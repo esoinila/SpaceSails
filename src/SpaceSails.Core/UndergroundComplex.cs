@@ -3307,26 +3307,80 @@ public static class UndergroundComplex
         "answering its own post decades ago and never once revoked a thing. The car below is colder than " +
         "the one above.";
 
-    /// <summary>What the gate says when you are carrying authorities and none of them is this one. The
-    /// failure has to name what is wrong with it — silence here would read as a bug.</summary>
-    public static string WrongCardLine(int floorsDown, IEnumerable<AuthorityCard> held)
+    // ── #684 · THE PANEL READS YOUR WALLET WITHOUT BEING ASKED, AND THAT READ IS A SCENE ───────────────
+    //
+    // Owner's ruling, on whether the shaft gate should become a TRY target like the doors: it should not.
+    // "The panel's unprompted wallet-read IS its character" — a machine that goes through your pockets for
+    // you is the whole administrative horror of this place in one gesture, and putting a verb in front of it
+    // would turn the building polite.
+    //
+    // What was wrong was never the interaction. It was that the read happened in SILENCE and then answered
+    // out of a SECOND set of sentences. `SatchelTry.Target.ShaftGate` carries the sharpest refusal matrix in
+    // the game — #679/#683 taught it to tell "another shaft of THIS site" from "somebody else's building",
+    // each named — and it had no client caller at all, while the panel said a flat "every one of them
+    // countersigned, current, and for another shaft" out of `WrongCardLine`. Two answers to one question,
+    // and the better one was the one nobody could read. That is this repo's third named bug class wearing a
+    // costume: the sim knowing a thing the sentence does not say.
+    //
+    // So `WrongCardLine` is GONE and the matrix is the source. This composes the read into the house card
+    // idiom (#528) so the answer is TOLD rather than muttered — art, a title, and the matrix's own line
+    // verbatim — and per #736's law the line the player acts on lives ON the card that is up, never only in
+    // a pulse behind its backdrop.
+
+    /// <summary>#684 · The panel's read of the wallet, and the card it is told on.</summary>
+    /// <param name="Worked">Whether the gate opened. False is a refusal, and <paramref name="Line"/> names
+    /// its reason either way (#603's law).</param>
+    /// <param name="Line">The matrix's own sentence, verbatim. Nothing here rewrites it.</param>
+    /// <param name="Presented">The card the gate actually read, or null when there was nothing in the wallet
+    /// to read. It is what decides the face on the card (#695) — the office that issued THIS one.</param>
+    /// <param name="Label">The card's title.</param>
+    /// <param name="ArtUrl">The presented card's own face, or the nameless fallback when none was presented
+    /// — which can never impersonate one of the five offices.</param>
+    public readonly record struct GateRead(
+        bool Worked, string Line, AuthorityCard? Presented, string Label, string ArtUrl);
+
+    /// <summary>#684 · What the story card is called, at a refusal and at a reading alike. It names the thing
+    /// the owner declined to put a verb in front of: the machine goes through your wallet, and you watch.</summary>
+    public const string GateReadLabel = "🎫 THE PANEL READS YOUR WALLET";
+
+    /// <summary>#684 · The gate below this car's band, reading what the captain happens to be carrying.
+    ///
+    /// <para>The judgement is <see cref="SatchelTry.ReadTheWallet"/>'s and only its — this asks the building
+    /// which shaft the gate serves and then does as it is told.</para></summary>
+    /// <param name="bodyId">The site.</param>
+    /// <param name="standingLevel">The floor the car is on; the gate is the one under this car's band.</param>
+    /// <param name="carried">The satchel. Anything that is not an authority is not in the wallet.</param>
+    public static GateRead TheGateReads(
+        string bodyId, int standingLevel, IReadOnlyList<Satchel.Item>? carried)
     {
-        ArgumentNullException.ThrowIfNull(held);
-        var names = new List<string>();
-        foreach (AuthorityCard c in held)
-        {
-            names.Add(CardTitle(c));
-        }
-        if (names.Count == 0)
-        {
-            return $"🔒 The second shaft is here, below B{floorsDown}, and its gate wants an " +
-                "authority this building has not issued in a long time. Somebody who worked these floors was " +
-                "carrying one. They did not take it with them.";
-        }
-        return $"🔒 The second shaft's gate reads what you are carrying, and declines it. " +
-            $"{string.Join("; ", names)} — every one of them countersigned, current, and for another " +
-            "shaft. The card that runs THIS one is on these floors somewhere.";
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // #677 · The next shaft that EXISTS. Under an unlisted band there is a band with nothing dug in it,
+        // and a gate named for it would be a refusal about solid rock. Where the building has nothing below
+        // at all there is no gate to read, and the band arithmetic is only a name for a card nobody holds.
+        int band = NextShaftBelow(bodyId, standingLevel) ?? (BandOf(Math.Min(standingLevel, -1)) + 1);
+        var gate = new AuthorityCard(bodyId, band);
+
+        SatchelTry.WalletRead read =
+            SatchelTry.ReadTheWallet(carried, SatchelTry.Target.ShaftGate, gate.Id);
+
+        AuthorityCard? presented =
+            read.Read is { } item && AuthorityCard.TryParse(item.Id, out AuthorityCard c) ? c : null;
+
+        return new(
+            read.Outcome.Worked, read.Outcome.Line, presented, GateReadLabel,
+            presented is { } shown ? AuthorityCardArtUrl(shown) : AuthorityCardFallbackArtUrl);
     }
+
+    /// <summary>#684 · The same read, the other way it can end — told at the ARRIVAL rather than at the
+    /// panel, because that is where the ride's beat has been said since #689 and a card raised on the frame
+    /// the floor is rebuilt is a card raised at nobody.
+    ///
+    /// <para><see cref="CardAcceptedLine"/> stays the one sentence for this: it is about the car going deeper
+    /// than the building admits to, which is a different question from the one the matrix answers, and it has
+    /// been the panel's success beat since #592.</para></summary>
+    public static GateRead TheGateAccepted(AuthorityCard card) => new(
+        true, CardAcceptedLine(card), card, GateReadLabel, AuthorityCardArtUrl(card));
 
     /// <summary>#585 · The card the first descent earns. Owner: "I think we need to gen AI pop-up about
     /// finding the elevator" — and he is right that it is the beat of the whole feature: the moment a moon
@@ -4231,12 +4285,16 @@ public static class UndergroundComplex
     /// <summary>The card face for a card nobody can name — the #528 original, kept when #695 gave every card
     /// the face of its own issuing office.
     ///
-    /// <para>No caller reaches it today, and that is a fact rather than an oversight: every seam that opens a
-    /// card has already run <c>AuthorityCard.TryParse</c> before it asks for a picture, and an id that fails
-    /// there gets no card at all rather than a card wearing a stranger's photograph. This is the face for a
-    /// seam that has an authority in front of it and cannot roll — the satchel row already keeps the matching
-    /// text fallback (<i>"🎫 an authority card"</i>), and the art side should not have to invent one under
-    /// pressure. It is deliberately NOT one of the five, so it can never impersonate an office.</para></summary>
+    /// <para>Every seam that opens a card has already run <c>AuthorityCard.TryParse</c> before it asks for a
+    /// picture, and an id that fails there gets no card at all rather than a card wearing a stranger's
+    /// photograph. This is the face for a seam that has an authority in front of it and cannot roll — the
+    /// satchel row already keeps the matching text fallback (<i>"🎫 an authority card"</i>), and the art side
+    /// should not have to invent one under pressure. It is deliberately NOT one of the five, so it can never
+    /// impersonate an office.</para>
+    ///
+    /// <para>#684 gave it its first real caller, and for exactly that reason: the panel's read of an EMPTY
+    /// wallet is a story card with no card in it. Painting one of the five offices onto that would be the
+    /// game showing the captain a pass they do not have.</para></summary>
     public const string AuthorityCardFallbackArtUrl = "art/the-authority-card.jpg";
 
     public const string AuthorityCardLabel = "🎫 THE COUNTERSIGNATURE";

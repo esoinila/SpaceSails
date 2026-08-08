@@ -2166,12 +2166,28 @@ public partial class Map
             // panel stays open on a refusal, and a line pulsed from here plays under the backdrop's blur —
             // in the DOM and not on the screen (#680's disease, second organ). The book still gets the
             // record; the saying happens where the player is looking.
-            string line = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
+            //
+            // #684 · And it is the MATRIX that answers now. The panel used to keep a second set of sentences
+            // of its own (UndergroundComplex.WrongCardLine, deleted), so the sharpest refusals in the game —
+            // another shaft of THIS site, named, versus somebody else's building, named (#679/#683) — had no
+            // client caller and nobody ever read them. One source, and this is a caller of it.
+            UndergroundComplex.GateRead read =
+                UndergroundComplex.TheGateReads(ex.Stop.Body.Id, ex.Floor, _satchel);
             int refusedBand = UndergroundComplex.BandOf(stop.Level);
             if (ex.HiveShaftsRefused.Add(refusedBand))
             {
-                _liftOutcome = line;
-                FileNote(line, "🔒");
+                _liftOutcome = read.Line;
+                FileNote(read.Line, "🔒");
+
+                // #684 · …and it is TOLD. Owner: the read's outcome must be raised as a story card in the
+                // house idiom, carrying the matrix's own line. It goes up OVER the panel — the view-object
+                // block is the last modal in Map.razor and shares the same backdrop band, so the card is the
+                // pop-up that is up, and #736's law is met by the line being ON it rather than only in the
+                // panel row underneath. Once per shaft per excursion, off the same latch as the field note:
+                // one event, one memory, and two latches would eventually disagree (#751's rule).
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                    read.Label, read.ArtUrl, read.Line);
             }
             else
             {
@@ -2360,8 +2376,20 @@ public partial class Map
                 // floor was torn down and rebuilt. Here the doors are open, the captain is standing still,
                 // and the car is not going anywhere. Once per shaft per excursion — and the band comes off
                 // the saying, because the ride that opened it already worked out which one that was.
+                //
+                // #684 · …and it is TOLD as a CARD, which is the other end of the read the panel makes. A
+                // gate that refuses raises one at the panel; a gate that AGREES raises one here — same
+                // title, same idiom, the face of the card the gate actually read. It belongs in this arm
+                // and nowhere else: the beat already carries WHICH card opened the gate, so nothing here
+                // re-derives a fact about a building it does not own (§13.15), and the picture can never
+                // drift from the sentence #693 just said beside it. The pulse is that law's business and is
+                // untouched — this is the saying a later tick cannot overwrite.
                 case UndergroundComplex.ArrivalBeat.CardAccepted when saying.Gate is { } opened:
                     ex.HiveShaftsOpened.Add(opened.Band);
+                    UndergroundComplex.GateRead told = UndergroundComplex.TheGateAccepted(opened);
+                    _viewObject = new DeckPlan.ConsoleSpot(
+                        DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                        told.Label, told.ArtUrl, told.Line);
                     ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
                     break;
 
@@ -2526,15 +2554,30 @@ public partial class Map
         // describing all along ("every one of them countersigned, current, and for another shaft"). Until now
         // that line was describing a thing the game could not give you. Now the deepest floor of one facility
         // hands you the way into the next, which is the best thing a bottom floor could possibly hold.
+        //
+        // ── #684 · AND THE LEAD IS NOT SPENT UNTIL THE CARD IS IN THE POCKET ──
+        //
+        // This used to call GrantLabLead here, which BANKS the lead and says it out loud — one step ahead of
+        // the capacity check below. On a bottom-band Key with a full pocket the find is refused, the room is
+        // not emptied and the same card is offered again on the next search (#678's law) — but the lead had
+        // already been heard, and news can only be heard once. The captain kept the knowledge without ever
+        // carrying the card that was supposed to be how they got it.
+        //
+        // The moon is only NAMED here now. It is announced further down, after the pocket has agreed.
         UndergroundComplex.AuthorityCard? found = null;
+        string? farLead = null;
         if (haul == UndergroundComplex.Haul.Key)
         {
             found = UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor);
             if (found is null
-                && GrantLabLead(DiceRule.Seed($"lead:hive-key:{ex.Stop.Body.Id}:{ex.Floor}:{which}")) is { } far
-                && UndergroundComplex.SiteHasBand(far, 0))
+                && NameAMoonWorthLookingAt(
+                    DiceRule.Seed($"lead:hive-key:{ex.Stop.Body.Id}:{ex.Floor}:{which}")) is { } far)
             {
-                found = new UndergroundComplex.AuthorityCard(far, 0);
+                farLead = far;
+                if (UndergroundComplex.SiteHasBand(far, 0))
+                {
+                    found = new UndergroundComplex.AuthorityCard(far, 0);
+                }
             }
         }
 
@@ -2572,6 +2615,14 @@ public partial class Map
         }
 
         ex.HiveRoomsEmptied.Add(roomKey);
+
+        // #684 · NOW the lead is spent — the room has been turned over for good and whatever it held is in
+        // the pocket. Said BEFORE the room's own line for the reason everything in this method is ordered:
+        // the pulse keeps one slot and the last write wins, and the haul is the sentence worth surviving.
+        if (farLead is { } lead)
+        {
+            AnnounceLabLead(lead);
+        }
 
         if (haul == UndergroundComplex.Haul.Equipment)
         {
@@ -3597,6 +3648,25 @@ public partial class Map
     /// lead is news you can only hear once, the card is an object that exists regardless.</summary>
     private string? GrantLabLead(ulong seed)
     {
+        if (NameAMoonWorthLookingAt(seed) is not { } named)
+        {
+            return null;
+        }
+        AnnounceLabLead(named);
+        return named;
+    }
+
+    /// <summary>#684 · WHICH moon, and NOTHING else — no lead written down, no line said, no save asked for.
+    ///
+    /// <para>Split out because one caller has to know the answer BEFORE it is allowed to keep it. A Key found
+    /// on a bottom band mints its card for the site a lead names (#613), and that mint can be refused by a
+    /// full pocket (#678) — at which point the room is not emptied and searching it again offers the same
+    /// find. The lead was being banked and SAID during the naming, one step ahead of the capacity check, so a
+    /// captain with no room left walked away holding the knowledge and none of the card. The sentence was
+    /// composed before the act it describes, which is the exact fault #678 was filed about, surviving in the
+    /// one branch of it that reached outside the pocket.</para></summary>
+    private string? NameAMoonWorthLookingAt(ulong seed)
+    {
         if (_surface is not { } ex)
         {
             return null;
@@ -3615,21 +3685,22 @@ public partial class Map
             candidates.Add(ex.Stop.Body.Id);
         }
 
-        string? named = SecretLab.MoonWorthLookingAt(candidates, seed);
-        if (named is null)
-        {
-            return null;
-        }
+        return SecretLab.MoonWorthLookingAt(candidates, seed);
+    }
+
+    /// <summary>#684 · Bank the lead and say it — once. News you can only hear the first time, which is why
+    /// it must not be spent on a find the pocket then refuses.</summary>
+    private void AnnounceLabLead(string named)
+    {
         if (!_labLeads.Add(named))
         {
-            return named;
+            return;
         }
 
         string display = ShuttleDestinationsInRange()
             .FirstOrDefault(s => s.Body.Id == named)?.Body.Name ?? named;
         ShowAndFile(SecretLab.LeadLine(display), "🔎");
         RequestVaultSave();
-        return named;
     }
 
     // ── #587 · THE FIELD BOOK ──────────────────────────────────────────────────────────────────────────
@@ -3675,22 +3746,9 @@ public partial class Map
     private HashSet<string> AuthorityCardIds() =>
         [.. Core.Satchel.OfKind(_satchel, Core.Satchel.Kind.Authority).Select(i => i.Id)];
 
-    /// <summary>#590 · Every card the captain holds, parsed back into what it authorises. Unreadable entries
-    /// from an edited or future save are simply dropped rather than thrown over — the vault is tolerant
-    /// everywhere else and a mystery key is not worth crashing a load for.</summary>
-    private List<Core.UndergroundComplex.AuthorityCard> HeldAuthorities()
-    {
-        var held = new List<Core.UndergroundComplex.AuthorityCard>();
-        foreach (string id in AuthorityCardIds())
-        {
-            if (Core.UndergroundComplex.AuthorityCard.TryParse(id, out Core.UndergroundComplex.AuthorityCard c))
-            {
-                held.Add(c);
-            }
-        }
-        held.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));   // stable order in the refusal line
-        return held;
-    }
+    // #684 · HeldAuthorities() lived here — the wallet parsed back into cards, sorted, so the panel's own
+    // refusal line could name every one of them. It went with WrongCardLine: the gate's answer is the
+    // matrix's now, and the matrix is handed the SATCHEL rather than a second list derived from it.
 
     /// <summary>Say it AND keep it. Every durable find on a surface goes through here rather than through
     /// ShowPulseMessage directly, so there is one place that can never be forgotten about — the pulse is the
