@@ -84,6 +84,24 @@ public static class HiveInterior
                 false, IsHull: !pastTheSeam, IsSeamless: pastTheSeam));
         }
 
+        // ── #759 · THE GLAZING, PUT BACK INTO THE DECK AS WHAT IT IS ────────────────────────────────────
+        //
+        // Owner's pinned requirement for this room's own pictures: a) A VIEW TO THE PARK and b) A WINDOW
+        // WALL BETWEEN. Core keeps these segments OUT of floor.Walls so nothing can draw them as poured
+        // concrete; they come back in here as walls carrying IsWindow — the flag the ship's bridge glass and
+        // her cantina's panoramic window have used since the deck was built, so the ink is the game's own
+        // window ink and this file invents nothing.
+        //
+        // BOTH HALVES OFF ONE SEGMENT. It is a wall, so the collision field takes it and no body crosses it;
+        // it is a window, so the eye does. Two segments on one line — one to draw, one to collide — is the
+        // drawn-versus-simulated split this house has a name for.
+        foreach (SurfaceLayout.Wall w in floor.Windows ?? [])
+        {
+            walls.Add(new(
+                (float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2,
+                IsWindow: true, IsHull: !pastTheSeam));
+        }
+
         foreach (SurfaceLayout.Doorway d in floor.Doorways)
         {
             doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: true));
@@ -292,6 +310,57 @@ public static class HiveInterior
                 consoles.Add(new(
                     DeckPlan.ConsoleKind.HiveBoard, (float)board.X, (float)board.Y, CanteenBoard.Plate));
             }
+        }
+
+        // ── #759 · THE PARK, DRAWN ─────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "on map the park needs to Exist there next to the bar. It is an indoor park where the fresh
+        // stuff is grown that is served here on the plate."
+        //
+        // Every solid thing in it — the walls, the raised beds, the benches, the floodlight masts — is
+        // already in floor.Walls and was therefore drawn and collided with by the loop at the top of this
+        // method. Nothing here lays out a bed or decides where a bench goes; this is the SIGNAGE and the
+        // floor art, which is the whole of a renderer's business in a room Core carved.
+        if (floor.Park is { } green)
+        {
+            // The floor it wears, in panels. One 16:9 frame stretched over a room six times wider than it is
+            // deep would be a smear; Core cuts the box (ParkArtPanels) because that is geometry about a room
+            // this file does not own.
+            if (green.ArtUrl is { } parkArt)
+            {
+                foreach ((double px0, double _, double px1, double py1) in
+                    UndergroundComplex.ParkArtPanels(green))
+                {
+                    backdrops.Add(new(
+                        parkArt, (float)px0, (float)py1,
+                        (float)(px1 - px0), (float)(green.Y1 - green.Y0),
+                        UndergroundComplex.HallArtAlpha));
+                }
+            }
+
+            // The plate at the gate, in the inspectorate voice the room is stencilled in.
+            labels.Add(((float)green.X, (float)green.Y, UndergroundComplex.ParkPlate));
+
+            // What is in each bed, and where it goes when it is picked. THE FOOD CONNECTION IS THIS LINE OF
+            // STENCIL and nothing else: the bed says CANTEEN 1 and so does the counter, and no card ever
+            // points that out.
+            foreach (UndergroundComplex.GrowingBed bed in green.Beds)
+            {
+                labels.Add(((float)bed.X, (float)bed.Y, bed.Plate));
+            }
+
+            // The benches. Labelled and NOT consoles: sitting down is #778's verb and arrives with it, and a
+            // console that answers nothing is #757's complaint restated in a park.
+            foreach ((double bx, double by) in green.Benches)
+            {
+                labels.Add(((float)bx, (float)(by - 2.2), UndergroundComplex.ParkBenchPlate));
+            }
+
+            // …and somebody on the far bench, who is scenery. Owner: "benches, the lone figure, the curve
+            // that hides the far end." A plate at a coordinate, with nothing to press: a park that started
+            // offering things would be a park that had noticed you.
+            labels.Add((
+                (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
         }
 
         // The lift, on every floor, in the same place.

@@ -1260,6 +1260,206 @@ public static class UndergroundComplex
         }
     }
 
+    // ── #759 · THE PARK BEHIND THE BAR ───────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-08-06 night: "Let's go Vault Tech fancy and have a view to an underground park behind the
+    // bar, windows between… a recreation device made to squeeze more out of their workers." And then, from
+    // a cruise ship two days later, the scale: "the reference is the ship's Central Park — the meeting place
+    // the cafeterias and restaurants ring… Do not make the park a puny small closet. Make it too big."
+    //
+    // WHY IT IS A ROOM AND NOT A PICTURE. The bar's stool view and the hall's own establishing art are both
+    // shot THROUGH the glass at green — so the moment those pictures shipped, the deck plan owed the player
+    // a room on the other side of that wall. A backdrop with nothing behind it is the drawn world and the
+    // simulated world disagreeing, which is the bug class this file keeps a table of.
+    //
+    // WHERE THE GROUND CAME FROM. Every rib in the building stops RibReachDu off the spine and the field
+    // runs on for sixty du past that — a band the width of the base that no placer has ever put anything
+    // in. The hall's rib now reaches HallRibExtraDu further into it (the owner's "at least double or triple
+    // it"), and the park is the rest of it: as wide as the spine is long, which makes it several times the
+    // floor area of the hall and the largest single room in the game.
+    //
+    // AND THE WALL BETWEEN IS GLASS, which is the one geometric fact the whole feature turns on: sight
+    // crosses it, bodies do not, and the way in is a door at the end of a corridor somewhere else.
+
+    /// <summary>#759 · One raised growing bed in the park — a solid box on the plan, stencilled with what is
+    /// in it and where it goes.</summary>
+    /// <param name="Number">1-based, as the plate reads.</param>
+    /// <param name="X">Centre.</param>
+    /// <param name="Y">Centre.</param>
+    /// <param name="HalfW">Half-width of the box.</param>
+    /// <param name="HalfH">Half-height.</param>
+    /// <param name="Crop">What is growing in it, in the building's own shouting stencil voice.</param>
+    public readonly record struct GrowingBed(
+        int Number, double X, double Y, double HalfW, double HalfH, string Crop)
+    {
+        /// <summary>Is this spot inside the bed? The box the walls were laid on, and nothing else.</summary>
+        public bool Contains(double x, double y) =>
+            Math.Abs(x - X) <= HalfW && Math.Abs(y - Y) <= HalfH;
+
+        /// <summary>What is stencilled on the end of it. The crop, and the room it is going to — which is
+        /// the whole of the food connection: the counter's sign is CANTEEN 1 and so is this.</summary>
+        public string Plate => $"🌱 BED {Number} · {Crop} · TO {ParkBedDestination}";
+    }
+
+    /// <summary>#759 · The park: the box, the walks through it, and what is standing in it.</summary>
+    /// <param name="X0">Left edge, in the surface's own coordinates.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="Walk">The gravel walks, as the centre-line the ground was cleared along — the gate spur
+    /// first, then the long curve. PUBLISHED because it is what makes the park a place you stroll rather
+    /// than a lawn you look at: the beds are laid around it, and a guard walks every metre of it.</param>
+    /// <param name="Beds">The raised beds, which are solid.</param>
+    /// <param name="Benches">Steel benches beside the walk, one per bend.</param>
+    /// <param name="Masts">Floodlight masts — the artificial day, as posts on the plan.</param>
+    /// <param name="Gate">The doorway into it, as the segment across the opening.</param>
+    /// <param name="Window">The glazed wall it shares with the hall, as the segment along it.</param>
+    /// <param name="X">Where the park's own plate reads from — just inside the gate.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="FigureX">The lone figure on the far bench. Scenery: a plate at a coordinate, with
+    /// nothing to press and nothing to say.</param>
+    /// <param name="FigureY">The same.</param>
+    /// <param name="FigurePlate">What the figure is, at plate size — one of <see cref="CanteenRegulars"/>'
+    /// own strangers, seeded off the site so a park is the same park every time it is walked. Chosen here
+    /// rather than in the renderer for the reason every string on these rooms is chosen here, and for one
+    /// more: a client picking it out of the list with <c>string.GetHashCode</c> would pick a DIFFERENT one
+    /// on every process start, and a guard run in the same process would never see it.</param>
+    /// <param name="ArtUrl">The picture the floor of it WEARS — same seam as <see cref="Hall.ArtUrl"/>,
+    /// laid in panels (<see cref="ParkArtPanels"/>) because one photograph stretched over a room six times
+    /// wider than it is deep is a photograph nobody can read.</param>
+    public readonly record struct Park(
+        double X0, double Y0, double X1, double Y1,
+        IReadOnlyList<(double X, double Y)> Walk,
+        IReadOnlyList<GrowingBed> Beds,
+        IReadOnlyList<(double X, double Y)> Benches,
+        IReadOnlyList<(double X, double Y)> Masts,
+        SurfaceLayout.Doorway Gate,
+        SurfaceLayout.Wall Window,
+        double X, double Y, double FigureX, double FigureY, string FigurePlate = "",
+        string? ArtUrl = null)
+    {
+        /// <summary>Is the captain in the park? The box the walls were laid on — the hall's own law
+        /// (<see cref="Hall.Contains"/>), for the same reason: a refuge-sized containment box in a room this
+        /// size would say "you are not in the park" from almost everywhere in the park.</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+
+        /// <summary>How much floor it has. The owner's "do not make it a puny small closet", in the one
+        /// unit a guard can measure.</summary>
+        public double FloorDu2 => (X1 - X0) * (Y1 - Y0);
+    }
+
+    /// <summary>#759 · Where the beds' produce goes, and it is the sign over the counter that serves it —
+    /// <see cref="AmenitySigns"/>'s own CANTEEN 1, said by the thing that grows the food. That is the whole
+    /// of the connection and it needs no sentence: the bed and the till name the same room.</summary>
+    public const string ParkBedDestination = "CANTEEN 1";
+
+    /// <summary>#759 · What the beds are growing, in the order they are laid. The card under the glass on
+    /// the counter (#756) sells coffee, a fry-up and a stew whose ingredients are "sourced from as far down
+    /// as we are willing to say" — every one of these is one of those things, standing in soil ten metres
+    /// from the table it is served at, and nothing anywhere points that out.</summary>
+    public static readonly IReadOnlyList<string> ParkCrops =
+    [
+        "TABLE GREENS",
+        "STEW ROOT",
+        "BREAKFAST TOMATO",
+        "SOFT HERBS",
+        "SALAD STOCK",
+        "COFFEE · SIX TREES · TRIAL",
+    ];
+
+    /// <summary>#759 · What is stencilled at the gate. The owner's own two phrases, in the inspectorate
+    /// voice the issue asks for: a company that builds a park underground is squeezing morale like any
+    /// other ore, and it does not pretend otherwise on the sign.</summary>
+    public const string ParkPlate =
+        "🌳 THE PARK · RECREATION SCHEDULE POSTED · ATTENDANCE IS RECORDED";
+
+    /// <summary>#759 · What the field book keeps of a walk in the park — filed once per excursion, the
+    /// cabinet's own idiom (<see cref="CabinetNote"/>). Authored, verbatim.
+    ///
+    /// <para>The surveillance is a LINE and not a system, which is the whole restraint of the beat: the
+    /// plate says attendance is recorded, the book records that it said so, and nothing anywhere counts
+    /// anything. §13.8 holds — the park says what the KITCHEN is for and never once what the facility
+    /// is.</para></summary>
+    public const string ParkNote =
+        "An indoor park behind the canteen's glass: gravel walks, raised beds under grow-lamps, and a "
+        + "plate at the gate that says attendance is recorded. The beds are stencilled for the counter — "
+        + "including the stew the card sources from as far down as they are willing to say, which is "
+        + "growing ten metres from the table it is served at.";
+
+    /// <summary>#759 · The glyph the park's filed line wears.</summary>
+    public const string ParkGlyph = "🌳";
+
+    /// <summary>#759 · What a bench is, on the plan. Steel, bolted, and a seat — the seat verb is #778's and
+    /// arrives with it; this is the furniture it will arrive at.</summary>
+    public const string ParkBenchPlate = "🪑 A STEEL BENCH";
+
+    /// <summary>#759 · The picture the park's floor wears. The owner's shotcrete ruling applies to it and it
+    /// is the regenerated shot: <i>"the crude rock is not up to modern mining smooth spray concrete
+    /// specs."</i></summary>
+    public const string ParkArtUrl = "art/b1-park-walk.jpg";
+
+    /// <summary>#759 · Which hall has a park behind it, asked exactly the way <see cref="HallArtFor"/> asks
+    /// which halls get a picture — because it is the same question. The branch office's upper canteen is the
+    /// room whose own art is shot through a window wall at the green; the head office's dining room is a
+    /// different room in a different building with its own everything (#411), and the staff mess two
+    /// hundred metres down has no view of anything.
+    ///
+    /// <para>ONE predicate, asked by the carve and by the paint, so a park can never be laid on a floor that
+    /// then declines to paint it — or, worse, painted on a floor that has no room behind the glass.</para></summary>
+    public static bool HasPark(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return use == Comfort.UpperCanteen && !IsHeadOffice(bodyId);
+    }
+
+    /// <summary>#759 · Which picture the park's floor wears, or null where there is no park.</summary>
+    public static string? ParkArtFor(string bodyId, Comfort use) =>
+        HasPark(bodyId, use) ? ParkArtUrl : null;
+
+    /// <summary>#759 · The park's floor art, cut into panels across its own box.
+    ///
+    /// <para>The hall wears ONE picture because a hall is about as wide as a photograph is. The park is six
+    /// times wider than it is deep — the owner's "make it too big" — and the same seam used once would
+    /// stretch a 16:9 frame to 6:1 and turn a garden into a smear. So the law is published HERE, beside the
+    /// box, for the reason every other number on these rooms is: a renderer working out how many copies of
+    /// a picture go on a floor would be doing geometry about a room it does not own.</para></summary>
+    public static IReadOnlyList<(double X0, double Y0, double X1, double Y1)> ParkArtPanels(in Park park)
+    {
+        double w = park.X1 - park.X0, h = park.Y1 - park.Y0;
+        int panels = Math.Max(1, (int)Math.Round(w / (h * ParkArtAspect), MidpointRounding.AwayFromZero));
+        var cut = new List<(double, double, double, double)>(panels);
+        for (int i = 0; i < panels; i++)
+        {
+            cut.Add((
+                park.X0 + (i * w / panels), park.Y0,
+                park.X0 + ((i + 1) * w / panels), park.Y1));
+        }
+        return cut;
+    }
+
+    /// <summary>#759 · The shape of the frames this set is painted in — 1280 × 720, every one of them.</summary>
+    public const double ParkArtAspect = 16.0 / 9.0;
+
+    /// <summary>#759 · Half the width of a gravel walk. Comfortably wider than <see cref="DoorHalf"/>, for
+    /// the reason DoorHalf itself was widened: a path narrower than a couple of the reachability flood's
+    /// grid steps is a path that is open in the geometry and shut to anything that pathfinds.</summary>
+    public const double ParkWalkHalfDu = 3.5;
+
+    /// <summary>#759 · The promenade kept clear against the park's own walls, so the walk is never the only
+    /// way across and a bed is never laid against the glass.</summary>
+    public const double ParkEdgeClearDu = 5.0;
+
+    /// <summary>#759 · Half a raised bed, across the park and along it.</summary>
+    public const double ParkBedHalfWDu = 7.0;
+
+    /// <summary>#759 · Half a raised bed, the short way.</summary>
+    public const double ParkBedHalfHDu = 3.5;
+
+    /// <summary>#759 · How many bends the long walk takes between the two ends. Curved is the owner's word
+    /// — <i>"It must be WALKABLE, with curved paths … the curve that hides the far end"</i> — and a curve on
+    /// a deck plan is a run of walkable ground whose beds were laid around it.</summary>
+    public const int ParkWalkBends = 3;
+
     /// <summary>#751 · What is stencilled beside a cabinet's door. Numbered, and it says how you get one:
     /// not off a menu.</summary>
     public static string CabinetPlate(int number) =>
@@ -1624,7 +1824,13 @@ public static class UndergroundComplex
         IReadOnlyList<Rib> Ribs,
         IReadOnlyList<Refuge> Refuges,
         IReadOnlyList<Amenity> Amenities,
-        IReadOnlyList<EnSuite> EnSuites);
+        IReadOnlyList<EnSuite> EnSuites,
+        // #759 · THE GLAZING, kept out of Walls on purpose. Every segment here is a wall a body may not
+        // pass and an eye may — the renderer puts them back into the deck in the window idiom the ship's
+        // own bridge glass already uses, so one segment carries both halves and nothing draws a second one.
+        IReadOnlyList<SurfaceLayout.Wall>? Windows = null,
+        // #759 · The park, on the one floor that has one.
+        Park? Park = null);
 
     /// <summary>#587 · A CROSS CORRIDOR, PUBLISHED RATHER THAN INFERRED.
     ///
@@ -1807,22 +2013,49 @@ public static class UndergroundComplex
         // refuges — sees the box and steps around it. The alternative was to carve it last and delete the
         // walls of whatever it had swallowed, which is the same thing said in a way that can go wrong.
         //
-        // The floor pays for it in exactly two room slots (the column the hall stands on), and nothing else
-        // on the floor is dropped: CarveHall clamps its own outer edge short of the next rib's chambers and
-        // short of the lift alcove rather than trusting the ledger to notice afterwards.
-        (int Rib, int Side)? hallSlot = HallSlotFor(bodyId, level, ribList, field, shaftX, shaftY, roomScale);
+        // The floor pays for it in the room slots of the column the hall stands on, and — since #759 let the
+        // carve stop at a neighbouring corridor rather than a full room column short of it — in whatever
+        // slots of that neighbour's near side it now stands on. Nothing is ever laid ON it: the ledger is
+        // told about the box before any other placer runs, and no CORRIDOR is ever covered.
+        (int Rib, int Side)? hallSlot =
+            HallSlotFor(bodyId, level, ribList, field, shaftX, shaftY, left, right, roomScale);
         HallSite? hallSite = null;
+        Park? park = null;
+
+        // #759 · The park's own glazing, kept apart from the poured walls all the way out of this method.
+        // See CarveHall: one segment, in the list that says what it is MADE OF, and the client turns it back
+        // into a wall the eye reads as glass and the boots read as wall.
+        var glass = new List<SurfaceLayout.Wall>();
+
         if (hallSlot is { } slot)
         {
-            (double hmouth, double hfar) = RibReach(field, shaftY, ribList[slot.Rib].Down);
+            // #759 · THE HALL'S OWN RIB REACHES FURTHER (RibReach's `hall:`), and the same two numbers are
+            // handed to the rib loop below for that rib — one call, one answer, the #585 law about the
+            // doorway and the gap being one gap applied to a rib's LENGTH.
+            (double hmouth, double hfar) = RibReach(field, shaftY, ribList[slot.Rib].Down, hall: true);
+            bool glazed = HasPark(bodyId, HallUseOn(bodyId, level));
             hallSite = CarveHall(
-                walls, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
-                shaftX, left, right, roomScale);
+                walls, glass, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
+                shaftX, left, right, roomScale, glazed);
             if (hallSite is { } built)
             {
                 claimed.Add((
                     built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
                     built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
+
+                // ── #759 · AND THE PARK BEHIND ITS GLASS ────────────────────────────────────────────────
+                //
+                // Carved immediately after the hall and claimed with it, for the hall's own reason: it is
+                // the largest single room in the building and everything laid afterwards has to see it.
+                if (glazed)
+                {
+                    park = CarvePark(
+                        walls, bodyId, level, built.Hall, built.Glass!.Value, ribList[slot.Rib],
+                        hfar, left, right, field);
+                    claimed.Add((
+                        park.Value.X0 - 1.5, park.Value.Y0 - 1.5,
+                        park.Value.X1 + 1.5, park.Value.Y1 + 1.5));
+                }
             }
             else
             {
@@ -1838,7 +2071,11 @@ public static class UndergroundComplex
             {
                 continue;   // that entry is the lift alcove's mouth, not a corridor
             }
-            (double mouth, double far) = RibReach(field, shaftY, down);
+            // #759 · The hall's rib runs longer than the rest, and this is the same call the carve made —
+            // never a second answer. `hallRib` is also the one rib in the building whose far end is a WAY IN
+            // rather than an end: the park is behind it.
+            bool hallRib = hallSlot is { } onThis && onThis.Rib == i;
+            (double mouth, double far) = RibReach(field, shaftY, down, hall: hallRib);
 
             // #585 · THE RIB'S OWN WALLS ARE CUT WHERE ROOMS OPEN OFF THEM. Owner: "a door is missing here
             // towards down", and his A* suggestion found it everywhere at once — 94 floors, not one room
@@ -1860,13 +2097,28 @@ public static class UndergroundComplex
             // and a stencil is a department, a survey and a decision about where somebody's authority stops.
             // Down here the passage simply ends in the same material as everything else, and the captain gets
             // no number to reason with — which is worse, and is the point.
-            if (!IsFound(bodyId, level) && Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
+            //
+            // #759 · …EXCEPT THE ONE THAT IS THE PARK GATE. On the hall's rib, where a park was carved, the
+            // corridor does not end: it opens, through a doorway cut to the same DoorHalf every other door
+            // in the building is cut to, and that gap is the ONLY way a body gets into the park. (The wall
+            // it shares with the hall is glass — an eye crosses it and nothing else does.) A sealed mouth
+            // with a distance stencilled on it here would be a sign lying about a door you can see through.
+            if (park is not null && hallRib)
             {
-                double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
-                locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
-                    SealedMouthSign(bodyId, i, km)));
+                doorways.Add(new(x - DoorHalf, far, x + DoorHalf, far));
+                walls.Add(new(x - CorridorHalf, far, x - DoorHalf, far, true));
+                walls.Add(new(x + DoorHalf, far, x + CorridorHalf, far, true));
             }
-            walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
+            else
+            {
+                if (!IsFound(bodyId, level) && Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
+                {
+                    double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
+                    locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
+                        SealedMouthSign(bodyId, i, km)));
+                }
+                walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
+            }
 
             // #751 · …and on the column the hall is standing on, no rooms at all. The rib's own face is
             // still built above (RibFace), with its doorway at every slot — those gaps ARE the hall's doors,
@@ -1896,19 +2148,44 @@ public static class UndergroundComplex
         }
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
-            walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites);
+            walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
+            glass, park);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,
     /// because the wall builder, the room builder and now the hall carver all have to be given the same two
-    /// numbers — and this was three copies of the same two lines the moment the hall arrived.</summary>
-    private static (double Mouth, double Far) RibReach(in SurfaceLayout.Field field, double shaftY, bool down)
+    /// numbers — and this was three copies of the same two lines the moment the hall arrived.
+    ///
+    /// <para>#759 · <paramref name="hall"/> is the ONE rib that reaches further, and it reaches further for
+    /// a reason that can be said in a sentence: the room on it is a hall. Owner, standing in the first
+    /// one — <i>"it is like cramped… At least double or triple it"</i> — and a hall grown only sideways is a
+    /// corridor with tables in it. The extra length comes out of the band beyond the rib ends that nothing
+    /// has ever stood in, and the park takes what is left of that band.</para></summary>
+    private static (double Mouth, double Far) RibReach(
+        in SurfaceLayout.Field field, double shaftY, bool down, bool hall = false)
     {
         double margin = SurfaceLayout.EdgeMargin + 6;
+        double reach = hall ? RibReachDu + HallRibExtraDu : RibReachDu;
         return down
-            ? (shaftY - CorridorHalf, Math.Max(field.BottomY + margin, shaftY - 52))
-            : (shaftY + CorridorHalf, Math.Min(field.LandingBandY - margin, shaftY + 52));
+            ? (shaftY - CorridorHalf, Math.Max(field.BottomY + margin, shaftY - reach))
+            : (shaftY + CorridorHalf, Math.Min(field.LandingBandY - margin, shaftY + reach));
     }
+
+    /// <summary>#585 · How far an ordinary rib runs off the spine. This was a literal <c>52</c> written
+    /// twice inside <see cref="RibReach"/>; it is named here because #759 needed to say "further than an
+    /// ordinary one" without retyping it.</summary>
+    public const double RibReachDu = 52.0;
+
+    /// <summary>#759 · How much further the HALL's own rib runs. The owner's <i>"at least double or triple
+    /// it"</i> is a floor-AREA ask and floor area has two axes; this is the second one, and it is spent on
+    /// ground the generator has never used — every rib in the building stops <see cref="RibReachDu"/> off
+    /// the spine while the field runs on for another sixty du past that.</summary>
+    public const double HallRibExtraDu = 16.0;
+
+    /// <summary>#759 · How deep the band the park stands in is, measured from the hall rib's own far end
+    /// outward. What is left of the unused band after <see cref="HallRibExtraDu"/> — stated as a number so
+    /// the park's area law has something to be measured against rather than a coordinate.</summary>
+    public const double ParkDepthDu = 42.0;
 
     /// <summary>#751 · A carved hall, on its way to becoming an <see cref="Amenity"/>.</summary>
     /// <param name="Hall">The box and its cabinets, as published on the plan.</param>
@@ -1916,8 +2193,13 @@ public static class UndergroundComplex
     /// <param name="Y">The same.</param>
     /// <param name="Tops">The round tops on the hall floor. Cabinet tops are NOT in here: a cabinet's chairs
     /// are extra, and the hall's own seat law is measured on this list.</param>
+    /// <param name="Glass">#759 · The far wall, when it was built as glazing rather than as concrete —
+    /// handed on so the park publishes the VERY segment the carve laid rather than a second one written from
+    /// the same two corners. Two segments that are equal today and drawn from different arithmetic is the
+    /// mirrored-constant bug with a one-line head start.</param>
     private readonly record struct HallSite(
-        Hall Hall, double X, double Y, IReadOnlyList<(double X, double Y)> Tops);
+        Hall Hall, double X, double Y, IReadOnlyList<(double X, double Y)> Tops,
+        SurfaceLayout.Wall? Glass = null);
 
     // ── #751 · THE HALL'S OWN MODULE ─────────────────────────────────────────────────────────────────
     //
@@ -1932,9 +2214,23 @@ public static class UndergroundComplex
 
     /// <summary>#751 · How far apart a hall's round tops stand, at the density the game's own canteens
     /// already use: one top per (module area ÷ <see cref="HallTopsPerModule"/>), squared back into a
-    /// spacing. A hall on tight ground packs closer than this; it never spreads wider.</summary>
+    /// spacing — and then spread by <see cref="HallSpreadFactor"/>, because a hall is not a canteen with
+    /// more chairs in it. A hall on tight ground packs closer than this; it never spreads wider.</summary>
     public static double HallTopPitchDu =>
-        Math.Sqrt(RoomWidthDu * RoomHeightDu / HallTopsPerModule);
+        Math.Sqrt(RoomWidthDu * RoomHeightDu * HallSpreadFactor / HallTopsPerModule);
+
+    /// <summary>
+    /// #759 · HOW MUCH MORE FLOOR A HALL GIVES A TABLE THAN A ROOM DOES — the owner's <i>"the hall is like
+    /// cramped … At least double or triple it"</i>, stated as the one number it actually is.
+    ///
+    /// <para>The first hall was laid at the ordinary canteen's density (<see cref="HallTopsPerModule"/>
+    /// tops to a room module) and simply repeated it eighty seats' worth, which is how a room ends up
+    /// twenty tables wide and still feeling like a corridor: the crowding a player feels is the PITCH, not
+    /// the table count. Three times the floor per top is the whole of the fix, and everything downstream —
+    /// how deep the carve asks the ground to be, where the counter's line falls, how far the pillars stand
+    /// apart — follows from it without a second number being typed.</para>
+    /// </summary>
+    public const double HallSpreadFactor = 3.0;
 
     /// <summary>#751 · The clear strip inside the hall's doors. Nothing is laid in it — a doorway a captain
     /// has to path around a table to use is #585's stranded room with better furniture.</summary>
@@ -1959,35 +2255,61 @@ public static class UndergroundComplex
     /// the rooms the floor had built; a hall has to be chosen before any room exists, so this asks the same
     /// question of the room SLOTS — the very positions <see cref="RoomCentresAlong"/> is about to place. Same
     /// answer, computed from the same arithmetic, one pass earlier.</para>
+    ///
+    /// <para>#759 · …<b>of the slots that can actually hold one.</b> Nearest-the-car on its own put every
+    /// hall in the game on the rib beside the shaft, and on the floors whose rib runs UP that is the one
+    /// column in the building with the lift alcove standing in front of it — so the room the owner called
+    /// cramped was cramped by a fixture thirty du away, and no amount of spreading its tables could have
+    /// answered him. The ground is asked FIRST now (<see cref="HallGround"/>, the same arithmetic the carve
+    /// itself uses, so the two can never disagree), the best floor wins, and nearest-the-car breaks the tie
+    /// — which it does on every floor where two slots would both take the hall whole, i.e. the rule is
+    /// unchanged everywhere it was ever doing any work.</para>
     /// </summary>
     private static (int Rib, int Side)? HallSlotFor(
         string bodyId, int level, List<Rib> ribs, in SurfaceLayout.Field field,
-        double shaftX, double shaftY, double roomScale)
+        double shaftX, double shaftY, double leftEnd, double rightEnd, double roomScale)
     {
         if (!IsHallFloor(bodyId, level) || ribs.Count == 0)
         {
             return null;
         }
 
+        Comfort use = HallUseOn(bodyId, level);
         double roomW = RoomWidthDu * roomScale;
         (int Rib, int Side)? best = null;
-        double bestD2 = double.MaxValue;
+        double bestFloor = -1, bestD2 = double.MaxValue;
 
         for (int i = 0; i < ribs.Count; i++)
         {
-            (double mouth, double far) = RibReach(field, shaftY, ribs[i].Down);
+            (double mouth, double far) = RibReach(field, shaftY, ribs[i].Down, hall: true);
             List<double> ys = RoomCentresAlong(mouth, far, ribs[i].Down, roomScale);
+            if (ys.Count == 0)
+            {
+                continue;
+            }
             for (int side = -1; side <= 1; side += 2)
             {
+                if (HallGround(bodyId, use, ribs, i, side, mouth, far, shaftX, leftEnd, rightEnd, roomScale)
+                    is not { } ground)
+                {
+                    continue;   // the ground here would not take a hall at all
+                }
+
+                // The floor this slot would yield, and never more than the hall ASKED for — so two slots
+                // that both take it whole are equal and the tie falls to the lift, which is the #751 rule.
+                double floor = Math.Min(ground.Width, ground.Wanted) * ground.Length;
+
                 double cx = ribs[i].X + (side * (CorridorHalf + (roomW / 2)));
+                double d2 = double.MaxValue;
                 foreach (double cy in ys)
                 {
                     double dx = cx - shaftX, dy = cy - shaftY;
-                    double d2 = (dx * dx) + (dy * dy);
-                    if (d2 < bestD2)
-                    {
-                        (best, bestD2) = ((i, side), d2);
-                    }
+                    d2 = Math.Min(d2, (dx * dx) + (dy * dy));
+                }
+
+                if (floor > bestFloor + 0.5 || (floor > bestFloor - 0.5 && d2 < bestD2))
+                {
+                    (best, bestFloor, bestD2) = ((i, side), Math.Max(floor, bestFloor), d2);
                 }
             }
         }
@@ -2010,46 +2332,71 @@ public static class UndergroundComplex
         TopPressurisedFloor(bodyId) == level ? Comfort.UpperCanteen : Comfort.StaffCanteen;
 
     /// <summary>
-    /// #751 · THE HALL, CARVED. Returns null when the ground will not take one, in which case the floor
-    /// keeps the ordinary three-top canteen and a guard says so out loud.
+    /// #759 · HOW MUCH GROUND A SLOT HAS FOR A HALL, AND HOW MUCH THE HALL WANTS — the arithmetic
+    /// <see cref="CarveHall"/> used to do inline, lifted out whole so <see cref="HallSlotFor"/> can ask the
+    /// same question one pass earlier.
     ///
-    /// <para>Laid out in the hall's own two axes so nothing here has to think about which way the rib
-    /// points: <b>u</b> runs outward from the rib's face, <b>v</b> runs down the rib from the spine. The
-    /// front wall (u = 0) and the near wall (v = 0) are not built at all — they are the rib's face and the
-    /// spine's face, already standing, already cut. That is the whole of the one-gap law here: the hall
-    /// cannot open a door in the wrong place because it never opens one.</para>
+    /// <para>It is lifted rather than copied for the reason this file opens with a table of: a chooser that
+    /// worked out available width on its own would be a second opinion about a room the carve owns, and the
+    /// two would drift apart the first time either grew a clause. Null means this ground will not take a
+    /// hall at all.</para>
     /// </summary>
-    private static HallSite? CarveHall(
-        List<SurfaceLayout.Wall> walls, string bodyId, int level, List<Rib> ribs, int ribIndex, int side,
+    private static (double Width, double Wanted, double Length, double VSpan)? HallGround(
+        string bodyId, Comfort use, List<Rib> ribs, int ribIndex, int side,
         double mouth, double far, double shaftX, double leftEnd, double rightEnd, double roomScale)
     {
-        Comfort use = HallUseOn(bodyId, level);
         double ribX = ribs[ribIndex].X;
         double roomW = RoomWidthDu * roomScale;
 
         // ── HOW FAR OUT THE GROUND GOES. Clamped against the things that are already spoken for rather
         //    than against a guess: the next rib's chambers, the lift alcove where the hall shares a spine
         //    face with it, and the spine's own end cap.
+        //
+        // #759 · …and a rib pointing the OTHER WAY off the spine is not in the way of anything. This used
+        // to reserve a full room column beside EVERY neighbouring rib, which on half the floors in the game
+        // was ground held back for chambers standing on the far side of the spine — sixty du of rock the
+        // hall was refused because of rooms it could not have reached with a drill. The clamp asks which
+        // way the neighbour runs now, and against a neighbour that shares this band it stops at the
+        // CORRIDOR rather than at the far side of that corridor's rooms: those room slots are ground, the
+        // claim ledger drops what stands on the hall, and a passage is the one thing that may never be
+        // covered.
         double limit = side > 0 ? rightEnd - HallEdgePadDu : leftEnd + HallEdgePadDu;
         foreach (Rib other in ribs)
         {
+            if (other.Down != ribs[ribIndex].Down)
+            {
+                continue;
+            }
             if (side > 0 && other.X > ribX)
             {
-                limit = Math.Min(limit, other.X - CorridorHalf - roomW - 1.5);
+                limit = Math.Min(limit, other.X - CorridorHalf - 1.5);
             }
             else if (side < 0 && other.X < ribX)
             {
-                limit = Math.Max(limit, other.X + CorridorHalf + roomW + 1.5);
+                limit = Math.Max(limit, other.X + CorridorHalf + 1.5);
             }
         }
+        // The lift alcove hangs off the TOP face, so only a rib that runs UP can meet it. #585 was a wall
+        // lying across a mouth; a hall laid over the alcove would be the same mistake with the captain's own
+        // way home inside it.
+        //
+        // #759 · …and only where the alcove is actually in the way, which is the clause this shipped
+        // without. A hall growing LEFT off a rib that is already left of the shaft was being clamped to a
+        // limit on the shaft's far side — a lower bound raised above the wall it was bounding, so
+        // `available` came out as the distance to a point behind the hall and the room was laid seventy du
+        // outside the field. It never fired while every hall in the game stood on the rib beside the car;
+        // the moment #759 let the chooser look at the other seven slots, it laid a bar through the edge of
+        // the world. A clamp that does not ask which side its obstacle is on is not a clamp.
         if (!ribs[ribIndex].Down)
         {
-            // The lift alcove hangs off the TOP face, so only a rib that runs UP can meet it. #585 was a
-            // wall lying across a mouth; a hall laid over the alcove would be the same mistake with the
-            // captain's own way home inside it.
-            limit = side > 0
-                ? Math.Min(limit, shaftX - ShaftHalf - 1.5)
-                : Math.Max(limit, shaftX + ShaftHalf + 1.5);
+            if (side > 0 && shaftX > ribX)
+            {
+                limit = Math.Min(limit, shaftX - ShaftHalf - 1.5);
+            }
+            else if (side < 0 && shaftX < ribX)
+            {
+                limit = Math.Max(limit, shaftX + ShaftHalf + 1.5);
+            }
         }
 
         double faceX = ribX + (side * CorridorHalf);
@@ -2057,12 +2404,11 @@ public static class UndergroundComplex
         double length = Math.Abs(far - mouth);
 
         // ── WHAT THE HALL NEEDS. The tops come first: the seat target decides the bill, the bill decides
-        //    how many tops, and the tops decide how deep the room has to be at the pitch the game's own
-        //    canteens already use.
+        //    how many tops, and the tops decide how deep the room has to be at the pitch a hall lays its
+        //    tables out at (HallSpreadFactor — the owner's "at least double or triple it").
         // …and the cabinets are the cantina's alone. The mess is the room the shift stopped coming to; a
         // door for sensitive negotiations in it would be furnishing a joke nobody is in the room to make.
-        bool cabs = use == Comfort.UpperCanteen;
-        double cabBand = cabs ? HallCabinetDepthDu : 0.0;
+        double cabBand = use == Comfort.UpperCanteen ? HallCabinetDepthDu : 0.0;
 
         int tops = HallSeatBill(bodyId, use, HallSeatsFor(bodyId, use)).Count;
         double pitch = HallTopPitchDu;
@@ -2076,10 +2422,41 @@ public static class UndergroundComplex
         // A hall that cannot hold its own doorways, its aisle and a table strip is not a hall. Saying so
         // and standing down is the honest answer; a guard asserts it never actually happens.
         double minWidth = HallDoorAisleDu + cabBand + HallEdgePadDu + (2 * DoorHalf);
-        if (width < minWidth || vSpan < 4 * DoorHalf)
+        return width < minWidth || vSpan < 4 * DoorHalf ? null : (available, wanted, length, vSpan);
+    }
+
+    /// <summary>
+    /// #751 · THE HALL, CARVED. Returns null when the ground will not take one, in which case the floor
+    /// keeps the ordinary three-top canteen and a guard says so out loud.
+    ///
+    /// <para>Laid out in the hall's own two axes so nothing here has to think about which way the rib
+    /// points: <b>u</b> runs outward from the rib's face, <b>v</b> runs down the rib from the spine. The
+    /// front wall (u = 0) and the near wall (v = 0) are not built at all — they are the rib's face and the
+    /// spine's face, already standing, already cut. That is the whole of the one-gap law here: the hall
+    /// cannot open a door in the wrong place because it never opens one.</para>
+    /// </summary>
+    private static HallSite? CarveHall(
+        List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
+        string bodyId, int level, List<Rib> ribs, int ribIndex, int side,
+        double mouth, double far, double shaftX, double leftEnd, double rightEnd, double roomScale,
+        bool glazed)
+    {
+        Comfort use = HallUseOn(bodyId, level);
+
+        if (HallGround(bodyId, use, ribs, ribIndex, side, mouth, far, shaftX, leftEnd, rightEnd, roomScale)
+            is not { } ground)
         {
             return null;
         }
+
+        double ribX = ribs[ribIndex].X;
+        bool cabs = use == Comfort.UpperCanteen;
+        double cabBand = cabs ? HallCabinetDepthDu : 0.0;
+        double pitch = HallTopPitchDu;
+        int tops = HallSeatBill(bodyId, use, HallSeatsFor(bodyId, use)).Count;
+        double faceX = ribX + (side * CorridorHalf);
+        double length = ground.Length;
+        double width = Math.Min(ground.Width, ground.Wanted);
 
         // ── FROM (u, v) TO THE FIELD'S OWN COORDINATES, in one place. ───────────────────────────────────
         bool down = ribs[ribIndex].Down;
@@ -2091,7 +2468,22 @@ public static class UndergroundComplex
 
         // ── THE THREE WALLS THE HALL OWNS. (The fourth and fifth are the rib's face and the spine's.)
         walls.Add(new(X(width), Y(0), X(width), Y(length), true));        // the outer wall
-        walls.Add(new(X(0), Y(length), X(width), Y(length), true));       // the far wall
+
+        // ── #759 · THE FAR WALL, WHICH IS GLASS WHERE THERE IS A PARK BEHIND IT ─────────────────────────
+        //
+        // Owner requirement, pinned: the restaurant scene must have a) A VIEW TO THE PARK and b) A WINDOW
+        // WALL BETWEEN. Both of the room's own pictures are shot through it — the stool view is counter,
+        // glass, green; the hall's own establishing art is steel tables, riveted glass, green — so the deck
+        // plan drawing an ordinary poured wall there would be the drawn room and the pictured room
+        // disagreeing about the one surface both of them are about.
+        //
+        // ONE SEGMENT, PUBLISHED TWICE AND BUILT ONCE. It goes in the `glass` list rather than the wall
+        // list, and the client puts it back into the deck as a wall that draws in the window idiom — so it
+        // collides exactly like the poured wall it replaced (a body may not pass) and reads as glass (an eye
+        // may). A second segment laid on the same line would be the drawn-versus-simulated split this house
+        // has a name for.
+        var farWall = new SurfaceLayout.Wall(X(0), Y(length), X(width), Y(length), true);
+        (glazed ? glass : walls).Add(farWall);
 
         // ── THE COUNTER · a long bar wall along the far end, with the service side shut off behind it.
         double counterV = length - HallCounterBandDu;
@@ -2184,7 +2576,188 @@ public static class UndergroundComplex
                 X(HallDoorAisleDu / 2.0), Y(length * 0.25),
                 HallArtFor(bodyId, use), spots),
             X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
-            laid);
+            laid,
+            glazed ? farWall : null);
+    }
+
+    /// <summary>
+    /// #759 · THE PARK, CARVED — the one room in the building that is not a box off a corridor.
+    ///
+    /// <para>Laid in the park's own two axes, the hall's discipline: <b>u</b> runs along the spine and
+    /// <b>w</b> runs outward from the wall it shares with the hall. It owns three walls and half of a
+    /// fourth: the far wall, the two ends, and the near wall in the segments left over once the corridor's
+    /// gate and the hall's GLASS have been taken out of it. Neither of those two openings is cut here —
+    /// the gate is the rib's own far end (the corridor stops being a dead end) and the glass is the hall's
+    /// own far wall — which is #585's one-gap law said about a room that has two neighbours.</para>
+    ///
+    /// <para><b>The walk comes first and the planting is laid around it</b>, which is the whole reason a
+    /// park drawn on a square grid can have a curve in it. The centre-line is a smooth line the length of
+    /// the room; a bed is only laid where it clears that line by a walk's half-width and then some. Do it
+    /// the other way — beds first, path threaded after — and the path is whatever the beds left, which is
+    /// how a garden becomes a maze and how a guard stops being able to fail.</para>
+    /// </summary>
+    private static Park CarvePark(
+        List<SurfaceLayout.Wall> walls, string bodyId, int level, in Hall hall, SurfaceLayout.Wall glass,
+        in Rib rib, double hallFar, double leftEnd, double rightEnd, in SurfaceLayout.Field field)
+    {
+        bool down = rib.Down;
+
+        // How deep the band is. ParkDepthDu unless the field runs out first, which it does not on the
+        // shipped one — clamped anyway, because a room laid past the edge margin is a room half of which
+        // is in the dark the client fades the field out with (#563).
+        double edge = down
+            ? field.BottomY + SurfaceLayout.EdgeMargin
+            : field.LandingBandY - SurfaceLayout.EdgeMargin;
+        double depth = Math.Min(ParkDepthDu, Math.Abs(edge - hallFar));
+        double farLine = down ? hallFar - depth : hallFar + depth;
+
+        double x0 = leftEnd, x1 = rightEnd;
+        double y0 = Math.Min(hallFar, farLine), y1 = Math.Max(hallFar, farLine);
+        double W(double w) => down ? hallFar - w : hallFar + w;
+
+        // ── THE WALLS IT OWNS.
+        walls.Add(new(x0, farLine, x1, farLine, true));       // the far wall — the painted horizon
+        walls.Add(new(x0, hallFar, x0, farLine, true));
+        walls.Add(new(x1, hallFar, x1, farLine, true));
+
+        // …and the near wall, in the segments left between the two openings. SORTED, and the cursor may
+        // only ever move forward: #587 was exactly this loop given its mouths out of order, and it sealed
+        // every room on a third of the floors in the game.
+        var openings = new List<(double Lo, double Hi)>
+        {
+            (rib.X - CorridorHalf, rib.X + CorridorHalf),   // the gate, cut by the rib's own far end
+            (hall.X0, hall.X1),                             // the glass, which is the hall's far wall
+        };
+        openings.Sort((a, b) => a.Lo.CompareTo(b.Lo));
+        double cursor = x0;
+        foreach ((double lo, double hi) in openings)
+        {
+            if (lo > cursor)
+            {
+                walls.Add(new(cursor, hallFar, lo, hallFar, true));
+            }
+            cursor = Math.Max(cursor, hi);
+        }
+        if (cursor < x1)
+        {
+            walls.Add(new(cursor, hallFar, x1, hallFar, true));
+        }
+
+        // ── THE WALK · one long curve down the room, and a spur in from the gate.
+        double uLo = x0 + ParkEdgeClearDu, uHi = x1 - ParkEdgeClearDu;
+        double span = uHi - uLo;
+        double mid = depth / 2.0;
+        double amp = Math.Max(1.0, mid - ParkEdgeClearDu - ParkWalkHalfDu - 2.0);
+        double Curve(double u) =>
+            mid + (amp * Math.Sin(2 * Math.PI * ParkWalkBends * (u - uLo) / span));
+
+        var walk = new List<(double X, double Y)>();
+        double gateU = Math.Clamp(rib.X, uLo, uHi);
+        for (double w = 0; w < Curve(gateU); w += 1.5)
+        {
+            walk.Add((gateU, W(w)));      // in from the gate, until it meets the long walk
+        }
+        for (double u = uLo; u <= uHi + 0.001; u += 1.5)
+        {
+            walk.Add((u, W(Curve(u))));
+        }
+
+        // ── THE BEDS · a grid of raised boxes, minus every one that would stand on the walk.
+        var beds = new List<GrowingBed>();
+        double bu0 = uLo + ParkBedHalfWDu, bu1 = uHi - ParkBedHalfWDu;
+        double bw0 = ParkEdgeClearDu + ParkBedHalfHDu, bw1 = depth - ParkEdgeClearDu - ParkBedHalfHDu;
+        int cols = Math.Max(1, (int)((bu1 - bu0) / ((2 * ParkBedHalfWDu) + 8)) + 1);
+        int rows = Math.Max(1, (int)((bw1 - bw0) / ((2 * ParkBedHalfHDu) + 4)) + 1);
+        double clearU = ParkBedHalfWDu + ParkWalkHalfDu + 1.0;
+        double clearW = ParkBedHalfHDu + ParkWalkHalfDu + 1.0;
+
+        for (int r = 0; r < rows; r++)
+        {
+            double bw = rows == 1 ? (bw0 + bw1) / 2.0 : bw0 + (r * (bw1 - bw0) / (rows - 1));
+            for (int c = 0; c < cols; c++)
+            {
+                double bu = cols == 1 ? (bu0 + bu1) / 2.0 : bu0 + (c * (bu1 - bu0) / (cols - 1));
+
+                // Would it stand on the gravel? Asked of the walk the room actually published, sample by
+                // sample — never of the formula, which is the same discipline as measuring the tops rather
+                // than reading the seat target.
+                bool onTheWalk = false;
+                foreach ((double px, double py) in walk)
+                {
+                    double pw = Math.Abs(py - hallFar);
+                    if (Math.Abs(px - bu) < clearU && Math.Abs(pw - bw) < clearW)
+                    {
+                        onTheWalk = true;
+                        break;
+                    }
+                }
+                if (onTheWalk)
+                {
+                    continue;
+                }
+
+                double by = W(bw);
+                walls.Add(new(bu - ParkBedHalfWDu, by - ParkBedHalfHDu,
+                    bu + ParkBedHalfWDu, by - ParkBedHalfHDu, true));
+                walls.Add(new(bu - ParkBedHalfWDu, by + ParkBedHalfHDu,
+                    bu + ParkBedHalfWDu, by + ParkBedHalfHDu, true));
+                walls.Add(new(bu - ParkBedHalfWDu, by - ParkBedHalfHDu,
+                    bu - ParkBedHalfWDu, by + ParkBedHalfHDu, true));
+                walls.Add(new(bu + ParkBedHalfWDu, by - ParkBedHalfHDu,
+                    bu + ParkBedHalfWDu, by + ParkBedHalfHDu, true));
+
+                beds.Add(new GrowingBed(
+                    beds.Count + 1, bu, by, ParkBedHalfWDu, ParkBedHalfHDu,
+                    ParkCrops[beds.Count % ParkCrops.Count]));
+            }
+        }
+
+        // ── THE BENCHES · one at every bend, on the outside of it, where a bench goes.
+        var benches = new List<(double X, double Y)>();
+        for (int k = 0; k < 2 * ParkWalkBends; k++)
+        {
+            double u = uLo + (span * (0.25 + (k * 0.5)) / ParkWalkBends);
+            double w = Curve(u);
+            double off = w > mid ? ParkWalkHalfDu + 1.6 : -(ParkWalkHalfDu + 1.6);
+            double by = W(w + off);
+            benches.Add((u, by));
+            walls.Add(new(u - 1.8, by, u + 1.8, by, true));
+        }
+
+        // ── THE MASTS · the artificial day, standing against the far wall.
+        var masts = new List<(double X, double Y)>();
+        for (int k = 0; k < 5; k++)
+        {
+            double u = uLo + (span * (k + 0.5) / 5.0);
+            double my = W(depth - (ParkEdgeClearDu / 2.0));
+            masts.Add((u, my));
+            walls.Add(new(u - 0.6, my - 0.6, u + 0.6, my - 0.6, true));
+            walls.Add(new(u - 0.6, my + 0.6, u + 0.6, my + 0.6, true));
+            walls.Add(new(u - 0.6, my - 0.6, u - 0.6, my + 0.6, true));
+            walls.Add(new(u + 0.6, my - 0.6, u + 0.6, my + 0.6, true));
+        }
+
+        // The lone figure, on the bench furthest from the gate. Scenery: the owner's own "benches, the lone
+        // figure, the curve that hides the far end", and nothing to press — a park that started offering
+        // things would be a park that had noticed you.
+        (double figX, double figY) = benches[0];
+        foreach ((double bx, double by) in benches)
+        {
+            if (Math.Abs(bx - rib.X) > Math.Abs(figX - rib.X))
+            {
+                (figX, figY) = (bx, by);
+            }
+        }
+
+        return new Park(
+            x0, y0, x1, y1, walk, beds, benches, masts,
+            new SurfaceLayout.Doorway(rib.X - DoorHalf, hallFar, rib.X + DoorHalf, hallFar),
+            glass,
+            rib.X, W(4.0), figX, figY,
+            CanteenRegulars.StrangerPlates[
+                (int)(Frac(bodyId, $"hive:{level}:park-figure") * CanteenRegulars.StrangerPlates.Count)
+                    % CanteenRegulars.StrangerPlates.Count],
+            ParkArtFor(bodyId, HallUseOn(bodyId, level)));
     }
 
     /// <summary>#707 · Hang a washroom cell off the back of a room, if the room is one that earned one and
@@ -3606,8 +4179,17 @@ public static class UndergroundComplex
     // them says what the building is for: the hall's card is about MONEY (a company that feeds contractors
     // like a hotel), and the cabinet's is about MEMORY (a room that has none). §13.8 holds.
 
-    /// <summary>#751 · The B1 cantina hall, painted.</summary>
-    public const string CantinaHallArtUrl = "art/b1-cantina-hall.jpg";
+    /// <summary>#751/#759 · The B1 cantina hall, painted.
+    ///
+    /// <para>#759 · …and repainted, because the room grew a wall. Owner's pinned requirement: <i>"the
+    /// restaurant scene must have a) A VIEW TO THE PARK and b) A WINDOW WALL BETWEEN"</i>, and the canonical
+    /// mapping he filed with it makes <c>b1-restaurant-park-view.jpg</c> the hall's own establishing shot —
+    /// the same room, the same steel tables, and the floor-to-ceiling riveted glass with the green behind
+    /// it. It supersedes <c>b1-cantina-hall.jpg</c> everywhere the hall's art shows (the floor it wears and
+    /// the card it raises are the same picture on purpose, #755), because a card that shows a room with no
+    /// window in it, hung over a plan whose far wall is a window, is two pictures of one room disagreeing
+    /// about the room.</para></summary>
+    public const string CantinaHallArtUrl = "art/b1-restaurant-park-view.jpg";
 
     /// <summary>#756 · How opaque a hall's floor art is drawn. A shade under the ship's own 0.9f: the hall
     /// is thirty times the floor area of a cabin, so the same alpha that reads as texture behind a 12×7

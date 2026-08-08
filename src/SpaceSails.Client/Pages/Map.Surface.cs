@@ -720,6 +720,12 @@ public partial class Map
         public bool HiveCantinaHallShown { get; set; }
         public bool HiveCabinetShown { get; set; }
 
+        // #759 · …and the park behind the hall's glass. ATTENDANCE IS RECORDED is what the plate at the gate
+        // says, so the book records that you were there, once, and then the poll stands down. The
+        // surveillance is a LINE and not a system — nothing counts anything, and nothing ever refers to it
+        // again.
+        public bool HiveParkNoteFiled { get; set; }
+
         // #677 · Whether this excursion has already crossed the seam, and already stepped out into the
         // halls. Two flags and not one, because they are two different events on the same ride and either
         // can happen without the other on a later trip — a captain who rode straight down on a card they
@@ -4392,6 +4398,49 @@ public partial class Map
         }
     }
 
+    // ── #759 · ATTENDANCE IS RECORDED ────────────────────────────────────────────────────────────────────
+    //
+    // The plate at the gate says the park keeps a register. So the game keeps exactly one: a line in the
+    // captain's own field book, filed the first time they walk in and never again this excursion. That is
+    // the whole feature — the issue's title phrase delivered as a SENTENCE rather than as a system, because
+    // a park that actually counted your visits would be a park that had noticed you, and #759's whole
+    // register is that nothing down here ever admits to noticing anything.
+    //
+    // NO CARD. The hall gets one and the cabinet gets one because they are finds; the park is a place you
+    // walk, and its own art is already under your boots. A third card in the same room would spend the
+    // beat.
+    private (string Body, int Floor)? _parkFor;
+    private UndergroundComplex.Park? _park;
+
+    private void CheckTheParkUnderfoot()
+    {
+        // The note is durable but the LATCH is the excursion's, like every one of its siblings (#725) — and
+        // the poll stands down for the rest of the walk the moment it has fired. `_viewObject` is checked
+        // for #680's reason: a pulse played under an open card renders beneath its backdrop and its blur.
+        if (_surface is not { } ex || ex.Floor >= 0 || ex.HiveParkNoteFiled || _viewObject is not null)
+        {
+            return;
+        }
+
+        // Cached against (body, floor), the hall poll's own reason: Build lays a whole floor out, and
+        // running it inside the step loop would be a generator call every tick for the whole excursion.
+        if (_parkFor != (ex.Stop.Body.Id, ex.Floor))
+        {
+            _parkFor = (ex.Stop.Body.Id, ex.Floor);
+            _park = UndergroundComplex.Build(
+                ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park;
+        }
+
+        if (_park is not { } green || !green.Contains(_avatarX, _avatarY))
+        {
+            return;
+        }
+
+        ex.HiveParkNoteFiled = true;
+        ShowAndFile(UndergroundComplex.ParkNote, UndergroundComplex.ParkGlyph);
+        RequestVaultSave();
+    }
+
     // ── #709 · STOPPING AT SOMEBODY'S TABLE ──────────────────────────────────────────────────────────────
     //
     // Owner: "we should have people in the bar... we have cover story."
@@ -5414,6 +5463,9 @@ public partial class Map
 
                 // #756 · …and ?counter=1 goes the same last leg to the other fixture in that room.
                 StandAtTheCounterIfAsked(landedOn);
+
+                // #759 · …and ?park=1 goes one room further, through the gate at the end of the corridor.
+                StandInTheParkIfAsked(landedOn);
             }
             return;
         }
@@ -5485,6 +5537,33 @@ public partial class Map
         }
     }
 
+    /// <summary>#759 QA · <c>?park=1</c> — the route to the park, booted. Set in Map.Sim's cheat parse.</summary>
+    private bool _parkCheat;
+
+    /// <summary>#759 QA · Stand the captain INSIDE THE PARK when <c>?park=1</c> asked for it.
+    ///
+    /// <para>On the park's own published plate spot — just inside the gate, looking down the first bend of
+    /// the gravel — rather than at a coordinate somebody read off a screenshot. The attendance note fires on
+    /// the very next tick, which is the point of the row.</para></summary>
+    private void StandInTheParkIfAsked(SurfaceExcursion ex)
+    {
+        if (!_parkCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        if (UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park
+            is not { } green)
+        {
+            return;
+        }
+
+        ShowPulseMessage(
+            "🧪 DEV ?park=1: THE PARK. Green underfoot, the window wall back to the bar, beds and benches "
+            + "down the curve.");
+        StandCaptainAt(green.X, green.Y, "you step through the gate onto the gravel");
+    }
+
     // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of
     // seconds. It does NOT change what happens — the beat, the variant roll and the (zero) cost are the
     // ones a captain gets — because a cheat that shows you a different scene is worse than no cheat at all.
@@ -5538,6 +5617,7 @@ public partial class Map
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
         CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
+        CheckTheParkUnderfoot();      // #759: …and the park behind its glass, which records attendance
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon

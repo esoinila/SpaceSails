@@ -555,8 +555,14 @@ public sealed class TheHiveAmenitiesTests
                 extraHallDoors += doors - 1;
             }
 
+            // #759 · …AND THE PARK IS A PLACE. Its gate is the one doorway in the building that is not cut
+            // into a rib's face: it is the far END of the hall's own corridor, which used to be a dead stop
+            // with a sealed sign on it and is now a way into the largest room in the game. The conservation
+            // claim is untouched — every doorway still leads somewhere — and this is that somewhere being
+            // named. (Its OTHER wall, the one it shares with the bar, is glass and is deliberately not a
+            // door: nothing is conserved through a window.)
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
-                + extraHallDoors;
+                + extraHallDoors + (floor.Park is null ? 0 : 1);
             if (places != floor.Doorways.Count)
             {
                 return $"{floor.Doorways.Count} doors were cut and only {places} of them lead anywhere.";
