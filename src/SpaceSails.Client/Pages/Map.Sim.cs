@@ -337,22 +337,63 @@ public partial class Map
     // bare Task.Yield) reliably parks on a browser timer, giving the compositor a chance to flush the
     // loading door — the animated ⚙ gear keeps turning on its own (CSS, compositor thread), the phase
     // text updates, and the tab never reads as a dead freeze even when the block runs long on Debug WASM.
-    private async Task BootPhaseAsync(string phase)
+    private async Task BootPhaseAsync(string phase, CancellationToken abandoned)
     {
         _bootPhase = phase;
         StateHasChanged();
-        await Task.Delay(1);
+        await Task.Delay(1, abandoned);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    // #737 · THE PLAYER MAY LEAVE WHILE THE WORLD IS STILL BEING BUILT. Boot pegs the main thread for tens
+    // of seconds, so backing out of a slow load is the ordinary case rather than the corner — and the boot
+    // below is a long chain of awaits whose continuations used to resume into a component the router had
+    // already torn down, ending at InitCanvas / StartLoop / FocusAsync, every one of which names DOM that
+    // has left the page. renderer.js throws outright on a missing canvas ("no canvas element with id …"),
+    // the exception escaped OnAfterRenderAsync, and the renderer logged it as an unhandled render
+    // exception. Dispose cancels this; every yield point in the boot carries the token, so an abandoned
+    // boot stops at the first await it reaches instead of finishing into a page that is gone.
+    private readonly CancellationTokenSource _bootAbandoned = new();
+
+    /// <summary>#737 · Cancelled the moment this component is disposed — the boot's own "the player left".</summary>
+    internal CancellationToken BootAbandonedToken => _bootAbandoned.Token;
+
+    /// <summary>#737 · True once <c>StartLoop</c> has actually run for this component. <c>_started</c> only
+    /// means the boot BEGAN: a boot abandoned before the renderer stage has no rAF loop to stop, and no
+    /// canvas left to name in the stopping.</summary>
+    private bool _renderLoopRunning;
+
+    /// <summary>#737 · The running boot. The renderer fires <c>OnAfterRenderAsync</c> and keeps only an
+    /// error handler on the task it returns, so this is the one handle a guard can await to watch the
+    /// continuation that used to outlive the page.</summary>
+    internal Task? Boot { get; private set; }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _started)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _started = true;
+        return Boot = BootWithinTheLifeOfThePageAsync();
+    }
 
+    private async Task BootWithinTheLifeOfThePageAsync()
+    {
+        try
+        {
+            await BootTheWorldAsync(_bootAbandoned.Token);
+        }
+        catch (OperationCanceledException) when (_bootAbandoned.IsCancellationRequested)
+        {
+            // #737: the player navigated away mid-boot. Half a world and no page to put it on — there is
+            // nothing to unwind (every field belongs to this instance, which the router has discarded) and
+            // nothing to report. Letting this escape is exactly what raised WebAssemblyRenderer[100].
+        }
+    }
+
+    private async Task BootTheWorldAsync(CancellationToken abandoned)
+    {
         // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
         // simple slug — it becomes a URL path segment. /map?start=space-bar jumps the freshly-built
         // world straight to a named start point (see StartPoints) — the playtest "skip the set-up"
@@ -1114,7 +1155,7 @@ public partial class Map
             StateHasChanged();
         }
 
-        string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
+        string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json", abandoned);
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         if (ellipseCheat)
         {
@@ -1267,9 +1308,9 @@ public partial class Map
         // instead of one silent multi-second freeze (badly amplified on the Debug/dev bundle). We do NOT
         // parallelise or restructure the planners — just phase-yield around them.
         // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
-        await BootPhaseAsync("plotting the traffic lanes — pods…");
+        await BootPhaseAsync("plotting the traffic lanes — pods…", abandoned);
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
-        await BootPhaseAsync("plotting the traffic lanes — freighters…");
+        await BootPhaseAsync("plotting the traffic lanes — freighters…", abandoned);
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
         // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
         // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
@@ -1277,7 +1318,7 @@ public partial class Map
         // A depot on a hidden body would leak it (the depot marker/menu would give the wreck away).
         // Filter generically on hidden+unrevealed, not the wreck's id — every future secret body is
         // covered for free (Tuesday plan PR-A).
-        await BootPhaseAsync("plotting the traffic lanes — supply depots…");
+        await BootPhaseAsync("plotting the traffic lanes — supply depots…", abandoned);
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)
             .Where(d => d.DepotBodyId is null || !IsBodyHidden(d.DepotBodyId)).ToList();
 
@@ -1293,7 +1334,7 @@ public partial class Map
             // toward the inner system, half already in flight at world-load, so the "Luna's mass
             // drivers lobbing compute-core pods" the scenario description promises is literally on the
             // map as tiny moving objects. Zero maneuver budget, empty plan — they coast their conic.
-            await BootPhaseAsync("plotting the traffic lanes — Luna's mass drivers…");
+            await BootPhaseAsync("plotting the traffic lanes — Luna's mass drivers…", abandoned);
             IReadOnlyList<NpcShip> lunaDriver = MassDriverSchedule.GenerateCadence(
                 _ephemeris, MassDriverSchedule.MassDriverRun.LunaMilkRun(), baseSimTime: _ship.SimTime, count: 4);
 
@@ -1314,6 +1355,15 @@ public partial class Map
         _camera.CenterOn(_ship.Position);
 
         await RendererInterop.EnsureModuleLoadedAsync();
+
+        // #737 · THE LAST GATE BEFORE THE DOM. Everything from here on names elements by id — the canvas,
+        // the scope inset, the focusable page div — and renderer.js throws rather than shrugging when the
+        // id resolves to nothing. If the player left during any of the planning phases above, the page
+        // those ids belong to is already gone, so this is where an abandoned boot must stop: no module
+        // wiring, no FrameTick subscription on a component the router discarded, and above all no rAF loop
+        // started against a dead canvas that nothing would ever stop.
+        abandoned.ThrowIfCancellationRequested();
+
         _renderer = new CanvasRenderer(CanvasId);
         RendererInterop.FrameTick += OnTick;
         RendererInterop.CanvasResized += OnCanvasResized;
@@ -1325,6 +1375,7 @@ public partial class Map
         _fpView = new FirstPersonView(_renderer!);
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
+        _renderLoopRunning = true;
 
         // #371 Phase 1 (perf) · PRE-DECODE the deck/surface backdrop art at boot. RegisterImage fires the
         // JS decode fire-and-forget and caches by id; doing it now means the first deck or surface paint
@@ -1502,6 +1553,10 @@ public partial class Map
         }
 
         StateHasChanged();
+
+        // The captured @ref is only a live element while the page is mounted; focusing a reference whose
+        // element has left the DOM throws out of here (#737).
+        abandoned.ThrowIfCancellationRequested();
         await _focusableDiv.FocusAsync();
 
         // #371 Phase 1 (perf) · warm the cold surface DRAW path once, idle-time, now that the map is
@@ -1545,7 +1600,9 @@ public partial class Map
         await Task.Yield();
         await Task.Delay(250);
 
-        if (_deckView is null || _renderer is null)
+        // A quarter of a second is plenty of time for the player to leave; a throwaway paint into a canvas
+        // that has gone with them is worth nothing and costs a JS throw (#737).
+        if (_deckView is null || _renderer is null || _bootAbandoned.IsCancellationRequested)
         {
             return;
         }
@@ -3146,10 +3203,18 @@ public partial class Map
 
     public void Dispose()
     {
+        // #737 · First, before anything else: tell a boot that is still running that its page is gone. The
+        // CTS is deliberately NOT disposed — a continuation parked on one of the boot's awaits is still
+        // holding this token and will read it as it resumes; a disposed source would answer that read with
+        // an ObjectDisposedException, which is the very shape of failure this cancellation exists to end.
+        _bootAbandoned.Cancel();
+
         RendererInterop.FrameTick -= OnTick;
         RendererInterop.CanvasResized -= OnCanvasResized;
 
-        if (_started)
+        // Only a loop that was actually started can be stopped (#737): _started means the boot BEGAN, and
+        // a boot abandoned before the renderer stage never registered this canvas with renderer.js.
+        if (_renderLoopRunning)
         {
             RendererInterop.StopLoop(CanvasId);
         }
