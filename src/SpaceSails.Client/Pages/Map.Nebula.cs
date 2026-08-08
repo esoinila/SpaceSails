@@ -57,7 +57,7 @@ public partial class Map
         RequestVaultSave();
         string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaLore.TruthNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
-        ShowPulseMessage(foundMessage + tail);
+        string found = foundMessage + tail;   // #736 · said below, once we know what is in front of the captain
 
         // #528 · the two beats of this arc that arrive at a bare bar table get the house reveal card. The
         // other four (the glitch on the resurrection card, the poster's grey line, the collector's writ, the
@@ -67,6 +67,12 @@ public partial class Map
         {
             ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
         }
+
+        // #736 · …and the found line goes onto whichever of those two things is now in front of the captain:
+        // the plate that just went up, or — for a shard bought over a counter — the barkeep's own card, which
+        // is still open behind the press. This method's own doc note above ("a floating pulse would hide
+        // behind it") was already the diagnosis; the seam is what makes it true for the loud path too.
+        SayItWhereTheyAreLooking(found);
 
         MaybeFireConvergence(); // the marquee edge — checked on every arc assemble
         return true;
@@ -176,7 +182,7 @@ public partial class Map
                 break;
 
             default:
-                ShowPulseMessage("▓ You ask, quiet, about the fine print on the pirate-insurance. Nobody at this bar is selling policies today.");
+                SayItWhereTheyAreLooking("▓ You ask, quiet, about the fine print on the pirate-insurance. Nobody at this bar is selling policies today.");
                 break;
         }
     }

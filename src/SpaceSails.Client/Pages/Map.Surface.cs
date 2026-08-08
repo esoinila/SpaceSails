@@ -2503,24 +2503,28 @@ public partial class Map
         // opens the card again. Re-reading is free; the casebook learns the gist once per book per thread
         // (#603's law: looking is free, knowledge is one-shot), which Core decides, not this method.
         //
-        // The shelf line is the ROOM's line and is said by the pulse only; the GIST is what the book is
-        // worth and is the thing the casebook keeps. Filing both would put the same shelf in the book twice
-        // in two registers, and the second search would file it a third time.
+        // The shelf line is the ROOM's line; the GIST is what the book is worth and is the thing the casebook
+        // keeps. Filing both would put the same shelf in the book twice in two registers, and the second
+        // search would file it a third time.
         if (OddBooks.Search(ex.Stop.Body.Id, ex.Floor, which, _oddBooksRead, _bookCheat) is { } shelf)
         {
-            ShowPulseMessage(shelf.Line);
-
             // #528's idiom, caption-only: there is no art file for these yet and one that is wired but
             // unpainted would render an img the browser hides — the lifeboat-muster precedent is a card that
             // never claims a picture at all.
+            //
+            // #736 · THE SHELF LINE IS ON THE CARD, not under it. The comment three lines down has said since
+            // #701 that "the pulse would play under the card's own blur" — and the shelf line was pulsed on
+            // the frame this card goes up, so the sentence that tells you WHY one book caught your eye was
+            // the one sentence of the beat behind the frosted glass. Composed into the card's own story, the
+            // way #603's document card already carries its try's answer: one object card, one text.
             _viewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                shelf.Title, null, shelf.Card);
+                shelf.Title, null, shelf.Line + "\n\n" + shelf.Card);
 
             if (shelf.Gist is { } gist)
             {
-                // FileNote and not ShowAndFile: the saying has already happened, and the pulse would play
-                // under the card's own blur (#686).
+                // FileNote and not ShowAndFile: the saying is on the card above, and a pulse would play under
+                // the card's own blur (#686/#736).
                 FileNote(gist, OddBooks.Glyph);
                 _oddBooksRead = [.. shelf.Filed];
             }
@@ -3033,12 +3037,72 @@ public partial class Map
     ///
     /// <para>It became a fork rather than a fact the moment #696 let a leave finish with the dialog closed —
     /// the hold shuts the satchel so the captain can watch the fan, and they may or may not have opened it
-    /// again by the time the shutter closes. One method, asked by every caller, so no site has to guess.</para></summary>
+    /// again by the time the shutter closes. One method, asked by every caller, so no site has to guess.</para>
+    ///
+    /// <para>#736 · AND THE FORK GREW THE REST OF THE POP-UPS. Owner, restating the law in general: <i>"When
+    /// an action is made on a pop-up, the result text must be readable on that pop-up — not on the blurred
+    /// background. All actions, like using the elevator, items, etc. should report to the pop-up so the text
+    /// is not blurred by the modal backdrop."</i> The seam existed and knew about exactly one dialog, so
+    /// every other pop-up in the game went on losing its answers to the blur one organ at a time (#680 the
+    /// satchel, #686 the car panel, #736 the freight agent's receipt behind his own card).</para>
+    ///
+    /// <para>The table below is that law, in one place, read TOP-DOWN in z-order: the pop-up nearest the
+    /// captain's eye owns the answer, because that is the one their eye is on and the one whose subtree the
+    /// backdrop cannot blur. Nothing in front of them at all, and the HUD's pulse is exactly right — a line
+    /// about the world, said on the world.</para></summary>
     private void SayItWhereTheyAreLooking(string line)
     {
+        // A raised card is the most modal thing in the game — it stops the world and waits to be dismissed,
+        // and everything else on this list is behind it. Its answer rides the card record itself, so it
+        // cannot outlive the card it belongs to.
+        if (_revealCard is { } card)
+        {
+            _revealCard = card with { Outcome = line };
+            return;
+        }
         if (_showSatchel)
         {
-            _satchelOutcome = line;
+            _satchelOutcome = line;     // #680 — the dialog this law was first written for
+            return;
+        }
+        if (_showLiftPanel)
+        {
+            _liftOutcome = line;        // #686 — the car panel, the same disease's second organ
+            return;
+        }
+        if (_pinJob is not null)
+        {
+            _pinOutcome = line;         // the hatch keypad: a buzz that is not read is a keypad that is broken
+            return;
+        }
+        if (_showAlarmPanel)
+        {
+            _alarmOutcome = line;
+            return;
+        }
+        if (_showDoorBoard)
+        {
+            _doorBoardOutcome = line;
+            return;
+        }
+        if (_showCaptainsRemote)
+        {
+            _remoteOutcome = line;
+            return;
+        }
+        if (_showChargeBoard)
+        {
+            _chargeBoardMessage = line; // the board already had a slot of its own — this only aims at it
+            return;
+        }
+        if (_showVentPanel)
+        {
+            _ventMessage = line;        // ditto: the valve board says everything else it does right here
+            return;
+        }
+        if (_barMenu is not null)
+        {
+            _barNotice = line;          // the counter-example #736 was filed against — the keep answers on his card
             return;
         }
         ShowPulseMessage(line);

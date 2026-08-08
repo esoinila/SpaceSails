@@ -301,13 +301,24 @@ public partial class Map
     /// the boring default and would only clutter the strip.</summary>
     private bool BoatClockWorthShowing => BoatState != SilentRunning.BoatState.Warm;
 
+    /// <summary>#736 · What the last switch on the remote answered, said on the remote. Three of the four
+    /// switches here order something that is somewhere ELSE — bots across the field, a boat on the pad, a
+    /// sounder in your own fist — so the sentence IS the feedback, and it was pulsed under the remote's own
+    /// backdrop. Cleared whenever the handset is taken out or pocketed.</summary>
+    private string? _remoteOutcome;
+
     private void OpenCaptainsRemote()
     {
         _showCaptainsRemote = true;
+        _remoteOutcome = null;
         RendererInterop.PlayCue("board");
     }
 
-    private void CloseCaptainsRemote() => _showCaptainsRemote = false;
+    private void CloseCaptainsRemote()
+    {
+        _showCaptainsRemote = false;
+        _remoteOutcome = null;
+    }
 
     /// <summary>
     /// Reverse the standing order for the boat, from the remote, wherever the captain is standing. Owner:
@@ -318,7 +329,7 @@ public partial class Map
     {
         _boatOrderedCold = !_boatOrderedCold;
 
-        ShowPulseMessage(_boatOrderedCold ? SilentRunning.BoatDarkLine : SilentRunning.BoatWakingLine);
+        SayItWhereTheyAreLooking(_boatOrderedCold ? SilentRunning.BoatDarkLine : SilentRunning.BoatWakingLine);
         LogAutopilotEvent(_boatOrderedCold
             ? $"🛸 Rigging the boat down — {SilentRunning.SecondsLeft(_boatWarmth, true):0} s to quiet."
             : $"🛸 Bringing the boat up — {SilentRunning.SecondsLeft(_boatWarmth, false):0} s to her hatch.");
@@ -388,7 +399,7 @@ public partial class Map
     {
         _weaponsTight = !_weaponsTight;
 
-        ShowPulseMessage(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
+        SayItWhereTheyAreLooking(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
         LogAutopilotEvent(_weaponsTight
             ? "🤖 WEAPONS TIGHT ordered — bots and the tube gun stand down."
             : "🤖 Weapons free — the bots have their arcs back.");

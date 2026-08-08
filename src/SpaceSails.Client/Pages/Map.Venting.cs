@@ -1320,15 +1320,18 @@ public sealed partial class Map
             });
         }
 
-        ShowPulseMessage(
-            $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last crew shut " +
-            "in there has been waiting on the other side of it, and it does not need a second invitation.");
-
         // #528 · THE THIRD PLATE IN THIS ROOM'S SET, and the one that was missing. The sealed door is the
         // whole decision the vacuum mechanic exists to make interesting, and throwing it was a pulse line —
         // beside a before-card and an after-card that have both had paintings for weeks. What the picture
         // shows is the INSIDE face of the door, and nothing about what worked at it.
-        ShowRevealCard(NestPlates.ReleasedTitle(name), NestPlates.Released.ArtFile, NestPlates.Released.Caption);
+        //
+        // #736 · …and the line that says WHICH hatch and that it opens both ways rides the plate. The press
+        // that throws this door is on the valve board, so before this the answer went to a pulse behind two
+        // layers of blur — the board's and then the card's.
+        ShowRevealCard(NestPlates.ReleasedTitle(name), NestPlates.Released.ArtFile, NestPlates.Released.Caption,
+            outcome: $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last " +
+                "crew shut in there has been waiting on the other side of it, and it does not need a second " +
+                "invitation.");
         BoardLog($"🕷 Opened the sealed {name} — {came} came out.");
         ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "you opened the door they sealed");
         RendererInterop.PlayCue("alarm");
@@ -1547,7 +1550,10 @@ public sealed partial class Map
         _survivorsRescued++;
         _credits += HullVenting.SurvivorRescueCr;
 
-        ShowPulseMessage(
+        // #736 · The board is still up — it IS the button that was pressed — so the answer is said on it,
+        // beside every other thing this board reports (_ventMessage). The one line in the room that names a
+        // PERSON and a payment was the one going to a pulse behind the board's own blur.
+        SayItWhereTheyAreLooking(
             $"🧑‍🚀 Somebody is alive behind the {name} barricade — and has been for a very long time. " +
             $"They come out on their own legs. ({HullVenting.SurvivorRescueCr:N0} cr, and a witness.)");
         BoardLog($"🧑‍🚀 Rescued a survivor from {name} — {HullVenting.SurvivorRescueCr:N0} cr.");

@@ -57,6 +57,8 @@ public sealed partial class Map
         _hasVantarCard = false;
         _labHackRoll = null;
         _showDoorBoard = false;
+        _doorBoardOutcome = null;
+        _alarmOutcome = null;
     }
 
     /// <summary>
@@ -144,16 +146,19 @@ public sealed partial class Map
             return;
         }
 
+        // #736 · Every answer this board gives is said ON the board. The door being worked is two rooms away
+        // and the board's own backdrop is over the world, so a line pulsed from here is in the DOM and not on
+        // the screen — #680's law, arriving at the panel the owner asked for in #409's own words.
         LockedDoor.State now = LockedDoor.Next(was, _hasVantarCard);
         if (now == was)
         {
-            ShowPulseMessage(LockedDoor.NoKeyLine);
+            SayItWhereTheyAreLooking(LockedDoor.NoKeyLine);
             RendererInterop.PlayCue("block");
             return;
         }
 
         _labDoors[doorId] = now;
-        ShowPulseMessage(now switch
+        SayItWhereTheyAreLooking(now switch
         {
             LockedDoor.State.Shut => LockedDoor.ShutLine,
             LockedDoor.State.Locked => LockedDoor.LockedLine,
@@ -218,12 +223,23 @@ public sealed partial class Map
     private void OpenAlarmPanel()
     {
         _showAlarmPanel = true;
+        _alarmOutcome = null;   // #736: the last argument belongs to the last stand at this panel
         RendererInterop.PlayCue("board");
     }
 
-    private void CloseAlarmPanel() => _showAlarmPanel = false;
+    private void CloseAlarmPanel()
+    {
+        _showAlarmPanel = false;
+        _alarmOutcome = null;
+    }
 
     private bool _showAlarmPanel;
+
+    /// <summary>#736 · What the last press of the panel answered, said INSIDE the panel. The panel stays open
+    /// on every outcome except the lockdown — that is what makes it a panel you argue with — so a line pulsed
+    /// from a failed hack played under this modal's own backdrop, blurred. Same law, same shape as #686's
+    /// <c>_liftOutcome</c>; the autopilot log still keeps the record.</summary>
+    private string? _alarmOutcome;
 
     /// <summary>The stack the panel is about to be argued with, for the offer line.</summary>
     private int LabHackStack => _surface is null ? 0 : LabSecurity.Modifiers(CurrentApproach()).Sum(m => m.Value);
@@ -238,10 +254,20 @@ public sealed partial class Map
     private void OpenDoorBoard()
     {
         _showDoorBoard = true;
+        _doorBoardOutcome = null;
         RendererInterop.PlayCue("board");
     }
 
-    private void CloseDoorBoard() => _showDoorBoard = false;
+    private void CloseDoorBoard()
+    {
+        _showDoorBoard = false;
+        _doorBoardOutcome = null;
+    }
+
+    /// <summary>#736 · What the last thrown door answered, said inside the board. A door two rooms away is
+    /// the one thing on this board a captain cannot check by looking, which is exactly why the refusal —
+    /// <c>LockedDoor.NoKeyLine</c>, the one that names what is missing — must not be behind the blur.</summary>
+    private string? _doorBoardOutcome;
 
     /// <summary>
     /// Have a go at the panel. The die is SHOWN — target, stack, and the number — because a roll a captain
@@ -249,9 +275,12 @@ public sealed partial class Map
     /// </summary>
     private void HackTheAlarm()
     {
+        // #736 · The panel stays open through every one of these answers, so all of them are said on it —
+        // the die is already shown here (the house law), and the sentence that reads the die had been
+        // playing behind the panel's own blur.
         if (_labAlarm is not (LabSecurity.State.Armed or LabSecurity.State.Dormant))
         {
-            ShowPulseMessage(_labAlarm == LabSecurity.State.Disarmed
+            SayItWhereTheyAreLooking(_labAlarm == LabSecurity.State.Disarmed
                 ? "🔔 The panel is dark. You already had this argument."
                 : LabSecurity.LockdownWithoutTheCardLine);
             return;
@@ -271,7 +300,7 @@ public sealed partial class Map
         if (LabSecurity.Beat(roll))
         {
             _labAlarm = LabSecurity.State.Disarmed;
-            ShowPulseMessage(LabSecurity.HackedLine);
+            SayItWhereTheyAreLooking(LabSecurity.HackedLine);
             LogAutopilotEvent(LabSecurity.HackedLine);
             RendererInterop.PlayCue("reveal");
             StateHasChanged();
@@ -280,7 +309,7 @@ public sealed partial class Map
 
         _labHackFailures++;
         double left = LabSecurity.SecondsLeftAfter(_labAlarmElapsed, _labHackFailures);
-        ShowPulseMessage(LabSecurity.FailedLine(left));
+        SayItWhereTheyAreLooking(LabSecurity.FailedLine(left));
         LogAutopilotEvent(LabSecurity.FailedLine(left));
         RendererInterop.PlayCue("block");
 

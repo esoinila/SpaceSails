@@ -1289,6 +1289,11 @@ public partial class Map
     private DeckPlan.ConsoleSpot? _pinHatch; // the hatch being cracked (for the keypad's header)
     private string _pinEntry = "";           // digits keyed so far (max 4)
 
+    /// <summary>#736 · What the last submitted code did, said ON the keypad. A wrong code leaves the pad up
+    /// (you are meant to try again), and the buzz that told you it was wrong was pulsed to the HUD under the
+    /// pad's own backdrop — the display simply blanked and nothing said why. Cleared with the pad.</summary>
+    private string? _pinOutcome;
+
     // Four slots, filled left to right: keyed digits, then "·" placeholders.
     private string PinDisplay => string.Concat(Enumerable.Range(0, 4)
         .Select(i => i < _pinEntry.Length ? _pinEntry[i] : '·'));
@@ -1308,6 +1313,7 @@ public partial class Map
         _pinJob = null;
         _pinHatch = null;
         _pinEntry = "";
+        _pinOutcome = null;
     }
 
     private void SubmitPin()
@@ -1336,8 +1342,11 @@ public partial class Map
         }
         else
         {
+            // #736 · The pad STAYS UP on a wrong code — that is the whole point of a keypad — so the buzz is
+            // said on the pad. Pulsed, it played under the pad's own backdrop and all the captain saw was
+            // four dots going back to dots. The right code closes the pad above, so its receipt still pulses.
             _pinEntry = "";
-            ShowPulseMessage("The panel buzzes red — wrong code. 🔴");
+            SayItWhereTheyAreLooking("The panel buzzes red — wrong code. 🔴");
         }
     }
 

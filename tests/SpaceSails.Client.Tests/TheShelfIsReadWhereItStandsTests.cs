@@ -97,15 +97,18 @@ public sealed class TheShelfIsReadWhereItStandsTests
 
         // The #528 idiom's three trailing arguments are (label, imageUrl, caption). The lifeboat-muster
         // precedent passes no url at all; anything else here would render an img and hide it on error.
-        Assert.Contains("shelf.Title, null, shelf.Card", branch, StringComparison.Ordinal);
+        // #736 moved the shelf LINE into that caption — the card is still caption-only, and the caption is
+        // now the whole of what the press said.
+        Assert.Contains("shelf.Title, null,", branch, StringComparison.Ordinal);
+        Assert.Contains("shelf.Card", branch, StringComparison.Ordinal);
         Assert.DoesNotContain("ArtUrl", branch, StringComparison.Ordinal);
         Assert.DoesNotContain(".jpg", branch, StringComparison.Ordinal);
         Assert.DoesNotContain(".png", branch, StringComparison.Ordinal);
     }
 
-    /// <summary>The gist is FILED and never ShowAndFiled — the saying has already happened in the pulse, and
-    /// a second pulse would play under the card's own blur (#686). And it files only when Core says this
-    /// reading files anything: the once-per-book law is not re-decided here.</summary>
+    /// <summary>The gist is FILED and never ShowAndFiled — the saying happens on the card, and a pulse would
+    /// play under that card's own blur (#686/#736). And it files only when Core says this reading files
+    /// anything: the once-per-book law is not re-decided here.</summary>
     [Fact]
     public void TheGistIsFiledOnlyWhenCoreSaysThisReadingFilesAnything()
     {
@@ -114,9 +117,14 @@ public sealed class TheShelfIsReadWhereItStandsTests
         Assert.Contains("if (shelf.Gist is { } gist)", branch, StringComparison.Ordinal);
         Assert.Contains("FileNote(gist, OddBooks.Glyph);", branch, StringComparison.Ordinal);
 
-        // The room's own line is a pulse and is never filed: the casebook keeps the GIST, and filing both
-        // would put one shelf in the book twice, in two registers, on every search.
-        Assert.Contains("ShowPulseMessage(shelf.Line);", branch, StringComparison.Ordinal);
+        // The room's own line is SAID and never filed: the casebook keeps the GIST, and filing both would put
+        // one shelf in the book twice, in two registers, on every search.
+        //
+        // #736 · And it is said ON THE CARD this press opens, not under it. The comment beside the FileNote
+        // has claimed since #701 that a pulse here would play behind the card's blur, and the shelf line was
+        // being pulsed on the very frame the card went up.
+        Assert.Contains("shelf.Line", branch, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowPulseMessage(", branch, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowAndFile(", branch, StringComparison.Ordinal);
 
         // And the read-list is only ever advanced to the list Core handed back.

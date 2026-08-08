@@ -1526,6 +1526,15 @@
                 <div class="view-object-title">@plate.Title</div>
                 <img class="view-object-img" src="@plate.Art" alt="@plate.Title" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@plate.Caption</div>
+                @* #736 · WHAT THE ACT ACTUALLY DID, on the card the act raised. Owner, at the Gilt-Eye: the
+                   350 cr and the kept receipt — "the two facts the player acts on" — were pulsing to the HUD
+                   under this backdrop while the caption in front carried neither. The caption is the fiction;
+                   this row is the arithmetic, and the card's own subtree is the one layer the backdrop cannot
+                   blur (#680/#686's law, third organ). *@
+                @if (plate.Outcome is { Length: > 0 } plateOutcome)
+                {
+                    <div class="reveal-outcome">@plateOutcome</div>
+                }
                 <button type="button" class="view-object-close" title="Look away"
                         @onclick="() => Dismiss(CloseRevealCard)">Look away</button>
             </div>
@@ -2197,6 +2206,12 @@
                     <button type="button" class="pin-pad-key" title="Key a zero into the access code" @onclick='() => PinPush("0")'>0</button>
                     <button type="button" class="pin-pad-key pin-pad-key-go" title="Try this code on the hatch" @onclick="SubmitPin">↵</button>
                 </div>
+                @* #736 · The buzz, said on the pad. A wrong code leaves the pad up and blanks the four slots,
+                   and the sentence that explained why was pulsing to the HUD under this backdrop. *@
+                @if (_pinOutcome is { } pinSaid)
+                {
+                    <div class="panel-outcome">@pinSaid</div>
+                }
                 <button type="button" class="pin-pad-cancel" title="Back off — leave the hatch locked" @onclick="CancelPin">Cancel</button>
             </div>
         </div>
@@ -3043,6 +3058,14 @@
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
                 <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
 
+                @* #736 · What the last switch DID. Every switch on this handset orders something that is
+                   somewhere else — bots across the field, a boat on the pad — so the sentence is the whole
+                   of the feedback, and it was pulsing under this panel's own backdrop. *@
+                @if (_remoteOutcome is { } remoteSaid)
+                {
+                    <div class="panel-outcome">@remoteSaid</div>
+                }
+
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseCaptainsRemote)">Pocket it</button>
             </div>
         </div>
@@ -3077,6 +3100,14 @@
                         </button>
                     }
                 </div>
+
+                @* #736 · What the last door did — the one answer on this board a captain cannot check by
+                   looking, because the door is two rooms away. The refusal that names the missing card was
+                   pulsing under this board's own backdrop. *@
+                @if (_doorBoardOutcome is { } doorSaid)
+                {
+                    <div class="panel-outcome">@doorSaid</div>
+                }
 
                 <div class="vent-sub">@LockedDoor.WhichSideLine</div>
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseDoorBoard)">Step back</button>
@@ -3117,6 +3148,14 @@
                         🔔 Have a go at it
                     </button>
                 </div>
+
+                @* #736 · What the last go at it answered. The panel STAYS OPEN on every outcome but the
+                   lockdown — that is what makes it a thing you argue with — so the sentence that reads the
+                   die belongs here and not in a banner behind the blur. *@
+                @if (_alarmOutcome is { } alarmSaid)
+                {
+                    <div class="panel-outcome">@alarmSaid</div>
+                }
 
                 <div class="vent-sub">@LabSecurity.LockdownLine</div>
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseAlarmPanel)">Leave it</button>

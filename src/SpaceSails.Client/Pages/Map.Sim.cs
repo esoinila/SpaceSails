@@ -2958,7 +2958,9 @@ public partial class Map
         }
         if (_ship.SimTime < _lastVentSimTime + VentCooldownSeconds)
         {
-            ShowPulseMessage("Vent recharging…");
+            // #736 · The dump is pressed from the charge board as often as from the key, and the board's own
+            // backdrop is over the HUD — so both answers go wherever the captain actually is.
+            SayItWhereTheyAreLooking("Vent recharging…");
             return;
         }
 
@@ -2976,7 +2978,7 @@ public partial class Map
         }
         // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
         // (house voice) rather than a bare status line. Deterministic per vent via the counter.
-        ShowPulseMessage(StaticCharge.LineFor(_ventLineSeed++));
+        SayItWhereTheyAreLooking(StaticCharge.LineFor(_ventLineSeed++));
         RendererInterop.PlayCue("vent");
     }
 
