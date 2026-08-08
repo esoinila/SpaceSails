@@ -132,20 +132,41 @@ public static class SittingAlone
     // ── #783 · THE OTHER REGISTER: A SHORT REST ───────────────────────────────────────────────────────
     //
     // Owner addendum, live: "sitting should also have the RELAXATION register — feels good to sit down for a
-    // change, lift legs to another chair and drink a cold drink with alcohol." The three lines below are the
-    // owner's own filing, canon-approved by authorship and lifted VERBATIM; nothing in this section rewrites
-    // them. The posture reads the ROOM: back-to-the-wall is what you are in a hall that is full of people who
-    // could be anybody, and it is not what you are in an emptied one with a cold glass in your hand.
+    // change, lift legs to another chair and drink a cold drink with alcohol." The lines below are the owner's
+    // own filing, canon-approved by authorship and lifted VERBATIM; nothing in this section rewrites them.
+    // The posture reads the ROOM: back-to-the-wall is what you are in a hall that is full of people who could
+    // be anybody, and it is not what you are in an emptied one with a cold glass in your hand.
+    //
+    // …AND THE SENTENCE OWNS ITS OWN FACTS (#740, canon review of #783). The filed relaxed line names a cold
+    // glass, and the trigger fires on a quiet watch with or WITHOUT a purchase — so the register is two
+    // openings, not one: the boots are the rest and are always there, the glass is the purchase and is
+    // mentioned only when somebody actually bought it.
     //
     // WHAT THIS FILE DOES NOT DO: rest is not a mechanic here. Whether a rest heals anything is #784's lane,
     // and this scene deliberately owns only the words and the law that picks between them — one answer to
     // "is this a rest?", exported below, for that crew to consume rather than re-derive.
 
-    /// <summary>The sit itself, with a drink in your hand or a room with nobody in it to mind you.</summary>
+    /// <summary>
+    /// The sit itself, WITH A BOUGHT POUR IN YOUR HAND. The cold glass in this sentence is a real glass:
+    /// somebody paid for it at the counter and carried it over.
+    /// </summary>
     public const string RelaxedSitLine =
         "It feels good to sit down for a change. You put your boots up on the spare chair and let the cold " +
         "glass sweat into your hand, and for as long as it lasts, nobody in this building needs anything " +
         "from you.";
+
+    /// <summary>
+    /// …and the same rest with NOTHING IN YOUR HAND, on a watch quiet enough to take one.
+    ///
+    /// <para>CANON REVIEW, ruled: the line above names a cold glass, and the owner's own trigger fires the
+    /// relaxed register on a quiet watch <b>with or without</b> a purchase — so a drinkless rest was
+    /// narrating a drink nobody bought. That is the #740 class exactly: a sentence must own its own facts.
+    /// The boots stay up either way, because the boots are the rest; the glass is the purchase, and only the
+    /// purchase may mention it.</para>
+    /// </summary>
+    public const string RelaxedSitDryLine =
+        "It feels good to sit down for a change. You put your boots up on the spare chair, and for as long " +
+        "as nobody needs you, nobody needs you.";
 
     /// <summary>The drink itself, said only when there actually is one — the counter's pour (#756/#772),
     /// carried to the table it was bought to be drunk at.</summary>
@@ -193,17 +214,24 @@ public static class SittingAlone
     public static bool DrinkStillInHand(double nowMs, double lastPourMs) =>
         lastPourMs > double.MinValue && nowMs >= lastPourMs && nowMs - lastPourMs < DrinkInHandMs;
 
+    /// <summary>The rest's own opening, in the one of its two forms the captain's hand decides. THE GLASS IS
+    /// ONLY MENTIONED WHEN THERE IS A GLASS — canon review's ruling, and the #740 law under it: a sentence
+    /// owns its own facts, so a rest with nothing in your hand may not narrate a drink.</summary>
+    public static string RelaxedOpening(bool drinkInHand) =>
+        drinkInHand ? RelaxedSitLine : RelaxedSitDryLine;
+
     /// <summary>What sitting down says, in whichever register the room and the glass put you in. The drink's
     /// own line rides along only when there IS a drink — a sentence about a pour nobody bought is the kind of
-    /// lie a panel tells once and a player never trusts again.
+    /// lie a panel tells once and a player never trusts again, and the opening it follows is chosen on the
+    /// same fact so the two cannot disagree about whether you are holding anything.
     ///
     /// <para>THE ONE PLACE the opening sentence is chosen. <see cref="TheTable"/>'s opening is this call and
     /// not a second copy of this ternary, because a scene whose first line disagreed with the line the panel
     /// prints is this project's third named bug class with prose in it.</para></summary>
     public static string SitLine(bool resting, bool drinkInHand) =>
         !resting ? TookTheTableLine
-        : drinkInHand ? RelaxedSitLine + " " + TheDrinkLine
-        : RelaxedSitLine;
+        : drinkInHand ? RelaxedOpening(true) + " " + TheDrinkLine
+        : RelaxedOpening(false);
 
     /// <summary>…and the same question asked of the ROOM instead of a flag: what does sitting down say on
     /// this watch, with or without a glass in your hand.</summary>
@@ -375,6 +403,7 @@ public static class SittingAlone
         // #783 · the other register, checked by the same grep the wary one is.
         yield return SatDownLine;
         yield return RelaxedSitLine;
+        yield return RelaxedSitDryLine;
         yield return TheDrinkLine;
         yield return StoodUpRelaxedLine;
         yield return ApproachOpening;

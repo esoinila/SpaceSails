@@ -320,8 +320,12 @@ one by publishing a `SpotArt` where it is carved — the park's windows (#759) a
   posture.
 
 **Canon note (#783):** the relaxation prose is the owner's own, lifted verbatim into `SittingAlone`
-(`RelaxedSitLine`, `TheDrinkLine`, `StoodUpRelaxedLine`). Whether a rest *heals* anything is #784's lane; this
-pair of pictures and the lines beside them are the register, not the mechanic.
+(`RelaxedSitLine`, `TheDrinkLine`, `StoodUpRelaxedLine`). The rest has **two openings**, ruled at canon
+review: the filed line names a cold glass sweating into your hand, and the trigger fires on a quiet watch
+*with or without* a purchase — so a drinkless rest gets `RelaxedSitDryLine` instead (#740: a sentence owns its
+own facts). The boots are the rest and are always there; the glass is the purchase and is named only when
+somebody bought one. Whether a rest *heals* anything is #784's lane; this pair of pictures and the lines
+beside them are the register, not the mechanic.
 
 **Guarded by** `RevealPlatesArePaintedTests.TheTablesTwoStatesArePainted` (both on disk, neither borrowing the
 counter's canvas) and `YouCanSitAtAnEmptyTableTests.THE_SIT_PANEL_DrawsTheTableItIsAPanelFor` (in the card's

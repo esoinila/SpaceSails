@@ -491,6 +491,14 @@ public sealed class YouCanTakeATableAloneTests
             "anything from you.",
             SittingAlone.RelaxedSitLine);
 
+        // …and the DRY opening, ruled at canon review: the glass in the line above is a REAL glass somebody
+        // bought at the counter, so a rest with nothing in your hand gets its own words (#740 — a sentence
+        // owns its own facts). Same boots, same chair, no drink anywhere in it.
+        Assert.Equal(
+            "It feels good to sit down for a change. You put your boots up on the spare chair, and for as " +
+            "long as nobody needs you, nobody needs you.",
+            SittingAlone.RelaxedSitDryLine);
+
         Assert.Equal(
             "The pour is cold and it is honest about what it is. Somewhere below B4, a still is doing its " +
             "quiet best for you.",
@@ -499,6 +507,11 @@ public sealed class YouCanTakeATableAloneTests
         Assert.Equal(
             "You put the chair back the way it was. The minute is over, and it was a good minute.",
             SittingAlone.StoodUpRelaxedLine);
+
+        // The two openings are two openings, and each is picked by the one fact it is about.
+        Assert.NotEqual(SittingAlone.RelaxedSitLine, SittingAlone.RelaxedSitDryLine);
+        Assert.Equal(SittingAlone.RelaxedSitLine, SittingAlone.RelaxedOpening(true));
+        Assert.Equal(SittingAlone.RelaxedSitDryLine, SittingAlone.RelaxedOpening(false));
     }
 
     /// <summary>
@@ -552,7 +565,7 @@ public sealed class YouCanTakeATableAloneTests
         Assert.Equal(
             SittingAlone.RelaxedSitLine + " " + SittingAlone.TheDrinkLine,
             SittingAlone.SatDown(true, busiest));
-        Assert.Equal(SittingAlone.RelaxedSitLine, SittingAlone.SatDown(false, quietest));
+        Assert.Equal(SittingAlone.RelaxedSitDryLine, SittingAlone.SatDown(false, quietest));
 
         // THE DRINK'S OWN LINE IS ONLY SAID WHEN A DRINK WAS BOUGHT. A panel that narrated a pour nobody
         // paid for would be the sim doing one thing while a sentence reported another (bug class three).
@@ -560,6 +573,26 @@ public sealed class YouCanTakeATableAloneTests
             StringComparison.Ordinal);
         Assert.DoesNotContain(SittingAlone.TheDrinkLine, SittingAlone.SatDown(false, busiest),
             StringComparison.Ordinal);
+
+        // …AND NEITHER IS THE GLASS IN THE OPENING (#740, canon review's ruling on this very PR). The filed
+        // relaxed line names a cold glass sweating into your hand; on a quiet watch with nothing bought,
+        // there is no glass, and a sentence that describes one is a sentence that does not own its facts.
+        // Walk EVERY watch, both hands, so this cannot be true of the one pair the guard happened to pick.
+        for (long w = 0; w < Watches; w++)
+        {
+            Assert.DoesNotContain("glass", SittingAlone.SatDown(false, w), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("pour", SittingAlone.SatDown(false, w), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("drink", SittingAlone.SatDown(false, w), StringComparison.OrdinalIgnoreCase);
+
+            // …and with a glass in hand the sit says so, on every watch there is, because that is the half
+            // of the law that would otherwise be satisfied by a scene that never mentions a drink at all.
+            Assert.Contains("glass", SittingAlone.SatDown(true, w), StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(SittingAlone.TheDrinkLine, SittingAlone.SatDown(true, w), StringComparison.Ordinal);
+        }
+
+        // The boots are the REST and survive both hands; only the glass is conditional.
+        Assert.Contains("boots up on the spare chair", SittingAlone.RelaxedSitDryLine, StringComparison.Ordinal);
+        Assert.Contains("boots up on the spare chair", SittingAlone.RelaxedSitLine, StringComparison.Ordinal);
 
         // And getting up is a different sentence out of a rest than out of a watch.
         Assert.Equal(SittingAlone.StoodUpRelaxedLine, SittingAlone.StoodUp(true));
