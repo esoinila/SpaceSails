@@ -121,6 +121,17 @@ public static class Encounter
     /// plainly is not a check, and neither is leaving a table politely.</param>
     /// <param name="Says">The fixed outcome's line, for an unrolled move. Null for a rolled one, whose
     /// content owns a line per band.</param>
+    /// <param name="OrAfter">#757 · A SECOND SENTENCE THAT WOULD ALSO DO. Some things a counterpart says
+    /// have two answers and both of them count as having heard it — a drink taken and a drink turned down
+    /// are one beat, and what comes next comes next either way. Without this a ladder either forces the
+    /// polite answer or is not a ladder at all, and "you may only proceed if you accepted" is exactly the
+    /// dead wall Fail Forward exists to refuse. Read by <see cref="Exists"/> beside
+    /// <see cref="After"/>; null on every move that has one answer.</param>
+    /// <param name="Note">#757 · What the FIELD BOOK keeps of a fixed outcome, or null when the moment is
+    /// not worth filing. Beside <see cref="Says"/> and for the same reason #749 put <see cref="Says"/> here:
+    /// a content file must be able to say "this one goes in the notebook" without a client author
+    /// remembering to write its id into a switch. Null on manners — a notebook full of manners is a notebook
+    /// nobody reads.</param>
     public readonly record struct Move(
         string Id,
         string Label,
@@ -129,7 +140,9 @@ public static class Encounter
         Satchel.Kind? Item = null,
         string? After = null,
         bool Rolled = false,
-        string? Says = null);
+        string? Says = null,
+        string? OrAfter = null,
+        string? Note = null);
 
     /// <summary>
     /// One scene: who you are talking to, where, what they open with, and what you may do about it.
@@ -315,7 +328,11 @@ public static class Encounter
     /// A reply is scoped to the sentence it answers, and the sentence was said to whoever was in the chair.</param>
     public static bool Exists(Move move, IReadOnlyCollection<string>? madeThisScene) =>
         move.Needs != Requirement.ReplyToPriorMove
-        || (move.After is { } after && madeThisScene is not null && madeThisScene.Contains(after));
+        || (madeThisScene is not null
+            && ((move.After is { } after && madeThisScene.Contains(after))
+                // #757 · …or the OTHER thing they might have been answering. Two replies to one sentence are
+                // one beat; what follows follows either way.
+                || (move.OrAfter is { } orAfter && madeThisScene.Contains(orAfter))));
 
     /// <summary>#749 · The moves that are ON THE TABLE right now, in the scene's own order. What a panel
     /// draws — and it is a call rather than a rule the markup applies, so the guard stop and the canteen

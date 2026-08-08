@@ -565,7 +565,10 @@ public static class CanteenTable
     /// anybody noticing for a month — so there is nowhere for a cost to be added except by hand, here, to
     /// every fixed outcome in the game at once.</para>
     /// </summary>
-    public static Answer SaidPlainly(Encounter.Move move) => new(move.Says ?? "");
+    /// <para>#757 · …and whatever the move says the BOOK should keep, by the same law and for the same
+    /// reason: a content file names what is worth writing down, and no client author has to remember to.
+    /// The dodge's is null, which is the nothing it has always cost.</para>
+    public static Answer SaidPlainly(Encounter.Move move) => new(move.Says ?? "", Note: move.Note);
 
     /// <summary>Standing up. Free, and it files nothing.</summary>
     public static Answer TookTheirLeave() => new(LeaveLine);

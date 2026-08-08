@@ -667,6 +667,12 @@ public partial class Map
                     HiveRegularInteract(); // #709: one breath of somebody's day, and nothing else
                 }
                 break;
+            case DeckPlan.ConsoleKind.HiveTable:
+                // #757 · TAKE THE TABLE — the other half of the same verb, and the half the room refused
+                // outright: owner, live in the hall, "I have empty table but I cannot sit down." Sitting
+                // down alone is a choice to be FINDABLE, and WAIT is what you do once you have made it.
+                TryTakeTable();
+                break;
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
                 break;

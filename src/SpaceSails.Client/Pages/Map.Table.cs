@@ -42,10 +42,26 @@ public partial class Map
     /// once, by the landing, to walk the last leg into the canteen.</summary>
     private bool _tableSceneCheat;
 
+    /// <summary>#757 QA · <c>?tablescene=free</c> — the same route, but the last leg lands you at a top with
+    /// NOBODY at it, which is the table this whole issue is named after.</summary>
+    private bool _freeTableCheat;
+
     /// <summary>#751 QA · <c>?watch=N</c> — pin which shift the hall is on, so a tester can walk into the
     /// heaving one and the empty one without waiting four sim-hours between looks. Null off the cheat, in
     /// which case the watch is <see cref="PatronRota.WatchIndex"/> of the sim clock exactly as before.</summary>
     private long? _watchCheat;
+
+    /// <summary>#757 QA · <c>?approach=1|0</c> — force the answer to WAITING at a table you took alone.
+    ///
+    /// <para>1 brings somebody over on the very next wait; 0 means nobody ever comes, which is the OTHER
+    /// half of the feature and just as much a scene: an empty room on the wrong watch is the event. Without
+    /// this the approach is a seeded roll at one top on one shift, and "sit down and press wait until the
+    /// dice agree" is not a demo. #693's own rule, written in the file that then could not follow it: <i>a
+    /// scene nobody can reach on demand is a scene that ships broken.</i></para>
+    ///
+    /// <para>It forces WHETHER, never WHO or WHAT — the ladder, her lines and what she wants are the ones a
+    /// captain would get, because a cheat that showed a different scene is worse than no cheat.</para></summary>
+    private bool? _approachCheat;
 
     /// <summary>
     /// #746 QA · Stand the captain IN the upper canteen when <c>?tablescene=1</c> asked for it.
@@ -70,11 +86,38 @@ public partial class Map
                 continue;
             }
 
+            // #757 · …or AT A FREE TOP, for ?tablescene=free. Which top that is comes off the very same
+            // call the deck was drawn with, off the same frozen watch — the cheat picks one of the room's
+            // own empty tables, and never a coordinate of its own (§13.15: the two times this project set
+            // the captain down inside a wall, it was a caller typing geometry about a room it did not own).
+            if (_freeTableCheat && FirstFreeTop(ex, a) is { } free)
+            {
+                ShowPulseMessage(
+                    "🧪 DEV ?tablescene=free: a table with nobody at it. Press E to take it, then Wait.");
+                StandCaptainAt(free.X, free.Y, "you step into the canteen");
+                return;
+            }
+
             ShowPulseMessage(
                 "🧪 DEV ?tablescene=1: the upper canteen. Walk to a table with somebody at it and press E.");
             StandCaptainAt(a.X, a.Y, "you step into the canteen");
             return;
         }
+    }
+
+    /// <summary>#757 QA · The first top in this room that nobody is at, this watch — Core's own list, so the
+    /// cheat cannot disagree with the room about which tables are free.</summary>
+    private static CanteenRegulars.TableSeat? FirstFreeTop(SurfaceExcursion ex, UndergroundComplex.Amenity a)
+    {
+        foreach (CanteenRegulars.TableSeat top in
+            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+        {
+            if (!top.Taken)
+            {
+                return top;
+            }
+        }
+        return null;
     }
 
     /// <summary>One conversation, with everything the panel needs to draw itself.</summary>
@@ -83,21 +126,37 @@ public partial class Map
         /// <summary>"watch:floor:tableIndex" — what every watch-scoped fact about this table is keyed on.</summary>
         public required string Key { get; init; }
 
+        /// <summary>#757 · Which top this is, as Core's own ordinal. The key already carries it, and this
+        /// carries it as a NUMBER because the approach roll is seeded on it — parsing an ordinal back out of
+        /// a string we built ourselves is a second answer to a question we already had.</summary>
+        public required int Index { get; init; }
+
         /// <summary>Which of the three is in the chair.</summary>
         public required CanteenTable.Who Who { get; init; }
 
-        /// <summary>Their plate, exactly as it is drawn over them on the deck.</summary>
-        public required string Plate { get; init; }
+        /// <summary>#757 · Their plate, exactly as it is drawn over them on the deck — or, at a table you
+        /// took alone, whose table it is. Settable because ONE SITTING CAN CHANGE COUNTERPART: you sit down
+        /// on your own, you wait, and somebody crosses the room and takes the chair opposite. That is one
+        /// continuous occupation of one table, not two panels, and the alternative — closing this one and
+        /// opening another — would blink the answer the player is reading off the screen (#680).</summary>
+        public required string Plate { get; set; }
 
-        /// <summary>The scene, straight off the content file.</summary>
-        public required Encounter.Scene Scene { get; init; }
+        /// <summary>The scene, straight off the content file. Settable for the same reason
+        /// <see cref="Plate"/> is: waiting is a scene that can turn into a different scene at the same
+        /// table.</summary>
+        public required Encounter.Scene Scene { get; set; }
+
+        /// <summary>#757 · Whether this is a table you took ALONE — nobody opposite, and WAIT is the whole
+        /// of the verb. It is the one fact the panel needs that is not on the scene.</summary>
+        public bool Solo { get; set; }
 
         /// <summary>How many the top seats, and how many chairs are still empty — the fact that let you
         /// ask to join in the first place, kept so the panel can say it.</summary>
         public required int Seats { get; init; }
 
-        /// <summary>Chairs nobody is in.</summary>
-        public required int Free { get; init; }
+        /// <summary>Chairs nobody is in. #757 · Settable, because the captain sitting down is one of them
+        /// and somebody joining them is another — occupancy the player can count.</summary>
+        public required int Free { get; set; }
 
         /// <summary>#751 · Their bark, for a background patron — drawn by Core per patron per watch, and
         /// carried here because it is the only thing a stranger has to say.</summary>
@@ -204,6 +263,7 @@ public partial class Map
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
+                    Index = top.Index,
                     Who = who,
                     Plate = plate,
                     Scene = who == CanteenTable.Who.Stranger
@@ -213,6 +273,84 @@ public partial class Map
                     Free = top.Free,
                     Bark = top.Line,
                     Quiet = top.Quiet,
+                };
+                RendererInterop.PlayCue("reveal");
+                StateHasChanged();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// #757 · TAKE A FREE TABLE — the normal way to operate in a bar, and the one the room refused.
+    ///
+    /// <para>Owner, live in the hall: <i>"I have empty table but I cannot sit down."</i> #746's press needs a
+    /// counterpart because its whole verb is <b>ask to join</b>; an empty top had no console over it at all,
+    /// so [E] there answered nothing — an absence rather than a refusal, which is the one kind of "no" a
+    /// player cannot read.</para>
+    ///
+    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. The seat is the spot you walked to in
+    /// order to press the key, exactly as it is at an occupied table — this file has never moved the captain
+    /// to sit down, and a solo table that teleported them onto the furniture would be §13.15's second cause
+    /// in the one room where the tops are drawn but do not collide. Which table it is comes off Core's own
+    /// list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the press
+    /// landed on — the same lookup, and still a lookup rather than a decision.</para>
+    /// </summary>
+    private bool TryTakeTable()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return false;
+        }
+
+        // Already sitting. The press is CONSUMED — E is not how you stand up, "take your leave" is.
+        if (_table is not null)
+        {
+            return true;
+        }
+
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveTable } spot)
+        {
+            return false;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            foreach (CanteenRegulars.TableSeat top in
+                CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+            {
+                if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
+                {
+                    continue;
+                }
+
+                if (top.Taken)
+                {
+                    return false;   // somebody is there after all: that is #746's press, not this one.
+                }
+
+                _table = new TableTalk
+                {
+                    Key = TableKey(ex, top.Index),
+                    Index = top.Index,
+                    Who = CanteenTable.Who.None,
+                    Plate = SittingAlone.OwnTablePlate,
+                    Scene = SittingAlone.TheTable(),
+                    Seats = top.Seats,
+                    // One of them is yours now. The room can see you sitting alone, which is the whole
+                    // premise (#757: "sitting alone is STATE"), and the panel says it in chairs.
+                    Free = Math.Max(0, top.Seats - 1),
+                    Quiet = top.Quiet,
+                    Solo = true,
+                    // Nobody to ask. #746's ask-to-join beat is the answer to a person, and there is not one
+                    // here — the table is simply taken, and the taking is the scene's opening line.
+                    Joined = true,
+                    Outcome = SittingAlone.TookTheTableLine,
                 };
                 RendererInterop.PlayCue("reveal");
                 StateHasChanged();
@@ -346,7 +484,13 @@ public partial class Map
         // Leaving is free and never penalised. First, so nothing below can ever grow a price on it.
         if (moveId == CanteenTable.Leave)
         {
-            CanteenTable.Answer bye = CanteenTable.TookTheirLeave();
+            // #757 · …and the SCENE says what leaving it looks like. Standing up from a table you took
+            // alone is not the same sentence as standing up from somebody else's — one is a courtesy, the
+            // other is just a chair going back under a table — and which it is belongs to the content file
+            // rather than to a constant this method reached for.
+            CanteenTable.Answer bye = TheLeaveMove(t) is { } goodbye
+                ? CanteenTable.SaidPlainly(goodbye)
+                : CanteenTable.TookTheirLeave();
             CloseTable();
             // The ONE pulse in this scene, and it is correct precisely because the panel has just gone:
             // there is no dialog subtree left to say it in. #680 is about which surface the player is
@@ -369,6 +513,14 @@ public partial class Map
         {
             t.Showing = !t.Showing;
             t.Math = null;
+            return;
+        }
+
+        // #757 · WAIT — the passive verb, and the only one a table you took alone has. Its own branch and
+        // not a fixed outcome, because what it says is decided by the ROOM at the moment it is pressed.
+        if (moveId == SittingAlone.Wait)
+        {
+            TableWaited(ex, t);
             return;
         }
 
@@ -430,6 +582,15 @@ public partial class Map
                 {
                     TableAnswered(ex, t, moveId, CanteenTable.SaidPlainly(move));
                 }
+
+                // #757 · …and one of those fixed outcomes ENDS A VISIT rather than the sitting. Waving
+                // somebody off is free (it is a refusal, and refusals are free here), it says what it says
+                // through the one ending above like everything else, and then the table is yours again —
+                // the panel never blinks, because it was one occupation of one table all along.
+                if (moveId == SittingAlone.WaveOff)
+                {
+                    BackToYourOwnTable(t);
+                }
                 return;
         }
     }
@@ -464,6 +625,110 @@ public partial class Map
 
         t.Math = roll.Describe();
         TableAnswered(ex, t, move.Id, CanteenTable.HandAsksAboutWork(band));
+    }
+
+    // ── #757 · WAITING, AND WHO COMES OF IT ───────────────────────────────────────────────────────────
+    //
+    // Owner: "Suppose I just want to sit down and wait to be disturbed?" — so this is not a filler button.
+    // Sitting at a table on your own is a choice to be FINDABLE, and the wait is the game asking the room
+    // whether it has anything for you. On the right watch it does. On the wrong one it does not, and being
+    // told so in an eighty-seat hall that used to be loud IS the event.
+
+    /// <summary>The scene's own leave move, if it has one. <see cref="Encounter.CanAlwaysLeave"/>'s law says
+    /// every scene must, so this is a lookup rather than a doubt.</summary>
+    private static Encounter.Move? TheLeaveMove(TableTalk t)
+    {
+        foreach (Encounter.Move m in t.Scene.Moves ?? [])
+        {
+            if (string.Equals(m.Id, Encounter.Leave, StringComparison.Ordinal))
+            {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// #757 · One beat of holding a table. Core decides whether anybody crosses the room; this counts the
+    /// beats and applies the answer.
+    ///
+    /// <para>THE BEAT COUNTER IS THE ROOM'S, not the sitting's (<c>ex.TableWaits</c>), and that is the whole
+    /// anti-abuse law: the approach is seeded on (site, floor, top, watch, beat), so a captain who stood up
+    /// and sat down again to get a different answer would simply carry on from the beat they were on. There
+    /// is no way to re-press your way into company, which is the same rule every other roll in this game
+    /// keeps.</para>
+    ///
+    /// <para>AND THE WATCH IS NOT TOUCHED. A wait is a beat inside the frozen shift (#709), never a nudge to
+    /// the clock — a wait that re-dated the room would make the drawn room and the pressed room two rooms,
+    /// which is this project's third named bug class.</para>
+    /// </summary>
+    private void TableWaited(SurfaceExcursion ex, TableTalk t)
+    {
+        ex.TableWaits.TryGetValue(t.Key, out int beat);
+        ex.TableWaits[t.Key] = beat + 1;
+
+        // One approach per top per watch. She came over, and whichever way that went, it went.
+        bool comes = !ex.TableApproached.Contains(t.Key)
+            && (_approachCheat
+                ?? SittingAlone.SomebodyComes(
+                    ex.Stop.Body.Id, ex.Floor, t.Index, ex.CanteenWatch, beat, t.Quiet));
+
+        if (!comes)
+        {
+            // #680/#736 · NOTHING HAPPENING IS AN ANSWER, and it is said on the panel the captain pressed,
+            // through the one ending every other answer at this table uses. A wait that produced silence
+            // and no words would be indistinguishable from a control that is broken (#603).
+            TableAnswered(ex, t, SittingAlone.Wait,
+                new CanteenTable.Answer(SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet)));
+            return;
+        }
+
+        ex.TableApproached.Add(t.Key);
+        SomebodyTakesTheChair(ex, t);
+    }
+
+    /// <summary>
+    /// #757 · SOMEBODY CROSSES THE ROOM — and the roles are the other way round.
+    ///
+    /// <para>Owner: <i>"a stranger may approach me and 1. ask to sit down, 2. maybe offer to buy me a drink,
+    /// 3. tell me what they have in mind… think Gandalf knocking on Bilbo's door."</i> #746's table is the
+    /// captain talking their way into somebody else's business; this is somebody walking across a hall to
+    /// recruit the captain into theirs, and the ladder is Core's, on the same machine.</para>
+    ///
+    /// <para>THE SAME PANEL, not a second one. One table, one continuous sitting — swapping the scene keeps
+    /// the outcome the captain is mid-way through reading on the screen, where closing and re-opening would
+    /// blink it (#680).</para>
+    /// </summary>
+    private void SomebodyTakesTheChair(SurfaceExcursion ex, TableTalk t)
+    {
+        t.Solo = false;
+        t.Plate = SittingAlone.VisitorPlate;
+        t.Scene = SittingAlone.TheVisitor();
+        t.Said.Clear();     // #749 · a new conversation: nothing has been said to HER yet.
+        t.Showing = false;
+        t.Math = null;
+        t.Free = Math.Max(0, t.Free - 1);
+
+        // #761 · Told, clearly, on the surface the captain is looking at. She is standing there; the game
+        // says so in words and does not leave the arrival to be inferred from a changed button row.
+        t.Outcome = t.Scene.Opening;
+        RendererInterop.PlayCue("reveal");
+        RequestVaultSave();
+        StateHasChanged();
+    }
+
+    /// <summary>#757 · She goes, and the table is yours again. The outcome line stays exactly as it was —
+    /// what she said on the way out is the last thing that happened, and it must not be wiped by the state
+    /// change that follows it.</summary>
+    private void BackToYourOwnTable(TableTalk t)
+    {
+        t.Solo = true;
+        t.Plate = SittingAlone.OwnTablePlate;
+        t.Scene = SittingAlone.TheTable();
+        t.Said.Clear();
+        t.Showing = false;
+        t.Free = Math.Min(t.Seats, t.Free + 1);
+        StateHasChanged();
     }
 
     /// <summary>

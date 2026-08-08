@@ -230,7 +230,8 @@ rota's own answer for that shift, so what you walk into is the room a captain wo
 | --- | --- |
 | the ten **named regulars** (#709/#717) | unchanged — the wave-in, the full #746 scene, the chit |
 | **background patrons** (#751) | a THIN scene: small talk (one of fourteen barks, drawn per patron per watch), **buy the round** (the +1 applies normally), take your leave. No asks, no jobs |
-| **cabinets** | empty in v1 — geometry plus a rule. #731's walkers will put somebody in one |
+| **cabinets** | empty — geometry plus a rule. #731's walkers will put somebody in one. **#757:** you may now TAKE one, and nobody ever comes to it, which is what a door is for |
+| **an empty top** (#757) | **take the table** — see 1c below. Until #757 this was the one tier that answered nothing at all |
 
 **The cabinets, and the one mechanic they carry.** Three enclosed rooms down the hall's back wall, plated
 `CABINET n · BY ARRANGEMENT · ASK AT THE COUNTER`, six chairs each — **and their eighteen chairs are not part
@@ -247,7 +248,49 @@ only line where they differ is the seat target. The mess's is derived: `ImpliedC
 the directory **admits to**, times four heads a department. A twenty-storey clinic runs eighty people, a
 five-floor annex twenty, and the band nobody listed has nobody on the books at all. **The mess is empty on
 every watch, forever** — that is #743's sentence (*"the shift has not come"*) at architectural scale, and the
-only new thing it says is its size, which it says by being walked across.
+only new thing it says is its size, which it says by being walked across. **#757 leaves it alone on purpose:**
+the mess is hall-class and full of tops, and not one of them offers "take this table" — a room outsiders are
+not admitted to is not a room you sit down in, and Core's own B1 ruling (`CanteenRegulars.PeopleSitHere`)
+decides that rather than a clause in the renderer.
+
+## 1c · ADDED (#757) — taking a free table, waiting at it, and who comes of it
+
+```
+/map?tablescene=free                   boots standing AT a top with nobody at it — press [E] to take it
+/map?tablescene=free&approach=1        …and the next WAIT brings somebody across the hall
+/map?tablescene=free&watch=5&approach=0  …and the small watch where nobody is coming, and the room says so
+```
+
+Owner, live in the hall: *"I have empty table but I cannot sit down"*, and, minutes later, *"the normal way to
+operate in a bar or restaurant is still not implemented."* Correct, and by omission: #746's press is **ask to
+join**, so it needed a counterpart — and an empty top carried **no console at all**, which is why `[E]` there
+did not refuse, did not answer, and never reached the dispatch.
+
+**What to look at, in order.**
+
+1. **Every top is pressable now.** A top with somebody at it says their plate (ask to join, #746); a top with
+   nobody at it says `🪑 A FREE TABLE`. **One dot per TABLE, never one per chair** — a six-seat top and a
+   two-seat top are one prompt each. The seat is the spot you walked to; nothing teleports you onto the
+   furniture.
+2. **`[E]` takes the table.** The panel opens with your own plate on it, the chair count one short (you are in
+   one of them), and two moves: **Wait** and **Take your leave**.
+3. **WAIT is the verb.** Owner: *"Suppose I just want to sit down and wait to be disturbed?"* Sitting alone is
+   a choice to be **findable**. Each press is a beat inside the frozen watch (the shift never moves — the
+   drawn room and the pressed room stay one room), and the room answers.
+4. **The wrong watch is a scene too.** `&watch=5&approach=0`: press Wait as often as you like and the hall
+   tells you, in different words each beat, that nothing is going to happen. A **busy** hall's silence and an
+   **emptied** hall's silence are different sentences and never borrow each other's words — that is the whole
+   beat, and it is the one thing most likely to be mistaken for a bug.
+5. **The approach inverts the roles.** `&approach=1`: a haulier with her coat still on crosses the hall and
+   asks for the chair. Owner's own shape — *"1. ask to sit down, 2. maybe offer to buy me a drink, 3. tell me
+   what they have in mind… think Gandalf knocking on Bilbo's door."* Pull the chair out, let her buy (or turn
+   it down — **either answer opens the next rung**, because refusing a drink is still having heard the offer),
+   then ask what is on her mind. **Not tonight** sends her away for free and leaves you the table.
+6. **What she wants lands on something that exists.** Her lead points at the Hand who has been here longest,
+   who writes the names, on the chit the cage's gate already reads (#746 → #752). It goes in the field book.
+7. **A cabinet is the opposite choice.** Take a cabinet top and wait: **nobody ever comes**, on any watch, at
+   any beat — and the lines say why without stating a rule. The counter has eyes everywhere except in there,
+   and so does everybody else.
 
 ## 2 · The board, and whose notice is whose (#709)
 
@@ -396,6 +439,8 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&credits=50000` | price anything without grinding for it |
 | `&roll=hi|lo` | force the encounter band at a table (#746) |
 | `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
+| `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — the table you can now take |
+| `&approach=1\|0` | force whether waiting at it brings somebody over (#757); `0` is the told nobody-came beat |
 
 ## What has NO link yet, because it is not built
 
