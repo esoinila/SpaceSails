@@ -42,14 +42,25 @@ public sealed class EveryStoryBeatHasACallerTests
     /// </summary>
     private static readonly Dictionary<StoryBeats.Beat, string> KnownOrphans = new()
     {
-        // #663 · CrewTemp.StandingOf already computes Solid → Grumbling → Petition → Ultimatum → Marooning.
-        // A deputation is the Petition edge and a meeting is the Ultimatum edge; both are still silent.
-        [StoryBeats.Beat.CrewDeputation] = "#663 — the CrewTemp Petition edge is still silent",
-        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge is still silent",
+        // #663 · The Petition and Ultimatum edges are the RIGHT edges, and the shipped game cannot cross
+        // either of them. Three of the inputs that could push a crew down are honest dormant constants in
+        // Map.CrewTemp (PromisesBroken, CrewLost, DaysSinceShoreLeave); every live input either helps the
+        // crew or is capped — heat stops at 3, and honest filings pull PAY down while pushing PROSPECTS up
+        // by almost as much, so the whole live space bottoms out inside Grumbling. Swept and pinned in Core
+        // (CrewTempTests.NothingTheShipActuallyTracksCanPushTheCrewPastGrumbling), written to go RED the day
+        // one of those hooks becomes real — which is the day these two become wireable. Wiring them today
+        // would be a caller that satisfies this scanner and can never fire, which is this house's fifth bug
+        // class wearing the fix's clothes.
+        [StoryBeats.Beat.CrewDeputation] = "#663 — the CrewTemp Petition edge cannot be crossed yet (see CrewTempTests)",
+        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge cannot be crossed yet (see CrewTempTests)",
 
-        // #663 · the BUSTED markup reads this beat's ArtFile directly, so the hail gets a picture but no
-        // cadence and no log line. Raising it properly is the fix.
-        [StoryBeats.Beat.CollectorHail] = "#663 — the BUSTED card reaches for the picture, not the beat",
+        // #663 · The BUSTED markup reads this beat's ArtFile directly, so the hail gets a picture but no
+        // cadence and no log line. Raising it as it stands would put a SECOND modal on top of the BUSTED
+        // modal that is already showing this very painting — "stacking a card on a card is not service, it
+        // is noise" (Map.Nebula's own rule) — and CollectorHail is the one beat that may not defer, because
+        // it IS the danger. The fix is a presentation the seam does not have: a beat HOSTED by a card its
+        // caller is already raising. That is a StoryBeats design change, not a wiring job.
+        [StoryBeats.Beat.CollectorHail] = "#663 — the BUSTED card IS the hail's card; the seam has no hosted presentation",
     };
 
     private static string RepoRoot()

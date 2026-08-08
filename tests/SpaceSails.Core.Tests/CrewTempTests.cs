@@ -196,6 +196,95 @@ public class CrewTempTests
         Assert.Equal(CrewTemp.StandingOf(v), CrewTemp.StandingOf(v));
     }
 
+    /// <summary>
+    /// #663 · WHY <c>CrewDeputation</c> AND <c>CrewMeeting</c> ARE STILL ORPHANS, stated as a computation
+    /// instead of as an opinion.
+    ///
+    /// <para>The issue's plan for those two beats was to raise them on the <see cref="CrewTemp.Standing"/>
+    /// edges — a deputation on Petition, a meeting on Ultimatum — and the edges are the right ones. What
+    /// nobody had checked is whether the shipped game can CROSS them. It cannot, and a beat wired to an edge
+    /// the world cannot reach is a caller that satisfies a scanner and never fires, which is this house's
+    /// fifth bug class wearing the fix's clothes.</para>
+    ///
+    /// <para>The reason is in <c>Map.CrewTemp.CrewVoyage()</c>, where three of the inputs that could push a
+    /// crew down are honest dormant constants — <c>PromisesBroken</c>, <c>CrewLost</c> and
+    /// <c>DaysSinceShoreLeave</c> — because nothing in the game yet makes a promise TO THE CREW, no crewman
+    /// can die, and nothing tracks shore leave. Of the inputs that ARE live, every one either helps the crew
+    /// or is capped: heat stops at <see cref="EncounterRule.MaxHeatLevel"/>, credits, tots and near-misses
+    /// only ever add, and honest filings pull PAY down while pushing PROSPECTS up by almost as much.</para>
+    ///
+    /// <para>So this sweeps the whole live space and pins the floor. It is written to go RED the day any one
+    /// of those three hooks becomes real — which is the day the two beats become wireable, and the day
+    /// somebody should come back to #663 and wire them.</para>
+    /// </summary>
+    [Fact]
+    public void NothingTheShipActuallyTracksCanPushTheCrewPastGrumbling()
+    {
+        CrewTemp.Standing worst = CrewTemp.Standing.Solid;
+        CrewTemp.Voyage worstVoyage = default;
+
+        // Every live input, swept past the point where it stops mattering. The dormant three are held at the
+        // constants Map.CrewTemp actually passes, because that is the world this claim is about.
+        foreach (int filings in new[] { 0, 1, 3, 6, 7, 10, 20, 40 })
+        {
+            foreach (int lies in new[] { 0, 1, 3, 10, 40 })
+            {
+                foreach (long share in new long[] { 0, 400, 5_000, 50_000 })
+                {
+                    foreach (int tots in new[] { 0, 10 })
+                    {
+                        foreach (int nearMisses in new[] { 0, 5 })
+                        {
+                            for (int heat = 0; heat <= EncounterRule.MaxHeatLevel; heat++)
+                            {
+                                foreach (bool vented in new[] { false, true })
+                                {
+                                    var v = new CrewTemp.Voyage(
+                                        HonestFilings: filings,
+                                        ProfitableLies: lies,
+                                        SharePaid: share,
+                                        PromisesKept: 0,        // dormant in Map.CrewTemp
+                                        PromisesBroken: 0,      // dormant in Map.CrewTemp
+                                        CrewLost: 0,            // dormant in Map.CrewTemp
+                                        NearMisses: nearMisses,
+                                        TotsPoured: tots,
+                                        DaysSinceShoreLeave: 0, // dormant in Map.CrewTemp
+                                        Heat: heat,
+                                        VentedOwnCompartment: vented);
+
+                                    CrewTemp.Standing s = CrewTemp.StandingOf(v);
+                                    if (s > worst)
+                                    {
+                                        worst = s;
+                                        worstVoyage = v;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.True(worst == CrewTemp.Standing.Grumbling,
+            $"the live inputs now reach {worst} ({worstVoyage}) — the crew CAN be pushed past Grumbling, so " +
+            "StoryBeats.Beat.CrewDeputation / CrewMeeting are wireable at last. Wire them on the " +
+            "CrewTemp.Standing edges (#663) and take them off EveryStoryBeatHasACallerTests.KnownOrphans.");
+
+        // And the other half of the claim, so this cannot pass on a sweep that reached nothing: the crew DO
+        // move within the range they have, or the sweep above would be a loop over one answer.
+        Assert.Equal(CrewTemp.Standing.Solid, CrewTemp.StandingOf(new CrewTemp.Voyage(SharePaid: 50_000, TotsPoured: 10)));
+        Assert.Equal(CrewTemp.Standing.Grumbling, CrewTemp.StandingOf(worstVoyage));
+
+        // …and the edges themselves are real, on a Voyage that the RULES admit even though the client cannot
+        // build one yet. This is what says the beats' target is correct and only their world is missing.
+        Assert.Equal(CrewTemp.Standing.Petition,
+            CrewTemp.StandingOf(new CrewTemp.Voyage(HonestFilings: 6, PromisesBroken: 1, DaysSinceShoreLeave: 90, Heat: 3)));
+        Assert.Equal(CrewTemp.Standing.Ultimatum,
+            CrewTemp.StandingOf(new CrewTemp.Voyage(HonestFilings: 6, PromisesBroken: 1, CrewLost: 2,
+                                                    DaysSinceShoreLeave: 200, Heat: 3)));
+    }
+
     private static CrewTemp.Reading Find(in CrewTemp.Voyage v, CrewTemp.Dimension d)
     {
         foreach (CrewTemp.Reading r in CrewTemp.Readings(v))

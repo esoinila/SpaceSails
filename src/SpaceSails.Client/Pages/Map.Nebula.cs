@@ -74,8 +74,35 @@ public partial class Map
         // behind it") was already the diagnosis; the seam is what makes it true for the loud path too.
         SayItWhereTheyAreLooking(found);
 
+        if (tail.Length > 0)
+        {
+            AnnounceTheTermsAreOnFile();   // #663: arc 2 reaches the wire, exactly as arc 1 does
+        }
+
         MaybeFireConvergence(); // the marquee edge — checked on every arc assemble
         return true;
+    }
+
+    /// <summary>#663 · THE WORLD NOTICES ARC 2. <c>StoryBeats.Beat.ArcNewsBreaks</c> shipped with a painted
+    /// canvas, a cadence and no caller at all; #668 gave arc 1 its break on the berth-listing edge and left
+    /// arc 2 without one, which is the half of the story-QA finding that was still open: <i>"an arc beat
+    /// landing on the news wire is the exact storytelling device the KAAMOS and Nebula passes are missing —
+    /// the wire is where an arc stops being your private business."</i>
+    ///
+    /// <para>This is the edge it belongs on. Every other turning in NEBULA MUTUAL is something the captain
+    /// READ — a poster's grey line, a writ glimpsed across a deck, a clinic's second page — and nobody else
+    /// in the system can see a man reading. The terms being re-lodged is a public act, filed by somebody
+    /// who has no idea what they are filing, and it is the only one in the arc.</para>
+    ///
+    /// <para>The register is the whole trick, and it is the same one the berth uses: the wire does not
+    /// announce that a policy is a warehouse, it files a routine regulatory note and says nothing about the
+    /// annexes. Which is what makes the beat's own caption land — <i>"one figure walks away from the screen
+    /// instead of toward it, because it is not news to them"</i> — because by this point the captain is that
+    /// figure, and is the only person in the concourse who knows what the annexes are.</para></summary>
+    private void AnnounceTheTermsAreOnFile()
+    {
+        PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks, NebulaLore.TermsRefiledHeadline);
+        RaiseStoryBeat(StoryBeats.Beat.ArcNewsBreaks, "the policy");
     }
 
     /// <summary>Assemble a NEBULA fragment WITHOUT the pulse/cue, for a site that renders the delivery on its
@@ -84,12 +111,24 @@ public partial class Map
     /// convergence. Returns true only on the first-held edge.</summary>
     private bool AssembleNebulaSilently(string fragmentId)
     {
+        bool knewBefore = _nebula.KnowsTheTruth;
         if (_nebula.Has(fragmentId) || !_nebula.Assemble(fragmentId))
         {
             return false;
         }
 
         RequestVaultSave();
+
+        // #663 · SILENT IS ABOUT THE PULSE, NOT ABOUT THE WORLD. These sites deliver inside the BUSTED modal,
+        // so nothing may be shouted over that card — but the wire is not a shout, and the beat's own seam
+        // already knows what to do with a card raised while somebody has you grappled: ArcNewsBreaks is
+        // deferrable, so it WAITS and lands the moment the scene is calm. Leaving the edge out here would
+        // have been the same "designed, never consumed" hole one shard deeper in.
+        if (!knewBefore && _nebula.KnowsTheTruth)
+        {
+            AnnounceTheTermsAreOnFile();
+        }
+
         MaybeFireConvergence();
         return true;
     }
@@ -264,6 +303,12 @@ public partial class Map
         RequestVaultSave();
         string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaLore.TruthNotice : "";
         ShowPulseMessage($"🧪 Test: assembled {_nebula.Count} NEBULA fragment{(_nebula.Count == 1 ? "" : "s")} ({_nebula.IntelAssembled} intel). See the Captain's ledger.{tail}");
+
+        if (tail.Length > 0)
+        {
+            AnnounceTheTermsAreOnFile();   // #663: the cheat crosses the same edge, so it raises the same beat
+        }
+
         MaybeFireConvergence(); // a big ?nebula= may itself cross the joint bar if KAAMOS is already up
     }
 
