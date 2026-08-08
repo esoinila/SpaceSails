@@ -153,8 +153,14 @@ public sealed class DeckPlan
     /// <summary>An interaction point on the deck. A <see cref="ConsoleKind.ViewObject"/> spot also
     /// carries an <paramref name="ImageUrl"/> and <paramref name="Caption"/> — press E and the game
     /// pops up that Gen-AI image (a souvenir, a lore prop) with its caption.</summary>
+    /// <param name="Outcome">#774 · What the act that raised this card actually FOUND — the reveal card's
+    /// own field (#736), grown here because the surface's full-screen cards are these ones. The caption is
+    /// the fiction and this is the record: the name that came out of the kit, the family who are waiting,
+    /// the moon somebody named. It is a REGION and not a slot, which is the whole of #774 — an event with
+    /// four things to say in one breath says all four, instead of writing three of them into a backdrop
+    /// nobody can read and letting append order pick the survivor (the contract #693 killed).</param>
     public readonly record struct ConsoleSpot(ConsoleKind Kind, float X, float Y, string Label,
-        string? ImageUrl = null, string? Caption = null);
+        string? ImageUrl = null, string? Caption = null, string? Outcome = null);
 
     /// <summary>A room backdrop image: top-left at (X, Y) in deck units, W×H deck units, drawn
     /// under the vector overlay. The top-down renderer walks these; first-person textures walls.</summary>

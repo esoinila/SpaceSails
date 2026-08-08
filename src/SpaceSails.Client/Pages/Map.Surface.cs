@@ -3079,6 +3079,25 @@ public partial class Map
     /// about the world, said on the world.</para></summary>
     private void SayItWhereTheyAreLooking(string line)
     {
+        // #774 · The object card, and it is FIRST because it is on top: both full-screen cards are drawn
+        // with the same backdrop class, and this one is written later in Map.razor, so when an event raises
+        // both (the outpost's effects plate under the dossier it assembles) this is the one the captain's
+        // eye is on.
+        //
+        // It APPENDS where every other row below replaces, and that difference is the whole of #774. The
+        // events that raise this card have two to five things to say IN ONE BREATH, all at the same rank —
+        // a slot has one winner and picking it by write order is the contract #693 killed, while a region
+        // has room for all of them and so has no winner to pick. Answers arriving one press at a time (the
+        // panels below) are a slot's proper business and stay one.
+        if (_viewObject is { } shown)
+        {
+            _viewObject = shown with
+            {
+                Outcome = shown.Outcome is { Length: > 0 } already ? $"{already}\n\n{line}" : line,
+            };
+            return;
+        }
+
         // A raised card is the most modal thing in the game — it stops the world and waits to be dismissed,
         // and everything else on this list is behind it. Its answer rides the card record itself, so it
         // cannot outlive the card it belongs to.
@@ -3639,10 +3658,28 @@ public partial class Map
     // Three pieces of kit make a person (one is litter, two is a coincidence). The payoff is not loot: it is
     // an errand, and a name to drop, and — sometimes — somebody who has been waiting nine years for news and
     // knows something nobody would ever tell a pirate.
+    //
+    // ── #774 · AND THE SENTENCES ARE READ ON THE CARD, NOT UNDER IT ────────────────────────────────────
+    //
+    // This method used to raise the card and then fire two to four ShowAndFile lines beneath it: the person,
+    // the next of kin, what the family knows, the in that fell out of the kit — every one of them pulsed
+    // into the HUD while a full-screen backdrop stood in front of the HUD. All of them were filed, none of
+    // them was readable, and the captain closed the card onto silence.
+    //
+    // #768's hold cannot settle it and was refused for exactly this case: it releases ONE winner, and these
+    // are a same-rank SEQUENCE whose survivor would have been decided by which line was appended last —
+    // the ordering-as-contract bug #693 killed. So the remedy is #736's law instead. The card carries them,
+    // in Core's own reading order (FieldDossier.Beat), and the book keeps every one of them exactly as it
+    // always did: what changed is where a sentence is READ, never what is recorded.
     private void AssembleSomebody(SurfaceExcursion ex, string body, string salt, int roomIndex)
     {
         ex.KitPieces.Add(roomIndex);
-        if (ex.KitPieces.Count < FieldDossier.FragmentsToAssemble || ex.DossierShown)
+
+        // ?kit=1 — the picture comes together on the FIRST piece. Three papers rooms at one room in eight,
+        // inside a single excursion, is the rarest thing on the regolith; the cheat moves the gate and
+        // nothing else, so what a tester reads is a dossier a captain can genuinely be handed.
+        int enough = _kitCheat ? 1 : FieldDossier.FragmentsToAssemble;
+        if (ex.KitPieces.Count < enough || ex.DossierShown)
         {
             return;
         }
@@ -3653,35 +3690,35 @@ public partial class Map
         FieldDossier.Person who = FieldDossier.Who(body, salt, roomIndex);
         string place = Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name);
 
-        // The card, with the compiled effects. Reuses the ViewObject pop-up the builder's plate and the
-        // souvenirs already use — one image surface, not a second one to keep in step.
+        // Everything this kit has to say, already in the order it is read — composed in Core beside the
+        // rolls that decide whether each sentence exists at all, so the client never picks an order.
+        IReadOnlyList<FieldDossier.Saying> debrief =
+            FieldDossier.Debrief(body, salt, roomIndex, everySaying: _kitCheat);
+
+        // The card, with the compiled effects AND the debrief on it. Reuses the ViewObject pop-up the
+        // builder's plate and the souvenirs already use — one image surface, not a second one to keep in
+        // step. The caption is the fiction; the outcome region is what you are now holding.
         _viewObject = new DeckPlan.ConsoleSpot(
             DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-            FieldDossier.ConsoleLabel, FieldDossier.ArtUrl, FieldDossier.Compiled(who, place));
+            FieldDossier.ConsoleLabel, FieldDossier.ArtUrl, FieldDossier.Compiled(who, place),
+            FieldDossier.DebriefBlock(debrief));
 
         RendererInterop.PlayCue("board");
-        ShowAndFile($"🗂 {who.Name} — a specialist in {who.Discipline}, carried out here by " +
-            $"{who.Employer}. The kit is theirs, all of it, and now you know their name.", "🗂");
 
-        // Somebody is still waiting. This is the thread, and running it is entirely the captain's choice.
-        FieldDossier.NextOfKin kin = FieldDossier.WhoIsWaiting(body, salt, roomIndex);
-        ShowAndFile(FieldDossier.KinLine(who, kin), "📇");
-        if (FieldDossier.KinKnowsSomething(body, salt, roomIndex))
+        // The book, unchanged: the same sentences under the same glyphs in the same order they were said.
+        foreach (FieldDossier.Saying said in debrief)
         {
-            ShowAndFile(FieldDossier.LeadHint(body, salt, roomIndex), "🔎");
+            FileNote(said.Text, said.Glyph);
 
-            // #585: and what they know is a PLACE. This is the owner's own chain closing — "if we know what
-            // happened to someone we get contacts easily by contacting their loved ones, in some cases that
-            // might lead our gum-shoe-efforts forward" — arriving, eventually, at a moon on the tracker.
-            GrantLabLead(DiceRule.Seed($"lead:kin:{body}:{salt}:{roomIndex}"));
-        }
-
-        // And the lighter one the owner asked for by name: a phrase that opens a door somewhere else.
-        // "In leisure suit larry game there was a tip to go to a door and say Ken sent me."
-        if (FieldDossier.HasIntroduction(body, salt, roomIndex))
-        {
-            ShowAndFile(FieldDossier.IntroductionLine(
-                FieldDossier.InTheKit(body, salt, roomIndex)), "🎟");
+            // #585: and what the family knows is a PLACE. This is the owner's own chain closing — "if we
+            // know what happened to someone we get contacts easily by contacting their loved ones, in some
+            // cases that might lead our gum-shoe-efforts forward" — arriving, eventually, at a moon on the
+            // tracker. Banked at the same point in the sequence it has always stood, between the hint and
+            // the in, because the field book's order is a record of when things were said.
+            if (said.Beat is FieldDossier.Beat.WhatTheFamilyKnows)
+            {
+                GrantLabLead(DiceRule.Seed($"lead:kin:{body}:{salt}:{roomIndex}"));
+            }
         }
 
         ApplyNerveShock(4.0, "a stranger's whole life, laid out on a rock");
@@ -3790,7 +3827,12 @@ public partial class Map
 
         string display = ShuttleDestinationsInRange()
             .FirstOrDefault(s => s.Body.Id == named)?.Body.Name ?? named;
-        ShowAndFile(SecretLab.LeadLine(display), "🔎");
+
+        // #774 · Where the captain is looking, because one of this method's callers is the dossier assembly
+        // and the dossier's own card is up when it calls — a moon named into a pulse behind that backdrop is
+        // the fifth sentence of the same bug. Every other caller reaches this with nothing in front of them,
+        // where the seam is an ordinary pulse and indistinguishable from one.
+        SayWhereTheyAreLookingAndFile(SecretLab.LeadLine(display), "🔎");
         RequestVaultSave();
     }
 
@@ -3851,6 +3893,17 @@ public partial class Map
     private void ShowAndFile(string text, string glyph, PulseRank rank = PulseRank.Status)
     {
         ShowPulseMessage(text, rank);
+        FileNote(text, glyph);
+    }
+
+    /// <summary>#774 · <see cref="ShowAndFile"/>'s sibling for a durable find announced in the same breath as
+    /// a card that will stand in front of it: the book keeps it, and the SAYING goes wherever the captain's
+    /// eye actually is (<see cref="SayItWhereTheyAreLooking"/>) rather than to a HUD behind a backdrop. With
+    /// nothing raised the two are the same method — there is no rank because there is no contest: this line
+    /// is not competing for a slot, it is being written where it can be read.</summary>
+    private void SayWhereTheyAreLookingAndFile(string text, string glyph)
+    {
+        SayItWhereTheyAreLooking(text);
         FileNote(text, glyph);
     }
 
@@ -5356,6 +5409,11 @@ public partial class Map
     /// <summary>#756 QA · <c>?counter=1</c> — the whole route to a counter that takes orders, booted. Set in
     /// Map.Sim's cheat parse; read here, where the last leg is walked.</summary>
     private bool _counterCheat;
+
+    /// <summary>#774 QA · <c>?kit=1</c> — the field dossier assembles on the FIRST piece of somebody's kit,
+    /// and with every saying it can carry. Set in Map.Sim's cheat parse; read in
+    /// <see cref="AssembleSomebody"/>, which is the one place both gates are asked about.</summary>
+    private bool _kitCheat;
 
     /// <summary>#756 QA · Stand the captain AT THE COUNTER when <c>?counter=1</c> asked for it.
     ///
