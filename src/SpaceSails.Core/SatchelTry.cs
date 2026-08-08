@@ -113,6 +113,31 @@ public static class SatchelTry
     /// ignored, so a caller may hand over the whole pocket and can never have a paper narrated as a card.</para>
     /// </summary>
     public static Outcome OfferWallet(IReadOnlyList<Satchel.Item>? cards, Target target, string? context = null)
+        => ReadTheWallet(cards, target, context).Outcome;
+
+    /// <summary>#684 · The wallet's answer, AND the card it was answered with.
+    ///
+    /// <para><see cref="OfferWallet"/> is this call with the second half thrown away, and it stayed that way
+    /// while the only caller was a dialog that already knew what it had pressed. The lift panel does not: it
+    /// reads the whole wallet without being asked (owner's ruling on #684 — <i>the unprompted read IS the
+    /// panel's character</i>), so the seam that tells the story of that read has to be told WHICH card the
+    /// gate settled on, or the picture on the story card is a stranger's photograph (#695's own fault, one
+    /// layer up).</para>
+    ///
+    /// <para><see cref="WalletRead.Read"/> is deliberately null at the two FINAL doors even when the wallet
+    /// is full. Nothing there is allowed to name a card, a shaft or a site (#590 call 2), and handing a
+    /// caller the card the fan happened to end on would let a new seam paint a face onto a sentence that
+    /// exists to say the door has no opinion.</para></summary>
+    /// <param name="Outcome">Exactly what <see cref="OfferWallet"/> returns — same sentence, same
+    /// <see cref="Outcome.Worked"/>.</param>
+    /// <param name="Read">The card the gate actually read: the one that worked, or the most informative
+    /// refusal on #683's ladder. Null when the wallet was empty, and null at a door with no reader.</param>
+    public readonly record struct WalletRead(Outcome Outcome, Satchel.Item? Read);
+
+    /// <summary>#684 · <see cref="OfferWallet"/>'s three laws, with the chosen card kept rather than
+    /// dropped. Every sentence in here is the one a single try already produced.</summary>
+    public static WalletRead ReadTheWallet(
+        IReadOnlyList<Satchel.Item>? cards, Target target, string? context = null)
     {
         var wallet = new List<Satchel.Item>();
         foreach (Satchel.Item c in cards ?? [])
@@ -125,7 +150,7 @@ public static class SatchelTry
 
         if (wallet.Count == 0)
         {
-            return NothingToFan(target, context);
+            return new(NothingToFan(target, context), null);
         }
 
         // A wallet of one is not a fan and must not read like one. The dialog never offers the folder for a
@@ -133,7 +158,7 @@ public static class SatchelTry
         // one layer down, so the two can never disagree about what the captain just did.
         if (wallet.Count == 1)
         {
-            return Offer(wallet[0], target, context);
+            return new(Offer(wallet[0], target, context), IsFinalDoor(target) ? null : wallet[0]);
         }
 
         Satchel.Item best = wallet[0];
@@ -143,7 +168,7 @@ public static class SatchelTry
             Outcome one = Offer(card, target, context);
             if (one.Worked)
             {
-                return one;
+                return new(one, card);
             }
 
             // Strictly greater: a tie goes to the card the captain found first, which is the only tie-break
@@ -160,15 +185,21 @@ public static class SatchelTry
             // The two FINAL doors. Every card gives the same answer there, so the fold has nothing to rank
             // and something else to do instead: say once, in the deadpan the thing deserves, that the whole
             // wallet came out and the door has no organ to have an opinion with.
-            Target.SealedWay => SealedWayLine(
+            Target.SealedWay => new(SealedWayLine(
                 $"You go through the wallet a card at a time — {HowMany(wallet.Count)}, every one " +
                 "countersigned, every one current, and no two of them agreeing about who you work for. "),
-            Target.RoomDoor => RoomDoorLine(
+                null),
+            Target.RoomDoor => new(RoomDoorLine(
                 $"You hold them up one after another, {HowMany(wallet.Count)}, which is " +
                 $"{Word(wallet.Count)} more than this door can read. "),
-            _ => Offer(best, target, context),
+                null),
+            _ => new(Offer(best, target, context), best),
         };
     }
+
+    /// <summary>#684 · A door with no reader and nothing to say about a card. The two places a wallet read
+    /// must come back holding nothing, however full the wallet was.</summary>
+    private static bool IsFinalDoor(Target target) => target is Target.SealedWay or Target.RoomDoor;
 
     /// <summary>#697 · The whole wallet, counted the way a person counts a small thing. <i>"All 2"</i> reads
     /// like a receipt; a wallet is never big enough to need digits.</summary>
@@ -224,9 +255,14 @@ public static class SatchelTry
     {
         Target.SealedWay => SealedWayLine(""),
         Target.RoomDoor => RoomDoorLine(""),
+        // #684 · …and at a shaft gate it carries the sentence the LIFT PANEL used to keep in a second set of
+        // words of its own (UndergroundComplex.WrongCardLine, deleted with this). The panel reads the wallet
+        // unprompted, so an empty one is the first refusal most captains ever meet, and what it has to leave
+        // behind is not the fact that the wallet is empty — it is that somebody once held the thing.
         Target.ShaftGate => new(false,
             "🔒 The wallet is empty. The gate reads authorities and there is not one in it — not for this " +
-            "hole, not for anybody else's."),
+            "hole, not for anybody else's. Somebody who worked these floors was carrying one. They did not " +
+            "take it with them."),
         _ => new(false, "🎫 The wallet is empty. There is nothing in it to hold up to anything."),
     };
 

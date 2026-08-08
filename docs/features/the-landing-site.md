@@ -802,7 +802,8 @@ The rule that fixes it is not a special case:
 > **A card is an object. You picked it up, so you have it.**
 
 When the shaft it runs is not in this building, it is a card for **another one** — which is exactly the wallet
-`WrongCardLine` has always described (*"every one of them countersigned, current, and for another shaft"*).
+the gate's refusal has always described (*"every one of them countersigned, current, and for another shaft"*;
+since #684 the sharper *"this one was issued for X SITE"*).
 Until now that line described a thing the game could not give you. Now the deepest floor of one facility hands
 you the way into the next, which is the best thing a bottom floor could hold, and the prose that was decoration
 became literally true without a word of it changing.
@@ -1110,6 +1111,18 @@ distinguishable **from the Line text alone**: the card works; it runs another sh
 was issued for another site, named; or the way is sealed and nothing you could ever carry opens it. The last of
 those is unchanged on purpose — #590 call 2 — and so is the mechanical room door: a refusal that hinted would
 send a captain looking for a card that does not exist.
+
+**And the panel reads it out loud** (#684). The lift panel goes through the wallet without being asked — the
+owner's ruling is that this *is* its character, and a `try it →` verb at the gate would make the building
+polite — but for three issues it answered out of a second set of sentences of its own (`WrongCardLine`), so
+the sharpened matrix above had **no client caller at all**. That is the third named bug class in a mirror: the
+sim knowing something the sentence does not say. `WrongCardLine` is gone; `UndergroundComplex.TheGateReads`
+asks `SatchelTry.ReadTheWallet` and passes its answer through untouched, and the answer goes up as a card in
+#528's idiom — the same title at a refusal and at a reading, the presented card's own office face, and the
+matrix's line verbatim as the caption. Per #736 that caption is the outcome: the line lives **on** the card
+that is up, never only in the panel row behind its backdrop. An empty wallet is pictured with
+`AuthorityCardFallbackArtUrl`, the nameless face, because painting one of the five offices onto a pass the
+captain does not have would be the game lying about a possession.
 
 | gets a card | does not |
 | --- | --- |

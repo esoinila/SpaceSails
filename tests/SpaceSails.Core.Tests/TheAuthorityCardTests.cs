@@ -21,6 +21,15 @@ public sealed class TheAuthorityCardTests
         "titan", "enceladus", "miranda", "triton", "the-clinker",
     ];
 
+    /// <summary>#684 · What the gate says to a wallet, said by the one source there is: the panel's read and
+    /// the satchel's try are the same matrix now (<c>UndergroundComplex.WrongCardLine</c> is gone, and these
+    /// canon sweeps read the matrix rather than the panel's deleted second set of sentences).</summary>
+    private static string GateSays(UndergroundComplex.AuthorityCard wants,
+        params UndergroundComplex.AuthorityCard[] carried) =>
+        SatchelTry.OfferWallet(
+            [.. carried.Select(c => new Satchel.Item(Satchel.Kind.Authority, c.Id))],
+            SatchelTry.Target.ShaftGate, wants.Id).Line;
+
     [Fact]
     public void AKeyRoomHoldsTheCardForTheShaftBelowTheBandItIsFoundIn()
     {
@@ -151,11 +160,17 @@ public sealed class TheAuthorityCardTests
             for (int band = 0; band < 4; band++)
             {
                 var card = new UndergroundComplex.AuthorityCard(body, band);
+                var next = new UndergroundComplex.AuthorityCard(body, band + 1);
                 cardWords.Add(UndergroundComplex.CardTitle(card));
                 cardWords.Add(UndergroundComplex.CardAcceptedLine(card));
-                cardWords.Add(UndergroundComplex.WrongCardLine(band * 4, [card]));
+
+                // #684 · Every refusal class the gate can produce, not just one of them: the matrix is the
+                // panel's source now, so the canon sweep walks the same three answers a player can read.
+                cardWords.Add(GateSays(next, card));
+                cardWords.Add(GateSays(next, new UndergroundComplex.AuthorityCard("titan", band)));
+                cardWords.Add(GateSays(next, card, new UndergroundComplex.AuthorityCard("titan", band)));
             }
-            cardWords.Add(UndergroundComplex.WrongCardLine(2, []));
+            cardWords.Add(GateSays(new UndergroundComplex.AuthorityCard(body, 1)));
         }
 
         foreach (string line in cardWords)
@@ -182,23 +197,34 @@ public sealed class TheAuthorityCardTests
     {
         // "It must be discoverable that you have it" — a gate that just sits there is indistinguishable
         // from a bug, and this game has shipped exactly that mistake before (the map lying).
-        string empty = UndergroundComplex.WrongCardLine(4, []);
-        Assert.Contains("shaft", empty, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("B4", empty, StringComparison.Ordinal);
+        //
+        // #684 · Asked of the PANEL'S OWN READ, which is the only way a player ever meets these sentences.
+        // It used to be asked of UndergroundComplex.WrongCardLine, a second set of words the panel kept to
+        // itself while the sharpened matrix (#679/#683) had no caller at all.
+        var empty = UndergroundComplex.TheGateReads("luna", -1, []);
+        Assert.False(empty.Worked);
+        Assert.Null(empty.Presented);
+        Assert.Contains("gate", empty.Line, StringComparison.OrdinalIgnoreCase);
+
+        // …and it still leaves behind the one fact the old panel line existed to leave: somebody held this
+        // thing once, and they are not the reason it is missing.
+        Assert.Contains("did not take it with them", empty.Line, StringComparison.Ordinal);
 
         var held = new[]
         {
             new UndergroundComplex.AuthorityCard("titan", 2),
             new UndergroundComplex.AuthorityCard("europa", 1),
         };
-        string wrong = UndergroundComplex.WrongCardLine(8, held);
+        UndergroundComplex.GateRead wrong = UndergroundComplex.TheGateReads(
+            "luna", -1, [.. held.Select(c => new Satchel.Item(Satchel.Kind.Authority, c.Id))]);
 
         // It NAMES what is in the pocket, so "I am carrying a card and it did nothing" can never happen
-        // without an explanation attached to it.
-        foreach (UndergroundComplex.AuthorityCard c in held)
-        {
-            Assert.Contains(UndergroundComplex.CardTitle(c), wrong, StringComparison.Ordinal);
-        }
+        // without an explanation attached to it. The matrix names the card it READ rather than listing the
+        // wallet — a sharper answer than the old line's roll-call, and it is the read one that is pictured.
+        Assert.False(wrong.Worked);
+        Assert.NotNull(wrong.Presented);
+        Assert.Contains(BodyNames.Designation(wrong.Presented!.Value.BodyId), wrong.Line, StringComparison.Ordinal);
+        Assert.Contains(wrong.Presented!.Value, held);
     }
 
     [Fact]
@@ -220,9 +246,12 @@ public sealed class TheAuthorityCardTests
             for (int band = 0; band < 6; band++)
             {
                 var card = new UndergroundComplex.AuthorityCard(body, band);
+                var next = new UndergroundComplex.AuthorityCard(body, band + 1);
                 text.Add(UndergroundComplex.CardTitle(card));
                 text.Add(UndergroundComplex.CardAcceptedLine(card));
-                text.Add(UndergroundComplex.WrongCardLine(band * 4, [card]));
+                text.Add(GateSays(next, card));
+                text.Add(GateSays(next, new UndergroundComplex.AuthorityCard("titan", band)));
+                text.Add(GateSays(next));
             }
         }
 
