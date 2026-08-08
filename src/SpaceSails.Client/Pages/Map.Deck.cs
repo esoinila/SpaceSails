@@ -255,6 +255,19 @@ public partial class Map
             case "a" or "A" or "ArrowLeft":
             case "s" or "S" or "ArrowDown":
             case "d" or "D" or "ArrowRight":
+                // #784 · …UNLESS THE CAPTAIN IS SITTING DOWN. Owner, live: "before moving I have to stand
+                // up… so if I try to move when sitting down it should ask with a pop-up whether I want to
+                // stand up again." So the press is CONSUMED and the chair does not slide across the hall:
+                // the question goes up instead, and the held-key set never learns the key was touched.
+                //
+                // It has to be first, above the #729 line below, for that rule's own reason one posture
+                // over: a cancel that happened after the keys were taken would have already thrown away the
+                // watch and the rest the seat is holding.
+                if (CaptainIsSeated)
+                {
+                    AskWhetherToStandUp();
+                    return true;
+                }
                 // #729 · THE KEYS ALWAYS WIN, and they win HERE — on the press itself, before the frame
                 // that follows it spends a single sub-step of the route. Cancelling anywhere further down
                 // (in MoveAvatar, say) would let the walk finish the leg it was on, and "it kept going for
@@ -325,6 +338,18 @@ public partial class Map
 
     private void MoveAvatar(double dtRealSeconds)
     {
+        // ── #784 · A CAPTAIN IN A CHAIR DOES NOT WALK ──
+        //
+        // The key handler above raises the confirm instead of taking the press, and this is the second half
+        // of the same law rather than a duplicate of it: a key HELD BEFORE the captain sat down is still in
+        // the held set, and every route the auto-walk is mid-way through is still a route. Refusing at the
+        // key alone would let a captain sit down mid-stride and keep going, chair and all — which is exactly
+        // the "the sim did one thing while the picture said another" this project has paid for three times.
+        if (CaptainIsSeated)
+        {
+            return;
+        }
+
         double dt = Math.Min(dtRealSeconds, 0.1);
 
         // Three tots of rum and the deck tilts (M21): the heading sways for a while. Purely

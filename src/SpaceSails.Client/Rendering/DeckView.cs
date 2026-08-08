@@ -34,7 +34,14 @@ public sealed class DeckView
         // dim. Instruments are untouched: the motion fan, the on-grid smudges and the corner gauges are drawn
         // after the dark is laid down, because a thing you HEAR through a wall in an unlit hall is the entire
         // point of the feature.
-        bool Dark = false);
+        bool Dark = false,
+        // #784 · IS THE CAPTAIN SITTING DOWN. Owner, live 2026-08-08: "Let's make the graphics say I am
+        // sitting down at the avatar level — like different graphics etc." So it is a fact about the FIGURE
+        // and not a caption: the mark below is drawn differently, and a glance at the deck says sitting with
+        // no panel text involved. Handed down as the sim's own answer (the table panel IS the chair, #757),
+        // never re-derived here — a renderer working out for itself what the sim already knows is how two
+        // instruments come to disagree (#591).
+        bool Seated = false);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -1185,12 +1192,27 @@ public sealed class DeckView
             }
         }
 
-        // #473: the captain's mark already happened to equal AvatarRadius — say so, so the two can never
-        // drift apart again the way the Old Ones' mark had.
-        _renderer.DrawCircle(ax, ay, (float)DeckPlan.AvatarRadius * scale, AvatarColor, AvatarColor);
-        float hx = ax + (float)Math.Cos(state.HeadingRad) * scale * 1.1f;
-        float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
-        DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
+        if (state.Seated)
+        {
+            // ── #784 · SITTING DOWN, DRAWN ──
+            //
+            // Owner: "Let's make the graphics say I am sitting down at the avatar level." A standing captain
+            // is a body and a long spoke pointing where they are going. A seated one is going nowhere, so
+            // the spoke is gone entirely — in its place a CHAIR BACK behind the shoulders and a short bar of
+            // ARMS on the table in front, and a body that takes a little less floor because it is folded
+            // into a chair. Same ink, same anchor: it is the same captain, in a different posture, and the
+            // three marks read as one figure rather than as furniture that has appeared beside them.
+            DrawSeated(ax, ay, state.HeadingRad, scale);
+        }
+        else
+        {
+            // #473: the captain's mark already happened to equal AvatarRadius — say so, so the two can never
+            // drift apart again the way the Old Ones' mark had.
+            _renderer.DrawCircle(ax, ay, (float)DeckPlan.AvatarRadius * scale, AvatarColor, AvatarColor);
+            float hx = ax + (float)Math.Cos(state.HeadingRad) * scale * 1.1f;
+            float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
+            DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
+        }
 
         // #313 the dig channel: a shovel glyph over the captain and a crude progress bar — the
         // vulnerability window, drawn ON the grid so the player watches the tracker while it fills.
@@ -1924,6 +1946,54 @@ public sealed class DeckView
         s[0] = x; s[1] = y; s[2] = x + w; s[3] = y; s[4] = x + w; s[5] = y + h;
         s[6] = x; s[7] = y + h; s[8] = x; s[9] = y;
         _renderer.DrawPolyline(s, color, 1.5f);
+    }
+
+    // ── #784 · THE SEATED FIGURE ──────────────────────────────────────────────────────────────────────
+    //
+    // Three numbers, named, because a posture drawn out of literals is a posture nobody can tune. All of
+    // them are fractions of DeckPlan.AvatarRadius or of the deck scale, so the seated captain grows and
+    // shrinks with the standing one and the two can never drift apart the way #473's marks had.
+
+    /// <summary>How much of the standing body a seated one takes on the floor. Less, because it is folded
+    /// into a chair — and not so much less that the figure stops reading as a person.</summary>
+    private const float SeatedBodyFactor = 0.74f;
+
+    /// <summary>How far BEHIND the body the chair back is drawn, in deck units.</summary>
+    private const float SeatedChairBackDu = 0.95f;
+
+    /// <summary>How far in FRONT of the body the arms rest, in deck units — hands on the table, which is the
+    /// half of the pose that says <i>at a table</i> rather than merely <i>not walking</i>.</summary>
+    private const float SeatedArmsDu = 0.62f;
+
+    /// <summary>Draw the captain sitting down: a chair back across the shoulders, a folded body, and a short
+    /// bar of arms on the table in front. No heading spoke — a seated captain is going nowhere, and the
+    /// spoke has meant "this way" since the mark was first drawn.</summary>
+    private void DrawSeated(float ax, float ay, double headingRad, float scale)
+    {
+        float cos = (float)Math.Cos(headingRad), sin = (float)Math.Sin(headingRad);
+        // Screen Y runs the other way to deck Y, which is why the sines are negated here exactly as they
+        // are in the standing spoke above.
+        (float fx, float fy) = (cos, -sin);          // forward, on screen
+        (float px, float py) = (-fy, fx);            // and across it
+
+        float back = SeatedChairBackDu * scale, arms = SeatedArmsDu * scale;
+        float backHalf = (float)DeckPlan.AvatarRadius * scale;
+        float armHalf = (float)DeckPlan.AvatarRadius * scale * 0.8f;
+
+        // The chair back — a bar behind the shoulders, the one mark a standing captain never has.
+        DrawSeg(
+            (ax - (fx * back) - (px * backHalf), ay - (fy * back) - (py * backHalf)),
+            (ax - (fx * back) + (px * backHalf), ay - (fy * back) + (py * backHalf)),
+            AvatarColor, 2.5f);
+
+        _renderer.DrawCircle(
+            ax, ay, (float)DeckPlan.AvatarRadius * scale * SeatedBodyFactor, AvatarColor, AvatarColor);
+
+        // …and the arms, on the table.
+        DrawSeg(
+            (ax + (fx * arms) - (px * armHalf), ay + (fy * arms) - (py * armHalf)),
+            (ax + (fx * arms) + (px * armHalf), ay + (fy * arms) + (py * armHalf)),
+            AvatarColor, 2f);
     }
 
     private void DrawSeg((float X, float Y) a, (float X, float Y) b, RgbaColor color, float width)

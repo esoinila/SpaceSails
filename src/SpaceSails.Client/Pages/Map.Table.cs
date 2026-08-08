@@ -667,6 +667,11 @@ public partial class Map
         ex.TableWaits.TryGetValue(t.Key, out int beat);
         ex.TableWaits[t.Key] = beat + 1;
 
+        // #784 · THE BEAT IS ALSO A SHORT REST. Owner: "Sitting down relaxes and heals" / "it is like short
+        // rest in TTRPG." The wait already IS the seated watch-beat, so the recovery hangs off it rather
+        // than off a second clock — Map.Seated.cs owns the arithmetic and the ceiling.
+        string? rested = RestOneSeatedBeat(ex, beat);
+
         // One approach per top per watch. She came over, and whichever way that went, it went.
         bool comes = !ex.TableApproached.Contains(t.Key)
             && (_approachCheat
@@ -678,8 +683,17 @@ public partial class Map
             // #680/#736 · NOTHING HAPPENING IS AN ANSWER, and it is said on the panel the captain pressed,
             // through the one ending every other answer at this table uses. A wait that produced silence
             // and no words would be indistinguishable from a control that is broken (#603).
+            // #784 · …with the body's footnote after it, when the beat gave something back. The silence is
+            // the EVENT and it keeps the first sentence; the rest is one clause added to it, and never a
+            // second panel line competing with the room's own answer.
+            //
+            // Composed INSIDE the call rather than hoisted into a local, deliberately: #778's own guard
+            // reads the ordering here to prove the nobody-came line goes through the one ending, and a local
+            // computed above it flips that reading while changing nothing about the behaviour. The guard is
+            // right about the law, so this stays shaped the way the law is checked.
             TableAnswered(ex, t, SittingAlone.Wait,
-                new CanteenTable.Answer(SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet)));
+                new CanteenTable.Answer(WithTheBodysFootnote(
+                    SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet), rested)));
             return;
         }
 
