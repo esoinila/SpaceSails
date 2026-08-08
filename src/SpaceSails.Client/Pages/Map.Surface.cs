@@ -159,6 +159,11 @@ public partial class Map
     /// would walk.</summary>
     private bool _foundCheat;
 
+    /// <summary>#693 · The <c>?card=</c> boot cheat: which authority to put in the wallet before the first
+    /// ride, or null when unset. <c>next</c> / <c>all</c> / a band index; see the parser in Map.Sim for why
+    /// no body id is typed into it.</summary>
+    private string? _cardCheat;
+
     /// <summary>#701 · The <c>?book=</c> dev cheat, null when unset. Never consulted on its own either: it is
     /// an ARGUMENT to <see cref="OddBooks.Search"/> and never a second answer OR-ed in beside it, which is
     /// §13.18's rule and the reason <c>?dark=1</c> did not black out the regolith at noon.</summary>
@@ -2246,8 +2251,6 @@ public partial class Map
 
         if (!wasUnderground)
         {
-            ShowAndFile(UndergroundComplex.DescendingLine, "\ud83d\udec3");
-
             // #585 \u00b7 THE CARD, on the first descent only. Owner: "I think we need to gen AI pop-up about
             // finding the elevator." It is the beat the whole feature turns on \u2014 the moment a moon stops
             // being a field with things scattered on it and becomes a LID.
@@ -2266,25 +2269,6 @@ public partial class Map
         // purpose: those floors are reached from underground, so `wasUnderground` is true by the time a
         // captain gets to either of them and the establishing card above has long since been spent.
         MaybeRaiseHeadOfficeBeat(ex);
-
-        // #592 · THE FLOOR THAT IS NOT ON THE PLAN. The whole beat of the feature, said once, on the first
-        // step out onto the band nobody listed — and it is the hardest place in the game to hold the canon
-        // line. It says the operation upstairs was enormous, funded, staffed and inspected, and that this
-        // was under it, and that the people upstairs did not know. It does not say what it was for. The
-        // captain gets the arithmetic and never the answer; if they want one, the files are in the rooms
-        // and the files are about PEOPLE.
-        if (UndergroundComplex.IsUnlisted(ex.Stop.Body.Id, level)
-            && ex.HiveUnlistedSeen is false)
-        {
-            ex.HiveUnlistedSeen = true;
-            ShowAndFile(
-                UndergroundComplex.UnlistedArrivalLine(
-                    -UndergroundComplex.DepthOf(ex.Stop.Body.Id),
-                    UndergroundComplex.KindFor(ex.Stop.Body.Id),
-                    UndergroundComplex.KindOn(ex.Stop.Body.Id, level)),
-                "\U0001F573");
-            ApplyNerveShock(9.0, "a building with floors it does not count");
-        }
 
         // ── #725 · …AND THE SIGN THAT SAYS IT, WHICH HAD NO FRAME ──────────────────────────────────────
         //
@@ -2308,127 +2292,106 @@ public partial class Map
             RendererInterop.PlayCue("reveal");
         }
 
-        // \u2500\u2500 #609 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
+        // ── #693 · EVERYTHING THE DOORS OPENING HAS TO SAY, AND THE LAW THAT DECIDES WHAT YOU HEAR ──
         //
-        // Owner, having suffocated on B2: "I thought there is air in the base?" / "there should be a warning
-        // or something :-D" / "maybe pop-up about you have air or you are in vacuum type ... it is vital
-        // info" / "like the basement is more dangerous than the surface now :-D".
+        // This was five blocks in a row, three of them carrying a comment explaining that they were
+        // deliberately LAST — because the pulse has one slot, the last write won, and the order these lines
+        // happened to be written in was the entire contract. #592's climax was not one of the three. The
+        // first words on a floor that does not exist, the biggest sentence in that feature, had been losing
+        // the slot to the routine pressurisation line since the day it shipped: eaten by the weather.
         //
-        // The last one is exactly right and it is the DESIGN \u2014 depth is paid for in air (#585) \u2014 but the
-        // game was announcing the single most important fact about a floor in a pulse message that fades in
-        // eight seconds, alongside pulses about hardware and dust. On the surface an emergency shelter is a
-        // visible building you can run to; down here the equivalent is knowing which floors hold pressure,
-        // and that was being whispered.
+        // The arrival is COMPOSED now (Core, ArrivalSayings) with a RANK on each saying, and PulseSlot's law
+        // picks the winner — a lower rank may not displace a higher one that is still held. So this loop
+        // says all of them, the book keeps every one in the order they were said, and the screen keeps the
+        // biggest. Shuffle the list and the same line is on screen; that is the law, and it is swept over
+        // every arrival the generator admits (ThePulseKeepsTheBiggestSentenceTests).
         //
-        // So the FIRST time each excursion meets dead air it stops the world with a card. Every later dead
-        // floor is the pulse line again, because by then the captain has been told and a card per floor
-        // would be a card nobody reads.
+        // What stays here is what Core does not have: the cards, the nerve, the flags and the save.
         bool firstSight = ex.HiveFloorsSeen.Add(level);
-        bool pressurised = UndergroundComplex.HoldsPressure(ex.Stop.Body.Id, level);
 
-        // #677 · NEITHER AIR LINE IS SAID PAST THE SEAM, and the reason is the whole feature. The
-        // pressurised line describes standing lights, a fan still turning and somebody's account decades
-        // after the last invoice — a sentence about PLANT, and about the people who were billed for it. Said
-        // in a gallery it would explain, in one breath, the one thing that must never be explained: where
-        // the air comes from. The authored arrival line states it once ("The air is good. Nothing here says
-        // why.") and after that the gauge and the plate answer, which is what instruments are for.
-        bool hallAir = UndergroundComplex.IsFound(ex.Stop.Body.Id, level);
+        foreach (UndergroundComplex.Saying saying in UndergroundComplex.ArrivalSayings(
+                     ex.Stop.Body.Id, fromLevel, level,
+                     new UndergroundComplex.ArrivalMemory(
+                         WasUnderground: wasUnderground,
+                         FirstSightOfThisFloor: firstSight,
+                         VacuumWarned: ex.HiveVacuumWarned,
+                         UnlistedSeen: ex.HiveUnlistedSeen,
+                         ChitBeatSpent: ex.ChitGateBeatShown,
+                         SeamCrossed: ex.HiveSeamCrossed,
+                         FoundSeen: ex.HiveFoundSeen,
+                         ShaftsNarrated: ex.HiveShaftsOpened),
+                     via, AuthorityCardIds(), _satchel))
+        {
+            ShowAndFile(saying.Text, saying.Glyph, saying.Rank);
 
-        if (firstSight && hallAir)
-        {
-            // nothing to say. The suit already knows, and this floor never had an invoice.
-        }
-        else if (firstSight && !pressurised && !ex.HiveVacuumWarned)
-        {
-            ex.HiveVacuumWarned = true;
-            _viewObject = new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                UndergroundComplex.VacuumCardLabel,
-                UndergroundComplex.VacuumArtUrl,
-                UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds));
-            ShowAndFile(UndergroundComplex.DeadAirLine, "\ud83e\udec1");
-        }
-        else if (firstSight)
-        {
-            ShowAndFile(pressurised
-                ? UndergroundComplex.PressurisedLine
-                : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
-        }
-
-        // ── #689 · THE CARD'S FINEST HOUR, SAID WHERE IT CAN BE HEARD ───────────────────────────────────
-        //
-        // Owner, having found the card, fed the gate and ridden past the listed bottom: "It was locked until
-        // I got it ... there was no story point about it being needed or used. Let's tell that story somehow
-        // more clearly that it was used in the elevator or somehow played a part in opening the most bottom
-        // floor."
-        //
-        // The line existed. It was said on the frame the panel closed and the floor was torn down and rebuilt
-        // — the one instant in the whole loop when nobody is reading the HUD. Here the doors are open, the
-        // captain is standing still, and the car is not going anywhere.
-        //
-        // LAST of the arrival's sayings on purpose: the pulse has exactly ONE slot and the last line written
-        // is the one that survives (ShowPulseMessage overwrites). Everything above this is a fact about the
-        // FLOOR — it holds air or it does not, it is on the plan or it is not — and the book keeps every one
-        // of them. This is the fact about the RIDE, it happens once per shaft per excursion, and it is the
-        // one the owner filed an issue about not seeing.
-        if (via is not null
-            && UndergroundComplex.GateOpenedByRidingTo(
-                ex.Stop.Body.Id, fromLevel, level, AuthorityCardIds(), _satchel) is { } opened
-            && ex.HiveShaftsOpened.Add(opened.Band))
-        {
-            ShowAndFile(UndergroundComplex.CardAcceptedLine(opened), "🎫");
-            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
-        }
-
-        // ── #752 · …AND THE OTHER PAPER'S ARRIVAL, WHICH IS THE JOB FINISHING ─────────────────────────────
-        //
-        // The Hand's line was "take this to the lift and don't be clever near the counter". This is the lift
-        // having heard of it. Said in the same place and for the same reasons as the card's beat above — when
-        // the DOORS OPEN, never on the frame the panel closes and the floor is rebuilt (#689/#680), and after
-        // the routine air line, because the one pulse slot keeps the last thing written.
-        //
-        // No nerve shock: the card's gate is a dead office still saluting, which is frightening. A gate that
-        // reads a timesheet and waves you through is the least frightening thing this building has done, and
-        // giving it the same 3.0 would say the opposite of what the sentence says.
-        //
-        // Once per excursion, and the GIST is filed with it: the beat is what happened, the gist is what the
-        // paper turned out to be worth, and #618's guards downstairs read the chit itself rather than either.
-        if (via is { OpenedByChit: true } && !ex.ChitGateBeatShown)
-        {
-            ex.ChitGateBeatShown = true;
-            ShowAndFile(CanteenTable.ChitGateLine, CanteenTable.ChitGlyph);
-            FileNote(CanteenTable.ChitGateGist, CanteenTable.ChitGlyph);
-            RequestVaultSave();
-        }
-
-        // ── #677 · AND THE TWO SENTENCES THE HALLS GET, WHICH ARE THE LAST THINGS SAID ────────────────────
-        //
-        // The seam first, because it happens in the shaft, on the way; then the arrival, because it happens
-        // when the doors open. Both are the owner's own words, lifted verbatim, and both are LAST for the
-        // reason the gate line above is last: the pulse has one slot and #693 is open, so the climax is
-        // written after everything routine. The book keeps both whatever the screen does.
-        //
-        // The residual is #693's, not this feature's, and it is worth writing down rather than papering
-        // over: on the tick after the doors open, a crossing into pressure can still pulse the generic
-        // supply line over the top of these. That is the same slot the unlisted band's own climax has been
-        // losing since #592 shipped, and the fix is the priority queue that issue is about.
-        if (UndergroundComplex.IsFound(ex.Stop.Body.Id, level))
-        {
-            if (!ex.HiveSeamCrossed)
+            switch (saying.Beat)
             {
-                ex.HiveSeamCrossed = true;
-                ShowAndFile(UndergroundComplex.SeamLine, "\U0001F573");
-            }
+                // #592 · THE FLOOR THAT IS NOT ON THE PLAN. The whole beat of the feature, said once, on the
+                // first step out onto the band nobody listed.
+                case UndergroundComplex.ArrivalBeat.Unlisted:
+                    ex.HiveUnlistedSeen = true;
+                    ApplyNerveShock(9.0, "a building with floors it does not count");
+                    break;
 
-            if (!ex.HiveFoundSeen)
-            {
-                ex.HiveFoundSeen = true;
-                ShowAndFile(UndergroundComplex.FoundArrivalLine, "\U0001F573");
+                // ── #609 · WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST ──
+                //
+                // Owner, having suffocated on B2: "I thought there is air in the base?" / "there should be a
+                // warning or something :-D" / "maybe pop-up about you have air or you are in vacuum type ...
+                // it is vital info" / "like the basement is more dangerous than the surface now :-D".
+                //
+                // The last one is exactly right and it is the DESIGN — depth is paid for in air (#585) — but
+                // the game was announcing the single most important fact about a floor in a pulse that fades
+                // in eight seconds, alongside pulses about hardware and dust. So the FIRST time each
+                // excursion meets dead air it stops the world with a card; every later dead floor is the
+                // pulse line again, because by then the captain has been told and a card per floor would be
+                // a card nobody reads.
+                case UndergroundComplex.ArrivalBeat.DeadAirFirst:
+                    ex.HiveVacuumWarned = true;
+                    _viewObject = new DeckPlan.ConsoleSpot(
+                        DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                        UndergroundComplex.VacuumCardLabel,
+                        UndergroundComplex.VacuumArtUrl,
+                        UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds));
+                    break;
 
-                // The same price as the floor nobody listed. It is not bigger, deliberately: nothing down
-                // here threatens, and a site that bills a captain for standing in a comfortable room is a
-                // predator whatever the prose says (§10.4c's ruling, one band further down).
-                ApplyNerveShock(9.0, "a room that was ready before anybody thought to build one");
+                // #689 · THE CARD'S FINEST HOUR. Owner, having found the card, fed the gate and ridden past
+                // the listed bottom: "It was locked until I got it ... there was no story point about it
+                // being needed or used." The line existed; it was said on the frame the panel closed and the
+                // floor was torn down and rebuilt. Here the doors are open, the captain is standing still,
+                // and the car is not going anywhere. Once per shaft per excursion — and the band comes off
+                // the saying, because the ride that opened it already worked out which one that was.
+                case UndergroundComplex.ArrivalBeat.CardAccepted when saying.Gate is { } opened:
+                    ex.HiveShaftsOpened.Add(opened.Band);
+                    ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
+                    break;
+
+                // #752 · …AND THE OTHER PAPER'S ARRIVAL, WHICH IS THE JOB FINISHING. The Hand's line was
+                // "take this to the lift and don't be clever near the counter"; this is the lift having heard
+                // of it. No nerve shock: the card's gate is a dead office still saluting, which is
+                // frightening, and a gate that reads a timesheet and waves you through is the least
+                // frightening thing this building has done. The GIST is filed with the beat — the beat is
+                // what happened, the gist is what the paper turned out to be worth.
+                case UndergroundComplex.ArrivalBeat.ChitGate:
+                    ex.ChitGateBeatShown = true;
+                    FileNote(CanteenTable.ChitGateGist, CanteenTable.ChitGlyph);
+                    RequestVaultSave();
+                    break;
+
+                // #677 · The pour stopping, said in the shaft on the way.
+                case UndergroundComplex.ArrivalBeat.Seam:
+                    ex.HiveSeamCrossed = true;
+                    break;
+
+                // #677 · The first gallery. The same price as the floor nobody listed, and not bigger,
+                // deliberately: nothing down here threatens, and a site that bills a captain for standing in
+                // a comfortable room is a predator whatever the prose says (§10.4c's ruling).
+                case UndergroundComplex.ArrivalBeat.Found:
+                    ex.HiveFoundSeen = true;
+                    ApplyNerveShock(9.0, "a room that was ready before anybody thought to build one");
+                    break;
+
+                default:
+                    break;   // the descent's own line and every later air line are prose and nothing else
             }
         }
 
@@ -3731,10 +3694,14 @@ public partial class Map
 
     /// <summary>Say it AND keep it. Every durable find on a surface goes through here rather than through
     /// ShowPulseMessage directly, so there is one place that can never be forgotten about — the pulse is the
-    /// doorbell, the book is the record.</summary>
-    private void ShowAndFile(string text, string glyph)
+    /// doorbell, the book is the record.
+    ///
+    /// <para>#693 · The book keeps everything whatever the screen does, so <paramref name="rank"/> only ever
+    /// decides the doorbell. A line that loses the slot is still filed, in the order it was said.</para>
+    /// </summary>
+    private void ShowAndFile(string text, string glyph, PulseRank rank = PulseRank.Status)
     {
-        ShowPulseMessage(text);
+        ShowPulseMessage(text, rank);
         FileNote(text, glyph);
     }
 
@@ -5046,6 +5013,76 @@ public partial class Map
                     _satchel = [.. Core.Satchel.Add(
                         _satchel, new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
                 }
+            }
+
+            // ── #693 · …OR ONE CARD, WHICH IS THE ROW AND THE BEAT AND THE REFUSAL ────────────────────────
+            //
+            // #692's own honest note: "reaching the row needs an authority card in the wallet and no dev
+            // cheat mints one." ?found=1 above hands over every authority a site issued, but it also parks a
+            // particular rock, so the carded lift row and the gate beat could not be seen on an ordinary
+            // site at all. Same mint, same satchel, same gate — one card instead of the set.
+            //
+            // The band the site does not have is deliberately NOT invented: the pocket stays empty and the
+            // line says which bands there were, because a cheat that silently gives you nothing is a tester
+            // playtesting the wrong scene without knowing it.
+            if (_cardCheat is { } asked)
+            {
+                string cardBody = landedOn.Stop.Body.Id;
+                int standingOn = _startingFloorCheat ?? 0;
+                var wanted = new List<int>();
+                int deepestBand = UndergroundComplex.BandOf(UndergroundComplex.DeepestPossibleFloor);
+
+                if (asked == "all")
+                {
+                    for (int band = 0; band <= deepestBand; band++)
+                    {
+                        wanted.Add(band);
+                    }
+                }
+                else if (asked == "next")
+                {
+                    // ASKED OF THE BUILDING, exactly as the panel asks it: the shaft that EXISTS below where
+                    // you are standing, stepping over the band of nothing under the unlisted floors (#677).
+                    // Working it out here as "band + 1" is §13.15's second cause, and it has already been
+                    // the cause of something three times on this ground.
+                    if (UndergroundComplex.NextShaftBelow(cardBody, standingOn) is { } next)
+                    {
+                        wanted.Add(next);
+                    }
+                }
+                else if (int.TryParse(asked, System.Globalization.NumberStyles.Integer,
+                             System.Globalization.CultureInfo.InvariantCulture, out int askedBand))
+                {
+                    wanted.Add(askedBand);
+                }
+
+                var minted = new List<int>();
+                foreach (int band in wanted)
+                {
+                    if (!UndergroundComplex.SiteHasBand(cardBody, band))
+                    {
+                        continue;
+                    }
+                    var card = new UndergroundComplex.AuthorityCard(cardBody, band);
+                    _satchel = [.. Core.Satchel.Add(
+                        _satchel, new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
+                    minted.Add(band);
+                }
+
+                var has = new List<string>();
+                for (int band = 0; band <= deepestBand; band++)
+                {
+                    if (UndergroundComplex.SiteHasBand(cardBody, band))
+                    {
+                        has.Add(band.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                }
+
+                ShowPulseMessage(minted.Count > 0
+                    ? $"🧪 DEV ?card={asked}: band {string.Join(", ", minted)} authority in the wallet — " +
+                      "🎒 I to read it, then ride and watch the row."
+                    : $"🧪 DEV ?card={asked}: this site has no such band, so nothing was minted. It has " +
+                      $"band {string.Join(", ", has)}.");
             }
 
             // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is

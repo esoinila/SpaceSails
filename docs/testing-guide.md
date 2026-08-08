@@ -503,6 +503,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?book=N` / `?book=on`** | **Put THE ODD BOOK in every would-be-empty room this excursion searches (#701). `1`–`10` force that catalog entry, which is how all ten authored texts get read on demand; `on` (or `all`/`any`) forces the SEEDED entry, i.e. the shipped selection with the one-in-six gate taken off, which is how the Laboratory/Transit-station weighting is watched working. It cannot put a book in an OCCUPIED room — a book is what a would-be-empty room has *instead of* the empty line, and a cheat that laid one on top of a pallet would have you playtesting a room the game cannot produce. It is an ARGUMENT to `OddBooks.Search` and never a second answer OR-ed in beside it (the `?dark=1` rule). Pair with `&secretlab=deep&land=1&floor=2`.** |
 | **`?autowalk=1`** | **CLICK THE DECK AND THE CAPTAIN WALKS THERE — A\* over the same walls the collision uses, at the same walking speed, on the on-foot views (a surface excursion and every Hive floor) (#729). Owner: *"So our testing does not hang on slow MCP speed to browser."* An automation-driven tab moves in keypress bursts with dead time between them, and three Reever deaths in one morning were pacing artifacts rather than findings; this makes a crossing one action instead of forty. It is NOT a teleport and NOT a faster walk: every step goes through the ordinary per-frame movement, so air drains, the nerve frays, the tracker rings, the auto-doors cycle and the Old Ones close exactly as they do under WASD. **Any movement key cancels instantly** — the keys always win. Click a console, a hatch or a door and the walk stops ADJACENT to it, so `[E]` is live the moment it ends. Click somewhere no corridor reaches and it says so out loud rather than shrugging. A drag still pans the deck plan. Pair with `&secretlab=deep&land=1&floor=4`, or with `&found=1&land=1`.** |
 | **`?found=1`** | **Park the one rock in the system with a band NOBODY DUG under the band nobody listed (#677), set down at the lift head, and start with every authority this site ever issued already in the wallet — including the last one, which is the way past the seam. About one site in fifty has galleries and the way in is a card somebody left in a room eleven floors down, so without this the feature is unreachable in practice. It implies `?secretlab=1` (there is no other way down). It overrides no Core fact: the rock's whole shape — its depth, its two kinds, its unlisted band and its halls — is seeded off its body id (`UndergroundComplex.FoundBandCheatSiteId`) exactly like every other site, so what you walk is what a captain would walk. The cards are minted through the real `AuthorityCard` and put in the real satchel, so the panel, the gate, the refusal ladder and the wallet fan all behave as they do for somebody who earned them. Pair with `&land=1`, and with `&floor=17` to ride straight to the first gallery.** *(It is also a button in the front door's **⚙ DEV START SITES** list — 🕳 “The halls nobody dug”.)* |
+| **`?card=next` / `?card=N` / `?card=all`** | **MINT AN AUTHORITY CARD BEFORE THE FIRST RIDE (#693) — the one cheat that makes the CARDED lift row, the gate beat and the refusal ladder reachable on an ordinary site.** #692 shipped all three and closed with the honest note that none of them had been seen in a browser: *"reaching the row needs an authority card in the wallet and no dev cheat mints one"*. `next` mints the band under wherever you are set down — the gate you will be standing at — asked of `NextShaftBelow` so it steps over the band of nothing under the unlisted floors (#677). `N` mints that band specifically, which is how the WRONG-card refusal is seen. `all` is `?found=1`'s whole wallet on any rock. It names a **band**, never a card id: a body typed into a URL is a body the landing may not be on, and the cheat would mint paper no gate on the ground reads. A band the site does not have mints nothing **and says so**, naming the bands it does have. Minted through the real `AuthorityCard` into the real satchel, so the panel, the gate, the refusal and the wallet fan behave exactly as they do for a captain who earned it. Implies `?secretlab=1`; pair with `&secretlab=deep` or `&found=1` to choose the rock. Try `/map?secretlab=deep&land=1&floor=1&card=next`.** *(Also a button in the front door's **⚙ DEV START SITES** list — 🎫 “The lift row the card unlocks”.)* |
 | **`?tablescene=1`** | **BOOT THE TABLE SCENE (#746) — the B1 canteen of a deep site, with people in it, one URL from the front door. Walk to a table with somebody at it, press `[E]`, and ask to join. It implies the whole route (`?secretlab=deep&land=1&floor=1`) rather than adding a fourth spelling of it, sets the captain down IN the canteen, and turns `?autowalk=1` on because the last leg is a walk across a room. It does NOT force who is at the tables: the rota is seeded off the site and the watch like any other shift (#709), and a cheat that seated THE HAND for you would be testing a room that does not ship — if this watch has no Hand in it, that is the room, and the next shift is a reload away. Three of #709's cast are scenes (the hand, the fitter, the temp); everybody else keeps their one breath.** |
 | **`?roll=hi` / `?roll=lo`** | **FORCE THE ENCOUNTER BAND (#746). `hi` makes every rolled move land YES, `lo` makes it NO — AND THE SCENE MOVES; `mid` forces YES, BUT. Owner, in the issue: *"testing is a feature."* It overrides the BAND and never the roll — the dice still cast, the named modifier stack still reads truthfully on the panel, and the scene that plays out is the scene a captain would get, because a cheat that showed you a different scene would be worse than no cheat at all. The only rolled move today is THE HAND's ask about work, so `?tablescene=1&roll=lo` is how the refusal's three consequences (the table hardens, the fitter opens, the temp overheard it) get watched on demand. Pair with `&tablescene=1`.** |
 | **`?watch=N`** | **PIN WHICH SHIFT THE HALL IS ON (#751). The B1 cantina hall holds eighty and how many of its twenty tables are taken varies BY WATCH — a heaving day watch, a small-hours watch of a dozen souls — and **nothing in the game announces which one you walked into**: that is the design, and it is exactly the kind of design a tester cannot see without waiting four sim-hours between looks. A watch is four sim-hours (`PatronRota.WatchSeconds`) and six of them are a day, so `?watch=2` is the middle of the day and `?watch=5` is the small hours; compare the two and the whole feature is on the screen. Owner, twice over: *"testing is a feature."* It pins the watch INDEX and nothing else — who is in the room and where they sat are still the rota's own answer for that shift (#709), so what you walk into is the room a captain would get, never a rigged one. Pair with `&tablescene=1`.** |
@@ -1242,6 +1243,7 @@ everything in the spec's "not yet enforced" list, which is exactly what a pair o
 | `&outpost=1` | guarantee the outpost hut on this ground |
 | `&collectors=20` | a repo boat sets down 20 s in, whatever your heat reads (#583) |
 | `&secretlab=1` | a landable rock with a Vantar lab, hidden door already found (#409) |
+| `&card=next` | the authority for the gate you will be standing at, in the wallet (#693) |
 | `&wreck=1` | a derelict wins the toss instead of a moon |
 
 **The secret lab's new space** appears where the hidden door is: the chamber is appended *from the door
@@ -1289,6 +1291,31 @@ dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
 ```
 
 Both only fire under `?secretlab=1`. An ordinary landing still drops you on the open regolith at the landing band, so this can never quietly become how the game plays.
+
+### The card, the row and the gate — `?card=` (#693)
+
+The whole of #689/#692's beat is three things a card does, and until this cheat existed the only way to see
+any of them was to find one:
+
+```
+/map?secretlab=deep&land=1&floor=1&card=next   B1 with the paper the gate downstairs reads
+/map?secretlab=deep&land=1&floor=1&card=3      B1 with the WRONG band's paper — the refusal names it
+/map?secretlab=deep&land=1&floor=1             B1 with nothing — the sealed row, exactly as it ships
+```
+
+Walk to the car and press `🛗`. With the right paper the gated row reads
+
+```
+B-5   ↓ THE OTHER SHAFT                                     🎫 opens for you
+      🎫 SHAFT 2 · … — the gate will read it
+```
+
+and the **accepted beat lands when the doors open** on the new floor, not on the frame the panel closes
+(#689). Since #693 it is also the line you will actually READ: the arrival's sayings carry a rank now and the
+routine air line can no longer stand on top of a beat or a climax.
+
+The head office (`?kaamos=hq&land=1`) has **no gate on any floor** and `?card=` there mints paper nothing
+reads — that absence is the rank difference (#411), not a bug.
 
 ### What each floor should be
 
