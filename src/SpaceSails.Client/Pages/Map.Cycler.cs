@@ -30,6 +30,12 @@ namespace SpaceSails.Client.Pages;
 // way round arrives at the same door. A route that is the only way in is a railroad.
 public partial class Map
 {
+    /// <summary>#742 · <c>/map?kaamos=hq&amp;arrivalphase=N</c> — which of the ice moon's 24 arrival phases
+    /// the head-office seat should let her go on, or null for whichever one boot time happens to be. Read
+    /// at boot, applied to the clock immediately before the park is built, and touched by nothing else:
+    /// the honest ride takes the phase its own 38-day crossing lands on, exactly as it always did.</summary>
+    private int? _arrivalPhaseCheat;
+
     /// <summary>Is the KAAMOS supply run in hand — filed to this hull, not yet signed for? The run's own
     /// quest is the state; there is no second flag, because a bool beside a quest is two answers to one
     /// question and this repo has a table of what that costs.</summary>
@@ -108,8 +114,12 @@ public partial class Map
             return;
         }
 
+        // #742 — the free park, not the clamped berth. Nobody is holding her out here, so the standoff's
+        // direction IS the orbit she flies while the captain is 23 floors down, and laying it along the
+        // Sun's radius put one arrival phase in 24 into the ice at +9.54 h. BerthState.CoOrbital lays it
+        // along the moon's own track instead; the arrival phase stops deciding anything.
         double arrivalEpoch = SimTime + CyclerWindow.CrossingSeconds;
-        ShipState arrival = BerthState.CoMoving(
+        ShipState arrival = BerthState.CoOrbital(
             _ephemeris, KaamosLore.IceMoonBodyId, arrivalEpoch, CyclerWindow.ArrivalOffsetMeters);
 
         // Committing the departure. No burn fires and no pulses are charged: the ship is not flying this,
@@ -211,7 +221,22 @@ public partial class Map
                 Undock();
             }
 
-            _ship = BerthState.CoMoving(
+            // #742 · &arrivalphase=N — wind the clock to the named arrival phase, immediately before the
+            // park is built off it, so the ride lets her go on the phase the tester named rather than on
+            // whichever one boot time happened to be. The moon's period is READ OFF THE MOON rather than
+            // typed in here: a moon's number belongs to the moon, and a copy of it in a client file is a
+            // bug class this repo keeps a table of. Set here and nowhere earlier, so the reward above is
+            // still priced at the epoch the offer would have priced it at — and the hull is rebuilt at the
+            // new epoch on the very next statement, so the clock never runs ahead of the ship (that is
+            // #733's freeze, and it is not being re-introduced in order to demonstrate #742).
+            if (_arrivalPhaseCheat is { } phase && BodyById(KaamosLore.IceMoonBodyId) is { } ice)
+            {
+                SimTime = CyclerWindow.ArrivalPhaseEpoch(ice.OrbitPeriod, phase);
+            }
+
+            // The same free park the honest ride builds (#742) — a cheat that parks you on a different
+            // orbit from the one the arc actually leaves you on is a cheat that playtests nothing.
+            _ship = BerthState.CoOrbital(
                 _ephemeris, KaamosLore.IceMoonBodyId, SimTime, CyclerWindow.ArrivalOffsetMeters);
             _passDirty = true;
         }
@@ -219,6 +244,10 @@ public partial class Map
         RequestVaultSave();
         ShowPulseMessage(
             "🧪 Test: PROJEKTI KAAMOS assembled, the berth-code resolved, the supply run filed, and the ship " +
-            "let go alongside the ice moon — the whole route already ridden. Add &land=1 to put boots on it.");
+            "let go alongside the ice moon — the whole route already ridden. Add &land=1 to put boots on it." +
+            (_arrivalPhaseCheat is { } p
+                ? $" Arrival phase {p}/{CyclerWindow.ArrivalPhases}, clock wound to t = {SimTime:F0} s — " +
+                  "#742's drift used to start here."
+                : ""));
     }
 }

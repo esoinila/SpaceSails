@@ -24,6 +24,14 @@ namespace SpaceSails.Core.Tests;
 /// wrong constant. Nothing about the facility's depth leaked anywhere. What reached the ship's parking
 /// solution was the moon's own MOTION, admitted into her state by a clock that moved while she did
 /// not.</para>
+///
+/// <para><b>#742 closed the other half.</b> These tests were written against
+/// <see cref="BerthState.CoMoving"/> because that was the construction the arc parked you with. It no
+/// longer is: the free parks now build through <see cref="BerthState.CoOrbital"/>, which lays the standoff
+/// along the moon's own track instead of the Sun's radius, so everything here that claims to fly "the real
+/// construction path" now flies that one. The two tests that deliberately reproduce the OLD, broken states
+/// — the frozen hull and the diving coast — stay on <c>CoMoving</c> on purpose and say so: they are #733's
+/// kept evidence, and evidence you have quietly re-based is not evidence.</para>
 /// </summary>
 public class TheParkedShipIsNotRunDownByTheMoonTests
 {
@@ -110,7 +118,7 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
         string moon = KaamosLore.IceMoonBodyId;
         CelestialBody ice = eph.Bodies.First(b => b.Id == moon);
 
-        ShipState parked = BerthState.CoMoving(eph, moon, 0, standoff);
+        ShipState parked = BerthState.CoOrbital(eph, moon, 0, standoff); // the live free park (#742)
         double gap = (parked.Position - eph.Position(moon, 0)).Length;
         double crossing = ShuttleRange.TravelSeconds(gap);
 
@@ -169,7 +177,7 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
 
         foreach (double epoch in ArrivalEpochs())
         {
-            ShipState parked = BerthState.CoMoving(eph, moon, epoch, CyclerWindow.ArrivalOffsetMeters);
+            ShipState parked = BerthState.CoOrbital(eph, moon, epoch, CyclerWindow.ArrivalOffsetMeters);
             double crossing = ShuttleRange.TravelSeconds(
                 (parked.Position - eph.Position(moon, epoch)).Length);
 
@@ -201,24 +209,25 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
     }
 
     /// <summary>
-    /// AND THE PART THIS FIX DOES NOT REACH, measured rather than waved at — because #733's second
-    /// checkpoint deserves a boundary, not a thumbs-up.
+    /// THE PART #733 COULD NOT REACH, AND #742 CLOSED — kept here, at this file's own 72-epoch resolution,
+    /// as the before-and-after of one number.
     ///
-    /// <para>The park itself is a co-orbital, not an orbit about the moon: <see cref="BerthState.CoMoving"/>
-    /// lays the standoff along the SUN-outward direction and hands the ship the MOON's velocity, so in
-    /// Saturn's frame she is on a slightly different ellipse with a slightly different period. Most
-    /// arrival phases simply lead or trail the ice forever. Some do not: of the 24 phases of one Enceladus
-    /// orbit, one (phase 2/24) closes on the moon and strikes it at +9.5 h, and two more (3/24 and 14/24)
-    /// pass inside 6e5 m — a couple of surface radii. That is a SLOW drift with the game's own
-    /// "orbit degrading — re-park or leave" banner in front of it, not the 21-minute ambush #733 was; it
-    /// is filed separately and it is not what this PR changes.</para>
+    /// <para>When this guard was written the park was <see cref="BerthState.CoMoving"/>: the standoff laid
+    /// along the SUN-outward direction with the MOON's velocity handed over, which in Saturn's frame is a
+    /// different ellipse whose shape depends entirely on the arrival phase. Of the 24 phases of one
+    /// Enceladus orbit, phase 2/24 closed on the moon and struck it at <b>+9.54 h</b>, and 3/24 and 14/24
+    /// passed inside 3.157e5 and 5.816e5 m — one and two surface radii. All this guard could hold then was
+    /// that nothing struck inside the two hours a captain can plausibly be off the ship, and it said so.</para>
     ///
-    /// <para>What this guard holds is the line that matters for the arc: nothing strikes inside an
-    /// excursion. If a change ever pulls the earliest strike down into the window a captain is actually
-    /// away for, this goes red with the number in hand.</para>
+    /// <para>#742 laid the standoff along the moon's own track instead (<see cref="BerthState.CoOrbital"/>),
+    /// so the bar moved from "not inside an excursion" to <b>nothing strikes at all, at any phase, for five
+    /// sim days</b> — and the assertion moved with it. A guard left asserting the old, weaker line would
+    /// have passed for free on the new construction and told nobody anything, which is this repo's fifth
+    /// named bug class. The tightest clearance is asserted too, so "no strike" can never be satisfied by a
+    /// hull that merely grazed.</para>
     /// </summary>
     [Fact]
-    public void TheCoOrbitalPark_HoldsForAWholeExcursion_EvenWhereItDoesNotHoldForever()
+    public void TheCoOrbitalPark_NowHoldsAtEveryArrivalPhase_NotMerelyForAnExcursion()
     {
         CircularOrbitEphemeris eph = Sol();
         var simulator = new Simulator(eph, timeStepSeconds: 1.0);
@@ -226,32 +235,54 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
 
         double earliest = double.PositiveInfinity;
         double earliestAt = 0;
+        double tightest = double.MaxValue;
+        double tightestAt = 0;
+        int swept = 0;
 
         foreach (double epoch in ArrivalEpochs())
         {
-            ShipState parked = BerthState.CoMoving(eph, moon, epoch, CyclerWindow.ArrivalOffsetMeters);
+            ShipState parked = BerthState.CoOrbital(eph, moon, epoch, CyclerWindow.ArrivalOffsetMeters);
             double crossing = ShuttleRange.TravelSeconds(
                 (parked.Position - eph.Position(moon, epoch)).Length);
             ShipState afloat = LoiterClock.Advance(simulator, eph, parked, crossing).Ship;
 
-            (SurfaceImpact.Crossing? struck, _, _) = FlyWatching(simulator, eph, afloat, 5.0 * 86_400.0, moon);
+            (SurfaceImpact.Crossing? struck, double closest, _) =
+                FlyWatching(simulator, eph, afloat, 5.0 * 86_400.0, moon);
+
             if (struck is { } hit && hit.SimTime - epoch < earliest)
             {
                 earliest = hit.SimTime - epoch;
                 earliestAt = epoch;
             }
+            else if (struck is null && closest < tightest)
+            {
+                tightest = closest;
+                tightestAt = epoch;
+            }
+
+            swept++;
         }
 
-        Assert.True(earliest > ExcursionSeconds,
-            $"the parked hull now strikes {moon} {earliest / 3600:F2} h after an arrival at epoch " +
-            $"{earliestAt:F0} s — inside the {ExcursionSeconds / 3600:F0} h a captain can be away. " +
-            "The measured margin when #733 was fixed was 9.5 h.");
+        Assert.Equal(72, swept);
+
+        Assert.True(double.IsPositiveInfinity(earliest),
+            $"the parked hull strikes {moon} {earliest / 3600:F2} h after an arrival at epoch " +
+            $"{earliestAt:F0} s. Since #742 the answer at every one of these {swept} epochs is NEVER, over " +
+            "five sim days — the last measured strike was phase 2/24 at +9.54 h, on the old Sun-outward park.");
+
+        // …and it did not merely miss: the tightest of the 72 keeps most of the 1e7 m it was let go with.
+        Assert.True(tightest > 0.5 * CyclerWindow.ArrivalOffsetMeters,
+            $"the tightest of {swept} arrivals closes to {tightest:e3} m (epoch {tightestAt:F0} s) — under " +
+            $"half the {CyclerWindow.ArrivalOffsetMeters:e2} m standoff it was let go at.");
     }
 
     /// <summary>Every arrival phase the honest route can land on: the window's 40-day grid makes the
     /// moon's phase free, so all 24 of one Enceladus orbit are swept, at three points around Saturn's own
-    /// year (the slow half of the geometry — the standoff is laid along the SUN-outward direction, so
-    /// where Saturn is in ITS orbit turns the offset relative to the moon's track).</summary>
+    /// year. Saturn's own phase mattered enormously to the OLD park (the standoff was laid along the
+    /// SUN-outward direction, so where Saturn stood in its orbit turned the offset relative to the moon's
+    /// track) and should now matter to nothing at all — which is exactly why all three are still flown.
+    /// A sweep narrowed to the axis the fix removed is a sweep that can no longer catch the fix coming
+    /// undone.</summary>
     private static IEnumerable<double> ArrivalEpochs()
     {
         const double MoonPeriod = 118_386.8;      // Enceladus, from the scenario
@@ -284,6 +315,9 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
         var simulator = new Simulator(eph, timeStepSeconds: 1.0);
         string moon = KaamosLore.IceMoonBodyId;
 
+        // #733's EVIDENCE, so it is built the way #733 found it: CoMoving, the Sun-outward park that was
+        // live that day. Deliberately not re-based onto #742's CoOrbital — evidence you have quietly
+        // rebuilt is not evidence, and what is under test here is the FREEZE, not the placement.
         ShipState parked = BerthState.CoMoving(eph, moon, 0, standoff);
         double gap = (parked.Position - eph.Position(moon, 0)).Length;
         double crossing = ShuttleRange.TravelSeconds(gap);
