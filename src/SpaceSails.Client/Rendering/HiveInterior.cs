@@ -146,9 +146,39 @@ public static class HiveInterior
         // A renderer that laid out its own bar counter would be one more caller doing geometry about a
         // building it does not own (§13.15).
         var tables = new List<(float X, float Y)>();
+
+        // ── #756 · THE FLOOR WEARS ITS ART ─────────────────────────────────────────────────────────────
+        //
+        // Owner, walking the biggest social room in the game and finding bare grid: "let's put todo to have
+        // gen-AI Bar image on the background like we have in space ports."
+        //
+        // THE SAME SEAM THE SHIP HAS USED SINCE THE 3D RENOVATION — DeckPlan.Backdrop, drawn by DeckView
+        // under every vector overlay, exactly the way the ship's CANTINA wears art/the-space-bar.jpg. This
+        // list was the bare `[]` in the constructor call at the bottom of this method; nothing about the
+        // renderer had to learn a new idea, because a hall is a floor zone and a floor zone is what a
+        // backdrop already was.
+        //
+        // WHICH PICTURE, AND OVER WHAT BOX, BOTH COME FROM CORE. The url is Hall.ArtUrl and the rectangle is
+        // the hall's own published box — so the day a hall is carved a du wider its art follows without
+        // anybody remembering to come here, and the park (#759) wears one by adding a row to HallArtFor and
+        // nothing else at all.
+        var backdrops = new List<DeckPlan.Backdrop>();
+
         foreach (UndergroundComplex.Amenity a in floor.Amenities)
         {
             consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
+            if (a.Hall is { ArtUrl: { } floorArt } painted)
+            {
+                // Top-left, W, H — the ship's own convention, and Y is the box's TOP edge because deck +y
+                // is up. Hall.X0/Y0/X1/Y1 are already min/max normalised where they are carved, so there is
+                // no orientation to work out here: a rib that runs down the field and one that runs up it
+                // hand this the same rectangle.
+                backdrops.Add(new(
+                    floorArt,
+                    (float)painted.X0, (float)painted.Y1,
+                    (float)(painted.X1 - painted.X0), (float)(painted.Y1 - painted.Y0),
+                    UndergroundComplex.HallArtAlpha));
+            }
             // #751 · A hall's plate is stencilled beside its DOOR, which is on whichever face the rib is
             // on — so Core says where, exactly as it says where the board hangs. The 7.6 du offset below is
             // measured off a 15 x 12 room and would hang the sign in mid-floor in a room fifty du deep.
@@ -344,7 +374,7 @@ public static class HiveInterior
         }
 
         return new DeckPlan(
-            [.. walls], [.. consoles], [.. labels], [],
+            [.. walls], [.. consoles], [.. labels], [.. backdrops],
             spawnX: SpawnOn(field).X, spawnY: SpawnOn(field).Y,
             droidCount: droidCount, fillDroids: fillDroids,
             location: (_, _) => floor.Name,

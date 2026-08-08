@@ -908,6 +908,29 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the top pressurised floor, where the owner put them
                 }
             }
+            else if (pair.StartsWith("counter=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #756 dev cheat: /map?counter=1 boots THE COUNTER — the B1 cantina hall of a deep site,
+                // with the captain standing at the service spot, one URL from the front door.
+                //
+                // Owner's standing rule for every new feature ("testing is a feature"), and this one has the
+                // longest walk in the game in front of it: find a rock with a lab, land, find the shed, ride
+                // the lift, cross a hall the size of a hangar. So it implies the whole route the same way
+                // ?tablescene=1 does rather than inventing a fifth spelling of it — the only difference is
+                // which fixture the last leg ends at.
+                //
+                // It forces nothing about the room. The watch, the rota and the purse are whatever the boot
+                // gave you: a cheat that handed you the coin would be testing a counter that does not ship.
+                string candidate = Uri.UnescapeDataString(pair["counter=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _counterCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the hall, which is the only floor with a counter on it
+                }
+            }
             else if (pair.StartsWith("watch=", StringComparison.OrdinalIgnoreCase))
             {
                 // #751 dev cheat: /map?watch=N pins which SHIFT the Hive's canteen is on.

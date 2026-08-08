@@ -244,6 +244,24 @@ neither room has anything to do with what is below.
 - **Feeling:** #601's funding trail as a room. The money does not mind being seen feeding contractors; it
   minds being asked. Nobody in frame finds any of it strange.
 
+**#756 · The hall's art is now worn TWICE.** Besides the first-entry card above, `b1-cantina-hall.jpg` is the
+floor's own **backdrop** — drawn under the vector overlay across the hall's published box, through the same
+`DeckPlan.Backdrop` seam the ship's CANTINA has worn `art/the-space-bar.jpg` through since the 3D renovation.
+Core publishes the url on the hall (`UndergroundComplex.Hall.ArtUrl`, chosen by `HallArtFor`) so the renderer
+picks nothing; alpha is `HallArtAlpha` (0.72, a shade under the ship's 0.9 because this room is thirty times a
+cabin's floor area) and walls, plates, tops, consoles and the captain all draw OVER it. Any hall wears one by
+adding a row to `HallArtFor` — the park (#759) and the head office's dining room need nothing else.
+
+### `art/b1-bar-desk.jpg` — 🍹 THE COUNTER'S OWN DESK
+
+- **Slot:** `CounterService`'s `Barkeep.DeskArtUrl`, drawn on the **counter service card** (#756) — the dialog
+  that opens when the captain presses `[E]` at THE COUNTER. Not a floor backdrop and not a first-entry card:
+  it is the picture of the thing you are standing at, on the panel you are standing at it through.
+- **Composition:** a long polished counter top with a brass rail, backlit bottle shelves glowing out of carved
+  rock, a brass espresso machine venting steam with cups warming on top, worn red leather stools — and **NO
+  ONE behind it**. No legible lettering.
+- **Feeling:** skeleton canon (#618) said as furniture. The counter does its own serving, which is worse.
+
 ### `art/b1-cabinet.jpg` — 🚪 THE CABINET
 
 - **Slot:** `UndergroundComplex.CabinetArtUrl`, raised once **total** (never once per door) on entering any of

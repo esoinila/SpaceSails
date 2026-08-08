@@ -90,6 +90,13 @@ public static class DevStarts
         // shipped the gated button, the promise it makes and the beat it pays off, and closed with the note
         // that none of the three had been seen in a browser — "a scene nobody can reach on demand is a scene
         // that ships broken", written into the same file that then could not follow it.
+        // #756 · The counter that takes orders. Owner walked to this exact fixture in a live playtest and
+        // could not buy a thing; the fix is worth nothing if the next tester has to make the same walk to
+        // check it. Stands you AT the service spot, purse and all, one press from the card.
+        new("🍹", "The counter, ready to order",
+            "B1 of a deep site, standing at THE COUNTER. Press E: the service card opens on the menu — "
+            + "coffee, a fry-up, and three pours that joke about the deep. Buying answers on the card (#756).",
+            "/map?counter=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

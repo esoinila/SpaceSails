@@ -22,6 +22,13 @@ public enum DrinkCategory
     /// is a nod to the neighbourhood, and it loosens neighbourhood gossip: who runs what through THIS
     /// port.</summary>
     Specialty,
+
+    /// <summary>#756 · Not a drink at all. Owner, walked up to the B1 counter and unable to buy anything:
+    /// <i>"you don't have drink or food… what kind of bar is that."</i> A tray goes on the same menu as a
+    /// glass because it is bought at the same counter with the same coin — but it is FOOD, so it does not
+    /// route through the tot law and it never makes the deck tilt. Last in the enum on purpose: the three
+    /// above it are load-bearing for the tell channels and their order is read by seeded picks.</summary>
+    Food,
 }
 
 /// <summary>
@@ -31,7 +38,18 @@ public enum DrinkCategory
 /// house voice does the lounge-lizard wink itself). Pure data — a <c>readonly record struct</c> so a
 /// save layer or a test handles it flat.
 /// </summary>
-public readonly record struct Drink(string Id, string Name, DrinkCategory Category, string Flavor);
+/// <param name="Price">#756 · What THIS item costs, or 0 for "whatever the house charges a glass"
+/// (<see cref="Interior.Barkeep.DrinkPrice"/>). Every haven bar prices its whole card at one rate and
+/// says so on the header, so they all leave this 0; a venue whose coffee is 2 cr and whose fry-up is 9
+/// writes the numbers down here rather than growing a second menu type beside this one.</param>
+public readonly record struct Drink(
+    string Id, string Name, DrinkCategory Category, string Flavor, int Price = 0)
+{
+    /// <summary>What this item actually costs at a counter charging <paramref name="houseRate"/> a
+    /// glass. One place, so the button's label, the button's enabled-ness and the debit can never come
+    /// to three different answers — the exact shape of bug this repo has named twice.</summary>
+    public int PriceAt(int houseRate) => Price > 0 ? Price : houseRate;
+}
 
 /// <summary>
 /// The talking drinks menu (owner, Sunday morning 2026-07-19: "The drinks menu should have more than
@@ -75,11 +93,16 @@ public static class DrinkMenu
     }
 
     /// <summary>The full menu at one bar: the shared staples, then this bar's local specialty last (the
-    /// house's own pour reads at the bottom of the card, where a special belongs).</summary>
+    /// house's own pour reads at the bottom of the card, where a special belongs).
+    ///
+    /// <para>#756 · …unless the venue brought its OWN card (<see cref="Barkeep.House"/>), in which case
+    /// that is the whole menu and the staples do not appear. A counter 150 m under a rock does not stock
+    /// Space Gin, and a menu seam that could only ADD to a fixed spine would have made every venue in the
+    /// game a spaceport bar with extras. Machinery here, content there — one call, either way.</para></summary>
     public static IReadOnlyList<Drink> For(Barkeep keep)
     {
         ArgumentNullException.ThrowIfNull(keep);
-        return [.. Staples, SpecialtyOf(keep)];
+        return keep.House is { Count: > 0 } own ? own : [.. Staples, SpecialtyOf(keep)];
     }
 
     /// <summary>Every drink anywhere in the system — the shared staples plus every bar's specialty, one
