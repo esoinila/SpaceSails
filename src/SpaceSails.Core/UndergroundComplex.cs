@@ -3692,16 +3692,31 @@ public static class UndergroundComplex
     public const string VacuumCardLabel = "🫁 DEAD AIR";
 
     /// <summary>What the first dead floor says. It states the rule and does the sum — a warning that makes
-    /// the captain work out their own margin is a warning delivered too late.</summary>
+    /// the captain work out their own margin is a warning delivered too late.
+    ///
+    /// <para>#740 · And it does the sum in the SUIT'S units, off <see cref="SuitAir.Clock"/>, because the
+    /// card and the gauge are describing one tank and a captain compares them by eye.</para></summary>
     public static string VacuumCard(string bodyId, int level, double airSeconds)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         int band = BandOf(level);
         int refuge = BandTop(band);          // the top of this band always holds pressure
         int floorsUp = -level - -refuge;     // how many floors between here and breathable
-        string tank = airSeconds > 0
-            ? $"{(int)(airSeconds / 60)} min {(int)(airSeconds % 60):00} s"
-            : "whatever is left";
+
+        // #740 · THE CARD READS THE GAUGE, it does not do its own sum. This used to format the raw play
+        // budget as minutes and seconds — "you have 21 min 01 s" — while the HUD two seconds later on the
+        // same floor said AIR 8h09. Both sentences were about the tank and both were honest about the number
+        // they held; they were simply holding it in different units, because the card was the one surface in
+        // the game that had never gone through SuitAir. A captain cannot be expected to know which of two
+        // instruments is quoting the designer's stopwatch, so there is now one clock and the card asks for it.
+        //
+        // …and the sentence OWNS the quantity: it names the instrument the figure came off, so that a captain
+        // who glances at their wrist a second later reads the same characters back, and so that the next hand
+        // to edit this copy cannot quietly re-derive the number from something else.
+        string margin = airSeconds > 0
+            ? $"Your gauge reads {SuitAir.Clock(airSeconds)}, and that is the figure it will go on counting " +
+              "down the whole way up."
+            : "Your gauge is already reading empty, which is its own instruction.";
 
         string upstairs = floorsUp == 0
             ? "this floor"
@@ -3714,7 +3729,7 @@ public static class UndergroundComplex
             "THE RULE, because it is the only one down here that can kill you: the TOP FLOOR OF EVERY SHAFT " +
             "BAND holds pressure. Nothing else does. That is where the lobbies were, and the fans on those " +
             "floors are still turning on somebody's account.\n\n" +
-            $"The nearest floor of air is {NameOf(bodyId, refuge)} — {upstairs}. You have {tank}.\n\n" +
+            $"The nearest floor of air is {NameOf(bodyId, refuge)} — {upstairs}. {margin}\n\n" +
             // #608 · AND THE OTHER HALF, now that it is true. This card used to end "there are no shelters
             // down here", which was honest when it was written and is now the most dangerous sentence in the
             // game: a captain who believes it will ration a tank they did not have to ration. Owner: "there
