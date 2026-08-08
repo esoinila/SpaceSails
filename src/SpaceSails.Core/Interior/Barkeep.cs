@@ -12,6 +12,16 @@ namespace SpaceSails.Core.Interior;
 /// re-implemented here — the client routes a poured drink through the exact same rum-tot law the Galley
 /// uses (one wobble law, aboard and ashore).</para>
 /// </summary>
+/// <param name="House">#756 · This venue's OWN card, or null to pour the shared staples plus the house
+/// special (<see cref="DrinkMenu.For"/>). The one field that lets a counter which is not a spaceport bar
+/// be served by this machine instead of forking it.</param>
+/// <param name="Welcome">#756 · What the counter says when you lean on it, when the default greeting is
+/// wrong for the place. Null keeps the barkeep's own line.</param>
+/// <param name="DeskArtUrl">#756 · The picture of THIS desk, drawn on the service card. Null draws no
+/// picture, which is every haven bar today.</param>
+/// <param name="SelfService">#756 · True where there is nobody behind it. Owner's canon for the Hive
+/// (#618, skeleton staff): the counter does its own serving, which is worse. A self-service counter has
+/// no round to stand and no keep to ask, so the card does not offer either.</param>
 public sealed record Barkeep(
     string BodyId,
     string Name,
@@ -20,10 +30,16 @@ public sealed record Barkeep(
     string DrinkFlavor,
     int DrinkPrice,
     int RoundPrice,
-    IReadOnlyList<string> Rumors)
+    IReadOnlyList<string> Rumors,
+    IReadOnlyList<Drink>? House = null,
+    string? Welcome = null,
+    string? DeskArtUrl = null,
+    bool SelfService = false)
 {
-    /// <summary>The barkeep's in-character welcome when you lean on the bar.</summary>
-    public string Greeting => $"“What'll it be? House special's {DrinkName} — {DrinkPrice} cr a glass.”";
+    /// <summary>The barkeep's in-character welcome when you lean on the bar — or the venue's own, where
+    /// the venue brought one (#756: a counter with nobody behind it cannot say "what'll it be").</summary>
+    public string Greeting => Welcome
+        ?? $"“What'll it be? House special's {DrinkName} — {DrinkPrice} cr a glass.”";
 
     /// <summary>A cheap tip, rotated deterministically by sim time (hourly) — flavor intel for now, the
     /// same no-wall-clock idiom the news wire and rum lines use, so it never flickers frame to frame.</summary>

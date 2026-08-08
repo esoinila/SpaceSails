@@ -4017,6 +4017,28 @@ public partial class Map
                 continue;
             }
 
+            // ── #756 · A COUNTER THAT TAKES ORDERS ANSWERS THE PRESS ITSELF ───────────────────────────
+            //
+            // Owner, live at this exact fixture: "HOW DO I ORDER A DRINK FROM THE BAR?????? I walk to the
+            // bar to buy a drink... not possible... WHY?" What is below was the WHOLE of what pressing E
+            // here ever did — a paragraph ABOUT a counter, read standing at the counter, with a purse in
+            // your pocket and nothing in the building to spend it on.
+            //
+            // CORE SAYS WHETHER THIS FIXTURE SERVES, and the card that opens is the very one the Tilt bar
+            // has opened since #247. The room's first-entry paragraph still lands — through FileNote rather
+            // than ShowAndFile, because the pulse half would now play UNDER the card's own blur (#686/#736)
+            // and a line said where nobody is looking is a line not said.
+            if (Core.Interior.CounterService.For(ex.Stop.Body.Id, a.Use) is { } counter)
+            {
+                if (ex.HiveAmenitiesRead.Add(HiveInterior.RoomKey(ex.Floor, i)))
+                {
+                    FileNote(UndergroundComplex.AmenityLine(ex.Stop.Body.Id, a.Use), "🍽");
+                    RequestVaultSave();   // the field note is a possession too (#587)
+                }
+                OpenCounterService(counter);
+                return;
+            }
+
             // FILED, not flashed. The mess's manifest is a lead about somewhere else entirely and the bar's
             // paint is the only warm thing in the building; both are worth being able to re-read, and a line
             // that faded in eight seconds would be #587's lesson unlearned. Once per room per excursion.
@@ -5223,6 +5245,9 @@ public partial class Map
                 // #746 · …and ?tablescene=1 goes the last leg too, because the scene under test is a
                 // conversation at a table and the lift head is the other end of the floor from it.
                 StandInTheCanteenIfAsked(landedOn);
+
+                // #756 · …and ?counter=1 goes the same last leg to the other fixture in that room.
+                StandAtTheCounterIfAsked(landedOn);
             }
             return;
         }
@@ -5240,6 +5265,38 @@ public partial class Map
     // roused in the DEEP and come to you (#461) — never set down on the landing pad, which read as the Old
     // Ones somehow knowing where the shuttle would touch down.
     private int _reeverAmbushCheat;
+
+    /// <summary>#756 QA · <c>?counter=1</c> — the whole route to a counter that takes orders, booted. Set in
+    /// Map.Sim's cheat parse; read here, where the last leg is walked.</summary>
+    private bool _counterCheat;
+
+    /// <summary>#756 QA · Stand the captain AT THE COUNTER when <c>?counter=1</c> asked for it.
+    ///
+    /// <para>The amenity's own published spot, which is the service side of the counter and the very square
+    /// the console dot is drawn on — so this walks the captain to the fixture rather than to a coordinate
+    /// somebody measured off a picture of it. Through <c>StandCaptainAt</c>, so the pad-crew net (#681) has
+    /// its say if the hall ever carves a table onto that square.</para></summary>
+    private void StandAtTheCounterIfAsked(SurfaceExcursion ex)
+    {
+        if (!_counterCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        foreach (UndergroundComplex.Amenity a in
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
+        {
+            if (Core.Interior.CounterService.For(ex.Stop.Body.Id, a.Use) is null)
+            {
+                continue;
+            }
+
+            ShowPulseMessage(
+                "🧪 DEV ?counter=1: THE COUNTER, in reach. Press E to open the card and order something.");
+            StandCaptainAt(a.X, a.Y, "you step up to the counter");
+            return;
+        }
+    }
 
     // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of
     // seconds. It does NOT change what happens — the beat, the variant roll and the (zero) cost are the

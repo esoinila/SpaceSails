@@ -1222,9 +1222,17 @@ public static class UndergroundComplex
     /// <param name="PlateX">Where the room's own stencilled plate reads from — down the door wall, a
     /// quarter of the way along, clear of the board. Same reason as <paramref name="BoardX"/>.</param>
     /// <param name="PlateY">The same.</param>
+    /// <param name="ArtUrl">#756 · The picture this floor WEARS — drawn under the vector overlay, stretched
+    /// across the hall's own box, the same seam the ship's rooms have used since the 3D renovation (the
+    /// CANTINA wears <c>art/the-space-bar.jpg</c>). Owner: <i>"let's put todo to have gen-AI Bar image on
+    /// the background like we have in space ports."</i> Published HERE, beside the box it is stretched over,
+    /// because a renderer choosing which picture goes on which floor would be a second opinion about a room
+    /// it does not own — the discipline <paramref name="BoardX"/> and <paramref name="PlateX"/> already
+    /// answer to. Null leaves the floor bare, which is every hall nobody has painted yet.</param>
     public readonly record struct Hall(
         double X0, double Y0, double X1, double Y1, int SeatTarget, IReadOnlyList<Cabinet> Cabinets,
-        double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0)
+        double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0,
+        string? ArtUrl = null)
     {
         /// <summary>Is the captain inside the hall? Cabinets are inside it, by construction.</summary>
         public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
@@ -2148,7 +2156,8 @@ public static class UndergroundComplex
             new Hall(
                 x0, y0, x1, y1, HallSeatsFor(bodyId, use), cabinets,
                 X(HallDoorAisleDu / 2.0), Y(length / 2.0),
-                X(HallDoorAisleDu / 2.0), Y(length * 0.25)),
+                X(HallDoorAisleDu / 2.0), Y(length * 0.25),
+                HallArtFor(bodyId, use)),
             X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
             laid);
     }
@@ -3574,6 +3583,29 @@ public static class UndergroundComplex
 
     /// <summary>#751 · The B1 cantina hall, painted.</summary>
     public const string CantinaHallArtUrl = "art/b1-cantina-hall.jpg";
+
+    /// <summary>#756 · How opaque a hall's floor art is drawn. A shade under the ship's own 0.9f: the hall
+    /// is thirty times the floor area of a cabin, so the same alpha that reads as texture behind a 12×7
+    /// cantina reads as a photograph the deck grid is lost in. Legibility first — the walls, the plates,
+    /// the tops and the captain all draw OVER this.</summary>
+    public const float HallArtAlpha = 0.72f;
+
+    /// <summary>#756 · Which picture a hall's floor wears, or null for a bare deck.
+    ///
+    /// <para>Owner, on walking into the biggest social room in the game and finding bare grid: <i>"let's
+    /// put todo to have gen-AI Bar image on the background like we have in space ports."</i> One row per
+    /// painted hall, asked of the building the same way its plates and its seats are — so the park, the
+    /// mess and the head office's dining room each take a row here when their art lands, and nothing else
+    /// anywhere has to learn a new idea to wear one.</para>
+    ///
+    /// <para>The branch office's UPPER canteen is the one painted so far, and the art is the very frame
+    /// #755's card already shows: the same room, from the door, so walking in and reading the card are two
+    /// looks at one place rather than two places.</para></summary>
+    public static string? HallArtFor(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return use == Comfort.UpperCanteen && !IsHeadOffice(bodyId) ? CantinaHallArtUrl : null;
+    }
 
     /// <summary>#751 · What the card is called.</summary>
     public const string CantinaHallLabel = "🍸 THE HALL";
