@@ -4749,6 +4749,24 @@
     margin-bottom: 0.6rem;
 }
 
+/* #783 — the table you are sitting at, on the panel you are sitting at it through. The counter's own
+   .bar-desk-art shape (capped band, object-fit crop, so a 16:9 plate is cropped rather than squashed), as
+   its OWN class because the two pictures frame differently: everything that matters in both of these — the
+   empty chair, the boots, the glass, the papers — sits in the lower half of the frame, so the crop is pulled
+   down where the counter's sits near the middle. Sharing one class and tuning it for the desk would silently
+   re-frame the table. #782: the image is in flow ABOVE the prose and nothing is ever written over it, so
+   there is no text here that could fail to read. */
+.table-art {
+    display: block;
+    width: 100%;
+    max-height: 9.5rem;
+    object-fit: cover;
+    object-position: center 72%;
+    border-radius: 0.3rem;
+    margin: 0.3rem 0 0.5rem;
+    border: 1px solid rgba(160, 200, 220, 0.35);
+}
+
 /* #680 · THE ANSWER, INSIDE THE DIALOG. Styled like the satchel's own outcome row for the reason #680's
    guard states out loud: an unstyled answer in a styled dialog is a bug report waiting to be filed. */
 .table-outcome {

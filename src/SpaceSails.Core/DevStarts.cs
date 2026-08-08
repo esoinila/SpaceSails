@@ -132,11 +132,11 @@ public static class DevStarts
         // rows exist for the same reason #693's does: whether anybody crosses the room is a seeded roll at
         // one top on one shift, so without a lever the somebody-comes beat is reachable only by luck and the
         // told nobody-came outcome only by more of it.
-        new("🪑", "A table with nobody at it — take it, and wait",
-            "B1's canteen with the captain standing at a FREE top. [E] takes the table; WAIT holds it. Somebody is forced to cross the room on the next wait: she asks for the chair, offers the round, and then says what she came over for (#757).",
+        new("🪑", "A table with nobody at it — sit down, and sit a while",
+            "B1's canteen with the captain standing at a FREE top plated SIT DOWN. [E] sits you down and the panel says so in its first line, over a picture of the chair opposite; SIT A WHILE holds the table. Somebody is forced to cross the room on the next one: she asks for the chair, offers the round, and then says what she came over for (#757, #783).",
             "/map?tablescene=free&approach=1"),
         new("🪑🕳", "…and the watch where nobody comes",
-            "The same table on the small watch with the approach forced OFF. Wait as long as you like: an eighty-seat hall answers, in words, that nothing is going to happen. That is the beat, not a bug (#757).",
+            "The same table on the small watch with the approach forced OFF. Sit as long as you like: an eighty-seat hall answers, in words, that nothing is going to happen. That is the beat, not a bug — and on a watch this quiet the sit is the RESTING one, boots up on the spare chair (#757, #783).",
             "/map?tablescene=free&watch=5&approach=0"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",

@@ -291,6 +291,54 @@ one by publishing a `SpotArt` where it is carved — the park's windows (#759) a
 - **Feeling:** the menu jokes about the deep and is never right about it. The photographs are appetising in
   the way a company canteen's photographs are appetising, which is its own joke.
 
+### `art/b1-your-own-table.jpg` — 🪑 THE TABLE YOU TOOK (waiting)
+
+- **Slot:** `SittingAlone.WaitingArtUrl`, drawn on the **sit panel** (#757/#778) — the card that opens when the
+  captain presses `[E]` at a top with nobody at it. Same idiom as the counter's desk one section up: the
+  picture of the thing you are sitting at, on the panel you are sitting at it through. Chosen by
+  `SittingAlone.ArtFor(resting: false)`, off the same flag that picks the panel's opening sentence, so the
+  picture and the prose can never describe two different minutes.
+- **Composition:** first person from your own chair. Worn scratched steel tops, a tin mug and a folded sheet of
+  paper in front of you, and **the chair opposite pulled slightly out and empty**. The hall alive and blurred
+  beyond — working people eating and arguing in overalls, poured pillars, hanging lamps — and, small in the far
+  background, a keep at the lit counter. No lettering.
+- **Feeling:** the empty chair **is** the wait beat. Sitting down alone in a room where nobody knows you is a
+  choice to be findable, and this is that choice with nobody in it yet.
+
+### `art/b1-short-rest.jpg` — 🥾 THE SHORT REST (resting)
+
+- **Slot:** `SittingAlone.RestingArtUrl`, the SECOND state of the same panel — `ArtFor(resting: true)`, which
+  `SittingAlone.SitReadsAsRelaxed` decides: a pour bought at the counter still in hand (#784's own
+  `APourInFrontOfYou`, the one reading there is), **or** a quiet watch. Owner,
+  live: *"Definitely a cold drink and legs up on adjacent chair and some notebooks / papers on table when we
+  rest there and some mystic looking food."*
+- **Composition:** the same table and the same chair — **your boots up on it**, laces trailing. A tall sweating
+  glass of something amber, an open notebook covered in handwriting with loose papers and a pen beside it, and
+  two tin plates of iridescent violet-and-green **food nobody would recognise**. The hall carries on behind,
+  warm and busy. No lettering.
+- **Feeling:** the game's one good minute. Nobody in this building needs anything from you, and it will not
+  last. The empty chair of the waiting plate is the chair your feet are on — same table, same minute, other
+  posture.
+
+**Canon note (#783):** the relaxation prose is the owner's own, lifted verbatim into `SittingAlone`
+(`RelaxedSitLine`, `TheDrinkLine`, `StoodUpRelaxedLine`). The rest has **two openings**, ruled at canon
+review: the filed line names a cold glass sweating into your hand, and the trigger fires on a quiet watch
+*with or without* a purchase — so a drinkless rest gets `RelaxedSitDryLine` instead (#740: a sentence owns its
+own facts). The boots are the rest and are always there; the glass is the purchase and is named only when
+somebody bought one. Whether a rest *heals* anything is #784's lane; this pair of pictures and the lines
+beside them are the register, not the mechanic.
+
+**Seam with #784, stated once:** `Map.CaptainIsRestingAtATable` is *"is the captain at a solo table"* — the
+short rest's own trigger, true on every solo sit. `SittingAlone.SitReadsAsRelaxed` is *"does this sit read as
+relaxed"* — words and pictures only. A back-to-the-wall watch still gives your breath back; it is simply not
+the sentence about boots, and not the picture of them. The **pour** has ONE reading and it is #784's
+(`Map.APourInFrontOfYou`), because a panel keeping its own window could say *"the cold glass sweat into your
+hand"* on a beat the rest engine had already decided there was no pour.
+
+**Guarded by** `RevealPlatesArePaintedTests.TheTablesTwoStatesArePainted` (both on disk, neither borrowing the
+counter's canvas) and `YouCanSitAtAnEmptyTableTests.THE_SIT_PANEL_DrawsTheTableItIsAPanelFor` (in the card's
+own subtree, framed, and with no text over it — #782).
+
 ### `art/b1-cabinet.jpg` — 🚪 THE CABINET
 
 - **Slot:** `UndergroundComplex.CabinetArtUrl`, raised once **total** (never once per door) on entering any of

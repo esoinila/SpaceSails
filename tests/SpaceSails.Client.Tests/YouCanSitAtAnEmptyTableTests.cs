@@ -356,5 +356,109 @@ public sealed class YouCanSitAtAnEmptyTableTests
         Assert.Contains("tablescene=free", guide, StringComparison.Ordinal);
         Assert.Contains("approach=1", guide, StringComparison.Ordinal);
         Assert.Contains("approach=0", guide, StringComparison.Ordinal);
+
+        // #783 · …and the cheat's own row says the labels a tester will actually read on the screen. A
+        // testing guide that still says "take the table" sends the owner looking for a button nobody drew.
+        Assert.Contains("SIT DOWN", guide, StringComparison.Ordinal);
+        Assert.Contains("SIT A WHILE", guide, StringComparison.Ordinal);
+    }
+
+    // ── #783 · THE PANEL WEARS THE TABLE, AND THE RIGHT ONE OF ITS TWO PICTURES ───────────────────────
+
+    /// <summary>
+    /// #783 · THE SIT PANEL DRAWS THE TABLE IT IS A PANEL FOR.
+    ///
+    /// <para>Owner, live at a taken table: <i>"the pop up could have Gen AI here."</i> Same source-shape
+    /// #772's counter guard uses for <c>keep.DeskArtUrl</c>: cut the card's own block out of the razor and
+    /// prove the picture is IN it, because an image rendered anywhere else is an image behind the backdrop's
+    /// blur (#680's whole lesson, applied to pixels).</para>
+    ///
+    /// <para><b>Proven RED</b> on the shipped panel — no image in the block at all:
+    /// <i>Assert.Contains() Failure: Sub-string not found. String: "@if (_table is { } tab)…"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void THE_SIT_PANEL_DrawsTheTableItIsAPanelFor()
+    {
+        string razor = Source("Pages", "Map.razor");
+        int start = razor.IndexOf("@if (_table is { } tab)", StringComparison.Ordinal);
+        Assert.True(start >= 0, "Map.razor no longer has the table card this guard knows how to find.");
+        string block = razor[start..razor.IndexOf("@if (_showSatchel)", start, StringComparison.Ordinal)];
+
+        Assert.Contains("tab.ArtUrl", block, StringComparison.Ordinal);
+        Assert.Contains("class=\"table-art\"", block, StringComparison.Ordinal);
+
+        // The url is CORE's, per state. A razor that named a jpg would be a second answer to "which picture
+        // is this sitting" — and the one that could not be kept in step with the prose beside it.
+        Assert.DoesNotContain(".jpg", block, StringComparison.Ordinal);
+
+        // #782 · The picture is framed, and the prose is NOT written over it — the card's own text keeps its
+        // own class on its own background, which is how the contrast law is kept here by construction.
+        Assert.Contains("class=\"table-outcome\"", block, StringComparison.Ordinal);
+        Assert.True(
+            block.IndexOf("class=\"table-art\"", StringComparison.Ordinal)
+                < block.IndexOf("class=\"table-outcome\"", StringComparison.Ordinal),
+            "the answer is drawn above the picture — #782's contrast law is only free while no text sits " +
+            "on the art.");
+
+        string css = Source("Pages", "Map.razor.css");
+        int at = css.IndexOf(".table-art {", StringComparison.Ordinal);
+        Assert.True(at >= 0, "no .table-art rule — a bare image stretches a 16:9 plate across the card.");
+        string rule = css[at..css.IndexOf('}', at)];
+        Assert.Contains("object-fit: cover", rule, StringComparison.Ordinal);
+        Assert.Contains("max-height", rule, StringComparison.Ordinal);
+
+        // Both plates are on disk. The art seam hides its own failure, so this is the only place a missing
+        // painting can be made to say anything at all.
+        foreach (string art in new[] { SittingAlone.WaitingArtUrl, SittingAlone.RestingArtUrl })
+        {
+            string file = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "wwwroot", art);
+            Assert.True(File.Exists(file),
+                $"{art} is not in wwwroot/art — the panel would draw a hole and never say so.");
+        }
+    }
+
+    /// <summary>
+    /// #783 · WHICH PICTURE AND WHICH SENTENCE COME OUT OF THE ONE ANSWER.
+    ///
+    /// <para>The register is <see cref="SittingAlone.SitReadsAsRelaxed"/>'s, decided once when the captain sits, and
+    /// the opening line is the SCENE's rather than a constant the client reached for. That is the whole
+    /// anti-mismatch law here: a client free to pin one of the two registers by hand is a client free to
+    /// print "you put your boots up on the spare chair" over a picture of an empty one.</para>
+    ///
+    /// <para><b>Proven RED</b> on #778's own <c>TryTakeTable</c>, which read
+    /// <c>Outcome = SittingAlone.TookTheTableLine</c> — the <c>DoesNotContain</c> below fails on it.</para>
+    /// </summary>
+    [Fact]
+    public void WHICH_PICTURE_AND_WHICH_SENTENCE_ComeFromTheOneAnswer()
+    {
+        string table = Source("Pages", "Map.Table.cs");
+        int take = table.IndexOf("private bool TryTakeTable()", StringComparison.Ordinal);
+        Assert.True(take >= 0, "Map.Table.cs has no TryTakeTable.");
+        string body = table[take..table.IndexOf("\n    /// <summary>Stand up.", take, StringComparison.Ordinal)];
+
+        Assert.Contains("SittingAlone.SitReadsAsRelaxed(", body, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.TheTable(relaxed, drink)", body, StringComparison.Ordinal);
+        Assert.Contains("Outcome = sat.Opening", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("SittingAlone.TookTheTableLine", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("RelaxedSitLine", body, StringComparison.Ordinal);
+
+        // The picture is chosen off the SAME flag, in Core, and never in the markup.
+        Assert.Contains("SittingAlone.ArtFor(Relaxed)", table, StringComparison.Ordinal);
+
+        // THE DRINK IS ASKED OF #784, NOT ANSWERED AGAIN HERE. Map.Seated.cs owns the one reading of the
+        // counter's pour (its window, and its exclusion of a drunk captain), and it is the same fact the
+        // short rest doubles its rate on — so a panel that kept a second window could print "the cold glass
+        // sweat into your hand" on a beat the rest engine had already decided there was no pour.
+        Assert.Contains("APourInFrontOfYou", table, StringComparison.Ordinal);
+        Assert.DoesNotContain("_lastRumMs", table, StringComparison.Ordinal);
+        Assert.DoesNotContain("_rumTots", table, StringComparison.Ordinal);
+        Assert.DoesNotContain("_lastTimestampMs", table, StringComparison.Ordinal);
+
+        // …and when she leaves, the register is ASKED again rather than remembered — a glass goes warm.
+        int back = table.IndexOf("private void BackToYourOwnTable(", StringComparison.Ordinal);
+        Assert.True(back >= 0, "the table stops being yours again — BackToYourOwnTable is gone.");
+        string again = table[back..table.IndexOf("\n    /// <summary>", back, StringComparison.Ordinal)];
+        Assert.Contains("SittingAlone.SitReadsAsRelaxed(", again, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.TheTable(t.Relaxed, t.DrinkInHand)", again, StringComparison.Ordinal);
     }
 }

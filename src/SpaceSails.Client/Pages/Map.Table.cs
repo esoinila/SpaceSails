@@ -93,7 +93,7 @@ public partial class Map
             if (_freeTableCheat && FirstFreeTop(ex, a) is { } free)
             {
                 ShowPulseMessage(
-                    "🧪 DEV ?tablescene=free: a table with nobody at it. Press E to take it, then Wait.");
+                    "🧪 DEV ?tablescene=free: a table with nobody at it. Press E to SIT DOWN, then SIT A WHILE.");
                 StandCaptainAt(free.X, free.Y, "you step into the canteen");
                 return;
             }
@@ -149,6 +149,25 @@ public partial class Map
         /// <summary>#757 · Whether this is a table you took ALONE — nobody opposite, and WAIT is the whole
         /// of the verb. It is the one fact the panel needs that is not on the scene.</summary>
         public bool Solo { get; set; }
+
+        /// <summary>#783 · Whether this sitting READS AS RELAXED — boots up on the spare chair, which is a
+        /// different sentence, a different goodbye and a different picture.
+        /// <see cref="SittingAlone.SitReadsAsRelaxed"/> decides it; this carries the answer, so the prose and
+        /// the art cannot come to two different views of the same minute.
+        ///
+        /// <para>NOT the same question as #784's <see cref="CaptainIsRestingAtATable"/>, and deliberately
+        /// named apart from it: every solo sit is a short REST for the body (that is #784's mechanic), while
+        /// this is whether the sit reads relaxed in WORDS AND PICTURES. A back-to-the-wall watch still gives
+        /// your breath back; it is simply not the sentence about boots.</para></summary>
+        public bool Relaxed { get; set; }
+
+        /// <summary>#783 · …and whether there is a bought pour in it, which adds the drink's own line.</summary>
+        public bool DrinkInHand { get; set; }
+
+        /// <summary>#783 · The picture the panel wears, or null for a table that is somebody else's. Owner,
+        /// live at a taken table: <i>"the pop up could have Gen AI here."</i> Two states, two images, off the
+        /// one <see cref="Relaxed"/> answer above.</summary>
+        public string? ArtUrl => Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
 
         /// <summary>How many the top seats, and how many chairs are still empty — the fact that let you
         /// ask to join in the first place, kept so the panel can say it.</summary>
@@ -334,23 +353,39 @@ public partial class Map
                     return false;   // somebody is there after all: that is #746's press, not this one.
                 }
 
+                // #783 · WHICH REGISTER THIS SIT IS IN, decided once, by Core, off the room and the glass.
+                // Owner: "with a bought drink in hand, or on a quiet watch, the sit becomes the other thing."
+                // #783/#784 · ONE reading of the counter's pour, and it is #784's — Map.Seated.cs owns the
+                // window, excludes a drunk captain and is the same fact the short rest doubles its rate on.
+                // A second window here would let the panel say "cold glass" on a beat the rest engine had
+                // already decided there was no pour, which is the fault canon review caught in this scene.
+                bool drink = APourInFrontOfYou;
+                bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, ex.CanteenWatch);
+                Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink);
+
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
                     Who = CanteenTable.Who.None,
                     Plate = SittingAlone.OwnTablePlate,
-                    Scene = SittingAlone.TheTable(),
+                    Scene = sat,
                     Seats = top.Seats,
                     // One of them is yours now. The room can see you sitting alone, which is the whole
                     // premise (#757: "sitting alone is STATE"), and the panel says it in chairs.
                     Free = Math.Max(0, top.Seats - 1),
                     Quiet = top.Quiet,
                     Solo = true,
+                    Relaxed = relaxed,
+                    DrinkInHand = drink,
                     // Nobody to ask. #746's ask-to-join beat is the answer to a person, and there is not one
                     // here — the table is simply taken, and the taking is the scene's opening line.
                     Joined = true,
-                    Outcome = SittingAlone.TookTheTableLine,
+                    // #783 · …and it is the SCENE's opening, never a constant this method reached for. The
+                    // owner's first-line law ("the panel's FIRST line must confirm the state change") is
+                    // kept by the content file, and a client that pinned one of the two registers here
+                    // would print the wary line over a picture of somebody's boots.
+                    Outcome = sat.Opening,
                 };
                 RendererInterop.PlayCue("reveal");
                 StateHasChanged();
@@ -589,7 +624,7 @@ public partial class Map
                 // the panel never blinks, because it was one occupation of one table all along.
                 if (moveId == SittingAlone.WaveOff)
                 {
-                    BackToYourOwnTable(t);
+                    BackToYourOwnTable(ex, t);
                 }
                 return;
         }
@@ -733,12 +768,18 @@ public partial class Map
 
     /// <summary>#757 · She goes, and the table is yours again. The outcome line stays exactly as it was —
     /// what she said on the way out is the last thing that happened, and it must not be wiped by the state
-    /// change that follows it.</summary>
-    private void BackToYourOwnTable(TableTalk t)
+    /// change that follows it.
+    ///
+    /// <para>#783 · The register is asked AGAIN rather than remembered: a glass goes warm while somebody is
+    /// standing over you, and a table that stayed "resting" because it was resting ten minutes ago would be
+    /// a picture of boots up on a chair she has just got out of.</para></summary>
+    private void BackToYourOwnTable(SurfaceExcursion ex, TableTalk t)
     {
         t.Solo = true;
+        t.DrinkInHand = APourInFrontOfYou;
+        t.Relaxed = SittingAlone.SitReadsAsRelaxed(t.DrinkInHand, ex.CanteenWatch);
         t.Plate = SittingAlone.OwnTablePlate;
-        t.Scene = SittingAlone.TheTable();
+        t.Scene = SittingAlone.TheTable(t.Relaxed, t.DrinkInHand);
         t.Said.Clear();
         t.Showing = false;
         t.Free = Math.Min(t.Seats, t.Free + 1);

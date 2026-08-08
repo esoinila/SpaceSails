@@ -43,8 +43,14 @@ public static class SittingAlone
     public const string Glyph = "🪑";
 
     /// <summary>What a free top is labelled on the deck. The whole of #757's complaint was that an empty
-    /// table said nothing and answered nothing; this is the half of the fix the eye does.</summary>
-    public const string FreeTablePlate = Glyph + " A FREE TABLE";
+    /// table said nothing and answered nothing; this is the half of the fix the eye does.
+    ///
+    /// <para>#783 · …AND IT SAYS THE ACTION. Owner, live at a table and confused: <i>"Why not use words like
+    /// SIT DOWN here if it means sitting down?"</i> The plate used to name the FURNITURE and leave the verb to
+    /// be guessed; "take the table" — the phrase this issue's first draft reached for — reads as inventory.
+    /// A prompt is text that must READ (#782), and the plainest word for sitting down is sitting down.</para>
+    /// </summary>
+    public const string FreeTablePlate = Glyph + " A FREE TABLE — SIT DOWN";
 
     /// <summary>Who you are sitting with. Nobody — and the panel says so plainly rather than leaving its
     /// counterpart line blank, which reads as a missing string.</summary>
@@ -80,43 +86,188 @@ public static class SittingAlone
     public const string HearThemOut = "hear-them-out";
 
     /// <summary>The button labels, beside the ids, so no panel invents its own vocabulary for a move the
-    /// design named.</summary>
+    /// design named.
+    ///
+    /// <para>#783 · WAIT'S LABEL SAYS WHAT WAITING DOES. Owner, twice in one sitting: <i>"What does the WAIT
+    /// option mean here?"</i> — and that is the red proof. "Wait" alone reads as a loading verb, so the
+    /// button that IS this scene looked like the button that means the game is thinking. The label now says
+    /// the posture and its point in the player's own words; the move id is untouched, because a saved game
+    /// and a guard both key on the id and neither should ever have keyed on the caption.</para>
+    /// </summary>
     public static string LabelOf(string moveId) => moveId switch
     {
-        Wait => "Wait",
+        Wait => "SIT A WHILE — see who comes",
         WaveIn => "Pull the chair out",
         WaveOff => "Not tonight",
         LetThemBuy => "Let her buy",
         NoDrink => "You're alright, thanks",
         HearThemOut => "What's on your mind?",
+        // #783 · Owner's own ruling on the panel's verbs: "'Stand up' stays — it already says the thing."
+        // It was reaching the default arm and rendering as TAKE YOUR LEAVE, which is the courtesy you owe
+        // somebody ELSE'S table (#746 keeps it, and should). Getting up from your own chair is standing up.
+        Stand => "Stand up",
         _ => "Take your leave",
     };
 
     // ── TAKING THE TABLE, AND GIVING IT BACK ──────────────────────────────────────────────────────────
 
-    /// <summary>What taking a table is. Not a transaction and not a menu: a posture.</summary>
+    /// <summary>#783 · THE STATE CHANGE, CONFIRMED FIRST, in the plainest words there are.
+    ///
+    /// <para>Owner ruling, live: <i>"On sitting, the panel's FIRST line must confirm the state change… so the
+    /// player knows E worked BEFORE seeing more verbs."</i> The wary line below opens on a POSTURE, which is
+    /// the right second sentence and the wrong first one: a captain who has just pressed a key needs to be
+    /// told the key did something before they are told what kind of person it made them.</para></summary>
+    public const string SatDownLine = "You sit down. The table is yours.";
+
+    /// <summary>What taking a table is on a watch that is watching you. Not a transaction and not a menu: a
+    /// posture — and #783's plain confirmation in front of it.</summary>
     public const string TookTheTableLine =
+        SatDownLine + " " +
         "You take the chair with your back to the wall and your hands where they can be seen. In a room " +
         "like this, sitting down on your own is the whole of asking.";
 
     /// <summary>Standing up. Free, always, and it never costs a thing.</summary>
     public const string StoodUpLine = "You stand, and the table is a table again.";
 
+    // ── #783 · THE OTHER REGISTER: A SHORT REST ───────────────────────────────────────────────────────
+    //
+    // Owner addendum, live: "sitting should also have the RELAXATION register — feels good to sit down for a
+    // change, lift legs to another chair and drink a cold drink with alcohol." The lines below are the owner's
+    // own filing, canon-approved by authorship and lifted VERBATIM; nothing in this section rewrites them.
+    // The posture reads the ROOM: back-to-the-wall is what you are in a hall that is full of people who could
+    // be anybody, and it is not what you are in an emptied one with a cold glass in your hand.
+    //
+    // …AND THE SENTENCE OWNS ITS OWN FACTS (#740, canon review of #783). The filed relaxed line names a cold
+    // glass, and the trigger fires on a quiet watch with or WITHOUT a purchase — so the register is two
+    // openings, not one: the boots are the rest and are always there, the glass is the purchase and is
+    // mentioned only when somebody actually bought it.
+    //
+    // WHAT THIS FILE DOES NOT DO: rest is not a mechanic here. Whether a rest heals anything is #784's lane,
+    // and this scene deliberately owns only the words and the law that picks between them — one answer to
+    // "is this a rest?", exported below, for that crew to consume rather than re-derive.
+
+    /// <summary>
+    /// The sit itself, WITH A BOUGHT POUR IN YOUR HAND. The cold glass in this sentence is a real glass:
+    /// somebody paid for it at the counter and carried it over.
+    /// </summary>
+    public const string RelaxedSitLine =
+        "It feels good to sit down for a change. You put your boots up on the spare chair and let the cold " +
+        "glass sweat into your hand, and for as long as it lasts, nobody in this building needs anything " +
+        "from you.";
+
+    /// <summary>
+    /// …and the same rest with NOTHING IN YOUR HAND, on a watch quiet enough to take one.
+    ///
+    /// <para>CANON REVIEW, ruled: the line above names a cold glass, and the owner's own trigger fires the
+    /// relaxed register on a quiet watch <b>with or without</b> a purchase — so a drinkless rest was
+    /// narrating a drink nobody bought. That is the #740 class exactly: a sentence must own its own facts.
+    /// The boots stay up either way, because the boots are the rest; the glass is the purchase, and only the
+    /// purchase may mention it.</para>
+    /// </summary>
+    public const string RelaxedSitDryLine =
+        "It feels good to sit down for a change. You put your boots up on the spare chair, and for as long " +
+        "as nobody needs you, nobody needs you.";
+
+    /// <summary>The drink itself, said only when there actually is one — the counter's pour (#756/#772),
+    /// carried to the table it was bought to be drunk at.</summary>
+    public const string TheDrinkLine =
+        "The pour is cold and it is honest about what it is. Somewhere below B4, a still is doing its quiet " +
+        "best for you.";
+
+    /// <summary>Standing up after a rest, which is not the same sentence as standing up from a watch.</summary>
+    public const string StoodUpRelaxedLine =
+        "You put the chair back the way it was. The minute is over, and it was a good minute.";
+
+    /// <summary>
+    /// #783 · DOES THIS SIT READ AS RELAXED? The one answer, so the panel's opening line, its goodbye
+    /// and its picture cannot come to three different ones.
+    ///
+    /// <para>Owner's own condition, quoted: <i>"with a bought drink in hand, OR on a quiet watch."</i> Quiet
+    /// is <see cref="BusyAt"/>'s own threshold — the same line that decides which silence a fruitless wait
+    /// gets — so the hall cannot be indifferent-busy in one sentence and restful in the next.</para>
+    ///
+    /// <para>FIFTH-BUG-CLASS NOTE: both answers are reachable on watches the game actually has. The small
+    /// watches sit at 0.15/0.30 and the working ones at 0.45 and up, so a guard can walk real watch indices
+    /// and see this flip, rather than trusting the arithmetic in this comment.</para>
+    /// </summary>
+    /// <param name="drinkInHand">Whether a pour bought at the counter is still in the captain's hand.</param>
+    /// <param name="watch">The shift, frozen when the floor was drawn (#709).</param>
+    public static bool SitReadsAsRelaxed(bool drinkInHand, long watch) =>
+        drinkInHand || Fill(watch) < BusyAt;
+
+    // WHOSE DRINK, AND WHOSE REST — the seam with #784, stated once so nobody collapses the two.
+    //
+    // #784 ships the short rest as a MECHANIC: every solo sit is one (Map.CaptainIsRestingAtATable), and how
+    // much it gives back is doubled by a pour in front of you (Map.APourInFrontOfYou, which is the client's
+    // one reading of the counter's tot — this file deliberately keeps no second window of its own, because
+    // a panel that said "cold glass" while the rest engine said "no pour" is the fault canon review already
+    // caught in this very scene). What THIS file decides is narrower and is about WORDS AND PICTURES ONLY:
+    // whether the sit READS as relaxed. A back-to-the-wall watch is still a short rest for the body; it is
+    // simply not the sentence about boots and it is not the picture of them.
+
+    /// <summary>The rest's own opening, in the one of its two forms the captain's hand decides. THE GLASS IS
+    /// ONLY MENTIONED WHEN THERE IS A GLASS — canon review's ruling, and the #740 law under it: a sentence
+    /// owns its own facts, so a rest with nothing in your hand may not narrate a drink.</summary>
+    public static string RelaxedOpening(bool drinkInHand) =>
+        drinkInHand ? RelaxedSitLine : RelaxedSitDryLine;
+
+    /// <summary>What sitting down says, in whichever register the room and the glass put you in. The drink's
+    /// own line rides along only when there IS a drink — a sentence about a pour nobody bought is the kind of
+    /// lie a panel tells once and a player never trusts again, and the opening it follows is chosen on the
+    /// same fact so the two cannot disagree about whether you are holding anything.
+    ///
+    /// <para>THE ONE PLACE the opening sentence is chosen. <see cref="TheTable"/>'s opening is this call and
+    /// not a second copy of this ternary, because a scene whose first line disagreed with the line the panel
+    /// prints is this project's third named bug class with prose in it.</para></summary>
+    public static string SitLine(bool relaxed, bool drinkInHand) =>
+        !relaxed ? TookTheTableLine
+        : drinkInHand ? RelaxedOpening(true) + " " + TheDrinkLine
+        : RelaxedOpening(false);
+
+    /// <summary>…and the same question asked of the ROOM instead of a flag: what does sitting down say on
+    /// this watch, with or without a glass in your hand.</summary>
+    public static string SatDown(bool drinkInHand, long watch) =>
+        SitLine(SitReadsAsRelaxed(drinkInHand, watch), drinkInHand);
+
+    /// <summary>What getting up says. The rest earns its own goodbye; the watch keeps #757's.</summary>
+    public static string StoodUp(bool relaxed) => relaxed ? StoodUpRelaxedLine : StoodUpLine;
+
+    // ── #783 · AND WHAT THE PANEL SHOWS YOU ───────────────────────────────────────────────────────────
+    //
+    // Owner, live at a taken table: "the pop up could have Gen AI here." Two states, two pictures, and the
+    // state is the SAME one the prose above reads — a panel that said "boots up on the spare chair" over a
+    // picture of an empty chair would be the third named bug class with a caption on it.
+
+    /// <summary>The WAITING state: first-person from your chair, the empty one opposite pulled slightly out.
+    /// The empty chair IS the wait beat.</summary>
+    public const string WaitingArtUrl = "art/b1-your-own-table.jpg";
+
+    /// <summary>The RESTING state: boots up on that same chair, a sweating glass, notebooks and papers and
+    /// two plates of something the kitchen calls food.</summary>
+    public const string RestingArtUrl = "art/b1-short-rest.jpg";
+
+    /// <summary>Which of the two the panel wears.</summary>
+    public static string ArtFor(bool relaxed) => relaxed ? RestingArtUrl : WaitingArtUrl;
+
     /// <summary>
     /// #757 · YOUR OWN TABLE, as an <see cref="Encounter.Scene"/> — two moves and no third.
     ///
-    /// <para>Wait, and take your leave. There is deliberately nothing else on it: buying your own drink is
+    /// <para>Wait, and stand up. There is deliberately nothing else on it: buying your own drink is
     /// the counter's business (#756's lane, and this scene must not grow a second answer to it), and every
     /// other move at a table is something you say to somebody.</para>
     /// </summary>
-    public static Encounter.Scene TheTable() => new(
+    /// <param name="relaxed">#783 · Whether this sitting READS AS RELAXED — which decides the opening line,
+    /// the line you get up on, and the picture the panel wears. <see cref="SitReadsAsRelaxed"/> is the one
+    /// place that is decided; this only carries the answer into the scene.</param>
+    /// <param name="drinkInHand">Whether there is a bought pour in hand, which adds its own sentence.</param>
+    public static Encounter.Scene TheTable(bool relaxed = false, bool drinkInHand = false) => new(
         "canteen:table:alone",
         OwnTablePlate,
         Setting,
-        TookTheTableLine,
+        SitLine(relaxed, drinkInHand),
         [
             new(Wait, LabelOf(Wait)),
-            new(Stand, LabelOf(Stand), Says: StoodUpLine),
+            new(Stand, LabelOf(Stand), Says: StoodUp(relaxed)),
         ]);
 
     // ── WHETHER ANYBODY COMES ─────────────────────────────────────────────────────────────────────────
@@ -240,6 +391,12 @@ public static class SittingAlone
         }
         yield return TookTheTableLine;
         yield return StoodUpLine;
+        // #783 · the other register, checked by the same grep the wary one is.
+        yield return SatDownLine;
+        yield return RelaxedSitLine;
+        yield return RelaxedSitDryLine;
+        yield return TheDrinkLine;
+        yield return StoodUpRelaxedLine;
         yield return ApproachOpening;
         yield return WaveInLine;
         yield return WaveOffLine;
