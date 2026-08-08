@@ -48,7 +48,15 @@ public partial class Map
 
     private RevealCard? _revealCard;
 
-    private void CloseRevealCard() => _revealCard = null;
+    /// <summary>#768 · …and the sayings this card was standing on are freed as it goes. An event that raises
+    /// a card holds its ranked lines rather than pulsing them under the backdrop, so the ✕ is where they are
+    /// finally said. Every road out of the card comes through here (Esc, Enter, the backdrop, the button) —
+    /// which is why nothing anywhere clears <c>_revealCard</c> by hand.</summary>
+    private void CloseRevealCard()
+    {
+        _revealCard = null;
+        ReleaseHeldSayings();
+    }
 
     /// <summary>Raise the card. Deliberately silent — the caller owns its own audio cue, because the beat
     /// knows whether it is a find ("board"), a reveal ("reveal") or something louder, and a card that

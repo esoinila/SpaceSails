@@ -1181,7 +1181,7 @@ public partial class Map
     {
         if (_viewObject is not null)
         {
-            _viewObject = null; // E again closes
+            CloseViewObject();  // E again closes — through the one door, so #768's held line is freed here too
             return;
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
@@ -1228,7 +1228,16 @@ public partial class Map
         }
     }
 
-    private void CloseViewObject() => _viewObject = null;
+    /// <summary>#768 · The card comes down and the sayings it was standing on are freed. An arrival that
+    /// raises one of these — the first descent (#585), the dead-air warning (#609), the gate's own face
+    /// (#684) — holds its ranked lines rather than pulsing them under the backdrop, so this is the moment
+    /// the winner is finally said. Every road out of the card (Esc, Enter, E again, the backdrop, Close)
+    /// comes through here.</summary>
+    private void CloseViewObject()
+    {
+        _viewObject = null;
+        ReleaseHeldSayings();
+    }
 
     private void KnockOnHatch()
     {

@@ -1341,6 +1341,30 @@ routine air line can no longer stand on top of a beat or a climax.
 The head office (`?kaamos=hq&land=1`) has **no gate on any floor** and `?card=` there mints paper nothing
 reads — that absence is the rank difference (#411), not a bug.
 
+### The card that lands on top of the beat — `/map?secretlab=deep&land=1&card=next` (#768)
+
+The same paper, pressed from the **SURFACE** instead of from B1 — which is the one ride that raises the
+first-descent card (#585) and crosses a gate (#689) on the same arrival, and the frame #768 was filed on:
+
+```
+/map?secretlab=deep&land=1&card=next   set down at the shed, the first gate's authority in the wallet
+```
+
+Walk into the shed, press `🛗`, and take `↓ THE OTHER SHAFT` straight down from daylight. **Two things happen
+on the one arrival:** a full-screen card stops the world (*"finding the elevator"*), and the arrival's
+sayings — the descent, the air, and the gate reading your paper — want the one pulse line behind it.
+
+**What to look for:** close the card. The gate's beat (🎫 *"You find the other shaft…"*) is **on the pulse
+now**, with its full dwell, because the arrival held it rather than pulsing it under the backdrop. Before
+#768 it was said and gone while you were reading the card, and the only place it survived was the field-notes
+book — which is still where every one of the arrival's lines is filed, in the order they were said, whatever
+the screen keeps. On a site whose first gated floor is the one nobody listed, the line waiting for you is
+#592's climax instead: the hold obeys the same ranks the pulse does (#693), so what survives the card is
+exactly what would have been on screen had no card been raised.
+
+The same shape on the regolith rather than underground: `&collectors=20` (a repo boat sets down 20 s in) —
+its arrival line and its callsign now wait behind the arrival plate instead of playing under it.
+
 ### What each floor should be
 
 - **the top of every shaft band holds pressure** — the tank stops, the nerve steadies, and the game says so in those words

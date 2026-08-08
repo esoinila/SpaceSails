@@ -88,3 +88,60 @@ public readonly record struct PulseSlot(
     public PulseSlot Expire(double nowMs) =>
         Message is not null && nowMs > ExpiresMs ? Empty : this;
 }
+
+/// <summary>#768 · THE SAYINGS AN EVENT KEPT BACK, BECAUSE THE SAME EVENT RAISED A CARD OVER THEM.
+///
+/// <para><see cref="PulseSlot"/> settles a pulse losing to a pulse. It cannot settle the other loss, and the
+/// other loss is total: an ARRIVAL that raises a card — the first descent (#585), the dead-air warning
+/// (#609), the gate the paper opened (#689), the repo boat setting down (#583) — writes its line into the
+/// slot and then puts a full-screen backdrop in front of it. No rank helps, because the line is not losing
+/// to a bigger line; it is losing to the whole HUD, and by the time the card is dismissed the dwell has run
+/// out and the sentence is gone. #680's family, arising from the world acting rather than from a press.</para>
+///
+/// <para>So the event <b>holds</b> its sayings instead of saying them, and the card's dismissal lets the
+/// winner go. That is the queue shape #693 declined — deliberately, and it stays declined: this is not a
+/// lifecycle the pulse's 400-odd call sites share, it is one slot for one situation, and an event that
+/// raises no card never touches it (it releases on the spot, which is an ordinary pulse).</para>
+///
+/// <para><b>The winner is chosen by the same law, not by the order.</b> The lines an arrival holds were
+/// composed in one breath, so who survives the card is a question of RANK — a lower-ranked held line may not
+/// displace a higher-ranked one; among equals the last held wins. Identical to <see cref="PulseSlot.Write"/>
+/// minus the clock, because there is no clock inside a breath, and identical on purpose: the sentence that
+/// survives the card must be the sentence that would have been on screen had no card been raised. That
+/// equivalence is the guard.</para>
+///
+/// <para>Releasing writes through <see cref="PulseSlot.Write"/>, so the freed line gets its ordinary dwell
+/// (#766's length-scaled reading time) and can itself be outranked afterwards. A held line is a line that
+/// has not been said yet — never a line with special powers.</para></summary>
+/// <param name="Message">The best thing held so far, or null for nothing held.</param>
+/// <param name="Rank">What that held message is, which is what decides whether a later one displaces it.</param>
+public readonly record struct PulseHold(string? Message, PulseRank Rank)
+{
+    /// <summary>Nothing held — the state every scene starts and ends in.</summary>
+    public static PulseHold Empty => new(null, PulseRank.Status);
+
+    /// <summary>Is there a sentence waiting for the card to close?</summary>
+    public bool Any => Message is not null;
+
+    /// <summary>Keep <paramref name="message"/> back for now, or decline to because something bigger is
+    /// already being kept back. Returns the hold as it stands afterwards.</summary>
+    public PulseHold Hold(string message, PulseRank rank)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return this;   // an empty saying is not a saying; it must never displace a real one
+        }
+
+        // THE SAME LAW AS THE SLOT'S, and written out rather than borrowed, because the slot's is about a
+        // line that is ON SCREEN and this one is about lines that never got there. Only the rank decides.
+        return Message is not null && rank < Rank ? this : new(message, rank);
+    }
+
+    /// <summary>The card is gone: say the winner. Returns the slot with the freed line written into it (by
+    /// the ordinary law, so it dwells and can be outranked like anything else) and an empty hold.
+    ///
+    /// <para>Nothing held is not an event: the slot comes back untouched, so a card dismissed on a quiet
+    /// screen never blanks or re-writes whatever the world has said since.</para></summary>
+    public (PulseSlot Slot, PulseHold Held) ReleaseInto(PulseSlot slot, double nowMs) =>
+        Message is null ? (slot, this) : (slot.Write(Message, Rank, nowMs), Empty);
+}
