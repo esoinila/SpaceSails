@@ -258,12 +258,31 @@
     border: 1px solid rgba(255, 212, 121, 0.35);
 }
 
-/* #4 SundayMorningWind — the drinks menu, where the Leisure-Suit-Larry flavour lives. */
+/* #756/#759/#782 · What the view through the counter's window wall is, in words, under the picture of it.
+   Caption size, caption colour, and readable against the card's own ground rather than against the photo —
+   text over an image is text whose contrast nobody controls. */
+.bar-view-caption {
+    font-size: 0.9rem;
+    color: #cfe4d2;
+    line-height: 1.35;
+    text-align: center;
+    margin: -0.2rem 0 0.5rem;
+}
+
+/* #4 SundayMorningWind — the drinks menu, where the Leisure-Suit-Larry flavour lives.
+
+   #780 · AND IT IS READ, NOT SQUINTED AT. Owner's standing rule, filed the evening this was found: text has
+   good contrast against WHAT IT ACTUALLY SITS ON, fonts are big enough to read on a phone, and content that
+   does not fit SCROLLS rather than shrinks. So the panel paints its own near-opaque ground instead of
+   borrowing whatever happens to be behind it (0.6 alpha over the card, and the card over a lit deck), the
+   `small` class is gone from the markup, and the size is named here at the price-list size. The scrolling
+   half is the card family's already (#735/#754): the menu sits in the body, and the body scrolls. */
 .bar-menu {
     margin: 0.35rem 0 0.5rem;
-    padding: 0.45rem 0.6rem;
+    padding: 0.55rem 0.7rem;
     text-align: left;
-    background: rgba(30, 22, 40, 0.6);
+    font-size: 0.95rem;
+    background: rgba(22, 16, 30, 0.96);
     border-left: 2px solid rgba(255, 212, 121, 0.55);
     border-radius: 0.3rem;
 }
@@ -272,24 +291,47 @@
     color: #ffd479;
     font-weight: 700;
     letter-spacing: 0.03em;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.45rem;
 }
 
 .bar-menu-item {
     display: flex;
     gap: 0.5rem;
     align-items: flex-start;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+/* #780/#782 · THE PLATE, BESIDE THE WORDS. A fixed square that cannot grow into the text column: the row is
+   the name, the price and the line, and the picture is what it looks like. 1:1 art, so object-fit: cover is
+   a crop that never happens rather than a squash that would. It shrinks on a narrow screen but never below a
+   thumbnail worth looking at — and when the illustrated card outgrows the window, the CARD scrolls (#754),
+   because content that does not fit scrolls and never shrinks. */
+.bar-menu-art {
+    flex: 0 0 auto;
+    width: clamp(3.2rem, 14vw, 4.6rem);
+    height: clamp(3.2rem, 14vw, 4.6rem);
+    object-fit: cover;
+    border-radius: 0.3rem;
+    border: 1px solid rgba(255, 212, 121, 0.35);
+}
+
+/* The text column takes what is left, and `min-width: 0` is the load-bearing half: without it a flex item
+   refuses to shrink below its longest word and the flavour line pushes the row — picture and all — off the
+   side of a phone. */
+.bar-menu-words {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .bar-menu-buy {
     flex: 0 0 auto;
     min-width: 8.5rem;
+    margin-bottom: 0.2rem;
 }
 
 .bar-menu-flavor {
-    color: #d9cfe0;
-    line-height: 1.35;
+    color: #ece4f2;
+    line-height: 1.4;
     font-style: italic;
 }
 

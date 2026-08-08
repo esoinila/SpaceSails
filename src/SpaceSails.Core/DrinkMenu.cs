@@ -42,8 +42,20 @@ public enum DrinkCategory
 /// (<see cref="Interior.Barkeep.DrinkPrice"/>). Every haven bar prices its whole card at one rate and
 /// says so on the header, so they all leave this 0; a venue whose coffee is 2 cr and whose fry-up is 9
 /// writes the numbers down here rather than growing a second menu type beside this one.</param>
+/// <param name="ArtUrl">#780 · The plate or the glass, photographed — a thumbnail beside the row, and exactly
+/// the optional-art seam <see cref="Interior.Barkeep.DeskArtUrl"/> already is. The owner asked for the
+/// specials to be SEEN, and the art was shot before the wiring existed.
+///
+/// <para>Null is the ordinary case and stays ordinary: every haven bar's card is text, COMPANY COFFEE has no
+/// picture and wants none, and a row without art draws the way it always drew rather than as a gap where a
+/// picture should have been. A menu that reserved a frame for every item would make the unillustrated ones
+/// look broken, which is the whole reason this is a nullable on the ITEM and not a layout on the panel.</para>
+///
+/// <para>#782's law governs what the client does with it: a thumbnail may not crowd the words. The row is the
+/// NAME, the PRICE and the LINE; the picture stands beside them at a fixed small size, and a card of
+/// illustrated rows that will not fit SCROLLS rather than shrinking.</para></param>
 public readonly record struct Drink(
-    string Id, string Name, DrinkCategory Category, string Flavor, int Price = 0)
+    string Id, string Name, DrinkCategory Category, string Flavor, int Price = 0, string? ArtUrl = null)
 {
     /// <summary>What this item actually costs at a counter charging <paramref name="houseRate"/> a
     /// glass. One place, so the button's label, the button's enabled-ness and the debit can never come

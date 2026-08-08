@@ -2376,10 +2376,36 @@
                not a second card. Everything that needs a PERSON (the keep's own pour, a round for the room,
                asking what they've heard) is gated on keep.SelfService, because 150 m down there is nobody
                back there to ask: the counter does its own serving, which is worse. *@
-            <div class="deck-offer-giver">@(keep.SelfService ? "🍸" : "🍺") @keep.Name · @keep.BarName</div>
-            @if (keep.DeskArtUrl is { } deskArt)
+            @* #756 · …AND ONE CARD, TWO POSTURES. Standing at the counter it is the counter's card; up on a
+               stool it is the stool's, and the plate says which seat. Not a second card and not a second
+               menu — see Map.Stool.cs for why the one-E-per-fixture rule points here. *@
+            <div class="deck-offer-giver">
+                @if (_stool is { } seatedPlate)
+                {
+                    @(seatedPlate.WithNeighbour
+                        ? SpaceSails.Core.Interior.TheStools.NeighbourPlate
+                        : SpaceSails.Core.Interior.TheStools.StoolPlate(seatedPlate.Index))
+                }
+                else
+                {
+                    @($"{(keep.SelfService ? "🍸" : "🍺")} {keep.Name} · {keep.BarName}")
+                }
+            </div>
+            @* #756/#759 · WHAT YOU ARE LOOKING AT CHANGES WITH THE POSTURE, because the view does. Owner:
+               "I do not see the park through the bar windows?" Standing, you are looking AT the bar desk;
+               up on a stool you are above the bottles with the window wall in front of you, and what is
+               behind the glass is the green. Core owns both pictures and the caption; this picks by whether
+               you sat down. Same onerror-hide law as every other art slot — no file, no frame. *@
+            @if (_stool is not null)
             {
-                <img class="bar-desk-art" src="@deskArt" alt="" aria-hidden="true" />
+                <img class="bar-desk-art" src="@SpaceSails.Core.Interior.TheStools.SeatedArtUrl" alt=""
+                     aria-hidden="true" onerror="this.style.display='none'" />
+                <div class="bar-view-caption">@SpaceSails.Core.Interior.TheStools.SeatedArtCaption</div>
+            }
+            else if (keep.DeskArtUrl is { } deskArt)
+            {
+                <img class="bar-desk-art" src="@deskArt" alt="" aria-hidden="true"
+                     onerror="this.style.display='none'" />
             }
             <div class="deck-offer-blurb">
                 House special: <strong>@keep.DrinkName</strong> — @keep.DrinkFlavor
@@ -2426,7 +2452,56 @@
             }
             @* #4 SundayMorningWind — the talking drinks menu: more than one type (Space Gin, Space Beer,
                Rocket Fuel + the house special), each with its colourful Leisure-Suit-Larry-style flavour.
-               This is where the Larry colour lives. Buy any of them for yourself; all at the going rate. *@
+               This is where the Larry colour lives. Buy any of them for yourself; all at the going rate.
+
+               #780 · AND IT IS IN THE CARD'S BODY, ABOVE THE PINNED FOOT. Owner, live at the B1 counter:
+               "How do I buy the drink here?... There is no button to pay there?" and "menu is not readable —
+               text and background are both dark." Both sentences are ONE fault, and it was never a colour:
+               the menu used to be the LAST child of this card, AFTER .deck-offer-actions — which #735 pins
+               with `position: sticky; z-index: 3` and a 12rem box-shadow SCRIM whose whole job is to darken
+               whatever slides under the foot. A static sibling that follows a positioned one paints beneath
+               it, so the six priced items sat under 92%-opaque black: still in the DOM, still hit-testable,
+               and read by a captain as a greyed-out panel behind glass. #680's law one turn further on —
+               IN THE DOM IS NOT ON THE SCREEN, and neither is UNDER THE SCRIM.
+
+               So the menu is prose, and prose goes in the body: it scrolls with the card (#754's cap and
+               overscroll), and the foot pins BELOW it where the scrim falls on nothing. Every bar in the
+               game renders through this block, so the Tilt's card is fixed by the same move. *@
+            @if (_showBarMenu)
+            {
+                <div class="bar-menu">
+                    @* #756 · The header stops promising one flat rate, because a card with a 2 cr coffee
+                       and a 12 cr double on it cannot have one. Each row prices itself off Core
+                       (Drink.PriceAt), so the label, the enabled-ness and the debit are one number. *@
+                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : $"🍸 THE MENU — {keep.DrinkPrice} cr a glass")</div>
+                    @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
+                    {
+                        Core.Drink d = drink;
+                        int cost = d.PriceAt(keep.DrinkPrice);
+                        bool isFood = d.Category == Core.DrinkCategory.Food;
+                        <div class="bar-menu-item">
+                            @* #780 · THE SPECIALS, SEEN. Owner asked for the card's items to be pictured, and
+                               the art landed before the wiring. Optional per item (Drink.ArtUrl), so COMPANY
+                               COFFEE and every haven bar's text-only card render exactly as they always did —
+                               and the frame onerror-hides like every other art slot in the game, because a
+                               missing file must cost a picture and never a row.
+
+                               #782 · The thumbnail stands BESIDE the words at a fixed small size and never in
+                               place of them: the name, the price and the line are the row. *@
+                            @if (d.ArtUrl is { } dishArt)
+                            {
+                                <img class="bar-menu-art" src="@dishArt" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            }
+                            <div class="bar-menu-words">
+                                <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy" disabled="@(_credits < cost)"
+                                        title="@($"Order the {d.Name} — {cost} cr")" @onclick="@(() => BuyDrink(d))">@(isFood ? "🍽" : "🥃") @d.Name · @cost cr</button>
+                                <span class="bar-menu-flavor">@d.Flavor</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
             <div class="deck-offer-actions">
                 @if (!keep.SelfService)
                 {
@@ -2456,28 +2531,41 @@
                        anything when your own gathered small print answers itself on your own table. *@
                     <button type="button" class="btn btn-sm btn-outline-info" title="@NebulaBarSeamTitle()" @onclick="AskAboutNebula">@NebulaBarSeamLabel()</button>
                 }
+                @* ── #756 · THE HIGH CHAIRS ────────────────────────────────────────────────────────────
+                   Owner, live: "Also there should be high chairs so sitting at the bar desk is also
+                   possible." ONE E AT THE FIXTURE, and the seat verb lives on the card that press opens —
+                   #757's rule kept rather than worked around (a row of eight consoles bolted along five
+                   deck-units would have put nine press-targets inside one arm's length of each other).
+
+                   The verb is drawn whether or not there is a free seat (#212: an affordance never hides);
+                   a full row refuses OUT LOUD in the notice slot above. *@
+                @if (CounterHasStools())
+                {
+                    @if (_stool is null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="Get up on one of the tall seats at the counter"
+                                @onclick="TakeAStool">🪑 Take a stool</button>
+                    }
+                    else
+                    {
+                        @* #749 · ONLY WHAT HAS BEEN SAID. A reply to a sentence nobody has spoken is not a
+                           control that is disabled, it is a control that is not there — Core's own call, so
+                           the stool and the table cannot end up with two ideas of when an answer exists. *@
+                        @foreach (SpaceSails.Core.Encounter.Move stoolMove in StoolMovesOnTheTable())
+                        {
+                            SpaceSails.Core.Encounter.Move sm = stoolMove;
+                            bool canPress = StoolMoveOnOffer(sm);
+                            <button type="button"
+                                    class="btn btn-sm @(canPress ? "btn-outline-light" : "btn-outline-secondary")"
+                                    disabled="@(!canPress)"
+                                    title="@(canPress ? sm.Label : StoolMoveRefusal(sm))"
+                                    @onclick="() => StoolMoveClicked(sm.Id)">@sm.Label</button>
+                        }
+                    }
+                }
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="() => Dismiss(CloseBarkeep)">Done</button>
             </div>
-            @if (_showBarMenu)
-            {
-                <div class="bar-menu small">
-                    @* #756 · The header stops promising one flat rate, because a card with a 2 cr coffee
-                       and a 12 cr double on it cannot have one. Each row prices itself off Core
-                       (Drink.PriceAt), so the label, the enabled-ness and the debit are one number. *@
-                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : $"🍸 THE MENU — {keep.DrinkPrice} cr a glass")</div>
-                    @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
-                    {
-                        Core.Drink d = drink;
-                        int cost = d.PriceAt(keep.DrinkPrice);
-                        bool isFood = d.Category == Core.DrinkCategory.Food;
-                        <div class="bar-menu-item">
-                            <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy" disabled="@(_credits < cost)"
-                                    title="@($"Order the {d.Name} — {cost} cr")" @onclick="@(() => BuyDrink(d))">@(isFood ? "🍽" : "🥃") @d.Name · @cost cr</button>
-                            <span class="bar-menu-flavor">@d.Flavor</span>
-                        </div>
-                    }
-                </div>
-            }
         </div>
     }
 

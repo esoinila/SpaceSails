@@ -966,6 +966,47 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the hall, which is the only floor with a counter on it
                 }
             }
+            else if (pair.StartsWith("stool=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #756 dev cheat: /map?stool=1 is ?counter=1 with the last, last leg walked — the card is
+                // open AND you are up on a stool, which is the posture the issue is about.
+                //
+                // It implies the counter's whole route rather than spelling a sixth one, for the same reason
+                // ?counter=1 implies ?secretlab=deep&land=1&floor=1: the walk in front of this feature is the
+                // longest in the game, and a tester who has to make it by hand will not make it twice.
+                string candidate = Uri.UnescapeDataString(pair["stool=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _stoolCheat = true;
+                    _counterCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the hall, which is the only floor with a counter on it
+                }
+            }
+            else if (pair.StartsWith("neighbour=", StringComparison.OrdinalIgnoreCase)
+                || pair.StartsWith("neighbor=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #756 dev cheat: /map?neighbour=1 makes the next WAIT on a stool turn the one beside you;
+                // /map?neighbour=0 means nobody ever does. ?approach=1's sibling — both spellings taken,
+                // because the owner writes one and this codebase writes the other.
+                //
+                // BOTH HALVES ARE THE FEATURE, exactly as at the tables: a counter where the seat beside you
+                // stays quiet is the thing the room is saying. And it is even less reachable by luck here
+                // than at a top, because the roll sits behind a seeded OCCUPANCY as well as a seeded die.
+                //
+                // It forces WHETHER and never WHO or WHAT: her ladder and her lines are the ones a captain
+                // would get.
+                string candidate =
+                    Uri.UnescapeDataString(pair[(pair.IndexOf('=') + 1)..]).ToLowerInvariant();
+                _neighbourCheat = candidate switch
+                {
+                    "1" or "true" or "yes" or "now" => true,
+                    "0" or "false" or "no" or "never" => false,
+                    _ => null,
+                };
+            }
             else if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
             {
                 // #757 dev cheat: /map?approach=1 makes the next WAIT at a table you took alone bring
