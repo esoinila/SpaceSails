@@ -939,14 +939,83 @@
         _ => $"Broadcasting our true state to everything within {FormatWallDistance(TransponderRule.BeaconRangeMeters)}.",
     };
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    // #765 · THE PLAYER MAY LEAVE WHILE THE TELESCOPE IS STILL BEING WIRED. The same window #764 closed
+    // in Map, one component down — and this one opens EARLIER and wider than Map's. Map.razor renders the
+    // tracking post ALWAYS (FullScreen="true", d-none off-desk, so a desk switch never destroys the ledger),
+    // which means this method runs on the map's very FIRST render, while the renderer module is still being
+    // imported — Map itself only awaits that import at the END of a multi-second boot. Everything below the
+    // await either names DOM by id (InitCanvas, and the CanvasRenderer built on the same id, which
+    // renderer.js throws over rather than shrugging when the id resolves to nothing) or hangs this component
+    // off a STATIC event. Back out of a slow load and the continuation resumes into a tracking post the
+    // router has already discarded: it subscribes a dead component to RendererInterop.FrameTick AFTER its
+    // Dispose has run, so nothing is ever going to unsubscribe it, and it draws into card canvases that left
+    // the page with it — the WebAssemblyRenderer[100] shape from #734, plus a leak that outlives the page.
+    private readonly CancellationTokenSource _leftTheDesk = new();
+
+    /// <summary>#765 · Cancelled the moment this component is disposed — the tracking post's own
+    /// "the player left". Every yield point in the wiring below carries it.</summary>
+    internal CancellationToken LeftTheDeskToken => _leftTheDesk.Token;
+
+    /// <summary>#765 · The wiring pass currently in flight. The renderer fires
+    /// <c>OnAfterRenderAsync</c> and keeps only an error handler on the task it returns, so this is the one
+    /// handle a guard can await to watch the continuation that used to outlive the page.</summary>
+    internal Task? WiringTheScopes { get; private set; }
+
+    /// <summary>#765 · True once this component has actually subscribed to the static
+    /// <see cref="RendererInterop.FrameTick"/>. A wiring pass abandoned at the module load never did, and a
+    /// subscription made after <see cref="Dispose"/> would never come off again.</summary>
+    internal bool RidingTheFrameTick => _wallFrameTickSubscribed;
+
+    /// <summary>#765 · The one yield point in the wiring below, and the only seam a bench can hold open:
+    /// off a browser the real module import fails at once, so there would be no in-flight instant for a
+    /// test to navigate away in. Production always loads the real <c>renderer.js</c> module — this exists
+    /// so the guard can drive the shipping <see cref="OnAfterRenderAsync"/>, the shipping cancellation and
+    /// the shipping <see cref="Dispose"/> against a load it can release on command.</summary>
+    internal virtual Task LoadTheRendererModuleAsync() => RendererInterop.EnsureModuleLoadedAsync();
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (!FullScreen)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        await RendererInterop.EnsureModuleLoadedAsync();
+        return WiringTheScopes = WireTheScopesWithinTheLifeOfThePageAsync();
+    }
+
+    private async Task WireTheScopesWithinTheLifeOfThePageAsync()
+    {
+        try
+        {
+            await WireTheScopesAsync(_leftTheDesk.Token);
+        }
+        catch (OperationCanceledException) when (_leftTheDesk.IsCancellationRequested)
+        {
+            // #765: the page went while the module was still importing. There is nothing to unwind — every
+            // field belongs to this instance, which the router has discarded — and nothing to report.
+            // Letting this escape is exactly what raises WebAssemblyRenderer[100]. The `when` clause is
+            // deliberate: a cancellation that is NOT ours is somebody else's fault and still an error.
+        }
+    }
+
+    private async Task WireTheScopesAsync(CancellationToken left)
+    {
+        // EnsureModuleLoadedAsync takes no token of its own (it hands out one shared, cached import task
+        // that every component on the page is waiting on), so WaitAsync is how THIS component's "the player
+        // left" reaches the one place this method can park.
+        await LoadTheRendererModuleAsync().WaitAsync(left);
+
+        // #765 · THE LAST GATE BEFORE THE DOM AND THE STATIC EVENT. Past this line the tracking post names
+        // canvases by id and hangs itself off RendererInterop.FrameTick. If the player left during the
+        // import, the page those ids belong to is gone and the Dispose that would have unsubscribed us has
+        // already run — so this is where an abandoned wiring pass must stop.
+        //
+        // Not redundant with the WaitAsync above, and the reason is a fast path worth knowing:
+        // Task.WaitAsync tests IsCompleted BEFORE it tests the token, so a wiring pass whose import had
+        // already landed sails through it no matter how cancelled the token is. This line is the one that
+        // answers for that case.
+        left.ThrowIfCancellationRequested();
+
         if (!_wallFrameTickSubscribed)
         {
             _wallFrameTickSubscribed = true;
@@ -1033,6 +1102,13 @@
 
     public void Dispose()
     {
+        // #765 · First, before anything else: tell a wiring pass still parked on the module import that its
+        // page is gone. The source is deliberately NOT disposed — a continuation parked on that import is
+        // still holding this token and will read it as it resumes; a disposed source would answer that read
+        // with an ObjectDisposedException, which is the very shape of failure this cancellation exists to
+        // end.
+        _leftTheDesk.Cancel();
+
         if (_wallFrameTickSubscribed)
         {
             RendererInterop.FrameTick -= OnWallFrameTick;
