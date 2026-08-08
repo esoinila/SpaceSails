@@ -4628,6 +4628,28 @@
 
 .busted-collector-hail > span { position: relative; z-index: 1; }
 
+/* #777 · THE HOSTED BEAT'S OWN WORDS, on the host's own canvas. CollectorHail is
+   StoryBeats.Presentation.Hosted: the seam counts it as told and raises nothing, so this panel is the only
+   place its caption can be read — #761 ("told clearly, on the surface they are looking at") and #736 ("not
+   in the banner behind the backdrop"). Its own scrim rather than the header's, because that gradient thins
+   to 0.4 alpha at the right and a three-line sentence crosses the whole frame; and it resets the heading's
+   alarm styling, because it is prose and not a shout. */
+.busted-hail-caption {
+    position: relative;
+    z-index: 1;
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.35rem;
+    background: rgba(10, 6, 5, 0.82);
+    border: 1px solid rgba(255, 138, 138, 0.16);
+    color: rgba(238, 241, 246, 0.94);
+    font-weight: 400;
+    font-size: 0.86rem;
+    line-height: 1.38;
+    letter-spacing: 0;
+    text-align: left;
+}
+
 /* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
    is live, because the order it carries is the one whose absence gets a captain shot.
 

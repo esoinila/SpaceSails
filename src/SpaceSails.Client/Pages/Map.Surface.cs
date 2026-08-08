@@ -6988,6 +6988,13 @@ public partial class Map
             Cause = DeathCause.Collector,
             DeathBodyName = ex.Stop.Body.Name,
         };
+
+        // #777 · The same demand, so the same beat. It is HOSTED (StoryBeats.Presentation.Hosted): the seam
+        // keeps the books and the panel we just opened is the canvas. Raised here as well as on her deck
+        // because the hail is a thing that HAPPENS, and this is one of the two places it happens — a beat
+        // wired at one of its edges is a beat that silently stops being told at the other.
+        RaiseStoryBeat(StoryBeats.Beat.CollectorHail, ex.CollectorCallsign);
+
         RequestVaultSave();
     }
 

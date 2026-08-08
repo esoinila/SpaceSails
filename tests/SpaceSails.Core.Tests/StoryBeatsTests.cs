@@ -201,4 +201,70 @@ public sealed class StoryBeatsTests
             }
         }
     }
+
+    // ── #777 · "…and sometimes the best surface is one that is already up" ────────────────────────────
+
+    /// <summary>
+    /// THE THIRD ANSWER. #776's audit found the one beat this seam could not serve: the collector's hail is
+    /// shown by the BUSTED demand panel, which has rendered its painting since #528, so raising it as a CARD
+    /// would put a second modal on top of the first with the identical picture on it — and it is the one beat
+    /// that may not wait for a better moment, because it IS the moment.
+    ///
+    /// <para>Hosted is that answer, and the two facts that make it honest are here: the presentation says the
+    /// caller's card is the canvas, and <see cref="StoryBeats.HostCard"/> says WHOSE. A hosted beat with no
+    /// named host is a beat nobody can find, which is the orphan #663 was filed about wearing the fix's
+    /// clothes.</para>
+    /// </summary>
+    [Fact]
+    public void AHostedBeatNamesTheCardThatIsItsCanvas()
+    {
+        Assert.Equal(StoryBeats.Presentation.Hosted, StoryBeats.PresentationOf(StoryBeats.Beat.CollectorHail));
+
+        foreach (StoryBeats.Beat beat in All)
+        {
+            bool hosted = StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Hosted;
+            bool names = !string.IsNullOrWhiteSpace(StoryBeats.HostCard(beat));
+
+            Assert.True(hosted == names,
+                hosted
+                    ? $"{beat} is presented HOSTED and names no host — nothing would ever show it"
+                    : $"{beat} names a host card and is not presented HOSTED — the seam will raise its own "
+                      + "surface as well, which is the stacked card this presentation exists to prevent");
+        }
+    }
+
+    /// <summary>
+    /// A HOSTED BEAT NEVER WAITS, and the reason is different from the danger rule: there is nothing to hold.
+    /// Its surface belongs to a card the caller is raising right now, so "later" would mean showing the words
+    /// after the picture they belong to has gone. Stated over the whole enum so a second hosted beat inherits
+    /// the law instead of rediscovering it.
+    /// </summary>
+    [Fact]
+    public void AHostedBeatNeverDefersBecauseThereIsNothingToHold()
+    {
+        foreach (StoryBeats.Beat beat in All)
+        {
+            if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Hosted)
+            {
+                Assert.False(StoryBeats.DeferrableWhileInDanger(beat),
+                             $"{beat} is hosted by a card that is on screen NOW; there is nothing to defer");
+            }
+        }
+    }
+
+    /// <summary>
+    /// …and it is still fully written. Hosting moves the CANVAS to the caller, never the words: the host is
+    /// obliged to render this caption (the client guards that), and the seam writes it into the log either
+    /// way. A hosted beat allowed to go captionless would be a picture with no sentence anywhere — which is
+    /// precisely the state the hail was in before #777.
+    /// </summary>
+    [Fact]
+    public void HostingMovesTheCanvasAndNeverTheWords()
+    {
+        string caption = StoryBeats.Caption(StoryBeats.Beat.CollectorHail, "THE QUIET SISTER");
+
+        Assert.Contains("Grapples", caption, StringComparison.Ordinal);
+        Assert.Contains("THE QUIET SISTER", caption, StringComparison.Ordinal);
+        Assert.False(string.IsNullOrWhiteSpace(StoryBeats.Title(StoryBeats.Beat.CollectorHail)));
+    }
 }

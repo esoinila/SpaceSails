@@ -20,6 +20,12 @@ namespace SpaceSails.Client.Pages;
 /// <item><b>Does not block the playing too much</b> — a PLATE never steals the keyboard and never stops the
 /// world; a CARD may, and a deferrable card WAITS while the captain is in danger. The wreck lane paid for that
 /// rule once already, when a full-screen tutorial let a pack kill the captain behind it.</item>
+/// <item>#777 · <b>…and sometimes the best surface is one that is already up.</b> A HOSTED beat
+/// (<see cref="StoryBeats.Presentation.Hosted"/>) knocks on this same door and gets the same two disciplines
+/// applied to it — cadence spent, seen-set filed, words logged — and then the seam raises nothing, because
+/// the caller's own card is the canvas. The collector's hail is the shape's first case: its picture has been
+/// on the BUSTED demand panel since #528, so an ordinary raise would have stacked a second modal showing the
+/// identical painting. Hosting is how a beat gets counted as told without being told twice.</item>
 /// </list>
 /// </summary>
 public sealed partial class Map
@@ -93,20 +99,40 @@ public sealed partial class Map
     private static (StoryBeats.Beat, string?) SeenKey(StoryBeats.Beat beat, string? subject) =>
         StoryBeats.CadenceOf(beat) == StoryBeats.Cadence.OncePerSubject ? (beat, subject) : (beat, null);
 
-    /// <summary>Put it on screen, and remember that it spoke.</summary>
+    /// <summary>
+    /// Put it on screen, and remember that it spoke.
+    ///
+    /// <para>#777 · …except for a <see cref="StoryBeats.Presentation.Hosted"/> beat, where the screen is
+    /// already somebody else's and putting anything on it would BE the bug. The bookkeeping above the switch
+    /// and the log line below it are the whole of what the seam owes a hosted beat: it is COUNTED as told,
+    /// its cadence spends, its words go in the book — and the caller's own card carries the picture. A
+    /// switch rather than an if/else on purpose, and the old <c>else</c> is the reason: it made CARD the
+    /// answer to every question nobody had thought of yet, so the fourth presentation somebody invents would
+    /// have shipped as a full-screen modal by default. Here it matches no arm and shows nothing, which is
+    /// the safe way to be wrong.</para>
+    /// </summary>
     private void ShowStoryBeat(StoryBeats.Beat beat, string? subject)
     {
         _beatsSpoken[SeenKey(beat, subject)] = SimTime;
 
-        if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Plate)
+        switch (StoryBeats.PresentationOf(beat))
         {
-            _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
-            RendererInterop.PlayCue("reveal");
-        }
-        else
-        {
-            _storyCard = (beat, subject);
-            RendererInterop.PlayCue("reveal");
+            case StoryBeats.Presentation.Plate:
+                _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
+                RendererInterop.PlayCue("reveal");
+                break;
+
+            case StoryBeats.Presentation.Card:
+                _storyCard = (beat, subject);
+                RendererInterop.PlayCue("reveal");
+                break;
+
+            case StoryBeats.Presentation.Hosted:
+                // Nothing is raised, and nothing is played. The host is already up, already showing this
+                // beat's painting, and already making its own noise — a collector's grapples arrive on the
+                // "board" cue. A second "reveal" chime layered over that would be the stacked card again,
+                // in the one channel the player cannot close.
+                break;
         }
 
         // The log keeps the words even when the picture has gone, because a card is the only place some of these

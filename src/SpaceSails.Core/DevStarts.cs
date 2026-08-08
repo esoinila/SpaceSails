@@ -130,6 +130,13 @@ public static class DevStarts
             "/map?dock=the-space-bar"),
 
         // --- Set pieces --------------------------------------------------------------------------------
+        // #777 · THE HAIL, AND IT IS COUNTED NOW. ?death=collector has existed since #621 with only a row in
+        // docs/testing-guide.md — which was fine while the demand panel was a modal, and is not fine now that
+        // it is a story beat's canvas. The beat is FRESH on any boot (the seen-set starts empty), so this URL
+        // is the one-press way to watch a HOSTED beat do its whole job.
+        new("⛓", "CAUGHT — the hail, hosted by its own card",
+            "Heat raised, muscle sent, and the grapples across the frame the moment the world is ready. The demand panel carries the collector-hail painting AND the beat's own sentence; the log behind it has the same words filed once; nothing stacks a second card on top (#777, #621).",
+            "/map?death=collector&dock=selene-gate"),
         new("☄", "The rock that must not arrive",
             "The asteroid-deflection gig accepted, the rock inbound, ship docked at Ringside — the whole clock running (#394).",
             "/map?deflection=1"),

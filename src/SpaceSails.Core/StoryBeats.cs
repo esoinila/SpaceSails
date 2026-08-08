@@ -96,6 +96,28 @@ public static class StoryBeats
         /// <summary>An art plate at the edge for a few seconds. Same picture, same words, no keyboard stolen and
         /// no world stopped.</summary>
         Plate,
+
+        /// <summary>
+        /// #777 · HOSTED — the beat's canvas is a card its own caller already raises, so the seam raises
+        /// NOTHING and only keeps the books.
+        ///
+        /// <para>The hail is what this is for and it is not a special case, it is a shape. A collector's
+        /// grapples arrive as the BUSTED demand panel, and that panel has rendered
+        /// <see cref="ArtFile"/>(<see cref="Beat.CollectorHail"/>) at the top of itself since #528. Raising
+        /// the beat the ordinary way would have put a second full-screen modal, showing the very same
+        /// painting, on top of the first — <i>"stacking a card on a card is not service, it is noise"</i> —
+        /// and this is the one beat that may not <see cref="DeferrableWhileInDanger">wait for a calmer
+        /// moment</see>, because it IS the moment. So the beat had a picture and no cadence, no log line and
+        /// no caller, and #663's scanner counted it as an orphan for exactly as long as the seam had only
+        /// two answers.</para>
+        ///
+        /// <para>The third answer: the caller still knocks on the one door, the seam still applies the
+        /// cadence, still files the seen-set and still writes the words into the log — and then stands
+        /// aside, because the surface is already up. What the host owes in return is
+        /// <see cref="HostCard">named here</see> and enforced by the client's own guards: the picture and
+        /// the caption go in the host's subtree, where the player is already looking (#736, #761).</para>
+        /// </summary>
+        Hosted,
     }
 
     /// <summary>How often this beat may speak.</summary>
@@ -128,7 +150,26 @@ public static class StoryBeats
         Beat.ChargeLetGo => Presentation.Plate,
         // #541: scene-setting, never a decision — a docking must not wait for anybody to read anything.
         Beat.BerthGreatPort or Beat.BerthWorkingBerth or Beat.BerthOutpost => Presentation.Plate,
-        _ => Presentation.Card,                      // the hail, the deputation, the meeting, the news
+        // #777: the grapples arrive AS the BUSTED demand panel, which has been showing this beat's painting
+        // since #528. A card here would be a second modal over the first, with the same picture on it.
+        Beat.CollectorHail => Presentation.Hosted,
+        _ => Presentation.Card,                      // the deputation, the meeting, the news
+    };
+
+    /// <summary>
+    /// #777 · WHOSE CARD IS THE CANVAS. A <see cref="Presentation.Hosted"/> beat is only honest if some
+    /// surface really does show it, so the host is named here in the same file as the cadence and the art —
+    /// one place, and a beat that claims a host it does not have is a beat nobody can find.
+    ///
+    /// <para>Prose rather than a type on purpose: the host is a card in the client and Core does not know
+    /// what a card is. The client's guards read this the way the art manifest reads
+    /// <see cref="ArtFile"/> — as the sentence a human checks the markup against.</para>
+    /// </summary>
+    /// <returns>The host's name, or an empty string for a beat the seam raises itself.</returns>
+    public static string HostCard(Beat beat) => beat switch
+    {
+        Beat.CollectorHail => "the BUSTED demand panel (Map.razor, BustedEncounter.Stage.Demand)",
+        _ => "",
     };
 
     /// <summary>
@@ -139,6 +180,9 @@ public static class StoryBeats
     /// reason somebody died — so a deferrable one queues until the scene is calm, and the moments that ARE the
     /// danger (a collector already has you) do not defer, because deferring them would be absurd.</para>
     /// </summary>
+    /// <para>#777 · A HOSTED beat never defers either, and for a second reason on top of the first: there is
+    /// nothing to hold. Its surface is a card the caller is raising right now, so "later" would mean showing
+    /// the words after the picture they belong to has gone.</para>
     public static bool DeferrableWhileInDanger(Beat beat) => beat switch
     {
         Beat.CollectorHail => false,   // this IS the danger; it cannot wait for a better time

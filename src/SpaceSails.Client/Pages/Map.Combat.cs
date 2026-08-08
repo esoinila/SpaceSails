@@ -1904,6 +1904,13 @@ public partial class Map
             _busted.CollectorWrit = NebulaLore.ById("collector-writ")!.Lore;
         }
 
+        // #777 · AND THE BEAT IS FINALLY COUNTED AS TOLD. The demand panel opening IS StoryBeats' collector
+        // hail — it has rendered that beat's painting at the top of itself since #528 — so the beat is raised
+        // through the one door, HOSTED: the seam spends the cadence and writes the hail's words into the log,
+        // and raises no card, because the card is the thing we just opened. Reading a beat's ArtFile out of
+        // markup was never the same as raising it; that is what left this one an orphan through #663.
+        RaiseStoryBeat(StoryBeats.Beat.CollectorHail, hunter.Callsign);
+
         SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
         StateHasChanged();
     }
