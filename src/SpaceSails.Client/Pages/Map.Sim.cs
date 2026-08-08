@@ -988,6 +988,19 @@ public partial class Map
                     _ => null,
                 };
             }
+            else if (pair.StartsWith("hurt=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #784 dev cheat: /map?hurt=N puts N of CaptainCondition's five blows on the captain when
+                // the excursion starts — the OTHER half of the short rest, and the half that is invisible on
+                // an unmarked captain for the same reason as above.
+                string candidate = Uri.UnescapeDataString(pair["hurt=".Length..]);
+                if (int.TryParse(candidate, System.Globalization.NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out int blows)
+                    && blows >= 0 && blows < CaptainCondition.MaxHits)
+                {
+                    _hurtCheat = blows;     // never MaxHits: booting a tester into a death card is not a demo
+                }
+            }
             else if (pair.StartsWith("watch=", StringComparison.OrdinalIgnoreCase))
             {
                 // #751 dev cheat: /map?watch=N pins which SHIFT the Hive's canteen is on.
@@ -1171,11 +1184,20 @@ public partial class Map
                 // At N=1 the captain is NOT yet overdrawn (CaptainSuccession.EmptyThreshold sits under one
                 // pip), so what you watch is the real two-step break — a hand takes the last pip, the NEXT
                 // one breaks them — rather than an instant death the cheat invented.
+                //
+                // #784 · …and three WORDS beside the number, because the short rest's demo link is read by a
+                // person rather than by a machine and "nerve=low" says what it means where "nerve=2" needs
+                // the pip lattice explained first. Same flag, same clamp, same seed — the words are spellings
+                // of the number and never a second parser.
                 string candidate = Uri.UnescapeDataString(pair["nerve=".Length..]);
-                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pips))
+                nerveCheat = candidate.ToLowerInvariant() switch
                 {
-                    nerveCheat = pips;
-                }
+                    "shot" or "gone" => 0,
+                    "low" or "fraying" => 2,
+                    "half" or "shaken" => 5,
+                    _ => int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                            out int pips) ? pips : nerveCheat,
+                };
             }
             else if (pair.StartsWith("reevers=", StringComparison.OrdinalIgnoreCase))
             {
@@ -1332,6 +1354,7 @@ public partial class Map
             _autoWalkCheat = true;
             _tableSceneCheat = true;
         }
+
 
         if (secretlabCheat)
         {
@@ -2508,7 +2531,10 @@ public partial class Map
                 NerveLedger: NerveLedgerLines,
                 // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
                 // for itself (the #591 one-reach lesson).
-                Dark: DarkHere()),
+                Dark: DarkHere(),
+                // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
+                // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
+                Seated: CaptainIsSeated),
                 _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }
@@ -2703,6 +2729,10 @@ public partial class Map
         if (_groundGrewOpen) { CloseGroundGrew(); return true; }
         if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
         if (_airCardOpen) { CloseAirCard(); return true; }
+        // #784 · The stand-up confirm sits ABOVE the table it is asking about, and Esc means KEEP YOUR SEAT.
+        // Owner: "one press confirms, Esc keeps you seated." Listed here rather than under the table so the
+        // cancel key cannot answer the question by doing the thing the question is about.
+        if (_standUpAsk) { KeepYourSeat(); return true; }
         // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
         // always available, and a keyboard cancel that could not reach the one panel whose design law is
         // "you may always stand up" would be the game contradicting itself with a keystroke.
@@ -2787,6 +2817,14 @@ public partial class Map
             }
         }
 
+        // #784 · THE ONE QUESTION THIS KEY IS ALLOWED TO ANSWER, and the exception is worth stating rather
+        // than smuggling. Every other card in this method asks nothing; the stand-up confirm asks something.
+        // It is here because of WHERE IT CAME FROM: it was raised by the captain pressing a movement key, so
+        // their hands are already on the keyboard, and a confirm reachable only by mouse would strand
+        // somebody who had just tried to walk. The doing-nothing default is still SEATED — Esc and every
+        // other key leave the chair where it is — so Enter confirms the thing the captain just asked for
+        // rather than deciding something for them. FLAGGED for the owner: this is a judgement call.
+        if (_standUpAsk) { StandUpFromTable(); return true; }
         // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
         // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
         // on purpose, and its absence is the feature.

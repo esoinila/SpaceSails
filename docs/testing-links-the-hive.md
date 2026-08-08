@@ -292,6 +292,47 @@ did not refuse, did not answer, and never reached the dispatch.
    any beat — and the lines say why without stating a rule. The counter has eyes everywhere except in there,
    and so does everybody else.
 
+## 1d · ADDED (#784) — sitting down is a STATE: it shows, it constrains, and it heals
+
+```
+/map?tablescene=free&approach=0&nerve=low&hurt=3          take the table and WAIT — watch the short rest work
+/map?tablescene=free&approach=0&nerve=low&hurt=3&watch=5  …in the emptied hall, where the wait is all there is
+```
+
+Owner, live over the #778 table, three rulings in the same minutes: *"Let's make the graphics say I am
+sitting down at the avatar level — like different graphics etc."* · *"before moving I have to stand up… so if
+I try to move when sitting down it should ask with a pop-up whether I want to stand up again."* ·
+*"Sitting down relaxes and heals"*, and then the anchor: *"it is like short rest in TTRPG."*
+
+`&nerve=low&hurt=3` is not decoration. A recovery mechanic shown to a steady, unmarked captain demonstrates
+nothing at all — the relief seam is honest and gives nothing back to somebody who has lost nothing, so the
+whole feature would look like a control that did not fire.
+
+**What to look at, in order.**
+
+1. **The figure changes.** Before you press `[E]`, the captain is a filled circle with a spoke pointing where
+   they are walking. After: **no spoke** (you are going nowhere), a smaller body (folded into a chair), a bar
+   behind the shoulders (the chair back) and a short bar in front (arms on the table). Nothing in the panel
+   has to say "you are sitting" — the deck already did.
+2. **W does not walk you out of your own table.** Press any movement key: the captain does not move a
+   centimetre and a small confirm goes up — *"Stand up? You will lose the table."* — with the cost said
+   underneath while there is still a rest to lose. `Esc`, the backdrop and **Stay where you are** all keep
+   your seat; **Stand up** (or `Enter`) stands you up and the table is gone.
+3. **WAIT is a short rest.** Each press eases a whole nerve pip — watch the corner gauge and the **nerve
+   ledger**, which names it — and the panel adds one clause after the room's own silence line. On the third
+   beat one of the five blows knits: the condition marker under the gauge goes *badly cut* → *bleeding*.
+4. **A short rest is SHORT, and the game says so.** Keep pressing. The nerve stops moving at the ceiling and
+   the panel tells you why rather than handing back a beat that silently did nothing. One blow per watch and
+   never two: the rest of you comes back in the ship's bunk, which is the long rest.
+5. **The pour pays in tempo.** Boot `&counter=1` instead, buy THE LOCAL POUR, then walk to a free top and
+   sit: the same rest lands in half the beats. It multiplies the RATE and never the ceiling — the glass buys
+   the rest *before the room takes it off you*, which matters because #757's haulier can walk into the middle
+   of it. Three tots and it stops helping, which is the game's one drunkenness law and not a second opinion.
+6. **Writing properly is seated-only.** Open the satchel (`I`) standing up, on a document: the ✍ control
+   refuses out loud and names the register you DO have — photograph it and leave it, which is #696 untouched.
+   Sit down and press it again: the book takes the entry in your own hand **and the sheet stays in your
+   pocket**, which is the whole of what a table buys.
+
 ## 2 · The board, and whose notice is whose (#709)
 
 ```
@@ -441,6 +482,8 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
 | `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — the table you can now take |
 | `&approach=1\|0` | force whether waiting at it brings somebody over (#757); `0` is the told nobody-came beat |
+| `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
+| `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 
 ## What has NO link yet, because it is not built
 

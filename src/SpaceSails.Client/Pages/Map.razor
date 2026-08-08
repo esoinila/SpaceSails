@@ -1853,6 +1853,32 @@
         </div>
     }
 
+    @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
+       when sitting down it should ask with a pop-up whether I want to stand up again."
+
+       Drawn AFTER the table so it lands on top of it — it is a question about that panel and it has to be
+       the thing the eye and the cancel key both reach first. Plain words and nothing else (#782/#783): the
+       question, what it costs when it costs something, and the two answers. Esc is the second road to "stay
+       where you are", and Enter to "stand up" (see TryConfirmTopOverlay's flagged exception). *@
+    @if (_standUpAsk)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
+            <div class="deck-offer-card stand-up-card" @onclick:stopPropagation="true">
+                <div class="deck-offer-giver">@SpaceSails.Core.SeatedPosture.StandUpAsk</div>
+                @if (StandingUpCostsARest)
+                {
+                    <div class="table-outcome">@SpaceSails.Core.SeatedPosture.StandUpCostsTheRest</div>
+                }
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            @onclick="() => Dismiss(StandUpFromTable)">@SpaceSails.Core.SeatedPosture.StandUpYes</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            @onclick="() => Dismiss(KeepYourSeat)">@SpaceSails.Core.SeatedPosture.StandUpNo</button>
+                </div>
+            </div>
+        </div>
+    }
+
     @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
        instrument it is a list of things to TRY, and every answer is definite. *@
     @if (_showSatchel)
@@ -2065,6 +2091,23 @@
                                     <button type="button" class="satchel-leave"
                                             title="@LeaveHintFor(item)"
                                             @onclick="() => LeaveItem(item)">🫳</button>
+                                    @* #784 · WRITE IT UP PROPERLY — the field book's other register, and
+                                       posture is the gate. Owner's law: "writing things down requires
+                                       sitting down to be properly done." Standing, this refuses OUT LOUD
+                                       and the leave control beside it still files the moving-knee scrawl
+                                       exactly as it always has; seated at a table the book takes the entry
+                                       AND the sheet stays in your pocket.
+
+                                       Drawn on your FEET as well as in a chair, and live either way — the
+                                       refusal is how the law is learned, and #603 says a refusal is said
+                                       rather than hidden behind a control that is not there. It goes only
+                                       when there is genuinely nothing left to write. *@
+                                    @if (CanWriteUp(item))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@WriteUpHint(item)"
+                                                @onclick="() => WriteItUp(item)">@SpaceSails.Core.SeatedPosture.WriteGlyph</button>
+                                    }
                                  </div>;
                         }
 

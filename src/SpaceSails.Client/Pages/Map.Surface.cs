@@ -807,6 +807,23 @@ public partial class Map
         // answer, not a re-roll.
         public HashSet<string> TableApproached { get; } = [];
 
+        // ── #784 · WHAT THE SHORT REST HAS ALREADY GIVEN BACK, THIS WATCH ─────────────────────────────
+        //
+        // Owner: "Sitting down relaxes and heals" — and, naming the shape, "it is like short rest in TTRPG",
+        // which is bounded recovery and not a tap. ShortRest owns the ceiling; these two are the ledger it
+        // is measured against.
+        //
+        // Keyed on the WATCH and deliberately not on the table, because the cap is a fact about the SHIFT.
+        // Keyed by table it would be a cap you could reset by standing up and taking the next top along —
+        // the same "press it again for a better answer" #757 closed on the approach roll, wearing a chair.
+        public Dictionary<long, int> RestPipsEased { get; } = [];   // nerve pips handed back this watch
+        public Dictionary<long, int> RestHitsKnit { get; } = [];    // blows knitted this watch
+
+        // #784 · …and which carried things have been written up PROPERLY (seated, in the captain's own hand)
+        // rather than photographed and left. Excursion-scoped like the rest of this block: the BOOK is what
+        // is durable, and it keeps the note; this only stops the pen offering to write the same page twice.
+        public HashSet<string> WrittenUpProperly { get; } = [];
+
         // #743/#746 · Whether the staff mess has already had its chit beat. Once per excursion, in the DEAD
         // AIR family: the first time you show a pass to an empty room and eat is the beat, and every time
         // after it is lunch.
@@ -953,6 +970,15 @@ public partial class Map
             ShipBot b = _shipBots[0];
             _shipBots.RemoveAt(0);
             excursion.Bots.Add(new SurfaceBot { Unit = b.Unit, Rounds = b.Rounds, Deployed = false });
+        }
+
+        // #784 QA · ?hurt=N — the captain steps out already marked, so the short rest's HEALING half is
+        // watchable. Here, at the one place an excursion's blow count begins, and never later: the condition
+        // marker, the block roll's modifier stack and the breathing rate all read this number, and a cheat
+        // that wrote it after they had started reading would show a tester three different captains.
+        if (_hurtCheat is { } blowsAlready)
+        {
+            excursion.HitsTaken = Math.Clamp(blowsAlready, 0, CaptainCondition.MaxHits - 1);
         }
 
         _surface = excursion;
