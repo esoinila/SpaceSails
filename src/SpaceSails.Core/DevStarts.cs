@@ -107,6 +107,16 @@ public static class DevStarts
         new("🃏", "The card that lands on top of the beat",
             "The surface of a deep site with the authority the first gate reads already in the wallet. Into the shed, press the row that is no longer sealed, and ride from daylight straight through the gate: the first-descent card stops the world — and the gate's own beat is waiting on the pulse when you close it, instead of having played under it (#768, #693).",
             "/map?secretlab=deep&land=1&card=next"),
+        // #757 · The table the owner could not sit down at, and the two answers waiting at it can give. Both
+        // rows exist for the same reason #693's does: whether anybody crosses the room is a seeded roll at
+        // one top on one shift, so without a lever the somebody-comes beat is reachable only by luck and the
+        // told nobody-came outcome only by more of it.
+        new("🪑", "A table with nobody at it — take it, and wait",
+            "B1's canteen with the captain standing at a FREE top. [E] takes the table; WAIT holds it. Somebody is forced to cross the room on the next wait: she asks for the chair, offers the round, and then says what she came over for (#757).",
+            "/map?tablescene=free&approach=1"),
+        new("🪑🕳", "…and the watch where nobody comes",
+            "The same table on the small watch with the approach forced OFF. Wait as long as you like: an eighty-seat hall answers, in words, that nothing is going to happen. That is the beat, not a bug (#757).",
+            "/map?tablescene=free&watch=5&approach=0"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),

@@ -903,10 +903,16 @@ public partial class Map
                 // any other shift (#709) — a cheat that seated the Hand for you would be testing a room that
                 // does not ship. If this watch has no Hand in it, that IS the room: come back next shift, or
                 // reload for a different one.
+                //
+                // #757 · …and `?tablescene=free` is the SAME route with a different last step: it stands you
+                // at a top with NOBODY at it, which is the table the owner could not sit down at ("I have
+                // empty table but I cannot sit down"). Same room, same rota, same watch — the only thing the
+                // cheat chooses is which of the room's own tops you are standing at when it lets go.
                 string candidate = Uri.UnescapeDataString(pair["tablescene=".Length..]).ToLowerInvariant();
-                if (candidate is "1" or "true" or "yes")
+                if (candidate is "1" or "true" or "yes" or "free")
                 {
                     tableSceneCheat = true;
+                    _freeTableCheat = candidate == "free";
                     secretlabCheat = true;
                     secretlabDeep = true;
                     _landCheat = true;
@@ -935,6 +941,28 @@ public partial class Map
                     _landCheat = true;
                     _startingFloorCheat = -1;   // B1 — the hall, which is the only floor with a counter on it
                 }
+            }
+            else if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #757 dev cheat: /map?approach=1 makes the next WAIT at a table you took alone bring
+                // somebody over; /map?approach=0 means nobody ever comes.
+                //
+                // Both halves are the feature. Whether anybody crosses the room is a seeded roll at one top
+                // on one shift, so without this the somebody-comes beat is reachable only by luck and the
+                // told nobody-came outcome is reachable only by more of it. Owner's own framing, again:
+                // "testing is a feature", and #693's rule that a scene nobody can reach on demand is a scene
+                // that ships broken.
+                //
+                // It forces WHETHER and never WHO or WHAT: the ladder, her lines and what she came over for
+                // are the ones a captain gets, because a cheat that showed a different scene would be worse
+                // than no cheat at all.
+                string candidate = Uri.UnescapeDataString(pair["approach=".Length..]).ToLowerInvariant();
+                _approachCheat = candidate switch
+                {
+                    "1" or "true" or "yes" or "now" => true,
+                    "0" or "false" or "no" or "never" => false,
+                    _ => null,
+                };
             }
             else if (pair.StartsWith("watch=", StringComparison.OrdinalIgnoreCase))
             {

@@ -301,12 +301,27 @@ public sealed class TheTableSceneIsOneRoomTests
             Assert.Contains("TableAnswered(", method, StringComparison.Ordinal);
         }
 
-        // …and the whole file may pulse exactly twice: the leave line (correct — the panel is gone, see the
-        // next guard) and the dev cheat's own notice. A third pulse appearing here is a line somebody
-        // decided to say over the top of an open modal, which is #680 coming back.
-        int pulses = table.Split("ShowPulseMessage(").Length - 1;
-        Assert.True(pulses == 2,
-            $"Map.Table.cs pulses {pulses} lines; only taking your leave and the dev notice may, because " +
+        // …and the whole file may pulse in exactly two PLACES: taking your leave (correct — the panel is
+        // gone, see the next guard) and the dev cheat's own boot notice, which #757 gave a second spelling
+        // (?tablescene=free) and which fires before any panel exists at all. A pulse anywhere else is a line
+        // somebody decided to say over the top of an open modal, which is #680 coming back — so this counts
+        // pulses OUTSIDE those two methods and requires it to be zero.
+        foreach (string method in new[] { "private void StandInTheCanteenIfAsked(", "private void TableMove(" })
+        {
+            Assert.True(table.Contains(method, StringComparison.Ordinal),
+                $"Map.Table.cs no longer has {method} — this guard needs re-reading.");
+        }
+
+        string withoutTheTwo = table
+            .Replace(MethodBodyAround(table, table.IndexOf(
+                "private void StandInTheCanteenIfAsked(", StringComparison.Ordinal)), "", StringComparison.Ordinal);
+        int at2 = withoutTheTwo.IndexOf("private void TableMove(", StringComparison.Ordinal);
+        withoutTheTwo = withoutTheTwo
+            .Replace(MethodBodyAround(withoutTheTwo, at2), "", StringComparison.Ordinal);
+
+        int strays = withoutTheTwo.Split("ShowPulseMessage(").Length - 1;
+        Assert.True(strays == 0,
+            $"Map.Table.cs pulses {strays} lines outside taking-your-leave and the dev boot notice, and " +
             "every other line in this scene is said while the panel is still up (#680).");
     }
 

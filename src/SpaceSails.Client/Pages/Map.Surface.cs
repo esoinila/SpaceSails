@@ -790,6 +790,23 @@ public partial class Map
         public bool TableTempOverheard { get; set; }
         public bool TableHouseWays { get; set; }
 
+        // ── #757 · AND WHAT HAS HAPPENED AT A TABLE YOU TOOK ALONE ────────────────────────────────────
+        //
+        // Owner, live in the hall: "I have empty table but I cannot sit down", and then the sharpening the
+        // same evening: "Suppose I just want to sit down and wait to be disturbed?"
+        //
+        // Same key, same watch scope, same reason as the four sets above. HOW MANY BEATS you have sat
+        // through at a top is the ROOM's memory of you rather than the conversation's — standing up and
+        // sitting down again must not buy a fresh set of dice, because the approach is seeded on the beat
+        // and re-rolling by standing up is exactly the "press it again for a better answer" this game
+        // refuses everywhere else.
+        public Dictionary<string, int> TableWaits { get; } = [];
+
+        // …and whether somebody has already crossed the room to a given top this watch. ONE approach per
+        // table per shift: she came over, and whichever way that went, it went. Waving her off is an
+        // answer, not a re-roll.
+        public HashSet<string> TableApproached { get; } = [];
+
         // #743/#746 · Whether the staff mess has already had its chit beat. Once per excursion, in the DEAD
         // AIR family: the first time you show a pass to an empty room and eat is the beat, and every time
         // after it is lunch.

@@ -208,10 +208,30 @@ public static class HiveInterior
             foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(bodyId, level, a, canteenWatch))
             {
                 tables.Add(((float)top.X, (float)top.Y));
+                // #757 · EVERY TOP IS NOW A CONSOLE, and which kind it is is the one fact the room already
+                // knows: somebody at it, or nobody. Owner, live in the hall: "I have empty table but I
+                // cannot sit down." An empty top used to be drawn as a ring on the floor and nothing else,
+                // so [E] there had literally nothing to answer — the refusal the issue is titled after was
+                // an ABSENCE, which is the one kind of refusal a player cannot read.
+                //
+                // Still one call, still the same frozen watch. The renderer does not decide who may be sat
+                // with; it labels what Core says is there.
+                //
+                // …and TAKING one is offered in the room outsiders are admitted to and NOWHERE ELSE, which is
+                // Core's own B1 ruling (CanteenRegulars.PeopleSitHere) rather than a clause typed here.
+                // B17's staff mess is hall-class as well and just as full of tops, and its whole identity is
+                // that the shift has not come — twenty FREE TABLE plates in it would be this renderer handing
+                // that room a verb its own design refuses.
                 if (top.Plate is { } plate)
                 {
                     consoles.Add(new(
                         DeckPlan.ConsoleKind.HiveRegular, (float)top.X, (float)top.Y, plate));
+                }
+                else if (CanteenRegulars.PeopleSitHere(bodyId, level, a))
+                {
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveTable, (float)top.X, (float)top.Y,
+                        SittingAlone.FreeTablePlate));
                 }
             }
 

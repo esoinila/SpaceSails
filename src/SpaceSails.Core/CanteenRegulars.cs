@@ -336,6 +336,26 @@ public static class CanteenRegulars
     private static int CabinetRoom(UndergroundComplex.Amenity amenity) =>
         amenity.Hall?.Cabinets.Count ?? 0;
 
+    /// <summary>
+    /// #709/#757 · IS THIS THE ROOM PEOPLE ARE IN? The owner's B1 ruling, as a question anybody may ask.
+    ///
+    /// <para>The upper canteen, on the top pressurised floor, and nowhere else. It was already the first two
+    /// clauses of <see cref="Seating"/> and of <see cref="Crowd"/> in longhand; #757 needed a THIRD caller,
+    /// because an empty top may only offer <i>take this table</i> in a room outsiders are admitted to — the
+    /// pass-only staff mess is hall-class as well, full of tops, and its whole identity is that the shift
+    /// has not come and nobody is ever in it. A third private copy of two clauses is how one rule stops
+    /// being one rule, so the copies became this.</para>
+    /// </summary>
+    /// <param name="bodyId">The site.</param>
+    /// <param name="level">The floor.</param>
+    /// <param name="amenity">The room, as Core carved it (#707).</param>
+    public static bool PeopleSitHere(string bodyId, int level, UndergroundComplex.Amenity amenity)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return amenity.Use == UndergroundComplex.Comfort.UpperCanteen
+            && UndergroundComplex.TopPressurisedFloor(bodyId) == level;
+    }
+
     /// <summary>WHO IS AT WHICH TABLE, as indices — the one rota, called by <see cref="Sitting"/> and by
     /// <see cref="Tables"/>. It was inlined in Sitting until #746 needed the table's ORDINAL as well as its
     /// coordinates; matching a person back to a top by comparing two doubles would have been a second answer
@@ -348,16 +368,10 @@ public static class CanteenRegulars
         var seating = new List<(int Table, int Who)>();
 
         // The washroom and the deep staff mess get nobody. The mess is pass-only and the people who would be
-        // in it are #618's question, not this one; the washroom is the one amenity nobody sits down in.
-        if (amenity.Use != UndergroundComplex.Comfort.UpperCanteen)
-        {
-            return seating;
-        }
-
-        // And only on the floor the owner put them on. UpperCanteen is only ever carved on the top
-        // pressurised floor today, so this is belt and braces — deliberately, because the day somebody
-        // carves a second canteen the B1 ruling must not quietly stop being true.
-        if (UndergroundComplex.TopPressurisedFloor(bodyId) != level)
+        // in it are #618's question, not this one; the washroom is the one amenity nobody sits down in. And
+        // only on the floor the owner put them on — #757 lifted both clauses into PeopleSitHere so that the
+        // third caller could not become a second opinion.
+        if (!PeopleSitHere(bodyId, level, amenity))
         {
             return seating;
         }
@@ -526,9 +540,7 @@ public static class CanteenRegulars
         // Halls only, upper canteen only, top floor only. The middle clause is the one with teeth: the
         // STAFF MESS is hall-class too (#751's second customer) and it must stay empty on every watch
         // forever — its whole identity is #743's sentence at architectural scale, "the shift has not come".
-        if (amenity.Hall is null
-            || amenity.Use != UndergroundComplex.Comfort.UpperCanteen
-            || UndergroundComplex.TopPressurisedFloor(bodyId) != level)
+        if (amenity.Hall is null || !PeopleSitHere(bodyId, level, amenity))
         {
             return crowd;
         }

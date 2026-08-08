@@ -45,6 +45,13 @@ public sealed class DeckPlan
         // round-buying economy (Map.Quests), and none of that is true of a haulier who has been waiting three
         // days for a signature. One kind per verb — stop at a table, hear one breath of somebody's working day.
         HiveRegular,
+        // #757 · A canteen top with NOBODY at it. Its own kind rather than a HiveRegular with no plate,
+        // because it is a different VERB: HiveRegular is "ask somebody whether you may join them", and this
+        // is "take the table" — the normal way to operate in a bar, and the one the room refused outright
+        // until #757 (owner, live in the hall: "I have empty table but I cannot sit down"). An empty top
+        // carried no console at all, which is why [E] answered nothing there: not a refusal anybody could
+        // read, an absence.
+        HiveTable,
         // #709 · The cork board on the canteen wall. Its own kind and NOT a HiveSign: a sign is a door that
         // will not open and says what is behind it, and this is paper somebody pinned up — read one notice at
         // a time, filed, and worth coming back to when you have met the people in the room.

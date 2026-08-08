@@ -250,6 +250,11 @@ public sealed class SceneInventoryTests
                                              "B1 ruling). Every floor below is deserted on purpose, which " +
                                              "is exactly why no general scene sweep reaches one; " +
                                              "ThereArePeopleInTheBarTests walks the floors that have them",
+        [DeckPlan.ConsoleKind.HiveTable] = "#757 a canteen top with NOBODY at it — take the table. Same one " +
+                                           "room per site as the person sitting at the next one over " +
+                                           "(CanteenRegulars.PeopleSitHere), so no general sweep reaches " +
+                                           "one either; YouCanSitAtAnEmptyTableTests walks every top of " +
+                                           "every floor of ten sites on six watches",
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",
