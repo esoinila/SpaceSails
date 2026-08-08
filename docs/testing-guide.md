@@ -595,6 +595,7 @@ place out of four, and nothing that reaches an impact at all.
 ```
 /map?death=impact                                  the ship into a world at speed
 /map?death=collector                               CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST
+/map?death=collector&dock=selene-gate              …the same catch, from a berth with muscle in reach (#777)
 /map?death=suffocated&dock=the-tilt&land=1         the tank runs dry on the regolith
 /map?death=reevers&dock=the-tilt&land=1            the Old Ones take you on the ground
 /map?death=suffocated&wreck=1&land=1               the tank runs dry inside a dead hull
@@ -622,6 +623,29 @@ out (so a full-nerve captain honestly gets the mauled caption, a shattered one t
 whether the cause is legal where you are standing — ask for a `collector` death inside a wreck and the law
 substitutes one that can happen there, and the game says so in a DEV pulse rather than inventing a
 character. `?death=void` has no lane yet and says so.
+
+#### …and what to look at while you are there — the HOSTED hail (#777)
+
+`?death=collector` is also the only way to reach `StoryBeats.Beat.CollectorHail` on demand, and since #777
+that beat is **hosted**: the demand panel it opens *is* the beat's canvas, so the seam keeps the books and
+raises nothing. The beat is fresh on any boot (the seen-set starts empty), so one URL shows the whole shape.
+The dev-start button is **⛓ CAUGHT — the hail, hosted by its own card**.
+
+```
+/map?death=collector&dock=selene-gate
+```
+
+Check four things on the panel that opens:
+
+1. the **grapples painting** across the top (`art/collector-hail.jpg`) — that has been there since #528;
+2. **the beat's own sentence under it**, naming the collector that has you. That is new, and it is the point:
+   a hosted beat has no card of its own to carry its prose, so the host owes it the words (#761, #736);
+3. **exactly one card.** Nothing opens over the demand panel — that second modal, showing the very same
+   painting, is what #663 refused to ship and what the hosted presentation exists to avoid;
+4. **the log behind it** (`⛓ GRAPPLES — Grapples come across the frame…`) filed **once**. Close the panel and
+   the words are still there, which is the whole reason the seam is involved at all.
+
+The same beat fires on the on-foot writ too (#583) — get caught out on a moon and the panel is identical.
 
 ### The salvage run — `?wreck=1` / `?wreck=<cause>` (#488)
 
