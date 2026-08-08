@@ -37,16 +37,18 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class SittingAlone
 {
-    /// <summary>The glyph a taken table's note wears — a chair, at console size.</summary>
+    /// <summary>The glyph a table of your own wears — a chair, at console size. A pocket, a board and a
+    /// person all have one; this is the furniture's, and both plates below are built out of it so the room
+    /// cannot end up with two chairs that are drawn differently.</summary>
     public const string Glyph = "🪑";
 
     /// <summary>What a free top is labelled on the deck. The whole of #757's complaint was that an empty
     /// table said nothing and answered nothing; this is the half of the fix the eye does.</summary>
-    public const string FreeTablePlate = "🪑 A FREE TABLE";
+    public const string FreeTablePlate = Glyph + " A FREE TABLE";
 
     /// <summary>Who you are sitting with. Nobody — and the panel says so plainly rather than leaving its
     /// counterpart line blank, which reads as a missing string.</summary>
-    public const string OwnTablePlate = "🪑 YOUR OWN TABLE";
+    public const string OwnTablePlate = Glyph + " YOUR OWN TABLE";
 
     /// <summary>Where you are. <see cref="CanteenTable.Setting"/>'s own words — one room, one name for
     /// it.</summary>
