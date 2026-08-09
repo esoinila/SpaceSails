@@ -119,6 +119,22 @@ public static class PatrolBeat
     /// monospace over a moving dot.</summary>
     public static string DeckName(int index) => $"PATROL {index + 1}";
 
+    /// <summary>
+    /// #793 · A GUARD, AS A BENCH SEES THEM — and the answer is always the same: NOT A TAIL.
+    ///
+    /// <para>A round is <see cref="BeatFor"/>'s stop list, a pure function of (site, floor, watch) and the
+    /// floor plan. It is laid before the captain steps off the car and it does not read them, which is
+    /// precisely <see cref="FootTail.Mover.OnAPublishedRound"/> — so #793's counter-surveillance question is
+    /// answered <b>no</b> by every guard in the building by construction, rather than by a clause somebody
+    /// remembered to write at a call site.</para>
+    ///
+    /// <para>That is a LAW and not a gap. A round that started following people would not be a round: the
+    /// whole of this file is somebody doing a job on a rota, and a captain who sits down on a bench and
+    /// watches a patrol keep its pace has learned something true about the building.</para>
+    /// </summary>
+    public static FootTail.Mover OnTheRound(int index, double x, double y) =>
+        FootTail.OnARound(DeckName(index), x, y);
+
     /// <summary>Is this deck name one of ours? The renderer's ink gate, and a single answer so a fourth kind
     /// of figure on the deck cannot be told apart by a string literal typed twice.</summary>
     public static bool IsGuardName(string? name) =>

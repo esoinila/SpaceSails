@@ -117,6 +117,17 @@ public static class SeatedHud
         {
             return "the door is shut — nobody is crossing the room to you";
         }
+
+        // #793 · …AND A BENCH IS NOT IN THE HALL AT ALL. Same law, the other way out: a strip that reported
+        // "the hall is heaving" to a captain sitting on gravel behind a window wall would be quoting a crowd
+        // figure for a room they cannot see, which is the exact fault this file was built to be incapable of
+        // (#740). What is true on a bench is the thing the whole sit is FOR — the sight lines. Owner: "the
+        // park's openness is the point: the same move at a hall table proves nothing."
+        if (seat == Seat.ParkBench)
+        {
+            return OpenWalkClause;
+        }
+
         double fill = Math.Clamp(watchFill, 0, 1);
         return fill >= HeavingAt ? "the hall is heaving"
             : fill >= SittingAlone.BusyAt ? "the hall is working"
@@ -128,6 +139,12 @@ public static class SeatedHud
     /// watches the game actually has — a threshold that selected everything, or nothing, would be a clause
     /// that says nothing (the fifth bug class). FLAGGED for the owner's tuning.</summary>
     public const double HeavingAt = 0.75;
+
+    /// <summary>#793 · The room clause a PARK BENCH gets. It states the one fact that is true of the room
+    /// you are actually in and that the sit is for: nothing crosses that gravel unseen, so anybody who is
+    /// on the walk is on the walk in front of you.</summary>
+    public const string OpenWalkClause =
+        "the walk runs clear both ways — nobody crosses this gravel out of sight";
 
     // ── THE LINE ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -169,6 +186,7 @@ public static class SeatedHud
         yield return RestClause(0, ShortRest.NervePipCapPerWatch);
         yield return RestClause(ShortRest.NervePipCapPerWatch, ShortRest.NervePipCapPerWatch);
         yield return RoomClause(Seat.Cabinet, 0);
+        yield return RoomClause(Seat.ParkBench, 0);
         yield return RoomClause(Seat.HallTable, 1);
         yield return RoomClause(Seat.HallTable, SittingAlone.BusyAt);
         yield return RoomClause(Seat.HallTable, 0);

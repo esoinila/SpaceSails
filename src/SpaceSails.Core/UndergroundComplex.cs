@@ -1618,6 +1618,13 @@ public static class UndergroundComplex
     /// arrives with it; this is the furniture it will arrive at.</summary>
     public const string ParkBenchPlate = "🪑 A STEEL BENCH";
 
+    /// <summary>#759/#793 · Half the length of one, in deck units — the segment the carve bolts down and
+    /// therefore the segment a body collides with. PUBLISHED because #793 makes the bench a SEAT WITH TWO
+    /// ENDS (<see cref="ParkBenches"/>): where you sit down, where somebody else can sit, and how far apart
+    /// the two are, are all this number. A caller measuring it off a screenshot would be doing geometry
+    /// about furniture it did not bolt down (§13.15).</summary>
+    public const double ParkBenchHalfDu = 1.8;
+
     /// <summary>#759 · The picture the park's floor wears. The owner's shotcrete ruling applies to it and it
     /// is the regenerated shot: <i>"the crude rock is not up to modern mining smooth spray concrete
     /// specs."</i></summary>
@@ -3830,7 +3837,7 @@ public static class UndergroundComplex
             double off = w > mid ? ParkWalkHalfDu + 1.6 : -(ParkWalkHalfDu + 1.6);
             double by = W(w + off);
             benches.Add((u, by));
-            walls.Add(new(u - 1.8, by, u + 1.8, by, true));
+            walls.Add(new(u - ParkBenchHalfDu, by, u + ParkBenchHalfDu, by, true));
         }
 
         // ── THE MASTS · the artificial day, standing against the far wall.

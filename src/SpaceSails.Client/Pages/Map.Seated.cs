@@ -246,11 +246,18 @@ public partial class Map
     ///
     /// <para>Off the room's own facts and never a client opinion: <c>Quiet</c> is Core's cabinet flag
     /// (<see cref="CanteenRegulars.TableSeat.Quiet"/>, the same bit <see cref="SittingAlone.SomebodyComes"/>
-    /// refuses on), and a stool is a stool. The park bench is in the enum and unreachable from here on
-    /// purpose: #793 wires the sit verb to the benches, and when it does this is the one line it changes.</para>
+    /// refuses on), and a stool is a stool.</para>
+    ///
+    /// <para>#793 · AND THE BENCH RUNG IS REACHABLE NOW. It was in the enum and answered by the predicate
+    /// from the day #799 shipped, waiting for a seat to point at it; the sit verb arrived at the park's
+    /// benches and this is the one line it took — a flag on the sitting (<c>TableTalk.Bench</c>) rather than
+    /// a second seated state, because a bench and a cabinet are the same POSTURE and a different
+    /// EXPOSURE.</para>
     /// </summary>
     private SeatedHud.Seat? SeatedIn =>
-        _table is { } t ? (t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable)
+        _table is { } t
+            ? t.Bench ? SeatedHud.Seat.ParkBench
+                : t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable
         : _stool is not null ? SeatedHud.Seat.BarStool
         : null;
 
@@ -264,7 +271,13 @@ public partial class Map
         {
             if (_table is { } t)
             {
-                return t.Solo;
+                // #793 · TWO WAYS TO LOSE THE SEAT TO YOURSELF, and they are not the same fact. At a table
+                // it is the chair opposite (#757's Solo, which is also whether this is a CONVERSATION). On a
+                // bench it is the far end of the plank — somebody who has started no conversation at all
+                // and is still close enough to read what is on your knee. Solo alone would have called a
+                // shared bench private; SharedSeat alone would have called a table with a face across it
+                // private. Both, asked together, because the ladder's question is "can anybody read this".
+                return t.Solo && !t.SharedSeat;
             }
             if (_surface is { } ex && _stool is { } s)
             {
