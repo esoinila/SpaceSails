@@ -207,8 +207,11 @@ public sealed class DeckPlan
     /// other's: 31 here, 30 on `main`. Sized now for ALL FOUR bands (3 + 24 + 4 + 3), which is what
     /// <c>Map.Surface.SurfaceDroidCount</c> computes and what <c>FillSurfaceDroids</c> writes. A buffer that
     /// is one band short does not throw — it silently draws nobody, which is how this class of bug survives
-    /// a merge.</para></summary>
-    public const int MaxDroids = 34;
+    /// a merge.</para>
+    ///
+    /// <para>#804 · And two more for the ROUNDS on the Hive's restricted floors — a fifth kind of figure,
+    /// and the first the underground has ever had. All FIVE bands: 3 + 24 + 4 + 3 + 2 = 36.</para></summary>
+    public const int MaxDroids = 36;
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 

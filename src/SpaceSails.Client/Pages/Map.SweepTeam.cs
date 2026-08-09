@@ -493,7 +493,12 @@ public sealed partial class Map
                 return;
             }
 
-            buffer[slot] = i < _sweepers.Count
+            // #804 · …and NEVER on a floor of the Hive. This band used to fall off the end of the Hive
+            // deck's droid count, which parked the sweepers by accident; the count is the whole buffer now
+            // (the rounds are the last band), so the accident has to become a rule. A black-ops team hired
+            // to strip a derelict is not walking a clandestine basement, and drawing them on one would be
+            // the picture claiming something the sim never said.
+            buffer[slot] = i < _sweepers.Count && _surface is not { Floor: < 0 }
                 ? new DeckPlan.Droid(_sweepers[i].X, _sweepers[i].Y, _sweepers[i].Facing, _sweepers[i].Callsign)
                 : new DeckPlan.Droid(-9999, -9999, 0, InspectionTeam.Callsigns[i]);
         }
@@ -525,6 +530,18 @@ public sealed partial class Map
         foreach (Collector c in _collectors)
         {
             yield return new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy);
+        }
+
+        // #804 · AND THE ROUNDS, WHICH ARE THE FIRST THING THE FAN HAS EVER HAD TO HEAR UNDERGROUND. Owner:
+        // "We need our motion detector to warn us or that we hear a noise they make before they spot us."
+        //
+        // Listed HERE and nowhere else, exactly as the comment above demands — and note what it buys for
+        // free: the fan hears them through poured wall at #591's degraded reach, the smudge path already
+        // draws a wall-blocked return as a smear, and none of that needed a line of new instrument code. A
+        // guard walks, so a guard is a contact. There is no special case anywhere.
+        foreach (Guard g in _guards)
+        {
+            yield return new MotionTracker.Entity(g.X, g.Y, g.Vx, g.Vy);
         }
     }
 }
