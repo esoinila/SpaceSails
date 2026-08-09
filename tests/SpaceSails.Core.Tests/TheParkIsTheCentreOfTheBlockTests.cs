@@ -896,6 +896,117 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
         Assert.True(cornered > 40, $"only {cornered} corner rooms were read — the gradient is untested.");
     }
 
+    // ── (g3) A SIGN YOU HAVE TO STEP OFF TO READ IS NOT SIGNAGE ───────────────────────────────────────
+
+    /// <summary>
+    /// #775's LESSON, RE-LEARNED ON FOURTEEN ROOMS A FLOOR: no ring room's plate stands on its own doorway.
+    ///
+    /// <para>#775 paid for this once already, on the hall's own front doors: <i>"a plate centred on its own
+    /// doorway is a plate with the captain standing on top of it the moment they arrive — watched happen in
+    /// the browser on the first boot of <c>?frontdoor=1</c>, the dot sitting squarely on the word
+    /// CANTEEN."</i> The block shipped the identical mistake on every room of the ring, and it was found the
+    /// identical way: booting <c>?parkwalk=1</c> and reading the pixels, with the avatar sitting in the
+    /// middle of PRIVILEGED RECORDS · READING ROOM.</para>
+    ///
+    /// <para>Which is the argument for this guard rather than for a careful placer. The geometry was right,
+    /// every other law in this file was green, and the only instrument that could see it was a screenshot.
+    /// A law that can only be checked by eye gets checked once; this one is checked on every floor.</para>
+    ///
+    /// <para><b>Proven RED</b> by putting the plate back on the door's own centre
+    /// (<c>plateAt = mid</c> in <c>RingBox</c>):</para>
+    /// <code>
+    /// 728 plate(s) are standing in their own doorway:
+    ///   luna B1: ring room 1 (NEAR) — CONSENT FILES — reads from 0.0 du off the middle of its own door.
+    ///   luna B1: ring room 2 (NEAR) — SENIOR ROTA · GREEN SIDE — reads from 0.0 du off the middle of its
+    ///     own door.
+    ///   luna B1: ring room 3 (NEAR) — PRIVILEGED RECORDS · READING ROOM — reads from 0.0 du off the middle
+    ///     of its own door.
+    ///   luna B1: ring room 5 (FAR) — 🚿 WASH-DOWN — reads from 0.0 du off the middle of its own door.
+    /// </code>
+    ///
+    /// <para>Ring room 3 is the one in the screenshot: PRIVILEGED RECORDS · READING ROOM, with the avatar
+    /// sitting on the word RECORDS.</para>
+    /// </summary>
+    [Fact]
+    public void NoRingRoomsPlateStandsInItsOwnDoorway()
+    {
+        var wrong = new List<string>();
+        int blocks = 0, plates = 0;
+
+        foreach ((string body, int level, UndergroundComplex.Hall _, UndergroundComplex.Park park,
+            UndergroundComplex.FloorPlan floor) in EveryBlock())
+        {
+            blocks++;
+            if (UndergroundComplex.IsFound(body, level))
+            {
+                continue;   // a gallery hangs no plates at all (#677)
+            }
+
+            foreach (UndergroundComplex.RingRoom room in park.Frontage)
+            {
+                bool horizontal = room.Side is UndergroundComplex.RingSide.Near
+                    or UndergroundComplex.RingSide.Far;
+                double doorAt = horizontal
+                    ? (room.Door.X1 + room.Door.X2) / 2.0
+                    : (room.Door.Y1 + room.Door.Y2) / 2.0;
+                (double lo, double hi) = Frontage(room);
+
+                // The label this room hung: its own text, standing within the room's own span and within a
+                // few du of the wall its door is in. Matched off the published box rather than by index,
+                // because plates repeat and an index would pair a room with somebody else's sign.
+                bool found = false;
+                foreach (SurfaceLayout.Landmark mark in floor.Labels)
+                {
+                    if (!string.Equals(mark.Label, room.Plate, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    double along = horizontal ? mark.X : mark.Y;
+                    double across = horizontal ? mark.Y : mark.X;
+                    double street = horizontal
+                        ? (room.Side == UndergroundComplex.RingSide.Near ? room.Y1 : room.Y0)
+                        : (room.Side == UndergroundComplex.RingSide.West ? room.X0 : room.X1);
+                    if (along < lo - 0.5 || along > hi + 0.5 || Math.Abs(across - street) > 4.0)
+                    {
+                        continue;   // somebody else's plate that happens to read the same
+                    }
+
+                    found = true;
+                    if (Math.Abs(along - doorAt) < UndergroundComplex.DoorHalf)
+                    {
+                        wrong.Add($"  {body} B{-level}: ring room {room.Number} "
+                            + $"({room.Side.ToString().ToUpperInvariant()}) — {room.Plate} — reads from "
+                            + $"{Math.Abs(along - doorAt):F1} du off the middle of its own door.");
+                    }
+
+                    // …and it stays on its OWN frontage. A plate stepped aside so far that it hangs over
+                    // the neighbour's wall is a different way of being unreadable.
+                    if (along < lo + 0.5 || along > hi - 0.5)
+                    {
+                        wrong.Add($"  {body} B{-level}: ring room {room.Number}'s plate at {along:F1} is "
+                            + $"outside its own frontage ({lo:F1}…{hi:F1}).");
+                    }
+                }
+
+                if (!found)
+                {
+                    wrong.Add($"  {body} B{-level}: ring room {room.Number} "
+                        + $"({room.Side.ToString().ToUpperInvariant()}) hangs no plate the deck draws.");
+                }
+                else
+                {
+                    plates++;
+                }
+            }
+        }
+
+        Assert.True(blocks > 40, $"only {blocks} blocks were measured — this proved little.");
+        Assert.True(plates > 500, $"only {plates} plates were read — this proved little.");
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} plate(s) are standing in their own doorway:\n"
+            + string.Join("\n", wrong.Take(20)));
+    }
+
     // ── (h) THE ROOMS THE OWNER ASKED FOR ─────────────────────────────────────────────────────────────
 
     /// <summary>

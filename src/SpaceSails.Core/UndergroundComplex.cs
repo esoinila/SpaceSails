@@ -2809,7 +2809,7 @@ public static class UndergroundComplex
         // never cut a wall of their own. Kept apart from the hall's cuts only because the plates differ:
         // the hall's first cut is the venue's entrance and the rest are its egress doors, and an office's
         // plate is the office's own.
-        var ringSpineCuts = new List<(double Lo, double Hi, string Plate)>();
+        var ringSpineCuts = new List<(double Lo, double Hi, double PlateX, string Plate)>();
 
         // #775 · …and the mouths on that face that are corridors rather than doors: the walks down to the
         // park. Kept in their own list because the two are drawn differently and always were — a doorway
@@ -2859,7 +2859,7 @@ public static class UndergroundComplex
             {
                 mouths.AddRange(hallSpineCuts);
                 mouths.AddRange(spineMouths);
-                foreach ((double lo, double hi, string _) in ringSpineCuts)
+                foreach ((double lo, double hi, double _, string _) in ringSpineCuts)
                 {
                     mouths.Add((lo, hi));
                 }
@@ -3101,10 +3101,10 @@ public static class UndergroundComplex
             // Their plates are the building's own vocabulary rather than the venue's, and they go on the
             // corridor side for the reason the hall's do: a walker on the spine is told what the wall beside
             // them is before they have to wonder.
-            foreach ((double lo, double hi, string plate) in ringSpineCuts)
+            foreach ((double lo, double hi, double plateX, string plate) in ringSpineCuts)
             {
                 doorways.Add(new(lo, hallSpineFaceY, hi, hallSpineFaceY));
-                labels.Add(new((lo + hi) / 2.0, plateY, plate));
+                labels.Add(new(plateX, plateY, plate));
             }
         }
 
@@ -4121,7 +4121,7 @@ public static class UndergroundComplex
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
         List<SurfaceLayout.Doorway> doorways, List<SurfaceLayout.Landmark> labels,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
-        List<(double Lo, double Hi, string Plate)> spineDoors,
+        List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
         List<(double Lo, double Hi)> spineMouths,
         List<SurfaceLayout.Doorway> gates,
         string bodyId, int level, in ParkBlock block, in Hall hall)
@@ -4249,7 +4249,7 @@ public static class UndergroundComplex
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
         List<SurfaceLayout.Doorway> doorways, List<SurfaceLayout.Landmark> labels,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
-        List<(double Lo, double Hi, string Plate)> spineDoors,
+        List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
         string bodyId, int level, bool found, int number, RingSide side,
         double fromX, double fromY, double toX, double toY, in ParkBlock block, bool gate)
     {
@@ -4311,9 +4311,23 @@ public static class UndergroundComplex
                         % ParkBackPlates.Count];
         }
 
+        // ── WHERE THE PLATE READS FROM · BESIDE the door and never over it.
+        //
+        // #775 learned this the expensive way on the hall's own front doors: "a plate centred on its own
+        // doorway is a plate with the captain standing on top of it the moment they arrive — watched happen
+        // in the browser on the first boot of ?frontdoor=1, the dot sitting squarely on the word CANTEEN."
+        // The ring shipped the same mistake on fourteen rooms a floor and it was found the same way, in the
+        // browser, on the first boot of ?parkwalk=1: PRIVILEGED RECORDS · READING ROOM with the avatar in
+        // the middle of it. A sign you have to step off to read is not signage.
+        //
+        // Stepped along the room's own wall rather than out into the corridor, and clamped inside the
+        // room's span so a narrow room's plate cannot wander onto its neighbour's frontage.
+        double aside = DoorHalf + 3.0;
+        double plateAt = Math.Clamp(mid + aside, faceLo + 1.5, faceHi - 1.5);
+
         if (side == RingSide.Near)
         {
-            spineDoors.Add((mid - DoorHalf, mid + DoorHalf, plate));
+            spineDoors.Add((mid - DoorHalf, mid + DoorHalf, plateAt, plate));
         }
         else
         {
@@ -4331,8 +4345,8 @@ public static class UndergroundComplex
             {
                 doorways.Add(door);
                 labels.Add(new(
-                    horizontal ? mid : streetLine + (side == RingSide.West ? -2.5 : 2.5),
-                    horizontal ? streetLine + (side == RingSide.Far ? -2.5 : 2.5) : mid,
+                    horizontal ? plateAt : streetLine + (side == RingSide.West ? -2.5 : 2.5),
+                    horizontal ? streetLine + (side == RingSide.Far ? -2.5 : 2.5) : plateAt,
                     plate));
             }
         }

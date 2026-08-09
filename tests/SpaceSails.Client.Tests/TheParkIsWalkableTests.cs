@@ -420,6 +420,13 @@ public sealed class TheParkIsWalkableTests
             // apart on purpose (the amenities' conservation sum counts a Way as a place). Both are doors a
             // body walks through, so both are plugged — a sealing experiment does not get to inherit a
             // bookkeeping distinction.
+            //
+            // AND IF A THIRD KIND EVER ARRIVES, IT BELONGS HERE TOO. This experiment is only as strong as
+            // its list of openings, and the list is enumerated by hand from the two Core publishes today.
+            // A future opening onto the gravel that neither Ways nor BackDoors carries would leave this
+            // guard passing while proving nothing — which is exactly what it did between #813's carve and
+            // the moment BackDoors was added to the line below: it reported a bug in a correct building,
+            // and the fix is the same either way. Anything that adds a way onto the green adds it here.
             UndergroundComplex.FloorPlan drawn = UndergroundComplex.Build(body, level, Field);
             var plugged = new List<DeckPlan.Wall>(honest.Walls);
             var openings = new List<SurfaceLayout.Doorway>(park.Ways);
