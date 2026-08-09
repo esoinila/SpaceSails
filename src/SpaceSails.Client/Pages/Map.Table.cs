@@ -62,6 +62,19 @@ public partial class Map
     private bool _spreadCheat;
 
     /// <summary>
+    /// #798 QA · <c>?rip=1</c> — THE DISPOSAL LOOP, in thirty seconds.
+    ///
+    /// <para>Everything <c>?spread=1</c> boots (the canteen route, three real finds in the sleeve) with the
+    /// last leg walked somewhere else: to the standing spot the hall's own SLOP BIN publishes. Press I, press
+    /// 🗑 on a paper, and the sheet is gone from the sleeve with the act filed in the book — and the CHUTE is
+    /// at the other end of the same room, which is what makes the bin a choice.</para>
+    ///
+    /// <para>It forces nothing. Which bin, where it stands and what is stencilled on it are the building's
+    /// answers, and whether anybody was watching is whatever the watch and the rota actually produce.</para>
+    /// </summary>
+    private bool _ripCheat;
+
+    /// <summary>
     /// #741 QA · <c>?threads=1</c> — THE RED PEN, with a case already in the book.
     ///
     /// <para>Everything <c>?spread=1</c> boots (the cabinet, the docked strip, three finds in the sleeve),
@@ -113,6 +126,23 @@ public partial class Map
             if (a.Use != UndergroundComplex.Comfort.UpperCanteen)
             {
                 continue;
+            }
+
+            // #798 · …or AT A BIN, on your feet, with papers in the sleeve — the disposal loop's own row.
+            // FIRST, because it is the shortest walk and because it must not be able to be swallowed by the
+            // cabinet branch below. Which bin, and where a captain stands to use it, are both the carve's
+            // own published answers (RipAndBin.Bin.StandX/StandY) — a cheat that typed its own spot beside a
+            // fixture it did not place is §13.15's second cause, and this project has been set down inside a
+            // wall by exactly that mistake twice.
+            if (_ripCheat && TheSlopBinIn(ex, a) is { } bin)
+            {
+                StandCaptainAt(bin.StandX, bin.StandY, "you stop beside the bin at the end of the counter");
+                SeedTheSpreadFinds();
+                ShowPulseMessage(
+                    "🧪 DEV ?rip=1: standing at the canteen's slop bin with three finds in the sleeve. "
+                    + "Press I and then 🗑 on a paper — the sheet goes, the book keeps what you dug. The "
+                    + "waste chute is at the other end of the same room, and the paper bin is by the lift.");
+                return;
             }
 
             // #784 · …or IN A CABINET, sat down, with papers in the sleeve — the phase-two loop's own row.
@@ -271,6 +301,26 @@ public partial class Map
         FileFrom("luna", 1, 22, 2);
 
         _fieldNotes = [.. book];
+    }
+
+    /// <summary>#798 QA · The slop bin standing inside THIS hall, or null. Asked of the floor plan and
+    /// filtered by the hall's own box (<see cref="UndergroundComplex.Hall.Contains"/>), so the row cannot
+    /// walk the captain to the paper bin by the lift and call it the canteen.</summary>
+    private static RipAndBin.Bin? TheSlopBinIn(SurfaceExcursion ex, UndergroundComplex.Amenity a)
+    {
+        if (a.Hall is not { } hall)
+        {
+            return null;
+        }
+        foreach (RipAndBin.Bin bin in
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).TheBins)
+        {
+            if (bin.Tier == RipAndBin.Tier.SlopBin && hall.Contains(bin.X, bin.Y))
+            {
+                return bin;
+            }
+        }
+        return null;
     }
 
     /// <summary>#757 QA · The first top in this room that nobody is at, this watch — Core's own list, so the

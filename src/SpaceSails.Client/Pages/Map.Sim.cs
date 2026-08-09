@@ -985,6 +985,28 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
                 }
             }
+            else if (pair.StartsWith("rip=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #798 dev cheat: /map?rip=1 is ?spread=1's route with the last leg walked to a BIN rather
+                // than into a cabinet — three finds in the sleeve, the slop bin at arm's length, and the
+                // whole verb two presses from the front door. Owner: "those trash cans are needed so we get
+                // rid of the processed materials without connecting them to us too clearly, like leaving
+                // them to the table."
+                //
+                // It implies the canteen's whole route rather than spelling an eighth one, exactly as
+                // ?spread= implies ?tablescene=. It forces nothing about the room: which bin, where it
+                // stands and what is stencilled on it are the building's own answers.
+                string candidate = Uri.UnescapeDataString(pair["rip=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _ripCheat = true;
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the hall, which is the floor the CHOICE is on
+                }
+            }
             else if (pair.StartsWith("threads=", StringComparison.OrdinalIgnoreCase))
             {
                 // #741 dev cheat: /map?threads=1 is ?spread=1 with a CASE ALREADY IN THE BOOK — six entries

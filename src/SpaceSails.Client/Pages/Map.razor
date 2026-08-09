@@ -2077,9 +2077,23 @@
                                             @onclick="() => SpreadDigClicked(dig)">
                                         <span class="satchel-item-name">@SatchelLabel(dig)</span>
                                         <span class="satchel-item-try">
-                                            @SpaceSails.Core.SeatedPosture.WriteGlyph dig it out →
+                                            @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadRowVerb(dig)
                                         </span>
                                     </button>
+                                    @* #798 · …AND THE OTHER END OF THE EVENING. Owner: "those trash cans
+                                       are needed so we get rid of the processed materials without
+                                       connecting them to us too clearly, like leaving them to the table."
+                                       The loop is sit, dig, book, BIN — and the bin has to be on the page
+                                       the digging happened on, or the last rung is somewhere else.
+
+                                       Never disabled: with no bin within reach it says so, on this page,
+                                       and names what would fix it. *@
+                                    @if (RipIsOffered(dig))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(dig)"
+                                                @onclick="() => RipItUp(dig)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
                                 </div>
                             }
                         </div>
@@ -2356,6 +2370,21 @@
                                         <button type="button" class="satchel-leave"
                                                 title="@WriteUpHint(item)"
                                                 @onclick="() => WriteItUp(item)">@SpaceSails.Core.SeatedPosture.WriteGlyph</button>
+                                    }
+                                    @* #798 · RIP IT AND BIN IT — the third answer, beside take and leave.
+                                       Owner: "I would not like to leave them at table in canteen… we need
+                                       option to destroy them by ripping and binning etc?"
+
+                                       Drawn only on EVIDENCE, because on a handful of rounds this is not a
+                                       refusal, it is a verb that does not apply — the same rule the spread
+                                       tab follows about posture. Live wherever it IS drawn and never
+                                       disabled (#212/#603): with no bin in reach it answers with the
+                                       sentence that says what would fix it. *@
+                                    @if (RipIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(item)"
+                                                @onclick="() => RipItUp(item)">@SpaceSails.Core.RipAndBin.Glyph</button>
                                     }
                                  </div>;
                         }

@@ -467,6 +467,24 @@ public static class HiveInterior
                 (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
         }
 
+        // ── #798 · THE BINS, PLATED ────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "those trash cans are needed so we get rid of the processed materials without connecting
+        // them to us too clearly, like leaving them to the table."
+        //
+        // The BOX is already in floor.Walls — Core stood it there, so it was drawn and collided with by the
+        // loop at the top of this method, and one rectangle carries both halves. This is the stencil on it
+        // and nothing else, which is the whole of a renderer's business in a room somebody else carved.
+        //
+        // Plated and NOT a console, the park bench's own idiom one room over: tearing a document up is the
+        // SATCHEL'S verb (you have to be holding the thing), and an [E] on a bin that answered nothing would
+        // be #757's complaint restated in a corridor.
+        foreach (RipAndBin.Bin bin in floor.TheBins)
+        {
+            labels.Add((
+                (float)bin.X, (float)(bin.Y - RipAndBin.HalfDu - 1.4), bin.Plate));
+        }
+
         // The cars, on every floor, in the same places. #801 · Both of them, off one list, each with the
         // sign Core paints on it — a renderer choosing which console kind goes on which car would be a
         // second opinion about a machine it does not own.
