@@ -59,6 +59,11 @@ public sealed class Vault
     /// optional section; a pre-#587 file simply lacks it and defaults to an empty book.</summary>
     public FieldNotesSection? FieldNotes { get; init; }
 
+    /// <summary>#741 · The RED LINES the captain has drawn between entries in that book. Its own
+    /// independently optional section; a pre-#741 file simply lacks it and comes back with a book full of
+    /// loose ends, which is exactly what it was.</summary>
+    public CaseThreadsSection? CaseThreads { get; init; }
+
     /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
     /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
     public AuthoritiesSection? Authorities { get; init; }
@@ -358,6 +363,21 @@ public sealed record FieldNotesSection
 {
     /// <summary>The notes, oldest first. Capped by the writer (see <c>FieldNotes</c>).</summary>
     public IReadOnlyList<FieldNote> Notes { get; init; } = [];
+}
+
+/// <summary>#741 · THE RED LINES. Owner: <i>"I dream of drawing those conspiracy board connecting red
+/// lines… I guess it could be a red pen only used to connect the things."</i>
+///
+/// <para>Stored as opaque pair strings (<c>CaseThreads.Thread.Stored</c>), which is the same shape
+/// <see cref="SatchelSection"/> uses and for the same reason: the file carries the FACT — these two entries
+/// were connected by a hand — and never the words. Both ends are
+/// <c>CaseThreads.IdentityOf</c> handles derived from the note's own place, moment and text, so a book that
+/// round-trips brings its lines back with it. A pair this build cannot parse is dropped on load rather than
+/// thrown over.</para></summary>
+public sealed record CaseThreadsSection
+{
+    /// <summary>The threads, in the order they were drawn. Capped by the writer (see <c>CaseThreads</c>).</summary>
+    public IReadOnlyList<string> Threads { get; init; } = [];
 }
 
 /// <summary>#590 · WHAT THE CAPTAIN IS CARRYING THAT OPENS SOMETHING. Owner: <i>"could there be like a

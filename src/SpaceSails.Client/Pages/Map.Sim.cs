@@ -985,6 +985,28 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
                 }
             }
+            else if (pair.StartsWith("threads=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #741 dev cheat: /map?threads=1 is ?spread=1 with a CASE ALREADY IN THE BOOK — six entries
+                // from two grounds the captain is not standing on, with a rhyme in them a human eye can
+                // catch. The pen is worth nothing against an empty book, and the whole feature is unreachable
+                // on demand without one: a book with two grounds in it is a real excursion's worth of play.
+                //
+                // It implies ?spread=1 rather than spelling the route again, exactly as ?spread= implies
+                // ?tablescene=. It forces nothing about the case: no line is drawn and nothing is marked,
+                // because spotting is the player's act.
+                string candidate = Uri.UnescapeDataString(pair["threads=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _threadsCheat = true;
+                    _spreadCheat = true;
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
+                }
+            }
             else if (pair.StartsWith("counter=", StringComparison.OrdinalIgnoreCase))
             {
                 // #756 dev cheat: /map?counter=1 boots THE COUNTER — the B1 cantina hall of a deep site,

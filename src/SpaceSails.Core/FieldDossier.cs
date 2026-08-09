@@ -63,7 +63,7 @@ public static class FieldDossier
         "cryogenic tissue recovery",
         "cognitive fidelity assurance",
         "long-storage biostasis",
-        "pattern integrity审 review",
+        "pattern integrity review",
         "post-transfer rehabilitation",
         "occupational psychometrics",
     ];

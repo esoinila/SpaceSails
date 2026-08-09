@@ -4612,6 +4612,31 @@
     border-radius: 0.2rem;
 }
 
+/* #741 · THE RED PEN, on its own row under the filters — an instrument taken out of the satchel, with the
+   register it puts the page in beside it. The nodes themselves are a child component and carry their own
+   sheet (Components/NotebookNodes.razor.css); these two are drawn by Map.razor. */
+.notebook-pen {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+/* Red only while it is in the hand. On the shelf it is one more control, and a permanently red button on a
+   page full of grey ones would be the game pointing at the feature. */
+.satchel-filter.red-pen.on {
+    color: #e07a6e;
+    background: rgba(196, 62, 52, 0.1);
+    border-color: rgba(196, 62, 52, 0.7);
+}
+
+.notebook-register {
+    flex: 1 1 14rem;
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: #7b8ca3;
+}
+
 /* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
    universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
    the modals, pointer-events NONE so it can never eat a click during a fight. */
