@@ -137,7 +137,7 @@ public sealed class TheDeskServesItsWholeLengthTests
     {
         var wrong = new List<string>();
         int served = 0;
-        double shortest = double.MaxValue, longest = 0;
+        double shortest = double.MaxValue, longest = 0, widestHall = 0;
 
         foreach ((string body, int level, UndergroundComplex.Comfort use,
             UndergroundComplex.Amenity _, UndergroundComplex.Hall hall) in Halls())
@@ -175,6 +175,7 @@ public sealed class TheDeskServesItsWholeLengthTests
 
             shortest = Math.Min(shortest, run.LengthDu);
             longest = Math.Max(longest, run.LengthDu);
+            widestHall = Math.Max(widestHall, Math.Max(hall.X1 - hall.X0, hall.Y1 - hall.Y0));
         }
 
         Assert.True(wrong.Count == 0,
@@ -194,7 +195,17 @@ public sealed class TheDeskServesItsWholeLengthTests
         Assert.True(shortest >= 18.0,
             $"the shortest serving desk in the game is {shortest:F1} du — barely more than the six a point "
             + "console already covered, so nothing above would notice the fixture going back to a dot.");
-        Assert.True(longest >= 75.0, $"the longest serving desk is only {longest:F1} du.");
+        // #813 · …and the longest one is measured against the ROOM rather than against a number typed in
+        // when the room happened to be 110 du wide.
+        //
+        // The Manhattan ruling put the bar in the near band of the park's block, and a block has ends: the
+        // hall is 98 du across now instead of 110, so a literal 75 here was a guard that went red because a
+        // room got a neighbour. What it was standing in for is a fact about the DESK, not about the field
+        // — that the counter runs most of the room it is in — and that is what is asked. Watched go red on
+        // the first Manhattan carve at "the longest serving desk is only 70.0 du."
+        Assert.True(longest >= 0.6 * widestHall,
+            $"the longest serving desk is {longest:F1} du in a hall {widestHall:F1} du wide — a counter "
+            + "that serves less than half its own room is a hatch.");
     }
 
     // ── (b) THE KEEP'S SIDE IS BEHIND, AND THE WALL IS BETWEEN ────────────────────────────────────────

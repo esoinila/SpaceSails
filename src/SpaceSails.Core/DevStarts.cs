@@ -187,10 +187,27 @@ public static class DevStarts
         new("🌳🚶", "Straight through the park, and out the other side",
             "B1 of a deep site, out on the MAIN CORRIDOR at the mouth of the GARDEN WALK — the passage "
             + "stencilled ⟶ THE PARK that every floor has, whichever way its ribs happen to fall. Walk "
-            + "down it, cross the gravel, and come out of a DIFFERENT gate into a different corridor: 2–5 "
-            + "ways in, every rib that points at the green opens into it, and the hall-side wall is still "
-            + "glass (#775, #759).",
+            + "down it, cross the gravel, and come out of a DIFFERENT gate into a different corridor — or "
+            + "out of one of the END streets, which is the crossing the Manhattan ruling added: the green "
+            + "is in the middle of a block now, so there is a way through EVERY one of its four walls, and "
+            + "the hall-side wall is still glass (#813, #775, #759).",
             "/map?parkwalk=1"),
+        // #813 · THE MANHATTAN RULING, FROM THE ONLY SIDE OF THE GLASS NOTHING HAS EVER BOOTED ON. Owner:
+        // "make sure the park prime real estate is not wasted and not unused, not on any side. It is the
+        // best real estate." Every other park row in this list stands the tester on the GRAVEL, which is the
+        // side that shows the green and never once shows what the green is worth. This one starts in a room
+        // that pays for the view, looking out of its own window wall, with the plate for the room behind
+        // them on the corridor.
+        new("🏢🌳", "Inside an office, with the park out of the window",
+            "B1 of a deep site, standing INSIDE one of the ring's own rooms with its window wall in front "
+            + "of you — the same glass the bar has, on a room that is not the bar. Read the plate by the "
+            + "door on the way out (REGISTERED OFFICE · GARDEN ASPECT, NEGOTIATION ROOM · BOOK AT THE "
+            + "COUNTER, and four more the corridors never hang), then walk the ring: every wall of the "
+            + "park is a room's front wall, every one of those rooms opens onto a street and never onto "
+            + "the green, and the corner rooms — the ones past the end of the park's own wall — wear the "
+            + "corridors' ordinary vocabulary instead, which is the whole gradient without a word said "
+            + "about it (#813, #775).",
+            "/map?ringoffice=1"),
         // #804 · THE ROUNDS. Two rows for one reason #757's pair has: how many walk a floor is a seeded roll
         // on the shift, and whether the captain has anything to show is the whole of the challenge. Neither
         // half is reachable by luck in a sensible amount of play.

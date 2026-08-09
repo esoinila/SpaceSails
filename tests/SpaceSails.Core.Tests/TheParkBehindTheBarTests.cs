@@ -191,15 +191,38 @@ public sealed class TheParkBehindTheBarTests
         {
             checkedParks++;
 
-            SurfaceLayout.Wall glass = Assert.Single(floor.Windows!);
-            Assert.Equal(park.Window, glass);
+            // #813 · THE BAR'S GLASS IS ONE OF MANY NOW, AND IT IS STILL EXACTLY ITSELF.
+            //
+            // This asked for exactly one window on the floor, which was a true statement about a park with
+            // one glazed side and became a false one the moment the Manhattan ruling put a room against all
+            // four of them. The law it was standing in for is unchanged and is asked directly instead: the
+            // segment the PARK publishes as its window is in the floor's glazing, it is the hall's own far
+            // wall, and it is the only glazing on that line across the hall's span. A guard that counts is
+            // a guard that goes red when the building gets bigger.
+            Assert.Contains(park.Window, floor.Windows!);
 
             // It IS the hall's far wall: the shared line, the hall's full width, and nothing more.
             double shared = Math.Abs(park.Y1 - hall.Y0) < 0.001 ? hall.Y0 : hall.Y1;
+            SurfaceLayout.Wall glass = park.Window;
             Assert.Equal(shared, glass.Y1, 3);
             Assert.Equal(shared, glass.Y2, 3);
             Assert.Equal(hall.X0, Math.Min(glass.X1, glass.X2), 3);
             Assert.Equal(hall.X1, Math.Max(glass.X1, glass.X2), 3);
+
+            // …and nothing else is glazed across the bar's own frontage. Two panes on one line is the
+            // drawn-versus-walked split this whole guard exists to prevent, said about glass.
+            foreach (SurfaceLayout.Wall w in floor.Windows!)
+            {
+                if (w.Equals(glass))
+                {
+                    continue;
+                }
+                bool sameLine = Math.Abs(w.Y1 - shared) < 0.001 && Math.Abs(w.Y2 - shared) < 0.001;
+                bool overlaps = Math.Min(w.X1, w.X2) < hall.X1 - 0.001
+                    && Math.Max(w.X1, w.X2) > hall.X0 + 0.001;
+                Assert.False(sameLine && overlaps,
+                    $"{body} B{-level}: a second pane ({w.X1:F1}…{w.X2:F1}) lies on the bar's glass.");
+            }
 
             // …and it is not ALSO in the poured walls, which would be two segments on one line: one to
             // draw, one to collide, and a day later they would disagree.
@@ -220,6 +243,7 @@ public sealed class TheParkBehindTheBarTests
             Assert.True(park.Gate.X2 <= hall.X0 + 0.001 || park.Gate.X1 >= hall.X1 - 0.001,
                 $"{body} B{-level}: the gate is cut THROUGH the window wall.");
             Assert.Equal(2 * UndergroundComplex.DoorHalf, park.Gate.X2 - park.Gate.X1, 3);
+            _ = level;
         }
 
         Assert.True(checkedParks > 40, $"only {checkedParks} parks were checked — this proved little.");
@@ -526,10 +550,16 @@ public sealed class TheParkBehindTheBarTests
     /// like to walk through on their way."</i> #790 shipped it with ONE gate at the end of one corridor,
     /// which makes the largest room in the game a destination and a dead end.</para>
     ///
-    /// <para>The law is stated against the building rather than as a number: EVERY rib pointing the park's
-    /// way opens into it (so a route down one rib and up another crosses the green), and at least one gate
-    /// is not a rib at all -- the garden walk, which exists because the ribs' directions are seeded and on
-    /// a quarter of the shipped sites exactly one of them falls this way.</para>
+    /// <para>The law is stated against the building rather than as a number: EVERY corridor that reaches
+    /// the green opens into it (so a route in one side and out of another crosses it), and every one of the
+    /// park's four walls has at least one way through.</para>
+    ///
+    /// <para>#813 · …and that last clause is the Manhattan ruling's, and it is the one that turned this
+    /// guard from a count into a law. When the park was a band, "several gates" meant several gates in the
+    /// ONE wall that faced anything; the other three faced rock and could not have had a door if anybody
+    /// had wanted one. A park in the middle of a block is crossed in two axes, so the gates are asked for
+    /// per SIDE, and the old "at least one gate that is not a rib" survives untouched: the two end streets
+    /// reach the green through gates that stand on no cross corridor at all.</para>
     ///
     /// <para><b>Proven RED</b> against the world as #790 shipped it -- the gate list handed to CarvePark cut
     /// back to the hall's own rib (<c>parkGateXs.Clear(); parkGateXs.Add(ribList[slot.Rib].X);</c>):</para>
@@ -547,7 +577,6 @@ public sealed class TheParkBehindTheBarTests
     {
         var wrong = new List<string>();
         int parks = 0, ways = 0;
-        var seen = new HashSet<int>();
         (double _, double shaftY) = UndergroundComplex.ShaftAt(Field);
 
         foreach ((string body, int level, UndergroundComplex.Hall hall, UndergroundComplex.Park park,
@@ -555,7 +584,6 @@ public sealed class TheParkBehindTheBarTests
         {
             parks++;
             ways += park.Ways.Count;
-            seen.Add(park.Ways.Count);
 
             if (park.Ways.Count < 2)
             {
@@ -563,73 +591,145 @@ public sealed class TheParkBehindTheBarTests
                     + "than one.");
             }
 
-            // The line every gate is cut in: the park's own near wall, which is whichever of its two long
-            // edges faces the spine.
-            double near = park.Y0 > shaftY ? park.Y0 : park.Y1;
+            // WHICH WALL EACH GATE IS CUT IN. Four of them now, and a gate is in one of them or it is
+            // nowhere: this is the same "the line every gate is cut in" clause the band's park had, asked
+            // of a room that has four lines instead of one and a half.
+            var perSide = new Dictionary<string, int>
+            {
+                ["NEAR"] = 0,
+                ["FAR"] = 0,
+                ["WEST"] = 0,
+                ["EAST"] = 0,
+            };
 
             foreach (SurfaceLayout.Doorway g in park.Ways)
             {
-                double gx = (g.X1 + g.X2) / 2.0;
-                if (Math.Abs(g.Y1 - near) > 0.001 || Math.Abs(g.Y2 - near) > 0.001)
+                bool horizontal = Math.Abs(g.Y1 - g.Y2) < 0.001;
+                double gx = (g.X1 + g.X2) / 2.0, gy = (g.Y1 + g.Y2) / 2.0;
+                double along = horizontal ? Math.Abs(g.X2 - g.X1) : Math.Abs(g.Y2 - g.Y1);
+
+                string? at = null;
+                if (horizontal && Math.Abs(gy - park.Y1) < 0.001)
                 {
-                    wrong.Add($"  {body} B{-level}: a gate at y={g.Y1:F1} is not in the park's near wall "
-                        + $"(y={near:F1}).");
+                    at = "NEAR";
                 }
-                if (Math.Abs((g.X2 - g.X1) - (2 * UndergroundComplex.DoorHalf)) > 0.001)
+                else if (horizontal && Math.Abs(gy - park.Y0) < 0.001)
                 {
-                    wrong.Add($"  {body} B{-level}: a gate is {g.X2 - g.X1:F1} du wide.");
+                    at = "FAR";
                 }
-                if (gx > hall.X0 - 0.001 && gx < hall.X1 + 0.001)
+                else if (!horizontal && Math.Abs(gx - park.X0) < 0.001)
+                {
+                    at = "WEST";
+                }
+                else if (!horizontal && Math.Abs(gx - park.X1) < 0.001)
+                {
+                    at = "EAST";
+                }
+
+                if (at is null)
+                {
+                    wrong.Add($"  {body} B{-level}: a gate at ({gx:F1},{gy:F1}) is not in any of the park's "
+                        + "four walls.");
+                    continue;
+                }
+                perSide[at]++;
+
+                if (Math.Abs(along - (2 * UndergroundComplex.DoorHalf)) > 0.001)
+                {
+                    wrong.Add($"  {body} B{-level}: a gate is {along:F1} du wide.");
+                }
+
+                // NEVER THROUGH THE GLASS. The owner's rule, and it only ever had anything to say about the
+                // near wall: that is where the bar's window is.
+                if (at == "NEAR" && gx > hall.X0 - 0.001 && gx < hall.X1 + 0.001)
                 {
                     wrong.Add($"  {body} B{-level}: the gate at x={gx:F1} is cut THROUGH the window wall.");
                 }
                 if (!floor.Doorways.Any(d => d == g))
                 {
-                    wrong.Add($"  {body} B{-level}: the gate at x={gx:F1} is one the park knows about and "
-                        + "the plan does not draw.");
+                    wrong.Add($"  {body} B{-level}: the gate at ({gx:F1},{gy:F1}) is one the park knows "
+                        + "about and the plan does not draw.");
                 }
 
                 // AND IT LEADS SOMEWHERE: nothing poured across it, on its own line.
+                (double glo, double ghi) = horizontal
+                    ? (Math.Min(g.X1, g.X2), Math.Max(g.X1, g.X2))
+                    : (Math.Min(g.Y1, g.Y2), Math.Max(g.Y1, g.Y2));
                 foreach (SurfaceLayout.Wall w in floor.Walls)
                 {
-                    bool onTheLine = Math.Abs(w.Y1 - near) < 0.05 && Math.Abs(w.Y2 - near) < 0.05;
-                    bool across = Math.Min(w.X1, w.X2) < g.X2 - 0.2 && Math.Max(w.X1, w.X2) > g.X1 + 0.2;
-                    if (onTheLine && across)
+                    bool onTheLine = horizontal
+                        ? Math.Abs(w.Y1 - gy) < 0.05 && Math.Abs(w.Y2 - gy) < 0.05
+                        : Math.Abs(w.X1 - gx) < 0.05 && Math.Abs(w.X2 - gx) < 0.05;
+                    (double lo, double hi) = horizontal
+                        ? (Math.Min(w.X1, w.X2), Math.Max(w.X1, w.X2))
+                        : (Math.Min(w.Y1, w.Y2), Math.Max(w.Y1, w.Y2));
+                    if (onTheLine && lo < ghi - 0.2 && hi > glo + 0.2)
                     {
-                        wrong.Add($"  {body} B{-level}: the gate at x={gx:F1} has a wall across it.");
+                        wrong.Add($"  {body} B{-level}: the gate at ({gx:F1},{gy:F1}) has a wall across "
+                            + "it.");
                         break;
                     }
                 }
             }
 
+            // #813 · EVERY SIDE IS CROSSED. This clause replaced "the number of gates varies from floor to
+            // floor" — which was a real anti-vacuity check while the count was rolled off the ribs' seeded
+            // directions, and became a statement about dice the moment the block decided its own crossings.
+            // A count that varies proves the ribs are doing something; a gate in every wall proves the ROOM
+            // is.
+            foreach ((string name, int count) in perSide)
+            {
+                if (count == 0)
+                {
+                    wrong.Add($"  {body} B{-level}: the {name} wall has no way through it.");
+                }
+            }
+
             // EVERY CORRIDOR THAT REACHES IT OPENS INTO IT. That is the whole of "people walk through on
             // their way": a rib that stops in rock beside the green is a route that goes round.
-            bool side = park.Y1 < shaftY;
+            bool parkSide = park.Y1 < shaftY;
             foreach (UndergroundComplex.Rib r in floor.Ribs)
             {
-                if (r.Down == side && !park.Ways.Any(g => Math.Abs(((g.X1 + g.X2) / 2.0) - r.X) < 0.001))
+                if (r.Down == parkSide && !park.Ways.Any(g =>
+                        Math.Abs(g.Y1 - g.Y2) < 0.001
+                        && Math.Abs(((g.X1 + g.X2) / 2.0) - r.X) < 0.001))
                 {
                     wrong.Add($"  {body} B{-level}: the rib at {r.X:F1} points at the park and does not "
                         + "open into it.");
                 }
             }
 
-            // ...and one of them is NOT a rib. The floor's dice decide how many ribs fall this way; the
-            // garden walk is why "multiple" is a law rather than a hope.
+            // ...and one of them is NOT a rib. It used to be the garden walk, cut because the ribs' dice
+            // could leave the green with one door; it is the two END streets now, which reach it across the
+            // block's own width and stand on no cross corridor at all. Same law, same reason, and it is
+            // still what makes "multiple" a law rather than a hope.
             if (!park.Ways.Any(g => !floor.Ribs.Any(
                     r => Math.Abs(((g.X1 + g.X2) / 2.0) - r.X) < 0.001)))
             {
                 wrong.Add($"  {body} B{-level}: no gate that is not a rib - the garden walk was never cut.");
             }
 
-            // No two gates are the same gate.
+            // No two gates in the SAME WALL are the same gate. (Two on one column in different walls are the
+            // two ends of one crossing, which is the feature.)
             for (int a = 0; a < park.Ways.Count; a++)
             {
                 for (int b = a + 1; b < park.Ways.Count; b++)
                 {
-                    if (Math.Abs(park.Ways[a].X1 - park.Ways[b].X1) < 2 * UndergroundComplex.DoorHalf)
+                    SurfaceLayout.Doorway ga = park.Ways[a], gb = park.Ways[b];
+                    bool bothHorizontal = Math.Abs(ga.Y1 - ga.Y2) < 0.001
+                        && Math.Abs(gb.Y1 - gb.Y2) < 0.001;
+                    bool bothVertical = Math.Abs(ga.X1 - ga.X2) < 0.001
+                        && Math.Abs(gb.X1 - gb.X2) < 0.001;
+                    bool clash = (bothHorizontal
+                            && Math.Abs(ga.Y1 - gb.Y1) < 0.001
+                            && Math.Abs(ga.X1 - gb.X1) < 2 * UndergroundComplex.DoorHalf)
+                        || (bothVertical
+                            && Math.Abs(ga.X1 - gb.X1) < 0.001
+                            && Math.Abs(ga.Y1 - gb.Y1) < 2 * UndergroundComplex.DoorHalf);
+                    if (clash)
                     {
-                        wrong.Add($"  {body} B{-level}: two gates share a jamb at x={park.Ways[a].X1:F1}.");
+                        wrong.Add($"  {body} B{-level}: two gates share a jamb at "
+                            + $"({ga.X1:F1},{ga.Y1:F1}).");
                     }
                 }
             }
@@ -644,8 +744,5 @@ public sealed class TheParkBehindTheBarTests
             + string.Join("\n", wrong.Take(20)));
         Assert.True(parks > 40, $"only {parks} parks were checked - this proved little.");
         Assert.True(ways > 100, $"only {ways} gates were checked - this proved little.");
-        Assert.True(seen.Count > 1,
-            "every park in the game has the same number of gates - the ribs are doing nothing: "
-            + string.Join(", ", seen.Order()));
     }
 }

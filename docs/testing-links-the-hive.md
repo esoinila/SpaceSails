@@ -254,13 +254,26 @@ the mess is hall-class and full of tops, and not one of them offers "take this t
 not admitted to is not a room you sit down in, and Core's own B1 ruling (`CanteenRegulars.PeopleSitHere`)
 decides that rather than a clause in the renderer.
 
-## 1b-2 · ADDED (#759) — THE PARK BEHIND THE BAR, and the hall at two to four times its old size
+## 1b-2 · ADDED (#759, RE-SITED #813) — THE PARK IN THE MIDDLE OF THE BLOCK, and the hall at two to four times its old size
 
 ```
 /map?park=1                            the whole route, booted — B1, standing INSIDE the park
 /map?counter=1                         …the same wall from the other side: the counter, with the glass behind it
 /map?tablescene=1                      …and the hall itself, which now has 2–4× the floor it had
+/map?ringoffice=1                      …and the OTHER side of the glass: inside a room that faces the green
 ```
+
+**#813 · It is no longer "behind the bar".** Owner, 2026-08-09: *"The central park needs to be in the
+center of all the other rooms… not on the side. Think of New York, is the park on one side or is it in the
+center?"* — and the clause that decided every number: *"make sure the park prime real estate is not wasted
+and not unused, not on any side. It is the best real estate."* The green used to be a full-width band at
+the far edge of B1, with the hall's glass along one long side and painted rock on the other three. It is
+now the middle of a **city block**: a ring of rooms all the way round it, each with its door on a street
+and its **glass on the park**, and a street on every side of the block so nobody walks through an office
+to reach an office. On the shipped field the green is **203 × 45 du** at
+`(-106.5, -253.5)`–`(96.5, -208.5)`, ringed by **14 rooms**, **6 gates** (two off the spine, two off the
+back street, one through each end) and about **15 window segments** — the bar's own pane plus every ring
+room's, and the west and east ones run **vertically**, which is the first vertical glazing in the building.
 
 ### 1b-2b · ADDED (#791) — THE DESK SERVES ITS WHOLE LENGTH
 
@@ -296,19 +309,23 @@ photograph, whose collidable wall and whose eight stools all ran the full length
 ```
 /map?frontdoor=1                       out on the MAIN CORRIDOR at the canteen's own entrance — walk in
 /map?freight=1                         the GOODS HOIST at the end of the counter's service band
-/map?parkwalk=1                        the GARDEN WALK off the main corridor — cross the park, out the far gate
+/map?parkwalk=1                        a gate off the MAIN CORRIDOR — down through the near band and across the green
 /map?parkback=1                        the FAR side of the green (#801) — the wall that was a horizon is a row of doors
+/map?ringoffice=1                      INSIDE one of the rooms that faces the green (#813) — the glass from the office side
 /map?goodscar=1                        the SECOND CAR (#801) at the corridor’s blind end — 170 du from the cage
 ```
 
 **And the park is a way THROUGH (#775, owner 2026-08-09).** *"Let's have multiple doors to the park… it is
 a kind of place people like to walk through on their way."* #790 gave it one gate at the end of one
-corridor, which makes the largest room in the game a destination and a dead end. Now **every rib pointing
-its way runs the extra sixteen du and opens into it**, and there is always a **GARDEN WALK** — a passage
-straight off the main corridor, stencilled `⟶ THE PARK`, cut where the spine's park-side face has the most
-room. Shipped parks carry **2–5 gates**. Boot `?parkwalk=1`, walk in, and leave by a gate that is not the one you came in by:
-you come out in a different corridor, and the route between two places on B1 has crossed the green. The
-hall-side wall is still glass and still stops a body — no gate is ever cut through it.
+corridor, which makes the largest room in the game a destination and a dead end.
+
+**#813 · and now it is crossed from all four sides.** The gates are no longer whichever ribs happened to
+point the right way — the green is the middle of a block and the block has a street on every side of it,
+so a shipped park carries **six** gates in a fixed pattern: **two down through the near band** off the main
+corridor, **two up through the far band** off the back street, and **one through each end** of the block.
+Boot `?parkwalk=1`, walk in, and leave by any of the other five: you come out on a different street, and
+the route between two places on B1 has crossed the green. The bar's own wall is still glass and still stops
+a body — no gate is ever cut through it, and that is the one pane in the ring with no door in it.
 
 Owner, walking the new B1 the night #790 landed: *"The bar/canteen needs DOORS ON THE MAIN CORRIDOR —
 today you have to really look for the way in; a venue's entrance should find YOU."* / *"A canteen this size
@@ -705,11 +722,12 @@ The pass is printed at the bottom of the cage.
 | `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
 | `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — plated **SIT DOWN**, and the panel wears the table (#783) |
 | `&approach=1\|0` | force whether sitting a while brings somebody over (#757); `0` is the told nobody-came beat |
-| `?park=1` | boot standing INSIDE the park behind the bar (#759) — green floor, window wall, beds, benches |
+| `?park=1` | boot standing INSIDE the park (#759/#813) — green floor, and a room's glass on all four sides of you |
 | `?frontdoor=1` | boot OUT ON THE MAIN CORRIDOR at the canteen's own front door (#775) — walk in through it |
 | `?freight=1` | boot at the GOODS HOIST (#775) — drawn, labelled, solid, and it refuses you in words |
-| `?parkwalk=1` | boot at the mouth of the GARDEN WALK (#775) — the park is a THOROUGHFARE, 2–5 gates |
-| `?parkback=1` | boot on the gravel facing the park’s FAR wall (#801) — back of house: potting, plant, cold room |
+| `?parkwalk=1` | boot at the mouth of a gate off the spine (#775/#813) — the block is crossed from all FOUR sides, 6 gates |
+| `?parkback=1` | boot on the gravel facing the park’s FAR wall (#801/#813) — the back of house, which has a street behind it now |
+| `?ringoffice=1` | boot INSIDE a room that faces the park (#813) — the only row in the game on the OFFICE side of the glass |
 | `?goodscar=1` | boot at the SECOND CAR (#801) — the goods lift at the blind end; no surface row, no gate |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |

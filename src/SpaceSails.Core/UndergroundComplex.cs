@@ -1514,8 +1514,27 @@ public static class UndergroundComplex
         double X, double Y, double FigureX, double FigureY, string FigurePlate = "",
         string? ArtUrl = null,
         IReadOnlyList<SurfaceLayout.Doorway>? Gates = null,
-        IReadOnlyList<BackRoom>? Back = null)
+        IReadOnlyList<BackRoom>? Back = null,
+        IReadOnlyList<RingRoom>? Ring = null)
     {
+        /// <summary>
+        /// #813 · THE ROOMS WITH THE VIEW, all the way round — the near band's suites, the back of house,
+        /// and the two end blocks, in that order.
+        ///
+        /// <para><b>The HALL is not one of them, and the omission is deliberate.</b> It is a ring room in
+        /// every way that matters — its doors are gaps in the spine's face, its far wall is glass on the
+        /// green — and it is already published twice: as this floor's <see cref="Amenity"/> and, for the
+        /// wall itself, as <see cref="Window"/>. A third entry would be the same room in a third list, and
+        /// a caller summing frontage or counting rooms off two of the three would get a different answer
+        /// depending which two. So the ring is <i>the rooms the ring carved</i>, the hall is the hall, and
+        /// anything measuring the park's whole perimeter unions the two out loud (see
+        /// <c>TheParkIsTheCentreOfTheBlockTests.EveryDuOfTheFrontageIsARoomOrAGate</c>).</para>
+        ///
+        /// <para>Never null, so a caller asking "what faces the park" cannot mistake an empty ring for a
+        /// missing one — and on the one floor that has a park, an empty ring is a bug rather than an
+        /// answer.</para></summary>
+        public IReadOnlyList<RingRoom> Frontage => Ring ?? [];
+
         /// <summary>
         /// #801 · WHAT IS ON THE OTHER SIDE, and the reason the far wall stopped being a horizon.
         ///
@@ -1644,6 +1663,15 @@ public static class UndergroundComplex
         return use == Comfort.UpperCanteen && !IsHeadOffice(bodyId);
     }
 
+    /// <summary>#813 · Does this floor get the block? The one floor that gets a park, asked exactly the way
+    /// <see cref="HasPark"/> asks it, because it is the same question — a block with no park in the middle
+    /// of it is a ring of offices around a hole.</summary>
+    public static bool HasParkBlock(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return IsHallFloor(bodyId, level) && HasPark(bodyId, HallUseOn(bodyId, level));
+    }
+
     /// <summary>#759 · Which picture the park's floor wears, or null where there is no park.</summary>
     public static string? ParkArtFor(string bodyId, Comfort use) =>
         HasPark(bodyId, use) ? ParkArtUrl : null;
@@ -1760,6 +1788,277 @@ public static class UndergroundComplex
         "🚿 WASH-DOWN",
         "📋 GROUNDS OFFICE · ROTA POSTED",
     ];
+
+    // ── #813 · THE MANHATTAN RULING — THE PARK IS THE MIDDLE OF THE BLOCK ────────────────────────────────
+    //
+    // Owner, 2026-08-09 evening: "The central park needs to be in the center of all the other rooms… not on
+    // the side. Think of New York, is the park on one side or is it in the center?" And the clause that
+    // decides every number below: "make sure the park prime real estate is not wasted and not unused, not on
+    // any side. It is the best real estate."
+    //
+    // WHAT WAS WRONG WITH THE SHIPPED PARK. #759 bought its ground out of the strip beyond the ribs' far
+    // ends — the one band no placer had ever used — so the green ran the whole width of the field with the
+    // hall's glass on one long side and PAINTED ROCK on the other three. #801 put a row of doors in the far
+    // wall, which was the owner noticing the same thing from inside: "walking through the park is fun, it
+    // should not be the edge." A room with three dead sides is a room on the side of the map however big it
+    // is, and three quarters of the best frontage in the building was frontage onto nothing.
+    //
+    // WHAT A BLOCK IS. The park is now the middle of a city block, and everything else here is the block:
+    //
+    //   ─────────────── THE SPINE ─────────────────   the block's own near street, with the cage on it
+    //   │ suite │ G │ suite │   T H E   H A L L   │   NEAR RING · doors on the spine, glass on the park
+    //   ├───────┴───┴───────┴─────────────────────┤
+    //  W│                                         │E  WEST/EAST RING · doors on the street, glass on the
+    //  e│            T H E   P A R K              │a  park; one gate through each
+    //  s│                                         │s
+    //  t├─────────────────────────────────────────┤t
+    //   │ store │ G │ potting │ cold │ G │ office │   FAR RING · the back of house, now ring fabric:
+    //   ─────────── THE BACK STREET ──────────────    a door on the street AND its old door on the gravel
+    //
+    // FOUR LAWS, and each of them is a guard in TheParkIsTheCentreOfTheBlockTests:
+    //
+    //   1. CENTRALITY. Every one of the park's four walls is faced by carved fabric. No side of it is the
+    //      field's edge and none of it is rock.
+    //   2. THE RING IS COMPLETE. Every du of the park's perimeter that is not a gate is a room's park-facing
+    //      wall, and that wall is GLASS (published in FloorPlan.Windows, blocking like any other wall). The
+    //      owner's "not unused, not on any side", in the one unit a guard can measure.
+    //   3. A CORRIDOR ON EVERY SIDE. The near street is the spine itself; the far street is the back street;
+    //      the west and east streets join them into one loop. Every ring room's door is on a street and
+    //      never on the park, so nobody walks through an office to reach an office.
+    //   4. THE CAR GOES WHERE THE BUILDING IS THINNEST. The ring's own frontage decides which end of the
+    //      block the goods car stands at — the density decides the shaft's side and never the other way
+    //      round (see ServiceShaftAt).
+    //
+    // WHICH SIDE OF THE SPINE. Always the lower one. The cage's alcove hangs off the spine's UPPER face, and
+    // a block that took that side would have to be carved around the captain's own way home — a notch in the
+    // best frontage in the building, on the one column nothing may ever be laid across (#585). The block
+    // takes the side the cage does not, which is a reason and not a coin toss.
+
+    /// <summary>#813 · How far the block's two service streets stand in from the spine's own end caps. What
+    /// is left outside them is the rock the goods car's alcove is cut into, which is why this is a number
+    /// and not the edge itself.</summary>
+    public const double BlockStreetInsetDu = 14.0;
+
+    /// <summary>#813 · How deep the ring is on the SPINE side — the premium band, and the one the hall
+    /// stands in. It is the hall's own length (the old <c>RibReachDu + HallRibExtraDu</c> less the corridor
+    /// half it was measured from), because the room that has to fit is the one with eighty seats in it: a
+    /// band shallower than this would make the bar wider than the ground it stands on.</summary>
+    public const double RingNearDepthDu = 51.5;
+
+    /// <summary>#813 · How deep the ring is on the BACK STREET side. The facility's own chamber module
+    /// exactly (<see cref="ParkBackDepthDu"/>) and not a number of its own — these are #801's back of house
+    /// re-anchored, and #801's law is that they are ordinary rooms that happen to be entered off a garden.
+    /// A ring band a du deeper than the module would have made that sentence false by one du, which is how
+    /// a law quietly stops being one.</summary>
+    public static double RingFarDepthDu => ParkBackDepthDu;
+
+    /// <summary>#813 · How deep the ring is on the two ends of the block. Deeper than a chamber and far
+    /// shallower than the near band: a corner office with the green out of one wall.</summary>
+    public const double RingSideDepthDu = 20.0;
+
+    /// <summary>#813 · How wide a ring room WANTS to be. A band is cut into
+    /// <c>max(1, round(span / this))</c> rooms of equal width, so the pier between two suites is their
+    /// shared wall and no frontage is ever left over — the owner's "not unused" said as arithmetic rather
+    /// than as an intention.</summary>
+    public const double RingRoomTargetDu = 40.0;
+
+    /// <summary>#813 · The narrowest a ring room may be. Also the clearance a gate must leave at each end of
+    /// a band: a corridor cut so close to the corner that the room beside it is a cupboard is a corridor
+    /// that has eaten the frontage it was there to serve.</summary>
+    public const double RingRoomMinDu = 16.0;
+
+    /// <summary>
+    /// #813 · WHAT IS STENCILLED ON A ROOM WITH THE VIEW — the six plates the block hangs on its park-facing
+    /// frontage, and nowhere else in the building.
+    ///
+    /// <para>#775's amenity gradient says amenities follow rank. The Manhattan ruling is where that becomes
+    /// a MAP: the rooms on the green are the expensive ones, so they get a vocabulary the corridors do not.
+    /// Every other plate down here is drawn from <see cref="SignFor"/>'s own register of departments and
+    /// refusals — <c>QUOTA OFFICE</c>, <c>DO NOT ADMIT UNESCORTED</c> — and those still go on the block's
+    /// CORNER rooms, which stand past the end of the park's wall and have nothing to look at. The gradient
+    /// is legible without a word being said about it: read along one wall and the rooms get better as the
+    /// green comes into view.</para>
+    ///
+    /// <para>§13.8 holds, and this row is a soft place to break it exactly as the back of house is. Every
+    /// one of these says what a ROOM is — a booking, a signature, an appointment — and not one of them says
+    /// what the facility is for. The nearest any of them comes is #770's negotiation room, and all it names
+    /// is where you book it: at the counter, which is the same sentence a cabinet's plate has carried since
+    /// #751 (<see cref="CabinetPlate"/>). The building rents rooms with a view of a garden it built to
+    /// squeeze morale out of a workforce, and it advertises the aspect.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> ParkViewPlates =
+    [
+        "REGISTERED OFFICE · GARDEN ASPECT",
+        "NEGOTIATION ROOM · BOOK AT THE COUNTER",
+        "SIGNATORY SUITE · TWO KEYS",
+        "SENIOR ROTA · GREEN SIDE",
+        "PRIVILEGED RECORDS · READING ROOM",
+        "RECEPTION · APPOINTMENTS HELD",
+    ];
+
+    /// <summary>#813 · Which side of the park a ring room faces it from. Near is the spine's side.</summary>
+    public enum RingSide
+    {
+        /// <summary>The spine's side — the premium band, and the hall's.</summary>
+        Near,
+
+        /// <summary>The back street's side — the back of house.</summary>
+        Far,
+
+        /// <summary>The block's west end.</summary>
+        West,
+
+        /// <summary>The block's east end.</summary>
+        East,
+    }
+
+    /// <summary>
+    /// #813 · ONE ROOM ON THE RING — the room with the view, published with both of its walls.
+    ///
+    /// <para>Two walls are what make it one of these rather than an ordinary chamber, and they are on
+    /// opposite sides of it: <see cref="View"/> is the park-facing wall, which is glass; <see cref="Door"/>
+    /// is the way in, which is on a street. That is the owner's <i>"view side to the park, service side to
+    /// the corridor"</i> as a record rather than as an arrangement two placers happen to agree on.</para>
+    ///
+    /// <para>Published for the reason <see cref="Hall.Openings"/> and <see cref="Park.Ways"/> are: "every
+    /// park-facing wall is used" is a law about a list, and a law about a list nobody keeps is a law nobody
+    /// can fail.</para>
+    /// </summary>
+    /// <param name="Number">1-based, in the order the ring was laid: near, far, west, east.</param>
+    /// <param name="X0">Left edge, in the surface's own coordinates.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="Side">Which of the park's four walls this room is one of.</param>
+    /// <param name="Door">The way in, cut in the street's face. Every ring room has exactly one.</param>
+    /// <param name="View">The park-facing wall, as the segment it was built as — null on a CORNER room,
+    /// which stands past the end of the park's own wall and therefore has nothing to look at. A corner
+    /// office with no view is the amenity gradient (#775) drawn on the plan.</param>
+    /// <param name="Gate">The door in the park-facing wall, where this room has one — the back of house
+    /// keeps #801's own way in off the gravel. Null everywhere else, and never on the hall: the owner's
+    /// rule is that the glass between the bar and the green is never a door.</param>
+    /// <param name="Plate">What is stencilled beside the street door.</param>
+    public readonly record struct RingRoom(
+        int Number, double X0, double Y0, double X1, double Y1, RingSide Side,
+        SurfaceLayout.Doorway Door, SurfaceLayout.Wall? View, SurfaceLayout.Doorway? Gate,
+        string Plate)
+    {
+        /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
+        public double X => (X0 + X1) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double Y => (Y0 + Y1) / 2.0;
+
+        /// <summary>Is the captain in it? The box the walls were laid on, and nothing else.</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+
+        /// <summary>How much floor it has.</summary>
+        public double FloorDu2 => (X1 - X0) * (Y1 - Y0);
+
+        /// <summary>Does it look at the green? False on the four corner rooms, and that is a true statement
+        /// about them rather than a missing one.</summary>
+        public bool HasView => View is not null;
+    }
+
+    /// <summary>
+    /// #813 · THE BLOCK, AS A PURE FUNCTION OF THE GROUND — every line the ring is laid on, decided once.
+    ///
+    /// <para>Field-pure on purpose, and it is the same discipline <see cref="RibColumnsOn"/> is written
+    /// with: the goods car is placed against these numbers (<see cref="ServiceShaftAt"/>) and a car stands
+    /// in the same place on every floor of a site, so anything the car is measured against has to hold for
+    /// the whole building and not for the one floor that has a park on it.</para>
+    /// </summary>
+    /// <param name="WestStreetX">The centre line of the block's west street.</param>
+    /// <param name="EastStreetX">The same, east.</param>
+    /// <param name="X0">The park's own left edge.</param>
+    /// <param name="X1">The park's own right edge.</param>
+    /// <param name="Y0">The park's far wall — the back street's side.</param>
+    /// <param name="Y1">The park's near wall — the spine's side, and the hall's glass.</param>
+    /// <param name="SpineFaceY">The spine's lower face, which is the near ring's own front wall.</param>
+    /// <param name="BackStreetY0">The back street's far face — the block's outer wall.</param>
+    /// <param name="BackStreetY1">Its near face, which is the far ring's back wall.</param>
+    /// <param name="SpurXs">Where a gate cuts through the near and far bands. These are rib columns, so a
+    /// corridor and a cross corridor can never disagree about where the crossings are (#801's own
+    /// reason).</param>
+    public readonly record struct ParkBlock(
+        double WestStreetX, double EastStreetX,
+        double X0, double X1, double Y0, double Y1,
+        double SpineFaceY, double BackStreetY0, double BackStreetY1,
+        IReadOnlyList<double> SpurXs)
+    {
+        /// <summary>The inside face of the west street — the wall the west ring's doors are cut in.</summary>
+        public double WestInnerX => WestStreetX + CorridorHalf;
+
+        /// <summary>The same, east.</summary>
+        public double EastInnerX => EastStreetX - CorridorHalf;
+
+        /// <summary>The block's own outer wall, west.</summary>
+        public double WestOuterX => WestStreetX - CorridorHalf;
+
+        /// <summary>The same, east.</summary>
+        public double EastOuterX => EastStreetX + CorridorHalf;
+
+        /// <summary>How much floor the park itself has — what the owner's "do not make it a puny small
+        /// closet" is measured in.</summary>
+        public double ParkDu2 => (X1 - X0) * (Y1 - Y0);
+    }
+
+    /// <summary>#813 · The block's lines, off the ground alone. See <see cref="ParkBlock"/>.</summary>
+    public static ParkBlock BlockOn(in SurfaceLayout.Field field)
+    {
+        double margin = SurfaceLayout.EdgeMargin + 6;
+        double left = field.LeftX + margin, right = field.RightX - margin;
+        (double _, double shaftY) = ShaftAt(field);
+
+        double west = left + BlockStreetInsetDu, east = right - BlockStreetInsetDu;
+        double spineFace = shaftY - CorridorHalf;
+        double nearY = spineFace - RingNearDepthDu;
+        double farY = nearY - ParkDepthDu;
+        double streetY1 = farY - RingFarDepthDu;
+        double streetY0 = streetY1 - (2 * CorridorHalf);
+
+        double x0 = west + CorridorHalf + RingSideDepthDu;
+        double x1 = east - CorridorHalf - RingSideDepthDu;
+
+        // WHICH COLUMNS THE GATES GO DOWN. The rib columns, so a gate and a cross corridor are one line —
+        // and only those that leave a whole room at each end of the band they cut. A gate against the corner
+        // would buy a through-route by spending the frontage the through-route exists to show off.
+        var spurs = new List<double>();
+        foreach ((int _, double rx) in RibColumnsOn(field))
+        {
+            if (rx - CorridorHalf >= x0 + RingRoomMinDu && rx + CorridorHalf <= x1 - RingRoomMinDu)
+            {
+                spurs.Add(rx);
+            }
+        }
+
+        return new ParkBlock(west, east, x0, x1, farY, nearY, spineFace, streetY0, streetY1, spurs);
+    }
+
+    /// <summary>
+    /// #813 · HOW MUCH ROOM FRONTAGE THE BLOCK CARRIES ON EACH SIDE OF ITS OWN MIDDLE, in deck units.
+    ///
+    /// <para>The near and far bands run the length of the block and the gates cut them; what is left is
+    /// room, and how much of it lies each side of the park's centre line is what "the less-built side"
+    /// means. It is not symmetric, and the reason it is not is worth saying: the rib columns are laid at
+    /// fifths of the spine and the one nearest the cage is DROPPED (<see cref="RibColumnsOn"/>), so the
+    /// gates fall on one side of the middle and the long unbroken run of suites falls on the other.</para>
+    ///
+    /// <para>Field-pure, so the car it decides stands in the same place on every floor.</para>
+    /// </summary>
+    public static (double West, double East) RingFrontageOn(in SurfaceLayout.Field field)
+    {
+        ParkBlock block = BlockOn(field);
+        double mid = (block.X0 + block.X1) / 2.0;
+        double west = mid - block.X0, east = block.X1 - mid;
+        foreach (double sx in block.SpurXs)
+        {
+            double lo = sx - CorridorHalf, hi = sx + CorridorHalf;
+            west -= Math.Max(0, Math.Min(hi, mid) - Math.Max(lo, block.X0));
+            east -= Math.Max(0, Math.Min(hi, block.X1) - Math.Max(lo, mid));
+        }
+        return (west, east);
+    }
 
     /// <summary>#751 · What is stencilled beside a cabinet's door. Numbered, and it says how you get one:
     /// not off a menu.</summary>
@@ -2286,18 +2585,47 @@ public static class UndergroundComplex
             (ribs[^1].X + reach + clear, right - clear),
         ];
 
-        double bestX = double.NaN, bestGap = -1;
-        foreach ((double lo, double hi) in ends)
+        // ── #813 · WHICH END, AND THE RING DECIDES IT ────────────────────────────────────────────────────
+        //
+        // Owner's Manhattan ruling, clause 4: "the extra lift goes on the LESS-BUILT side of the park — the
+        // ring's density decides the shaft's side, not the other way around."
+        //
+        // So the two blind ends are no longer ranked by how far they are from the cage. They are ranked by
+        // how much ROOM FRONTAGE the block carries at that end (RingFrontageOn), and the thinner end wins.
+        // Distance from the cage is what breaks a tie, which is where the old rule went — it was never
+        // wrong, it was only the only thing being asked.
+        //
+        // This is a real measurement and it really does choose: on the shipped field the west half of the
+        // block carries 91 du of frontage and the east half 98, because the rib column nearest the cage is
+        // dropped (RibColumnsOn) and the gates therefore fall to the west of the park's middle while the
+        // long unbroken run of suites falls to the east. Mirror that asymmetry and the car moves; the guard
+        // in TheParkIsTheCentreOfTheBlockTests does exactly that.
+        (double westFrontage, double eastFrontage) = RingFrontageOn(field);
+        ParkBlock block = BlockOn(field);
+
+        // …and WHERE in that end. Hard against the block's own service street, which is where a goods
+        // vehicle stops in any building anybody has ever worked in — clamped into the blind end, because
+        // the blind end is a fact about the chambers and this is a preference about the streets.
+        (double Lo, double Hi, double Frontage, double Want)[] candidates =
+        [
+            (left + clear, ribs[0].X - reach - clear, westFrontage,
+                block.WestOuterX - ShaftHalf - ShaftClearDu),
+            (ribs[^1].X + reach + clear, right - clear, eastFrontage,
+                block.EastOuterX + ShaftHalf + ShaftClearDu),
+        ];
+
+        double bestX = double.NaN, bestFrontage = double.MaxValue, bestGap = -1;
+        foreach ((double lo, double hi, double frontage, double want) in candidates)
         {
             if (hi <= lo)
             {
                 continue;   // the ribs run all the way to the cap: no blind end on this side
             }
-            double x = (lo + hi) / 2.0;
+            double x = Math.Clamp(want, lo, hi);
             double gap = Math.Abs(x - cageX);
-            if (gap > bestGap)
+            if (frontage < bestFrontage - 0.001 || (frontage < bestFrontage + 0.001 && gap > bestGap))
             {
-                (bestX, bestGap) = (x, gap);
+                (bestX, bestFrontage, bestGap) = (x, Math.Min(frontage, bestFrontage), gap);
             }
         }
 
@@ -2413,13 +2741,32 @@ public static class UndergroundComplex
         //
         // A corridor is defined by where it does NOT have walls. Both faces are now built in segments with a
         // deliberate gap at each rib, and both ends are shut.
+        // ── #813 · IS THIS THE BLOCK'S FLOOR? Decided first, because it decides which way every corridor on
+        //    it runs. See the Manhattan header above ParkBlock.
+        ParkBlock? blockOn = HasParkBlock(bodyId, level) ? BlockOn(field) : null;
+
         var ribXs = new System.Collections.Generic.List<(double X, bool Down)>();
         // #801 · The x's come from RibColumnsOn now — the same list the second car is placed against, so a
         // car and a corridor can never disagree about where the corridors are. Which WAY each one runs is
         // still this floor's own seeded business.
+        //
+        // #813 · …on every floor but ONE. On the block's floor the lower half of the field IS the block, all
+        // of it, so a column runs DOWN if and only if the block uses it as a gate through the ring, and
+        // every other column runs UP into the ordinary grid. That is not the seed being overruled for
+        // convenience: a rib running down anywhere else would arrive in the middle of somebody's office,
+        // and the seeded direction is a fact about a floor with two open halves.
         foreach ((int ordinal, double rx) in RibColumnsOn(field))
         {
-            ribXs.Add((rx, Frac(bodyId, $"hive:{level}:rib-dir:{ordinal}") < 0.62));
+            bool ribDown = Frac(bodyId, $"hive:{level}:rib-dir:{ordinal}") < 0.62;
+            if (blockOn is { } gated)
+            {
+                ribDown = false;
+                foreach (double sx in gated.SpurXs)
+                {
+                    ribDown |= Math.Abs(sx - rx) < 0.001;
+                }
+            }
+            ribXs.Add((rx, ribDown));
         }
 
         // #587 · The ribs, exactly as built, published on the plan. Taken HERE — before the lift alcove is
@@ -2456,17 +2803,23 @@ public static class UndergroundComplex
         var hallSpineCuts = new List<(double Lo, double Hi)>();
         double hallSpineFaceY = double.NaN;
 
-        // #775 · …and the ONE mouth on that face that is a corridor rather than a door: the garden walk down
-        // to the park. Kept in its own list because the two are drawn differently and always were — a
-        // doorway gets an imported leaf and a plate, a corridor mouth gets neither, exactly as the ribs'
-        // mouths get neither.
-        var spineMouths = new List<(double Lo, double Hi)>();
+        // #813 · …and the SAME wall, for the same reason, on behalf of every other room in the near band.
+        // The block's premium suites front the spine exactly the way the hall does — their door is a gap in
+        // this face and nothing else — so they hand their spans to the very list the wall is swept from and
+        // never cut a wall of their own. Kept apart from the hall's cuts only because the plates differ:
+        // the hall's first cut is the venue's entrance and the rest are its egress doors, and an office's
+        // plate is the office's own.
+        var ringSpineCuts = new List<(double Lo, double Hi, double PlateX, string Plate)>();
 
-        // #775 · The park's own circulation, decided with the park and read by the rib loop below.
-        var parkGateXs = new List<double>();
-        double? gardenWalkX = null;
-        bool parkSide = false;
-        double parkNear = double.NaN;   // the line every gate is cut in: the park's own near wall
+        // #775 · …and the mouths on that face that are corridors rather than doors: the walks down to the
+        // park. Kept in their own list because the two are drawn differently and always were — a doorway
+        // gets an imported leaf and a plate, a corridor mouth gets neither, exactly as the ribs' mouths get
+        // neither.
+        //
+        // #813 · There were one of these and there are four: the block's two service streets and a gate
+        // down each of the near band's crossings. The spine is the block's own near street now, and a street
+        // that meets it has a mouth in it.
+        var spineMouths = new List<(double Lo, double Hi)>();
 
         // One face of the spine, built as segments that stop either side of every mouth cut into it.
         void SpineFace(double y, Func<double, bool, bool> cutHere)
@@ -2506,6 +2859,10 @@ public static class UndergroundComplex
             {
                 mouths.AddRange(hallSpineCuts);
                 mouths.AddRange(spineMouths);
+                foreach ((double lo, double hi, double _, string _) in ringSpineCuts)
+                {
+                    mouths.Add((lo, hi));
+                }
             }
             mouths.Sort((a, b) => a.Lo.CompareTo(b.Lo));
 
@@ -2580,123 +2937,110 @@ public static class UndergroundComplex
         // refuges — sees the box and steps around it. The alternative was to carve it last and delete the
         // walls of whatever it had swallowed, which is the same thing said in a way that can go wrong.
         //
-        // The floor pays for it in the room slots of the column the hall stands on, and — since #759 let the
-        // carve stop at a neighbouring corridor rather than a full room column short of it — in whatever
-        // slots of that neighbour's near side it now stands on. Nothing is ever laid ON it: the ledger is
-        // told about the box before any other placer runs, and no CORRIDOR is ever covered.
-        (int Rib, int Side)? hallSlot =
-            HallSlotFor(bodyId, level, ribList, field, shaftX, serviceX, shaftY, left, right, roomScale);
+        // #813 · …and on the block's floor it is not carved off a rib at all. It is a RING ROOM: the widest
+        // sub-segment of the near band, front doors on the spine, glass on the park — which is what it has
+        // been in every way but its bookkeeping since #775 hung its doors on the main corridor. What the
+        // Manhattan ruling changed is that the ground either side of it is now a room too.
         HallSite? hallSite = null;
         Park? park = null;
+        (int Rib, int Side)? hallSlot = null;
+        var ring = new List<RingRoom>();
 
         // #759 · The park's own glazing, kept apart from the poured walls all the way out of this method.
         // See CarveHall: one segment, in the list that says what it is MADE OF, and the client turns it back
         // into a wall the eye reads as glass and the boots read as wall.
         var glass = new List<SurfaceLayout.Wall>();
 
-        if (hallSlot is { } slot)
+        if (blockOn is { } block)
         {
-            // #759 · THE HALL'S OWN RIB REACHES FURTHER (RibReach's `hall:`), and the same two numbers are
-            // handed to the rib loop below for that rib — one call, one answer, the #585 law about the
-            // doorway and the gap being one gap applied to a rib's LENGTH.
-            (double hmouth, double hfar) = RibReach(field, shaftY, ribList[slot.Rib].Down, hall: true);
-            bool glazed = HasPark(bodyId, HallUseOn(bodyId, level));
-            hallSite = CarveHall(
-                walls, glass, hallSpineCuts, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
-                shaftX, serviceX, left, right, roomScale, glazed);
+            Comfort use = HallUseOn(bodyId, level);
+            double mouth = block.SpineFaceY, far = block.Y1;
+
+            // ── WHICH SUB-SEGMENT OF THE BAND · #751's rule, unchanged, asked of the block's own list
+            //    (RingNearSegments) rather than of the room slots down a rib: the best FLOOR wins and
+            //    nearest-the-cage breaks the tie. The hall takes the whole of the segment it stands in
+            //    unless what is left over would still make a room, and never leaves a strip too narrow to
+            //    be one — the owner's "not unused" applied to the ground the biggest room in the building
+            //    does not want.
+            var wide = new List<Rib> { new(block.WestInnerX - CorridorHalf, true) };
+            double wanted = HallGround(
+                bodyId, use, wide, 0, +1, mouth, far, shaftX, serviceX, left, right + 400.0, roomScale)
+                is { } asked ? asked.Wanted : 0.0;
+
+            double bestLo = double.NaN, bestW = 0, bestD2 = double.MaxValue;
+            foreach ((double lo, double hi) in RingNearSegments(block))
+            {
+                double span = hi - lo;
+                double w = span <= wanted || span - wanted < RingRoomMinDu ? span : wanted;
+                var pseudo = new List<Rib> { new(lo - CorridorHalf, true) };
+                if (HallGround(
+                        bodyId, use, pseudo, 0, +1, mouth, far, shaftX, serviceX,
+                        left, lo + w + HallEdgePadDu, roomScale)
+                    is null)
+                {
+                    continue;   // this segment will not take a hall, and that is a real answer
+                }
+                double d2 = ((lo + (w / 2.0)) - shaftX) * ((lo + (w / 2.0)) - shaftX);
+                if (w > bestW + 0.5 || (w > bestW - 0.5 && d2 < bestD2))
+                {
+                    (bestLo, bestW, bestD2) = (lo, Math.Max(w, bestW), d2);
+                }
+            }
+
+            if (!double.IsNaN(bestLo))
+            {
+                var stand = new List<Rib> { new(bestLo - CorridorHalf, true) };
+                hallSite = CarveHall(
+                    walls, glass, hallSpineCuts, bodyId, level, stand, 0, +1, mouth, far,
+                    shaftX, serviceX, left, bestLo + bestW + HallEdgePadDu, roomScale, glazed: true);
+            }
+
             if (hallSite is { } built)
             {
-                // #775 · WHICH FACE OF THE SPINE THE HALL'S FRONT DOORS ARE CUT IN. The hall's near wall IS
-                // that face (v = 0 in the carve's own axes), so this is the carve's own `mouth` and never a
-                // second opinion about it.
-                hallSpineFaceY = hmouth;
+                // #775 · WHICH FACE OF THE SPINE THE HALL'S FRONT DOORS ARE CUT IN — the carve's own mouth,
+                // and never a second opinion about it. It is the whole near band's face now.
+                hallSpineFaceY = mouth;
                 claimed.Add((
                     built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
                     built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
 
-                // ── #759 · AND THE PARK BEHIND ITS GLASS ────────────────────────────────────────────────
+                // ── #813 · THE RING, AND THEN THE GREEN IN THE MIDDLE OF IT ────────────────────────────
                 //
-                // Carved immediately after the hall and claimed with it, for the hall's own reason: it is
-                // the largest single room in the building and everything laid afterwards has to see it.
-                if (glazed)
-                {
-                    // ── #775 · EVERY CORRIDOR THAT REACHES THE GREEN, DECIDED BEFORE THE WALL IS POURED ──
-                    //
-                    // Owner: "let's have multiple doors to the park… it is a kind of place people like to
-                    // walk through on their way." Two sources, and both are known here — which is the whole
-                    // reason this list is built before the carve rather than patched into the wall after it:
-                    //
-                    //   · every RIB pointing the park's way. Their far ends stop RibReachDu off the spine
-                    //     and the park's near wall is HallRibExtraDu beyond that, so the rib loop runs each
-                    //     of them the extra sixteen du and opens where it arrives — the hall's rib gate,
-                    //     said about the other three. A route down one rib and up another now crosses the
-                    //     green instead of going round it.
-                    //   · THE GARDEN WALK, always, because the ribs' directions are seeded and on a quarter
-                    //     of the shipped sites exactly one of them points this way. A park with one door is
-                    //     a cul-de-sac however the dice fell.
-                    parkSide = ribList[slot.Rib].Down;
-                    parkNear = hfar;
-                    foreach (Rib r in ribList)
-                    {
-                        if (r.Down == parkSide)
-                        {
-                            parkGateXs.Add(r.X);
-                        }
-                    }
-                    gardenWalkX = GardenWalkX(ribList, parkSide, built.Hall, shaftX, serviceX, left, right);
-                    if (gardenWalkX is { } gx)
-                    {
-                        parkGateXs.Add(gx);
-                    }
+                // In this order because the ring owns the park's whole boundary: every wall the park has is
+                // a room's glass or a gate's stub, so the green is what is left when the block has been
+                // built rather than a box with openings cut in it afterwards.
+                var parkGates = new List<SurfaceLayout.Doorway>();
+                ring = CarveRing(
+                    walls, glass, doorways, labels, claimed, ringSpineCuts, spineMouths, parkGates,
+                    bodyId, level, block, built.Hall);
 
-                    park = CarvePark(
-                        walls, bodyId, level, built.Hall, built.Glass!.Value, ribList[slot.Rib],
-                        hfar, left, right, field, parkGateXs);
-                    claimed.Add((
-                        park.Value.X0 - 1.5, park.Value.Y0 - 1.5,
-                        park.Value.X1 + 1.5, park.Value.Y1 + 1.5));
-
-                    // ── #801 · THE BACK OF HOUSE, PUBLISHED. The carve owns the walls (it owns the far
-                    //    wall the doors are cut in); everything a room IS rather than is made of is said
-                    //    here, in the same three lists every other room in the building is said in — one
-                    //    doorway, one plate beside it on the side the walker is coming from, one claim.
-                    //    The centres go into `rooms` at the very end of the build, after the amenities and
-                    //    the refuge have taken theirs: the back of house is the park's and may not be
-                    //    quietly turned into a washroom.
-                    foreach (BackRoom br in park.Value.Rooms)
-                    {
-                        doorways.Add(br.Door);
-                        labels.Add(new(
-                            br.X,
-                            park.Value.Contains(br.X, br.Y0 - 2.5) ? br.Y0 - 2.5 : br.Y1 + 2.5,
-                            br.Plate));
-                        claimed.Add((br.X0 - 1.5, br.Y0 - 1.5, br.X1 + 1.5, br.Y1 + 1.5));
-                    }
-
-                    // ── AND THE WALK ITSELF · two walls down to the green, and the gate at the end of them.
-                    //
-                    // Built here, with the park, so the claim ledger sees it before a single chamber is laid:
-                    // a passage is the one thing that may never be covered (#585), and the rooms either side
-                    // of a rib are placed later out of ground this one now stands on.
-                    if (gardenWalkX is { } wx)
-                    {
-                        double near = hmouth, farLine = hfar;
-                        walls.Add(new(wx - CorridorHalf, near, wx - CorridorHalf, farLine, true));
-                        walls.Add(new(wx + CorridorHalf, near, wx + CorridorHalf, farLine, true));
-                        walls.Add(new(wx - CorridorHalf, farLine, wx - DoorHalf, farLine, true));
-                        walls.Add(new(wx + DoorHalf, farLine, wx + CorridorHalf, farLine, true));
-                        spineMouths.Add((wx - CorridorHalf, wx + CorridorHalf));
-                        doorways.Add(new(wx - DoorHalf, farLine, wx + DoorHalf, farLine));
-                        claimed.Add((
-                            wx - CorridorHalf - 1.5, Math.Min(near, farLine) - 1.5,
-                            wx + CorridorHalf + 1.5, Math.Max(near, farLine) + 1.5));
-                        labels.Add(new(wx, near + (parkSide ? -4.5 : 4.5), ParkWaySign));
-                    }
-                }
+                park = CarvePark(
+                    walls, bodyId, level, built.Hall, built.Glass!.Value, block, parkGates, ring);
             }
-            else
+        }
+        else
+        {
+            // ── EVERY OTHER FLOOR, UNCHANGED · the staff mess two hundred metres down stands on a rib's
+            //    room column exactly as it has since #751, and there is no park behind it to glaze.
+            hallSlot = HallSlotFor(
+                bodyId, level, ribList, field, shaftX, serviceX, shaftY, left, right, roomScale);
+            if (hallSlot is { } slot)
             {
-                hallSlot = null;   // the ground would not take one. The floor keeps its ordinary canteen.
+                (double hmouth, double hfar) = RibReach(field, shaftY, ribList[slot.Rib].Down, hall: true);
+                hallSite = CarveHall(
+                    walls, glass, hallSpineCuts, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
+                    shaftX, serviceX, left, right, roomScale, glazed: false);
+                if (hallSite is { } built)
+                {
+                    hallSpineFaceY = hmouth;
+                    claimed.Add((
+                        built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
+                        built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
+                }
+                else
+                {
+                    hallSlot = null;   // the ground would not take one. It keeps its ordinary canteen.
+                }
             }
         }
 
@@ -2752,6 +3096,16 @@ public static class UndergroundComplex
                         ? HallEntrancePlate(bodyId, HallUseOn(bodyId, level))
                         : HallEgressPlate(d + 1)));
             }
+
+            // #813 · …and the near band's other doors, out of the very same list the wall was swept from.
+            // Their plates are the building's own vocabulary rather than the venue's, and they go on the
+            // corridor side for the reason the hall's do: a walker on the spine is told what the wall beside
+            // them is before they have to wonder.
+            foreach ((double lo, double hi, double plateX, string plate) in ringSpineCuts)
+            {
+                doorways.Add(new(lo, hallSpineFaceY, hi, hallSpineFaceY));
+                labels.Add(new(plateX, plateY, plate));
+            }
         }
 
         // #775 · AND THE FREIGHT DOOR, HUNG. The shutter is a locked door like every other door down here
@@ -2772,6 +3126,15 @@ public static class UndergroundComplex
                 || (serviceX is { } carMouth && Math.Abs(x - carMouth) < 0.001))
             {
                 continue;   // that entry is a car's alcove mouth, not a corridor
+            }
+            if (blockOn is not null && down)
+            {
+                // #813 · The block's own gates. Their walls, their claim and the doorway at the end of them
+                // were laid by CarveRing, because the walls either side of a gate ARE the party walls of the
+                // rooms it runs between — one wall, laid once, by whichever placer owns both of its faces.
+                // A second pass over them here is exactly the two-authors-one-line bug this file opens with
+                // a table of.
+                continue;
             }
             // #759 · The hall's rib runs longer than the rest, and this is the same call the carve made —
             // never a second answer. `hallRib` is also the one rib in the building whose far end is a WAY IN
@@ -2812,32 +3175,15 @@ public static class UndergroundComplex
             // arrives, so a route down one rib and up another crosses the green instead of going round it.
             // The extension is corridor, not room: the chambers were laid against `far` and nothing stands
             // in the sixteen du beyond it — that is the same unused band the park itself came out of.
-            bool parkRib = park is not null && down == parkSide;
-            if (parkRib && !hallRib)
+            // #813 · Every rib that gets this far runs away from the block, so its far end is an end.
+            // The one that used to be a way in is a gate through the ring now, and it never reaches here.
+            if (!IsFound(bodyId, level) && Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
             {
-                walls.Add(new(x - CorridorHalf, far, x - CorridorHalf, parkNear, true));
-                walls.Add(new(x + CorridorHalf, far, x + CorridorHalf, parkNear, true));
+                double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
+                locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
+                    SealedMouthSign(bodyId, i, km)));
             }
-
-            if (parkRib)
-            {
-                // ONE line for all of them — the park's own near wall, which for the hall's rib is its own
-                // `far` and for every other rib is sixteen du past it. A second answer about where a gate
-                // sits is how this file's oldest bug was written.
-                doorways.Add(new(x - DoorHalf, parkNear, x + DoorHalf, parkNear));
-                walls.Add(new(x - CorridorHalf, parkNear, x - DoorHalf, parkNear, true));
-                walls.Add(new(x + DoorHalf, parkNear, x + CorridorHalf, parkNear, true));
-            }
-            else
-            {
-                if (!IsFound(bodyId, level) && Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
-                {
-                    double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
-                    locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
-                        SealedMouthSign(bodyId, i, km)));
-                }
-                walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
-            }
+            walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
 
             // #751 · …and on the column the hall is standing on, no rooms at all. The rib's own face is
             // still built above (RibFace), with its doorway at every slot — those gaps ARE the hall's doors,
@@ -2857,6 +3203,18 @@ public static class UndergroundComplex
         // the same room. They never compete in practice — an amenity is only ever plumbed on a floor that
         // holds pressure and a refuge is only ever carved on one that does not — but the order says so
         // rather than leaving it to be rediscovered.
+        // #813 · …and the ring's own rooms join the pool BEFORE either of them, which is #775's amenity
+        // gradient cashed out: a washroom on the park side of the block is a washroom with a window, and
+        // "amenities follow rank" means the best room in the building is a candidate for the best of them.
+        // The back of house is NOT in here — it goes in below, after both have chosen, for #801's reason.
+        foreach (RingRoom room in ring)
+        {
+            if (room.Side != RingSide.Far)
+            {
+                rooms.Add((room.X, room.Y, room.Plate));
+            }
+        }
+
         List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY, hallSite);
         List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, field);
 
@@ -2864,11 +3222,20 @@ public static class UndergroundComplex
         // are rooms — they hold what any room down here holds and the A* audit walks to every one of them —
         // but they are the garden's, and an amenity or a refuge carved out of one would be the building
         // taking back the thing this feature exists to give: somewhere on the far side of the green.
-        if (park is { } green)
+        if (park is not null)
         {
-            foreach (BackRoom br in green.Rooms)
+            // #813 · …asked of the RING rather than of Park.Rooms, which is the #801 view of it and holds
+            // only the ones with a door onto the gravel. The far band's two CORNER rooms stand past the end
+            // of the park's own wall, so they have no gravel door and are not back rooms in #801's sense —
+            // and reading the narrower list here left two rooms on every block floor with a door cut, a
+            // plate hung and nothing behind them. Watched go red: "34 doors were cut and only 28 of them
+            // lead anywhere."
+            foreach (RingRoom room in ring)
             {
-                rooms.Add((br.X, br.Y, br.Plate));
+                if (room.Side == RingSide.Far)
+                {
+                    rooms.Add((room.X, room.Y, room.Plate));
+                }
             }
         }
 
@@ -2921,10 +3288,17 @@ public static class UndergroundComplex
     /// the spine while the field runs on for another sixty du past that.</summary>
     public const double HallRibExtraDu = 16.0;
 
-    /// <summary>#759 · How deep the band the park stands in is, measured from the hall rib's own far end
-    /// outward. What is left of the unused band after <see cref="HallRibExtraDu"/> — stated as a number so
-    /// the park's area law has something to be measured against rather than a coordinate.</summary>
-    public const double ParkDepthDu = 42.0;
+    /// <summary>#759/#813 · How deep the park is, measured from its own near wall (the hall's glass)
+    /// outward. Stated as a number so the park's area law has something to be measured against rather than
+    /// a coordinate.
+    ///
+    /// <para>#813 · It grew by two du when the Manhattan ruling turned the band into a block. That reads
+    /// like a rounding error and it is not: the park lost most of its WIDTH — it no longer runs from one end
+    /// cap of the spine to the other, because a room that runs to the end caps has ends nobody can build
+    /// against — and every du of the depth budget freed by moving the hall's band and the back of house
+    /// into one ring went back into the green. What is left of the field beyond the block is the rock the
+    /// back street is cut in.</para></summary>
+    public const double ParkDepthDu = 45.0;
 
     /// <summary>#751 · A carved hall, on its way to becoming an <see cref="Amenity"/>.</summary>
     /// <param name="Hall">The box and its cabinets, as published on the plan.</param>
@@ -3660,6 +4034,429 @@ public static class UndergroundComplex
             glazed ? farWall : null);
     }
 
+    /// <summary>#813 · How a band of ring frontage is cut into rooms — one answer, asked by the near band,
+    /// the far band, the two ends, and by the chooser that decides which sub-segment the hall stands in.
+    ///
+    /// <para>The gates cut the band into segments; the park's own two ends cut it again, because a room that
+    /// straddled the corner would have glass along part of its front wall and rock along the rest, and a
+    /// wall that is two materials is a wall two placers will one day disagree about.</para></summary>
+    private static List<(double Lo, double Hi)> RingSegments(
+        double lo, double hi, IReadOnlyList<double> gapCentres, double half, params double[] splits)
+    {
+        var cuts = new List<(double Lo, double Hi)>(gapCentres.Count);
+        foreach (double c in gapCentres)
+        {
+            cuts.Add((c - half, c + half));
+        }
+        cuts.Sort((a, b) => a.Lo.CompareTo(b.Lo));
+
+        var spans = new List<(double Lo, double Hi)>();
+        double cursor = lo;
+        foreach ((double glo, double ghi) in cuts)
+        {
+            if (glo > cursor)
+            {
+                spans.Add((cursor, glo));
+            }
+            cursor = Math.Max(cursor, ghi);
+        }
+        if (cursor < hi)
+        {
+            spans.Add((cursor, hi));
+        }
+
+        var cut = new List<(double Lo, double Hi)>(spans.Count + splits.Length);
+        foreach ((double slo, double shi) in spans)
+        {
+            double at = slo;
+            foreach (double s in splits)
+            {
+                if (s > at + 0.001 && s < shi - 0.001)
+                {
+                    cut.Add((at, s));
+                    at = s;
+                }
+            }
+            cut.Add((at, shi));
+        }
+        return cut;
+    }
+
+    /// <summary>#813 · The near band's sub-segments — the run of ground between the spine and the park's own
+    /// near wall, once the gates and the park's two ends have been taken out of it. Field-pure, and lifted
+    /// out whole so the chooser that puts the hall in one of them and the carve that fills the rest are
+    /// reading the SAME list rather than two copies of the same arithmetic (§13.15).</summary>
+    public static IReadOnlyList<(double Lo, double Hi)> RingNearSegments(in ParkBlock block) =>
+        RingSegments(
+            block.WestInnerX, block.EastInnerX, block.SpurXs, CorridorHalf, block.X0, block.X1);
+
+    /// <summary>#813 · How many rooms a run of frontage this long is cut into, and each of them the same
+    /// width. Never fewer than one and never so many that one of them is under
+    /// <see cref="RingRoomMinDu"/>.</summary>
+    private static int RingRoomsIn(double span)
+    {
+        int n = Math.Max(1, (int)Math.Round(span / RingRoomTargetDu, MidpointRounding.AwayFromZero));
+        while (n > 1 && span / n < RingRoomMinDu)
+        {
+            n--;
+        }
+        return n;
+    }
+
+    /// <summary>
+    /// #813 · THE RING, CARVED — every room that faces the park, the four streets that serve them, and the
+    /// six gates through them.
+    ///
+    /// <para>It owns the park's whole boundary, which is the one thing that makes the Manhattan ruling
+    /// provable rather than decorative: every du of the park's four walls is laid HERE, either as a room's
+    /// glass or as a gate's stub, so "no side of the park is wasted" is true by construction and not by an
+    /// arrangement two placers happen to agree on. The single exception is the hall's own glass, which
+    /// <see cref="CarveHall"/> laid before this ran, and which this therefore steps over — #585's one-gap
+    /// law, said about a wall with two authors.</para>
+    ///
+    /// <para>Laid in one order, near then far then the two ends, so a room's <see cref="RingRoom.Number"/>
+    /// is a fact about where it is rather than about when the loop got to it.</para>
+    /// </summary>
+    private static List<RingRoom> CarveRing(
+        List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
+        List<SurfaceLayout.Doorway> doorways, List<SurfaceLayout.Landmark> labels,
+        List<(double X0, double Y0, double X1, double Y1)> claimed,
+        List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
+        List<(double Lo, double Hi)> spineMouths,
+        List<SurfaceLayout.Doorway> gates,
+        string bodyId, int level, in ParkBlock block, in Hall hall)
+    {
+        bool found = IsFound(bodyId, level);
+        var ring = new List<RingRoom>();
+        double sf = block.SpineFaceY;
+
+        // ── THE SHELL · three walls, and the fourth side is the spine's own face.
+        walls.Add(new(block.WestOuterX, sf, block.WestOuterX, block.BackStreetY0, true));
+        walls.Add(new(block.EastOuterX, sf, block.EastOuterX, block.BackStreetY0, true));
+        walls.Add(new(block.WestOuterX, block.BackStreetY0, block.EastOuterX, block.BackStreetY0, true));
+        claimed.Add((block.WestOuterX - 1.5, block.BackStreetY0 - 1.5, block.EastOuterX + 1.5, sf + 1.5));
+
+        // ── THE MOUTHS ON THE SPINE · the two streets and every gate down the near band. Corridor-width,
+        //    and in the mouths list rather than the doors list, because a corridor mouth gets no leaf and no
+        //    plate — exactly as a rib's mouth never has.
+        spineMouths.Add((block.WestOuterX, block.WestInnerX));
+        spineMouths.Add((block.EastInnerX, block.EastOuterX));
+        foreach (double sx in block.SpurXs)
+        {
+            spineMouths.Add((sx - CorridorHalf, sx + CorridorHalf));
+        }
+
+        // ── (1) THE NEAR BAND · the premium suites, doors on the spine, glass on the green.
+        foreach ((double lo, double hi) in RingNearSegments(block))
+        {
+            // The hall stands in one of these and it stands in the whole of it (see Build). Nothing else is
+            // laid on that ground: the hall published its own glass and its own front doors already.
+            if (hall.X1 > lo + 0.001 && hall.X0 < hi - 0.001)
+            {
+                continue;
+            }
+            int n = RingRoomsIn(hi - lo);
+            for (int k = 0; k < n; k++)
+            {
+                double rx0 = lo + ((hi - lo) * k / n), rx1 = lo + ((hi - lo) * (k + 1) / n);
+                ring.Add(RingBox(
+                    walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
+                    ring.Count + 1, RingSide.Near, rx0, block.Y1, rx1, sf, block, gate: false));
+            }
+        }
+
+        // ── (2) THE FAR BAND · #801's back of house, re-anchored as ring fabric. It keeps the door onto the
+        //    gravel that made it worth walking across a garden for, and it GAINS the street door the
+        //    Manhattan ruling requires — the owner's "nobody walks through an office to reach an office"
+        //    said about the one row that used to have no other way in.
+        foreach ((double lo, double hi) in RingSegments(
+            block.WestInnerX, block.EastInnerX, block.SpurXs, CorridorHalf, block.X0, block.X1))
+        {
+            int n = RingRoomsIn(hi - lo);
+            for (int k = 0; k < n; k++)
+            {
+                double rx0 = lo + ((hi - lo) * k / n), rx1 = lo + ((hi - lo) * (k + 1) / n);
+                ring.Add(RingBox(
+                    walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
+                    ring.Count + 1, RingSide.Far, rx0, block.BackStreetY1, rx1, block.Y0, block,
+                    gate: true));
+            }
+        }
+
+        // ── (3) AND THE TWO ENDS · a gate through the middle of each, and a room above and below it.
+        foreach (RingSide side in new[] { RingSide.West, RingSide.East })
+        {
+            bool west = side == RingSide.West;
+            double inner = west ? block.WestInnerX : block.X1;
+            double outer = west ? block.X0 : block.EastInnerX;
+            double mid = (block.Y0 + block.Y1) / 2.0;
+            foreach ((double lo, double hi) in RingSegments(
+                block.Y0, block.Y1, [mid], CorridorHalf))
+            {
+                ring.Add(RingBox(
+                    walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
+                    ring.Count + 1, side, inner, lo, outer, hi, block, gate: false));
+            }
+        }
+
+        // ── (4) THE GATES · one spur per crossing, and the park's wall opened where it arrives.
+        //
+        //    THE HALL OPENS ONTO ONE OF THEM. #751's law is that the hall never cuts a door: the gaps in
+        //    the corridor beside it ARE its doors, and it publishes the very slots the corridor was cut at.
+        //    That corridor used to be a rib and is a gate now — so the gate's side wall is swept with the
+        //    hall's own published openings taken out of it, and the room keeps every door it had. Watched go
+        //    red without this: "the door at (-1.5,-177.4) is one the hall knows about and the deck plan does
+        //    not", 208 of them, on every floor with a block on it.
+        var abutting = new List<SurfaceLayout.Doorway>();
+        foreach (SurfaceLayout.Doorway o in hall.Openings)
+        {
+            if (Math.Abs(o.X1 - o.X2) < 0.001)
+            {
+                abutting.Add(o);
+
+                // …and PUBLISHED, in the same list every other door down here is in, so the deck hangs its
+                // imported leaf on it and an audit can find it without knowing anything about halls. This is
+                // the job AddRoomsAlong used to do for the hall's own column (#751) and the column is a gate
+                // now, so the gate does it. Watched go red without this: "the door at (-1.5,-177.4) is one
+                // the hall knows about and the deck plan does not — nothing would be drawn there."
+                if (!found)
+                {
+                    doorways.Add(o);
+                }
+            }
+        }
+
+        foreach (double sx in block.SpurXs)
+        {
+            RingGate(walls, doorways, claimed, gates, sx, sf, block.Y1, vertical: true, abutting);
+            RingGate(walls, doorways, claimed, gates, sx, block.BackStreetY1, block.Y0, vertical: true);
+        }
+        double midY = (block.Y0 + block.Y1) / 2.0;
+        RingGate(walls, doorways, claimed, gates, midY, block.WestInnerX, block.X0, vertical: false);
+        RingGate(walls, doorways, claimed, gates, midY, block.EastInnerX, block.X1, vertical: false);
+
+        return ring;
+    }
+
+    /// <summary>#813 · One ring room: four walls, a door on the street, and — where it has any park in front
+    /// of it — the glass that makes it one of these rather than a chamber.
+    ///
+    /// <para><paramref name="fromX"/>/<paramref name="fromY"/> is the STREET corner and
+    /// <paramref name="toX"/>/<paramref name="toY"/> the PARK corner, so this one function lays a room on
+    /// any of the four sides without ever asking which side it is on — the same trick <see cref="CarveHall"/>
+    /// plays with its u and v.</para></summary>
+    private static RingRoom RingBox(
+        List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
+        List<SurfaceLayout.Doorway> doorways, List<SurfaceLayout.Landmark> labels,
+        List<(double X0, double Y0, double X1, double Y1)> claimed,
+        List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
+        string bodyId, int level, bool found, int number, RingSide side,
+        double fromX, double fromY, double toX, double toY, in ParkBlock block, bool gate)
+    {
+        bool horizontal = side is RingSide.Near or RingSide.Far;
+        double x0 = Math.Min(fromX, toX), x1 = Math.Max(fromX, toX);
+        double y0 = Math.Min(fromY, toY), y1 = Math.Max(fromY, toY);
+
+        // WHERE THE PARK IS, and how much of this room's front wall actually looks at it. A corner room
+        // stands past the end of the park's own wall, so it has none — which is the amenity gradient (#775)
+        // as geometry: the rooms with the view are the ones with the view.
+        double faceLo = horizontal ? x0 : y0, faceHi = horizontal ? x1 : y1;
+        double parkLo = horizontal ? block.X0 : block.Y0, parkHi = horizontal ? block.X1 : block.Y1;
+        bool view = faceLo >= parkLo - 0.001 && faceHi <= parkHi + 0.001;
+        double mid = (faceLo + faceHi) / 2.0;
+
+        // ── THE FOUR WALLS. The park-facing one is laid last because it is the one that is sometimes glass,
+        //    sometimes glass with a door in it, and on a corner room simply concrete.
+        double parkLine = horizontal ? (side == RingSide.Near ? y0 : y1) : (side == RingSide.West ? x1 : x0);
+        double streetLine = horizontal ? (side == RingSide.Near ? y1 : y0) : (side == RingSide.West ? x0 : x1);
+
+        // the two side walls, which are also the pier between this room and its neighbour
+        if (horizontal)
+        {
+            walls.Add(new(x0, y0, x0, y1, true));
+            walls.Add(new(x1, y0, x1, y1, true));
+        }
+        else
+        {
+            walls.Add(new(x0, y0, x1, y0, true));
+            walls.Add(new(x0, y1, x1, y1, true));
+        }
+
+        // ── THE STREET DOOR. On the near band the street is the SPINE, and its face is poured by the spine
+        //    builder from one sorted list of spans — so the gap is handed over rather than cut here, which
+        //    is #585's one-gap law said about the one wall this room does not own.
+        SurfaceLayout.Doorway door = horizontal
+            ? new SurfaceLayout.Doorway(mid - DoorHalf, streetLine, mid + DoorHalf, streetLine)
+            : new SurfaceLayout.Doorway(streetLine, mid - DoorHalf, streetLine, mid + DoorHalf);
+
+        // ── THE PLATE. A room with the view gets the block's own register (ParkViewPlates); a CORNER room
+        //    gets the building's ordinary one, which is the amenity gradient said in signage rather than in
+        //    a sentence. The back of house keeps #801's plates, because those rooms did not become premium
+        //    by acquiring a street door.
+        string plate = found ? "" : SignFor(bodyId, level, $"hive:{level}:ring:{(int)side}:{number}");
+        if (view && side != RingSide.Far)
+        {
+            plate = found
+                ? ""
+                : ParkViewPlates[
+                    (number + (int)(Frac(bodyId, $"hive:{level}:ring-view") * ParkViewPlates.Count))
+                        % ParkViewPlates.Count];
+        }
+        if (side == RingSide.Far)
+        {
+            plate = found
+                ? ""
+                : ParkBackPlates[
+                    (number + (int)(Frac(bodyId, $"hive:{level}:park-back") * ParkBackPlates.Count))
+                        % ParkBackPlates.Count];
+        }
+
+        // ── WHERE THE PLATE READS FROM · BESIDE the door and never over it.
+        //
+        // #775 learned this the expensive way on the hall's own front doors: "a plate centred on its own
+        // doorway is a plate with the captain standing on top of it the moment they arrive — watched happen
+        // in the browser on the first boot of ?frontdoor=1, the dot sitting squarely on the word CANTEEN."
+        // The ring shipped the same mistake on fourteen rooms a floor and it was found the same way, in the
+        // browser, on the first boot of ?parkwalk=1: PRIVILEGED RECORDS · READING ROOM with the avatar in
+        // the middle of it. A sign you have to step off to read is not signage.
+        //
+        // Stepped along the room's own wall rather than out into the corridor, and clamped inside the
+        // room's span so a narrow room's plate cannot wander onto its neighbour's frontage.
+        double aside = DoorHalf + 3.0;
+        double plateAt = Math.Clamp(mid + aside, faceLo + 1.5, faceHi - 1.5);
+
+        if (side == RingSide.Near)
+        {
+            spineDoors.Add((mid - DoorHalf, mid + DoorHalf, plateAt, plate));
+        }
+        else
+        {
+            if (horizontal)
+            {
+                walls.Add(new(x0, streetLine, mid - DoorHalf, streetLine, true));
+                walls.Add(new(mid + DoorHalf, streetLine, x1, streetLine, true));
+            }
+            else
+            {
+                walls.Add(new(streetLine, y0, streetLine, mid - DoorHalf, true));
+                walls.Add(new(streetLine, mid + DoorHalf, streetLine, y1, true));
+            }
+            if (!found)
+            {
+                doorways.Add(door);
+                labels.Add(new(
+                    horizontal ? plateAt : streetLine + (side == RingSide.West ? -2.5 : 2.5),
+                    horizontal ? streetLine + (side == RingSide.Far ? -2.5 : 2.5) : plateAt,
+                    plate));
+            }
+        }
+
+        // ── THE PARK-FACING WALL. Glass where there is a park behind it; on the far band a door is cut in
+        //    it and the glass is the rest of it, which is what a potting shed's front actually looks like.
+        SurfaceLayout.Wall? viewWall = null;
+        SurfaceLayout.Doorway? parkDoor = null;
+        if (view)
+        {
+            viewWall = horizontal
+                ? new SurfaceLayout.Wall(x0, parkLine, x1, parkLine, true)
+                : new SurfaceLayout.Wall(parkLine, y0, parkLine, y1, true);
+            if (gate)
+            {
+                parkDoor = horizontal
+                    ? new SurfaceLayout.Doorway(mid - DoorHalf, parkLine, mid + DoorHalf, parkLine)
+                    : new SurfaceLayout.Doorway(parkLine, mid - DoorHalf, parkLine, mid + DoorHalf);
+                glass.Add(horizontal
+                    ? new SurfaceLayout.Wall(x0, parkLine, mid - DoorHalf, parkLine, true)
+                    : new SurfaceLayout.Wall(parkLine, y0, parkLine, mid - DoorHalf, true));
+                glass.Add(horizontal
+                    ? new SurfaceLayout.Wall(mid + DoorHalf, parkLine, x1, parkLine, true)
+                    : new SurfaceLayout.Wall(parkLine, mid + DoorHalf, parkLine, y1, true));
+                if (!found)
+                {
+                    doorways.Add(parkDoor.Value);
+                }
+            }
+            else
+            {
+                glass.Add(viewWall.Value);
+            }
+        }
+        else
+        {
+            walls.Add(horizontal
+                ? new SurfaceLayout.Wall(x0, parkLine, x1, parkLine, true)
+                : new SurfaceLayout.Wall(parkLine, y0, parkLine, y1, true));
+        }
+
+        claimed.Add((x0 - 1.5, y0 - 1.5, x1 + 1.5, y1 + 1.5));
+        return new RingRoom(number, x0, y0, x1, y1, side, door, viewWall, parkDoor, plate);
+    }
+
+    /// <summary>#813 · One gate through the ring — a corridor's width of spur, and the park's own wall
+    /// opened to a doorway where it arrives. The spur's two side walls ARE the party walls of the rooms
+    /// either side of it, so a gate costs the ring a pier and never a room.</summary>
+    private static void RingGate(
+        List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways,
+        List<(double X0, double Y0, double X1, double Y1)> claimed,
+        List<SurfaceLayout.Doorway> gates, double at, double from, double to, bool vertical,
+        IReadOnlyList<SurfaceLayout.Doorway>? abutting = null)
+    {
+        if (vertical)
+        {
+            // The two side walls, in the segments left between whatever opens off them. One sorted sweep
+            // with a cursor that may only move forward (§13.2) — #587's own law, said about a corridor
+            // whose neighbour is a room somebody else carved.
+            foreach (int face in (int[])[-1, +1])
+            {
+                double wx = at + (face * CorridorHalf);
+                var cuts = new List<(double Lo, double Hi)>();
+                foreach (SurfaceLayout.Doorway o in abutting ?? [])
+                {
+                    if (Math.Abs(o.X1 - wx) < 0.001)
+                    {
+                        cuts.Add((Math.Min(o.Y1, o.Y2), Math.Max(o.Y1, o.Y2)));
+                    }
+                }
+                cuts.Sort((a, b) => a.Lo.CompareTo(b.Lo));
+
+                double lo = Math.Min(from, to), hi = Math.Max(from, to), cursor = lo;
+                foreach ((double clo, double chi) in cuts)
+                {
+                    if (clo > cursor)
+                    {
+                        walls.Add(new(wx, cursor, wx, Math.Min(clo, hi), true));
+                    }
+                    cursor = Math.Max(cursor, chi);
+                }
+                if (cursor < hi)
+                {
+                    walls.Add(new(wx, cursor, wx, hi, true));
+                }
+            }
+            walls.Add(new(at - CorridorHalf, to, at - DoorHalf, to, true));
+            walls.Add(new(at + DoorHalf, to, at + CorridorHalf, to, true));
+            var gate = new SurfaceLayout.Doorway(at - DoorHalf, to, at + DoorHalf, to);
+            doorways.Add(gate);
+            gates.Add(gate);
+            claimed.Add((
+                at - CorridorHalf - 1.5, Math.Min(from, to) - 1.5,
+                at + CorridorHalf + 1.5, Math.Max(from, to) + 1.5));
+        }
+        else
+        {
+            walls.Add(new(from, at - CorridorHalf, to, at - CorridorHalf, true));
+            walls.Add(new(from, at + CorridorHalf, to, at + CorridorHalf, true));
+            walls.Add(new(to, at - CorridorHalf, to, at - DoorHalf, true));
+            walls.Add(new(to, at + DoorHalf, to, at + CorridorHalf, true));
+            var gate = new SurfaceLayout.Doorway(to, at - DoorHalf, to, at + DoorHalf);
+            doorways.Add(gate);
+            gates.Add(gate);
+            claimed.Add((
+                Math.Min(from, to) - 1.5, at - CorridorHalf - 1.5,
+                Math.Max(from, to) + 1.5, at + CorridorHalf + 1.5));
+        }
+    }
+
     /// <summary>
     /// #759 · THE PARK, CARVED — the one room in the building that is not a box off a corridor.
     ///
@@ -3678,102 +4475,40 @@ public static class UndergroundComplex
     /// </summary>
     private static Park CarvePark(
         List<SurfaceLayout.Wall> walls, string bodyId, int level, in Hall hall, SurfaceLayout.Wall glass,
-        in Rib rib, double hallFar, double leftEnd, double rightEnd, in SurfaceLayout.Field field,
-        IReadOnlyList<double> gateXs)
+        in ParkBlock block, IReadOnlyList<SurfaceLayout.Doorway> gates, IReadOnlyList<RingRoom> ring)
     {
-        bool down = rib.Down;
-
-        // How deep the band is. ParkDepthDu unless the field runs out first, which it does not on the
-        // shipped one — clamped anyway, because a room laid past the edge margin is a room half of which
-        // is in the dark the client fades the field out with (#563).
-        double edge = down
-            ? field.BottomY + SurfaceLayout.EdgeMargin
-            : field.LandingBandY - SurfaceLayout.EdgeMargin;
-        double depth = Math.Min(ParkDepthDu, Math.Abs(edge - hallFar));
-        double farLine = down ? hallFar - depth : hallFar + depth;
-
-        double x0 = leftEnd, x1 = rightEnd;
-        double y0 = Math.Min(hallFar, farLine), y1 = Math.Max(hallFar, farLine);
-        double W(double w) => down ? hallFar - w : hallFar + w;
-
-        // ── #801 · WHAT IS BEHIND THE FAR WALL, decided BEFORE the wall is poured — the near wall's own
-        //    law (#775) said about the other side of the room. A back room is laid in each BAY BETWEEN two
-        //    floodlight masts, so a door can never be cut in front of a lamp post: the bay is where the
-        //    masts are not.
-        IReadOnlyList<double> mastXs = ParkMastXs(x0, x1);
-        double bandOut = down
-            ? Math.Abs(farLine - field.BottomY)
-            : Math.Abs(field.LandingBandY - farLine);
-        var backBays = new List<(double At, double Half)>();
-        if (bandOut >= ParkBackDepthDu + ParkBackRockDu)
-        {
-            for (int k = 1; k < mastXs.Count; k++)
-            {
-                double bay = mastXs[k] - mastXs[k - 1];
-                double half = (bay - ParkBackPierDu) / 2.0;
-                if (half >= DoorHalf + ParkBackPierDu)
-                {
-                    backBays.Add(((mastXs[k] + mastXs[k - 1]) / 2.0, half));
-                }
-            }
-        }
-
-        // ── THE WALLS IT OWNS.
+        // ── #813 · THE BOX IS THE BLOCK'S. Every one of the park's four walls belongs to a room or to a
+        //    gate (CarveRing), so nothing here pours a single boundary segment: what is left for this method
+        //    is the GROUND — the walk, the planting, the benches, the masts, and the one figure sitting at
+        //    the far end of it.
         //
-        // #801 · The far wall is built in segments now, exactly the way the near wall is and for exactly the
-        // same reason: the gaps in it and the doors published on it are ONE set of spans, swept in order by a
-        // cursor that may only move forward (§13.2). It stopped being the painted horizon the day the owner
-        // said the park must not be the edge.
-        double backCursor = x0;
-        foreach ((double at, double _) in backBays)
-        {
-            double lo = at - DoorHalf, hi = at + DoorHalf;
-            if (lo > backCursor)
-            {
-                walls.Add(new(backCursor, farLine, lo, farLine, true));
-            }
-            backCursor = Math.Max(backCursor, hi);
-        }
-        if (backCursor < x1)
-        {
-            walls.Add(new(backCursor, farLine, x1, farLine, true));
-        }
-        walls.Add(new(x0, hallFar, x0, farLine, true));
-        walls.Add(new(x1, hallFar, x1, farLine, true));
+        //    That is a real narrowing and it is the point. The park used to own three of its own walls and
+        //    half of a fourth, which meant the shape of the room and the shape of the fabric around it were
+        //    two answers to one question; now the fabric IS the shape, and a wall the ring did not lay is a
+        //    wall the park does not have.
+        double x0 = block.X0, x1 = block.X1;
+        double y0 = block.Y0, y1 = block.Y1;
+        double depth = y1 - y0;
+        double W(double w) => y1 - w;
 
-        // …and the near wall, in the segments left between the two openings. SORTED, and the cursor may
-        // only ever move forward: #587 was exactly this loop given its mouths out of order, and it sealed
-        // every room on a third of the floors in the game.
-        //
-        // #775 · …and there are SEVERAL gates now, not one. Owner: "let's have multiple doors to the park —
-        // it is a kind of place people like to walk through on their way." Every corridor that reaches this
-        // side of the spine ends at this wall, and every one of them opens through it, so the natural route
-        // between two places on B1 crosses the green instead of going round it. The list is handed in: the
-        // carve does not decide which corridors exist, it opens the wall where they arrive.
-        var openings = new List<(double Lo, double Hi)>
+        // WHICH GATE THE ROOM'S PLATE AND ITS DEV ROUTE ARE PINNED TO: the one on the hall's own side of
+        // the green, nearest the bar, which is the gate a drinker walks out of. #775's rule, said about a
+        // wall that now has six openings in it instead of two.
+        SurfaceLayout.Doorway first = gates[0];
+        double bestD = double.MaxValue;
+        foreach (SurfaceLayout.Doorway g in gates)
         {
-            (hall.X0, hall.X1),   // the glass, which is the hall's far wall — never a door (owner's rule)
-        };
-        foreach (double gx in gateXs)
-        {
-            // The corridor's full width, because the corridor's own far-end stubs are what narrow it to a
-            // doorway — the same two segments the rib has always laid. One gap, cut once (#585).
-            openings.Add((gx - CorridorHalf, gx + CorridorHalf));
-        }
-        openings.Sort((a, b) => a.Lo.CompareTo(b.Lo));
-        double cursor = x0;
-        foreach ((double lo, double hi) in openings)
-        {
-            if (lo > cursor)
+            if (Math.Abs(g.Y1 - y1) > 0.001 || Math.Abs(g.Y2 - y1) > 0.001)
             {
-                walls.Add(new(cursor, hallFar, lo, hallFar, true));
+                continue;   // not on the near wall: a gate off the back street or one of the two ends
             }
-            cursor = Math.Max(cursor, hi);
+            double d = Math.Abs(((g.X1 + g.X2) / 2.0) - ((hall.X0 + hall.X1) / 2.0));
+            if (d < bestD)
+            {
+                (first, bestD) = (g, d);
+            }
         }
-        if (cursor < x1)
-        {
-            walls.Add(new(cursor, hallFar, x1, hallFar, true));
-        }
+        double gateX = (first.X1 + first.X2) / 2.0;
 
         // ── THE WALK · one long curve down the room, and a spur in from the gate.
         double uLo = x0 + ParkEdgeClearDu, uHi = x1 - ParkEdgeClearDu;
@@ -3784,7 +4519,7 @@ public static class UndergroundComplex
             mid + (amp * Math.Sin(2 * Math.PI * ParkWalkBends * (u - uLo) / span));
 
         var walk = new List<(double X, double Y)>();
-        double gateU = Math.Clamp(rib.X, uLo, uHi);
+        double gateU = Math.Clamp(gateX, uLo, uHi);
         for (double w = 0; w < Curve(gateU); w += 1.5)
         {
             walk.Add((gateU, W(w)));      // in from the gate, until it meets the long walk
@@ -3798,10 +4533,36 @@ public static class UndergroundComplex
         var beds = new List<GrowingBed>();
         double bu0 = uLo + ParkBedHalfWDu, bu1 = uHi - ParkBedHalfWDu;
         double bw0 = ParkEdgeClearDu + ParkBedHalfHDu, bw1 = depth - ParkEdgeClearDu - ParkBedHalfHDu;
-        int cols = Math.Max(1, (int)((bu1 - bu0) / ((2 * ParkBedHalfWDu) + 8)) + 1);
-        int rows = Math.Max(1, (int)((bw1 - bw0) / ((2 * ParkBedHalfHDu) + 4)) + 1);
+        // #813 · The grid is a du tighter both ways than the band-shaped park's was. The green kept its area
+        // when it became a block and it lost most of its LENGTH, and a planting pitch measured for a room
+        // six times wider than it is deep leaves a garden with six beds in it — which is what the first
+        // Manhattan carve produced, and the number a guard measures rather than a paragraph.
+        int cols = Math.Max(1, (int)((bu1 - bu0) / ((2 * ParkBedHalfWDu) + 5)) + 1);
+        int rows = Math.Max(1, (int)((bw1 - bw0) / ((2 * ParkBedHalfHDu) + 2)) + 1);
         double clearU = ParkBedHalfWDu + ParkWalkHalfDu + 1.0;
         double clearW = ParkBedHalfHDu + ParkWalkHalfDu + 1.0;
+
+        // #813 · …and minus every one that would stand in front of a GATE. There are six of them now and
+        // they arrive on all four sides, so "the ground in front of a door is clear" stopped being a thing
+        // the old single gate got for free off the gate spur's own walk. A bed across a doorway is the
+        // shape of bug this file keeps a table of: drawn correct, walked shut.
+        var mouths = new List<(double X, double Y)>(gates.Count);
+        foreach (SurfaceLayout.Doorway g in gates)
+        {
+            mouths.Add(((g.X1 + g.X2) / 2.0, (g.Y1 + g.Y2) / 2.0));
+        }
+
+        // …and the back of house's own doors onto the gravel (#801) are mouths in this wall exactly as the
+        // gates are. They are not in `gates` — a Way is a way THROUGH the park and these are ways OUT of it
+        // into a room, a distinction Park.BackDoors has kept since #801 — and leaving them out of THIS list
+        // is what put a floodlight mast in front of two of them on every floor in the game. Watched go red.
+        foreach (RingRoom room in ring)
+        {
+            if (room.Gate is { } gravel)
+            {
+                mouths.Add(((gravel.X1 + gravel.X2) / 2.0, (gravel.Y1 + gravel.Y2) / 2.0));
+            }
+        }
 
         for (int r = 0; r < rows; r++)
         {
@@ -3813,22 +4574,28 @@ public static class UndergroundComplex
                 // Would it stand on the gravel? Asked of the walk the room actually published, sample by
                 // sample — never of the formula, which is the same discipline as measuring the tops rather
                 // than reading the seat target.
-                bool onTheWalk = false;
+                bool blocked = false;
                 foreach ((double px, double py) in walk)
                 {
-                    double pw = Math.Abs(py - hallFar);
+                    double pw = Math.Abs(py - y1);
                     if (Math.Abs(px - bu) < clearU && Math.Abs(pw - bw) < clearW)
                     {
-                        onTheWalk = true;
+                        blocked = true;
                         break;
                     }
                 }
-                if (onTheWalk)
+
+                double by = W(bw);
+                foreach ((double mx, double my) in mouths)
+                {
+                    blocked |= Math.Abs(mx - bu) < ParkBedHalfWDu + ParkWalkHalfDu + 1.0
+                        && Math.Abs(my - by) < ParkBedHalfHDu + ParkWalkHalfDu + 1.0;
+                }
+                if (blocked)
                 {
                     continue;
                 }
 
-                double by = W(bw);
                 walls.Add(new(bu - ParkBedHalfWDu, by - ParkBedHalfHDu,
                     bu + ParkBedHalfWDu, by - ParkBedHalfHDu, true));
                 walls.Add(new(bu - ParkBedHalfWDu, by + ParkBedHalfHDu,
@@ -3856,11 +4623,25 @@ public static class UndergroundComplex
             walls.Add(new(u - ParkBenchHalfDu, by, u + ParkBenchHalfDu, by, true));
         }
 
-        // ── THE MASTS · the artificial day, standing against the far wall.
+        // ── THE MASTS · the artificial day, standing along the far pavement. The far wall used to be the
+        //    edge of the world and is a row of shop fronts now, so a mast is STEPPED ASIDE where one would
+        //    otherwise stand in front of somebody's door — nudged, never dropped: the artificial day is what
+        //    makes an underground garden legible and a park with two lamps in it is a car park.
         var masts = new List<(double X, double Y)>();
-        foreach (double u in mastXs)
+        double mastW = depth - (ParkEdgeClearDu / 2.0);
+        foreach (double at in ParkMastXs(x0, x1))
         {
-            double my = W(depth - (ParkEdgeClearDu / 2.0));
+            double my = W(mastW), u = at;
+            foreach ((double mx, double gy) in mouths)
+            {
+                if (Math.Abs(gy - my) >= DoorHalf + ParkEdgeClearDu || Math.Abs(mx - u) >= DoorHalf + 2.0)
+                {
+                    continue;
+                }
+                double step = DoorHalf + 2.0 + 0.1;
+                u = mx + (mx <= (x0 + x1) / 2.0 ? step : -step);
+            }
+            u = Math.Clamp(u, x0 + 1.0, x1 - 1.0);
             masts.Add((u, my));
             walls.Add(new(u - 0.6, my - 0.6, u + 0.6, my - 0.6, true));
             walls.Add(new(u - 0.6, my + 0.6, u + 0.6, my + 0.6, true));
@@ -3868,24 +4649,17 @@ public static class UndergroundComplex
             walls.Add(new(u + 0.6, my - 0.6, u + 0.6, my + 0.6, true));
         }
 
-        // ── #801 · AND THE ROOMS THEMSELVES · three walls each; the fourth is the park's own far wall,
-        //    already poured above with this room's door left out of it. #585's one-gap law, said about a
-        //    room whose corridor is a garden.
-        double backFar = down ? farLine - ParkBackDepthDu : farLine + ParkBackDepthDu;
-        var back = new List<BackRoom>(backBays.Count);
-        foreach ((double at, double half) in backBays)
+        // ── #801/#813 · THE BACK OF HOUSE, which is now the ring's FAR band. It is published in both
+        //    shapes on purpose and it is ONE set of rooms: Park.Rooms is the view #801's own consumers were
+        //    written against (a box, a door off the gravel, a plate) and Park.Frontage is the whole ring.
+        //    A second carve for the second shape is the mirrored-constant bug with a record's clothes on.
+        var back = new List<BackRoom>();
+        foreach (RingRoom room in ring)
         {
-            double bx0 = at - half, bx1 = at + half;
-            walls.Add(new(bx0, farLine, bx0, backFar, true));
-            walls.Add(new(bx1, farLine, bx1, backFar, true));
-            walls.Add(new(bx0, backFar, bx1, backFar, true));
-            back.Add(new BackRoom(
-                bx0, Math.Min(farLine, backFar), bx1, Math.Max(farLine, backFar),
-                new SurfaceLayout.Doorway(at - DoorHalf, farLine, at + DoorHalf, farLine),
-                ParkBackPlates[
-                    (back.Count
-                        + (int)(Frac(bodyId, $"hive:{level}:park-back") * ParkBackPlates.Count))
-                        % ParkBackPlates.Count]));
+            if (room.Side == RingSide.Far && room.Gate is { } gravel)
+            {
+                back.Add(new BackRoom(room.X0, room.Y0, room.X1, room.Y1, gravel, room.Plate));
+            }
         }
 
         // The lone figure, on the bench furthest from the gate. Scenery: the owner's own "benches, the lone
@@ -3894,37 +4668,35 @@ public static class UndergroundComplex
         (double figX, double figY) = benches[0];
         foreach ((double bx, double by) in benches)
         {
-            if (Math.Abs(bx - rib.X) > Math.Abs(figX - rib.X))
+            if (Math.Abs(bx - gateX) > Math.Abs(figX - gateX))
             {
                 (figX, figY) = (bx, by);
             }
         }
 
-        // #775 · Every gate as a published doorway, the hall's own rib FIRST — it is the one the room's
-        // plate and its dev route are pinned to, and the order is the only thing that says which is which.
-        var gates = new List<SurfaceLayout.Doorway>(gateXs.Count)
+        // #775 · Every gate as a published doorway, the hall's own FIRST — it is the one the room's plate
+        // and its dev route are pinned to, and the order is the only thing that says which is which.
+        var ordered = new List<SurfaceLayout.Doorway>(gates.Count) { first };
+        foreach (SurfaceLayout.Doorway g in gates)
         {
-            new(rib.X - DoorHalf, hallFar, rib.X + DoorHalf, hallFar),
-        };
-        foreach (double gx in gateXs)
-        {
-            if (Math.Abs(gx - rib.X) > 0.001)
+            if (g != first)
             {
-                gates.Add(new SurfaceLayout.Doorway(gx - DoorHalf, hallFar, gx + DoorHalf, hallFar));
+                ordered.Add(g);
             }
         }
 
         return new Park(
             x0, y0, x1, y1, walk, beds, benches, masts,
-            gates[0],
+            first,
             glass,
-            rib.X, W(4.0), figX, figY,
+            gateX, W(4.0), figX, figY,
             CanteenRegulars.StrangerPlates[
                 (int)(Frac(bodyId, $"hive:{level}:park-figure") * CanteenRegulars.StrangerPlates.Count)
                     % CanteenRegulars.StrangerPlates.Count],
             ParkArtFor(bodyId, HallUseOn(bodyId, level)),
-            gates,
-            back);
+            ordered,
+            back,
+            ring);
     }
 
     /// <summary>#775 · What is stencilled at the mouth of the walk down to the park — the arrow idiom this

@@ -196,8 +196,25 @@ public sealed class TheParkIsWalkableTests
     // ── (c) THE GLASS: DRAWN AS GLASS, AND NOT A WAY IN ───────────────────────────────────────────────
 
     /// <summary>
-    /// THE WALL BETWEEN THE BAR AND THE PARK IS DRAWN AS GLASS. One wall on the deck, carrying
-    /// <c>IsWindow</c>, standing on exactly the line Core published — and no poured wall doubling it.
+    /// EVERY WALL BETWEEN THE PARK AND A ROOM IS DRAWN AS GLASS — the hall's, and every ring room's, all
+    /// the way round the block. On exactly the line Core published, carrying <c>IsWindow</c>, with no poured
+    /// wall doubling any of it.
+    ///
+    /// <para>#813 · This guard used to say <i>ONE wall</i>, and it was right to: the park had a single
+    /// glazed side and painted rock on the other three, so <c>Assert.Single</c> was the whole truth. The
+    /// Manhattan ruling makes the green the middle of a city block, and its second law is that <b>every du
+    /// of the park's perimeter that is not a gate is a room's park-facing wall, and that wall is glass</b>.
+    /// So the guard is pointed at the same claim over a bigger world rather than relaxed: not "the window
+    /// wall is one segment" but "every window wall is drawn as one, on both axes".</para>
+    ///
+    /// <para>BOTH AXES is not a detail. The west and east ring rooms' view walls are VERTICAL — the first
+    /// vertical glazing in the building — and a check that reads a segment's <c>Y1</c> to find it would sail
+    /// past every one of them and report that it had proved something.</para>
+    ///
+    /// <para>AND THE HOLE IS ACCOUNTED FOR. A far-band room keeps #801's own door off the gravel, so its
+    /// glass reaches the deck as the two panes either side of that door. The covered length is measured
+    /// against the room's OWN published gate rather than against a tolerance: a pane short by a doorway is
+    /// the room's door, and a pane short by anything else is a hole nobody built.</para>
     ///
     /// <para><b>Proven RED</b> by flipping ONE flag in <c>HiveInterior.FloorDeck</c> — the glazing still
     /// reaches the deck, still stands there, still stops a body, and simply draws in the poured-hull ink:</para>
@@ -214,49 +231,125 @@ public sealed class TheParkIsWalkableTests
     public void TheWindowWallIsDrawnAsGlass()
     {
         var bad = new List<string>();
-        int walls = 0;
+        int walls = 0, vertical = 0, withADoorInThem = 0;
 
         foreach ((string body, int level, UndergroundComplex.Park park, _, _) in EveryPark())
         {
             DeckPlan deck = DeckFor(body, level);
-            SurfaceLayout.Wall glass = park.Window;
-            double lo = Math.Min(glass.X1, glass.X2), hi = Math.Max(glass.X1, glass.X2);
 
-            var onTheLine = deck.Walls.Where(w =>
-                Math.Abs(w.Y1 - glass.Y1) < 0.01 && Math.Abs(w.Y2 - glass.Y2) < 0.01
-                && Math.Min(w.X1, w.X2) < hi - 0.01
-                && Math.Max(w.X1, w.X2) > lo + 0.01).ToList();
-
-            if (onTheLine.Count == 0)
+            // EVERY PANE THE ROOM PUBLISHES: the hall's own glass, and then the whole ring. Off the two
+            // published lists, so a floor that stopped glazing a side of its block cannot pass by being
+            // asked about the side it still glazes.
+            var panes = new List<(string What, SurfaceLayout.Wall Glass, double DoorWidth)>
             {
-                bad.Add($"  {body} B{-level}: the park's window wall ({lo:F1}…{hi:F1} at "
-                    + $"y {glass.Y1:F1}) is not on the deck in ANY form — the bar looks out at a room with "
-                    + "no wall between, and walks straight into it.");
-                continue;
+                ("the wall between the bar and the park", park.Window, 0.0),
+            };
+            foreach (UndergroundComplex.RingRoom room in park.Frontage)
+            {
+                if (room.View is not { } view)
+                {
+                    continue;   // a corner room stands past the end of the park's wall: no park, no pane
+                }
+                double doorWidth = room.Gate is { } gate
+                    ? Math.Max(Math.Abs(gate.X2 - gate.X1), Math.Abs(gate.Y2 - gate.Y1))
+                    : 0.0;
+                panes.Add(($"ring room {room.Number} ({room.Side})'s window wall", view, doorWidth));
             }
 
-            walls++;
-            DeckPlan.Wall drawn = Assert.Single(onTheLine);
-            Assert.True(drawn.IsWindow,
-                $"{body} B{-level}: the wall between the bar and the park draws as poured concrete. Both of "
-                + "this room's own pictures are shot THROUGH it at the green.");
-            Assert.Equal(lo, Math.Min(drawn.X1, drawn.X2), 1);
-            Assert.Equal(hi, Math.Max(drawn.X1, drawn.X2), 1);
+            foreach ((string what, SurfaceLayout.Wall glass, double doorWidth) in panes)
+            {
+                bool horizontal = Math.Abs(glass.Y1 - glass.Y2) < 0.01;
+                double lo = horizontal ? Math.Min(glass.X1, glass.X2) : Math.Min(glass.Y1, glass.Y2);
+                double hi = horizontal ? Math.Max(glass.X1, glass.X2) : Math.Max(glass.Y1, glass.Y2);
+                double on = horizontal ? glass.Y1 : glass.X1;
+
+                // On the same LINE and overlapping the same SPAN, asked on the pane's own axis. A drawn
+                // segment that merely touches an end is a neighbour's pane and not this one.
+                var onTheLine = deck.Walls.Where(w =>
+                {
+                    bool wh = Math.Abs(w.Y1 - w.Y2) < 0.01;
+                    if (wh != horizontal)
+                    {
+                        return false;
+                    }
+                    if (Math.Abs((horizontal ? w.Y1 : w.X1) - on) > 0.01)
+                    {
+                        return false;
+                    }
+                    double wLo = horizontal ? Math.Min(w.X1, w.X2) : Math.Min(w.Y1, w.Y2);
+                    double wHi = horizontal ? Math.Max(w.X1, w.X2) : Math.Max(w.Y1, w.Y2);
+                    return wLo < hi - 0.01 && wHi > lo + 0.01;
+                }).ToList();
+
+                if (onTheLine.Count == 0)
+                {
+                    bad.Add($"  {body} B{-level}: {what} ({lo:F1}…{hi:F1} at {(horizontal ? "y" : "x")} "
+                        + $"{on:F1}) is not on the deck in ANY form — the room looks out at a park with no "
+                        + "wall between, and walks straight into it.");
+                    continue;
+                }
+
+                walls++;
+                if (!horizontal)
+                {
+                    vertical++;
+                }
+                if (doorWidth > 0.01)
+                {
+                    withADoorInThem++;
+                }
+
+                foreach (DeckPlan.Wall drawn in onTheLine)
+                {
+                    Assert.True(drawn.IsWindow,
+                        $"{body} B{-level}: {what} draws as poured concrete. Both of this room's own "
+                        + "pictures are shot THROUGH it at the green.");
+                }
+
+                // The panes together span the whole wall, less exactly the doorway the room published in
+                // it. Endpoints first, because a pane that stops short at one end is a different finding
+                // from a pane with a hole in the middle of it.
+                Assert.Equal(lo, onTheLine.Min(w => horizontal
+                    ? Math.Min(w.X1, w.X2) : Math.Min(w.Y1, w.Y2)), 1);
+                Assert.Equal(hi, onTheLine.Max(w => horizontal
+                    ? Math.Max(w.X1, w.X2) : Math.Max(w.Y1, w.Y2)), 1);
+
+                double covered = onTheLine.Sum(w => horizontal
+                    ? Math.Abs(w.X2 - w.X1) : Math.Abs(w.Y2 - w.Y1));
+                Assert.True(Math.Abs(covered - ((hi - lo) - doorWidth)) < 0.05,
+                    $"{body} B{-level}: {what} is {hi - lo:F1} du long and only {covered:F1} du of it is "
+                    + $"glazed, with a published door {doorWidth:F1} du wide in it. The rest is a hole "
+                    + "nobody built.");
+            }
         }
 
-        Assert.True(walls >= 10, $"only {walls} window walls were checked — this proved little.");
-        Assert.True(bad.Count == 0, $"{bad.Count} floor(s) draw no glass at all:\n" + string.Join("\n", bad));
+        Assert.True(walls >= 100, $"only {walls} window walls were checked — this proved little.");
+        Assert.True(vertical >= 20,
+            $"only {vertical} of them ran VERTICALLY — the block's two ends are not being read at all, and "
+            + "a check that only ever sees horizontal glass is the one that would miss them.");
+        Assert.True(withADoorInThem >= 20,
+            $"only {withADoorInThem} panes had a door cut in them — the split-pane case is not being "
+            + "exercised and the arithmetic above proves nothing about it.");
+        Assert.True(bad.Count == 0, $"{bad.Count} pane(s) draw no glass at all:\n" + string.Join("\n", bad));
     }
 
     /// <summary>
-    /// …AND IT IS STILL A WALL. Nobody stands on it, and — the half that matters — <b>the gate is the only
-    /// way in</b>: plug that one doorway and the whole park goes unreachable.
+    /// …AND IT IS STILL A WALL. Nobody stands on it, and — the half that matters — <b>the published
+    /// openings are the only ways in</b>: plug every one of them and the whole park goes unreachable.
     ///
     /// <para>This is the #488/#600 experiment in its sharpest form. A park behind glass and a park behind a
     /// hole in the wall are the same picture from the bar; the only thing that tells them apart is what
-    /// happens when the legitimate door is shut. If any gravel is still reachable with the gate poured shut,
+    /// happens when the legitimate doors are shut. If any gravel is still reachable with them poured shut,
     /// then something crosses that glass — and the room's whole design ("you always meet the park through
     /// glass before you walk it") is decoration.</para>
+    ///
+    /// <para>#813 · THE LIST OF LEGITIMATE DOORS GREW AGAIN, and the guard grows with it rather than
+    /// loosening. #775 took it from one gate to every gate; the Manhattan carve rings the green with rooms,
+    /// and the far band keeps #801's own doors onto the gravel — which are ways OUT of the park into a room
+    /// and are deliberately not <see cref="UndergroundComplex.Park.Ways"/>. Both lists are plugged here.
+    /// Sealing only the Ways and finding the gravel still reachable would have been a true report of a
+    /// perfectly correct building, which is how a sealing experiment starts lying: not by missing a bug, but
+    /// by counting a door it forgot as a hole in the glass.</para>
     ///
     /// <para><b>Proven RED</b> twice, at two depths.</para>
     ///
@@ -312,26 +405,51 @@ public sealed class TheParkIsWalkableTests
                 $"{body} B{-level}: the park is already unwalkable ({reachable} of {park.Walk.Count}) — "
                 + "this experiment would prove nothing.");
 
-            // …and now EVERY gate is poured shut. Taken off the room's own published list rather than
-            // re-derived, so this cannot plug a hole that is not actually a door — and cannot miss one.
+            // …and now EVERY OPENING IN THE PARK'S BOUNDARY is poured shut. Taken off the room's own two
+            // published lists rather than re-derived, so this cannot plug a hole that is not actually a
+            // door — and cannot miss one.
             //
             // #775 · It used to plug exactly one, because there was exactly one. The park is a THOROUGHFARE
             // now (owner: "it is a kind of place people like to walk through on their way"), and a sealing
             // experiment that misses a door is an experiment that proves nothing while reporting that it
             // proved something. The spirit is unchanged and is the whole point: with every way in bricked
             // up, not one gravel sample may be reachable — anything that still is, is crossing the glass.
+            //
+            // #813 · …and BackDoors with them. A Way is a way THROUGH the green, corridor to corridor; a
+            // BackDoor is a way OUT of it into one of the far band's rooms, and Core keeps the two lists
+            // apart on purpose (the amenities' conservation sum counts a Way as a place). Both are doors a
+            // body walks through, so both are plugged — a sealing experiment does not get to inherit a
+            // bookkeeping distinction.
+            //
+            // AND IF A THIRD KIND EVER ARRIVES, IT BELONGS HERE TOO. This experiment is only as strong as
+            // its list of openings, and the list is enumerated by hand from the two Core publishes today.
+            // A future opening onto the gravel that neither Ways nor BackDoors carries would leave this
+            // guard passing while proving nothing — which is exactly what it did between #813's carve and
+            // the moment BackDoors was added to the line below: it reported a bug in a correct building,
+            // and the fix is the same either way. Anything that adds a way onto the green adds it here.
             UndergroundComplex.FloorPlan drawn = UndergroundComplex.Build(body, level, Field);
             var plugged = new List<DeckPlan.Wall>(honest.Walls);
-            foreach (SurfaceLayout.Doorway gate in park.Ways)
+            var openings = new List<SurfaceLayout.Doorway>(park.Ways);
+            openings.AddRange(park.BackDoors);
+            foreach (SurfaceLayout.Doorway gate in openings)
             {
                 Assert.Contains(gate, drawn.Doorways);
+
+                // Grown ACROSS the opening, whichever way the opening runs — the block's west and east
+                // gates are VERTICAL, and a plug padded on a fixed axis would lie along one of them and
+                // seal nothing at all while reporting that it had.
+                bool horizontal = Math.Abs(gate.Y1 - gate.Y2) < 0.001;
+                float px = horizontal ? 0f : 0.5f, py = horizontal ? 0.5f : 0f;
                 plugged.Add(new DeckPlan.Wall(
-                    (float)gate.X1, (float)(gate.Y1 - 0.5),
-                    (float)gate.X2, (float)(gate.Y2 + 0.5), false, true));
+                    (float)gate.X1 - px, (float)gate.Y1 - py,
+                    (float)gate.X2 + px, (float)gate.Y2 + py, false, true));
             }
             Assert.True(park.Ways.Count > 1,
                 $"{body} B{-level}: the park has one way in — #775's thoroughfare never happened, and this "
                 + "experiment is the one that would not notice.");
+            Assert.True(park.BackDoors.Count > 0,
+                $"{body} B{-level}: the park has nothing opening off its gravel — #801's back of house "
+                + "never happened, and the second half of this plug is plugging an empty list.");
 
             var sealedDeck = new DeckPlan(
                 [.. plugged], honest.Consoles, honest.RoomLabels, honest.Backdrops,
@@ -342,7 +460,8 @@ public sealed class TheParkIsWalkableTests
 
             Assert.True(still == 0,
                 $"{body} B{-level}: {still} of {park.Walk.Count} gravel samples are STILL reachable with "
-                + "the park's only gate poured shut. Something crosses the window wall.");
+                + $"every one of the park's {openings.Count} published openings poured shut. Something "
+                + "crosses the window wall.");
 
             // …and the hall on the other side of that glass is untouched by the plug, which is what makes
             // the result above a statement about the WALL rather than about a floor that fell apart.

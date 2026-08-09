@@ -730,7 +730,21 @@ public sealed class TheCantinaHallTests
             Path.Combine(RepoRoot(), "src", "SpaceSails.Core", "UndergroundComplex.cs"));
 
         Assert.Equal(1, Occurrences(core, "private static HallSite? CarveHall("));
-        Assert.Equal(1, Occurrences(core, "hallSite = CarveHall("));
+
+        // #813 · …and TWO callers of it, which is the same law and not a weakening of it.
+        //
+        // The Manhattan ruling gave the top floor's bar a different piece of GROUND to stand on — the near
+        // band of the park's block, chosen out of the block's own segments — while the staff mess two
+        // hundred metres down still stands on a rib's room column, because there is no block down there to
+        // stand in. Two grounds, two callers, and the thing this guard is actually about is untouched: there
+        // is exactly ONE piece of code that knows how to lay out a hall, and both callers hand it the same
+        // five numbers. A second carver is the bug; a second address is not.
+        //
+        // Stated as "no more than the two the file explains" rather than as "one", so a third one still goes
+        // red — which is the whole value of the original line.
+        Assert.Equal(2, Occurrences(core, "hallSite = CarveHall("));
+        Assert.Contains("#813 · …and on the block's floor it is not carved off a rib at all.", core,
+            StringComparison.Ordinal);
 
         // The bill, the pitch and the box are asked for once each — no "if it is the mess" fork anywhere in
         // the geometry. The ONE place the two rooms differ is the seat target they are handed.
