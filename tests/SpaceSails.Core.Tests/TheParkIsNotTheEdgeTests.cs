@@ -178,9 +178,13 @@ public sealed class TheParkIsNotTheEdgeTests
         }
 
         Assert.True(parks > 40, $"only {parks} parks were measured — this proved little.");
-        Assert.True(rooms > 100, $"only {rooms} back rooms were measured — this proved little.");
+
+        // The substantive report first, then the anti-vacuous count. Ordered that way on purpose: with the
+        // carve gone it is the BUILDING that has gone wrong, and a guard that leads with "only 0 back rooms
+        // were measured" is telling the truth about itself instead of about the building.
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} park(s) are still the edge of the map:\n" + string.Join("\n", wrong.Take(20)));
+        Assert.True(rooms > 100, $"only {rooms} back rooms were measured — this proved little.");
     }
 
     /// <summary>
