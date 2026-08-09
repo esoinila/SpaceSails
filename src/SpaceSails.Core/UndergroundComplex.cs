@@ -2256,7 +2256,15 @@ public static class UndergroundComplex
         // own bridge glass already uses, so one segment carries both halves and nothing draws a second one.
         IReadOnlyList<SurfaceLayout.Wall>? Windows = null,
         // #759 · The park, on the one floor that has one.
-        Park? Park = null);
+        Park? Park = null,
+        // #798 · Somewhere to put a document you never want read again. Appended and never inserted: every
+        // caller of this record builds it positionally.
+        IReadOnlyList<RipAndBin.Bin>? Bins = null)
+    {
+        /// <summary>#798 · Somewhere to put a paper on this floor, never null — a caller asking "is there a
+        /// bin here" must not have to tell an empty list from a missing one.</summary>
+        public IReadOnlyList<RipAndBin.Bin> TheBins => Bins ?? [];
+    }
 
     /// <summary>#587 · A CROSS CORRIDOR, PUBLISHED RATHER THAN INFERRED.
     ///
@@ -2785,9 +2793,17 @@ public static class UndergroundComplex
             centres.Add((rx, ry));
         }
 
+        // #798 · LAST OF ALL, THE BINS — because a bin is fitted into a room that is already finished. It
+        // is the only placer in this method that has to see EVERY wall the floor ended up with (its own
+        // clearance is measured against them) and every piece of furniture that was laid in it, and a
+        // placer that ran earlier would be measuring a room that did not exist yet. It appends walls of its
+        // own, which is why nothing below it may read `walls` again.
+        List<RipAndBin.Bin> bins = CarveBins(
+            bodyId, level, walls, doorways, centres, amenities, refuges, ribList, park, shaftX, shaftY);
+
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park);
+            glass, park, bins);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,
@@ -4021,6 +4037,267 @@ public static class UndergroundComplex
         // than an artefact of the order they happened to be removed in.
         built.Sort((a, b) => a.Use.CompareTo(b.Use));
         return built;
+    }
+
+    /// <summary>
+    /// #798 · THE BINS — somewhere to put a document you never want read again.
+    ///
+    /// <para>Owner, live in play: <i>"those trash cans are needed so we get rid of the processed materials
+    /// without connecting them to us too clearly, like leaving them to the table."</i> The phase-two loop
+    /// (sit, dig, book) ends by producing a liability, and until this method ran, the only places a captain
+    /// could put one were their own pocket and the table they had just been sitting at.</para>
+    ///
+    /// <h3>Where they go, and why those three places</h3>
+    /// <list type="bullet">
+    /// <item><b>The canteen hall</b> — a <see cref="RipAndBin.Tier.SlopBin"/> at the far end of the counter,
+    /// where trays go back, and a <see cref="RipAndBin.Tier.Chute"/> at the service end of the same room,
+    /// beside the end of the band the goods hoist parks in. Both rungs of the ladder in the one room a
+    /// captain spends an evening in, which is what makes bin CHOICE a choice.</item>
+    /// <item><b>The park</b> — a slop-grade grounds bin beside the bench nearest the gate. Clippings,
+    /// cartons and whatever the walk leaves behind: a bin with wet in it, in the open, in another room.</item>
+    /// <item><b>Every floor that breathes</b> — a <see cref="RipAndBin.Tier.PaperBin"/> by the lift, which is
+    /// the copier-corner bin of #775's amenity rule and the reason the offices band has one at all. It is
+    /// also the WORST rung, and it is the one that is everywhere: the convenient answer and the wrong one,
+    /// which is the whole shape of this feature's joke.</item>
+    /// </list>
+    ///
+    /// <h3>The one discipline</h3>
+    /// <para><b>Nothing here is placed at a coordinate somebody liked.</b> Every anchor is derived from
+    /// geometry the room already published, every candidate is then CHECKED against the floor's own finished
+    /// walls and furniture, and a bin that cannot find clear floor is simply not fitted — the floor says so
+    /// by having no bin rather than by having one inside a table. §13.15's rule, and the reason this method
+    /// runs last: it is the only placer that needs to see the whole room.</para>
+    ///
+    /// <para>The solid box goes into <paramref name="walls"/>, which is what makes a bin drawn and collidable
+    /// off ONE source — a second rectangle for the eye would be the drawn world and the simulated world
+    /// disagreeing about a thing the captain walks into.</para>
+    /// </summary>
+    private static List<RipAndBin.Bin> CarveBins(
+        string bodyId, int level,
+        List<SurfaceLayout.Wall> walls,
+        List<SurfaceLayout.Doorway> doorways,
+        List<(double X, double Y)> roomCentres,
+        List<Amenity> amenities,
+        List<Refuge> refuges,
+        List<Rib> ribs,
+        Park? park,
+        double shaftX, double shaftY)
+    {
+        var bins = new List<RipAndBin.Bin>();
+
+        // #775's tidy-spaces rule is what makes a bin worth having AND what makes it a bet: this building is
+        // kept by professionals, and professionals empty bins in rooms that have air in them. A floor that
+        // does not hold pressure gets none — not a rule about litter, but about who works down there.
+        if (!HoldsPressure(bodyId, level))
+        {
+            return bins;
+        }
+
+        var segs = new List<SurfaceCollision.Segment>(walls.Count);
+        foreach (SurfaceLayout.Wall w in walls)
+        {
+            segs.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
+        }
+
+        // Everything a bin may not be shoved against. Walls are handled by the collision field above; this
+        // is the list of things that are NOT walls and still cannot be blocked — a doorway, a rib's mouth, a
+        // console the [E] key answers, a chair somebody has to be able to get out of.
+        var furniture = new List<(double X, double Y)>();
+        foreach (SurfaceLayout.Doorway d in doorways)
+        {
+            furniture.Add(((d.X1 + d.X2) / 2.0, (d.Y1 + d.Y2) / 2.0));
+        }
+        foreach (Rib rib in ribs)
+        {
+            furniture.Add((rib.X, shaftY - CorridorHalf));
+            furniture.Add((rib.X, shaftY + CorridorHalf));
+        }
+        furniture.AddRange(roomCentres);
+        foreach (Refuge r in refuges)
+        {
+            furniture.Add((r.X, r.Y));
+        }
+        foreach (Amenity a in amenities)
+        {
+            furniture.Add((a.X, a.Y));
+            furniture.AddRange(a.Tables);
+            if (a.Hall is { } hall)
+            {
+                furniture.AddRange(hall.StoolRow);
+                foreach (Cabinet c in hall.Cabinets)
+                {
+                    furniture.Add(c.Table);
+                }
+                foreach (SurfaceLayout.Doorway d in hall.Openings)
+                {
+                    furniture.Add(((d.X1 + d.X2) / 2.0, (d.Y1 + d.Y2) / 2.0));
+                }
+                if (hall.Freight is { } hoist)
+                {
+                    furniture.Add((hoist.PlateX, hoist.PlateY));
+                }
+            }
+        }
+        if (park is { } green)
+        {
+            furniture.AddRange(green.Walk);
+            furniture.AddRange(green.Benches);
+            furniture.AddRange(green.Masts);
+        }
+
+        // ── THE HALL · the slop bin at the tray end of the counter, the chute at the service end ─────────
+        foreach (Amenity a in amenities)
+        {
+            if (a.Hall is not { } h)
+            {
+                continue;
+            }
+
+            // THE HALL'S OWN TWO AXES, READ BACK OFF WHAT THE ROOM PUBLISHED. The carve laid this room in
+            // (u, v) — u out from the rib's face, v in from the spine — and threw the frame away. It is
+            // recoverable exactly, from two points the room hangs signs on: the PLATE is a quarter of the
+            // way down the door wall at u = HallDoorAisleDu / 2, and the AMENITY's own spot is the middle
+            // of the counter at v = counterV - HallEdgePadDu. Two signs, two signs' worth of arithmetic,
+            // and not one number typed here that the room did not already say out loud.
+            int su = Math.Sign(a.X - h.PlateX);
+            int sv = Math.Sign(a.Y - h.PlateY);
+            if (su == 0 || sv == 0)
+            {
+                continue;   // a hall that cannot say which way round it is gets no bins, and says so.
+            }
+
+            double faceX = su > 0 ? h.X0 : h.X1;
+            double mouthY = sv > 0 ? h.Y0 : h.Y1;
+            double U(double u) => faceX + (su * u);
+            double V(double v) => mouthY + (sv * v);
+
+            double counterV = ((a.Y - mouthY) * sv) + HallEdgePadDu;
+            double cabBand = a.Use == Comfort.UpperCanteen ? HallCabinetDepthDu : 0.0;
+            double counterU1 = (h.X1 - h.X0) - cabBand - HallEdgePadDu;
+            double midX = (h.X0 + h.X1) / 2.0, midY = (h.Y0 + h.Y1) / 2.0;
+
+            // The chute first, because it is the better bet and a room with only one of the two should keep
+            // the one worth walking to. Down the aisle inside the door wall — the service side of the room,
+            // where the goods band ends — trying further in until the floor has room for it.
+            var chuteAt = new List<(double X, double Y, double TowardX, double TowardY)>();
+            var slopAt = new List<(double X, double Y, double TowardX, double TowardY)>();
+            for (int step = 1; step <= 6; step++)
+            {
+                chuteAt.Add((U(HallDoorAisleDu - 0.6), V(counterV - (3.0 * step)), midX, midY));
+                slopAt.Add((U(counterU1 - HallEdgePadDu), V(counterV - (3.0 * step)), midX, midY));
+            }
+
+            TakeTheBin(RipAndBin.Tier.Chute, chuteAt);
+            TakeTheBin(RipAndBin.Tier.SlopBin, slopAt);
+        }
+
+        // ── THE PARK · a grounds bin beside the bench nearest the gate ───────────────────────────────────
+        if (park is { Benches.Count: > 0 } grounds)
+        {
+            (double bx, double by) = grounds.Benches[0];
+            foreach ((double x, double y) in grounds.Benches)
+            {
+                double was = ((bx - grounds.X) * (bx - grounds.X)) + ((by - grounds.Y) * (by - grounds.Y));
+                double now = ((x - grounds.X) * (x - grounds.X)) + ((y - grounds.Y) * (y - grounds.Y));
+                if (now < was)
+                {
+                    (bx, by) = (x, y);
+                }
+            }
+
+            double pmx = (grounds.X0 + grounds.X1) / 2.0, pmy = (grounds.Y0 + grounds.Y1) / 2.0;
+            var parkAt = new List<(double X, double Y, double TowardX, double TowardY)>();
+            foreach (double off in new[] { 5.5, 7.0, 8.5, 10.0 })
+            {
+                parkAt.Add((bx + off, by, pmx, pmy));
+                parkAt.Add((bx - off, by, pmx, pmy));
+            }
+            TakeTheBin(RipAndBin.Tier.SlopBin, parkAt);
+        }
+
+        // ── THE LIFT · the paper bin every floor that breathes has, and the worst rung of the ladder ─────
+        var liftAt = new List<(double X, double Y, double TowardX, double TowardY)>();
+        foreach (double along in new[] { 3.5, 7.0, 10.5, -3.5, -7.0, -10.5 })
+        {
+            double bx = shaftX + (along > 0 ? ShaftHalf + along : -ShaftHalf + along);
+            liftAt.Add((bx, shaftY - CorridorHalf + 2.0, bx, shaftY));
+            liftAt.Add((bx, shaftY + CorridorHalf - 2.0, bx, shaftY));
+        }
+        TakeTheBin(RipAndBin.Tier.PaperBin, liftAt);
+
+        return bins;
+
+        // ── THE FITTING ITSELF ───────────────────────────────────────────────────────────────────────────
+        //
+        // One local function, so every bin in the building is stood up by the same three tests and none of
+        // the placers above can quietly relax one of them: clear of the walls, clear of the furniture, and
+        // with somewhere to STAND that is clear of both and inside arm's reach. A candidate that fails any
+        // of the three is skipped; a bin whose whole list fails is not fitted at all.
+        void TakeTheBin(
+            RipAndBin.Tier tier, IReadOnlyList<(double X, double Y, double TowardX, double TowardY)> anchors)
+        {
+            foreach ((double bx, double by, double tx, double ty) in anchors)
+            {
+                if (SurfaceCollision.Blocked(bx, by, RipAndBin.ClearDu, segs) || Crowded(bx, by))
+                {
+                    continue;
+                }
+
+                double dx = tx - bx, dy = ty - by;
+                double len = Math.Sqrt((dx * dx) + (dy * dy));
+                if (len < 0.001)
+                {
+                    continue;
+                }
+
+                double sx = bx + (dx / len * RipAndBin.StandOffDu);
+                double sy = by + (dy / len * RipAndBin.StandOffDu);
+                if (SurfaceCollision.Blocked(sx, sy, RipAndBin.StandClearDu, segs))
+                {
+                    continue;
+                }
+
+                bins.Add(new RipAndBin.Bin(tier, bx, by, sx, sy, RipAndBin.PlateFor(tier)));
+
+                // The box, in the ONE list that is both drawn and collided with. And into the collision
+                // field this method is still reading, so the next bin cannot be stood inside this one.
+                double h = RipAndBin.HalfDu;
+                AddBox(bx, by, h);
+
+                // …and the spot a captain stands on is furniture now, for the same reason a chair is: the
+                // next bin may not be put where somebody has to stand to use this one.
+                furniture.Add((sx, sy));
+                return;
+            }
+        }
+
+        void AddBox(double cx, double cy, double h)
+        {
+            (double, double, double, double)[] sides =
+            [
+                (cx - h, cy - h, cx + h, cy - h), (cx - h, cy + h, cx + h, cy + h),
+                (cx - h, cy - h, cx - h, cy + h), (cx + h, cy - h, cx + h, cy + h),
+            ];
+            foreach ((double x1, double y1, double x2, double y2) in sides)
+            {
+                walls.Add(new SurfaceLayout.Wall(x1, y1, x2, y2, true));
+                segs.Add(new SurfaceCollision.Segment(x1, y1, x2, y2));
+            }
+        }
+
+        bool Crowded(double bx, double by)
+        {
+            foreach ((double fx, double fy) in furniture)
+            {
+                double dx = fx - bx, dy = fy - by;
+                if ((dx * dx) + (dy * dy)
+                    < RipAndBin.ClearOfFurnitureDu * RipAndBin.ClearOfFurnitureDu)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /// <summary>#592/#614/#411 · Is this room index DESIGNATED — reserved for a find that must exist? The
