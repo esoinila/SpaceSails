@@ -622,11 +622,23 @@ public static class UndergroundComplex
     /// about the site, and there is deliberately NO level-only overload left: one would be a second answer to
     /// the one question §13.13 exists to keep single, silently right on every floor of every building except
     /// the four this feature is about. The compiler made every caller say which moon it is standing under,
-    /// which is the strongest guard available.</para></summary>
+    /// which is the strongest guard available.</para>
+    ///
+    /// <para><b>#802 · AND THE SURFACE IS A FLOOR IT ANSWERS FOR.</b> Owner: <i>"the surface should be
+    /// vacuum / unbreathable ... being unbreathable makes the breathing so much more scary."</i> Level 0 and
+    /// above is the regolith, and on every body this game lands on the regolith is airless — so the answer
+    /// here is <c>false</c>, deliberately and not as a side effect of the <c>level &lt; 0</c> clause. It is
+    /// stated because a caller had to ask: the lift panel typed <c>Pressurised: true</c> into its SURFACE row
+    /// rather than asking, and for as long as it did, the one button every captain presses on the way out
+    /// promised air on the one ground the whole tank mechanic is built on.</para></summary>
     public static bool HoldsPressure(string bodyId, int level)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return level < 0 && ((-level - 1) % FloorsPerShaft == 0 || IsFound(bodyId, level));
+        if (level >= 0)
+        {
+            return false;   // #802 · the regolith. Vacuum on every body, with no exception to write down.
+        }
+        return (-level - 1) % FloorsPerShaft == 0 || IsFound(bodyId, level);
     }
 
     /// <summary>#677 · IS ANYTHING PLUMBED ON THIS FLOOR — the question every amenity, cubicle and en-suite
@@ -5121,7 +5133,9 @@ public static class UndergroundComplex
     /// <param name="Level">The floor it goes to; 0 is the surface.</param>
     /// <param name="Name">What is written on the button.</param>
     /// <param name="Pressurised">Whether that floor still holds air — the panel says so, because it is the
-    /// single fact that decides whether the trip is free.</param>
+    /// single fact that decides whether the trip is free. <b>#802 · Every row asks
+    /// <see cref="HoldsPressure"/>, the SURFACE row included.</b> Nothing on this panel may type its own
+    /// answer: a hand-written <c>true</c> is how the way out came to promise air on airless ground.</param>
     /// <param name="IsCurrent">The floor the car is on now: shown, and not a destination.</param>
     /// <param name="Refusal">Null when the button works. When set, the button is PRESENT and says why it
     /// will not — an absent button and a broken one look identical, and this ground has already shipped that
@@ -5173,9 +5187,16 @@ public static class UndergroundComplex
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
 
+        // #802 · THE SURFACE ROW ASKS, LIKE EVERY OTHER ROW. It used to say `Pressurised: true` — a literal,
+        // typed once, on the one button every captain presses on the way out — and the panel therefore drew
+        // `🫁 air` over SURFACE and titled it "holds pressure" while the sim spent tank on that exact ground
+        // from the first step. The drain never believed it (SuitAir.SourceOf hands back Tanks at level 0),
+        // the plate by the car never said it, and the card in the wallet says "there is no air on this moon
+        // to help you" — so this was the house bug class in its purest form: a SENTENCE reporting one world
+        // while the sim runs another, kept alive because the row nobody doubted was the row nobody asked.
         var stops = new List<LiftStop>
         {
-            new(0, "SURFACE", Pressurised: true, IsCurrent: level >= 0, Refusal: null),
+            new(0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null),
         };
 
         int band = BandOf(Math.Min(level, -1));
