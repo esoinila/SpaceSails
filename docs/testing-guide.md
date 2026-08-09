@@ -1440,6 +1440,12 @@ its arrival line and its callsign now wait behind the arrival plate instead of p
 
 ### What each floor should be
 
+- **the SURFACE is VACUUM** (#802) — the regolith holds air on no body in the game, so the car panel's own
+  `SURFACE` row reads **`dead air`**, greyed like every other airless stop, and the plate by the car says
+  `NO ATMOSPHERE · TANK RUNNING` the moment you step out of it. It said `🫁 air` and titled itself *"holds
+  pressure"* until #802, while the sim spent tank up there from the first step — the one button every captain
+  presses on the way out was the only thing in the game that disagreed. If it ever promises air again,
+  `TheSurfaceIsVacuumTests` should have caught it
 - **the top of every shaft band holds pressure** — the tank stops, the nerve steadies, and the game says so in those words
 - **everything else is dead** — the tank runs, and depth is paid for in air
 - one car serves four floors; at the bottom of a band the panel simply **has no button** below, and the way down is another shaft

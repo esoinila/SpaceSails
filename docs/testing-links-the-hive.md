@@ -24,6 +24,7 @@ it. Use `?secretlab=deep` for anything about the band nobody listed.
 ### The deep site, as the generator actually builds it
 
 ```
+  ──   SURFACE          dead   ← #802: the regolith, on every body. The lift's SURFACE button says so too
   B1   ADMINISTRATION   air    ← the canteen, the people, the board, the facility plate
   B2   LABORATORIES     dead
   B3   LONG STORAGE     dead
