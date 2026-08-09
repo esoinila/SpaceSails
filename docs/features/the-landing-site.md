@@ -2280,9 +2280,13 @@ far line, nothing lying across one, every room on the floor's own `RoomCentres`,
 park's own depth untouched to three decimals, and the rock left over. `TheFarGatesLeadSomewhereTests`
 (Client) floods the real `DeckPlan.CollisionField` from the car to every one of them and then **pours every
 back door shut** and demands they all go dark, with the green itself still reachable so the plug is proved to
-have measured the door. Watched go red both ways: with the carve removed, `52 park(s) are still the edge of
-the map`; with the rooms carved and the far wall left poured as one segment, `48 room(s) behind the green are
-drawn and cannot be entered`.)*
+have measured the door. Watched go red three ways: with the carve removed, `52 park(s) are still the edge of
+the map: luna B1: the far wall has nothing behind it — the park is where the building stops`; with the rooms
+carved and the far wall left poured as one segment, Core says `208 park(s) are still the edge of the map:
+luna B1: a wall (-144.0…134.0) lies across the back door at -88.6…-82.2` and the Client says `48 room(s)
+behind the green are drawn and cannot be entered: luna B1: 📋 GROUNDS OFFICE · ROTA POSTED at (-85, -270) —
+the door is a picture`; and with the far wall deleted entirely, `48 room(s) … is STILL reachable with its
+door poured shut — the far wall is a picture, not a wall`.)*
 
 **Reaching it.** `/map?parkback=1` — B1, standing on the gravel facing the doors.
 
@@ -2323,20 +2327,51 @@ is what keeps it a law rather than a tautology, and is asserted against a synthe
 **Every singular guard grew rather than moved.** `TheLiftIsInTheSAMEPlaceOnEveryFloor`,
 `EveryMouthCutInTheSpineIsSTILLOpenWhenTheWallIsFinished` (which had seeded its mouth list with a hard-coded
 singleton — a second alcove walled over on the lower face is #587 one face down and would never have been
-looked at), `NoRibIsRunThroughTheLiftShaft`, `ARefugeIsNeverBesideTheLift` (a refuge that is a detour from
-the cage and four steps from the goods car has stopped costing anything), the hall-swallowed-the-lift clause,
-the nobody-sits-in-the-car clause, and `ThereIsAlwaysAWayBackToTheLift` — which said *"exactly one lift"*,
-i.e. it asserted the choke, and now says **one cage, one goods car, both always findable**.
+looked at), `NoRibIsRunThroughTheLiftShaft`, `ARefugeIsNeverBesideTheLift`, the hall-swallowed-the-lift
+clause, the nobody-sits-in-the-car clause, and `ThereIsAlwaysAWayBackToTheLift` — which said *"exactly one
+lift"*, i.e. it asserted the choke, and now says **one cage, one goods car, both always findable**.
+
+**And one of them found a real bug rather than needing a widening.** `ARefugeIsNeverBesideTheLift` measured
+the cage alone; widening it to both cars took **332 of 1130 floors** red, because #608's carve had been
+choosing the room furthest from ONE shaft. The carve was fixed rather than the guard: it measures every car,
+and where a tight floor has nowhere `MinRefugeDetourDu` from both it takes the **furthest** room it has
+instead of a rolled one (which alone moved the worst case from 29 du to 52). The law is restated as a
+comparison — *the refuge must be the furthest-from-both room the floor had, and must clear the number
+wherever any room does* — with the fallback counted, capped at a twentieth of the floors that clear it
+outright, and floored at 0.7 of the law, so the escape hatch is measured rather than assumed. Watched go red
+by reverting the carve to one shaft: `319 of 1130 floor(s) break the law … luna B2: the refuge is 29 du from
+the nearest car and this floor had a room 79 du out`.
+
+**#707's rank-in-plumbing law was made honest in passing.** A principal room whose ground was already claimed
+cannot be given an en-suite, and it used to keep a plate stating a rank the building could not back up. The
+fallback had never fired on the shipped field — which is exactly why it fired on four generated moons the day
+a passage moved four du. Such a room is now re-plated from the floor's own register, one step along the same
+seed.
 
 *(Enforced: `TheOtherCarTests` (Core) — every floor of 53 sites has both alcoves cut, the separation and the
 opposite-faces law, nothing standing on either car, the ground's veto, and the goods car's panel offering
 exactly its band with no surface row, no sealed row and no card named, asked with a wallet holding every card
 the site can mint. `TheFarGatesLeadSomewhereTests` (Client) proves each car's doorstep is standable and that
-from either one you can WALK to the other, which is the anti-choke claim itself. Watched go red: with
-`ServiceShaftAt` returning null, `594 floor(s) can be sealed by one person standing on one square`; with the
-car placed in the first empty stretch instead of the furthest, `the two cars are 21.0 du apart and the law
-wants 92.7`; with the goods car given the cage's panel, `594 goods-car panel(s) offer something the shaft
-does not have`.)*
+from either one you can WALK to the other, which is the anti-choke claim itself. Watched go red four ways: with the second
+alcove never cut, `594 floor(s) can be sealed by one person standing on one square: luna B1: the Service
+car's alcove is not cut on this floor`; with the separation law dropped and the car placed at the NEAR blind
+end, `the two cars are 92.2 du apart and the law wants 92.7 — one person standing between them has both`;
+with the goods car given the cage's panel, `1285 goods-car panel(s) offer something the shaft does not have:
+luna B1: the goods car offers B5, which is another band's floor`; and with the doorstep left as the cage's,
+`130 floor(s) fail the two-car law: luna B1: riding the Service car puts a captain 170 du from the car they
+rode`.)*
+
+**Two things this deliberately does NOT do, so nobody has to guess later.**
+
+- **No second SURFACE head.** The issue says "maybe a second surface shaft"; the hut is a seeded
+  `SurfaceStructure` with a discovery beat, a probe ping and its own art (#606/#592), and a second one is a
+  surface feature rather than a carve. The surface remains one way in — and #719's **service stair** is the
+  designated answer to that, which is why it is not pre-empted here.
+- **The wrong-shaft-of-this-site refusals do not get a new stage.** A card's identity is `(bodyId, band)`, so
+  those lines only fire when the wallet holds a card for a *different band* than the gate wants. Both cars
+  serve the same band, so the goods car cannot produce a case the cage does not. Reaching them in play needs
+  a car whose band coverage is OFFSET — which moves the gate from the shaft to the band SEAM, i.e. a rewrite
+  of §13.5's implementation. That wants an owner ruling, not a carve PR.
 
 **Reaching it.** `/map?goodscar=1` — B1, standing at the second car. Then walk to the other one and see how
 far that is.
