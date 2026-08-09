@@ -149,6 +149,14 @@ public static class DevStarts
         new("🪑🕳", "…and the watch where nobody comes",
             "The same table on the small watch with the approach forced OFF. Sit as long as you like: an eighty-seat hall answers, in words, that nothing is going to happen. That is the beat, not a bug — and on a watch this quiet the sit is the RESTING one, boots up on the spare chair (#757, #783).",
             "/map?tablescene=free&watch=5&approach=0"),
+        // #784 · THE WHOLE PHASE-TWO LOOP IN THIRTY SECONDS. Owner's own ask, filing the demo: "we probably
+        // need a start point where we have things in our inventory we can process (when our HUD UI state is
+        // sitting down with enough privacy)." Everything the seated build is about — the docked frame, the
+        // customer line, the privacy gate, the digging bar, the entry landing in the book — is one URL and
+        // two presses from the front door here, and nothing about the room is forced.
+        new("🗂🪑", "Sat down in a cabinet with the papers out",
+            "B1's canteen with the captain already seated at a CABINET table — the private end of the ladder — and three finds in the sleeve. The panel is a HUD STRIP, not a card: the hall stays lit behind it, the park stays green, and the customer line reads your table, your pour, your rest pips and the watch the room is keeping. Press I, pick a paper, and the digging bar runs it into the detective book (#784).",
+            "/map?spread=1"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),

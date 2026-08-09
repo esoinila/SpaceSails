@@ -4957,3 +4957,82 @@
 .deck-shuttle-card {
     --card-foot-scrim: rgba(6, 9, 15, 0.94);
 }
+
+/* ── #784 · THE SEATED DOCK ───────────────────────────────────────────────────────────────────────────
+   Owner, live at a taken table with the card up: "the seated frame docks, it does not dim — the hall stays
+   lit, the A* walkers stay visible, the park stays green. The full card returns only for conversations."
+
+   THIS IS NOT A CARD AND MUST NEVER GROW INTO ONE. It has no backdrop, no scrim, no blur and no centring;
+   it is a HUD strip pinned to the foot of the deck, and everything above it is the room the player came to
+   watch. The one thing it takes from the card family is the skin, so the eye reads the two as the same
+   game — and it stays deliberately short, because a strip tall enough to cover the tables would be the
+   modal back in a low hat.
+
+   pointer-events: auto on the strip only — the wrapper takes none, so a click on the hall behind it still
+   reaches the canvas and the captain can keep clicking their way around the room while seated. */
+.seated-dock {
+    position: absolute;
+    left: 50%;
+    bottom: 4.5rem;
+    transform: translateX(-50%);
+    width: min(46rem, 94vw);
+    max-height: 38vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.55rem 0.85rem;
+    text-align: left;
+    color: #e8ecf4;
+    background: rgba(6, 9, 15, 0.86);
+    border: 1px solid rgba(160, 200, 220, 0.42);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    z-index: calc(var(--z-desks-popups) + 40);
+}
+
+/* The CUSTOMER LINE, in the AIR gauge's clothes: monospace figures, one row, quiet ink. It is an
+   INSTRUMENT and it is styled like one — the moment it reads as prose it stops being glanced at, which is
+   the whole reason the air line works. */
+.seated-dock-line {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #9fd0e4;
+    border-bottom: 1px solid rgba(160, 200, 220, 0.2);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
+}
+
+/* The latest thing the table said. Same ink as .table-outcome, because it is the same slot moved onto the
+   strip — the law travelled with the surface (#680). */
+.seated-dock-said {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.45rem;
+    white-space: pre-wrap;
+}
+
+/* …and a running dig, in the channel's own amber-green rather than the outcome's gold: it is not an answer
+   yet, it is a clock. */
+.seated-dock-busy {
+    color: #9fe0c0;
+    background: rgba(120, 215, 175, 0.08);
+    border-left-color: rgba(120, 215, 175, 0.55);
+}
+
+.seated-dock-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* #784 · A paper lying on the table. The satchel row's skin with the spread's own pen-coloured hint, so a
+   dig reads apart from a TRY at a glance. */
+.spread-item .satchel-item-try {
+    color: #d8c56a;
+}

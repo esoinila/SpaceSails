@@ -2897,7 +2897,31 @@ public partial class Map
         _satchelTarget = null;
         _satchelOutcome = null;
         TheSatchelOpensOnThePocket();
+
+        // #784 · SEATED, [I] IS THE DOOR TO PROCESSING. Owner, live: "I would like to be able to see the
+        // NPCs move with A* and press I to open inventory and process the loot into my detective book."
+        // Standing, the key does exactly what it has always done and lands on the pocket — the fork is the
+        // POSTURE and nothing else, which is why it is written here, at the one place an open happens, and
+        // not in the key handler where a mouse would miss it.
+        _satchelPage = CaptainIsSeatedAnywhere ? SatchelPage.Spread : SatchelPage.Carried;
         _showSatchel = true;
+    }
+
+    /// <summary>#784 · The strip's own way in, and the mouse's. Forces the spread page rather than toggling,
+    /// because the button says what it opens — and says WHY NOT on the page itself when the seat refuses,
+    /// since a control that opens onto an unexplained empty list is #603's founding sin with a lid on
+    /// it.</summary>
+    private void OpenTheSpread()
+    {
+        if (_surface is null)
+        {
+            return;
+        }
+        _satchelTarget = null;
+        _satchelOutcome = SpreadRefusal;
+        _satchelPage = SatchelPage.Spread;
+        _showSatchel = true;
+        StateHasChanged();
     }
 
     /// <summary>#688 · The I key, both ways. Owner: <i>"If I press I when inventory is open, let's close it
@@ -2946,6 +2970,11 @@ public partial class Map
 
         /// <summary>What the ground has told you.</summary>
         Notes,
+
+        /// <summary>#784 · THE SPREAD — the papers laid out on the table, one dig at a time. Reachable only
+        /// while seated: the tab is not drawn on your feet, and the page itself refuses out loud if you
+        /// somehow arrive on it standing (<see cref="SeatedSpread"/>).</summary>
+        Spread,
     }
 
     private SatchelPage _satchelPage = SatchelPage.Carried;
@@ -3360,6 +3389,16 @@ public partial class Map
     {
         ex.Processing = null;
         RendererInterop.PlayCue("board");
+
+        // #784 · THE SEATED REGISTER'S FAR END. Same hold, same bar, same twenty seconds — a different
+        // ending, because what a table buys is not a better fact: it is the sheet still being in your pocket
+        // afterwards. So this returns WITHOUT calling SetItDown, which is the entire difference between
+        // digging a paper out at a table and photographing it to leave it on the ground.
+        if (hold.Work == Core.Processing.Work.Write)
+        {
+            TheWriteUpLands(ex, hold.Item, hold.Standing);
+            return;
+        }
 
         if (hold.Work == Core.Processing.Work.Read && hold.At is { } at)
         {
@@ -8187,7 +8226,10 @@ public partial class Map
     /// winner — and three copies of one precedence order is the shape that drifts.</summary>
     private static string SurfaceChannelGlyph(SurfaceExcursion ex) =>
         ex.Channel is not null || ex.DoorChannel is not null ? "⛏"
-        : ex.Processing is not null ? Core.Processing.Glyph
+        // #784 · …and the seated register wears the PEN, not the camera. Core.Processing.GlyphFor is the one
+        // place that choice is made — the control, the bar and the book entry all read it, so the glyph over
+        // a captain's head can never say "photographing" while the sim writes into the field book (#562).
+        : ex.Processing is { } hold ? Core.Processing.GlyphFor(hold.Work)
         : ex.RearmBotIndex is not null ? "🔫"
         : "⛏";
 

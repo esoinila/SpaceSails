@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
@@ -68,19 +69,37 @@ public partial class Map
     private const double DrinkInHandSeconds = 300.0;
 
     /// <summary>
-    /// #784 · Is there a bought pour in front of the captain? The one discoverable fact #756's counter
-    /// leaves behind is the tot — <see cref="PourRum"/> is the single funnel every purchase in the game goes
-    /// through — so this reads that and nothing else.
+    /// #784 · HOW MUCH OF THE POUR WINDOW IS LEFT, in real seconds — or null when there is no bought pour in
+    /// front of the captain at all. The one discoverable fact #756's counter leaves behind is the tot
+    /// (<see cref="PourRum"/> is the single funnel every purchase in the game goes through), so this reads
+    /// that and nothing else.
     ///
     /// <para>Two honest gaps, both filed rather than faked. FOOD does not route through <c>PourRum</c> (a
     /// fry-up does not tilt the deck, #756), so a meal buys no multiplier today. And a DRUNK captain gets
     /// none either: <see cref="NerveModel.DrunkAt"/> is the game's one drunkenness law and it already says a
     /// third tot stops helping — a rest is not the place to invent a second opinion about that.</para>
+    ///
+    /// <para>#784 phase two · IT IS THE FIGURE AND THE FLAG AT ONCE, and that is deliberate. The customer
+    /// line on the seated strip prints the minutes left; the rest engine doubles its rate off the same
+    /// window. Written as two members they would be two clocks, and a strip saying "2m of cold left" over a
+    /// beat the rest engine had already decided was dry is #740's fault exactly — so there is one member and
+    /// the boolean is derived from it.</para>
     /// </summary>
-    private bool APourInFrontOfYou =>
-        _rumTots > 0
-        && !NerveModel.DrunkAt(_rumTots)
-        && (_lastTimestampMs ?? 0) - _lastRumMs < DrinkInHandSeconds * 1000.0;
+    private double? PourSecondsLeft
+    {
+        get
+        {
+            if (_rumTots <= 0 || NerveModel.DrunkAt(_rumTots))
+            {
+                return null;
+            }
+            double leftMs = (DrinkInHandSeconds * 1000.0) - ((_lastTimestampMs ?? 0) - _lastRumMs);
+            return leftMs > 0 ? leftMs / 1000.0 : null;
+        }
+    }
+
+    /// <summary>#784 · Is there a bought pour in front of the captain? Derived, never re-measured.</summary>
+    private bool APourInFrontOfYou => PourSecondsLeft is not null;
 
     // ── THE SHORT REST ────────────────────────────────────────────────────────────────────────────────
 
@@ -186,6 +205,128 @@ public partial class Map
         && (!ex.RestPipsEased.TryGetValue(ex.CanteenWatch, out int pips)
             || pips < ShortRest.NervePipCapPerWatch);
 
+    // ── PHASE TWO · THE FRAME DOCKS, IT DOES NOT DIM ──────────────────────────────────────────────────
+    //
+    // Owner, live at a taken table with the panel up (his own screenshot read: the card centred, the backdrop
+    // dimming the entire hall AND the new park to near-black behind the glass): "the seated frame docks, it
+    // does not dim… the hall stays lit, the A* walkers stay visible, the park stays green. The full card
+    // returns only for conversations." And, classifying the whole family: "Like the sit a while… kind of same
+    // issue as operating with the service spot and menu — the card is for CONVERSATIONS; the room is for
+    // everything else."
+    //
+    // THE STATE MACHINE, in one place so nothing else has to derive it:
+    //
+    //   seated-idle   (_table is { Solo: true })   → the DOCKED STRIP. No backdrop element at all.
+    //   conversation  (_table is { Solo: false })  → the full card, backdrop and art unchanged (#778/#787).
+    //   standing      (_table is null)             → neither.
+    //
+    // SOLO is the right flag and not a new one: #757 already flips it the moment somebody takes the chair
+    // opposite (SomebodyTakesTheChair) and back when they go (BackToYourOwnTable). A second "is this a
+    // conversation" flag beside it would be this repo's first named bug class aimed at a frame — and the
+    // approach beat that is coming (#731's walker crossing the hall for real) needs exactly this seam: a
+    // conversation begins from OUTSIDE the strip, by flipping Solo, and the card comes up over the room it
+    // was already showing.
+    //
+    // The COUNTER is already docked and stays that way: #780/#789 took the bar card out from under the scrim,
+    // so a stool has never dimmed the room. There is nothing to change there and the guard says so in the
+    // affirmative rather than this file growing a second frame for it.
+
+    /// <summary>#784 · Is the seated frame in its DOCKED state right now — the HUD strip, with the hall lit
+    /// and running behind it? The one question the razor asks, so the frame law lives here and not in
+    /// markup.</summary>
+    private bool SeatedIsDocked => _table is { Solo: true };
+
+    /// <summary>#784 · …and the other half, named for the reader rather than derived at each use: a table with
+    /// somebody in the chair opposite is a CONVERSATION and gets the card it has always had.</summary>
+    private bool SeatedIsAConversation => _table is { Solo: false };
+
+    /// <summary>
+    /// #784/#793 · WHICH RUNG OF THE EXPOSURE LADDER THE CAPTAIN IS SITTING ON, or null on their feet.
+    ///
+    /// <para>Off the room's own facts and never a client opinion: <c>Quiet</c> is Core's cabinet flag
+    /// (<see cref="CanteenRegulars.TableSeat.Quiet"/>, the same bit <see cref="SittingAlone.SomebodyComes"/>
+    /// refuses on), and a stool is a stool. The park bench is in the enum and unreachable from here on
+    /// purpose: #793 wires the sit verb to the benches, and when it does this is the one line it changes.</para>
+    /// </summary>
+    private SeatedHud.Seat? SeatedIn =>
+        _table is { } t ? (t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable)
+        : _stool is not null ? SeatedHud.Seat.BarStool
+        : null;
+
+    /// <summary>#784 · Has the captain got this seat to themselves? At a table that is the chair opposite
+    /// being empty (#757's own Solo); at the counter it is
+    /// <see cref="Core.Interior.TheStools.HasNeighbour"/> — the exposure fact #789 already shipped, asked
+    /// rather than re-derived.</summary>
+    private bool SeatedAlone
+    {
+        get
+        {
+            if (_table is { } t)
+            {
+                return t.Solo;
+            }
+            if (_surface is { } ex && _stool is { } s)
+            {
+                return !s.WithNeighbour
+                    && !Core.Interior.TheStools.HasNeighbour(
+                        ex.Stop.Body.Id, ex.Floor, s.Index, ex.CanteenWatch);
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// #784 · THE CUSTOMER LINE — the seated strip's one instrument row, in the AIR gauge's register.
+    ///
+    /// <para>Owner: <i>"maybe the HUD could have place for our current state as customer of the restaurant,
+    /// like we have really superb UI for the air use."</i> Every figure on it is handed to
+    /// <see cref="SeatedHud.CustomerLine"/> from the SAME member the mechanic runs on —
+    /// <see cref="PourSecondsLeft"/> is the window <see cref="ShortRest"/> doubles its rate off,
+    /// <c>ex.RestPipsEased</c> is the ledger <see cref="RestOneSeatedBeat"/> writes, and
+    /// <see cref="SittingAlone.Fill"/> is the fraction the approach roll is scaled by. There is no second
+    /// copy of any of them for this line to drift away from (#740).</para>
+    /// </summary>
+    private string? SeatedCustomerLine()
+    {
+        if (_surface is not { } ex || SeatedIn is not { } seat)
+        {
+            return null;
+        }
+        ex.RestPipsEased.TryGetValue(ex.CanteenWatch, out int pips);
+        return SeatedHud.CustomerLine(
+            seat, PourSecondsLeft, pips, ShortRest.NervePipCapPerWatch,
+            SittingAlone.Fill(ex.CanteenWatch));
+    }
+
+    // ── PRIVACY GATES THE SPREAD ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>#784/#793 · May the case be spread out at this seat? Core's one predicate
+    /// (<see cref="SeatedSpread.CanSpreadTheCase"/>) asked with the two facts this file owns.</summary>
+    private bool CanSpreadTheCaseHere =>
+        SeatedIn is { } seat && SeatedSpread.CanSpreadTheCase(seat, SeatedAlone);
+
+    /// <summary>
+    /// #784 · IS THE CAPTAIN IN A SEAT OF ANY KIND — a table, a cabinet, a stool at the counter.
+    ///
+    /// <para>Deliberately NOT <see cref="CaptainIsSeated"/>, which is #788's TABLE flag and is wired to the
+    /// things a table decides: the drawn posture, the stand-up confirm, the movement stop. A stool is a
+    /// posture of the COUNTER card (#789's one-E-per-fixture rule) and has never been in that flag; widening
+    /// it here would silently change what WASD and the deck renderer do at the bar, which is a bigger claim
+    /// than this issue is making.</para>
+    ///
+    /// <para>What the spread needs is the other question — <i>am I in a seat, and which one</i> — and the
+    /// answer to it is <see cref="SeatedIn"/> being non-null. This member exists so that reading is named
+    /// rather than spelled out at each use.</para>
+    /// </summary>
+    private bool CaptainIsSeatedAnywhere => SeatedIn is not null;
+
+    /// <summary>#784 · Why not, said out loud — the posture refusal on your feet, the privacy refusal in the
+    /// wrong seat, null when the papers may come out. One ladder, asked top-down: standing beats seating,
+    /// because a captain who is not in a seat at all has not yet reached the question about WHICH seat.</summary>
+    private string? SpreadRefusal =>
+        SeatedPosture.RefusalIfStanding(CaptainIsSeatedAnywhere)
+        ?? (SeatedIn is { } seat ? SeatedSpread.RefusalAt(seat, SeatedAlone) : null);
+
     // ── THE FIELD BOOK'S SECOND REGISTER ──────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -208,9 +349,10 @@ public partial class Map
             return;
         }
 
-        // The gate, asked of Core. The client decides only what "seated" means; it never decides what
-        // seated is FOR.
-        if (SeatedPosture.RefusalIfStanding(CaptainIsSeated) is { } refusal)
+        // The gates, asked of Core, in the order a captain meets them: are you sitting, and is this a seat
+        // you would lay evidence out on. The client decides only what "seated" and "alone" mean; it never
+        // decides what a seat is FOR.
+        if (SpreadRefusal is { } refusal)
         {
             SayItWhereTheyAreLooking(refusal);
             return;
@@ -220,28 +362,69 @@ public partial class Map
         // "is there a gist" is asked once, by Core), so the two registers can never disagree about which
         // things are documents.
         string standing = WhereYouAreStanding();
-        if (LeftBehind.GistOf(item, standing) is not { Length: > 0 } gist)
+        if (LeftBehind.GistOf(item, standing) is not { Length: > 0 })
         {
             return;
         }
 
-        string key = $"{item.Kind}:{item.Id}";
-        if (!ex.WrittenUpProperly.Add(key))
+        if (ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}"))
         {
             SayItWhereTheyAreLooking(SeatedPosture.AlreadyWrittenLine);
             return;
         }
 
-        // FileNote and not ShowAndFile: the saying happens on the surface the captain is actually looking
-        // at, which with a table panel up is the panel and never the pulse under its blur (#680/#686).
+        // #784 phase two · AND NOW IT TAKES TIME, ON THE BAR THE GAME ALREADY DRAWS. Owner: "The inventory
+        // processing should have like a timer progress bar like the digging has… we are digging for info and
+        // understanding." So this does not open a second clock or a second bar — it starts the one hold
+        // #696 already owns (Processing.Work.Write), which means the one channel, the one precedence ladder,
+        // and the one progress rectangle over the captain's own mark. Nothing about the drawing is new.
+        //
+        // The entry lands at the far end, in TheWriteUpLands, and NOTHING is filed here: an interruption has
+        // to have nothing to undo, which is #696's founding discipline and the reason the set is added to
+        // there rather than up here where it would survive a stand-up.
+        BeginProcessing(ex, Core.Processing.Work.Write, item, standing, null);
+    }
+
+    /// <summary>
+    /// #784 · THE FAR END OF A SEATED WRITE-UP — the dig finishes and the book gains the entry.
+    ///
+    /// <para>Called only from <see cref="CompleteProcessing"/>, which clears the hold first, so this runs in
+    /// a world with no clock in it. The gist is re-asked rather than carried on the hold: a document's gist
+    /// is a pure function of the paper and the ground (<see cref="LeftBehind.GistOf"/>), and asking it twice
+    /// is cheaper than a second copy of it that could go stale across twenty seconds of somebody else's
+    /// sim.</para>
+    ///
+    /// <para>The line lands on the STRIP when the strip is up (<c>t.Outcome</c> is what the docked frame
+    /// draws as its latest line), and pulses otherwise. That is #680's law read correctly for a frame with no
+    /// backdrop in it: the rule was never "never pulse", it was "never pulse under a blur".</para>
+    /// </summary>
+    private void TheWriteUpLands(SurfaceExcursion ex, Core.Satchel.Item item, string standing)
+    {
+        if (LeftBehind.GistOf(item, standing) is not { Length: > 0 } gist)
+        {
+            return;
+        }
+        if (!ex.WrittenUpProperly.Add($"{item.Kind}:{item.Id}"))
+        {
+            return;
+        }
+
         FileNote(gist, SeatedPosture.WriteGlyph);
-        SayItWhereTheyAreLooking(SeatedPosture.WrittenUpLine(SatchelLabel(item), gist));
+        string said = SeatedPosture.WrittenUpLine(SatchelLabel(item), gist);
+        if (_table is { } t)
+        {
+            t.Outcome = said;
+        }
+        else
+        {
+            SayItWhereTheyAreLooking(said);
+        }
         RequestVaultSave();
     }
 
     /// <summary>Is the pen live on this row? A thing with no gist is not a document, and a document already
-    /// in the book in your own hand is done — but a captain on their FEET still gets the control, because
-    /// the refusal is how the law is taught.</summary>
+    /// in the book in your own hand is done — but a captain on their FEET, or in the wrong seat, still gets
+    /// the control, because the refusal is how the law is taught.</summary>
     private bool CanWriteUp(Core.Satchel.Item item) =>
         _surface is { } ex
         && LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
@@ -251,5 +434,21 @@ public partial class Map
     /// the price of a press is known before the press (#696's own discipline, one control over).</summary>
     private string WriteUpHint(Core.Satchel.Item item) =>
         !CanWriteUp(item) ? SeatedPosture.AlreadyWrittenLine
-        : SeatedPosture.RefusalIfStanding(CaptainIsSeated) ?? SeatedPosture.WriteHint;
+        : SpreadRefusal ?? SeatedSpread.SpreadHint;
+
+    /// <summary>#784 · The rows the spread offers — everything in the sleeve that has something to dig out of
+    /// it and has not been dug out already. <see cref="CanWriteUp"/>'s own answer, so the list and the
+    /// control cannot disagree about which papers are still worth an evening.</summary>
+    private List<Core.Satchel.Item> SpreadableFinds()
+    {
+        var found = new List<Core.Satchel.Item>();
+        foreach (Core.Satchel.Item item in _satchel)
+        {
+            if (CanWriteUp(item))
+            {
+                found.Add(item);
+            }
+        }
+        return found;
+    }
 }
