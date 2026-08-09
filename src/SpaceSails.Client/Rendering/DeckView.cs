@@ -870,11 +870,32 @@ public sealed class DeckView
 
         }
 
-        // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor.
-        foreach ((float tx, float ty) in plan.Tables)
+        // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor, and — where the
+        // plan bothered to say — the chairs round it and who is in them (#792).
+        foreach (DeckPlan.TableTop top in plan.Tables)
         {
-            (float cx2, float cy2) = P(tx, ty);
+            (float cx2, float cy2) = P(top.X, top.Y);
             _renderer.DrawCircle(cx2, cy2, 0.9f * scale, null, InnerLine, 1.5f);
+            DrawSeatsRound(cx2, cy2, top, scale);
+        }
+
+        // #792 · The tall seats at a counter — free and taken, in the same two inks the chairs use.
+        foreach (DeckPlan.StoolSpot stool in plan.Stools)
+        {
+            (float sx, float sy) = P(stool.X, stool.Y);
+            if (stool.Taken)
+            {
+                // A round seat with somebody up on it: filled, and there is nothing to draw a back on,
+                // because a bar stool does not have one.
+                _renderer.DrawCircle(sx, sy, StoolSeatDu * scale, SeatTaken, SeatTaken, 1.5f);
+            }
+            else
+            {
+                _renderer.DrawCircle(
+                    sx, sy, StoolSeatDu * scale, null,
+                    stool.RowHasSomebody ? SeatOpen : SeatEmpty,
+                    stool.RowHasSomebody ? 2.4f : 1.5f);
+            }
         }
 
         // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).
@@ -1994,6 +2015,110 @@ public sealed class DeckView
             (ax + (fx * arms) - (px * armHalf), ay + (fy * arms) - (py * armHalf)),
             (ax + (fx * arms) + (px * armHalf), ay + (fy * arms) + (py * armHalf)),
             AvatarColor, 2f);
+    }
+
+    // ── #792 · THE SEATS, SEEN ────────────────────────────────────────────────────────────────────────
+    //
+    // Owner, playtest 2026-08-08: "people looking to sit down look at those like hungry wild beasts look at
+    // their prey" — and the deck could not answer one of the three glances a hungry traveller takes.
+    //
+    // THREE GLYPHS AND NO WORDS, because #782's law is that the deck is read at phone size and this room is
+    // already the densest in the game. Everything below is a fraction of the deck scale, exactly as the
+    // seated captain's chair back is, so the furniture grows and shrinks with the people in it.
+    //
+    //   an EMPTY chair          a short bar on the table's ring, in the room's own furniture grey
+    //   an OPEN chair           the same bar, heavier and in the console green — a seat at a table that
+    //                           already has somebody at it, which is a different offer from an empty room
+    //   a TAKEN seat            a filled body with a chair back behind its shoulders — #788's idiom for
+    //                           the seated captain, at a stranger's size, so the two rhyme
+    //   TALKING                 two short ticks over the top: there is a conversation here, and a lone
+    //                           sitter has none. Handed down (DeckPlan.TableTop.Talking) and never read off
+    //                           a plate by this file, which is the whole reason the fact exists in Core.
+
+    /// <summary>How far out from a top's centre the chairs stand.</summary>
+    private const float SeatRingDu = 1.55f;
+
+    /// <summary>How wide a chair is across its back — the bar an empty one is drawn as.</summary>
+    private const float SeatChairDu = 0.62f;
+
+    /// <summary>A sitter's body, at a top. Smaller than the captain's (<see cref="DeckPlan.AvatarRadius"/>)
+    /// because the captain is the one figure on this deck that must never be mistaken for scenery.</summary>
+    private const float SeatBodyDu = 0.30f;
+
+    /// <summary>How far behind a sitter's shoulders their chair back is drawn.</summary>
+    private const float SeatBackDu = 0.36f;
+
+    /// <summary>The round seat of a tall chair at a counter.</summary>
+    private const float StoolSeatDu = 0.40f;
+
+    /// <summary>How far over a top the conversation ticks are struck, and how long they are.</summary>
+    private const float TalkTickDu = 0.55f, TalkRiseDu = 0.85f;
+
+    /// <summary>A chair nobody is in, at a table nobody is at — furniture, at the weight of the furniture
+    /// line it stands on. Its own constant rather than <see cref="InnerLine"/> itself: a seat is a thing the
+    /// room can be asked about, and a guard counting empty chairs must be able to tell one from the several
+    /// hundred inner walls drawn in the same grey.</summary>
+    private static readonly RgbaColor SeatEmpty = new(126, 142, 164, 210);
+
+    /// <summary>…and a chair nobody is in at a table somebody IS at. The console green this deck has used
+    /// for "you may walk up to this" since the first spot was drawn, so an invitation is not a new word.</summary>
+    private static readonly RgbaColor SeatOpen = new(120, 220, 200, 235);
+
+    /// <summary>Somebody is in it. Warm, and deliberately not the captain's amber — one figure on this deck
+    /// is you.</summary>
+    private static readonly RgbaColor SeatTaken = new(228, 196, 150, 240);
+
+    /// <summary>Draw the chairs round one top, and whoever is in them. Nothing here decides anything: the
+    /// seat count, the occupancy and the conversation all arrive on <paramref name="top"/> from the room
+    /// that owns them (#788's one-reach lesson, applied to everybody who is not the captain).</summary>
+    private void DrawSeatsRound(float cx, float cy, in DeckPlan.TableTop top, float scale)
+    {
+        if (top.Seats <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < top.Seats; i++)
+        {
+            double ang = i * 2 * Math.PI / top.Seats;
+            // Screen Y runs the other way to deck Y — the same negated sine the heading spoke uses.
+            float ux = (float)Math.Cos(ang), uy = -(float)Math.Sin(ang);
+            (float px, float py) = (-uy, ux);   // along the chair's back, across the radius
+            float half = SeatChairDu * scale / 2f;
+
+            float sx = cx + (ux * SeatRingDu * scale), sy = cy + (uy * SeatRingDu * scale);
+
+            // The party sits in the first chair. One body per top is Core's own arithmetic (a top's Free is
+            // its seat count less at most one), so drawing a second would be the picture claiming an
+            // occupancy the room does not have.
+            if (i == 0 && top.Occupied)
+            {
+                float back = (SeatRingDu + SeatBackDu) * scale;
+                DrawSeg(
+                    (cx + (ux * back) - (px * half), cy + (uy * back) - (py * half)),
+                    (cx + (ux * back) + (px * half), cy + (uy * back) + (py * half)),
+                    SeatTaken, 2f);
+                _renderer.DrawCircle(sx, sy, SeatBodyDu * scale, SeatTaken, SeatTaken, 1f);
+                continue;
+            }
+
+            bool invites = top.Occupied;
+            DrawSeg(
+                (sx - (px * half), sy - (py * half)), (sx + (px * half), sy + (py * half)),
+                invites ? SeatOpen : SeatEmpty, invites ? 2.4f : 1.5f);
+        }
+
+        // …and whether there is anything to overhear. Struck over the top rather than on it, so it survives
+        // the plate the console draws through the same coordinate.
+        if (top.Talking)
+        {
+            float rise = cy - ((SeatRingDu + TalkRiseDu) * scale);
+            float tick = TalkTickDu * scale;
+            DrawSeg((cx - (0.34f * scale), rise), (cx - (0.34f * scale) + (0.18f * scale), rise - tick),
+                SeatTaken, 2f);
+            DrawSeg((cx + (0.10f * scale), rise), (cx + (0.10f * scale) + (0.18f * scale), rise - tick),
+                SeatTaken, 2f);
+        }
     }
 
     private void DrawSeg((float X, float Y) a, (float X, float Y) b, RgbaColor color, float width)

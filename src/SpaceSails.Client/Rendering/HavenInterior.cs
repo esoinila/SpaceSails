@@ -642,10 +642,10 @@ public static class HavenInterior
 
         // Seven tables spread across the big room — the rota seats present regulars at some of them this
         // watch, the rest stand open (an empty chair = someone's drifted off) — plus the ship's cantina.
-        var tables = new List<(float X, float Y)>(ship.Tables)
+        var tables = new List<DeckPlan.TableTop>(ship.Tables)
         {
-            (-9, HallTopY + 6), (14, HallTopY + 6), (2.5f, HallTopY + 11),
-            (-9, HallTopY + 16), (14, HallTopY + 16), (-3, HallTopY + 18), (8, HallTopY + 18),
+            new(-9, HallTopY + 6), new(14, HallTopY + 6), new(2.5f, HallTopY + 11),
+            new(-9, HallTopY + 16), new(14, HallTopY + 16), new(-3, HallTopY + 18), new(8, HallTopY + 18),
         };
 
         var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops)

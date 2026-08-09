@@ -163,7 +163,11 @@ public static class HiveInterior
         // collided with by the loop at the top of this method, and nothing here has to know their shape.
         // A renderer that laid out its own bar counter would be one more caller doing geometry about a
         // building it does not own (§13.15).
-        var tables = new List<(float X, float Y)>();
+        var tables = new List<DeckPlan.TableTop>();
+
+        // #792 · …and the tall seats, which Core has known the occupancy of since #756 and which have never
+        // once been on the floor. Same rule as the tops below it: this file ASKS, and decides nothing.
+        var stools = new List<DeckPlan.StoolSpot>();
 
         // ── #756 · THE FLOOR WEARS ITS ART ─────────────────────────────────────────────────────────────
         //
@@ -218,6 +222,37 @@ public static class HiveInterior
                     UndergroundComplex.SpotArtAlpha));
             }
 
+            // ── #792 · THE TALL SEATS, FREE AND TAKEN ──────────────────────────────────────────────────
+            //
+            // Owner: "there should be high chairs so sitting at the bar desk is also possible" (#756, built)
+            // and then, on the 8th: "Now I have trouble finding a free table… lol story of my travelling
+            // life right here."
+            //
+            // WHERE is the hall's (Core carved the row out of the counter's own segments); WHO IS ON THEM is
+            // TheStools' (the same call the [E] press asks, off the same frozen watch, so the seat drawn
+            // free is the seat pick-or-default will hand over). Both halves come from somewhere else on
+            // purpose — a renderer that laid out eight stools would be doing geometry about a bar it did not
+            // carve, and one that decided which were busy would be the drawn room and the pressed room
+            // disagreeing, which is the bug class this project has paid for most often.
+            if (a.Hall is { } counter)
+            {
+                // Asked over the whole row before any of it is drawn, because "is there anybody at this
+                // counter" is a fact about the ROW and not about a seat: the free stool beside somebody and
+                // the free stool in an empty bar are two different offers, and they are the same two offers
+                // the tops make. One language, one question.
+                bool anybody = false;
+                for (int s = 0; s < counter.StoolRow.Count; s++)
+                {
+                    anybody |= TheStools.Taken(bodyId, level, s, canteenWatch);
+                }
+                for (int s = 0; s < counter.StoolRow.Count; s++)
+                {
+                    (double sx, double sy) = counter.StoolRow[s];
+                    stools.Add(new(
+                        (float)sx, (float)sy, TheStools.Taken(bodyId, level, s, canteenWatch), anybody));
+                }
+            }
+
             // #751 · A hall's plate is stencilled beside its DOOR, which is on whichever face the rib is
             // on — so Core says where, exactly as it says where the board hangs. The 7.6 du offset below is
             // measured off a 15 x 12 room and would hang the sign in mid-floor in a room fifty du deep.
@@ -244,9 +279,17 @@ public static class HiveInterior
             // IT — the named regulars, the background patrons that fill the hall by the watch, and the
             // cabinets' empty tops — and this loop cannot tell them apart, which is the point: a patron is
             // a plate at a coordinate, drawn like any console dot, with nothing to run per frame.
+            //
+            // #792 · THE SAME ONE CALL ANSWERS THE THREE GLANCES, TOO. A top now goes onto the plan with
+            // its seat count, whether anybody is at it and whether they are TALKING — all three off this
+            // list, off this frozen watch, so the chairs drawn free are the chairs [E] will offer. The
+            // renderer downstream is handed the answers and never works one out: DeckView has no idea what
+            // a canteen is, which is #788's own discipline for the seated captain applied to everybody else
+            // in the room.
             foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(bodyId, level, a, canteenWatch))
             {
-                tables.Add(((float)top.X, (float)top.Y));
+                tables.Add(new(
+                    (float)top.X, (float)top.Y, top.Seats, top.Taken, top.Talking));
                 // #757 · EVERY TOP IS NOW A CONSOLE, and which kind it is is the one fact the room already
                 // knows: somebody at it, or nobody. Owner, live in the hall: "I have empty table but I
                 // cannot sit down." An empty top used to be drawn as a ring on the floor and nothing else,
@@ -497,6 +540,7 @@ public static class HiveInterior
             // whose coordinates mean something else. The rings belong to a room now, and the room is on
             // this floor.
             tables: [.. tables],
+            stools: [.. stools],
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.
