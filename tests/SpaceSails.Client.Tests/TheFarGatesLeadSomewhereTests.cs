@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
@@ -108,15 +108,17 @@ public sealed class TheFarGatesLeadSomewhereTests
             // ── AND THE SEALED ONE. Every back door plugged, grown across its own axis (the doors are
             //    horizontal spans, so the plug is padded in y) — the #775 lesson about plugging a front
             //    door with a wall that lies along it instead of across it.
-            var plugged = deck.Walls.ToList();
+            var plugged = new List<DeckPlan.Wall>(deck.Walls);
             foreach (UndergroundComplex.BackRoom br in park.Rooms)
             {
+                Assert.Contains(br.Door, UndergroundComplex.Build(body, level, Field).Doorways);
                 plugged.Add(new DeckPlan.Wall(
                     (float)br.Door.X1, (float)(br.Door.Y1 - 0.5),
-                    (float)br.Door.X2, (float)(br.Door.Y2 + 0.5)));
+                    (float)br.Door.X2, (float)(br.Door.Y2 + 0.5), false, true));
             }
             var sealedDeck = new DeckPlan(
-                [.. plugged], deck.Consoles, from.X, from.Y, (_, _) => "sealed");
+                [.. plugged], deck.Consoles, deck.RoomLabels, deck.Backdrops,
+                deck.SpawnX, deck.SpawnY, 0, (_, _) => { }, (_, _) => "sealed");
 
             foreach (UndergroundComplex.BackRoom br in park.Rooms)
             {
