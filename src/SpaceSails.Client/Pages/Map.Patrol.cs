@@ -327,11 +327,12 @@ public sealed partial class Map
 
         LogAutopilotEvent($"{read.Label} — {read.Told}");
 
-        // A pass that works is a non-event and files nothing: a notebook full of manners is a notebook
-        // nobody reads. Being walked off a floor is not manners.
+        // A PASS THAT WORKS COSTS NOTHING. Encounter.NervePipsFor's own arithmetic — the band that lands is
+        // free and the two that hurt cost a pip — and it has to be, or the badge is worth nothing: a captain
+        // who paid the same either way would have earned a longer sentence and no mechanic. It files nothing
+        // either, because a notebook full of manners is a notebook nobody reads.
         if (read.Satisfied)
         {
-            ApplyNerveShock(NervePips.PipUnit, "somebody on this floor knows your face now");
             return;
         }
 
@@ -381,6 +382,11 @@ public sealed partial class Map
     /// </summary>
     private void FillPatrolDroids(DeckPlan.Droid[] buffer, int firstSlot)
     {
+        // …and never anywhere but a floor of the Hive. The list is cleared on the way up, but the buffer is
+        // shared with the ship, the havens and the derelicts, and a filler that trusted a list to have been
+        // emptied is one lifted shuttle away from drawing a contract guard on the bridge.
+        bool underground = _surface is { Floor: < 0 };
+
         for (int i = 0; i < PatrolBand; i++)
         {
             int slot = firstSlot + i;
@@ -389,7 +395,7 @@ public sealed partial class Map
                 return;
             }
 
-            buffer[slot] = i < _guards.Count && _guards[i].Drawn
+            buffer[slot] = underground && i < _guards.Count && _guards[i].Drawn
                 ? new DeckPlan.Droid(_guards[i].X, _guards[i].Y, _guards[i].Facing, _guards[i].DeckName)
                 : new DeckPlan.Droid(-9999, -9999, 0, PatrolBeat.DeckName(i));
         }

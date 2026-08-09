@@ -167,6 +167,22 @@ public static class DevStarts
             + "ways in, every rib that points at the green opens into it, and the hall-side wall is still "
             + "glass (#775, #759).",
             "/map?parkwalk=1"),
+        // #804 · THE ROUNDS. Two rows for one reason #757's pair has: how many walk a floor is a seeded roll
+        // on the shift, and whether the captain has anything to show is the whole of the challenge. Neither
+        // half is reachable by luck in a sensible amount of play.
+        new("👮🚶", "B2 — somebody is walking the floor",
+            "The first floor under the bar, which is the first with a security ROTA on it. Stand at the car "
+            + "and watch: the motion fan hears them through the wall long before anything is drawn, then "
+            + "boots on shotcrete, and only inside your own line of sight does a green mark appear. They "
+            + "stand five seconds at each stop — that gap is the whole game. Let one get within nine metres "
+            + "with an empty wallet and the round STOPS at you (#804).",
+            "/map?patrol=2"),
+        new("🪪", "…and the same floor with the site's own pass in your wallet",
+            "The identical round with a SITE PASS · GENERAL HANDS already minted. Walk straight at one: he "
+            + "reads the face, the site code and the tier, hands it back, mentions the wet floor, and picks "
+            + "the round up where he left it. Earned properly it comes off the cage crew's chit — the job "
+            + "does not pay in coin, it pays in paper (#804, #746, #752).",
+            "/map?badge=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),
