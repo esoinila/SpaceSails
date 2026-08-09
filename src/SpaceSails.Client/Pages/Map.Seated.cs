@@ -466,19 +466,35 @@ public partial class Map
         !CanWriteUp(item) ? SeatedPosture.AlreadyWrittenLine
         : SpreadRefusal ?? SeatedSpread.SpreadHint;
 
-    /// <summary>#784 · The rows the spread offers — everything in the sleeve that has something to dig out of
-    /// it and has not been dug out already. <see cref="CanWriteUp"/>'s own answer, so the list and the
-    /// control cannot disagree about which papers are still worth an evening.</summary>
+    /// <summary>
+    /// #784/#798 · THE ROWS THE SPREAD OFFERS — everything in the sleeve this table has business with.
+    ///
+    /// <para>It used to be <see cref="CanWriteUp"/>'s own answer, and that was right while the page had one
+    /// verb on it. #798 gave it a second one, and the moment it did, the old list had a hole in exactly the
+    /// place the owner's loop ends: <b>a paper you have just dug vanished off the page</b>, so <i>sit, dig,
+    /// book, BIN</i> could not be done without shutting the spread and reopening the pocket. A page that
+    /// hides the thing you have just worked on is a page that hides the next verb.</para>
+    ///
+    /// <para>So the row is offered for anything with a gist — a document, in the book's own sense — and the
+    /// two controls on it answer for themselves. The dig refuses OUT LOUD when there is nothing left to dig
+    /// (<see cref="SeatedPosture.AlreadyWrittenLine"/>), which is #603's rule and how the law is learned.</para>
+    /// </summary>
     private List<Core.Satchel.Item> SpreadableFinds()
     {
         var found = new List<Core.Satchel.Item>();
         foreach (Core.Satchel.Item item in _satchel)
         {
-            if (CanWriteUp(item))
+            if (CanWriteUp(item) || Core.RipAndBin.IsEvidence(item.Kind))
             {
                 found.Add(item);
             }
         }
         return found;
     }
+
+    /// <summary>#798 · What the dig control says on a row whose paper is already in the book — the same
+    /// truth <see cref="WriteUpHint"/> tells in the tooltip, said on the button itself, so a row that is
+    /// still there for the SHREDDER's sake does not go on offering an evening's work that is already done.</summary>
+    private string SpreadRowVerb(Core.Satchel.Item item) =>
+        CanWriteUp(item) ? "dig it out →" : "already in the book";
 }

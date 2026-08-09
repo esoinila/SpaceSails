@@ -248,6 +248,17 @@ public static class DevStarts
             + "another: a line goes between them, the list reorders around it, and nothing congratulates you "
             + "(#741, #784).",
             "/map?threads=1"),
+        // #798 · THE DISPOSAL LOOP, in thirty seconds. The phase-two loop ENDS by producing a liability —
+        // the book has the gist, and the original is now the one thing connecting you to the room you took
+        // it from. This is the row where a tester meets the third verb. Owner: "those trash cans are needed
+        // so we get rid of the processed materials without connecting them to us too clearly."
+        new("🗑📄", "Standing at the bin with the papers still on you",
+            "B1's canteen with the captain at the SLOP BIN and three finds in the sleeve. Press I, press 🗑 "
+            + "on a paper: it is torn up and gone from the sleeve, the book keeps whatever you had already "
+            + "dug out of it, and the act is filed with the bucket named. The WASTE CHUTE is at the other "
+            + "end of the same room and the tidy PAPER BIN is by the lift — one verb, three different bets, "
+            + "and the game never once says which was enough (#798).",
+            "/map?rip=1"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),

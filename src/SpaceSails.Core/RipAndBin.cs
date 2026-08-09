@@ -127,6 +127,16 @@ public static class RipAndBin
     /// stands at a bin, they do not park a vehicle at one.</summary>
     public const double StandClearDu = 0.9;
 
+    /// <summary>
+    /// How far somebody else's eyes reach for a rip to be a thing they SAW.
+    ///
+    /// <para>Not a reading distance — nobody makes out a pay sheet across a canteen — but the distance at
+    /// which <i>the new face tore something up and binned it</i> is a sentence a stranger could later say.
+    /// Deliberately wider than a hall's table pitch, so the top next to yours counts, and always asked with a
+    /// LINE OF SIGHT: a cabinet's privacy is the walls it is made of and not a number typed here.</para>
+    /// </summary>
+    public const double OverlookedDu = 15.0;
+
     /// <summary>The verb's glyph, and the one the filed fact wears.</summary>
     public const string Glyph = "🗑";
 
@@ -290,6 +300,41 @@ public static class RipAndBin
 
         /// <summary>#804 · A round, with its eyes on you.</summary>
         TheRota,
+    }
+
+    /// <summary>
+    /// WHO SAW IT — one ladder, asked top-down, stopping at the first true rung.
+    ///
+    /// <para>The four flags are the client's own facts about a running world; the ORDER is this file's, and
+    /// it lives here for the reason every other law in this project lives in Core: a ladder spelled out at a
+    /// call site is a ladder nobody can test both directions of, and this one has to be provable to answer
+    /// <b>null</b> as often as it answers a name.</para>
+    ///
+    /// <para>The rota is first because a man whose job is looking at people is a different fact from a
+    /// stranger who happened to glance up. It files ONE line and not a census: this cut records that it was
+    /// seen, and nothing reacts.</para>
+    /// </summary>
+    /// <param name="rotaEyesOn">#804 · A guard on a round has registered the captain.</param>
+    /// <param name="atTheCounter">The captain is on a bar stool — where the keep is security (#781) and
+    /// everyone waiting to be served is behind you.</param>
+    /// <param name="companyAtTheTable">Somebody is in the chair opposite.</param>
+    /// <param name="overlooked">Somebody at a nearby seat has a clear line to the captain's hands.</param>
+    public static Watcher? WhoSaw(
+        bool rotaEyesOn, bool atTheCounter, bool companyAtTheTable, bool overlooked)
+    {
+        if (rotaEyesOn)
+        {
+            return Watcher.TheRota;
+        }
+        if (atTheCounter)
+        {
+            return Watcher.TheKeep;
+        }
+        if (companyAtTheTable)
+        {
+            return Watcher.TheChairOpposite;
+        }
+        return overlooked ? Watcher.TheNextTable : null;
     }
 
     /// <summary>Who it was, in a clause a sentence can be built round.</summary>
