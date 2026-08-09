@@ -344,6 +344,19 @@ public sealed class AJambIsNotASealedDoorTests
                     {
                         continue;
                     }
+
+                    // …AND THERE HAS TO BE A WALL THERE TO BE STOPPED BY.
+                    //
+                    // #775 put a second opening within a body's width of some of these cuts: the hall's own
+                    // front doors are cut into the spine's face a few du from a rib's mouth, and the garden
+                    // walk stands near the end of the field. So an approach offset sideways can now start in
+                    // front of ANOTHER hole — or off the end of the building altogether — and walking
+                    // through THAT proves nothing about walls. Asked of the deck rather than assumed: if the
+                    // line is not solid at this offset, this is not an experiment about a wall.
+                    if (!deck.Collides(cutRunsAlongX ? along : wallAt, cutRunsAlongX ? wallAt : along))
+                    {
+                        continue;
+                    }
                     tried++;
                     double dx = cutRunsAlongX ? 0 : PressStep, dy = cutRunsAlongX ? PressStep : 0;
                     for (int i = 0; i < Presses; i++)

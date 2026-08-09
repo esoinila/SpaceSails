@@ -515,4 +515,137 @@ public sealed class TheParkBehindTheBarTests
             Interior.CounterService.Card,
             d => d.Flavor.Contains("as far down as we are willing to say", StringComparison.Ordinal));
     }
+
+    // ---- #775 THE THOROUGHFARE ----------------------------------------------------------------------
+
+    /// <summary>
+    /// THE PARK IS A WAY THROUGH, NOT A CUL-DE-SAC — several gates, on the corridors that actually reach
+    /// it, and never one cut through the glass.
+    ///
+    /// <para>Owner, 2026-08-09: <i>"let's have multiple doors to the park... it is a kind of place people
+    /// like to walk through on their way."</i> #790 shipped it with ONE gate at the end of one corridor,
+    /// which makes the largest room in the game a destination and a dead end.</para>
+    ///
+    /// <para>The law is stated against the building rather than as a number: EVERY rib pointing the park's
+    /// way opens into it (so a route down one rib and up another crosses the green), and at least one gate
+    /// is not a rib at all -- the garden walk, which exists because the ribs' directions are seeded and on
+    /// a quarter of the shipped sites exactly one of them falls this way.</para>
+    ///
+    /// <para><b>Proven RED</b> against the world as #790 shipped it -- the gate list handed to CarvePark cut
+    /// back to the hall's own rib (<c>parkGateXs.Clear(); parkGateXs.Add(ribList[slot.Rib].X);</c>):</para>
+    /// <code>
+    /// 52 park(s) are a cul-de-sac rather than a way through:
+    ///   luna B1: 1 way(s) in -- the owner asked for more than one.
+    ///   luna B1: the rib at -103.4 points at the park and does not open into it.
+    ///   luna B1: the rib at -54.2 points at the park and does not open into it.
+    ///   luna B1: no gate that is not a rib -- the garden walk was never cut.
+    ///   ...
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void TheParkIsAThoroughfare()
+    {
+        var wrong = new List<string>();
+        int parks = 0, ways = 0;
+        var seen = new HashSet<int>();
+        (double _, double shaftY) = UndergroundComplex.ShaftAt(Field);
+
+        foreach ((string body, int level, UndergroundComplex.Hall hall, UndergroundComplex.Park park,
+            UndergroundComplex.FloorPlan floor) in EveryPark())
+        {
+            parks++;
+            ways += park.Ways.Count;
+            seen.Add(park.Ways.Count);
+
+            if (park.Ways.Count < 2)
+            {
+                wrong.Add($"  {body} B{-level}: {park.Ways.Count} way(s) in - the owner asked for more "
+                    + "than one.");
+            }
+
+            // The line every gate is cut in: the park's own near wall, which is whichever of its two long
+            // edges faces the spine.
+            double near = park.Y0 > shaftY ? park.Y0 : park.Y1;
+
+            foreach (SurfaceLayout.Doorway g in park.Ways)
+            {
+                double gx = (g.X1 + g.X2) / 2.0;
+                if (Math.Abs(g.Y1 - near) > 0.001 || Math.Abs(g.Y2 - near) > 0.001)
+                {
+                    wrong.Add($"  {body} B{-level}: a gate at y={g.Y1:F1} is not in the park's near wall "
+                        + $"(y={near:F1}).");
+                }
+                if (Math.Abs((g.X2 - g.X1) - (2 * UndergroundComplex.DoorHalf)) > 0.001)
+                {
+                    wrong.Add($"  {body} B{-level}: a gate is {g.X2 - g.X1:F1} du wide.");
+                }
+                if (gx > hall.X0 - 0.001 && gx < hall.X1 + 0.001)
+                {
+                    wrong.Add($"  {body} B{-level}: the gate at x={gx:F1} is cut THROUGH the window wall.");
+                }
+                if (!floor.Doorways.Any(d => d == g))
+                {
+                    wrong.Add($"  {body} B{-level}: the gate at x={gx:F1} is one the park knows about and "
+                        + "the plan does not draw.");
+                }
+
+                // AND IT LEADS SOMEWHERE: nothing poured across it, on its own line.
+                foreach (SurfaceLayout.Wall w in floor.Walls)
+                {
+                    bool onTheLine = Math.Abs(w.Y1 - near) < 0.05 && Math.Abs(w.Y2 - near) < 0.05;
+                    bool across = Math.Min(w.X1, w.X2) < g.X2 - 0.2 && Math.Max(w.X1, w.X2) > g.X1 + 0.2;
+                    if (onTheLine && across)
+                    {
+                        wrong.Add($"  {body} B{-level}: the gate at x={gx:F1} has a wall across it.");
+                        break;
+                    }
+                }
+            }
+
+            // EVERY CORRIDOR THAT REACHES IT OPENS INTO IT. That is the whole of "people walk through on
+            // their way": a rib that stops in rock beside the green is a route that goes round.
+            bool side = park.Y1 < shaftY;
+            foreach (UndergroundComplex.Rib r in floor.Ribs)
+            {
+                if (r.Down == side && !park.Ways.Any(g => Math.Abs(((g.X1 + g.X2) / 2.0) - r.X) < 0.001))
+                {
+                    wrong.Add($"  {body} B{-level}: the rib at {r.X:F1} points at the park and does not "
+                        + "open into it.");
+                }
+            }
+
+            // ...and one of them is NOT a rib. The floor's dice decide how many ribs fall this way; the
+            // garden walk is why "multiple" is a law rather than a hope.
+            if (!park.Ways.Any(g => !floor.Ribs.Any(
+                    r => Math.Abs(((g.X1 + g.X2) / 2.0) - r.X) < 0.001)))
+            {
+                wrong.Add($"  {body} B{-level}: no gate that is not a rib - the garden walk was never cut.");
+            }
+
+            // No two gates are the same gate.
+            for (int a = 0; a < park.Ways.Count; a++)
+            {
+                for (int b = a + 1; b < park.Ways.Count; b++)
+                {
+                    if (Math.Abs(park.Ways[a].X1 - park.Ways[b].X1) < 2 * UndergroundComplex.DoorHalf)
+                    {
+                        wrong.Add($"  {body} B{-level}: two gates share a jamb at x={park.Ways[a].X1:F1}.");
+                    }
+                }
+            }
+
+            // The hall's own gate is still the FIRST one, which is what the room's plate and its dev route
+            // are pinned to.
+            Assert.Equal(park.Gate, park.Ways[0]);
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} park(s) are a cul-de-sac rather than a way through:\n"
+            + string.Join("\n", wrong.Take(20)));
+        Assert.True(parks > 40, $"only {parks} parks were checked - this proved little.");
+        Assert.True(ways > 100, $"only {ways} gates were checked - this proved little.");
+        Assert.True(seen.Count > 1,
+            "every park in the game has the same number of gates - the ribs are doing nothing: "
+            + string.Join(", ", seen.Order()));
+    }
 }

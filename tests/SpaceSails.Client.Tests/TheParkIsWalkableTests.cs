@@ -312,13 +312,26 @@ public sealed class TheParkIsWalkableTests
                 $"{body} B{-level}: the park is already unwalkable ({reachable} of {park.Walk.Count}) — "
                 + "this experiment would prove nothing.");
 
-            // …and now the ONE gate is poured shut. Taken off the floor plan's published doorway rather than
-            // re-derived, so this cannot plug a hole that is not actually the door.
-            var plugged = new List<DeckPlan.Wall>(honest.Walls)
+            // …and now EVERY gate is poured shut. Taken off the room's own published list rather than
+            // re-derived, so this cannot plug a hole that is not actually a door — and cannot miss one.
+            //
+            // #775 · It used to plug exactly one, because there was exactly one. The park is a THOROUGHFARE
+            // now (owner: "it is a kind of place people like to walk through on their way"), and a sealing
+            // experiment that misses a door is an experiment that proves nothing while reporting that it
+            // proved something. The spirit is unchanged and is the whole point: with every way in bricked
+            // up, not one gravel sample may be reachable — anything that still is, is crossing the glass.
+            UndergroundComplex.FloorPlan drawn = UndergroundComplex.Build(body, level, Field);
+            var plugged = new List<DeckPlan.Wall>(honest.Walls);
+            foreach (SurfaceLayout.Doorway gate in park.Ways)
             {
-                new((float)park.Gate.X1, (float)(park.Gate.Y1 - 0.5),
-                    (float)park.Gate.X2, (float)(park.Gate.Y2 + 0.5), false, true),
-            };
+                Assert.Contains(gate, drawn.Doorways);
+                plugged.Add(new DeckPlan.Wall(
+                    (float)gate.X1, (float)(gate.Y1 - 0.5),
+                    (float)gate.X2, (float)(gate.Y2 + 0.5), false, true));
+            }
+            Assert.True(park.Ways.Count > 1,
+                $"{body} B{-level}: the park has one way in — #775's thoroughfare never happened, and this "
+                + "experiment is the one that would not notice.");
 
             var sealedDeck = new DeckPlan(
                 [.. plugged], honest.Consoles, honest.RoomLabels, honest.Backdrops,

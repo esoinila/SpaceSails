@@ -829,7 +829,19 @@ public sealed class TheCantinaHallTests
                 }
                 foreach (UndergroundComplex.LockedDoor door in floor.Locked)
                 {
-                    Assert.False(hall.Contains((door.X1 + door.X2) / 2, (door.Y1 + door.Y2) / 2),
+                    // #775 · …EXCEPT THE ONE THE ROOM OWNS. The goods hoist's shutter is a sealed door
+                    // standing inside the hall on purpose: freight access is a fixture in the counter's own
+                    // service band, and this building's grammar for "that will not open for you" is a locked
+                    // door with a plate on it. The exemption is by IDENTITY — the very segment the hall
+                    // published — so the law still catches a chamber's door swallowed by the room, which is
+                    // the thing it was written about.
+                    bool isTheHoist = hall.Freight is { } hoist
+                        && Math.Abs(door.X1 - hoist.Shutter.X1) < 0.001
+                        && Math.Abs(door.Y1 - hoist.Shutter.Y1) < 0.001
+                        && Math.Abs(door.X2 - hoist.Shutter.X2) < 0.001
+                        && Math.Abs(door.Y2 - hoist.Shutter.Y2) < 0.001;
+                    Assert.True(
+                        isTheHoist || !hall.Contains((door.X1 + door.X2) / 2, (door.Y1 + door.Y2) / 2),
                         $"{body} B{-level}: a sealed door is inside the hall.");
                 }
 

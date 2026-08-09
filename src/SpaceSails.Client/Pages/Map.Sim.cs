@@ -1066,6 +1066,54 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the only floor in the building with a park behind it
                 }
             }
+            else if (pair.StartsWith("frontdoor=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?frontdoor=1 boots the same B1 route and stops one room SHORT — out
+                // on the MAIN CORRIDOR, standing at the hall's own front door. The owner's complaint was
+                // that you had to go looking for the way in, so the row that proves the fix has to start
+                // OUTSIDE: a cheat that set the tester down inside the bar would be showing the wrong half
+                // of it.
+                string candidate = Uri.UnescapeDataString(pair["frontdoor=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _frontDoorCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the floor the hall is on
+                }
+            }
+            else if (pair.StartsWith("parkwalk=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?parkwalk=1 boots the same B1 route and stands the captain on the
+                // MAIN CORRIDOR at the mouth of the GARDEN WALK. ?park=1 sets a tester down inside the
+                // green, which is the wrong half of the owner's ask: "a kind of place people like to walk
+                // through on their way" is about the CROSSING, and a crossing has to be started outside.
+                string candidate = Uri.UnescapeDataString(pair["parkwalk=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkWalkCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("freight=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?freight=1 walks the last leg to the GOODS HOIST instead — the one
+                // fixture in the room the captain is refused, and that refusal is a PLATE rather than an
+                // absence (#757's lesson), so it has to be stood in front of before it says anything.
+                string candidate = Uri.UnescapeDataString(pair["freight=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _freightCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
             else if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
             {
                 // #757 dev cheat: /map?approach=1 makes the next WAIT at a table you took alone bring

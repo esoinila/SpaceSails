@@ -140,6 +140,33 @@ public static class DevStarts
             + "masts against the far wall. The field book files the attendance line on the first step "
             + "(#759).",
             "/map?park=1"),
+        // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
+        // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
+        // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the
+        // one place none of the six canteen cheats above ever left a tester standing.
+        new("🚪", "The canteen's front door, from the corridor",
+            "B1 of a deep site, out on the MAIN CORRIDOR facing the canteen's own entrance — the plate on "
+            + "the wall beside you, the door in it, and the bar through the door. Walk in. Then walk the "
+            + "corridor and count the others: a hall this size is required to have them, and each one is "
+            + "numbered and leads somewhere (#775).",
+            "/map?frontdoor=1"),
+        new("🚛", "The goods hoist that will not take you",
+            "The same hall, standing at the GOODS HOIST at the end of the counter's own service band — "
+            + "eighty seats of food and twelve beds of produce do not arrive through a personnel door. It "
+            + "is drawn, it is labelled, a body stops at it, and pressing it tells you whose side of the "
+            + "shutter you are on (#775).",
+            "/map?freight=1"),
+        // #775 · THE PARK AS A WAY THROUGH. Owner: "let's have multiple doors to the park… it is a kind of
+        // place people like to walk through on their way." The ?park=1 row above sets a tester down INSIDE
+        // it, which is the wrong half of this: the crossing is the feature, so this one starts on the main
+        // corridor at the mouth of the garden walk and asks them to come out somewhere else.
+        new("🌳🚶", "Straight through the park, and out the other side",
+            "B1 of a deep site, out on the MAIN CORRIDOR at the mouth of the GARDEN WALK — the passage "
+            + "stencilled ⟶ THE PARK that every floor has, whichever way its ribs happen to fall. Walk "
+            + "down it, cross the gravel, and come out of a DIFFERENT gate into a different corridor: 2–5 "
+            + "ways in, every rib that points at the green opens into it, and the hall-side wall is still "
+            + "glass (#775, #759).",
+            "/map?parkwalk=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

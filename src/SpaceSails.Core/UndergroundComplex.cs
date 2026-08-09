@@ -1244,7 +1244,8 @@ public static class UndergroundComplex
         double X0, double Y0, double X1, double Y1, int SeatTarget, IReadOnlyList<Cabinet> Cabinets,
         double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0,
         string? ArtUrl = null, IReadOnlyList<SpotArt>? Spots = null,
-        IReadOnlyList<(double X, double Y)>? Stools = null)
+        IReadOnlyList<(double X, double Y)>? Stools = null,
+        IReadOnlyList<SurfaceLayout.Doorway>? Doors = null, FreightLift? Freight = null)
     {
         /// <summary>#780 · The furniture pictures, never null — a caller drawing a room must not have to
         /// ask whether "no spots" means an empty list or a missing one.</summary>
@@ -1254,6 +1255,24 @@ public static class UndergroundComplex
         /// whose counter does not serve has an empty row, which is a true statement about it and not a
         /// missing one.</summary>
         public IReadOnlyList<(double X, double Y)> StoolRow => Stools ?? [];
+
+        /// <summary>#775 · EVERY WAY IN AND OUT OF THIS ROOM, published rather than inferred — the same
+        /// discipline #587 applied to the ribs, for the same reason: a law about how many doors a hall has
+        /// cannot be written against a list nobody keeps.
+        ///
+        /// <para>It holds BOTH kinds and does not distinguish them, because egress does not: the gaps in
+        /// the rib's own face (which the hall never cut — see the module's header) and the front doors cut
+        /// into the spine's face for #775. They come off one carve, out of the two functions that already
+        /// own those two walls, so a door here is a gap there by construction.</para></summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> Openings => Doors ?? [];
+
+        /// <summary>#775 · How many doors a room this size is REQUIRED to have — asked of its own published
+        /// box, so a hall that grows a du grows its egress duty with it.</summary>
+        public int EgressRequired => HallEgressDoors(FloorDu2);
+
+        /// <summary>#775 · How much floor it has. The unit the egress law and the owner's "a canteen this
+        /// size" are both stated in.</summary>
+        public double FloorDu2 => (X1 - X0) * (Y1 - Y0);
 
         /// <summary>Is the captain inside the hall? Cabinets are inside it, by construction.</summary>
         public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
@@ -1348,8 +1367,23 @@ public static class UndergroundComplex
         SurfaceLayout.Doorway Gate,
         SurfaceLayout.Wall Window,
         double X, double Y, double FigureX, double FigureY, string FigurePlate = "",
-        string? ArtUrl = null)
+        string? ArtUrl = null,
+        IReadOnlyList<SurfaceLayout.Doorway>? Gates = null)
     {
+        /// <summary>
+        /// #775 · EVERY WAY IN, and there is more than one now.
+        ///
+        /// <para>Owner, 2026-08-09: <i>"let's have multiple doors to the park… it is a kind of place people
+        /// like to walk through on their way."</i> That is what a central park is FOR — the crossing, not
+        /// the visit — and #790 shipped it with one gate at the end of one corridor, which makes it a
+        /// destination and a cul-de-sac.</para>
+        ///
+        /// <para><see cref="Gate"/> is still the hall's own — the first of these, and the one the room's
+        /// plate and its dev route are pinned to. This is all of them, published for the same reason
+        /// <see cref="Hall.Openings"/> is: a law about how a room is entered cannot be written against a
+        /// list nobody keeps.</para></summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> Ways => Gates ?? [Gate];
+
         /// <summary>Is the captain in the park? The box the walls were laid on — the hall's own law
         /// (<see cref="Hall.Contains"/>), for the same reason: a refuge-sized containment box in a room this
         /// size would say "you are not in the park" from almost everywhere in the park.</summary>
@@ -1931,6 +1965,30 @@ public static class UndergroundComplex
         // this list that is not in x order — which is the whole of #587. See SpineFace.
         ribXs.Add((shaftX, false));
 
+        // #775 · THE DOORS THE HALL CUTS IN THE SPINE'S OWN FACE, filled in by the carve below and read by
+        // the wall builder — one list, so the gap the corridor leaves and the door the hall publishes are
+        // the same gap. #585's law, said about the one wall the hall did not previously own a hole in.
+        //
+        // Owner, walking the new B1: "the bar/canteen needs DOORS ON THE MAIN CORRIDOR — today you have to
+        // really look for the way in; a venue's entrance should find YOU." He was right about the topology:
+        // the hall's near wall IS the spine's face, and until this list existed that face ran unbroken past
+        // it, so a hundred and ten du of canteen frontage on the building's only through-corridor had no
+        // way in at all. You had to turn down the rib and find a gap in the side wall.
+        var hallSpineCuts = new List<(double Lo, double Hi)>();
+        double hallSpineFaceY = double.NaN;
+
+        // #775 · …and the ONE mouth on that face that is a corridor rather than a door: the garden walk down
+        // to the park. Kept in its own list because the two are drawn differently and always were — a
+        // doorway gets an imported leaf and a plate, a corridor mouth gets neither, exactly as the ribs'
+        // mouths get neither.
+        var spineMouths = new List<(double Lo, double Hi)>();
+
+        // #775 · The park's own circulation, decided with the park and read by the rib loop below.
+        var parkGateXs = new List<double>();
+        double? gardenWalkX = null;
+        bool parkSide = false;
+        double parkNear = double.NaN;   // the line every gate is cut in: the park's own near wall
+
         // One face of the spine, built as segments that stop either side of every mouth cut into it.
         void SpineFace(double y, Func<double, bool, bool> cutHere)
         {
@@ -1952,34 +2010,38 @@ public static class UndergroundComplex
             // RibFace already sorts its cuts for precisely this reason. Both faces sort now, and the cursor
             // can only ever move forward — so an overlapping pair of mouths degrades to one wide mouth
             // rather than to a wall.
-            var mouths = new List<double>();
+            //
+            // #775 · …and a mouth is a SPAN now rather than a centre, because the two things cut into this
+            // wall are no longer the same width: a rib mouth is the corridor's own CorridorHalf and a hall's
+            // front door is DoorHalf, the number every other door in the building is cut to. One sweep, one
+            // sorted list of spans, and the cursor still only ever moves forward.
+            var mouths = new List<(double Lo, double Hi)>();
             foreach ((double rx, bool down) in ribXs)
             {
                 if (cutHere(rx, down))
                 {
-                    mouths.Add(rx);
+                    mouths.Add((rx - CorridorHalf, rx + CorridorHalf));
                 }
             }
-            mouths.Sort();
+            if (Math.Abs(y - hallSpineFaceY) < 0.001)
+            {
+                mouths.AddRange(hallSpineCuts);
+                mouths.AddRange(spineMouths);
+            }
+            mouths.Sort((a, b) => a.Lo.CompareTo(b.Lo));
 
             double cursor = left;
-            foreach (double rx in mouths)
+            foreach ((double lo, double hi) in mouths)
             {
-                double near = Math.Max(cursor, rx - CorridorHalf);
+                double near = Math.Max(cursor, lo);
                 if (near > cursor)
                 {
                     walls.Add(new(cursor, y, near, y, true));
                 }
-                cursor = Math.Max(cursor, rx + CorridorHalf);
+                cursor = Math.Max(cursor, hi);
             }
             walls.Add(new(cursor, y, right, y, true));
         }
-
-        // #585 · The lift alcove hangs off the TOP face, so that face needs a mouth for it too — otherwise
-        // the car opens into a sealed box and the captain cannot reach their own way out. The A* audit
-        // reported this as "the lift cannot be reached from the lift", which is as clear as a guard gets.
-        SpineFace(shaftY + CorridorHalf, (rx, down) => !down || Math.Abs(rx - shaftX) < 0.001);
-        SpineFace(shaftY - CorridorHalf, (_, down) => down);
 
         // BOTH ends shut. The missing right-hand cap is the "open end" itself.
         walls.Add(new(left, shaftY - CorridorHalf, left, shaftY + CorridorHalf, true));
@@ -2047,10 +2109,14 @@ public static class UndergroundComplex
             (double hmouth, double hfar) = RibReach(field, shaftY, ribList[slot.Rib].Down, hall: true);
             bool glazed = HasPark(bodyId, HallUseOn(bodyId, level));
             hallSite = CarveHall(
-                walls, glass, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
+                walls, glass, hallSpineCuts, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
                 shaftX, left, right, roomScale, glazed);
             if (hallSite is { } built)
             {
+                // #775 · WHICH FACE OF THE SPINE THE HALL'S FRONT DOORS ARE CUT IN. The hall's near wall IS
+                // that face (v = 0 in the carve's own axes), so this is the carve's own `mouth` and never a
+                // second opinion about it.
+                hallSpineFaceY = hmouth;
                 claimed.Add((
                     built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
                     built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
@@ -2061,18 +2127,126 @@ public static class UndergroundComplex
                 // the largest single room in the building and everything laid afterwards has to see it.
                 if (glazed)
                 {
+                    // ── #775 · EVERY CORRIDOR THAT REACHES THE GREEN, DECIDED BEFORE THE WALL IS POURED ──
+                    //
+                    // Owner: "let's have multiple doors to the park… it is a kind of place people like to
+                    // walk through on their way." Two sources, and both are known here — which is the whole
+                    // reason this list is built before the carve rather than patched into the wall after it:
+                    //
+                    //   · every RIB pointing the park's way. Their far ends stop RibReachDu off the spine
+                    //     and the park's near wall is HallRibExtraDu beyond that, so the rib loop runs each
+                    //     of them the extra sixteen du and opens where it arrives — the hall's rib gate,
+                    //     said about the other three. A route down one rib and up another now crosses the
+                    //     green instead of going round it.
+                    //   · THE GARDEN WALK, always, because the ribs' directions are seeded and on a quarter
+                    //     of the shipped sites exactly one of them points this way. A park with one door is
+                    //     a cul-de-sac however the dice fell.
+                    parkSide = ribList[slot.Rib].Down;
+                    parkNear = hfar;
+                    foreach (Rib r in ribList)
+                    {
+                        if (r.Down == parkSide)
+                        {
+                            parkGateXs.Add(r.X);
+                        }
+                    }
+                    gardenWalkX = GardenWalkX(ribList, parkSide, built.Hall, shaftX, left, right);
+                    if (gardenWalkX is { } gx)
+                    {
+                        parkGateXs.Add(gx);
+                    }
+
                     park = CarvePark(
                         walls, bodyId, level, built.Hall, built.Glass!.Value, ribList[slot.Rib],
-                        hfar, left, right, field);
+                        hfar, left, right, field, parkGateXs);
                     claimed.Add((
                         park.Value.X0 - 1.5, park.Value.Y0 - 1.5,
                         park.Value.X1 + 1.5, park.Value.Y1 + 1.5));
+
+                    // ── AND THE WALK ITSELF · two walls down to the green, and the gate at the end of them.
+                    //
+                    // Built here, with the park, so the claim ledger sees it before a single chamber is laid:
+                    // a passage is the one thing that may never be covered (#585), and the rooms either side
+                    // of a rib are placed later out of ground this one now stands on.
+                    if (gardenWalkX is { } wx)
+                    {
+                        double near = hmouth, farLine = hfar;
+                        walls.Add(new(wx - CorridorHalf, near, wx - CorridorHalf, farLine, true));
+                        walls.Add(new(wx + CorridorHalf, near, wx + CorridorHalf, farLine, true));
+                        walls.Add(new(wx - CorridorHalf, farLine, wx - DoorHalf, farLine, true));
+                        walls.Add(new(wx + DoorHalf, farLine, wx + CorridorHalf, farLine, true));
+                        spineMouths.Add((wx - CorridorHalf, wx + CorridorHalf));
+                        doorways.Add(new(wx - DoorHalf, farLine, wx + DoorHalf, farLine));
+                        claimed.Add((
+                            wx - CorridorHalf - 1.5, Math.Min(near, farLine) - 1.5,
+                            wx + CorridorHalf + 1.5, Math.Max(near, farLine) + 1.5));
+                        labels.Add(new(wx, near + (parkSide ? -4.5 : 4.5), ParkWaySign));
+                    }
                 }
             }
             else
             {
                 hallSlot = null;   // the ground would not take one. The floor keeps its ordinary canteen.
             }
+        }
+
+        // ── #585/#775 · THE SPINE'S TWO LONG FACES, BUILT LAST OF THE THREE ──────────────────────────────
+        //
+        // The lift alcove hangs off the TOP face, so that face needs a mouth for it too — otherwise the car
+        // opens into a sealed box and the captain cannot reach their own way out. The A* audit reported this
+        // as "the lift cannot be reached from the lift", which is as clear as a guard gets.
+        //
+        // #775 · …and these two lines used to stand above the hall carve, which is why the hall could not
+        // have a front door: the wall was already poured by the time anybody knew where the room was. They
+        // are the SAME two calls, moved after the carve, reading the one list of cuts the carve filled in.
+        // Nothing else between here and there touches this wall — walls are a set, not a sequence.
+        SpineFace(shaftY + CorridorHalf, (rx, down) => !down || Math.Abs(rx - shaftX) < 0.001);
+        SpineFace(shaftY - CorridorHalf, (_, down) => down);
+
+        // #775 · THE FRONT DOORS, PUBLISHED FROM THE VERY LIST THE WALL WAS CUT FROM. #585's one-gap law
+        // with no room left for a second opinion: the segments above stop at these spans and the leaves
+        // below are drawn across them, off one list, in one method.
+        //
+        // …and nothing is drawn past the seam, exactly as AddRoomsAlong has it: a gallery has no door in it,
+        // only a way through, so the gap is cut and no imported leaf is hung in it.
+        if (!IsFound(bodyId, level))
+        {
+            // …and the plate goes on the CORRIDOR side of each of them, which is the whole point of the
+            // feature: a walker on the spine is told what the wall beside them is before they have to
+            // wonder. The first cut is the entrance (it was placed at the lift), the rest are the doors a
+            // code put there and they say so.
+            //
+            // BESIDE the door and never over it, on the side the walker is coming from. A plate centred on
+            // its own doorway is a plate with the captain standing on top of it the moment they arrive —
+            // watched happen in the browser on the first boot of ?frontdoor=1, the dot sitting squarely on
+            // the word CANTEEN — and a sign you have to step off to read is not signage.
+            double plateY = hallSpineFaceY > shaftY ? hallSpineFaceY - 2.0 : hallSpineFaceY + 2.0;
+            double aside = DoorHalf + 3.0;
+            for (int d = 0; d < hallSpineCuts.Count; d++)
+            {
+                (double lo, double hi) = hallSpineCuts[d];
+                doorways.Add(new(lo, hallSpineFaceY, hi, hallSpineFaceY));
+
+                double cx = (lo + hi) / 2.0;
+                double plateX = Math.Clamp(
+                    cx + (cx > shaftX ? -aside : aside),
+                    hallSite is { } signed ? signed.Hall.X0 : cx,
+                    hallSite is { } bounded ? bounded.Hall.X1 : cx);
+                labels.Add(new(plateX, plateY,
+                    d == 0
+                        ? HallEntrancePlate(bodyId, HallUseOn(bodyId, level))
+                        : HallEgressPlate(d + 1)));
+            }
+        }
+
+        // #775 · AND THE FREIGHT DOOR, HUNG. The shutter is a locked door like every other door down here
+        // that will not open — drawn shut, walled behind, and its plate is what [E] reads — so the refusal
+        // is TOLD in the grammar the building already speaks, and no new client idiom was invented for it.
+        if (hallSite is { } withFreight && withFreight.Hall.Freight is { } hoist)
+        {
+            locked.Add(new(
+                hoist.Shutter.X1, hoist.Shutter.Y1, hoist.Shutter.X2, hoist.Shutter.Y2, hoist.Plate));
+            labels.Add(new(hoist.PlateX, hoist.PlateY, FreightSign));
         }
 
         // ── THE RIBS. Cross corridors off the spine, with rooms flanking them.
@@ -2115,11 +2289,28 @@ public static class UndergroundComplex
             // in the building is cut to, and that gap is the ONLY way a body gets into the park. (The wall
             // it shares with the hall is glass — an eye crosses it and nothing else does.) A sealed mouth
             // with a distance stencilled on it here would be a sign lying about a door you can see through.
-            if (park is not null && hallRib)
+            //
+            // #775 · …AND IT IS NO LONGER THE ONLY ONE. Owner: "let's have multiple doors to the park — it
+            // is a kind of place people like to walk through on their way." Every rib pointing the park's
+            // way now runs the extra HallRibExtraDu that the hall's rib always ran and opens where it
+            // arrives, so a route down one rib and up another crosses the green instead of going round it.
+            // The extension is corridor, not room: the chambers were laid against `far` and nothing stands
+            // in the sixteen du beyond it — that is the same unused band the park itself came out of.
+            bool parkRib = park is not null && down == parkSide;
+            if (parkRib && !hallRib)
             {
-                doorways.Add(new(x - DoorHalf, far, x + DoorHalf, far));
-                walls.Add(new(x - CorridorHalf, far, x - DoorHalf, far, true));
-                walls.Add(new(x + DoorHalf, far, x + CorridorHalf, far, true));
+                walls.Add(new(x - CorridorHalf, far, x - CorridorHalf, parkNear, true));
+                walls.Add(new(x + CorridorHalf, far, x + CorridorHalf, parkNear, true));
+            }
+
+            if (parkRib)
+            {
+                // ONE line for all of them — the park's own near wall, which for the hall's rib is its own
+                // `far` and for every other rib is sixteen du past it. A second answer about where a gate
+                // sits is how this file's oldest bug was written.
+                doorways.Add(new(x - DoorHalf, parkNear, x + DoorHalf, parkNear));
+                walls.Add(new(x - CorridorHalf, parkNear, x - DoorHalf, parkNear, true));
+                walls.Add(new(x + DoorHalf, parkNear, x + CorridorHalf, parkNear, true));
             }
             else
             {
@@ -2247,6 +2438,123 @@ public static class UndergroundComplex
     /// <summary>#751 · The clear strip inside the hall's doors. Nothing is laid in it — a doorway a captain
     /// has to path around a table to use is #585's stranded room with better furniture.</summary>
     public const double HallDoorAisleDu = 4.0;
+
+    // ── #775 · CIRCULATION: PEOPLE-DOORS, SAFETY-DOORS, AND WHERE THE GOODS COME IN ──────────────────────
+    //
+    // Owner, walking the new B1 the night #790 landed, three complaints in one breath:
+    //
+    //   (1) "The bar/canteen needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way
+    //       in; a venue's entrance should find YOU."
+    //   (2) "A canteen this size would have MORE THAN TWO DOORS just for safety reasons — egress is a code,
+    //       and the base was built by people who file paperwork about codes."
+    //   (3) "The facility needs FREIGHT ACCESS somewhere — a freight elevator or a long drive-in ramp for
+    //       supplies; eighty seats of food and twelve beds of produce do not arrive through a personnel
+    //       door."
+    //
+    // All three are one law said three times — THE LAYOUT MATCHES ITS FUNCTION — and all three are about
+    // circulation rather than about rooms: people-doors where people come from, safety-doors because rules,
+    // freight where freight goes.
+    //
+    // WHY THE ROOM HAD NO FRONT DOOR IN THE FIRST PLACE, because it is not an oversight anybody could have
+    // seen from the plan. The hall's near wall IS the spine's own face (#751: "the front wall and the near
+    // wall are not built at all — they are the rib's face and the spine's"), and the spine's faces were
+    // poured BEFORE anybody knew where the hall was going to stand. So the one wall a walker on the main
+    // corridor actually meets was the one wall the hall was structurally incapable of cutting. The carve
+    // hands the wall builder a list of spans now, and the wall builder runs after it.
+
+    /// <summary>#775 · HOW MUCH FLOOR ONE REQUIRED EGRESS DOOR COVERS. The one number the code-mandated
+    /// door count is derived from, so nothing anywhere types how many doors a hall has.
+    ///
+    /// <para>Not a guess about du: the shipped halls run 2 100 – 7 300 du² and a du is about a metre of the
+    /// deck the captain walks, which puts the biggest of them at the floor area of a real assembly hall.
+    /// One way out per fifteen hundred of those is a conservative reading of every occupancy code anybody
+    /// ever filed, and the people who built this place filed all of them.</para></summary>
+    public const double HallDu2PerEgressDoor = 1500.0;
+
+    /// <summary>#775 · THE FLOOR UNDER THE EGRESS COUNT — the owner's "more than two doors" as an integer.
+    /// A room with two ways out has one way out the day one of them is where the fire is.</summary>
+    public const int HallMinDoors = 3;
+
+    /// <summary>#775 · HOW MANY DOORS A HALL OF THIS FLOOR AREA MUST HAVE. Published, and asked by BOTH the
+    /// carve and the guard — a second opinion about a door count is the mirrored-constant bug with a whole
+    /// building to be wrong in.</summary>
+    public static int HallEgressDoors(double floorDu2) => Math.Max(
+        HallMinDoors, (int)Math.Ceiling(floorDu2 / HallDu2PerEgressDoor));
+
+    /// <summary>#775 · THE FRONT DOOR GOES WHERE THE WALKER IS, and this is how near it may be allowed to
+    /// get to the corners of the room it is cut into: a door's own half-width, and a little.</summary>
+    public const double HallSpineDoorEdgeDu = DoorHalf + 2.0;
+
+    /// <summary>#775 · How wide the goods hoist's car is. Twelve du by the counter band's own five — the
+    /// footprint of something a pallet goes into, parked in the one part of the room the customer never
+    /// stands in.</summary>
+    public const double FreightCarWidthDu = 12.0;
+
+    /// <summary>
+    /// #775 · THE GOODS HOIST — freight access, on the deck, drawn and collidable, and shut.
+    ///
+    /// <para>Owner: <i>"eighty seats of food and twelve beds of produce do not arrive through a personnel
+    /// door."</i> It is parked in the counter's own service band — the band #751 closed off because it is
+    /// the one part of a bar the customer never stands in — at the end of that band nearest the park's
+    /// gate, which is the end the produce comes in by. Behind it, through the glass, are the beds it exists
+    /// to carry; in front of it is the hall floor it feeds. One fixture, both jobs, no sentence needed.</para>
+    ///
+    /// <para><b>The captain cannot ride it, and is TOLD so.</b> The shutter is a
+    /// <see cref="LockedDoor"/> — the building's own grammar for a door that will not open: drawn shut, a
+    /// wall poured behind it, and its plate is exactly what [E] reads. Nothing here simulates freight and
+    /// nothing pretends to; the fixture exists, it is labelled, a body stops at it, and the refusal is a
+    /// sentence rather than an absence (#757's lesson about what a player cannot read).</para>
+    /// </summary>
+    /// <param name="X0">The car's box, min/max normalised where it is carved.</param>
+    /// <param name="Shutter">The roller door in the counter's line, hall side.</param>
+    /// <param name="PlateX">Where the plate is read from — on the HALL floor, in front of the shutter.</param>
+    public readonly record struct FreightLift(
+        double X0, double Y0, double X1, double Y1,
+        SurfaceLayout.Doorway Shutter, double PlateX, double PlateY, string Plate)
+    {
+        /// <summary>Is this spot inside the car? The box the walls were laid on, and nothing else — the
+        /// hall's own law (<see cref="Hall.Contains"/>).</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+    }
+
+    /// <summary>#775 · What is stencilled on the goods hoist's shutter, and therefore what the captain is
+    /// told when they press it. The bureaucracy's own register: a number, a window, and whose side of the
+    /// shutter you are on — no explanation, no apology, and not one word about the building.
+    ///
+    /// <para>It carries no glyph of its own because the sign console already hangs the 🔒 on it, which is
+    /// the building's grammar for a door that will not open (#585). Two glyphs on one plate is a plate
+    /// nobody reads.</para></summary>
+    public const string FreightPlate =
+        "GOODS HOIST 1 · DELIVERIES 04:00–06:00 · CREW SIDE ONLY";
+
+    /// <summary>#775 · What is painted on the floor in front of it, so the fixture reads as a fixture from
+    /// across the room rather than as one more shut door in a building full of them.</summary>
+    public const string FreightSign = "🚛 GOODS HOIST 1";
+
+    /// <summary>#775 · What is painted beside the hall's main front door, the one nearest the lift. The
+    /// venue announcing ITSELF on the corridor a walker is already on — the owner's <i>"a venue's entrance
+    /// should find YOU"</i>, which a plate reading only ENTRANCE would not do: a door labelled "the way in"
+    /// says nothing about what it is the way in TO.
+    ///
+    /// <para>Composed from the room's OWN sign rather than spelled a second time, and cut at its first
+    /// separator: <see cref="AmenitySigns"/> writes the venue, then who it is for, then the pass rule, and
+    /// only the first of those three belongs on a corridor at walking pace. So the bar's front door says
+    /// <c>🍸 CANTEEN 1 · ENTRANCE</c> and the staff mess's says <c>🍽 CANTEEN 2 · ENTRANCE</c>, and the day
+    /// either room is renamed both plates follow without anybody remembering this one exists.</para></summary>
+    public static string HallEntrancePlate(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        string plate = AmenitySigns(bodyId, use).Plate;
+        int cut = plate.IndexOf(" · ", StringComparison.Ordinal);
+        return $"{(cut < 0 ? plate : plate[..cut])} · ENTRANCE";
+    }
+
+    /// <summary>#775 · What is painted beside the hall's OTHER front doors. They exist because a code says
+    /// a room this size has them, so they say what a code-mandated door says and nothing else — and the
+    /// number is the one thing that makes a corridor of them read as a building rather than as a wall with
+    /// holes in it.</summary>
+    public static string HallEgressPlate(int number) =>
+        $"⇥ EXIT {number} · KEEP CLEAR";
 
     /// <summary>#751 · How deep the cabinets run off the hall's outer wall.</summary>
     public const double HallCabinetDepthDu = 10.0;
@@ -2459,6 +2767,7 @@ public static class UndergroundComplex
     /// </summary>
     private static HallSite? CarveHall(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
+        List<(double Lo, double Hi)> spineCuts,
         string bodyId, int level, List<Rib> ribs, int ribIndex, int side,
         double mouth, double far, double shaftX, double leftEnd, double rightEnd, double roomScale,
         bool glazed)
@@ -2511,9 +2820,43 @@ public static class UndergroundComplex
         double counterV = length - HallCounterBandDu;
         double counterU0 = HallDoorAisleDu;
         double counterU1 = width - cabBand - HallEdgePadDu;
-        walls.Add(new(X(counterU0), Y(counterV), X(counterU1), Y(counterV), true));
+
+        // ── #775 · AND THE GOODS HOIST, PARKED AT ONE END OF THAT BAND ─────────────────────────────────
+        //
+        // The band is already a sealed strip the customer never stands in, five du deep and the length of
+        // the bar. The hoist is the first twelve du of it, divided off by one wall — so the car's four
+        // sides are the band's end cap, that new divider, the room's own far wall behind it, and the
+        // shutter in the counter's line in front. Four walls, one of them new: freight access is a fixture
+        // in a room somebody already carved, which is the cheapest honest version of the owner's ask.
+        //
+        // WHICH END. The one nearest u = 0, which on the hall's rib is the end the park's gate is on — the
+        // beds' produce comes in the gate at the far end of the corridor and goes straight into the hoist,
+        // and the counter that serves it is on the other side of the same divider. Nothing says any of
+        // that; the geometry is the sentence.
+        //
+        // …and it is only fitted where BOTH halves of the band survive it: a car narrower than a doorway is
+        // not a freight lift, and a bar left with less counter than that is not a bar. Every hall the game
+        // ships clears both by a wide margin; the clause is here so the day one does not, the floor says so
+        // by having no hoist rather than by having a serving hatch.
+        double hoistU1 = Math.Min(counterU0 + FreightCarWidthDu, counterU1);
+        bool hoisted = hoistU1 - counterU0 >= 2 * DoorHalf && counterU1 - hoistU1 >= 2 * DoorHalf;
+        double serveU0 = hoisted ? hoistU1 : counterU0;
+
+        walls.Add(new(X(serveU0), Y(counterV), X(counterU1), Y(counterV), true));
         walls.Add(new(X(counterU0), Y(counterV), X(counterU0), Y(length), true));
         walls.Add(new(X(counterU1), Y(counterV), X(counterU1), Y(length), true));
+
+        FreightLift? freight = null;
+        if (hoisted)
+        {
+            walls.Add(new(X(hoistU1), Y(counterV), X(hoistU1), Y(length), true));   // the car's divider
+            freight = new FreightLift(
+                Math.Min(X(counterU0), X(hoistU1)), Math.Min(Y(counterV), Y(length)),
+                Math.Max(X(counterU0), X(hoistU1)), Math.Max(Y(counterV), Y(length)),
+                new SurfaceLayout.Doorway(X(counterU0), Y(counterV), X(hoistU1), Y(counterV)),
+                X((counterU0 + hoistU1) / 2.0), Y(counterV - HallEdgePadDu),
+                FreightPlate);
+        }
 
         // #780 · …and THE PICTURE OF IT, over the same three walls' own box. Owner: "see how in the space
         // bars we have the image of bar desk at the spot where the bar desk is." Built HERE, out of the very
@@ -2522,13 +2865,18 @@ public static class UndergroundComplex
         // set this project's captain down inside a wall twice. Only where a counter actually serves: the
         // washroom has no bar, and a picture of one over a room's back wall would be the game saying
         // something about that room that is not true.
+        //
+        // #775 · …and it starts where the SERVING counter starts, which since the goods hoist took the end
+        // of the band is not where the band starts. A bar-desk photograph stretched over the hoist's own
+        // twelve du would be a picture of a counter drawn across a freight car — the drawn room and the
+        // carved room disagreeing about one wall, which is precisely the split #759 kept the glass out of.
         var spots = new List<SpotArt>(1);
         if (CounterArtFor(bodyId, use) is { } deskArt)
         {
             spots.Add(new SpotArt(
                 deskArt,
-                Math.Min(X(counterU0), X(counterU1)), Math.Min(Y(counterV), Y(length)),
-                Math.Max(X(counterU0), X(counterU1)), Math.Max(Y(counterV), Y(length))));
+                Math.Min(X(serveU0), X(counterU1)), Math.Min(Y(counterV), Y(length)),
+                Math.Max(X(serveU0), X(counterU1)), Math.Max(Y(counterV), Y(length))));
         }
 
         // ── #792 · AND THE STOOLS ALONG THE FRONT OF IT ────────────────────────────────────────────────
@@ -2617,6 +2965,79 @@ public static class UndergroundComplex
             walls.Add(new(X(u + ph), Y(v - ph), X(u + ph), Y(v + ph), true));
         }
 
+        // ── #775 · THE DOORS · WHAT THE ROOM ALREADY HAD, AND WHAT A CODE SAYS IT MUST HAVE ─────────────
+        //
+        // WHAT IT ALREADY HAD, asked of the function that cut them rather than counted off the wall. The
+        // hall never opened a door in the rib's face — RibFace leaves a gap at every room slot on that
+        // column and those gaps ARE the hall's doors (#751). RoomCentresAlong is the one function that says
+        // where a slot is, and it is called here for the same reason the wall builder and the room builder
+        // both call it: a second answer about where a door is, is this file's oldest and most expensive bug.
+        var doors = new List<SurfaceLayout.Doorway>();
+        foreach (double cy in RoomCentresAlong(mouth, far, down, roomScale))
+        {
+            doors.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
+        }
+
+        // WHAT THE CODE SAYS. The count comes off the room's own published floor (HallEgressDoors) and the
+        // shortfall is cut into the spine's face — never fewer than one, because the owner's first
+        // complaint is not about arithmetic: a venue with no door on the main corridor has no entrance at
+        // all, whatever the total says.
+        double floorDu2 = (x1 - x0) * (y1 - y0);
+        int wantSpine = Math.Max(1, HallEgressDoors(floorDu2) - doors.Count);
+
+        // WHERE THEY GO, in the hall's own u. Clear of both corners, and clear of the cabinet band — a
+        // front door opening into the back of a negotiating cabinet is #585's stranded room told from the
+        // corridor side.
+        double duLo = HallSpineDoorEdgeDu;
+        double duHi = width - cabBand - HallSpineDoorEdgeDu;
+
+        // THE FIRST ONE IS THE ENTRANCE, AND IT GOES WHERE THE WALKER IS. #751 already puts the hall on the
+        // column nearest the car; this is that same rule one step further in, and it is the whole of the
+        // owner's "a venue's entrance should find YOU": the captain steps out of the lift onto the spine,
+        // turns, and the door is the nearest thing on the wall.
+        var atU = new List<double>();
+        if (duHi > duLo)
+        {
+            double toShaft = side * (shaftX - faceX);   // the shaft, in this hall's own outward axis
+            atU.Add(Math.Clamp(toShaft, duLo, duHi));
+
+            // THE REST ARE SPREAD, each one put as far from every door already placed as the wall allows —
+            // which is what a fire officer means by spread, and what a fixed pitch stops meaning the moment
+            // the entrance is not in the middle. Placed only while they can still be a door's width and a
+            // half apart: two exits sharing a jamb are one exit with a thick frame.
+            const int samples = 240;
+            while (atU.Count < wantSpine)
+            {
+                double best = duLo, bestGap = -1;
+                for (int s = 0; s <= samples; s++)
+                {
+                    double u = duLo + ((duHi - duLo) * s / samples);
+                    double gap = double.MaxValue;
+                    foreach (double placed in atU)
+                    {
+                        gap = Math.Min(gap, Math.Abs(placed - u));
+                    }
+                    if (gap > bestGap)
+                    {
+                        (bestGap, best) = (gap, u);
+                    }
+                }
+                if (bestGap < 3 * DoorHalf)
+                {
+                    break;   // the wall has run out of room. The guard says so out loud rather than here.
+                }
+                atU.Add(best);
+            }
+        }
+
+        foreach (double u in atU)
+        {
+            double dx0 = Math.Min(X(u - DoorHalf), X(u + DoorHalf));
+            double dx1 = Math.Max(X(u - DoorHalf), X(u + DoorHalf));
+            spineCuts.Add((dx0, dx1));
+            doors.Add(new SurfaceLayout.Doorway(dx0, Y(0), dx1, Y(0)));
+        }
+
         // The board hangs half-way down the door wall and the plate reads a quarter of the way along it, so
         // neither crowds the other and both are things you meet on the way in rather than across the room.
         return new HallSite(
@@ -2624,7 +3045,7 @@ public static class UndergroundComplex
                 x0, y0, x1, y1, HallSeatsFor(bodyId, use), cabinets,
                 X(HallDoorAisleDu / 2.0), Y(length / 2.0),
                 X(HallDoorAisleDu / 2.0), Y(length * 0.25),
-                HallArtFor(bodyId, use), spots, stools),
+                HallArtFor(bodyId, use), spots, stools, doors, freight),
             X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
             laid,
             glazed ? farWall : null);
@@ -2648,7 +3069,8 @@ public static class UndergroundComplex
     /// </summary>
     private static Park CarvePark(
         List<SurfaceLayout.Wall> walls, string bodyId, int level, in Hall hall, SurfaceLayout.Wall glass,
-        in Rib rib, double hallFar, double leftEnd, double rightEnd, in SurfaceLayout.Field field)
+        in Rib rib, double hallFar, double leftEnd, double rightEnd, in SurfaceLayout.Field field,
+        IReadOnlyList<double> gateXs)
     {
         bool down = rib.Down;
 
@@ -2673,11 +3095,22 @@ public static class UndergroundComplex
         // …and the near wall, in the segments left between the two openings. SORTED, and the cursor may
         // only ever move forward: #587 was exactly this loop given its mouths out of order, and it sealed
         // every room on a third of the floors in the game.
+        //
+        // #775 · …and there are SEVERAL gates now, not one. Owner: "let's have multiple doors to the park —
+        // it is a kind of place people like to walk through on their way." Every corridor that reaches this
+        // side of the spine ends at this wall, and every one of them opens through it, so the natural route
+        // between two places on B1 crosses the green instead of going round it. The list is handed in: the
+        // carve does not decide which corridors exist, it opens the wall where they arrive.
         var openings = new List<(double Lo, double Hi)>
         {
-            (rib.X - CorridorHalf, rib.X + CorridorHalf),   // the gate, cut by the rib's own far end
-            (hall.X0, hall.X1),                             // the glass, which is the hall's far wall
+            (hall.X0, hall.X1),   // the glass, which is the hall's far wall — never a door (owner's rule)
         };
+        foreach (double gx in gateXs)
+        {
+            // The corridor's full width, because the corridor's own far-end stubs are what narrow it to a
+            // doorway — the same two segments the rib has always laid. One gap, cut once (#585).
+            openings.Add((gx - CorridorHalf, gx + CorridorHalf));
+        }
         openings.Sort((a, b) => a.Lo.CompareTo(b.Lo));
         double cursor = x0;
         foreach ((double lo, double hi) in openings)
@@ -2799,15 +3232,89 @@ public static class UndergroundComplex
             }
         }
 
+        // #775 · Every gate as a published doorway, the hall's own rib FIRST — it is the one the room's
+        // plate and its dev route are pinned to, and the order is the only thing that says which is which.
+        var gates = new List<SurfaceLayout.Doorway>(gateXs.Count)
+        {
+            new(rib.X - DoorHalf, hallFar, rib.X + DoorHalf, hallFar),
+        };
+        foreach (double gx in gateXs)
+        {
+            if (Math.Abs(gx - rib.X) > 0.001)
+            {
+                gates.Add(new SurfaceLayout.Doorway(gx - DoorHalf, hallFar, gx + DoorHalf, hallFar));
+            }
+        }
+
         return new Park(
             x0, y0, x1, y1, walk, beds, benches, masts,
-            new SurfaceLayout.Doorway(rib.X - DoorHalf, hallFar, rib.X + DoorHalf, hallFar),
+            gates[0],
             glass,
             rib.X, W(4.0), figX, figY,
             CanteenRegulars.StrangerPlates[
                 (int)(Frac(bodyId, $"hive:{level}:park-figure") * CanteenRegulars.StrangerPlates.Count)
                     % CanteenRegulars.StrangerPlates.Count],
-            ParkArtFor(bodyId, HallUseOn(bodyId, level)));
+            ParkArtFor(bodyId, HallUseOn(bodyId, level)),
+            gates);
+    }
+
+    /// <summary>#775 · What is stencilled at the mouth of the walk down to the park — the arrow idiom this
+    /// building already paints on a corridor whose end is somewhere else
+    /// (<see cref="SealedMouthSign"/>). The difference is the whole point: that one names a place you will
+    /// never reach, and this one is a way through.</summary>
+    public const string ParkWaySign = "⟶ THE PARK";
+
+    /// <summary>
+    /// #775 · WHERE THE DEDICATED WALK DOWN TO THE PARK IS CUT, or null where this floor has no room for
+    /// one.
+    ///
+    /// <para>Owner: <i>"multiple doors to the park"</i> — and the corridors that already reach it are the
+    /// ribs pointing its way, which on a quarter of the shipped sites is exactly ONE (the hall's own). A
+    /// park with one door is a cul-de-sac however many ribs happen to fall the right way, so the building
+    /// gets a passage whose only job is that crossing: off the main corridor, straight down, into the
+    /// green.</para>
+    ///
+    /// <para>It is placed at the point on the spine's park-side face FURTHEST from everything already
+    /// standing on that side — the hall's box, the corridors that reach the park, and the lift alcove where
+    /// the park is on the alcove's own face. Furthest rather than first-fit because the room columns either
+    /// side of a rib are ground this passage would otherwise take: the claim ledger would drop them
+    /// silently, and a floor quietly losing chambers is the shape of bug this file keeps a table of.</para>
+    /// </summary>
+    private static double? GardenWalkX(
+        List<Rib> ribs, bool parkSide, in Hall hall, double shaftX, double leftEnd, double rightEnd)
+    {
+        var keepOff = new List<(double Lo, double Hi)> { (hall.X0, hall.X1) };
+        foreach (Rib r in ribs)
+        {
+            if (r.Down == parkSide)
+            {
+                keepOff.Add((r.X - CorridorHalf, r.X + CorridorHalf));
+            }
+        }
+        if (!parkSide)
+        {
+            keepOff.Add((shaftX - ShaftHalf, shaftX + ShaftHalf));   // the alcove hangs off the top face
+        }
+
+        double clear = CorridorHalf + 2.0;
+        // …and it keeps a wall's worth of ground off the ends of the building, which the max-min search
+        // would otherwise walk straight into: the emptiest x on this face is very often the last one.
+        double lo = leftEnd + clear + CorridorHalf, hi = rightEnd - clear - CorridorHalf;
+        double bestX = double.NaN, bestRoom = clear;
+
+        for (double x = lo; x <= hi + 0.001; x += 1.0)
+        {
+            double room = double.MaxValue;
+            foreach ((double a, double b) in keepOff)
+            {
+                room = Math.Min(room, x < a ? a - x : x > b ? x - b : 0.0);
+            }
+            if (room > bestRoom)
+            {
+                (bestRoom, bestX) = (room, x);
+            }
+        }
+        return double.IsNaN(bestX) ? null : bestX;
     }
 
     /// <summary>#707 · Hang a washroom cell off the back of a room, if the room is one that earned one and
