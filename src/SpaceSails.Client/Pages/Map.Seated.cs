@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
@@ -342,6 +343,30 @@ public partial class Map
     /// indistinguishable from a bug, and this one is drawn everywhere so that the law can be learned by
     /// pressing it once.</para>
     /// </summary>
+    /// <summary>
+    /// #784 · THE SPREAD ROW, PRESSED WITH THE MOUSE — and the way home when the press shuts the dialog.
+    ///
+    /// <para>The seam <c>TableMoveClicked</c> documents one file over: <i>"only the mouse needs the way
+    /// home."</i> A keyboard path already owns focus; a click leaves it on the button that has just stopped
+    /// existing, and the deck goes deaf — the captain presses W, or I, and nothing happens. Starting a dig
+    /// CLOSES the satchel by design (#696: the vulnerability is the mechanic), so every successful press on
+    /// this page is exactly that case.</para>
+    ///
+    /// <para><b>Found by playing it</b>, in the browser, on this build: dug a manifest out of the spread and
+    /// the map took no keys at all afterwards. Same bug #746 found after "Take your leave", same fix.</para>
+    /// </summary>
+    private async Task SpreadDigClicked(Core.Satchel.Item item)
+    {
+        WriteItUp(item);
+
+        // Only when the dialog actually went away. A press that keeps it up must NOT steal focus back, or
+        // tabbing through the rows would fight the map for every key.
+        if (!_showSatchel)
+        {
+            await RefocusMap();
+        }
+    }
+
     private void WriteItUp(Core.Satchel.Item item)
     {
         if (_surface is not { } ex)
@@ -400,7 +425,12 @@ public partial class Map
     /// </summary>
     private void TheWriteUpLands(SurfaceExcursion ex, Core.Satchel.Item item, string standing)
     {
-        if (LeftBehind.GistOf(item, standing) is not { Length: > 0 } gist)
+        // kept: true — the SEATED disposition. Same fact, one different clause. A book entry reading "read
+        // and left on the floor of B1" directly under a sentence saying "the sheet goes back in the sleeve"
+        // is the game reporting one thing while the sim does another; the docked strip prints both on one
+        // line, where it is impossible to miss. FOUND BY LOOKING AT IT — it shipped in #788's instant write
+        // and was invisible there, filed once into a book nobody had open while the outcome pulsed and went.
+        if (LeftBehind.GistOf(item, standing, kept: true) is not { Length: > 0 } gist)
         {
             return;
         }

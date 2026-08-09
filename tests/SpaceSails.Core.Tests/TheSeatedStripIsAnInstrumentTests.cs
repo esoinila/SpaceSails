@@ -313,6 +313,60 @@ public class TheSeatedStripIsAnInstrumentTests
         Assert.True(Processing.Done(Processing.SecondsPerDocument, Processing.SecondsPerDocument));
     }
 
+    // ── THE ENTRY DOES NOT CONTRADICT THE SENTENCE THAT FILED IT ─────────────────────────────────────
+
+    /// <summary>
+    /// #784/#562 · WHAT THE BOOK SAYS HAPPENED TO THE SHEET IS WHAT HAPPENED TO THE SHEET.
+    ///
+    /// <para><b>Found by looking at it.</b> Booted <c>?spread=1</c>, dug a manifest out, and read the docked
+    /// strip: <i>"…copy it into the book in your own hand. The sheet goes back in the sleeve. 📋 shipping
+    /// manifest, torn — a description, <b>read and left on the floor of B1</b>."</i> One line, two opposite
+    /// claims about the same piece of paper. It shipped in #788's instant write and was invisible there —
+    /// the entry was filed once into a book nobody had open while the outcome pulsed and faded. The strip
+    /// put both halves side by side and it read wrong on sight.</para>
+    ///
+    /// <para>The FACT is deliberately still one fact (#784's ruling: a table does not buy a better gist, it
+    /// buys the sheet staying in your pocket). Only the disposition clause differs.</para>
+    /// </summary>
+    [Fact]
+    public void THE_KEPT_ENTRY_NeverSaysTheSheetWasLeftBehind()
+    {
+        const string where = "on the floor of B1";
+
+        foreach (Satchel.Kind kind in new[] { Satchel.Kind.Paper, Satchel.Kind.Dirt })
+        {
+            var item = new Satchel.Item(kind, "manifest-7");
+
+            string left = LeftBehind.GistOf(item, where)!;
+            string kept = LeftBehind.GistOf(item, where, kept: true)!;
+
+            // The standing register is untouched — #696's leave verb still says what it has always said.
+            Assert.Contains("left", left, StringComparison.OrdinalIgnoreCase);
+
+            // …and the seated one never claims the paper went anywhere.
+            Assert.DoesNotContain("left " + where, kept, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("what you put down", kept, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(where, kept, StringComparison.Ordinal);
+            Assert.NotEqual(left, kept);
+
+            // The whole line the strip prints has to agree with itself, end to end: it promises the sleeve
+            // and then quotes the entry, and the entry must not take the promise back.
+            string said = SeatedPosture.WrittenUpLine("the manifest", kept);
+            Assert.Contains("back in the sleeve", said, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("and left", said, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Both dispositions still answer for the same kinds and refuse the same ones — a flag that changed
+        // WHICH things have a gist would be a second answer to "is this a document".
+        foreach (Satchel.Kind kind in Enum.GetValues<Satchel.Kind>())
+        {
+            var item = new Satchel.Item(kind, "x");
+            Assert.Equal(
+                LeftBehind.GistOf(item, where) is null,
+                LeftBehind.GistOf(item, where, kept: true) is null);
+        }
+    }
+
     // ── THE CANON SWEEP ───────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Every new sentence is listed for the canon review, and none of them is empty or a

@@ -243,7 +243,21 @@ public sealed class LeftBehind
     ///
     /// <para>Null means "nothing to file", and the caller must not file an empty note.</para>
     /// </summary>
-    public static string? GistOf(Satchel.Item item, string where)
+    /// <param name="kept">
+    /// #784 · Whether the SHEET IS STILL IN THE SLEEVE afterwards — the seated register
+    /// (<see cref="SeatedPosture"/>), where the captain copies a document out at a table and keeps the paper.
+    ///
+    /// <para>The FACT is the same fact either way, which is #784's own ruling: what a table buys is not a
+    /// better gist, it is the sheet still being in your pocket. What differs is one clause — the
+    /// DISPOSITION — and it has to differ, because a book entry reading <i>"read and left on the floor of
+    /// B1"</i> directly under a sentence saying <i>"the sheet goes back in the sleeve"</i> is the game
+    /// reporting one thing while the sim does another (#562's class).</para>
+    ///
+    /// <para><b>Found by looking.</b> The contradiction shipped in #788's instant write and was invisible
+    /// there: the entry was filed once into a book nobody had open, while the outcome pulsed and faded. The
+    /// docked strip put both halves on one line, side by side, and it read wrong on sight.</para>
+    /// </param>
+    public static string? GistOf(Satchel.Item item, string where, bool kept = false)
     {
         ArgumentNullException.ThrowIfNull(where);
 
@@ -255,14 +269,18 @@ public sealed class LeftBehind
         if (item.Kind == Satchel.Kind.Paper)
         {
             FieldClue.Certainty certainty = FieldClue.CertaintyOf(item.Id);
-            return $"📋 {FieldClue.Title(item.Id)} — {FieldClue.Label(certainty)}, read and left {where}. " +
+            string disposition = kept ? $"read through {where} and copied out" : $"read and left {where}";
+            return $"📋 {FieldClue.Title(item.Id)} — {FieldClue.Label(certainty)}, {disposition}. " +
                 FieldClue.Line(certainty);
         }
 
         // A file on somebody has no title of its own — it is a name and a posting and the years around them,
         // and the game has never printed a heading on one. What goes in the book is that you read it.
-        return $"🗃 A file on somebody, read through and left {where}. You know what is in it now; the " +
-            "folder is what you put down.";
+        return kept
+            ? $"🗃 A file on somebody, read through {where} and copied out. You know what is in it now; the " +
+                "folder went back in the sleeve."
+            : $"🗃 A file on somebody, read through and left {where}. You know what is in it now; the " +
+                "folder is what you put down.";
     }
 
     /// <summary>What the ground says when the captain comes back for it. <paramref name="taken"/> and

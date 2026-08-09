@@ -223,7 +223,21 @@ public sealed class SittingIsNotACutsceneTests
         Assert.True(page > 0, "the satchel has no spread page.");
         string body = razor[page..razor.IndexOf("else if (_satchelPage == SatchelPage.Notes)", page,
             StringComparison.Ordinal)];
-        Assert.Contains("WriteItUp(dig)", body, StringComparison.Ordinal);
+        // …through the seam that gives the keys back. A press on this page CLOSES the dialog (#696 shuts the
+        // pocket so the deck comes back), and a click that closes a dialog leaves focus on a control that no
+        // longer exists — after which the map takes no keys at all. Found by playing this build in a
+        // browser: the dig ran, the strip said so, and [I] and WASD were both dead afterwards. Same bug #746
+        // found after "Take your leave", same fix.
+        Assert.Contains("SpreadDigClicked(dig)", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("@onclick=\"() => WriteItUp(dig)\"", body, StringComparison.Ordinal);
+
+        string seatedSrc = Source("Pages", "Map.Seated.cs");
+        int clicked = seatedSrc.IndexOf("private async Task SpreadDigClicked(", StringComparison.Ordinal);
+        Assert.True(clicked > 0, "the spread row has no way home for the mouse.");
+        string clickedBody = seatedSrc[clicked..(clicked + 700)];
+        Assert.Contains("WriteItUp(item);", clickedBody, StringComparison.Ordinal);
+        Assert.Contains("if (!_showSatchel)", clickedBody, StringComparison.Ordinal);
+        Assert.Contains("await RefocusMap();", clickedBody, StringComparison.Ordinal);
         Assert.Contains("SeatedSpread.SpreadBlurb", body, StringComparison.Ordinal);
         Assert.Contains("SeatedSpread.NothingToWorkLine", body, StringComparison.Ordinal);
 

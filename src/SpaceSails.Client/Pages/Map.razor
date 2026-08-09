@@ -2048,9 +2048,14 @@
                             {
                                 SpaceSails.Core.Satchel.Item dig = lying;
                                 <div class="satchel-row">
+                                    @* Through SpreadDigClicked and not WriteItUp directly: a successful
+                                       press CLOSES this dialog (#696 shuts the pocket so the deck comes
+                                       back), and a click that closes a dialog leaves focus on a button that
+                                       no longer exists — the map then takes no keys at all. Found by
+                                       playing it. *@
                                     <button type="button" class="satchel-item spread-item"
                                             title="@WriteUpHint(dig)"
-                                            @onclick="() => WriteItUp(dig)">
+                                            @onclick="() => SpreadDigClicked(dig)">
                                         <span class="satchel-item-name">@SatchelLabel(dig)</span>
                                         <span class="satchel-item-try">
                                             @SpaceSails.Core.SeatedPosture.WriteGlyph dig it out →
