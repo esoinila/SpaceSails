@@ -309,6 +309,36 @@ public static class PatrolBeat
         return rotated;
     }
 
+    /// <summary>
+    /// #804 · HOW BIG A LATTICE ONE LEG IS WALKED OVER, and why it is not the whole floor.
+    ///
+    /// <para><see cref="AutoWalk.BoundsFor"/> spans every wall it is handed, which is right for a captain
+    /// clicking an arbitrary spot and wrong for a guard walking forty du down a rib: a floor-sized lattice
+    /// at <see cref="DeckReachability.DefaultStep"/> is a third of a million cells, and this repo runs in
+    /// WASM where a Debug build is a hundred times slower than the machine this is written on. A round that
+    /// planned one of those every time it reached a stop would hitch the frame it arrived on.</para>
+    ///
+    /// <para><b>The margin is the whole of the safety.</b> A leg may bulge around a room to reach the next
+    /// stop, so the box is the two stops plus a room's own depth on every side — derived from
+    /// <c>RoomHeightDu</c> and the corridor's width rather than typed, so a generator that grows its rooms
+    /// grows this with them. Clamped to the field, because nothing is built outside it.</para>
+    ///
+    /// <para><b>And it lives here so the audit and the game ask ONE question.</b> If the client shrank the
+    /// box and the sweep walked the whole floor, the sweep would be proving a route the game never plans —
+    /// two pathfinders agreeing only by luck, which is the drift <c>DeckReachability</c>'s own lattice was
+    /// consolidated to stop.</para>
+    /// </summary>
+    public static (double MinX, double MinY, double MaxX, double MaxY) LatticeFor(
+        in Stop from, in Stop to, in SurfaceLayout.Field field)
+    {
+        double margin = UndergroundComplex.RoomHeightDu + (UndergroundComplex.CorridorHalf * 2);
+        double minX = Math.Max(field.LeftX, Math.Min(from.X, to.X) - margin);
+        double maxX = Math.Min(field.RightX, Math.Max(from.X, to.X) + margin);
+        double minY = Math.Max(field.BottomY, Math.Min(from.Y, to.Y) - margin);
+        double maxY = Math.Min(field.LandingBandY, Math.Max(from.Y, to.Y) + margin);
+        return (minX, minY, maxX, maxY);
+    }
+
     /// <summary>Where the <paramref name="index"/>th guard starts on a beat of <paramref name="legs"/> stops
     /// — spread evenly around it, so two of them cover the floor instead of walking in a queue. The sweep
     /// team's arithmetic, because it is the same problem.</summary>
@@ -516,12 +546,11 @@ public static class PatrolBeat
     /// card describes a man doing a task and says nothing at all about what happens next.
     /// </summary>
     public static string ChallengeCard(string plate) =>
-        $"{plate}\n\n" +
-        "They see you before you hear them stop. No shout and no lamp in the face — this floor has lights " +
-        "and you are plainly not what the lights are for.\n\n" +
-        "What you get instead is a hand out, palm up, for the thing everybody who works this corridor " +
-        "carries. Nothing about it is urgent. That is the part worth being frightened of: he has done this " +
-        "a hundred times, it has come to nothing a hundred times, and he will write down whichever way it " +
+        $"{plate} — and they see you before you hear them stop. No shout and no lamp in the face: this " +
+        "floor has lights, and you are plainly not what the lights are for.\n\n" +
+        "What you get is a hand out, palm up, for the thing everybody who works this corridor carries. " +
+        "Nothing about it is urgent. That is the part worth being frightened of — he has done this a " +
+        "hundred times, it has come to nothing a hundred times, and he will write down whichever way it " +
         "goes tonight either way.";
 
     /// <summary>#804 · The guard's read of the wallet, and the card it is told on. Deliberately the same

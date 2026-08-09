@@ -2398,6 +2398,10 @@ public partial class Map
         // What stays here is what Core does not have: the cards, the nerve, the flags and the save.
         bool firstSight = ex.HiveFloorsSeen.Add(level);
 
+        // #804 · Whether THIS ride was the one the day-labour chit opened. Banked rather than acted on where
+        // it is noticed, so the pass it earns is granted after the arrival has said everything it has to say.
+        bool chitGateThisRide = false;
+
         foreach (UndergroundComplex.Saying saying in UndergroundComplex.ArrivalSayings(
                      ex.Stop.Body.Id, fromLevel, level,
                      new UndergroundComplex.ArrivalMemory(
@@ -2479,16 +2483,12 @@ public partial class Map
                 case UndergroundComplex.ArrivalBeat.ChitGate:
                     ex.ChitGateBeatShown = true;
                     FileNote(CanteenTable.ChitGateGist, CanteenTable.ChitGlyph);
-                    // #804 · AND THE JOB PAYS IN PAPER. This is the gig completing, not the gig being
-                    // offered: the Hand hands you a chit, the chit is a promise, and going down on it is
-                    // the shift you actually turned up for. A site that has had a body arrive on somebody's
-                    // account does the one thing a site does about that — it puts you on its books.
-                    //
-                    // Hung on THIS beat rather than on the table because the table's own gist already says
-                    // what the paper is worth ("Downstairs is a place you are now paid to be") and this
-                    // makes that sentence literally true. Granted once: the wallet never fills, but a
-                    // second identical pass would be the pocket saying something the sim did not.
-                    IssueTheSitePass(ex);
+                    // #804 · AND THE JOB PAYS IN PAPER — but the grant is made BELOW, after the arrival has
+                    // finished speaking. Doing it here would put the pass's own sentence into the middle of
+                    // a composed arrival, where a later saying (or the held card's release) simply takes the
+                    // slot back off it (#693/#768). The gig completing is the loudest thing about this
+                    // ride, and it is said last.
+                    chitGateThisRide = true;
                     RequestVaultSave();
                     break;
 
@@ -2518,6 +2518,21 @@ public partial class Map
         // that opened on nothing but prose pulse the winner immediately — the shipped behaviour, unchanged.
         // Doors that also raised a card keep it, and the ✕ on that card is what finally says it.
         ReleaseHeldSayingsUnlessACardStopsTheWorld();
+
+        // #804 · AND THE JOB PAYS IN PAPER, said LAST. This is the gig completing, not the gig being
+        // offered: the Hand hands you a chit, the chit is a promise, and going down on it is the shift you
+        // actually turned up for. The site does the one thing a site does about a body that has arrived on
+        // somebody's account — it puts you on its books.
+        //
+        // Hung on the CHIT'S ride rather than on the table because the table's own gist already says what
+        // the paper is worth ("Downstairs is a place you are now paid to be"), and this makes that sentence
+        // literally true. After the release, because the pass's line is the loudest thing about this
+        // particular ride and the arrival's own composition would otherwise take the slot back off it.
+        if (chitGateThisRide)
+        {
+            IssueTheSitePass(ex);
+        }
+
         RequestVaultSave();
     }
 

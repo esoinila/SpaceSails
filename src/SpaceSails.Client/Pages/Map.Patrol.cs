@@ -150,9 +150,6 @@ public sealed partial class Map
         }
     }
 
-    /// <summary>Is anybody walking this floor right now? Read by the HUD wiring and the tests.</summary>
-    private bool PatrolOnThisFloor => _guards.Count > 0;
-
     // ── THE LOOP ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Walk them, decide what each side can know about the other, and let a sighting raise the
@@ -216,9 +213,15 @@ public sealed partial class Map
         {
             var from = new DeckReachability.Point(g.X, g.Y);
             var to = new DeckReachability.Point(target.X, target.Y);
+
+            // The lattice is the LEG's box and not the floor's — Core's own answer, so the audit that
+            // proves every leg walkable proves the route this actually plans. See PatrolBeat.LatticeFor for
+            // why the difference is not a micro-optimisation: a floor-sized lattice on every arrival would
+            // hitch the frame in WASM.
             AutoWalk.Attempt planned = AutoWalk.Plan(
                 true, from, to, walls, DeckPlan.AvatarRadius,
-                AutoWalk.BoundsFor(_deckPlan.CollisionSegments, from, to));
+                PatrolBeat.LatticeFor(
+                    new PatrolBeat.Stop(g.X, g.Y, "here"), target, MoonSurface.ExpeditionField()));
 
             if (planned.Route is null)
             {
