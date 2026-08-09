@@ -817,7 +817,7 @@ public static class UndergroundComplex
     /// drawer to turn over, and the air is what it pays.</para></summary>
     private static List<Refuge> CarveRefuges(
         string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
-        double shaftX, double shaftY)
+        in SurfaceLayout.Field field)
     {
         var refuges = new List<Refuge>();
         if (HoldsPressure(bodyId, level) || rooms.Count == 0)
@@ -840,8 +840,19 @@ public static class UndergroundComplex
                 continue;
             }
             anywhere.Add(i);
-            double dx = rooms[i].X - shaftX, dy = rooms[i].Y - shaftY;
-            if ((dx * dx) + (dy * dy) >= MinRefugeDetourDu * MinRefugeDetourDu)
+
+            // #801 · A DETOUR FROM EVERY CAR, not from the cage. This measured one shaft, and the day the
+            // building grew a second one at the other end of the corridor it went on passing while the
+            // sentence it exists to protect died: a third of the refuges in the game were four steps from
+            // the goods car. The guard found it (332 of 1130 floors); the fix is that the carve asks the
+            // same list the guard does.
+            bool far = true;
+            foreach (Shaft car in ShaftsOn(field))
+            {
+                double dx = rooms[i].X - car.X, dy = rooms[i].Y - car.Y;
+                far &= (dx * dx) + (dy * dy) >= MinRefugeDetourDu * MinRefugeDetourDu;
+            }
+            if (far)
             {
                 faraway.Add(i);
             }
@@ -851,7 +862,31 @@ public static class UndergroundComplex
         // floor whose rooms all happen to crowd the shaft, a near refuge beats no refuge, every time: the
         // owner's line is "at least one ... for pure safety", and a safety regulation that a seed can talk
         // out of is not one.
-        List<int> pool = faraway.Count > 0 ? faraway : anywhere;
+        // #801 · …and when NOTHING qualifies, the fallback takes the FURTHEST room rather than a rolled one.
+        // With two cars at opposite ends of the spine there are floors whose every chamber is inside the
+        // detour of one car or the other, and on those the old fallback rolled a room at random — which on
+        // the sweep put a refuge twenty-nine du from a car on floors that had a sixty-du one going spare.
+        // A safety regulation a seed can talk out of is not one, and neither is one it can shrug at.
+        List<int> pool = faraway;
+        if (pool.Count == 0 && anywhere.Count > 0)
+        {
+            int best = anywhere[0];
+            double bestNear = -1;
+            foreach (int i in anywhere)
+            {
+                double near = double.MaxValue;
+                foreach (Shaft car in ShaftsOn(field))
+                {
+                    double dx = rooms[i].X - car.X, dy = rooms[i].Y - car.Y;
+                    near = Math.Min(near, (dx * dx) + (dy * dy));
+                }
+                if (near > bestNear)
+                {
+                    (best, bestNear) = (i, near);
+                }
+            }
+            pool = [best];
+        }
         if (pool.Count == 0)
         {
             return refuges;
@@ -1344,6 +1379,26 @@ public static class UndergroundComplex
         public string Plate => $"🌱 BED {Number} · {Crop} · TO {ParkBedDestination}";
     }
 
+    /// <summary>#801 · A room on the far side of the park — the back of house, entered off the gravel.
+    ///
+    /// <para>Its own box, its own door, its own plate, published for the same reason
+    /// <see cref="Hall.Openings"/> is: "the far gates lead somewhere real" is a law about a list, and a law
+    /// about a list nobody keeps is a law nobody can fail.</para></summary>
+    /// <param name="Door">The gap cut in the park's far wall. It is the room's ONLY door — the band behind
+    /// the park is the last of the field, and there is no corridor back there for a second one.</param>
+    public readonly record struct BackRoom(
+        double X0, double Y0, double X1, double Y1, SurfaceLayout.Doorway Door, string Plate)
+    {
+        /// <summary>The middle of it — where the search console stands and where the audit walks to.</summary>
+        public double X => (X0 + X1) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double Y => (Y0 + Y1) / 2.0;
+
+        /// <summary>Is the captain in it?</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+    }
+
     /// <summary>#759 · The park: the box, the walks through it, and what is standing in it.</summary>
     /// <param name="X0">Left edge, in the surface's own coordinates.</param>
     /// <param name="Y0">Bottom edge.</param>
@@ -1380,8 +1435,42 @@ public static class UndergroundComplex
         SurfaceLayout.Wall Window,
         double X, double Y, double FigureX, double FigureY, string FigurePlate = "",
         string? ArtUrl = null,
-        IReadOnlyList<SurfaceLayout.Doorway>? Gates = null)
+        IReadOnlyList<SurfaceLayout.Doorway>? Gates = null,
+        IReadOnlyList<BackRoom>? Back = null)
     {
+        /// <summary>
+        /// #801 · WHAT IS ON THE OTHER SIDE, and the reason the far wall stopped being a horizon.
+        ///
+        /// <para>Owner, 2026-08-09: <i>"we could have rooms to explore below the park also (on the map).
+        /// Walking through the park is fun, it should not be the edge."</i> He is describing a map problem
+        /// and it was a real one: #775 made the green a thoroughfare between corridors, and a thoroughfare
+        /// with a painted wall along one whole side is still a room you cross rather than a place you are
+        /// IN. The back of house is what a park of this size actually has behind it — potting, soil, feed,
+        /// a cold room the counter draws on — and it is the one row of doors in the building a captain
+        /// reaches by walking across a garden.</para>
+        ///
+        /// <para>They are ordinary rooms: they appear in <see cref="FloorPlan.RoomCentres"/>, they hold what
+        /// any room down here holds, and the A* audit that walks every room from the car walks these. What
+        /// makes them the park's is only where their doors are.</para></summary>
+        public IReadOnlyList<BackRoom> Rooms => Back ?? [];
+
+        /// <summary>#801 · The doors in the FAR wall, in the order the rooms behind them are laid. Kept out
+        /// of <see cref="Ways"/> on purpose: a Way is a way THROUGH the park, corridor to corridor, and
+        /// these are ways OUT OF it into a room. The distinction is not decorative — the amenities'
+        /// conservation sum counts a Way as a place and would count these twice.</summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> BackDoors
+        {
+            get
+            {
+                var doors = new List<SurfaceLayout.Doorway>(Rooms.Count);
+                foreach (BackRoom r in Rooms)
+                {
+                    doors.Add(r.Door);
+                }
+                return doors;
+            }
+        }
+
         /// <summary>
         /// #775 · EVERY WAY IN, and there is more than one now.
         ///
@@ -1517,6 +1606,75 @@ public static class UndergroundComplex
     /// — <i>"It must be WALKABLE, with curved paths … the curve that hides the far end"</i> — and a curve on
     /// a deck plan is a run of walkable ground whose beds were laid around it.</summary>
     public const int ParkWalkBends = 3;
+
+    /// <summary>#759/#801 · How many floodlight masts stand against the far wall. It was a literal 5 inside
+    /// the carve; it is named because the back of house is laid in the BAYS BETWEEN them (#801) and a second
+    /// copy of the count would have put a door in front of a lamp post.</summary>
+    public const int ParkMastCount = 5;
+
+    /// <summary>#801 · Where the masts stand along the park, as a pure function of its box. One answer, asked
+    /// by the carve that erects them and by the carve that lays rooms between them.</summary>
+    public static IReadOnlyList<double> ParkMastXs(double x0, double x1)
+    {
+        double uLo = x0 + ParkEdgeClearDu, uHi = x1 - ParkEdgeClearDu;
+        double span = uHi - uLo;
+        var xs = new List<double>(ParkMastCount);
+        for (int k = 0; k < ParkMastCount; k++)
+        {
+            xs.Add(uLo + (span * (k + 0.5) / ParkMastCount));
+        }
+        return xs;
+    }
+
+    // ── #801 · THE BACK OF HOUSE, ON THE FAR SIDE OF THE GREEN ────────────────────────────────────────────
+    //
+    // Owner, 2026-08-09: "we could have rooms to explore below the park also (on the map). Walking through
+    // the park is fun, it should not be the edge."
+    //
+    // WHERE THE GROUND CAME FROM, written down because it is the whole engineering answer and it is not
+    // obvious. The park is already the biggest room in the game and its size is a LAW — it must stand
+    // ParkDepthDu deep and hold half again the floor of the hall behind it, and on the shipped field the
+    // second of those binds at 38.3 du of the 42 it has. So the band beyond it could not be bought by making
+    // the park shallower: there is 3.7 du of slack in the whole feature and a room needs twelve.
+    //
+    // It is bought instead from the LAST STRIP OF THE FIELD. The park's far wall clamps at
+    // BottomY + EdgeMargin, and the edge margin is a SURFACE law — the half-lane the regolith generator
+    // keeps clear so nothing is drawn into the #563 falloff. There is no falloff on a floor with a roof on
+    // it: a Hive deck publishes no unseen wall at all, so nothing down here fades and nothing is clipped.
+    // The band is 16.5 du of the field's own envelope that no floor has ever used, and a chamber module is
+    // twelve. The one law that DOES bind is the envelope itself (`ItNEVERLeavesTheSurfacesOwnEnvelope`), and
+    // the back wall is laid inside it with rock to spare.
+
+    /// <summary>#801 · How deep a back-of-house room is. The facility's own chamber module
+    /// (<see cref="RoomHeightDu"/>) and not a number of its own: these are ordinary rooms that happen to be
+    /// entered off a garden.</summary>
+    public static double ParkBackDepthDu => RoomHeightDu;
+
+    /// <summary>#801 · How much rock is left between the back wall and the end of the field. Small on
+    /// purpose — this is the last strip of the world and the building is meant to read as having used it —
+    /// but never zero, because a wall standing exactly on the envelope is a wall one rounding error outside
+    /// it.</summary>
+    public const double ParkBackRockDu = 3.0;
+
+    /// <summary>#801 · The pier of rock left between two back rooms.</summary>
+    public const double ParkBackPierDu = 8.0;
+
+    /// <summary>#801 · What is stencilled beside the doors in the far wall.
+    ///
+    /// <para>§13.8, and this row is a soft place to break it: a room behind a garden is one sentence away
+    /// from being a room about what the garden was really for. Every one of these says what the KITCHEN and
+    /// the GROUNDS are for — the same restraint the beds are stencilled with — and not one of them is about
+    /// the facility. The cold room names CANTEEN 1 because the beds already do, which is the entire food
+    /// connection and is still never pointed out.</para></summary>
+    public static readonly IReadOnlyList<string> ParkBackPlates =
+    [
+        "🌱 POTTING · SOIL, TRAYS, GRIT",
+        "🧰 GROUNDS PLANT · LAMPS, FEED, TIMERS",
+        "❄ COLD ROOM · TO CANTEEN 1",
+        "🧤 GROUNDS STORE · TOOLS SIGNED OUT AND BACK",
+        "🚿 WASH-DOWN",
+        "📋 GROUNDS OFFICE · ROTA POSTED",
+    ];
 
     /// <summary>#751 · What is stencilled beside a cabinet's door. Numbered, and it says how you get one:
     /// not off a menu.</summary>
@@ -1857,7 +2015,11 @@ public static class UndergroundComplex
     }
 
     /// <summary>The lift shaft's spot — the SAME (x, y) on every floor, so going down is legible and coming
-    /// back up is never a search. Sits on the spine corridor at the field's heart.</summary>
+    /// back up is never a search. Sits on the spine corridor at the field's heart.
+    ///
+    /// <para>#801 · This is THE CAGE now, and it is one of two. Everything that only ever wanted "the lift"
+    /// still asks here and still gets the same answer it always did; the ones that mean <b>every way off
+    /// this floor</b> ask <see cref="ShaftsOn"/>.</para></summary>
     public static (double X, double Y) ShaftAt(in SurfaceLayout.Field field) =>
         (field.AnchorX + 40, (field.BottomY + field.LandingBandY) / 2.0);
 
@@ -1867,6 +2029,212 @@ public static class UndergroundComplex
     /// <summary>Corridor half-width. Wide enough for the captain and an Old One to pass and for the eye to
     /// read it as a built passage rather than a gap between two walls.</summary>
     public const double CorridorHalf = 3.5;
+
+    // ── #801 · THE BUILDING HAS TWO CARS, AND THEY ARE NOT BESIDE EACH OTHER ──────────────────────────────
+    //
+    // Owner, 2026-08-09: "that elevator would be so busy it would be packed and never available… it is a
+    // choke point, and the whole lab would be too easily guarded by just having the guard posted in front
+    // of the one elevator. I want to remove that too-easy plot-to-catch-us plot hole."
+    //
+    // He is right three times over and the third one is the interesting one:
+    //
+    //   * TRAFFIC. A facility with a canteen for eighty, twelve growing beds and a goods hoist does not run
+    //     on one personnel car. It never did; the building simply never drew the second one.
+    //   * PACING. One car is a come-back-here point on every floor. Two at opposite ends of the spine turn
+    //     a floor into a route with a decision in it, which is what #775 did for the park one storey up.
+    //   * THE POSTED GUARD. This is the plot hole. A single car is a single square somebody stands on, and
+    //     no amount of writing around that makes an escape feel earned. Two cars a hundred and seventy du
+    //     apart cannot be watched by one person, and the fiction stops needing an excuse.
+    //
+    // What this is NOT. It is not #719's executive lift (that hangs off a principal apartment, is on no
+    // panel, and costs your cover), and it is not #719's service stair. It is the ordinary, boring, second
+    // car every real building of this size has, and it ships first because the other two are beats and this
+    // is a topology.
+    //
+    // THE CARD LAW IS UNTOUCHED (§13.5). The service car runs its band and nothing else: no surface, no
+    // gate, no way past the seam. A second car that could cross a band boundary would be a way to buy depth
+    // without the paper, and depth past the first band is the one thing this game makes you earn.
+
+    /// <summary>#801 · Which of the two cars this is.</summary>
+    public enum ShaftKind
+    {
+        /// <summary>The cage: the one the surface head sits on top of, the one the plate is beside, and the
+        /// only one that runs a gate.</summary>
+        Cage,
+
+        /// <summary>The goods car at the blind end of the corridor. Same four floors, no surface, no
+        /// gate.</summary>
+        Service,
+    }
+
+    /// <summary>#801 · A car, on the plan. Published from <see cref="ShaftsOn"/> so that a law about "every
+    /// way off this floor" has a list to be written against — the same reason <see cref="Hall.Openings"/>
+    /// and <see cref="Park.Ways"/> exist, said about the thing a captain leaves by.</summary>
+    public readonly record struct Shaft(ShaftKind Kind, double X, double Y)
+    {
+        /// <summary>What is painted at the car mouth.</summary>
+        public string Sign => Kind == ShaftKind.Cage ? CageSign : ServiceCarSign;
+
+        /// <summary>Does this one climb all the way out? Only the cage does, because only the cage has a
+        /// hut on the regolith over it (#606).</summary>
+        public bool ReachesTheSurface => Kind == ShaftKind.Cage;
+
+        /// <summary>Does this one run the gate to the band below? Only the cage. §13.5 is a law about the
+        /// building, not about a car, and the second car may not be a way round it.</summary>
+        public bool RunsTheGate => Kind == ShaftKind.Cage;
+
+        /// <summary>Where a captain stands when the doors open — a pace out of the car, on the spine. The
+        /// cage's alcove hangs off the spine's upper face and the service car's off the lower one, so the
+        /// pace is outward in opposite directions and neither of them is a typed sign.</summary>
+        public (double X, double Y) Landing =>
+            (X, Kind == ShaftKind.Cage ? Y + 1.0 : Y - 1.0);
+    }
+
+    /// <summary>#801 · What is painted at the cage's mouth. The console has said this since #585.</summary>
+    public const string CageSign = "\U0001F6D7 LIFT";
+
+    /// <summary>#801 · …and at the other one. It says what it is for and it says what it does not do, in
+    /// the inspectorate voice every plate down here is stencilled in — a car with no surface button is a
+    /// car a captain has to be told about ONCE rather than discover by pressing.</summary>
+    public const string ServiceCarSign = "\U0001F6D7 GOODS CAR 2 · THIS BAND ONLY";
+
+    /// <summary>#801 · What the service car's panel says under its title, in place of the cage's own line.
+    /// It names where the other car is, which is the whole of the anti-choke feature said in a sentence:
+    /// a captain who finds one car has been told there is another and roughly where.</summary>
+    public const string ServiceCarPanelLine =
+        "The goods car. It runs these floors and it does not climb out: for the surface, and for anything "
+        + "below this band, the cage is at the other end of the corridor.";
+
+    /// <summary>#801 · How much clear corridor a car's alcove wants either side of itself before the ground
+    /// counts as taking one.</summary>
+    public const double ShaftClearDu = 1.5;
+
+    /// <summary>#801 · THE WIDEST A CHAMBER EVER GETS in this building — the found band's deepest floor
+    /// (<see cref="FoundGrowthPerFloor"/> compounded across a band), and the reason it is here rather than
+    /// beside the growth constant: a car stands in the SAME place on every floor of a site, so the ground
+    /// it needs has to be clear of the biggest room the site can produce and not merely of this floor's.
+    /// A number worked out per floor would have put the second car in solid chamber four storeys down.</summary>
+    public static double DeepestRoomScale => Math.Pow(FoundGrowthPerFloor, FloorsPerShaft - 1);
+
+    /// <summary>#801 · How far apart the two cars must be before the building counts as having two. Stated
+    /// as a share of the spine it is measured on rather than as a distance, because "far enough that one
+    /// person cannot watch both" is a fact about the corridor's length and not about deck units. A third of
+    /// the main corridor is a walk with two cross-corridors and the length of the hall in it.</summary>
+    public static double MinShaftSeparationOn(in SurfaceLayout.Field field)
+    {
+        double margin = SurfaceLayout.EdgeMargin + 6;
+        return ((field.RightX - margin) - (field.LeftX + margin)) / 3.0;
+    }
+
+    /// <summary>#801 · WHERE EVERY CROSS CORRIDOR IS, as a pure function of the ground.
+    ///
+    /// <para>This was five lines inside <see cref="Build"/> and it had to come out: the second car is
+    /// placed where no rib and no rib's chambers can reach, and a placer that worked that out from its own
+    /// copy of the rib arithmetic would be the mirrored constant this file keeps a table of. One list, and
+    /// <see cref="Build"/> reads it too.</para>
+    ///
+    /// <para>The x's are the same on every floor of every site — only which WAY a rib runs is seeded — so a
+    /// spot chosen against them is a spot that holds for the whole building.</para>
+    ///
+    /// <para><b>The ordinal is the SLOT the field offered, not the survivor's place in this list</b>, and it
+    /// is carried out of here for exactly one reason: a rib's direction is seeded on it. The slot the lift
+    /// stands in is dropped, so the ordinals a real building uses have a hole in them — and a caller that
+    /// re-numbered from zero would silently re-roll which way every corridor in the game runs. That is the
+    /// same class of mistake as #587's out-of-order sweep: the arithmetic is right and the INDEX is not.</para></summary>
+    public static IReadOnlyList<(int Ordinal, double X)> RibColumnsOn(in SurfaceLayout.Field field)
+    {
+        double margin = SurfaceLayout.EdgeMargin + 6;
+        double left = field.LeftX + margin, right = field.RightX - margin;
+        (double shaftX, _) = ShaftAt(field);
+
+        var xs = new List<(int, double)>();
+        const int ribs = 5;
+        for (int i = 0; i < ribs; i++)
+        {
+            double t = (i + 0.5) / ribs;
+            double rx = Lerp(left + 16, right - 16, t);
+            if (Math.Abs(rx - shaftX) < ShaftHalf + CorridorHalf + 4)
+            {
+                continue;   // never run a rib through the lift
+            }
+            xs.Add((i, rx));
+        }
+        return xs;
+    }
+
+    /// <summary>
+    /// #801 · WHERE THE SECOND CAR STANDS, or null where this ground will not take one.
+    ///
+    /// <para>At the blind end of the main corridor: the stretch past the outermost cross corridor, which is
+    /// the one length of spine in the building that no chamber can ever reach — every room down here hangs
+    /// off a rib, so the ground beyond the last rib's own column is ground nothing will ever be laid in.
+    /// That is also exactly where a goods car goes in a building anybody has ever worked in.</para>
+    ///
+    /// <para><b>The end FURTHER from the cage</b>, and then only if what is left is still a third of the
+    /// corridor away from it (<see cref="MinShaftSeparationOn"/>). Two cars a captain can see at once are
+    /// one car drawn twice, and the whole point of the feature is that they cannot both be watched.</para>
+    ///
+    /// <para><b>Null is a real answer.</b> A field whose ribs run out to its own end caps has no blind end,
+    /// and this returns null rather than putting a car through a chamber — which is what makes the choke
+    /// law provable: it binds where the generator admits two and says nothing where it does not.</para>
+    /// </summary>
+    public static (double X, double Y)? ServiceShaftAt(in SurfaceLayout.Field field)
+    {
+        IReadOnlyList<(int Ordinal, double X)> ribs = RibColumnsOn(field);
+        if (ribs.Count == 0)
+        {
+            return null;
+        }
+
+        (double cageX, double cageY) = ShaftAt(field);
+        double margin = SurfaceLayout.EdgeMargin + 6;
+        double left = field.LeftX + margin, right = field.RightX - margin;
+
+        // How far a rib's own chambers reach along the spine, at the biggest a chamber ever gets. The 1.5
+        // is the claim ledger's own inflation, so this is the room's keep-out and not the room.
+        double reach = CorridorHalf + (RoomWidthDu * DeepestRoomScale) + 1.5;
+        double clear = ShaftHalf + ShaftClearDu;
+
+        (double Lo, double Hi)[] ends =
+        [
+            (left + clear, ribs[0].X - reach - clear),
+            (ribs[^1].X + reach + clear, right - clear),
+        ];
+
+        double bestX = double.NaN, bestGap = -1;
+        foreach ((double lo, double hi) in ends)
+        {
+            if (hi <= lo)
+            {
+                continue;   // the ribs run all the way to the cap: no blind end on this side
+            }
+            double x = (lo + hi) / 2.0;
+            double gap = Math.Abs(x - cageX);
+            if (gap > bestGap)
+            {
+                (bestX, bestGap) = (x, gap);
+            }
+        }
+
+        return double.IsNaN(bestX) || bestGap < MinShaftSeparationOn(field) ? null : (bestX, cageY);
+    }
+
+    /// <summary>#801 · EVERY WAY OFF THIS FLOOR THAT IS A CAR. The cage first — it is the one the surface
+    /// sits on and the one every older law means by "the lift" — then the goods car where the ground took
+    /// one.
+    ///
+    /// <para>Published so that "no floor of a clandestine site has exactly one way off it" is a law that
+    /// can be written down and can go red, instead of an arrangement two placers happen to agree on.</para></summary>
+    public static IReadOnlyList<Shaft> ShaftsOn(in SurfaceLayout.Field field)
+    {
+        (double cageX, double cageY) = ShaftAt(field);
+        var cars = new List<Shaft> { new(ShaftKind.Cage, cageX, cageY) };
+        if (ServiceShaftAt(field) is { } service)
+        {
+            cars.Add(new Shaft(ShaftKind.Service, service.X, service.Y));
+        }
+        return cars;
+    }
 
     /// <summary>One floor, laid out. Walls and doorways in the same shapes <see cref="SurfaceLayout"/> speaks,
     /// so the client lays a floor exactly the way it lays a ground.</summary>
@@ -1953,16 +2321,12 @@ public static class UndergroundComplex
         // A corridor is defined by where it does NOT have walls. Both faces are now built in segments with a
         // deliberate gap at each rib, and both ends are shut.
         var ribXs = new System.Collections.Generic.List<(double X, bool Down)>();
-        int ribs = 5;
-        for (int i = 0; i < ribs; i++)
+        // #801 · The x's come from RibColumnsOn now — the same list the second car is placed against, so a
+        // car and a corridor can never disagree about where the corridors are. Which WAY each one runs is
+        // still this floor's own seeded business.
+        foreach ((int ordinal, double rx) in RibColumnsOn(field))
         {
-            double t = (i + 0.5) / ribs;
-            double rx = Lerp(left + 16, right - 16, t);
-            if (Math.Abs(rx - shaftX) < ShaftHalf + CorridorHalf + 4)
-            {
-                continue;   // never run a rib through the lift
-            }
-            ribXs.Add((rx, Frac(bodyId, $"hive:{level}:rib-dir:{i}") < 0.62));
+            ribXs.Add((rx, Frac(bodyId, $"hive:{level}:rib-dir:{ordinal}") < 0.62));
         }
 
         // #587 · The ribs, exactly as built, published on the plan. Taken HERE — before the lift alcove is
@@ -1976,6 +2340,16 @@ public static class UndergroundComplex
         // The lift alcove, as a mouth in the top face at the shaft. It is APPENDED, so it is the one entry in
         // this list that is not in x order — which is the whole of #587. See SpineFace.
         ribXs.Add((shaftX, false));
+
+        // #801 · …and the GOODS CAR's alcove, as a mouth in the LOWER face at the blind end of the corridor.
+        // Two cars on one face would read as one machine room; on opposite faces, at opposite ends, they read
+        // as two ways out, which is the whole of the feature. Appended for the same reason the cage is, and
+        // the sweep sorts (§13.2) so being out of x order cannot re-seal anything.
+        double? serviceX = ServiceShaftAt(field) is { } car ? car.X : null;
+        if (serviceX is { } sx2)
+        {
+            ribXs.Add((sx2, true));
+        }
 
         // #775 · THE DOORS THE HALL CUTS IN THE SPINE'S OWN FACE, filled in by the carve below and read by
         // the wall builder — one list, so the gap the corridor leaves and the door the hall publishes are
@@ -2066,6 +2440,20 @@ public static class UndergroundComplex
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf, shaftX - ShaftHalf, shaftY + CorridorHalf + 5, true));
         walls.Add(new(shaftX + ShaftHalf, shaftY + CorridorHalf, shaftX + ShaftHalf, shaftY + CorridorHalf + 5, true));
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf + 5, shaftX + ShaftHalf, shaftY + CorridorHalf + 5, true));
+
+        // ── #801 · AND THE SECOND ONE, the same box mirrored onto the lower face. Same spot on every floor,
+        //    for the cage's own reason: a car a captain has to look for twice is a car they will not use.
+        //    Claimed as well as built — the ground it stands on is past the last rib's chambers, so nothing
+        //    was ever going to be laid here, and the ledger says so rather than leaving it to arithmetic.
+        if (serviceX is { } carX)
+        {
+            walls.Add(new(carX - ShaftHalf, shaftY - CorridorHalf, carX - ShaftHalf, shaftY - CorridorHalf - 5, true));
+            walls.Add(new(carX + ShaftHalf, shaftY - CorridorHalf, carX + ShaftHalf, shaftY - CorridorHalf - 5, true));
+            walls.Add(new(carX - ShaftHalf, shaftY - CorridorHalf - 5, carX + ShaftHalf, shaftY - CorridorHalf - 5, true));
+            claimed.Add((
+                carX - ShaftHalf - 1.5, shaftY - CorridorHalf - 6.5,
+                carX + ShaftHalf + 1.5, shaftY - CorridorHalf));
+        }
         // #605 · The "LIFT" plate is gone from here. The console at the car mouth is already labelled LIFT,
         // and the signage stack above it (HiveInterior) now answers the bigger question in the same wall
         // space. Three plates on one wall is a wall nobody reads.
@@ -2104,7 +2492,7 @@ public static class UndergroundComplex
         // slots of that neighbour's near side it now stands on. Nothing is ever laid ON it: the ledger is
         // told about the box before any other placer runs, and no CORRIDOR is ever covered.
         (int Rib, int Side)? hallSlot =
-            HallSlotFor(bodyId, level, ribList, field, shaftX, shaftY, left, right, roomScale);
+            HallSlotFor(bodyId, level, ribList, field, shaftX, serviceX, shaftY, left, right, roomScale);
         HallSite? hallSite = null;
         Park? park = null;
 
@@ -2122,7 +2510,7 @@ public static class UndergroundComplex
             bool glazed = HasPark(bodyId, HallUseOn(bodyId, level));
             hallSite = CarveHall(
                 walls, glass, hallSpineCuts, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
-                shaftX, left, right, roomScale, glazed);
+                shaftX, serviceX, left, right, roomScale, glazed);
             if (hallSite is { } built)
             {
                 // #775 · WHICH FACE OF THE SPINE THE HALL'S FRONT DOORS ARE CUT IN. The hall's near wall IS
@@ -2162,7 +2550,7 @@ public static class UndergroundComplex
                             parkGateXs.Add(r.X);
                         }
                     }
-                    gardenWalkX = GardenWalkX(ribList, parkSide, built.Hall, shaftX, left, right);
+                    gardenWalkX = GardenWalkX(ribList, parkSide, built.Hall, shaftX, serviceX, left, right);
                     if (gardenWalkX is { } gx)
                     {
                         parkGateXs.Add(gx);
@@ -2174,6 +2562,23 @@ public static class UndergroundComplex
                     claimed.Add((
                         park.Value.X0 - 1.5, park.Value.Y0 - 1.5,
                         park.Value.X1 + 1.5, park.Value.Y1 + 1.5));
+
+                    // ── #801 · THE BACK OF HOUSE, PUBLISHED. The carve owns the walls (it owns the far
+                    //    wall the doors are cut in); everything a room IS rather than is made of is said
+                    //    here, in the same three lists every other room in the building is said in — one
+                    //    doorway, one plate beside it on the side the walker is coming from, one claim.
+                    //    The centres go into `rooms` at the very end of the build, after the amenities and
+                    //    the refuge have taken theirs: the back of house is the park's and may not be
+                    //    quietly turned into a washroom.
+                    foreach (BackRoom br in park.Value.Rooms)
+                    {
+                        doorways.Add(br.Door);
+                        labels.Add(new(
+                            br.X,
+                            park.Value.Contains(br.X, br.Y0 - 2.5) ? br.Y0 - 2.5 : br.Y1 + 2.5,
+                            br.Plate));
+                        claimed.Add((br.X0 - 1.5, br.Y0 - 1.5, br.X1 + 1.5, br.Y1 + 1.5));
+                    }
 
                     // ── AND THE WALK ITSELF · two walls down to the green, and the gate at the end of them.
                     //
@@ -2212,8 +2617,13 @@ public static class UndergroundComplex
         // have a front door: the wall was already poured by the time anybody knew where the room was. They
         // are the SAME two calls, moved after the carve, reading the one list of cuts the carve filled in.
         // Nothing else between here and there touches this wall — walls are a set, not a sequence.
+        //
+        // #801 · …and the LOWER face now has an alcove of its own to leave a mouth for. Same clause, same
+        // wall, the other way up: the goods car opens into a sealed box otherwise, which is #585's "the lift
+        // cannot be reached from the lift" said about the car nobody had built yet.
         SpineFace(shaftY + CorridorHalf, (rx, down) => !down || Math.Abs(rx - shaftX) < 0.001);
-        SpineFace(shaftY - CorridorHalf, (_, down) => down);
+        SpineFace(shaftY - CorridorHalf,
+            (rx, down) => down || (serviceX is { } atX && Math.Abs(rx - atX) < 0.001));
 
         // #775 · THE FRONT DOORS, PUBLISHED FROM THE VERY LIST THE WALL WAS CUT FROM. #585's one-gap law
         // with no room left for a second opinion: the segments above stop at these spans and the leaves
@@ -2265,9 +2675,10 @@ public static class UndergroundComplex
         for (int i = 0; i < ribXs.Count; i++)
         {
             (double x, bool down) = ribXs[i];
-            if (Math.Abs(x - shaftX) < 0.001)
+            if (Math.Abs(x - shaftX) < 0.001
+                || (serviceX is { } carMouth && Math.Abs(x - carMouth) < 0.001))
             {
-                continue;   // that entry is the lift alcove's mouth, not a corridor
+                continue;   // that entry is a car's alcove mouth, not a corridor
             }
             // #759 · The hall's rib runs longer than the rest, and this is the same call the carve made —
             // never a second answer. `hallRib` is also the one rib in the building whose far end is a WAY IN
@@ -2354,7 +2765,19 @@ public static class UndergroundComplex
         // holds pressure and a refuge is only ever carved on one that does not — but the order says so
         // rather than leaving it to be rediscovered.
         List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY, hallSite);
-        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, shaftX, shaftY);
+        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, field);
+
+        // #801 · …and the park's back of house LAST of all, appended after both of those have chosen. They
+        // are rooms — they hold what any room down here holds and the A* audit walks to every one of them —
+        // but they are the garden's, and an amenity or a refuge carved out of one would be the building
+        // taking back the thing this feature exists to give: somewhere on the far side of the green.
+        if (park is { } green)
+        {
+            foreach (BackRoom br in green.Rooms)
+            {
+                rooms.Add((br.X, br.Y, br.Plate));
+            }
+        }
 
         var centres = new List<(double X, double Y)>(rooms.Count);
         foreach ((double rx, double ry, string _) in rooms)
@@ -2609,7 +3032,7 @@ public static class UndergroundComplex
     /// </summary>
     private static (int Rib, int Side)? HallSlotFor(
         string bodyId, int level, List<Rib> ribs, in SurfaceLayout.Field field,
-        double shaftX, double shaftY, double leftEnd, double rightEnd, double roomScale)
+        double shaftX, double? serviceX, double shaftY, double leftEnd, double rightEnd, double roomScale)
     {
         if (!IsHallFloor(bodyId, level) || ribs.Count == 0)
         {
@@ -2631,7 +3054,9 @@ public static class UndergroundComplex
             }
             for (int side = -1; side <= 1; side += 2)
             {
-                if (HallGround(bodyId, use, ribs, i, side, mouth, far, shaftX, leftEnd, rightEnd, roomScale)
+                if (HallGround(
+                        bodyId, use, ribs, i, side, mouth, far, shaftX, serviceX, leftEnd, rightEnd,
+                        roomScale)
                     is not { } ground)
                 {
                     continue;   // the ground here would not take a hall at all
@@ -2685,7 +3110,8 @@ public static class UndergroundComplex
     /// </summary>
     private static (double Width, double Wanted, double Length, double VSpan)? HallGround(
         string bodyId, Comfort use, List<Rib> ribs, int ribIndex, int side,
-        double mouth, double far, double shaftX, double leftEnd, double rightEnd, double roomScale)
+        double mouth, double far, double shaftX, double? serviceX, double leftEnd, double rightEnd,
+        double roomScale)
     {
         double ribX = ribs[ribIndex].X;
         double roomW = RoomWidthDu * roomScale;
@@ -2741,6 +3167,22 @@ public static class UndergroundComplex
             }
         }
 
+        // #801 · …and the GOODS CAR's alcove, which hangs off the LOWER face, so it is the ribs running DOWN
+        // that can meet it. The same two lines the other way up — stated as its own clause rather than as a
+        // loop over a list of cars, because the clause a car needs is WHICH FACE it is on, and a list that
+        // had lost that would be a clamp that does not ask which side its obstacle is on.
+        if (ribs[ribIndex].Down && serviceX is { } carX)
+        {
+            if (side > 0 && carX > ribX)
+            {
+                limit = Math.Min(limit, carX - ShaftHalf - 1.5);
+            }
+            else if (side < 0 && carX < ribX)
+            {
+                limit = Math.Max(limit, carX + ShaftHalf + 1.5);
+            }
+        }
+
         double faceX = ribX + (side * CorridorHalf);
         double available = Math.Abs(limit - faceX);
         double length = Math.Abs(far - mouth);
@@ -2781,12 +3223,14 @@ public static class UndergroundComplex
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Wall> glass,
         List<(double Lo, double Hi)> spineCuts,
         string bodyId, int level, List<Rib> ribs, int ribIndex, int side,
-        double mouth, double far, double shaftX, double leftEnd, double rightEnd, double roomScale,
-        bool glazed)
+        double mouth, double far, double shaftX, double? serviceX, double leftEnd, double rightEnd,
+        double roomScale, bool glazed)
     {
         Comfort use = HallUseOn(bodyId, level);
 
-        if (HallGround(bodyId, use, ribs, ribIndex, side, mouth, far, shaftX, leftEnd, rightEnd, roomScale)
+        if (HallGround(
+                bodyId, use, ribs, ribIndex, side, mouth, far, shaftX, serviceX, leftEnd, rightEnd,
+                roomScale)
             is not { } ground)
         {
             return null;
@@ -3099,8 +3543,48 @@ public static class UndergroundComplex
         double y0 = Math.Min(hallFar, farLine), y1 = Math.Max(hallFar, farLine);
         double W(double w) => down ? hallFar - w : hallFar + w;
 
+        // ── #801 · WHAT IS BEHIND THE FAR WALL, decided BEFORE the wall is poured — the near wall's own
+        //    law (#775) said about the other side of the room. A back room is laid in each BAY BETWEEN two
+        //    floodlight masts, so a door can never be cut in front of a lamp post: the bay is where the
+        //    masts are not.
+        IReadOnlyList<double> mastXs = ParkMastXs(x0, x1);
+        double bandOut = down
+            ? Math.Abs(farLine - field.BottomY)
+            : Math.Abs(field.LandingBandY - farLine);
+        var backBays = new List<(double At, double Half)>();
+        if (bandOut >= ParkBackDepthDu + ParkBackRockDu)
+        {
+            for (int k = 1; k < mastXs.Count; k++)
+            {
+                double bay = mastXs[k] - mastXs[k - 1];
+                double half = (bay - ParkBackPierDu) / 2.0;
+                if (half >= DoorHalf + ParkBackPierDu)
+                {
+                    backBays.Add(((mastXs[k] + mastXs[k - 1]) / 2.0, half));
+                }
+            }
+        }
+
         // ── THE WALLS IT OWNS.
-        walls.Add(new(x0, farLine, x1, farLine, true));       // the far wall — the painted horizon
+        //
+        // #801 · The far wall is built in segments now, exactly the way the near wall is and for exactly the
+        // same reason: the gaps in it and the doors published on it are ONE set of spans, swept in order by a
+        // cursor that may only move forward (§13.2). It stopped being the painted horizon the day the owner
+        // said the park must not be the edge.
+        double backCursor = x0;
+        foreach ((double at, double _) in backBays)
+        {
+            double lo = at - DoorHalf, hi = at + DoorHalf;
+            if (lo > backCursor)
+            {
+                walls.Add(new(backCursor, farLine, lo, farLine, true));
+            }
+            backCursor = Math.Max(backCursor, hi);
+        }
+        if (backCursor < x1)
+        {
+            walls.Add(new(backCursor, farLine, x1, farLine, true));
+        }
         walls.Add(new(x0, hallFar, x0, farLine, true));
         walls.Add(new(x1, hallFar, x1, farLine, true));
 
@@ -3221,15 +3705,34 @@ public static class UndergroundComplex
 
         // ── THE MASTS · the artificial day, standing against the far wall.
         var masts = new List<(double X, double Y)>();
-        for (int k = 0; k < 5; k++)
+        foreach (double u in mastXs)
         {
-            double u = uLo + (span * (k + 0.5) / 5.0);
             double my = W(depth - (ParkEdgeClearDu / 2.0));
             masts.Add((u, my));
             walls.Add(new(u - 0.6, my - 0.6, u + 0.6, my - 0.6, true));
             walls.Add(new(u - 0.6, my + 0.6, u + 0.6, my + 0.6, true));
             walls.Add(new(u - 0.6, my - 0.6, u - 0.6, my + 0.6, true));
             walls.Add(new(u + 0.6, my - 0.6, u + 0.6, my + 0.6, true));
+        }
+
+        // ── #801 · AND THE ROOMS THEMSELVES · three walls each; the fourth is the park's own far wall,
+        //    already poured above with this room's door left out of it. #585's one-gap law, said about a
+        //    room whose corridor is a garden.
+        double backFar = down ? farLine - ParkBackDepthDu : farLine + ParkBackDepthDu;
+        var back = new List<BackRoom>(backBays.Count);
+        foreach ((double at, double half) in backBays)
+        {
+            double bx0 = at - half, bx1 = at + half;
+            walls.Add(new(bx0, farLine, bx0, backFar, true));
+            walls.Add(new(bx1, farLine, bx1, backFar, true));
+            walls.Add(new(bx0, backFar, bx1, backFar, true));
+            back.Add(new BackRoom(
+                bx0, Math.Min(farLine, backFar), bx1, Math.Max(farLine, backFar),
+                new SurfaceLayout.Doorway(at - DoorHalf, farLine, at + DoorHalf, farLine),
+                ParkBackPlates[
+                    (back.Count
+                        + (int)(Frac(bodyId, $"hive:{level}:park-back") * ParkBackPlates.Count))
+                        % ParkBackPlates.Count]));
         }
 
         // The lone figure, on the bench furthest from the gate. Scenery: the owner's own "benches, the lone
@@ -3267,7 +3770,8 @@ public static class UndergroundComplex
                 (int)(Frac(bodyId, $"hive:{level}:park-figure") * CanteenRegulars.StrangerPlates.Count)
                     % CanteenRegulars.StrangerPlates.Count],
             ParkArtFor(bodyId, HallUseOn(bodyId, level)),
-            gates);
+            gates,
+            back);
     }
 
     /// <summary>#775 · What is stencilled at the mouth of the walk down to the park — the arrow idiom this
@@ -3293,7 +3797,8 @@ public static class UndergroundComplex
     /// silently, and a floor quietly losing chambers is the shape of bug this file keeps a table of.</para>
     /// </summary>
     private static double? GardenWalkX(
-        List<Rib> ribs, bool parkSide, in Hall hall, double shaftX, double leftEnd, double rightEnd)
+        List<Rib> ribs, bool parkSide, in Hall hall, double shaftX, double? serviceX,
+        double leftEnd, double rightEnd)
     {
         var keepOff = new List<(double Lo, double Hi)> { (hall.X0, hall.X1) };
         foreach (Rib r in ribs)
@@ -3306,6 +3811,14 @@ public static class UndergroundComplex
         if (!parkSide)
         {
             keepOff.Add((shaftX - ShaftHalf, shaftX + ShaftHalf));   // the alcove hangs off the top face
+        }
+        else if (serviceX is { } carX)
+        {
+            // #801 · …and on the other face the goods car stands, at the blind end — which is precisely
+            // where this max-min search likes to land, because the emptiest x on a face is very often the
+            // last one. Without this clause the walk down to the green and the second car would have been
+            // cut into the same six du of wall.
+            keepOff.Add((carX - ShaftHalf, carX + ShaftHalf));
         }
 
         double clear = CorridorHalf + 2.0;
@@ -3701,6 +4214,27 @@ public static class UndergroundComplex
         return Math.Pow(FoundGrowthPerFloor, BandTop(FoundBandOf(bodyId)) - level);
     }
 
+    /// <summary>#801 · The nearest plate in this floor s own register that is NOT a room somebody sat in.
+    ///
+    /// <para>Walked from the same seed <see cref="SignFor(string, int, string)"/> used, one step on, so a
+    /// room that had to give up its rank keeps the building s vocabulary rather than acquiring a sign
+    /// invented for the occasion. Empty only if a kind ever ships a register with nothing but principal
+    /// plates in it, which is a thing a guard would notice long before a player did.</para></summary>
+    private static string NotPrincipal(string bodyId, int level, string tag)
+    {
+        string[] signs = SignsFor(KindOn(bodyId, level));
+        ulong seed = DiceRule.Seed($"hive-sign:{bodyId}:{tag}");
+        for (int i = 1; i <= signs.Length; i++)
+        {
+            string candidate = signs[(int)((seed + (ulong)i) % (ulong)signs.Length)];
+            if (!IsPrincipalRoom(candidate))
+            {
+                return candidate;
+            }
+        }
+        return string.Empty;
+    }
+
     private static void AddRoomsAlong(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
         List<(double X, double Y, string Plate)> rooms, List<EnSuite> ensuites,
@@ -3777,6 +4311,22 @@ public static class UndergroundComplex
                 bool cell = AddEnSuite(
                     walls, ensuites, claimed, bodyId, level, plate, backX, cy, side, open: !shut);
                 claimed.Add((x1 - 1.5, y1 - 1.5, x2 + 1.5, y2 + 1.5));
+
+                // #801 · A ROOM THAT COULD NOT BE PLUMBED WAS NEVER A PRINCIPAL ROOM.
+                //
+                // #707 s law is that rank is readable in PLUMBING: a cell on a store room says nothing, and
+                // a principal plate with no cell says the opposite of the thing it is there to say. The cell
+                // is refused when the ground behind the room is already spoken for (the ledger is law,
+                // #585), and until now that left the plate saying a rank the building could not back up.
+                // It never fired on the shipped field — which is exactly why it was worth fixing the moment
+                // a new passage moved by four du and it fired on four generated moons.
+                //
+                // The re-plate walks the SAME seeded list from the SAME seed, one step on, so it is the
+                // floor s own vocabulary and not a special sign invented for the case.
+                if (!cell && !found && IsPlumbed(bodyId, level) && IsPrincipalRoom(plate))
+                {
+                    plate = NotPrincipal(bodyId, level, tag);
+                }
                 if (!cell)
                 {
                     walls.Add(new(backX, y1, backX, y2, true));
@@ -5182,6 +5732,27 @@ public static class UndergroundComplex
     /// </param>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, IReadOnlyCollection<string> heldCardIds,
+        IReadOnlyList<Satchel.Item>? carried = null) =>
+        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried);
+
+    /// <summary>
+    /// #801 · The same panel, asked of a CAR rather than of a building.
+    ///
+    /// <para>The cage's panel is the panel this game has always had, to the last string — every older caller
+    /// reaches it through the overload above and nothing about it moved.</para>
+    ///
+    /// <para>The goods car's is the same four floors and <b>nothing else</b>: no SURFACE row, because the
+    /// only hole with a hut on top of it is the cage's (#606), and no gate row, because §13.5 is a law about
+    /// the BUILDING and a second car may not be a way to buy depth without the paper. That is also what makes
+    /// the pair worth walking between rather than interchangeable: within a band either car will do, and the
+    /// moment you want to leave the band you want the cage, which is at the other end of the corridor.</para>
+    ///
+    /// <para>Written as one method with one clause in it rather than as two panels, because two panels is two
+    /// answers to "which floors does this site have on this band" and the second one goes stale the first
+    /// time a band learns a new shape (§13.7 and §13.20 have each taught this file that once).</para>
+    /// </summary>
+    public static IReadOnlyList<LiftStop> LiftPanel(
+        string bodyId, int level, ShaftKind car, IReadOnlyCollection<string> heldCardIds,
         IReadOnlyList<Satchel.Item>? carried = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
@@ -5194,16 +5765,31 @@ public static class UndergroundComplex
         // the plate by the car never said it, and the card in the wallet says "there is no air on this moon
         // to help you" — so this was the house bug class in its purest form: a SENTENCE reporting one world
         // while the sim runs another, kept alive because the row nobody doubted was the row nobody asked.
-        var stops = new List<LiftStop>
+        //
+        // #801 · …and only the CAGE offers it at all. There is one hut on the regolith (#606) and it stands
+        // over one hole; the goods car does not climb out, so the row is not drawn rather than drawn and
+        // refused. #802's law is untouched — the row that exists still ASKS.
+        var stops = new List<LiftStop>();
+        if (car == ShaftKind.Cage)
         {
-            new(0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null),
-        };
+            stops.Add(new(0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null));
+        }
 
         int band = BandOf(Math.Min(level, -1));
         int deepest = BandFloor(bodyId, band);
         for (int f = BandTop(band); f >= deepest; f--)
         {
             stops.Add(new(f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null));
+        }
+
+        if (car != ShaftKind.Cage)
+        {
+            // The goods car's panel ends here, and it ends in SILENCE rather than in a button that refuses.
+            // A refusing row is right where a gate exists and the paper is missing (#590); there is no gate
+            // in this shaft at all, and a row that said so would be an affordance a captain re-presses every
+            // floor for the rest of the excursion. What the car is and is not is said once, at the top of
+            // the panel, by ServiceCarPanelLine.
+            return stops;
         }
 
         // #677 · The next shaft that EXISTS. Under the band nobody listed there is a whole band with nothing

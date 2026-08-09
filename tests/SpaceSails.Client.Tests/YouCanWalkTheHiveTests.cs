@@ -311,11 +311,24 @@ public sealed class YouCanWalkTheHiveTests
     {
         // Coming back up must never be a search, and on a dead floor it must never be a maze either: the tank
         // is running the whole time you are looking.
+        //
+        // #801 · TWO cars, and the law grew rather than moved. It said "exactly one lift" and that was the
+        // whole of the choke the owner filed: one console is one square somebody stands on. There is still
+        // exactly one CAGE — the one the surface hut sits over and the one every older route arrives at —
+        // and, wherever the corridor has room for it, exactly one goods car as well.
+        int cars = UndergroundComplex.ShaftsOn(Field).Count;
         AuditEveryFloor((_, _, deck) =>
         {
-            var lift = deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.HiveLift).ToList();
-            return lift.Count == 1 ? null : $"{lift.Count} lifts on this floor — there should be exactly one.";
-        }, "spec — one lift, always findable");
+            var cage = deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.HiveLift).ToList();
+            if (cage.Count != 1)
+            {
+                return $"{cage.Count} cages on this floor — there should be exactly one.";
+            }
+            var goods = deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.HiveServiceLift).ToList();
+            return goods.Count == cars - 1
+                ? null
+                : $"{goods.Count} goods car(s) on this floor and the ground takes {cars - 1}.";
+        }, "spec — one cage and one goods car, both always findable");
     }
 
     [Fact]

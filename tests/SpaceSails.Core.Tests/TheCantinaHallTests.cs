@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -845,9 +845,14 @@ public sealed class TheCantinaHallTests
                         $"{body} B{-level}: a sealed door is inside the hall.");
                 }
 
-                // …and the lift is not, which is the one spot every excursion stands on.
-                (double sx, double sy) = UndergroundComplex.ShaftAt(Field);
-                Assert.False(hall.Contains(sx, sy), $"{body} B{-level}: the hall swallowed the LIFT.");
+                // …and neither car is, which are the two spots every excursion stands on (#801).
+                foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
+                {
+                    Assert.False(hall.Contains(car.X, car.Y),
+                        $"{body} B{-level}: the hall swallowed the {car.Kind} car.");
+                    Assert.False(hall.Contains(car.Landing.X, car.Landing.Y),
+                        $"{body} B{-level}: the hall swallowed the {car.Kind} car's doorstep.");
+                }
 
                 // The floor is still a facility rather than a flat — over the sites the game actually
                 // ships. Scoped exactly the way TheHiveAmenitiesTests scopes the same law and for the same

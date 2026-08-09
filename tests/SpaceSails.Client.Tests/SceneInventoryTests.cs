@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -239,6 +239,9 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveHead] = "#585 the camouflaged lift head, on the surface only where a site " +
                                           "actually carries a clandestine facility (?secretlab=1)",
         [DeckPlan.ConsoleKind.HiveLift] = "#585 the lift car, in an underground floor appended on the way down",
+        [DeckPlan.ConsoleKind.HiveServiceLift] = "#801 the SECOND car — the goods lift at the blind end of " +
+                                                 "the main corridor, on an appended underground floor " +
+                                                 "wherever the ground takes one (?goodscar=1)",
         [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",

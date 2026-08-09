@@ -1169,6 +1169,38 @@ public partial class Map
                     _startingFloorCheat = -1;
                 }
             }
+            else if (pair.StartsWith("goodscar=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #801 dev cheat: /map?goodscar=1 boots the same B1 route and walks the last leg to the
+                // SECOND CAR, at the blind end of the main corridor. A feature whose whole point is that
+                // there is another way off this floor is a feature nobody finds unless the route to it is
+                // one URL — and the cage's own console is a hundred and seventy du the other way.
+                string candidate = Uri.UnescapeDataString(pair["goodscar=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _goodsCarCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("parkback=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #801 dev cheat: /map?parkback=1 boots inside the park and stands the captain on the
+                // GRAVEL IN FRONT OF THE FAR WALL, facing the back-of-house doors. ?park=1 sets a tester
+                // down at the gate looking down the room, which is the half of the park that was never the
+                // problem: the owner's note is about the far side.
+                string candidate = Uri.UnescapeDataString(pair["parkback=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkBackCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
             else if (pair.StartsWith("freight=", StringComparison.OrdinalIgnoreCase))
             {
                 // #775 dev cheat: /map?freight=1 walks the last leg to the GOODS HOIST instead — the one

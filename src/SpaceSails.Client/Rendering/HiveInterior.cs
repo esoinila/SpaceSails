@@ -20,9 +20,31 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public static class HiveInterior
 {
-    /// <summary>Where the captain stands when the lift doors open — just off the car, on the spine.</summary>
-    public static (double X, double Y) SpawnOn(in SurfaceLayout.Field field)
+    /// <summary>Where the captain stands when the lift doors open — just off the car, on the spine.
+    ///
+    /// <para>#801 · The CAGE's doorstep. Every caller that means "the way in" still means this one; the ones
+    /// that mean "the car I just rode" say which (<see cref="SpawnOn(in SurfaceLayout.Field,
+    /// UndergroundComplex.ShaftKind)"/>).</para></summary>
+    public static (double X, double Y) SpawnOn(in SurfaceLayout.Field field) =>
+        SpawnOn(field, UndergroundComplex.ShaftKind.Cage);
+
+    /// <summary>#801 · Where the doors of THIS car open onto the floor.
+    ///
+    /// <para>The pace out of the car is the shaft's own (<see cref="UndergroundComplex.Shaft.Landing"/>) and
+    /// not a sign written here: the two alcoves hang off opposite faces of the spine, so "a pace out" is
+    /// +1 du for one of them and −1 for the other, and a renderer that kept its own copy of that would put
+    /// a captain inside a wall the first time a car moved. Falls back to the cage where the ground would not
+    /// take a second car — #602's law, said about a shaft that may not exist.</para></summary>
+    public static (double X, double Y) SpawnOn(
+        in SurfaceLayout.Field field, UndergroundComplex.ShaftKind car)
     {
+        foreach (UndergroundComplex.Shaft shaft in UndergroundComplex.ShaftsOn(field))
+        {
+            if (shaft.Kind == car)
+            {
+                return shaft.Landing;
+            }
+        }
         (double x, double y) = UndergroundComplex.ShaftAt(field);
         return (x, y + 1.0);
     }
@@ -427,10 +449,19 @@ public static class HiveInterior
                 (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
         }
 
-        // The lift, on every floor, in the same place.
+        // The cars, on every floor, in the same places. #801 · Both of them, off one list, each with the
+        // sign Core paints on it — a renderer choosing which console kind goes on which car would be a
+        // second opinion about a machine it does not own.
         (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(field);
-        consoles.Add(new(DeckPlan.ConsoleKind.HiveLift,
-            (float)shaftX, (float)(shaftY + UndergroundComplex.CorridorHalf + 2.5), "🛗 LIFT"));
+        foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(field))
+        {
+            bool cage = car.Kind == UndergroundComplex.ShaftKind.Cage;
+            consoles.Add(new(
+                cage ? DeckPlan.ConsoleKind.HiveLift : DeckPlan.ConsoleKind.HiveServiceLift,
+                (float)car.X,
+                (float)(car.Y + ((cage ? 1 : -1) * (UndergroundComplex.CorridorHalf + 2.5))),
+                car.Sign));
+        }
 
         foreach (SurfaceLayout.Landmark m in floor.Labels)
         {

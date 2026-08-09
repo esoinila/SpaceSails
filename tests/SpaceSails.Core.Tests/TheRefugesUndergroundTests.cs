@@ -129,20 +129,94 @@ public sealed class TheRefugesUndergroundTests
         // would be dead and the deep floors would cost nothing. A refuge changes the VERB (from "how long
         // dare I stay" to "can I get from the car to the refuge to the room I want and back"); it does not
         // remove the price.
-        (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(Field);
-        AuditEveryFloor((_, _, floor) =>
+        // ── #801 · MEASURED FROM BOTH CARS, AND STATED AS "THE CARVE TOOK THE BEST IT HAD" ─────────────
+        //
+        // There are two ways onto a floor now. A refuge that is a detour from the cage and four steps from
+        // the goods car has stopped costing anything, and the law as it stood — one shaft, straight-line —
+        // would have gone on passing while the sentence it exists to protect died. It did not: widening it
+        // to both cars took 332 of 1130 floors red, and the carve was fixed rather than the guard.
+        //
+        // What could not be fixed is arithmetic. Two cars a hundred and seventy du apart on a spine two
+        // hundred and seventy-eight du long means a handful of the tightest generated floors — two to seven
+        // chambers, all of them hanging off one or two corridors — have NOWHERE that is seventy du from
+        // both. On those the carve takes the furthest room it has, and a guard that simply demanded the
+        // number would be demanding a floor the generator cannot produce.
+        //
+        // So the law is stated as a comparison instead of as a constant, which is stronger: the refuge must
+        // be the FURTHEST-from-both room the floor had, and it must clear the law wherever any room does.
+        // The pool is reconstructed exactly — the refuge itself plus every remaining room centre, minus the
+        // one room #592 reserves — so this cannot pass by measuring a world the carve never saw.
+        int fellBack = 0, cleared = 0;
+        double worstFallback = double.MaxValue;
+
+        AuditEveryFloor((body, level, floor) =>
         {
-            foreach (UndergroundComplex.Refuge r in floor.Refuges)
+            if (floor.Refuges.Count == 0)
             {
-                double dx = r.X - shaftX, dy = r.Y - shaftY;
-                double range = Math.Sqrt((dx * dx) + (dy * dy));
-                if (range < UndergroundComplex.MinRefugeDetourDu)
+                return null;
+            }
+            UndergroundComplex.Refuge r = floor.Refuges[0];
+
+            // The pool the carve chose from: this room, plus the ones it left. Amenities and refuges never
+            // share a floor (one is plumbed and the other is not), so nothing else came out of it.
+            int reserved = UndergroundComplex.KeyRoomFor(body) is { } key && key.Level == level
+                ? key.RoomIndex
+                : -1;
+            var pool = new List<(double X, double Y)> { (r.X, r.Y) };
+            for (int i = 0; i < floor.RoomCentres.Count; i++)
+            {
+                if (i != reserved)
                 {
-                    return $"the refuge is {range:F0} du from the car — that is decoration, not a detour.";
+                    pool.Add(floor.RoomCentres[i]);
                 }
             }
+
+            double Nearest(double x, double y)
+            {
+                double near = double.MaxValue;
+                foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
+                {
+                    double dx = x - car.X, dy = y - car.Y;
+                    near = Math.Min(near, Math.Sqrt((dx * dx) + (dy * dy)));
+                }
+                return near;
+            }
+
+            double got = Nearest(r.X, r.Y);
+            double best = 0;
+            foreach ((double px, double py) in pool)
+            {
+                best = Math.Max(best, Nearest(px, py));
+            }
+
+            if (got >= UndergroundComplex.MinRefugeDetourDu)
+            {
+                cleared++;
+                return null;
+            }
+
+            // It did not clear the law. That is only allowed where NOTHING on the floor could have.
+            if (best >= UndergroundComplex.MinRefugeDetourDu)
+            {
+                return $"the refuge is {got:F0} du from the nearest car and this floor had a room {best:F0} "
+                    + "du out — that is decoration, not a detour.";
+            }
+            fellBack++;
+            worstFallback = Math.Min(worstFallback, got);
             return null;
-        }, "a refuge is always a walk away from the lift");
+        }, "a refuge is always a walk away from the lift — the furthest walk the floor had");
+
+        // ── AND THE ESCAPE HATCH IS MEASURED, or it is not an escape hatch, it is a hole.
+        Assert.True(cleared > 500, $"only {cleared} refuge(s) cleared the law outright — this proved little.");
+        Assert.True(fellBack > 0,
+            "no floor ever used the furthest-room fallback, so the branch above is never exercised and this "
+            + "guard has been agreeing with itself.");
+        Assert.True(fellBack * 20 < cleared,
+            $"{fellBack} floor(s) fell back against {cleared} that cleared the law — the fallback has "
+            + "stopped being the exception it is documented as.");
+        Assert.True(worstFallback >= UndergroundComplex.MinRefugeDetourDu * 0.7,
+            $"the worst fallback puts a refuge {worstFallback:F0} du from a car, and even a floor with "
+            + "nowhere to put one may not put it beside the doors.");
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-# The landing site
+﻿# The landing site
 
 *What a moon's ground has to be before it ships. Written 2026-08-01, after two days of the owner playing
 Miranda and finding, by eye, eleven things reasoning had not.*
@@ -2233,6 +2233,169 @@ consumed here.** What a round DOES about a noise is not a predicate, it is a STA
 to the place, search it, resume — which is the first rung of the suspicion ladder this phase is scoped out of,
 and it wants a sentence in the guard's own register that has not been through canon review. The seam is ready
 and the caller is one `if`; the reason it is empty is a ruling rather than an oversight.
+13.28 **The park is not the edge of the map: the far wall is a row of doors** (#801).
+
+> *"we could have rooms to explore below the park also (on the map). Walking through the park is fun, it
+> should not be the edge."* — the owner, 2026-08-09
+
+§13's park (#759) is the biggest room in the game and #775 made it a **thoroughfare** — 2–5 gates in its near
+wall, so the natural route between two corridors crosses the green. It still had a painted horizon down one
+whole side, and a crossing that ends at a horizon is a crossing you do once.
+
+**The back of house.** Behind the far wall, one room in each **bay between two floodlight masts** — four on
+the shipped field, ~46 × 12 du each, entered directly off the gravel. Their plates say what the KITCHEN and
+the GROUNDS are for and never what the building is for (§13.8): `🌱 POTTING · SOIL, TRAYS, GRIT`,
+`🧰 GROUNDS PLANT · LAMPS, FEED, TIMERS`, `❄ COLD ROOM · TO CANTEEN 1`,
+`🧤 GROUNDS STORE · TOOLS SIGNED OUT AND BACK`, `🚿 WASH-DOWN`, `📋 GROUNDS OFFICE · ROTA POSTED`. The cold
+room names the same `CANTEEN 1` the beds are stencilled for, which is the entire food connection said a third
+time and never once pointed out.
+
+**Where the ground came from, because it is not obvious and it is the whole engineering answer.** The park's
+size is a LAW — `ParkDepthDu` deep, and half again the floor of the hall behind it — and on the shipped field
+the second of those binds at 38.3 du of the 42 it has. There is 3.7 du of slack in the entire feature and a
+chamber module is twelve, so the band could **not** be bought by making the park shallower. It is bought from
+the **last strip of the field**: the park's far wall clamps at `BottomY + EdgeMargin`, and the edge margin is
+a *surface* law — the half-lane the regolith generator keeps clear of the #563 falloff. There is no falloff on
+a floor with a roof on it (a Hive deck publishes no `Unseen` wall at all, so `DrawUnseenFalloff`
+short-circuits and nothing is clipped). That band is 16.5 du of the field's own envelope no floor has ever
+used. The back wall stands `ParkBackRockDu` inside `BottomY`, and the one law that *does* bind —
+`ItNEVERLeavesTheSurfacesOwnEnvelope` — is met with rock to spare.
+
+**Three consequences that had to be got right.**
+
+- **The far wall is built in segments now**, exactly the way the near wall has been since #775, off the one
+  list of spans a cursor sweeps in order (§13.2). The gap the wall leaves and the door the room publishes are
+  one gap (§13.1's founding law).
+- **The doors are laid in the bays BETWEEN the masts**, off `ParkMastXs` — one answer, asked by the carve
+  that erects the masts and by the carve that lays the rooms — so a door can never be cut in front of a lamp
+  post.
+- **They are not `Park.Ways`.** A Way is a way *through* the green, corridor to corridor, and
+  `TheHiveAmenitiesTests`' conservation sum counts each one as a place with a doorway. A back door is a way
+  *out of* the green into a room that is already counted; publishing it on `Ways` would have taken that guard
+  red for a reason that has nothing to do with the bug it was written for. They are published as
+  `Park.BackDoors`, and each room carries its own.
+
+*(Enforced: `TheParkIsNotTheEdgeTests` (Core) sweeps 52 parks — every room on the far side, every door on the
+far line, nothing lying across one, every room on the floor's own `RoomCentres`, every plate on a wall, the
+park's own depth untouched to three decimals, and the rock left over. `TheFarGatesLeadSomewhereTests`
+(Client) floods the real `DeckPlan.CollisionField` from the car to every one of them and then **pours every
+back door shut** and demands they all go dark, with the green itself still reachable so the plug is proved to
+have measured the door. Watched go red three ways: with the carve removed, `52 park(s) are still the edge of
+the map: luna B1: the far wall has nothing behind it — the park is where the building stops`; with the rooms
+carved and the far wall left poured as one segment, Core says `208 park(s) are still the edge of the map:
+luna B1: a wall (-144.0…134.0) lies across the back door at -88.6…-82.2` and the Client says `48 room(s)
+behind the green are drawn and cannot be entered: luna B1: 📋 GROUNDS OFFICE · ROTA POSTED at (-85, -270) —
+the door is a picture`; and with the far wall deleted entirely, `48 room(s) … is STILL reachable with its
+door poured shut — the far wall is a picture, not a wall`.)*
+
+**Reaching it.** `/map?parkback=1` — B1, standing on the gravel facing the doors.
+
+13.29 **No floor has exactly one way off it: the building has two cars** (#801).
+
+> *"that elevator would be so busy it would be packed and never available… it is a choke point, and the whole
+> lab would be too easily guarded by just having the guard posted in front of the one elevator. I want to
+> remove that too-easy plot-to-catch-us plot hole."* — the owner, 2026-08-09
+
+He is right three times and the third is the one that matters. **Traffic**: a facility with a canteen for
+eighty, twelve growing beds and a goods hoist does not run on one personnel car. **Pacing**: one car is a
+come-back-here point on every floor. **The posted guard**: a single car is a single square somebody stands
+on, and no amount of writing around that makes an escape feel earned.
+
+**The shape.** `ShaftAt` is THE CAGE — the one the surface hut (#606) sits over, the one the plate stack is
+beside, the one every older law means by "the lift". Beside it now, published from `ShaftsOn(field)`, is the
+**goods car**: same spine, opposite face, at the **blind end of the main corridor** — the one stretch of
+spine past the outermost cross corridor's own chambers, which is ground no room can ever be laid in and
+exactly where a goods lift goes in a building anybody has ever worked in. On the shipped field that is 170 du
+from the cage against a law of 92.7 (a third of the corridor), so **one person cannot watch both**.
+
+**What it does NOT do, and this is the load-bearing half.** The goods car has **no SURFACE row** (there is
+one hut on the regolith and it is over the cage) and **no gate row at all**. §13.5 is a law about the
+BUILDING — depth past the first band is earned with paper — and a second car that could cross a band seam
+would be a way to buy it without. Which also makes the pair worth walking between rather than
+interchangeable: within a band either car will do; the moment you want the surface or anything deeper you
+want the cage, and the cage is at the other end of the corridor. That is route planning, and it costs nothing
+to state.
+
+It is **not** #719's executive lift (that hangs off a principal apartment, is on no panel, and costs your
+cover) and **not** #719's service stair. It is the ordinary second car a building this size has, and it ships
+first because the other two are beats and this is a topology.
+
+**The ground gets a veto.** `ServiceShaftAt` returns null on a field whose cross corridors run out to its own
+end caps, and the choke law binds *where the generator admits two* and says nothing where it does not — which
+is what keeps it a law rather than a tautology, and is asserted against a synthetic cramped field.
+
+**Every singular guard grew rather than moved.** `TheLiftIsInTheSAMEPlaceOnEveryFloor`,
+`EveryMouthCutInTheSpineIsSTILLOpenWhenTheWallIsFinished` (which had seeded its mouth list with a hard-coded
+singleton — a second alcove walled over on the lower face is #587 one face down and would never have been
+looked at), `NoRibIsRunThroughTheLiftShaft`, `ARefugeIsNeverBesideTheLift`, the hall-swallowed-the-lift
+clause, the nobody-sits-in-the-car clause, and `ThereIsAlwaysAWayBackToTheLift` — which said *"exactly one
+lift"*, i.e. it asserted the choke, and now says **one cage, one goods car, both always findable**.
+
+**And one of them found a real bug rather than needing a widening.** `ARefugeIsNeverBesideTheLift` measured
+the cage alone; widening it to both cars took **332 of 1130 floors** red, because #608's carve had been
+choosing the room furthest from ONE shaft. The carve was fixed rather than the guard: it measures every car,
+and where a tight floor has nowhere `MinRefugeDetourDu` from both it takes the **furthest** room it has
+instead of a rolled one (which alone moved the worst case from 29 du to 52). The law is restated as a
+comparison — *the refuge must be the furthest-from-both room the floor had, and must clear the number
+wherever any room does* — with the fallback counted, capped at a twentieth of the floors that clear it
+outright, and floored at 0.7 of the law, so the escape hatch is measured rather than assumed. Watched go red
+by reverting the carve to one shaft: `319 of 1130 floor(s) break the law … luna B2: the refuge is 29 du from
+the nearest car and this floor had a room 79 du out`.
+
+**#707's rank-in-plumbing law was made honest in passing.** A principal room whose ground was already claimed
+cannot be given an en-suite, and it used to keep a plate stating a rank the building could not back up. The
+fallback had never fired on the shipped field — which is exactly why it fired on four generated moons the day
+a passage moved four du. Such a room is now re-plated from the floor's own register, one step along the same
+seed.
+
+*(Enforced: `TheOtherCarTests` (Core) — every floor of 53 sites has both alcoves cut, the separation and the
+opposite-faces law, nothing standing on either car, the ground's veto, and the goods car's panel offering
+exactly its band with no surface row, no sealed row and no card named, asked with a wallet holding every card
+the site can mint. `TheFarGatesLeadSomewhereTests` (Client) proves each car's doorstep is standable and that
+from either one you can WALK to the other, which is the anti-choke claim itself. Watched go red four ways: with the second
+alcove never cut, `594 floor(s) can be sealed by one person standing on one square: luna B1: the Service
+car's alcove is not cut on this floor`; with the separation law dropped and the car placed at the NEAR blind
+end, `the two cars are 92.2 du apart and the law wants 92.7 — one person standing between them has both`;
+with the goods car given the cage's panel, `1285 goods-car panel(s) offer something the shaft does not have:
+luna B1: the goods car offers B5, which is another band's floor`; and with the doorstep left as the cage's,
+`130 floor(s) fail the two-car law: luna B1: riding the Service car puts a captain 170 du from the car they
+rode`.)*
+
+**The signage stack stays at the cage, and that is a call rather than an oversight.** §13.13's plate — the
+depth, the department, and whether you can breathe — is 44px lettering on the wall a captain steps out onto,
+and the second car does not get a copy of it. Two reasons, both already written in this file: #605 deleted a
+third plate from that wall because *three plates on one wall is a wall nobody reads*, and §13.16 settled that
+**a building says a thing where you ENTER it and nowhere else**. The goods car names itself
+(`🛗 GOODS CAR 2 · THIS BAND ONLY`), its panel states the depth in the same `DepthPaint` the plate uses, and
+the air fact reaches a captain who arrives by it through the arrival's own sayings and the suit gauge — which
+is §13.13's actual law: **one** pressure fact, said by everything that says it. Nothing is left unsaid; it is
+said once.
+
+**What this means for §13.27's rounds, said out loud rather than left for somebody to trip over.**
+`PatrolBeat.Circuit` opens at *the car* — `ShaftAt` plus a pace — and then walks the rib mouths and their far
+rooms. That is still correct: `ShaftAt` is the cage, and the cage's doorstep is still a pace off its own face.
+What is now true and was not before is that **the goods car is on nobody's round.** That is the feature
+working rather than a hole in the roster — the owner's complaint was precisely that one posted guard has the
+building — but it IS a design question the guards lane owns, and this PR does not answer it: whether a round
+should take in both cars (and pay for it in length), whether a second guard walks the other end, or whether
+the goods car being unwatched is the price the building pays for having one. Nothing here guesses. The back
+of house does not enter the question at all: `IsPatrolled` excludes the bar floor, and the park is only ever
+on the bar floor.
+
+**Two things this deliberately does NOT do, so nobody has to guess later.**
+
+- **No second SURFACE head.** The issue says "maybe a second surface shaft"; the hut is a seeded
+  `SurfaceStructure` with a discovery beat, a probe ping and its own art (#606/#592), and a second one is a
+  surface feature rather than a carve. The surface remains one way in — and #719's **service stair** is the
+  designated answer to that, which is why it is not pre-empted here.
+- **The wrong-shaft-of-this-site refusals do not get a new stage.** A card's identity is `(bodyId, band)`, so
+  those lines only fire when the wallet holds a card for a *different band* than the gate wants. Both cars
+  serve the same band, so the goods car cannot produce a case the cage does not. Reaching them in play needs
+  a car whose band coverage is OFFSET — which moves the gate from the shaft to the band SEAM, i.e. a rewrite
+  of §13.5's implementation. That wants an owner ruling, not a carve PR.
+
+**Reaching it.** `/map?goodscar=1` — B1, standing at the second car. Then walk to the other one and see how
+far that is.
 
 ## Working method
 

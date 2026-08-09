@@ -1721,13 +1721,25 @@ public partial class Map
         // fan down here is not merely useless — it is actively wrong, because the way home ring is the one
         // the captain reads when the air gets short and it would be pointing at a hut they cannot reach.
         //
-        // Down here there is exactly ONE place worth a ring, and it is the same one every floor: the lift.
-        // It is the way home in the only sense that matters underground, so it takes the HOME flag and the
-        // calm colour that goes with it — a place, not a thing that moves.
+        // Down here the places worth a ring are the CARS, and they are the same ones every floor. They are
+        // the way home in the only sense that matters underground, so they take the HOME flag and the calm
+        // colour that goes with it — a place, not a thing that moves.
+        //
+        // #801 · Plural, and off the one list. This said "there is exactly ONE place worth a ring" and drew
+        // it from ShaftAt; a captain being hunted toward the goods car would have had the instrument telling
+        // them the way home was a hundred and seventy du behind them, which is the map lying (#573) in the
+        // one place it costs a life.
         if (ex.Floor < 0)
         {
-            (double liftX, double liftY) = UndergroundComplex.ShaftAt(MoonSurface.ExpeditionField());
-            Add(liftX, liftY + UndergroundComplex.CorridorHalf + 2.5, home: true);
+            foreach (UndergroundComplex.Shaft car in
+                UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
+            {
+                (double carX, double carY) = car.Landing;
+                Add(carX,
+                    carY + ((car.Kind == UndergroundComplex.ShaftKind.Cage ? 1 : -1)
+                        * (UndergroundComplex.CorridorHalf + 1.5)),
+                    home: true);
+            }
 
             // ── #608 · AND THE REFUGES, WHICH ARE THIS FLOOR'S SHELTERS ──
             //
@@ -2188,11 +2200,20 @@ public partial class Map
         {
             return;
         }
-        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
-            { Kind: DeckPlan.ConsoleKind.HiveLift or DeckPlan.ConsoleKind.HiveHead })
+
+        // #801 · WHICH CAR THE CAPTAIN IS STANDING AT. The press used to throw the pressed console away and
+        // ask Core about "the lift", which was harmless while there was one and is a bug the moment there
+        // are two: the goods car at the blind end would have opened the cage's panel and set the captain
+        // down a hundred and seventy du away. The spot decides; nothing else in this method knows.
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { } at
+            || at.Kind is not (DeckPlan.ConsoleKind.HiveLift or DeckPlan.ConsoleKind.HiveHead
+                or DeckPlan.ConsoleKind.HiveServiceLift))
         {
             return;
         }
+        _liftCar = at.Kind == DeckPlan.ConsoleKind.HiveServiceLift
+            ? UndergroundComplex.ShaftKind.Service
+            : UndergroundComplex.ShaftKind.Cage;
 
         // ── #600 · THE PANEL, BECAUSE THE CAR ONLY WENT DOWN ──
         //
@@ -2223,8 +2244,20 @@ public partial class Map
     /// (<c>CanteenTable.Cover</c>) — asked of the same pocket the player can open and look in.</para></summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
         _surface is { } ex
-            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, AuthorityCardIds(), _satchel)
+            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, _liftCar, AuthorityCardIds(), _satchel)
             : [];
+
+    /// <summary>#801 · Which of the two cars the open panel belongs to — set by the press that opened it,
+    /// and read by the panel, the ride and the placement so that all three are talking about one machine.
+    /// The cage until somebody walks to the other end of the corridor.</summary>
+    private UndergroundComplex.ShaftKind _liftCar = UndergroundComplex.ShaftKind.Cage;
+
+    /// <summary>#801 · What the open panel says under its title. The cage's line is the one it has always
+    /// had; the goods car's names where the cage is, which is the anti-choke feature said in a sentence.</summary>
+    private string LiftPanelLine() =>
+        _liftCar == UndergroundComplex.ShaftKind.Cage
+            ? "This car serves its own band and no further."
+            : UndergroundComplex.ServiceCarPanelLine;
 
     /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
     /// that is present and explains itself is the entire reason it is not simply absent.</summary>
@@ -2342,7 +2375,11 @@ public partial class Map
             return;
         }
 
-        (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
+        // #801 · …and it opens where the car the captain PRESSED is, which used to be a constant. The
+        // doorstep is the shaft's own (UndergroundComplex.Shaft.Landing) and the two alcoves hang off
+        // opposite faces of the spine, so a placement that kept its own +1.0 would have set a captain who
+        // rode the goods car down inside the goods car's own wall.
+        (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField(), _liftCar);
         StandCaptainAt(sx, sy, "the car opens onto the floor");   // #681: the same net, underground
         RendererInterop.PlayCue("board");
 
@@ -5754,6 +5791,10 @@ public partial class Map
                 // a building it does not own is §13.15's second cause, and this is the third time it has
                 // been the cause of something.
                 string cheatBody = landedOn.Stop.Body.Id;
+                // #801 · …in the cage, because that is the car a boot arrives in and the one every route
+                // in the testing guide is written from. A cheat that inherited whichever car was last
+                // pressed would put a tester somewhere different depending on their last excursion.
+                _liftCar = UndergroundComplex.ShaftKind.Cage;
                 RideTheLiftTo(landedOn, UndergroundComplex.NearestFloorTo(cheatBody, askedFor));
 
                 // #746 · …and ?tablescene=1 goes the last leg too, because the scene under test is a
@@ -5775,6 +5816,11 @@ public partial class Map
                 // #803 · …and this one rigs the whole loop at that shutter: a gun set down beside you with
                 // a hut's worth of rounds in your pocket and not enough in the drum.
                 RigTheDesignateDemoIfAsked(landedOn);
+
+                // #801 · …and the two rows this PR owes a tester: the car at the OTHER end of the corridor,
+                // and the far side of the green.
+                StandAtTheGoodsCarIfAsked(landedOn);
+                StandBehindTheParkIfAsked(landedOn);
             }
             return;
         }
@@ -6104,6 +6150,68 @@ public partial class Map
     private const int DesignateDemoRoundsInPocket = 12;
 
     private bool _designateCheat;
+
+    /// <summary>#801 QA · <c>?goodscar=1</c> — booted at the SECOND CAR. Set in Map.Sim's cheat parse.</summary>
+    private bool _goodsCarCheat;
+
+    /// <summary>#801 QA · <c>?parkback=1</c> — booted on the gravel facing the BACK-OF-HOUSE doors. Set in
+    /// Map.Sim's cheat parse.</summary>
+    private bool _parkBackCheat;
+
+    /// <summary>#801 QA · Stand the captain at the GOODS CAR, at the blind end of the main corridor.
+    ///
+    /// <para>On the car's own published doorstep (<see cref="UndergroundComplex.Shaft.Landing"/>), never on
+    /// a coordinate measured off a screenshot — the two alcoves hang off opposite faces of the spine and a
+    /// number typed here would be right for one of them and inside a wall for the other.</para></summary>
+    private void StandAtTheGoodsCarIfAsked(SurfaceExcursion ex)
+    {
+        if (!_goodsCarCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        foreach (UndergroundComplex.Shaft car in
+            UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
+        {
+            if (car.Kind != UndergroundComplex.ShaftKind.Service)
+            {
+                continue;
+            }
+            (double cx, double cy) = car.Landing;
+            StandCaptainAt(cx, cy, "you walk the corridor to its blind end and the other car is standing there");
+            ShowPulseMessage(
+                "🧪 DEV ?goodscar=1: THE SECOND CAR. Press E: it runs these four floors, it does not climb "
+                + "out, and the cage is at the other end of the corridor.");
+            return;
+        }
+    }
+
+    /// <summary>#801 QA · Stand the captain on the gravel in front of the park's FAR wall, facing the
+    /// back-of-house doors — the far side the owner said should not be the edge.</summary>
+    private void StandBehindTheParkIfAsked(SurfaceExcursion ex)
+    {
+        if (!_parkBackCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        if (UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park
+            is not { } green || green.Rooms.Count == 0)
+        {
+            return;
+        }
+
+        // In front of the middle door, on the park's own side of it — the walk is a good ten du back from
+        // this wall, so this is the promenade the masts stand on and not a bed.
+        UndergroundComplex.BackRoom middle = green.Rooms[green.Rooms.Count / 2];
+        double doorX = (middle.Door.X1 + middle.Door.X2) / 2.0;
+        double inward = green.Contains(doorX, middle.Door.Y1 + 4.0) ? 4.0 : -4.0;
+        StandCaptainAt(doorX, middle.Door.Y1 + inward,
+            "you cross the gravel to the far wall, and it is a row of doors");
+        ShowPulseMessage(
+            "🧪 DEV ?parkback=1: THE FAR SIDE OF THE GREEN. Doors in the wall that used to be the horizon — "
+            + "walk through one.");
+    }
 
     // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of
     // seconds. It does NOT change what happens — the beat, the variant roll and the (zero) cost are the

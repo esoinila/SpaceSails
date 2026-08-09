@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Core.Tests;
 
@@ -179,11 +179,13 @@ public sealed class TheSilentFindsGetACardTests
                 }
             }
 
-            // …as is the lift the captain walked in from, which is the one spot every excursion stands on.
-            (double sx, double sy) = UndergroundComplex.ShaftAt(Field);
-            if (mess.Contains(sx, sy))
+            // …as are the cars the captain walked in from, which are the spots every excursion stands on.
+            foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
             {
-                wrong.Add($"  {body} B{-level}: the mess reads as holding the LIFT");
+                if (mess.Contains(car.X, car.Y))
+                {
+                    wrong.Add($"  {body} B{-level}: the mess reads as holding the {car.Kind} car");
+                }
             }
 
             // …and the floor's other amenities, where it has any.
