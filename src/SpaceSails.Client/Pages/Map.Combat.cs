@@ -519,9 +519,25 @@ public partial class Map
             return;
         }
 
+        // ASKED AGAIN AT THE TRIGGER, not trusted from the scan. The list on the panel is a snapshot taken
+        // when the gun was picked, and the world has had every frame since then to change: a door between
+        // them can have cycled shut behind the captain's back. A shot resolved off a stale row is the sim
+        // and the screen disagreeing about what a gun can see, which is the one thing this feature must not
+        // do — and re-asking costs one line.
+        IReadOnlyList<SurfaceCollision.Segment> walls = SightBlockers();
+        if (!ShootTheLock.CanBreak(gun.X, gun.Y, target.X, target.Y, walls))
+        {
+            _remoteOutcome = ShootTheLock.NothingInViewLine(gun.Unit);
+            RendererInterop.PlayCue("block");
+            ScanForLocks(unit);
+            StateHasChanged();
+            return;
+        }
+
         Ammunition.Kind kind = Ammunition.ById(gun.AmmoId);
         ShootTheLock.Order order = ShootTheLock.Fire(
-            gun.Unit, target.Sign, gun.Rounds, kind, target.RangeDu);
+            gun.Unit, target.Sign, gun.Rounds, kind,
+            ShootTheLock.RangeDu(gun.X, gun.Y, target.X, target.Y));
 
         if (!order.Fired)
         {

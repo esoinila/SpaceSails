@@ -6007,8 +6007,11 @@ public partial class Map
         SurfaceBot? gun = ex.Bots.FirstOrDefault(b => !SurfaceArrival.IsDoorSentry(b.Unit));
         if (gun is not null)
         {
+            // Where the [T] key would have put it: at the captain's own boots. Not a hand-picked spot two du
+            // to one side — that could be inside the car's divider on some floors, and a cheat that stands a
+            // machine in a wall is a cheat that playtests a world nobody can reach.
             gun.Deployed = true;
-            gun.X = _avatarX + 1.5;
+            gun.X = _avatarX;
             gun.Y = _avatarY;
             gun.AimX = gun.X;
             gun.AimY = gun.Y - 1;

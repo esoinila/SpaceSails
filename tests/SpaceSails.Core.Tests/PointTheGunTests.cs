@@ -476,6 +476,13 @@ public sealed class PointTheGunTests
         Assert.Contains("9 du", target);
         Assert.Contains("6 rounds", target);
 
+        // …and a row for something that will refuse quotes no price, because a tariff on a trade the world
+        // is going to turn down is the control misleading the captain rather than teaching them.
+        string wall = ShootTheLock.TargetRow(
+            UndergroundComplex.SealedMouthSign("miranda", 0, 2.4), 12.0, 6);
+        Assert.DoesNotContain("6 rounds", wall);
+        Assert.Contains("nothing on it to break", wall);
+
         Assert.Contains("6 rounds", ShootTheLock.FireLabel(6));
         Assert.Contains("1 round", ShootTheLock.FireLabel(1));
     }

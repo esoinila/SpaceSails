@@ -280,9 +280,18 @@ public static class ShootTheLock
     public static string GunRow(string unit, int rounds, Ammunition.Kind kind) =>
         $"{unit} · {SentryBot.Readout(rounds)}/{SentryBot.MaxMagazine} · {kind.Name}";
 
-    /// <summary>One target's row: what is painted on it and how far off it is.</summary>
+    /// <summary>
+    /// One target's row: what is painted on it, how far off it is, and what pressing it will do.
+    ///
+    /// <para>A row for something with nothing on it to break must NOT quote a price. Six rounds beside a
+    /// sealed way would be the panel offering a trade the world will refuse — and a captain who presses it
+    /// expecting to spend six rounds and gets a sentence has been misled by the control rather than taught
+    /// by it. It still presses, and it still answers; what it does not do is lie about the tariff.</para>
+    /// </summary>
     public static string TargetRow(string sign, double rangeDu, int cost) =>
-        $"🔒 {sign} · {rangeDu:F0} du · {cost} round{(cost == 1 ? "" : "s")}";
+        IsShootable(sign)
+            ? $"🔒 {sign} · {rangeDu:F0} du · {cost} round{(cost == 1 ? "" : "s")}"
+            : $"🔒 {sign} · {rangeDu:F0} du · nothing on it to break";
 
     /// <summary>The trigger.</summary>
     public static string FireLabel(int cost) => $"🔫 FIRE — {cost} round{(cost == 1 ? "" : "s")}";
