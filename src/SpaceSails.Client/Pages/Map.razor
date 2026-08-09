@@ -1665,8 +1665,11 @@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
             <div class="lift-panel" @onclick:stopPropagation="true">
                 <div class="view-object-title">🛗 CAR PANEL</div>
+                @* #801 · WHICH car. The line is the panel's own no longer: two cars serve this band and
+                   only one of them climbs out, so the sentence under the title is decided beside the stops
+                   it is describing. *@
                 <div class="lift-sub">
-                    This car serves its own band and no further. You are at
+                    @LiftPanelLine() You are at
                     <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
                 </div>
 

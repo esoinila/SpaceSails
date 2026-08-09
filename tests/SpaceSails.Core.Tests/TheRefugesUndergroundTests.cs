@@ -129,12 +129,15 @@ public sealed class TheRefugesUndergroundTests
         // would be dead and the deep floors would cost nothing. A refuge changes the VERB (from "how long
         // dare I stay" to "can I get from the car to the refuge to the room I want and back"); it does not
         // remove the price.
-        (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(Field);
+        // #801 · Measured from BOTH cars. There are two ways onto a floor now, and a refuge that is a
+        // detour from the cage and four steps from the goods car is a refuge that has stopped costing
+        // anything — the guard would have gone on passing while the sentence it exists to protect died.
         AuditEveryFloor((_, _, floor) =>
         {
             foreach (UndergroundComplex.Refuge r in floor.Refuges)
+            foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
             {
-                double dx = r.X - shaftX, dy = r.Y - shaftY;
+                double dx = r.X - car.X, dy = r.Y - car.Y;
                 double range = Math.Sqrt((dx * dx) + (dy * dy));
                 if (range < UndergroundComplex.MinRefugeDetourDu)
                 {

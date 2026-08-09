@@ -669,7 +669,10 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.HiveLift:
             case DeckPlan.ConsoleKind.HiveHead:
-                HiveLiftInteract();   // #585: down the shaft, or back up out of it
+            case DeckPlan.ConsoleKind.HiveServiceLift:
+                // #585: down the shaft, or back up out of it. #801: whichever of the two cars you walked
+                // to — the method asks the pressed spot, so this arm does not have to know.
+                HiveLiftInteract();
                 break;
             case DeckPlan.ConsoleKind.HiveHaul:
                 HiveHaulInteract();   // #585: turn over one room of the facility

@@ -193,6 +193,22 @@ public static class DevStarts
             + "the round up where he left it. Earned properly it comes off the cage crew's chit — the job "
             + "does not pay in coin, it pays in paper (#804, #746, #752).",
             "/map?badge=1"),
+        // #801 · THE PARK IS NOT THE EDGE. Owner: "we could have rooms to explore below the park also (on
+        // the map). Walking through the park is fun, it should not be the edge." The three rows above all
+        // face the near wall; this one crosses to the far one, which is the half that used to be a picture.
+        new("🌳🚪", "The far side of the green",
+            "B1 of a deep site, standing on the gravel in front of the park's FAR wall — the one that used "
+            + "to be the painted horizon. It is a row of doors now: potting, plant, a cold room stencilled "
+            + "for the same CANTEEN 1 the beds are. Walk through one (#801).",
+            "/map?parkback=1"),
+        // #801 · AND THE SECOND CAR. Owner: "it is a choke point, and the whole lab would be too easily
+        // guarded by just having the guard posted in front of the one elevator." A row that boots at the
+        // OTHER car, because the cage's console is the one every other row in this list arrives at.
+        new("🛗🛗", "The other car, at the blind end of the corridor",
+            "B1 of a deep site, standing at the SECOND lift — the goods car, a hundred and seventy du from "
+            + "the cage, on the other face of the main corridor. Press E: it runs these four floors and it "
+            + "does not climb out. Now walk to the other one and see how far that is (#801).",
+            "/map?goodscar=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

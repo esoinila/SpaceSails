@@ -30,6 +30,10 @@ public sealed class DeckPlan
         // #585 · THE HIVE: the lift car, a room to search, a door that never opens, and the
         // camouflaged lift head that is the only part of the whole facility above ground.
         HiveLift, HiveHaul, HiveSign, HiveHead,
+        // #801 · THE SECOND CAR. Its own kind rather than a second HiveLift, because the two are not the
+        // same machine: the cage climbs out and runs the gate, the goods car does neither, and a [E] press
+        // that could not tell them apart would open the cage's panel at the other end of the building.
+        HiveServiceLift,
         // #608 · The pressure refuge's rack. Its OWN kind rather than a re-used ShelterTank, because the two
         // buildings share the air law and nothing else: the surface rack sits beside an ammunition press in
         // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate

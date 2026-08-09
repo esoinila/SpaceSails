@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -205,15 +205,16 @@ public sealed class ThereArePeopleInTheBarTests
             }
 
             DeckPlan deck = DeckFor(body, level);
-            (double shaftX, double shaftY) =
-                UndergroundComplex.ShaftAt(MoonSurface.ExpeditionField());
 
             foreach (DeckPlan.ConsoleSpot who in RegularsOn(deck))
+            foreach (UndergroundComplex.Shaft car in
+                UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
             {
+                // #801 · Both cars. There are two boxes on the spine now and only one of them was checked.
                 Assert.False(
-                    System.Math.Abs(who.X - shaftX) < UndergroundComplex.CorridorHalf &&
-                    System.Math.Abs(who.Y - shaftY) < UndergroundComplex.CorridorHalf,
-                    $"{body} B{-level}: somebody is sitting in the lift car.");
+                    System.Math.Abs(who.X - car.X) < UndergroundComplex.CorridorHalf &&
+                    System.Math.Abs(who.Y - car.Y) < UndergroundComplex.CorridorHalf,
+                    $"{body} B{-level}: somebody is sitting in the {car.Kind} car.");
             }
         }
     }

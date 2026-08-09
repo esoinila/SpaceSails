@@ -1,4 +1,4 @@
-# Test links — the Hive, floor by floor
+﻿# Test links — the Hive, floor by floor
 
 *Companion to [`testing-guide.md`](testing-guide.md) Appendix A, narrowed to one building. Every link here
 boots straight into the situation, and **every floor number below was read out of the real generator** (Lab 44,
@@ -268,6 +268,8 @@ decides that rather than a clause in the renderer.
 /map?frontdoor=1                       out on the MAIN CORRIDOR at the canteen's own entrance — walk in
 /map?freight=1                         the GOODS HOIST at the end of the counter's service band
 /map?parkwalk=1                        the GARDEN WALK off the main corridor — cross the park, out the far gate
+/map?parkback=1                        the FAR side of the green (#801) — the wall that was a horizon is a row of doors
+/map?goodscar=1                        the SECOND CAR (#801) at the corridor’s blind end — 170 du from the cage
 ```
 
 **And the park is a way THROUGH (#775, owner 2026-08-09).** *"Let's have multiple doors to the park… it is
@@ -678,6 +680,8 @@ The pass is printed at the bottom of the cage.
 | `?frontdoor=1` | boot OUT ON THE MAIN CORRIDOR at the canteen's own front door (#775) — walk in through it |
 | `?freight=1` | boot at the GOODS HOIST (#775) — drawn, labelled, solid, and it refuses you in words |
 | `?parkwalk=1` | boot at the mouth of the GARDEN WALK (#775) — the park is a THOROUGHFARE, 2–5 gates |
+| `?parkback=1` | boot on the gravel facing the park’s FAR wall (#801) — back of house: potting, plant, cold room |
+| `?goodscar=1` | boot at the SECOND CAR (#801) — the goods lift at the blind end; no surface row, no gate |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 | `?patrol=1\|2` | boot on B2 with a ROUND on it (#804); `2` forces the two-guard watch |
