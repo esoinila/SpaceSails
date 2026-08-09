@@ -817,7 +817,7 @@ public static class UndergroundComplex
     /// drawer to turn over, and the air is what it pays.</para></summary>
     private static List<Refuge> CarveRefuges(
         string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
-        double shaftX, double shaftY)
+        in SurfaceLayout.Field field)
     {
         var refuges = new List<Refuge>();
         if (HoldsPressure(bodyId, level) || rooms.Count == 0)
@@ -840,8 +840,19 @@ public static class UndergroundComplex
                 continue;
             }
             anywhere.Add(i);
-            double dx = rooms[i].X - shaftX, dy = rooms[i].Y - shaftY;
-            if ((dx * dx) + (dy * dy) >= MinRefugeDetourDu * MinRefugeDetourDu)
+
+            // #801 · A DETOUR FROM EVERY CAR, not from the cage. This measured one shaft, and the day the
+            // building grew a second one at the other end of the corridor it went on passing while the
+            // sentence it exists to protect died: a third of the refuges in the game were four steps from
+            // the goods car. The guard found it (332 of 1130 floors); the fix is that the carve asks the
+            // same list the guard does.
+            bool far = true;
+            foreach (Shaft car in ShaftsOn(field))
+            {
+                double dx = rooms[i].X - car.X, dy = rooms[i].Y - car.Y;
+                far &= (dx * dx) + (dy * dy) >= MinRefugeDetourDu * MinRefugeDetourDu;
+            }
+            if (far)
             {
                 faraway.Add(i);
             }
@@ -851,7 +862,31 @@ public static class UndergroundComplex
         // floor whose rooms all happen to crowd the shaft, a near refuge beats no refuge, every time: the
         // owner's line is "at least one ... for pure safety", and a safety regulation that a seed can talk
         // out of is not one.
-        List<int> pool = faraway.Count > 0 ? faraway : anywhere;
+        // #801 · …and when NOTHING qualifies, the fallback takes the FURTHEST room rather than a rolled one.
+        // With two cars at opposite ends of the spine there are floors whose every chamber is inside the
+        // detour of one car or the other, and on those the old fallback rolled a room at random — which on
+        // the sweep put a refuge twenty-nine du from a car on floors that had a sixty-du one going spare.
+        // A safety regulation a seed can talk out of is not one, and neither is one it can shrug at.
+        List<int> pool = faraway;
+        if (pool.Count == 0 && anywhere.Count > 0)
+        {
+            int best = anywhere[0];
+            double bestNear = -1;
+            foreach (int i in anywhere)
+            {
+                double near = double.MaxValue;
+                foreach (Shaft car in ShaftsOn(field))
+                {
+                    double dx = rooms[i].X - car.X, dy = rooms[i].Y - car.Y;
+                    near = Math.Min(near, (dx * dx) + (dy * dy));
+                }
+                if (near > bestNear)
+                {
+                    (best, bestNear) = (i, near);
+                }
+            }
+            pool = [best];
+        }
         if (pool.Count == 0)
         {
             return refuges;
@@ -2730,7 +2765,7 @@ public static class UndergroundComplex
         // holds pressure and a refuge is only ever carved on one that does not — but the order says so
         // rather than leaving it to be rediscovered.
         List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY, hallSite);
-        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, shaftX, shaftY);
+        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, field);
 
         // #801 · …and the park's back of house LAST of all, appended after both of those have chosen. They
         // are rooms — they hold what any room down here holds and the A* audit walks to every one of them —
@@ -4179,6 +4214,27 @@ public static class UndergroundComplex
         return Math.Pow(FoundGrowthPerFloor, BandTop(FoundBandOf(bodyId)) - level);
     }
 
+    /// <summary>#801 · The nearest plate in this floor s own register that is NOT a room somebody sat in.
+    ///
+    /// <para>Walked from the same seed <see cref="SignFor(string, int, string)"/> used, one step on, so a
+    /// room that had to give up its rank keeps the building s vocabulary rather than acquiring a sign
+    /// invented for the occasion. Empty only if a kind ever ships a register with nothing but principal
+    /// plates in it, which is a thing a guard would notice long before a player did.</para></summary>
+    private static string NotPrincipal(string bodyId, int level, string tag)
+    {
+        string[] signs = SignsFor(KindOn(bodyId, level));
+        ulong seed = DiceRule.Seed($"hive-sign:{bodyId}:{tag}");
+        for (int i = 1; i <= signs.Length; i++)
+        {
+            string candidate = signs[(int)((seed + (ulong)i) % (ulong)signs.Length)];
+            if (!IsPrincipalRoom(candidate))
+            {
+                return candidate;
+            }
+        }
+        return string.Empty;
+    }
+
     private static void AddRoomsAlong(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
         List<(double X, double Y, string Plate)> rooms, List<EnSuite> ensuites,
@@ -4255,6 +4311,22 @@ public static class UndergroundComplex
                 bool cell = AddEnSuite(
                     walls, ensuites, claimed, bodyId, level, plate, backX, cy, side, open: !shut);
                 claimed.Add((x1 - 1.5, y1 - 1.5, x2 + 1.5, y2 + 1.5));
+
+                // #801 · A ROOM THAT COULD NOT BE PLUMBED WAS NEVER A PRINCIPAL ROOM.
+                //
+                // #707 s law is that rank is readable in PLUMBING: a cell on a store room says nothing, and
+                // a principal plate with no cell says the opposite of the thing it is there to say. The cell
+                // is refused when the ground behind the room is already spoken for (the ledger is law,
+                // #585), and until now that left the plate saying a rank the building could not back up.
+                // It never fired on the shipped field — which is exactly why it was worth fixing the moment
+                // a new passage moved by four du and it fired on four generated moons.
+                //
+                // The re-plate walks the SAME seeded list from the SAME seed, one step on, so it is the
+                // floor s own vocabulary and not a special sign invented for the case.
+                if (!cell && !found && IsPlumbed(bodyId, level) && IsPrincipalRoom(plate))
+                {
+                    plate = NotPrincipal(bodyId, level, tag);
+                }
                 if (!cell)
                 {
                     walls.Add(new(backX, y1, backX, y2, true));
