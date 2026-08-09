@@ -1007,6 +1007,54 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
                 }
             }
+            else if (pair.StartsWith("patrol=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #804 dev cheat: /map?patrol=1 boots ONTO A RESTRICTED FLOOR WITH A ROUND ON IT — B2 of a
+                // deep site, which is the shallowest floor below the bar and therefore the shallowest floor
+                // anybody walks. ?patrol=2 forces the two-guard watch, which is otherwise a coin flip and is
+                // the harder scene to time.
+                //
+                // It implies the whole route (?secretlab=deep&land=1&floor=2) rather than spelling an eighth
+                // one, exactly as ?tablescene= and ?counter= do. It forces nothing else: which stops the
+                // round walks, which direction it runs and who is on it are whatever the watch says, because
+                // a cheat that pinned the beat would be testing a floor that does not ship.
+                string candidate = Uri.UnescapeDataString(pair["patrol=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _patrolCheat = 1;
+                }
+                else if (candidate == "2")
+                {
+                    _patrolCheat = 2;
+                }
+                if (_patrolCheat is not null)
+                {
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -2;   // B2 — the first floor under the bar, and the first with a round
+                }
+            }
+            else if (pair.StartsWith("badge=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #804 dev cheat: /map?badge=1 mints THIS SITE'S OWN PASS into the wallet at boot, so the
+                // satisfied arm of the challenge is one URL away instead of behind the whole cage-crew lane
+                // (find the bar, find the Hand, roll the ask, ride the cage). It implies ?patrol=1's route,
+                // because a pass with nobody to show it to is not a thing anybody can test.
+                //
+                // The MINTING is the only thing it does. The guard still has to see you, the wallet is still
+                // read by Core, and what is said is what would have been said had the pass been earned.
+                string candidate = Uri.UnescapeDataString(pair["badge=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _badgeCheat = true;
+                    _patrolCheat ??= 1;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -2;
+                }
+            }
             else if (pair.StartsWith("counter=", StringComparison.OrdinalIgnoreCase))
             {
                 // #756 dev cheat: /map?counter=1 boots THE COUNTER — the B1 cantina hall of a deep site,

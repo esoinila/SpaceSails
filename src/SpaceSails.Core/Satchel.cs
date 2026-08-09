@@ -75,6 +75,18 @@ public static class Satchel
         /// strength of somebody vouching for you rather than on the strength of a stamp. They ride the same
         /// flat compartment because a wallet is where a person keeps both.</para></summary>
         Chit,
+
+        /// <summary>#804 · A PERSONNEL PASS — the site's own card, with your face on it, saying you are one
+        /// of the people who are supposed to be walking about in here.
+        ///
+        /// <para>Appended, never inserted, for the two reasons one line up: the ordinal is what a saved
+        /// satchel stores.</para>
+        ///
+        /// <para>The third thing in the wallet and the third grammar. An <see cref="Authority"/> is an office
+        /// vouching for a HOLE; a <see cref="Chit"/> is a foreman vouching for a SHIFT; a badge is the site
+        /// vouching for a PERSON, which is the only one of the three a guard on a round has any use for.
+        /// It runs no shaft and opens no gate — it answers a man, and nothing else.</para></summary>
+        Badge,
     }
 
     /// <summary>One thing in the pocket.</summary>
@@ -167,7 +179,9 @@ public static class Satchel
         // #746 · A chit is a wallet card. Flat, thin, and the wallet never fills — the same ruling #688 made
         // for authorities, and for the same reason: the paper that gets you through a door is never the thing
         // an arithmetic about BULK should be allowed to refuse.
-        Kind.Authority or Kind.Chit => Compartment.Wallet,
+        // #804 · A badge is a wallet card too, and for the third time the same reason: the paper that gets
+        // you past a person is never the thing an arithmetic about BULK should be allowed to refuse.
+        Kind.Authority or Kind.Chit or Kind.Badge => Compartment.Wallet,
         Kind.Paper or Kind.Dirt => Compartment.Sleeve,
         _ => Compartment.Pocket,
     };
