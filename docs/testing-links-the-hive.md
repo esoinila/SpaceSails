@@ -613,6 +613,51 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 
 ---
 
+## 9 · The rounds on the restricted floors, and the badge (#804, v1 of the guards)
+
+```
+/map?patrol=2                    B2 of the deep site with the TWO-guard watch forced
+/map?patrol=1                    …the one-guard watch, which is the floor you can actually cross
+/map?badge=1                     …the same round with this site's own SITE PASS already in the wallet
+/map?patrol=2&watch=5            the same floor on a different shift — the same stops, a different round
+/map?patrol=1&autowalk=1         cross the floor by clicking it, which is how to time a round without WASD
+```
+
+**Which floors have one, and it is worth knowing before you go looking.** Everything **below the bar** and
+**no deeper than the directory admits to** — on the deep site that is **B2 down to B20**. B1 has the canteen
+and nobody asks anybody for anything there; **B21–B24 (the unlisted band) and the found halls have nobody**,
+on purpose, and that is not a gap to report.
+
+**Stand at the car on B2 and do nothing for a minute.** The order the information arrives in is the feature:
+
+1. **the motion fan** paints a smudged, moving return with a bearing on it — a guard heard through poured
+   wall, at the reach #591 gave the instrument on that depth;
+2. **👣 *Boots on shotcrete, out of sight and in no hurry…*** — closer, still nothing on the deck;
+3. **a green mark** with `PATROL 1` over it, the instant your own line of sight reaches them, and **gone the
+   instant a wall gets between you**;
+4. inside **nine deck units**, with a clear line, **the round stops at you** and a card goes up.
+
+They stand **five seconds at every stop** and walk between them at 3.2 du/s, which is slower than you. Watch
+one work a rib, wait at the mouth, and go past behind it.
+
+**The four things a wallet can say**, all on the same card, in its amber row:
+
+| carrying | what he says | what happens |
+| --- | --- | --- |
+| this site's pass | reads the face, the site code and the tier, hands it back, mentions the wet floor | the round picks up where it left off |
+| another site's pass | *"That's not us."* — and it NAMES the other site | walked back to the car |
+| only the cage chit | *"That's for the cage. This isn't the cage."* | walked back to the car |
+| nothing | *"He waits the entire time you are looking"* | walked back to the car |
+
+Nothing is confiscated, nobody is called, and **there is no chase in this feature.** The cost is one nerve pip
+and a line in the field book.
+
+**Earning the pass rather than minting it** is the whole cage-crew lane end to end, and it is worth walking
+once: `?tablescene=1&roll=hi` → ask the Hand about work → take the chit → walk to the lift → ride to **B5**.
+The pass is printed at the bottom of the cage.
+
+---
+
 ## Add-ons that stack on any of the above
 
 | Argument | What it does |
@@ -633,6 +678,8 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `?parkwalk=1` | boot at the mouth of the GARDEN WALK (#775) — the park is a THOROUGHFARE, 2–5 gates |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
+| `?patrol=1\|2` | boot on B2 with a ROUND on it (#804); `2` forces the two-guard watch |
+| `?badge=1` | the same, with this site's own SITE PASS minted — the satisfied arm of the challenge |
 
 ## What has NO link yet, because it is not built
 
@@ -640,8 +687,9 @@ Filed tonight and deliberately absent from this document — adding a link for a
 testing guide starts lying:
 
 - **#719** the service stair / second way out — *and it must ship before anything is allowed to stop the car*
-- **#618** guards on the bottom floors, the noise trigger, the talk risk
-- **#715** illegal heat, owed per entity
+- **#618** the guards' *response* — the noise trigger and the talk risk. The rounds themselves shipped with
+  #804 (section 9 above); what is still unbuilt is everything that would make being seen escalate
+- **#715** illegal heat, owed per entity — the challenge files one line today and nothing accumulates
 - **#718** the rollback, the coerced job, recognition
 - **#720** the batch ending
 - the **staff cantina's own people** (B17 above is furnished and empty on purpose)
