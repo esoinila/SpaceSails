@@ -1805,12 +1805,28 @@
                 <div class="seated-dock-said">@dockedSaid</div>
             }
 
-            @* …and a running dig says so here too. The BAR is on the canvas over the captain's own mark
-               (the one progress language, #562/#696); this is its sentence, and the strip is the surface the
-               captain is looking at while it fills. *@
+            @* …and a running dig says so here too — the sentence, AND the clock beside it.
+
+               #784, owner live on the phase-2 build: "the progress bar is kind of small there... it might be
+               good to have it on the dialog... took me a while to notice it." The rectangle over the
+               captain's own mark stays (the one progress language, #562/#696, and honest at a glance from
+               across the hall) — but a seated captain's eyes are HERE, and a clock drawn where nobody is
+               looking is #782's readability law failing at time instead of at type. So the strip carries the
+               primary read at the strip's own width, and the fraction is Core's same Fraction() the deck
+               rectangle is fed by, so the two can never disagree about one dig. *@
             @if (ProcessingUnderway() is { } dockedBusy)
             {
                 <div class="seated-dock-said seated-dock-busy">@dockedBusy</div>
+                @if (ProcessingFraction() is { } dockedDug)
+                {
+                    <div class="seated-dock-dig"
+                         role="progressbar"
+                         aria-label="@SpaceSails.Core.Processing.Glyph digging"
+                         aria-valuemin="0" aria-valuemax="100"
+                         aria-valuenow="@((int)(dockedDug * 100))">
+                        <div class="seated-dock-dig-fill" style="width:@((int)(dockedDug * 100))%"></div>
+                    </div>
+                }
             }
 
             <div class="seated-dock-actions">

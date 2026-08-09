@@ -320,12 +320,13 @@ public sealed partial class Map
         PatrolBeat.Read read = PatrolBeat.TheGuardReads(ex.Stop.Body.Id, g.Plate, _satchel);
 
         // #684's idiom, one building along: the read is TOLD on a card, with the outcome in the card's own
-        // amber row (#736) rather than pulsed under a backdrop nobody can see through. No picture yet — the
-        // markup renders caption-only when none is wired, which is the house's degradation law, and the
-        // painting drops in behind it.
+        // amber row (#736) rather than pulsed under a backdrop nobody can see through. #804 shipped it
+        // caption-only under the house's degradation law and the painting has now dropped in behind it —
+        // Core's own constant, the same plate whichever way the wallet reads, because the man in it has not
+        // read it yet either.
         _viewObject = new DeckPlan.ConsoleSpot(
             DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-            read.Label, null, read.Card, read.Told);
+            read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told);
         RendererInterop.PlayCue("reveal");
 
         LogAutopilotEvent($"{read.Label} — {read.Told}");

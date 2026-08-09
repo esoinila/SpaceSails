@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -344,6 +345,87 @@ public sealed class SittingIsNotACutsceneTests
             chairBody.IndexOf("AbandonProcessing(", StringComparison.Ordinal)
                 < chairBody.IndexOf("t.Solo = false;", StringComparison.Ordinal),
             "the privacy flag flips before the hold it licensed is ended.");
+    }
+
+    // ── (d2) THE DIG'S CLOCK IS DRAWN WHERE THE CAPTAIN IS ACTUALLY LOOKING ───────────────────────────
+
+    /// <summary>
+    /// #784/#782 · <b>THE BAR IS ON THE STRIP, AT THE STRIP'S WIDTH, AND ONLY WHILE A DIG RUNS.</b>
+    ///
+    /// <para>Owner playtest, live on the phase-2 build: <i>"the progress bar is kind of small there… it might
+    /// be good to have it on the dialog… took me a while to notice it."</i> The rectangle on the deck rides
+    /// the DeckView idiom and is honest at a glance from across the hall — but a seated captain's eyes are on
+    /// the DOCKED STRIP, and a clock drawn where nobody is looking is #782's readability law failing at TIME
+    /// rather than at type. A bar is a number drawn as a length; too thin to see is the same defect as too
+    /// small to read.</para>
+    ///
+    /// <para>Three things, and the second is the one that can rot. It must be THERE during a dig, ABSENT
+    /// otherwise (a permanent empty trough at the foot of the strip is furniture, and furniture is what the
+    /// eye learns to skip), and it must be fed by <see cref="Processing.Fraction"/> — the same call the deck
+    /// rectangle is fed by, because two arithmetics for one clock is this house's two-clocks class.</para>
+    ///
+    /// <para>The deck rectangle STAYS. The owner asked for a second read, not a move.</para>
+    ///
+    /// <para><b>Proven RED</b> by deleting the bar from the strip, and again by hoisting it out of the
+    /// <c>ProcessingUnderway</c> gate so it draws while nothing is being dug: see the PR body for both.</para>
+    /// </summary>
+    [Fact]
+    public void THE_DIG_BAR_RidesTheStripAndOnlyWhileSomethingIsBeingDug()
+    {
+        string docked = DockedBranch();
+
+        // ── it is in the strip's subtree, and inside the running-dig gate ──
+        int gate = docked.IndexOf("@if (ProcessingUnderway() is { } dockedBusy)", StringComparison.Ordinal);
+        Assert.True(gate > 0, "the strip no longer says anything about a running dig at all.");
+        // The gate's own body, cut at ITS closing brace (the one at the strip's own indentation) rather
+        // than at the next element — a window that ran past the brace would call a bar hoisted OUT of the
+        // gate "inside" it, which is precisely the failure this test exists to see.
+        int closes = docked.IndexOf("\n            }", gate, StringComparison.Ordinal);
+        Assert.True(closes > gate, "the running-dig block no longer closes where this guard can see it.");
+        string whileDigging = docked[gate..closes];
+
+        Assert.Contains("class=\"seated-dock-dig\"", whileDigging, StringComparison.Ordinal);
+        Assert.Contains("class=\"seated-dock-dig-fill\"", whileDigging, StringComparison.Ordinal);
+
+        // …AND NOWHERE ELSE IN THE STRIP. Outside the gate there is no trough to sit empty.
+        Assert.Single(Regex.Matches(docked, "seated-dock-dig\""));
+        Assert.DoesNotContain("seated-dock-dig", docked[..gate], StringComparison.Ordinal);
+        Assert.DoesNotContain("seated-dock-dig", docked[closes..], StringComparison.Ordinal);
+
+        // …and it is the bar rather than a second sentence: a width, driven by a fraction.
+        Assert.Contains("ProcessingFraction() is { } dockedDug", whileDigging, StringComparison.Ordinal);
+        Assert.Contains("style=\"width:@((int)(dockedDug * 100))%\"", whileDigging, StringComparison.Ordinal);
+
+        // ── ONE CLOCK. The strip's fraction and the deck rectangle's are the same Core call ──
+        string surface = Source("Pages", "Map.Surface.cs");
+        int frac = surface.IndexOf("private double? ProcessingFraction()", StringComparison.Ordinal);
+        Assert.True(frac > 0, "the strip's bar has no fraction of its own to read.");
+        string fracBody = surface[frac..(frac + 260)];
+        Assert.Contains("Core.Processing.Fraction(dug.Elapsed, ProcessingSeconds)", fracBody,
+            StringComparison.Ordinal);
+        Assert.Contains("_surface is { Processing: { } dug }", fracBody, StringComparison.Ordinal);
+
+        // THE DECK RECTANGLE STAYS. The owner asked for a second read, not for the first one to move —
+        // "keep the deck rectangle (it's honest at a glance from afar)".
+        Assert.Contains("Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)", surface,
+            StringComparison.Ordinal);
+        Assert.Contains("DigProgress:", surface, StringComparison.Ordinal);
+
+        // ── (#782) AND IT IS BIG ENOUGH TO NOTICE. Full strip width, and a real height in rem ──
+        string css = Source("Pages", "Map.razor.css");
+        int at = css.IndexOf(".seated-dock-dig {", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the strip's bar has no rule of its own — it is whatever a default gives it.");
+        string rule = css[at..css.IndexOf('}', at)];
+        Assert.Contains("width: 100%", rule, StringComparison.Ordinal);
+
+        Match height = Regex.Match(rule, @"height:\s*(?<n>[0-9.]+)rem");
+        Assert.True(height.Success, "the bar's height is not stated in rem, so it does not scale with the text.");
+        Assert.True(double.Parse(height.Groups["n"].Value, CultureInfo.InvariantCulture) >= 0.9,
+            "the bar is back to being 'kind of small there' — #782 is a law about being noticed.");
+
+        int fill = css.IndexOf(".seated-dock-dig-fill {", StringComparison.Ordinal);
+        Assert.True(fill >= 0, "the fill has no rule, so a width with no colour behind it draws nothing.");
+        Assert.Contains("background:", css[fill..css.IndexOf('}', fill)], StringComparison.Ordinal);
     }
 
     // ── (e, client half) THE GATE IS ASKED WITH THE ROOM'S OWN FACTS ──────────────────────────────────

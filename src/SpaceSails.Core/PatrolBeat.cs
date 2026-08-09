@@ -541,6 +541,21 @@ public static class PatrolBeat
     /// direction and a rhythm, and the frightening thing is that it has stopped.</summary>
     public const string ChallengeLabel = "👮 THE ROUND STOPS AT YOU";
 
+    /// <summary>#804 · The painting the card wears — a contract guard, palm up, clipboard under the arm, a
+    /// laminated pass on his chest, in a shotcrete corridor of bolt plates with faint chalk scrawls on the
+    /// walls (an accidental #794 nod the owner spotted in his own generation).
+    ///
+    /// <para>ONE picture for all four rungs, deliberately. The card's body is the same sentence whatever
+    /// comes out of the wallet — <see cref="ChallengeCard"/> describes a man who has not read it yet — and a
+    /// per-outcome plate would be the picture telling the captain how the read went before he has finished
+    /// reading. The verdict lives in the amber row under the image and nowhere else (#736).</para>
+    ///
+    /// <para>A constant here rather than a literal in the client, for the reason every other plate is one: a
+    /// razor that names a jpg is a second answer to "which picture is this moment", and the one that cannot
+    /// be kept in step with the prose beside it. #804 shipped caption-only under the degradation law; this
+    /// closes that gap without the degradation law changing at all.</para></summary>
+    public const string ChallengeArtUrl = "art/the-round-stops-at-you.jpg";
+
     /// <summary>
     /// What is happening, before anything is read. Evidence, and then it stops (§13.9's discipline) — the
     /// card describes a man doing a task and says nothing at all about what happens next.
