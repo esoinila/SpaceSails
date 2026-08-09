@@ -566,8 +566,22 @@ public sealed class TheHiveAmenitiesTests
             // pointing its way opens into it and the garden walk always does, so the park now accounts for
             // as many doorways as it has gates. Asked of the room (Park.Ways) rather than counted off the
             // plan, which is the correction #775 had to make to the hall's own line above.
+            // #813 · …AND THE BACK OF HOUSE IS A PLACE WITH TWO DOORS, for the hall's own reason one line
+            // up. The Manhattan ruling made the far band part of the RING: every one of those rooms gained a
+            // door on the block's back street (the owner's "nobody walks through an office to reach an
+            // office"), and every one of them KEPT #801's own door onto the gravel — the row a captain
+            // reaches by walking across a garden, which was the whole charm of the feature and was not going
+            // to be spent on bookkeeping. So each of them accounts for one doorway more than it is a room.
+            //
+            // Asked of Park.Rooms rather than counted off the plan, which is the same correction #775 made
+            // to the hall's line above: Park.Rooms is exactly the far-band rooms that have a gravel door
+            // (the two corner rooms stand past the end of the park's wall and have only the street door), so
+            // this counts the second doors and never a first one.
+            int backOfHouseSecondDoors = floor.Park is { } backed ? backed.Rooms.Count : 0;
+
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
-                + extraHallDoors + (floor.Park is { } green ? green.Ways.Count : 0);
+                + extraHallDoors + backOfHouseSecondDoors
+                + (floor.Park is { } green ? green.Ways.Count : 0);
             if (places != floor.Doorways.Count)
             {
                 return $"{floor.Doorways.Count} doors were cut and only {places} of them lead anywhere.";

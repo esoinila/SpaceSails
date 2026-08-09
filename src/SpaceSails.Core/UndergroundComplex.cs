@@ -1837,10 +1837,12 @@ public static class UndergroundComplex
     /// band shallower than this would make the bar wider than the ground it stands on.</summary>
     public const double RingNearDepthDu = 51.5;
 
-    /// <summary>#813 · How deep the ring is on the BACK STREET side. The facility's own chamber module plus
-    /// a du — these are the back of house (#801's own rooms, re-anchored), and a store room is a store
-    /// room.</summary>
-    public const double RingFarDepthDu = 13.0;
+    /// <summary>#813 · How deep the ring is on the BACK STREET side. The facility's own chamber module
+    /// exactly (<see cref="ParkBackDepthDu"/>) and not a number of its own — these are #801's back of house
+    /// re-anchored, and #801's law is that they are ordinary rooms that happen to be entered off a garden.
+    /// A ring band a du deeper than the module would have made that sentence false by one du, which is how
+    /// a law quietly stops being one.</summary>
+    public static double RingFarDepthDu => ParkBackDepthDu;
 
     /// <summary>#813 · How deep the ring is on the two ends of the block. Deeper than a chamber and far
     /// shallower than the near band: a corner office with the green out of one wall.</summary>
@@ -3186,11 +3188,20 @@ public static class UndergroundComplex
         // are rooms — they hold what any room down here holds and the A* audit walks to every one of them —
         // but they are the garden's, and an amenity or a refuge carved out of one would be the building
         // taking back the thing this feature exists to give: somewhere on the far side of the green.
-        if (park is { } green)
+        if (park is not null)
         {
-            foreach (BackRoom br in green.Rooms)
+            // #813 · …asked of the RING rather than of Park.Rooms, which is the #801 view of it and holds
+            // only the ones with a door onto the gravel. The far band's two CORNER rooms stand past the end
+            // of the park's own wall, so they have no gravel door and are not back rooms in #801's sense —
+            // and reading the narrower list here left two rooms on every block floor with a door cut, a
+            // plate hung and nothing behind them. Watched go red: "34 doors were cut and only 28 of them
+            // lead anywhere."
+            foreach (RingRoom room in ring)
             {
-                rooms.Add((br.X, br.Y, br.Plate));
+                if (room.Side == RingSide.Far)
+                {
+                    rooms.Add((room.X, room.Y, room.Plate));
+                }
             }
         }
 
@@ -3253,7 +3264,7 @@ public static class UndergroundComplex
     /// against — and every du of the depth budget freed by moving the hall's band and the back of house
     /// into one ring went back into the green. What is left of the field beyond the block is the rock the
     /// back street is cut in.</para></summary>
-    public const double ParkDepthDu = 44.0;
+    public const double ParkDepthDu = 45.0;
 
     /// <summary>#751 · A carved hall, on its way to becoming an <see cref="Amenity"/>.</summary>
     /// <param name="Hall">The box and its cabinets, as published on the plan.</param>
@@ -4155,9 +4166,35 @@ public static class UndergroundComplex
         }
 
         // ── (4) THE GATES · one spur per crossing, and the park's wall opened where it arrives.
+        //
+        //    THE HALL OPENS ONTO ONE OF THEM. #751's law is that the hall never cuts a door: the gaps in
+        //    the corridor beside it ARE its doors, and it publishes the very slots the corridor was cut at.
+        //    That corridor used to be a rib and is a gate now — so the gate's side wall is swept with the
+        //    hall's own published openings taken out of it, and the room keeps every door it had. Watched go
+        //    red without this: "the door at (-1.5,-177.4) is one the hall knows about and the deck plan does
+        //    not", 208 of them, on every floor with a block on it.
+        var abutting = new List<SurfaceLayout.Doorway>();
+        foreach (SurfaceLayout.Doorway o in hall.Openings)
+        {
+            if (Math.Abs(o.X1 - o.X2) < 0.001)
+            {
+                abutting.Add(o);
+
+                // …and PUBLISHED, in the same list every other door down here is in, so the deck hangs its
+                // imported leaf on it and an audit can find it without knowing anything about halls. This is
+                // the job AddRoomsAlong used to do for the hall's own column (#751) and the column is a gate
+                // now, so the gate does it. Watched go red without this: "the door at (-1.5,-177.4) is one
+                // the hall knows about and the deck plan does not — nothing would be drawn there."
+                if (!found)
+                {
+                    doorways.Add(o);
+                }
+            }
+        }
+
         foreach (double sx in block.SpurXs)
         {
-            RingGate(walls, doorways, claimed, gates, sx, sf, block.Y1, vertical: true);
+            RingGate(walls, doorways, claimed, gates, sx, sf, block.Y1, vertical: true, abutting);
             RingGate(walls, doorways, claimed, gates, sx, block.BackStreetY1, block.Y0, vertical: true);
         }
         double midY = (block.Y0 + block.Y1) / 2.0;
@@ -4301,12 +4338,41 @@ public static class UndergroundComplex
     private static void RingGate(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
-        List<SurfaceLayout.Doorway> gates, double at, double from, double to, bool vertical)
+        List<SurfaceLayout.Doorway> gates, double at, double from, double to, bool vertical,
+        IReadOnlyList<SurfaceLayout.Doorway>? abutting = null)
     {
         if (vertical)
         {
-            walls.Add(new(at - CorridorHalf, from, at - CorridorHalf, to, true));
-            walls.Add(new(at + CorridorHalf, from, at + CorridorHalf, to, true));
+            // The two side walls, in the segments left between whatever opens off them. One sorted sweep
+            // with a cursor that may only move forward (§13.2) — #587's own law, said about a corridor
+            // whose neighbour is a room somebody else carved.
+            foreach (int face in (int[])[-1, +1])
+            {
+                double wx = at + (face * CorridorHalf);
+                var cuts = new List<(double Lo, double Hi)>();
+                foreach (SurfaceLayout.Doorway o in abutting ?? [])
+                {
+                    if (Math.Abs(o.X1 - wx) < 0.001)
+                    {
+                        cuts.Add((Math.Min(o.Y1, o.Y2), Math.Max(o.Y1, o.Y2)));
+                    }
+                }
+                cuts.Sort((a, b) => a.Lo.CompareTo(b.Lo));
+
+                double lo = Math.Min(from, to), hi = Math.Max(from, to), cursor = lo;
+                foreach ((double clo, double chi) in cuts)
+                {
+                    if (clo > cursor)
+                    {
+                        walls.Add(new(wx, cursor, wx, Math.Min(clo, hi), true));
+                    }
+                    cursor = Math.Max(cursor, chi);
+                }
+                if (cursor < hi)
+                {
+                    walls.Add(new(wx, cursor, wx, hi, true));
+                }
+            }
             walls.Add(new(at - CorridorHalf, to, at - DoorHalf, to, true));
             walls.Add(new(at + DoorHalf, to, at + CorridorHalf, to, true));
             var gate = new SurfaceLayout.Doorway(at - DoorHalf, to, at + DoorHalf, to);
@@ -4424,6 +4490,18 @@ public static class UndergroundComplex
         foreach (SurfaceLayout.Doorway g in gates)
         {
             mouths.Add(((g.X1 + g.X2) / 2.0, (g.Y1 + g.Y2) / 2.0));
+        }
+
+        // …and the back of house's own doors onto the gravel (#801) are mouths in this wall exactly as the
+        // gates are. They are not in `gates` — a Way is a way THROUGH the park and these are ways OUT of it
+        // into a room, a distinction Park.BackDoors has kept since #801 — and leaving them out of THIS list
+        // is what put a floodlight mast in front of two of them on every floor in the game. Watched go red.
+        foreach (RingRoom room in ring)
+        {
+            if (room.Gate is { } gravel)
+            {
+                mouths.Add(((gravel.X1 + gravel.X2) / 2.0, (gravel.Y1 + gravel.Y2) / 2.0));
+            }
         }
 
         for (int r = 0; r < rows; r++)

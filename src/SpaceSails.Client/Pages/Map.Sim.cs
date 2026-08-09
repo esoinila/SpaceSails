@@ -1191,6 +1191,24 @@ public partial class Map
                     _startingFloorCheat = -1;
                 }
             }
+            else if (pair.StartsWith("ringoffice=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #813 dev cheat: /map?ringoffice=1 boots the same B1 route and stands the captain INSIDE
+                // one of the rooms that FACES the park, a few paces back from its own window wall. Every
+                // other park row in the guide puts a tester on the gravel, which is the side of the glass
+                // the game has always shown; the Manhattan ruling's claim ("the park prime real estate is
+                // not wasted") is a claim about the rooms that paid for the view, and there was no URL that
+                // put you in one.
+                string candidate = Uri.UnescapeDataString(pair["ringoffice=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _ringOfficeCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor in the building with a block on it
+                }
+            }
             else if (pair.StartsWith("goodscar=", StringComparison.OrdinalIgnoreCase))
             {
                 // #801 dev cheat: /map?goodscar=1 boots the same B1 route and walks the last leg to the

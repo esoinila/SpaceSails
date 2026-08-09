@@ -5829,6 +5829,10 @@ public partial class Map
                 StandAtTheGoodsHoistIfAsked(landedOn);
                 StandAtTheGardenWalkIfAsked(landedOn);
 
+                // #813 · …and this one goes the other way through the same glass: INSIDE a room on the
+                // ring, with the park out of the window wall. The only row in the game on that side of it.
+                StandInARingOfficeIfAsked(landedOn);
+
                 // #803 · …and this one rigs the whole loop at that shutter: a gun set down beside you with
                 // a hut's worth of rounds in your pocket and not enough in the drum.
                 RigTheDesignateDemoIfAsked(landedOn);
@@ -6010,12 +6014,21 @@ public partial class Map
     /// walk. Set in Map.Sim's cheat parse.</summary>
     private bool _parkWalkCheat;
 
-    /// <summary>#775 QA · Stand the captain on the SPINE, at the mouth of the garden walk.
+    /// <summary>#775 QA · Stand the captain on the SPINE, at the mouth of a gate down through the near band.
     ///
-    /// <para>The garden walk is the one gate into the park that is not a rib, so it is found by asking the
-    /// room for its ways and taking the one no rib stands on — off the published list, never off a
-    /// coordinate measured from a picture. The tester starts on the main corridor because the feature is a
-    /// CROSSING: walk down, over the gravel, and out of a different gate.</para></summary>
+    /// <para>#813 · This used to hunt for <i>the one gate no rib stands on</i>, because that was what a
+    /// garden walk WAS: a passage cut off the spine on the one column the seeded ribs had left free. The
+    /// Manhattan carve took the seeding away — a rib on B1 runs DOWN only if it is one of the block's own
+    /// gate columns — so "the gate no rib stands on" now selects NOTHING, and a row that selects nothing
+    /// leaves the captain wherever the lift left them and tells nobody. That is the sharpest shape a dev
+    /// row goes wrong in: the code still runs, the URL still parses, and the loop simply never fires.</para>
+    ///
+    /// <para>What it asks for now is the LAW rather than the accident: a gate in the park's NEAR wall — one
+    /// that is horizontal and stands on the park's own near line (<c>green.Y1</c>), which is exactly the
+    /// definition of "you reach it by walking off the spine" — taken off the room's published
+    /// <see cref="UndergroundComplex.Park.Ways"/> list, never off a coordinate measured from a picture. The
+    /// tester still starts on the main corridor, because the feature is a CROSSING: walk down, over the
+    /// gravel, and out of any one of the other five.</para></summary>
     private void StandAtTheGardenWalkIfAsked(SurfaceExcursion ex)
     {
         if (!_parkWalkCheat || ex.Floor >= 0)
@@ -6034,22 +6047,99 @@ public partial class Map
 
         foreach (SurfaceLayout.Doorway gate in green.Ways)
         {
-            double gx = (gate.X1 + gate.X2) / 2.0;
-            if (floor.Ribs.Any(r => Math.Abs(r.X - gx) < 0.001))
+            // A NEAR gate. The two on the back street are horizontal too but stand on the park's FAR line,
+            // and the west and east gates are vertical — none of the three is a thing you find by walking
+            // the spine, which is the leg this row exists to start.
+            if (Math.Abs(gate.Y1 - gate.Y2) > 0.001 || Math.Abs(gate.Y1 - green.Y1) > 0.001)
             {
-                continue;   // a rib's own far end, not the walk that was cut for this
+                continue;
             }
 
-            // Just inside the spine, at the walk's mouth: the corridor face is CorridorHalf off the shaft
-            // line, so a step short of it is a captain standing in the main corridor looking down the walk.
+            // Just inside the spine, at the gate column's mouth: the corridor face is CorridorHalf off the
+            // shaft line, so a step short of it is a captain standing in the main corridor looking down it.
+            double gx = (gate.X1 + gate.X2) / 2.0;
             double standY = shaftY + (green.Y1 < shaftY ? -1.5 : 1.5);
             StandCaptainAt(gx, standY, "you stop on the main corridor at the mouth of the walk");
             ShowPulseMessage(
-                "🧪 DEV ?parkwalk=1: the GARDEN WALK, off the main corridor. Walk down it, cross the "
-                + "gravel, and come out of a DIFFERENT gate — the park is a way through, not a room you "
-                + "visit.");
+                "🧪 DEV ?parkwalk=1: a GATE THROUGH THE BLOCK, off the main corridor. Walk down it, cross "
+                + "the gravel, and come out somewhere else entirely — the green is the middle of a city "
+                + "block now and it is crossed from all FOUR sides: two gates off the spine, two off the "
+                + "back street, and one through each end of the block.");
             return;
         }
+    }
+
+    /// <summary>#813 QA · <c>?ringoffice=1</c> — booted INSIDE a room on the ring, facing its own glass.
+    /// Set in Map.Sim's cheat parse.</summary>
+    private bool _ringOfficeCheat;
+
+    /// <summary>
+    /// #813 QA · Stand the captain INSIDE a ring office, a few paces back from its window wall.
+    ///
+    /// <para>Every other park row in this file stands a tester on the GRAVEL, which is the park's side of
+    /// the glass and the only side anybody has ever been shown. The Manhattan ruling's claim is about the
+    /// OTHER side of it — <i>"make sure the park prime real estate is not wasted and not unused"</i> — and
+    /// prime real estate is a thing you check by standing in the room that paid for the view and looking
+    /// out of it. Until this row there was no URL in the game that put you in one.</para>
+    ///
+    /// <para>Off the ring's own published frontage (<see cref="UndergroundComplex.Park.Frontage"/>): the
+    /// first room with a view on the SPINE side, which is the premium band, falling back to any room with a
+    /// view at all. The hall is skipped — it is a ring room and it does have the glass, and it is also the
+    /// one room down here a tester can already reach with four other URLs.</para>
+    ///
+    /// <para>The spot is measured off the room's OWN two walls rather than typed: back from the view wall
+    /// toward the room's middle, by a few paces or by half the room's depth where the room is shallower
+    /// than that. A number typed here would be right for the fifty-du near band and inside the back wall of
+    /// a thirteen-du store.</para></summary>
+    private void StandInARingOfficeIfAsked(SurfaceExcursion ex)
+    {
+        if (!_ringOfficeCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        if (UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park
+            is not { } green)
+        {
+            return;
+        }
+
+        UndergroundComplex.RingRoom? chosen = null;
+        foreach (UndergroundComplex.RingRoom room in green.Frontage)
+        {
+            if (room.IsHall || !room.HasView)
+            {
+                continue;
+            }
+            if (room.Side == UndergroundComplex.RingSide.Near)
+            {
+                chosen = room;
+                break;
+            }
+            chosen ??= room;
+        }
+        if (chosen is not { } office || office.View is not { } glass)
+        {
+            return;
+        }
+
+        // A FEW PACES BACK FROM THE GLASS, toward the room's own middle — so the pane is in front of the
+        // captain and the green is through it. WHICH WAY back is comes from the room and not from the side:
+        // the near band looks down at the park and the far band looks up at it, and this asks rather than
+        // assumes, which is the same reason the front-door row asks the shaft which face the hall is on.
+        const double PacesBackFromTheGlass = 6.0;
+        bool horizontal = Math.Abs(glass.Y1 - glass.Y2) < 0.001;
+        double depth = horizontal ? office.Y1 - office.Y0 : office.X1 - office.X0;
+        double back = Math.Min(PacesBackFromTheGlass, depth / 2.0);
+        double standX = horizontal ? office.X : glass.X1 + (Math.Sign(office.X - glass.X1) * back);
+        double standY = horizontal ? glass.Y1 + (Math.Sign(office.Y - glass.Y1) * back) : office.Y;
+
+        StandCaptainAt(standX, standY, "you step in off the street and the whole front wall is green");
+        ShowPulseMessage(
+            "🧪 DEV ?ringoffice=1: INSIDE a room on the ring, looking OUT through its glass at the park — "
+            + $"{office.Plate}. The door behind you is on a street; the wall in front of you is a window "
+            + "and it still stops you. Then walk the block: every side of the green is somebody's front "
+            + "wall now.");
     }
 
     /// <summary>#775 QA · Stand the captain OUT ON THE SPINE, at the hall's front door.
