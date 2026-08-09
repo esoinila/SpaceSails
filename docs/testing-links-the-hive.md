@@ -262,6 +262,35 @@ decides that rather than a clause in the renderer.
 /map?tablescene=1                      …and the hall itself, which now has 2–4× the floor it had
 ```
 
+### 1b-2b · ADDED (#791) — THE DESK SERVES ITS WHOLE LENGTH
+
+```
+/map?counter=1                         the counter — now walk the desk END TO END and press [E] anywhere
+/map?stool=1                           …and the row of tall seats, which no longer starts at the freight shutter
+```
+
+Owner, live at the B1 bar (2026-08-08): *"The Bar desk is really long now, but there is only one spot to get
+service on it… we would need an **E-bus** of the bar desk length instead of one bar keep cashier at a single
+spot. Now the counter is in front of the desk, where the bar keep physically would be behind the bar desk
+instead of being in front of it."*
+
+**What was wrong, measured.** The serving desk is **81.9 du** long. The console that answered `[E]` was a
+POINT, and the interact radius is 3 — so **six du of it** took an order, in the middle, with nothing on the
+floor saying which six. Walking the desk end to end, the press answered on **5.6%** of a fixture whose
+photograph, whose collidable wall and whose eight stools all ran the full length.
+
+**What to look for.**
+
+| | what you should see |
+| --- | --- |
+| **the service rail** | a line down the **whole front** of the desk with a tick struck across it every 5 du and a cap at each end — dim while you are away from it, **lit** the moment `[E]` would answer |
+| **the press** | walk from one end of the desk to the other. `[E]` answers everywhere along it, and from ~3 du out into the room |
+| **the prompt** | the `[E]` is drawn at the **stretch of counter under your elbow**, not forty du away at the plate |
+| **the plate** | said **once**, at the middle of the SERVING desk — one console, one card. Not a row of dots |
+| **the click** | click the far end of the desk and you walk to the far end of the desk, not to the plate |
+| **the stools** | hold the row against the desk photograph: every one of the eight is **on it**. Stool 1 used to stand in front of the goods shutter, twelve du before the bar begins |
+| **the keep's side** | the sealed band **behind** the desk (#781 arrives there). Try to walk round the bar — the counter's walls still hold, everywhere |
+
 ### 1b-3 · ADDED (#775) — THE CIRCULATION: DOORS ON THE MAIN CORRIDOR, AND WHERE THE FOOD COMES IN
 
 ```

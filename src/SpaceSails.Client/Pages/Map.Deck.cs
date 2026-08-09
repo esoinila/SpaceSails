@@ -225,7 +225,11 @@ public partial class Map
     {
         if (_deckPlan.NearestConsoleSpot(gx, gy) is { } spot)
         {
-            return (spot.X, spot.Y);
+            // #791 · …and on a fixture that IS a length (the bar's service run) it is the point you aimed at
+            // ON it, never its middle. Clicking the far end of an eighty-du desk and being marched forty du
+            // up to the plate is "walk to the thing" answered about a different thing. A point console's
+            // nearest point is itself, so no other deck in the game moves a millimetre.
+            return spot.NearestPointTo(gx, gy);
         }
 
         foreach (DeckPlan.Door door in _deckPlan.Doors)

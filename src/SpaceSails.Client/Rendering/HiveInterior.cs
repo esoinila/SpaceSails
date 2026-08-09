@@ -231,7 +231,25 @@ public static class HiveInterior
 
         foreach (UndergroundComplex.Amenity a in floor.Amenities)
         {
-            consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
+            // ── #791 · ONE FIXTURE, ONE CARD, AND THE WHOLE DESK-FRONT TO PRESS IT FROM ────────────────
+            //
+            // Owner, live at the B1 bar: "The Bar desk is really long now, but there is only one spot to get
+            // service on it… we would need an E-bus of the bar desk length instead of one bar keep cashier
+            // at a single spot."
+            //
+            // It is still ONE console — one dot, one plate, one card — and that is the point of doing it
+            // this way rather than bolting a row of consoles along the bar. A row would be a dozen [E]
+            // targets in a room already dotted with table consoles, which is the very crowding #212 and
+            // both "there two e's are too close to each others" reports were about; and every one of them
+            // would open the same card, so eleven of the twelve would be furniture pretending to be a
+            // choice. A fixture that IS eighty du long says the true thing once.
+            //
+            // THE LENGTH IS CORE'S. Hall.Service is the run the carve laid, off the same (u, v) as the
+            // counter's own wall segments, its photograph and its stools. Nothing here measures a bar.
+            UndergroundComplex.ServiceRun? run = a.Hall?.Service;
+            consoles.Add(new(
+                DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture,
+                SpanX: (float)(run?.HalfSpanX ?? 0.0), SpanY: (float)(run?.HalfSpanY ?? 0.0)));
             if (a.Hall is { ArtUrl: { } floorArt } painted)
             {
                 // Top-left, W, H — the ship's own convention, and Y is the box's TOP edge because deck +y
