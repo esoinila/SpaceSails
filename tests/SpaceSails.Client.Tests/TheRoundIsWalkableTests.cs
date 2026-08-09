@@ -302,6 +302,33 @@ public sealed class TheRoundIsWalkableTests
         Assert.DoesNotContain("SpawnPatrolFor", rebuild, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A SCENE NOBODY CAN REACH ON DEMAND IS A SCENE THAT SHIPS BROKEN (#693's rule, the owner's twice-over
+    /// <i>"testing is a feature"</i>). Both halves need a lever: how many walk a floor is a seeded roll on
+    /// the shift, and whether the captain has anything to show is the whole of the challenge.
+    /// </summary>
+    [Fact]
+    public void BothHalvesOfTheChallengeAreOneUrlFromTheFrontDoor()
+    {
+        Assert.Contains(DevStarts.All, e => e.Url == "/map?patrol=2");
+        Assert.Contains(DevStarts.All, e => e.Url == "/map?badge=1");
+
+        // …and the guide is the prose twin of that catalogue, so a button without a row is half a feature.
+        string root = RepoRoot();
+        string guide = File.ReadAllText(Path.Combine(root, "docs", "testing-guide.md"));
+        Assert.Contains("?patrol=", guide, StringComparison.Ordinal);
+        Assert.Contains("?badge=1", guide, StringComparison.Ordinal);
+
+        string hive = File.ReadAllText(Path.Combine(root, "docs", "testing-links-the-hive.md"));
+        Assert.Contains("patrol=", hive, StringComparison.Ordinal);
+        Assert.Contains("badge=1", hive, StringComparison.Ordinal);
+
+        // And the cheat the docs promise is a cheat the parser actually reads.
+        string boot = Between(Pages("Map.Sim.cs"), "private async Task BootTheWorldAsync(", "\n    }");
+        Assert.Contains("\"patrol=\"", boot, StringComparison.Ordinal);
+        Assert.Contains("\"badge=\"", boot, StringComparison.Ordinal);
+    }
+
     /// <summary>The pass is issued by the SHIFT, not by the offer — hung on the arrival the day-labour chit
     /// opened, which is the moment the gig stops being a promise.</summary>
     [Fact]
