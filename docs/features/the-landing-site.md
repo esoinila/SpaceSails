@@ -2361,6 +2361,16 @@ luna B1: the goods car offers B5, which is another band's floor`; and with the d
 `130 floor(s) fail the two-car law: luna B1: riding the Service car puts a captain 170 du from the car they
 rode`.)*
 
+**The signage stack stays at the cage, and that is a call rather than an oversight.** §13.13's plate — the
+depth, the department, and whether you can breathe — is 44px lettering on the wall a captain steps out onto,
+and the second car does not get a copy of it. Two reasons, both already written in this file: #605 deleted a
+third plate from that wall because *three plates on one wall is a wall nobody reads*, and §13.16 settled that
+**a building says a thing where you ENTER it and nowhere else**. The goods car names itself
+(`🛗 GOODS CAR 2 · THIS BAND ONLY`), its panel states the depth in the same `DepthPaint` the plate uses, and
+the air fact reaches a captain who arrives by it through the arrival's own sayings and the suit gauge — which
+is §13.13's actual law: **one** pressure fact, said by everything that says it. Nothing is left unsaid; it is
+said once.
+
 **Two things this deliberately does NOT do, so nobody has to guess later.**
 
 - **No second SURFACE head.** The issue says "maybe a second surface shaft"; the hut is a seeded
