@@ -212,15 +212,29 @@ public static class SurfaceShelter
         "⛺ The door already read your suit on the way in. It cycles when you approach and seals behind you; " +
         "there is nothing here to press.";
 
-    /// <summary>The console inside.</summary>
-    public const string TankLabel = "🫁 CHARGING RACK";
+    /// <summary>The console inside — and what it is FOR, on the plate rather than in the glyph.
+    ///
+    /// <para>#728 · Owner, in the smoke run, standing between the two fixtures he designed: <i>"the air fill
+    /// and the reload functionality are not marked quite so clearly as they could be… on shelters I always
+    /// forget which is which."</i> When the owner of the ammunition design cannot tell the ammunition plate
+    /// from the air plate, the plates have failed — the found-object noun was carrying the poetry and the
+    /// glyph was carrying the whole of the meaning, and a 🫁 read at a run over regolith is a smudge.</para>
+    ///
+    /// <para>The noun STAYS. These are not renamed and must not be: a charging rack is what somebody who left
+    /// this here would have called it, and the fiction of the place is in the vocabulary. What is added is the
+    /// VERB — the same move the refuge plate already makes by putting <c>REFUGE ·</c> in front of its claim
+    /// (<c>UndergroundComplex.RefugeGlyph</c>), so the scope of the promise is part of the promise.</para></summary>
+    public const string TankLabel = "🫁 CHARGING RACK — FILLS YOUR TANK";
 
     /// <summary>The other half of a survival cache. Owner: <i>"In Andy Weir's moon book there were these
     /// emergency shelters on Moon surface and indoor spaces. I think those should exist on the surface and
     /// they should also contain reload to guns."</i> Right — a shelter stocked with air and nothing else is
     /// a tap, not a refuge. Somebody who put a pressure vessel out here for strangers to find would have put
-    /// something in it to defend the place with.</summary>
-    public const string LockerLabel = "🔫 EMERGENCY LOCKER";
+    /// something in it to defend the place with.
+    ///
+    /// <para>#728 · Carries its verb for the same reason <see cref="TankLabel"/> does, and it is the half of
+    /// the pair the owner was actually reaching for when he could not tell them apart.</para></summary>
+    public const string LockerLabel = "🔫 EMERGENCY LOCKER — FILLS YOUR MAGAZINES";
 
     /// <summary>#580 · THE LOCKER IS NOT A CACHE. IT IS A SUPPLY POINT.
     ///
@@ -249,6 +263,17 @@ public static class SurfaceShelter
     /// <summary>What the locker says to a captain who needs nothing.</summary>
     public const string LockerFullLine =
         "🔫 The press reads your magazines, finds them full, and goes back to sleep. It will be here.";
+
+    /// <summary>#728 · …and what it says to a captain who has no magazines at all.
+    ///
+    /// <para>Both cases used to reach <see cref="LockerFullLine"/>, which then told a captain who had brought
+    /// no sentry down that his magazines were FULL. That is the sim doing one thing while a sentence reports
+    /// another — this house's third named bug class — and it lands at the one fixture whose entire job is
+    /// ammunition. The outpost hut's locker has always got this right (<i>"you have nothing to put them
+    /// in"</i>); the shelter's had not.</para></summary>
+    public const string LockerNothingToFillLine =
+        "🔫 The press cycles, finds nothing to fill and stops. Your magazines ride on the sentries, and no " +
+        "sentry came down with you.";
 
     /// <summary>What the ground says as the door gives way to proximity.</summary>
     public const string ArrivalLine =

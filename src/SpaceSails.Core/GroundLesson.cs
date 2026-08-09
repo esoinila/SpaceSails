@@ -64,10 +64,21 @@ public static class GroundLesson
         // introduced, and I now does something. Worded for a captain whose pockets are still EMPTY, because
         // on a first landing they are: what matters is knowing there IS somewhere for the first thing you
         // find to go, and that it will still be there next time.
+        // #728 · AND IT NO LONGER PROMISES ROUNDS. Owner, in the smoke run, opening the satchel on the spot
+        // where a shelter had just told him "70 rounds into your magazines" and reading "Empty".
+        //
+        // The card said "loose rounds" go in your pockets. Nothing in this game has ever put a round in a
+        // pocket: every round a captain finds — the shelter press, the outpost locker, the half-shut drawer
+        // in a ruin — goes STRAIGHT into the sentries' magazines, by #580's ruling that ammunition is not
+        // inventory and scarcity lives in the walk. So the one word was doing two jobs and telling the truth
+        // in neither: it promised a pocketful that never arrives, and it made the abstraction look like a
+        // bug at the first locker. The fix is the SENTENCE (#740) — it now says where rounds actually go,
+        // which is also the only place the card ever needed to point.
         new("I", "What you are carrying",
-            "I opens your pockets. Papers, keys, loose rounds, files on people — everything you pick up out "
-            + "here goes in, and stays yours between visits. At a door that will not open it is also the "
-            + "list of things to TRY on it."),
+            "I opens your pockets. Papers, keys, files on people, a card that opens a door — everything you "
+            + "pick up out here goes in, and stays yours between visits. Rounds are the exception: what you "
+            + "find loose goes straight into your sentries' magazines, never into the bag. At a door that "
+            + "will not open the pocket is also the list of things to TRY on it."),
     ];
 
     /// <summary>The laws of the place — the four things that kill a first excursion, said plainly.</summary>
