@@ -1136,6 +1136,23 @@ public partial class Map
                     _startingFloorCheat = -1;
                 }
             }
+            else if (pair.StartsWith("designate=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #803 dev cheat: /map?designate=1 is the freight boot with the whole manual-fire loop rigged
+                // at it — a gun set down beside you one round short of a hasp, and a hut's find in the
+                // pocket. The scenario the owner described (a few found rounds, and a lock worth them) is
+                // otherwise a lift ride and two rooms apart from itself.
+                string candidate = Uri.UnescapeDataString(pair["designate=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _designateCheat = true;
+                    _freightCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
             else if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
             {
                 // #757 dev cheat: /map?approach=1 makes the next WAIT at a table you took alone bring

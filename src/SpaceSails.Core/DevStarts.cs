@@ -150,6 +150,16 @@ public static class DevStarts
             + "corridor and count the others: a hall this size is required to have them, and each one is "
             + "numbered and leads somewhere (#775).",
             "/map?frontdoor=1"),
+        // #803 · THE FEW ROUNDS FROM A HUT, SPENT ON A LOCK. Owner: "we might want to hand-load them into
+        // the bots for some special purposes, like shooting a mechanical lock ... that UI is missing." Every
+        // piece of that exists on a real run and no two of them are in the same room, so the one thing
+        // nobody could do was watch the loop go round once.
+        new("🔫🔒", "Hand-load a gun and shoot a lock off",
+            "B1 of a deep site, standing at the GOODS HOIST with a sentry SET DOWN beside you reading 05 — "
+            + "one round short of a hasp — and twelve loose rounds in your pocket. Press I over the bot to "
+            + "hand-load it, then 📻 Remote → 🎯 DESIGNATE: pick the gun, pick the shutter, say when. Six "
+            + "rounds, one very loud noise the world writes down, and the shutter comes open (#803).",
+            "/map?designate=1"),
         new("🚛", "The goods hoist that will not take you",
             "The same hall, standing at the GOODS HOIST at the end of the counter's own service band — "
             + "eighty seats of food and twelve beds of produce do not arrive through a personnel door. It "

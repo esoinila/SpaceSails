@@ -5519,6 +5519,41 @@ public static class UndergroundComplex
         return sign.StartsWith('⟶');   // ⟶ SECTOR n · d.d km
     }
 
+    /// <summary>#803 · Is this sign the goods hoist's own plate? Asked of the sign for the same reason
+    /// <see cref="IsSealedWay"/> is: the client meets these as strings on a console and must never be the
+    /// place that decides what one of them IS.</summary>
+    public static bool IsFreightShutter(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return string.Equals(sign, FreightPlate, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// #803 · Is this sign a ROOM DOOR's plate — one of the words this building paints on a door somebody
+    /// shut? Membership in the door vocabularies themselves (<see cref="SignsFor"/>), across every kind of
+    /// site, so the answer cannot drift from the list that produced the string.
+    ///
+    /// <para>Positive recognition on purpose. The three things <see cref="Build"/> hangs a
+    /// <see cref="LockedDoor"/> on are a room's plate, a rib's sealed mouth and the hoist's shutter, and
+    /// anything asking "what is holding this shut" (#803's designate mode) must be able to say <b>yes, this
+    /// is a door with a department on it</b> rather than <b>no, it is not a sealed way</b> — a rule written
+    /// as a negation selects every string in the game the day somebody adds a fourth kind.</para></summary>
+    public static bool IsDoorSign(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        foreach (Kind kind in Enum.GetValues<Kind>())
+        {
+            foreach (string word in SignsFor(kind))
+            {
+                if (string.Equals(word, sign, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public const string SealedWayArtUrl = "art/the-sealed-way.jpg";
 
     public const string SealedWayCardLabel = "🔒 THE WAY ON, CLOSED";

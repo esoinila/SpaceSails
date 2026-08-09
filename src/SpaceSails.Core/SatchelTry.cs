@@ -26,8 +26,14 @@ public static class SatchelTry
         /// <summary>A room door that will not open, with a department painted on it.</summary>
         RoomDoor,
 
-        /// <summary>A sentry that has run dry (#562's supply line).</summary>
-        DrySentry,
+        /// <summary>A sentry the captain has SET DOWN (#562's supply line).
+        ///
+        /// <para>#803 · It was <c>DrySentry</c> while the only bot that would take a handful was one reading
+        /// 00, and that was the honest name then. The put verb loads any drum that is not full — a gun you
+        /// are about to point at a lock wants six rounds whether it has eleven in it or none — so the name
+        /// says what it now is. Nothing about the dry case changed; it is the same target, asked the same
+        /// way.</para></summary>
+        Sentry,
 
         /// <summary>The motion tracker — offering a paper as a lead rather than as reading matter.</summary>
         Tracker,
@@ -53,11 +59,14 @@ public static class SatchelTry
     /// was never storytelling was a shipping manifest carrying a live <b>try it →</b> at a bulkhead: the game
     /// dangling forty offers at a wall to hide the one that matters.</para>
     ///
-    /// <para><b>Rounds stay inert at a door on purpose.</b> Shooting a lock open (#610) is an owner call that
-    /// has not been made, and an offerable round at a door would pre-wire an answer to it.</para>
+    /// <para><b>Rounds stay inert at a door, and now for a better reason.</b> This used to say that shooting
+    /// a lock open was an owner call nobody had made. It has been made (#803) — and the answer is not that a
+    /// captain holds a handful of rounds up to a hasp. It is that a captain <b>walks the rounds to a gun</b>,
+    /// sets the gun down where it can see the door, and points it with the handset. So the pocket still has
+    /// nothing to say to a door; what changed is that the gun does (<see cref="ShootTheLock"/>).</para>
     ///
-    /// <para>Away from a door nothing narrows: a paper offered to the tracker, rounds tipped into a dry
-    /// sentry. This is a rule about DOORS, not a new law about pockets.</para>
+    /// <para>Away from a door nothing narrows: a paper offered to the tracker, rounds tipped into a sentry
+    /// you have set down. This is a rule about DOORS, not a new law about pockets.</para>
     /// </summary>
     public static bool CanOffer(Satchel.Kind kind, Target target) =>
         !IsDoor(target) || kind == Satchel.Kind.Authority;
@@ -73,7 +82,7 @@ public static class SatchelTry
         Target.ShaftGate => AtShaftGate(item, context),
         Target.SealedWay => AtSealedWay(item),
         Target.RoomDoor => AtRoomDoor(item),
-        Target.DrySentry => AtDrySentry(item),
+        Target.Sentry => AtSentry(item),
         _ => AtTracker(item),
     };
 
@@ -351,11 +360,15 @@ public static class SatchelTry
         $"🔒 {held}The lock is mechanical and it was turned by somebody who then walked away with the " +
         "key. It is not refusing you; it has simply been shut for longer than you have been alive.");
 
-    private static Outcome AtDrySentry(Satchel.Item item)
+    /// <summary>#803 · The sentry you are standing over. The kind refusal is unchanged; what the ROUNDS
+    /// answer is now decided by <see cref="SentryHandLoad.Offer"/>, because the drum has a ceiling, a kind
+    /// already in it and a state (slung or set down) — and a sentence written here could only guess at all
+    /// three. This returns the yes; the caller that owns the magazine gets the numbers.</summary>
+    private static Outcome AtSentry(Satchel.Item item)
     {
         if (item.Kind != Satchel.Kind.Rounds)
         {
-            return new(false, "🔫 It is out of ammunition. That is the only thing it wants.");
+            return new(false, "🔫 It takes rounds. That is the only thing it wants from a pocket.");
         }
         return new(true, $"🔫 {item.Count} round{(item.Count == 1 ? "" : "s")} into the hopper. It is not a " +
             "magazine, but it is not nothing.");

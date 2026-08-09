@@ -224,14 +224,14 @@ public sealed class WhatYouLeaveIsStillThereTests
         // Rounds stay inert at a door DELIBERATELY: shooting a lock open (#610) is an owner call nobody has
         // made, and an offerable round here would pre-wire the answer to it.
         Assert.False(SatchelTry.CanOffer(Satchel.Kind.Rounds, SatchelTry.Target.RoomDoor));
-        Assert.True(SatchelTry.CanOffer(Satchel.Kind.Rounds, SatchelTry.Target.DrySentry));
+        Assert.True(SatchelTry.CanOffer(Satchel.Kind.Rounds, SatchelTry.Target.Sentry));
 
         // The three doors, named, so a target added later has to come past this list.
         Assert.True(SatchelTry.IsDoor(SatchelTry.Target.ShaftGate));
         Assert.True(SatchelTry.IsDoor(SatchelTry.Target.SealedWay));
         Assert.True(SatchelTry.IsDoor(SatchelTry.Target.RoomDoor));
         Assert.False(SatchelTry.IsDoor(SatchelTry.Target.Tracker));
-        Assert.False(SatchelTry.IsDoor(SatchelTry.Target.DrySentry));
+        Assert.False(SatchelTry.IsDoor(SatchelTry.Target.Sentry));
     }
 
     [Fact]

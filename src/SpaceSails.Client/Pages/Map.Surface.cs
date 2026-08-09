@@ -680,6 +680,19 @@ public partial class Map
         public HashSet<int> HiveRoomsEmptied { get; } = [];
         public HashSet<int> HiveFloorsSeen { get; } = [];
 
+        // #803 · …and which of the doors that never open somebody took the hasp off with a sentry
+        // (HiveInterior.LockKey). Replayed on every rebuild, exactly the way an emptied room is, so a floor
+        // does not grow its wall back while the captain is two rooms away.
+        public HashSet<string> LocksShotOpen { get; } = [];
+
+        // #803 · …and what the shot itself was: the fired-shot facts this ground has heard, in the order
+        // they happened. Nothing in this build reads them beyond the field book — the pack's ear is rung by
+        // MakeNoise, as it always has been — and #804 prices them.
+        public List<GunfireHeard.Shot> ShotsHeard { get; set; } = [];
+
+        // #803 · Whether the captain has been told, once, what a shot indoors actually spends.
+        public bool GunfireWarned { get; set; }
+
         // #688 · WHAT THE CAPTAIN PUT DOWN, AND WHERE. Owner: "no way to drop stuff." Excursion-scoped by
         // deliberate v1 choice — the world does not keep a ledger of every sheet of paper anybody ever set on
         // a floor, and the line the captain reads says as much out loud rather than implying a permanence the
@@ -1873,6 +1886,7 @@ public partial class Map
                 }
                 RendererInterop.PlayCue("board");
                 ShowPulseMessage(SurfaceSalvage.RoundsLine(rounds - left));
+                WhatTheDrumsCouldNotHold(left);
                 break;
             }
 
@@ -2835,6 +2849,17 @@ public partial class Map
         {
             return;
         }
+        // #803 \u00b7 A door somebody took the hasp off is not a locked door any more, and the sign it wears says
+        // which of the two it is. Reading it is still worth a press \u2014 the plate is the only thing in the
+        // corridor that names the room \u2014 but it offers no pockets and tells no locked-door story, because
+        // there is nothing left on it to try.
+        if (spot.Label.StartsWith(HiveInterior.ShotOpenGlyph, StringComparison.Ordinal))
+        {
+            ShowPulseMessage(ShootTheLock.BehindItLine(
+                spot.Label.Replace($"{HiveInterior.ShotOpenGlyph} ", "", StringComparison.Ordinal)));
+            return;
+        }
+
         string sign = spot.Label.Replace("\ud83d\udd12 ", "");
 
         // #528 \u00b7 THE WAY ON, CLOSED. Owner, standing at a rib's far end: "I see there is a nice lock here at
@@ -2871,6 +2896,49 @@ public partial class Map
             UndergroundComplex.IsSealedWay(sign)
                 ? SatchelTry.Target.SealedWay
                 : SatchelTry.Target.RoomDoor);
+    }
+
+    /// <summary>
+    /// #803 · THE HASP COMES OFF, IN THE BUILDING'S OWN GRAMMAR.
+    ///
+    /// <para>The floor plan is pure and deterministic per (body, level), so the door that was shot is found
+    /// where it has always been rather than remembered as a shape: the plan is rebuilt, the lock nearest the
+    /// console the captain fired at is identified, and its key is written down. Every later rebuild replays
+    /// it — a floor change, a searched room, a save and a load — which is the same seam an emptied room
+    /// rides and the reason a shot door cannot grow its wall back behind the captain's shoulder.</para>
+    ///
+    /// <para>The MATCH is by geometry and by nothing else. A branch office reuses its door vocabulary, so a
+    /// floor can carry two doors reading LONG STORAGE and shooting one of them is not shooting the other —
+    /// keying on the sign would open both, quietly, forever.</para>
+    /// </summary>
+    private void TheLockComesOff(SurfaceExcursion ex, DesignateTarget target)
+    {
+        UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(
+            ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+
+        string? key = null;
+        double bestSq = double.MaxValue;
+        foreach (UndergroundComplex.LockedDoor l in floor.Locked)
+        {
+            double mx = (l.X1 + l.X2) / 2, my = (l.Y1 + l.Y2) / 2;
+            double dx = mx - target.X, dy = my - target.Y;
+            double d2 = (dx * dx) + (dy * dy);
+            if (d2 < bestSq)
+            {
+                bestSq = d2;
+                key = HiveInterior.LockKey(ex.Floor, l);
+            }
+        }
+
+        // A console spot IS a lock's midpoint, so the nearest one is the one that was shot; the tolerance
+        // exists only so a future renderer nudging a plate by a hair cannot silently open a different door.
+        if (key is null || bestSq > 1.0)
+        {
+            return;
+        }
+
+        ex.LocksShotOpen.Add(key);
+        RebuildSurfaceDeck();
     }
 
     /// <summary>#603 · The door the captain is standing at, while its pop-up is up.</summary>
@@ -3593,6 +3661,20 @@ public partial class Map
         // The sim told the story; the z-order ate it. In the DOM is not on the screen (the owner's own
         // formulation): the one layer the backdrop cannot blur is the dialog's own subtree, so a failed
         // offer is stored for the dialog to say, and only a success — which closes the modal — pulses.
+        // ── #803 · THE PUT VERB ANSWERS FOR ITSELF, BEFORE ANYTHING IS SAID ──
+        //
+        // Core's yes at a sentry is a yes about the KIND of thing being offered ("it takes rounds"). Whether
+        // THESE rounds go into THAT drum is a question about a ceiling, a kind already loaded and whether the
+        // machine is on your back or on the ground — three facts SatchelTry cannot see. So the hand-load
+        // decides, here, and its answer REPLACES the generic one rather than following it: two sentences for
+        // one act is how a captain ends up reading "rounds into the hopper" immediately above "there is
+        // nowhere for them to go".
+        if (outcome.Worked && item is { Kind: Core.Satchel.Kind.Rounds } fed
+            && at.Target == SatchelTry.Target.Sentry && _surface is { } loadEx)
+        {
+            outcome = TheRoundsGoInByHand(loadEx, fed, at.Context);
+        }
+
         if (!outcome.Worked)
         {
             _satchelOutcome = outcome.Line;
@@ -3625,33 +3707,84 @@ public partial class Map
             GrantLabLead(DiceRule.Seed($"clue:{read.Id}"));
         }
 
-        // ── #603 case 2 · THE ROUNDS GO IN, AND THE GUN REMEMBERS WHAT THEY WERE ──
-        //
-        // Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
-        // the lab round clears a line with one shot and refuses anything already on top of it; one loaded
-        // with issue ball does neither. Both facts have to live on the magazine, so the bot carries the kind.
-        if (item is { Kind: Core.Satchel.Kind.Rounds } fed && at.Target == SatchelTry.Target.DrySentry
-            && _surface is { } loadEx)
-        {
-            SurfaceBot? gun = loadEx.Bots.FirstOrDefault(b => b.Deployed && b.Unit == at.Context);
-            if (gun is not null)
-            {
-                gun.Rounds += fed.Count;
-                gun.AmmoId = fed.Id;
-                _satchel = [.. Core.Satchel.Remove(_satchel, fed.Kind, fed.Id, fed.Count)];
+        CloseSatchel();
+    }
 
-                Core.Ammunition.Kind kind = Core.Ammunition.ById(fed.Id);
-                if (kind.MinimumRangeDu > 0)
-                {
-                    ShowPulseMessage(
-                        $"🔫 {gun.Unit} takes them. It will not fire these at anything closer than " +
-                        $"{kind.MinimumRangeDu:F0} du — they arm after travel, and that is the whole point " +
-                        "of them.");
-                }
-            }
+    /// <summary>
+    /// #603 case 2, grown up into #803's PUT VERB · THE ROUNDS GO IN BY HAND, AND THE GUN REMEMBERS WHAT
+    /// THEY WERE.
+    ///
+    /// <para>Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
+    /// the lab round clears a line with one shot and refuses anything already on top of it; one loaded with
+    /// issue ball does neither. Both facts live on the magazine, so the bot carries the kind.</para>
+    ///
+    /// <para><b>What #803 changed.</b> The old cut took any handful into any dry bot and wrote
+    /// <c>gun.Rounds += fed.Count</c> — no ceiling, because a drum at 00 plus a hut's twenty-two could not
+    /// reach ninety-nine and the bug was unreachable rather than absent. The put verb loads bots that are
+    /// already part full, so the ceiling is now the whole point: a magazine the two-digit readout cannot
+    /// report is the sim and the #797 instrument disagreeing about one number, which is this repo's third
+    /// named bug class with a gun in its hand. <see cref="SentryHandLoad.Offer"/> owns all of it; what is
+    /// left here is applying the answer.</para>
+    /// </summary>
+    private SatchelTry.Outcome TheRoundsGoInByHand(
+        SurfaceExcursion ex, Core.Satchel.Item fed, string? unit)
+    {
+        SurfaceBot? gun = ex.Bots.FirstOrDefault(b => b.Unit == unit);
+        if (gun is null)
+        {
+            return new(false, "🔫 That gun is not down here any more.");
         }
 
-        CloseSatchel();
+        SentryHandLoad.Load load = SentryHandLoad.Offer(
+            gun.Unit, gun.Rounds, gun.AmmoId, gun.Deployed, fed.Count, fed.Id);
+        if (!load.Worked)
+        {
+            return new(false, load.Line);
+        }
+
+        // Only what the drum TOOK leaves the pocket. The rest is still yours — the arithmetic is Core's and
+        // is asserted there, so nothing here can quietly round a captain out of four rounds.
+        gun.Rounds = load.Magazine;
+        gun.AmmoId = load.AmmoId;
+        _satchel = [.. Core.Satchel.Remove(_satchel, fed.Kind, fed.Id, load.Accepted)];
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();
+
+        Core.Ammunition.Kind kind = Core.Ammunition.ById(load.AmmoId);
+        string line = load.Line;
+        if (kind.MinimumRangeDu > 0)
+        {
+            line += $" It will not fire these at anything closer than {kind.MinimumRangeDu:F0} du — they " +
+                "arm after travel, and that is the whole point of them.";
+        }
+        return new(true, line);
+    }
+
+    /// <summary>
+    /// #803 · THE ROUNDS THE GUNS COULD NOT HOLD GO IN THE POCKET.
+    ///
+    /// <para>Every auto-route on this ground fills magazines in order and then stops, and until now whatever
+    /// was left simply stopped existing. The receipts were not lying — they name the rounds that went IN —
+    /// but a captain who watched a drawer produce twenty-two rounds into two drums that could take fourteen
+    /// has been shown a thing and then had it taken away, which is the one move an object in this game is
+    /// never allowed to make (#587: <i>a find that is shown once is a find that is lost</i>).</para>
+    ///
+    /// <para>It is also where the found-rounds item comes from at all. #603 wrote the law for rounds in a
+    /// pocket, hung the door on a dry sentry and shipped — and nothing in the game ever put one there, so
+    /// the whole verb was reachable only by editing a save. The overflow is the supply, and the put verb is
+    /// what it is for.</para>
+    ///
+    /// <para>Silent when there is nothing left over, which is the ordinary case and must stay exactly as
+    /// quiet as it is today.</para></summary>
+    private void WhatTheDrumsCouldNotHold(int leftOver, string? ammoId = null)
+    {
+        if (SentryHandLoad.IntoThePocket(leftOver, ammoId) is not { } loose)
+        {
+            return;
+        }
+        _satchel = [.. Core.Satchel.Add(_satchel, loose)];
+        ShowPulseMessage(SentryHandLoad.PocketedLine(loose.Count));
+        RequestVaultSave();
     }
 
     /// <summary>#603 · What this item can be offered to right now.
@@ -3685,17 +3818,29 @@ public partial class Map
         // autoguns and have those on our inventory then from there we should be able to load them into the
         // guns." The interesting case is precisely a sentry that has run dry out in the field, away from the
         // tube — a handful is never a resupply, but it might be enough to get you home.
-        if (item.Kind == Core.Satchel.Kind.Rounds && DrySentryUnderfoot() is { } unit)
+        if (item.Kind == Core.Satchel.Kind.Rounds && SentryUnderfoot() is { } unit)
         {
-            return (SatchelTry.Target.DrySentry, unit, unit);
+            return (SatchelTry.Target.Sentry, unit, unit);
         }
 
         return null;
     }
 
-    /// <summary>#603 · The dry sentry within reach, if there is one. Deployed and out of ammunition: a live
-    /// one does not want your six rounds and a carried one is not deployed.</summary>
-    private string? DrySentryUnderfoot()
+    /// <summary>
+    /// #603 → #803 · The sentry within reach that would take rounds, if there is one.
+    ///
+    /// <para>It asked for a bot reading exactly 00, which was right while the only reason to hand a machine
+    /// six rounds was that it had none. Owner, 2026-08-09: <i>"we might want to hand-load them into the bots
+    /// for some special purposes, like shooting a mechanical lock."</i> A gun with eleven rounds in it and a
+    /// hasp to take off wants six more, and a captain standing over it holding them was being told there was
+    /// nothing to do.</para>
+    ///
+    /// <para>Still DEPLOYED only, and that is the division of labour rather than an oversight: the world's
+    /// fixtures — the tube's belts, the shelter's press, the hut's locker — reach into the sling and fill
+    /// what you carry. What you have SET DOWN is out there, and the only thing that walks rounds to it is
+    /// you. The driest one wins when two are underfoot, because that is the one the captain came over
+    /// for.</para></summary>
+    private string? SentryUnderfoot()
     {
         if (_surface is not { } ex)
         {
@@ -3703,19 +3848,22 @@ public partial class Map
         }
 
         double radiusSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
+        string? best = null;
+        int fewest = int.MaxValue;
         foreach (SurfaceBot b in ex.Bots)
         {
-            if (!b.Deployed || b.Rounds > 0)
+            if (!b.Deployed || b.Rounds >= SentryBot.MaxMagazine || b.Rounds >= fewest)
             {
                 continue;
             }
             double dx = b.X - _avatarX, dy = b.Y - _avatarY;
             if ((dx * dx) + (dy * dy) <= radiusSq)
             {
-                return b.Unit;
+                best = b.Unit;
+                fewest = b.Rounds;
             }
         }
-        return null;
+        return best;
     }
 
     /// <summary>What to write on one row of the pocket. The prose is rebuilt from the world here rather than
@@ -4735,7 +4883,7 @@ public partial class Map
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
                 3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied,
-                ex.CanteenWatch);
+                ex.CanteenWatch, ex.LocksShotOpen);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
@@ -5556,6 +5704,10 @@ public partial class Map
                 StandAtTheFrontDoorIfAsked(landedOn);
                 StandAtTheGoodsHoistIfAsked(landedOn);
                 StandAtTheGardenWalkIfAsked(landedOn);
+
+                // #803 · …and this one rigs the whole loop at that shutter: a gun set down beside you with
+                // a hut's worth of rounds in your pocket and not enough in the drum.
+                RigTheDesignateDemoIfAsked(landedOn);
             }
             return;
         }
@@ -5832,6 +5984,56 @@ public partial class Map
             return;
         }
     }
+
+    /// <summary>
+    /// #803 QA · THE WHOLE MANUAL-FIRE LOOP, AT THE ONE SHUTTER IT WAS WRITTEN FOR.
+    ///
+    /// <para>Owner's own scenario: a hut with a few rounds in it, and a lock worth spending them on. The
+    /// pieces are two rooms and one lift ride apart on a real run, so the row assembles them: the captain is
+    /// standing at the GOODS HOIST (the <c>?freight=1</c> boot), one sentry is SET DOWN beside them with
+    /// four rounds in it — one short of a hasp, deliberately, so the put verb is not optional — and a hut's
+    /// find is loose in the pocket.</para>
+    ///
+    /// <para>Nothing here is a different world from the one a captain reaches by walking. The shutter is the
+    /// shutter, the rounds are ordinary rounds, and the six that come off the drum are the six the law
+    /// charges: a cheat that shows a tester a different scene is worse than no cheat at all.</para></summary>
+    private void RigTheDesignateDemoIfAsked(SurfaceExcursion ex)
+    {
+        if (!_designateCheat)
+        {
+            return;
+        }
+
+        SurfaceBot? gun = ex.Bots.FirstOrDefault(b => !SurfaceArrival.IsDoorSentry(b.Unit));
+        if (gun is not null)
+        {
+            gun.Deployed = true;
+            gun.X = _avatarX + 1.5;
+            gun.Y = _avatarY;
+            gun.AimX = gun.X;
+            gun.AimY = gun.Y - 1;
+            gun.Rounds = DesignateDemoRoundsInDrum;
+            gun.AmmoId = Core.Ammunition.Issue.Id;
+        }
+
+        _satchel = [.. Core.Satchel.Add(_satchel,
+            new Core.Satchel.Item(Core.Satchel.Kind.Rounds, Core.Ammunition.Issue.Id, DesignateDemoRoundsInPocket))];
+
+        RebuildSurfaceDeck();
+        ShowPulseMessage(
+            $"🧪 DEV ?designate=1: {gun?.Unit ?? "your sentry"} is SET DOWN beside you reading "
+            + $"{SentryBot.Readout(DesignateDemoRoundsInDrum)}, and there are {DesignateDemoRoundsInPocket} "
+            + "loose rounds in your pocket. Press I over the bot to hand-load it, then 📻 Remote → "
+            + $"{ShootTheLock.OpenLabel} and point it at the shutter.");
+    }
+
+    /// <summary>#803 QA · One short of a hasp, so the demo cannot be completed without hand-loading.</summary>
+    private const int DesignateDemoRoundsInDrum = ShootTheLock.RoundsPerHasp - 1;
+
+    /// <summary>#803 QA · A hut's find, in the pocket — the size <c>SurfaceOutpost.CacheRounds</c> deals in.</summary>
+    private const int DesignateDemoRoundsInPocket = 12;
+
+    private bool _designateCheat;
 
     // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of
     // seconds. It does NOT change what happens — the beat, the variant roll and the (zero) cost are the

@@ -3415,9 +3415,59 @@
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseCaptainsRemote)">
             <div class="view-object" @onclick:stopPropagation="true">
-                <div class="view-object-title">@SilentRunning.PanelTitle</div>
-                <div class="view-object-caption">@SilentRunning.PanelBlurb</div>
+                <div class="view-object-title">@(_designateOpen ? ShootTheLock.PanelTitle : SilentRunning.PanelTitle)</div>
+                <div class="view-object-caption">@(_designateOpen ? ShootTheLock.PanelBlurb : SilentRunning.PanelBlurb)</div>
 
+                @* #803 · DESIGNATE — the handset's fourth verb, and the only one that spends anything. Two
+                   pages on one panel rather than a second pop-up: the answer to a press must be readable on
+                   the pop-up that was pressed (#769), and a captain who opened the remote to point a gun has
+                   not changed rooms. Every row here is a full sentence at phone size (#782) — a gun's row
+                   says what is in it, a target's row says how far and what it costs, and the trigger says
+                   the price on its own face, so nothing is spent by a press whose consequence was a glyph. *@
+                @if (_designateOpen)
+                {
+                    @if (_designateUnit is null)
+                    {
+                        <div class="vent-readout">WHICH GUN</div>
+                        <div class="vent-actions">
+                            @foreach (var gun in DesignatableGuns())
+                            {
+                                string unit = gun.Unit;
+                                <button type="button" class="btn btn-sm btn-outline-warning"
+                                        title="Point this one"
+                                        @onclick="() => PickTheGun(unit)">
+                                    @ShootTheLock.GunRow(unit, gun.Rounds, Ammunition.ById(gun.AmmoId))
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="vent-readout">@_designateUnit — WHAT IT CAN SEE</div>
+                        <div class="vent-actions">
+                            @foreach (var mark in _designateTargets)
+                            {
+                                DesignateTarget aimedAt = mark;
+                                <button type="button"
+                                        class="btn btn-sm @(mark.Shootable ? "btn-warning" : "btn-outline-secondary")"
+                                        title="@(mark.Shootable ? ShootTheLock.FireLabel(mark.Cost) : ShootTheLock.RefusalLine(mark.Sign))"
+                                        @onclick="() => FireOnTheLock(aimedAt)">
+                                    @ShootTheLock.TargetRow(mark.Sign, mark.RangeDu, mark.Cost)
+                                </button>
+                            }
+                        </div>
+                        @if (_designateTargets.Count > 0)
+                        {
+                            <div class="vent-sub">Press one to fire on it. Anything with nothing to break on it will say so and cost you nothing.</div>
+                        }
+                    }
+
+                    <button type="button" class="btn btn-sm btn-outline-info" @onclick="BackToTheSwitches">
+                        @ShootTheLock.BackLabel
+                    </button>
+                }
+                else
+                {
                 <div class="vent-actions">
                     <button type="button"
                             class="btn btn-sm @(_weaponsTight ? "btn-warning" : "btn-outline-warning")"
@@ -3447,10 +3497,23 @@
                             @(_soundQuietly ? "✊ QUIET SEARCH — knuckles only" : "📡 Sounder (quick, and heard)")
                         </button>
                     }
+
+                    @* #803 · The fourth switch, and the only one that points at something. On the ground
+                       only: the guns it commands are machines a captain has SET DOWN, and there is nowhere
+                       to set one down from the bridge. *@
+                    @if (_surface is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@ShootTheLock.PanelBlurb"
+                                @onclick="OpenDesignate">
+                            @ShootTheLock.OpenLabel
+                        </button>
+                    }
                 </div>
 
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
                 <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+                }
 
                 @* #736 · What the last switch DID. Every switch on this handset orders something that is
                    somewhere else — bots across the field, a boat on the pad — so the sentence is the whole
