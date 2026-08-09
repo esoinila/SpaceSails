@@ -244,25 +244,34 @@ public static class RipAndBin
         "That is not a thing anybody reads over your shoulder. Paper is, and a file on somebody is. Rounds, "
         + "cards and the paperwork for something too big to lift are not evidence — they are property.";
 
-    /// <summary>What the captain is told as it comes apart in their hands. One sentence per rung, because
-    /// the hands are doing three different things and a captain told the wrong story about their own hands
-    /// has been lied to whatever the sim did.</summary>
+    /// <summary>
+    /// What the captain is told as it comes apart in their hands. One sentence per rung, because the hands
+    /// are doing three different things and a captain told the wrong story about their own hands has been
+    /// lied to whatever the sim did.
+    ///
+    /// <para><b>The document is named at the END of its clause and never inside one.</b> FOUND BY READING IT
+    /// ON THE SCREEN, in the browser, on this build: <c>SatchelLabel</c> hands over a phrase that carries its
+    /// own em-dash clause — <i>"maintenance log, two hands — a mention"</i> — so the first cut's <i>"You tear
+    /// {what} up"</i> rendered as <i>"You tear maintenance log, two hands — a mention up and push…"</i>, with
+    /// the particle stranded five words from its verb. A sentence that only reads correctly for short labels
+    /// is a sentence nobody has read.</para>
+    /// </summary>
     public static string RippedLine(string what, Tier tier)
     {
         ArgumentNullException.ThrowIfNull(what);
+        const string kept =
+            " Whatever you had already dug out of it is still in the book, in your own hand.";
         return tier switch
         {
             Tier.PaperBin =>
-                $"{Glyph} You tear {what} into eighths and drop it in the paper bin. Out of the sleeve, out "
-                + "of your hands — and whatever you had already dug out of it is still in the book, in your "
-                + "own hand.",
+                $"{Glyph} You tear it into eighths and drop it in the paper bin — {what}, out of the sleeve "
+                + $"and out of your hands.{kept}",
             Tier.SlopBin =>
-                $"{Glyph} You tear {what} up and push the pieces down under the soup. Out of the sleeve — "
-                + "and whatever you had already dug out of it is still in the book, in your own hand.",
+                $"{Glyph} You tear it up and push the pieces down under the soup — {what}, out of the "
+                + $"sleeve.{kept}",
             _ =>
-                $"{Glyph} You tear {what} up, pull the hatch and let it go. Something takes it, a long way "
-                + "down. Out of the sleeve — and whatever you had already dug out of it is still in the "
-                + "book, in your own hand.",
+                $"{Glyph} You tear it up, pull the hatch and let it go — {what}, out of the sleeve, and "
+                + $"something takes it a long way down.{kept}",
         };
     }
 
@@ -280,7 +289,12 @@ public static class RipAndBin
     public static string DisposalNote(string what, Tier tier)
     {
         ArgumentNullException.ThrowIfNull(what);
-        return $"Tore up {what} and put it in {TheBin(tier)}. Nothing of it was left on the table.";
+        // The BUCKET first and the document after it, for two reasons that agree: the notebook clips a
+        // title to 88 characters (CaseThreads.TitleLength), and the one word a later arc has to be able to
+        // read back is the one saying where the pieces went — and a label with its own em-dash clause in it
+        // ("maintenance log, two hands — a mention") made "Tore up {what} and put it in…" unreadable on the
+        // page. Both faults were on the screen at once, which is where they were found.
+        return $"Torn up and put in {TheBin(tier)}: {what}. Nothing of it was left on the table.";
     }
 
     /// <summary>Who was looking. The client decides which of these is true — what "watched" means at a

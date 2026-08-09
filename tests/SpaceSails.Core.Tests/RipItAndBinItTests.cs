@@ -388,6 +388,47 @@ public sealed class RipItAndBinItTests
         Assert.Contains("Soup", RipAndBin.TierBet(RipAndBin.Tier.SlopBin), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #798 · THE DOCUMENT IS NAMED AT THE END OF ITS CLAUSE, NEVER INSIDE ONE.
+    ///
+    /// <para><b>Found by reading it on the screen</b>, in the browser, on this build.
+    /// <c>Map.SatchelLabel</c> hands these two sentences a phrase that carries its own em-dash clause —
+    /// <i>"maintenance log, two hands — a mention"</i> — and the first cut wrote <i>"You tear {what} up"</i>,
+    /// which rendered as <i>"You tear maintenance log, two hands — a mention up and push the pieces down"</i>.
+    /// The particle was five words from its verb and the line was gibberish, in the pulse AND in the book,
+    /// on the very first press of the very first demo row.</para>
+    ///
+    /// <para>The law that fixes it is checkable: whatever follows the label has to be punctuation that CLOSES
+    /// its clause. A guard about "does it read well" cannot be written; this one can, and it is the same
+    /// fault.</para>
+    /// </summary>
+    [Fact]
+    public void THE_DOCUMENT_IsNamedAtTheEndOfItsClause()
+    {
+        const string label = "a manifest, two hands — a mention";
+
+        foreach (RipAndBin.Tier tier in RipAndBin.Ladder)
+        {
+            foreach (string line in new[]
+            {
+                RipAndBin.RippedLine(label, tier), RipAndBin.DisposalNote(label, tier),
+            })
+            {
+                int at = line.IndexOf(label, StringComparison.Ordinal);
+                Assert.True(at >= 0, $"{tier}: the sentence does not name the document at all.");
+
+                int after = at + label.Length;
+                Assert.True(after < line.Length, $"{tier}: the sentence ends on the label with no stop.");
+
+                char next = line[after];
+                Assert.True(next is ',' or '.' or ':' or ';' or '—',
+                    $"{tier}: the document is named mid-clause — the sentence goes on with \""
+                    + line[after..Math.Min(line.Length, after + 24)]
+                    + "\", which is a word the label's own clause has already run away with.");
+            }
+        }
+    }
+
     /// <summary>#798 · NOTHING IN THIS FEATURE PROMISES THE PAPER IS GONE. A bin in this building is a
     /// HANDOVER (#775: professionals empty every one of them on schedule), and the discipline #649 wrote is
     /// that you find out only if it comes back. A sentence saying "destroyed", "safe" or "nobody will ever"
@@ -464,7 +505,10 @@ public sealed class RipItAndBinItTests
     [Fact]
     public void THE_SHREDDER_CannotReachTheBook()
     {
-        string source = CoreSource("RipAndBin.cs");
+        // Read off the CODE, with the commentary stripped — the file's own docs name the notebook in the
+        // sentence that promises never to touch it, and a guard that could not tell those apart would be
+        // unwritable. (It shipped red on its own documentation the first time it ran.)
+        string source = CodeOnly(CoreSource("RipAndBin.cs"));
 
         foreach (string reach in new[] { "FieldNote", "FieldNotes", "CaseThreads", "Thread(", "Erase(" })
         {
@@ -472,6 +516,23 @@ public sealed class RipItAndBinItTests
                 $"RipAndBin.cs mentions {reach} — the file that destroys evidence has grown a hand that can "
                 + "reach the captain's own notes.");
         }
+    }
+
+    /// <summary>The same source with every comment taken out. The law is about what the code DOES.</summary>
+    private static string CodeOnly(string source)
+    {
+        var kept = new StringBuilder();
+        foreach (string line in source.Split('\n'))
+        {
+            string trimmed = line.TrimStart();
+            if (trimmed.StartsWith("//", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            int slashes = line.IndexOf("//", StringComparison.Ordinal);
+            kept.AppendLine(slashes >= 0 ? line[..slashes] : line);
+        }
+        return kept.ToString();
     }
 
     /// <summary>Read one of Core's own source files, for the guards that are about SHAPE rather than
