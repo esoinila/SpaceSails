@@ -311,10 +311,18 @@ public sealed class SittingIsNotACutsceneTests
             StringComparison.Ordinal);
 
         // …and the entry goes into the ONE book, through the one seam, glyphed with the pen.
+        // The method's own body, cut at the member that follows it rather than at a character count — a
+        // guard whose window a comment can push an assertion out of is a guard about formatting.
         int lands = seated.IndexOf("private void TheWriteUpLands(", StringComparison.Ordinal);
-        string landing = seated[lands..(lands + 1200)];
+        Assert.True(lands > 0, "the dig has no far end for the entry to land at.");
+        int afterLanding = seated.IndexOf("private bool CanWriteUp(", lands, StringComparison.Ordinal);
+        Assert.True(afterLanding > lands);
+        string landing = seated[lands..afterLanding];
         Assert.Contains("FileNote(gist, SeatedPosture.WriteGlyph);", landing, StringComparison.Ordinal);
-        Assert.Contains("LeftBehind.GistOf(item, standing)", landing, StringComparison.Ordinal);
+        // …and it asks for the KEPT disposition, which is the difference between a table and a photograph
+        // said in the entry itself. Found in a browser: without it the strip promised the sleeve and then
+        // quoted a book entry that said the sheet had been left on the floor.
+        Assert.Contains("LeftBehind.GistOf(item, standing, kept: true)", landing, StringComparison.Ordinal);
         Assert.Contains("RequestVaultSave();", landing, StringComparison.Ordinal);
 
         // INTERRUPTIBLE, and honestly: standing up ends it out loud, in the seated register's own reason.
