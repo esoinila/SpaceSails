@@ -2119,6 +2119,121 @@ card reads` and five of eight failing; with the four client files reverted, all 
 dossier assembles on the first piece of kit with every sentence it can carry. Three papers rooms in one
 excursion at one room in eight, times two one-in-three rolls, is why it needed a door.
 
+13.27 **Somebody walks the working floors, the walk is a thing you can learn, and being seen is a CONVERSATION**
+(#804, v1 of the guards).
+
+> *"the rotating guards on the lower more restricted levels… ideally we could see them move and wait for them
+> to pass before we pass them."* · *"Surely we should not know their movements like 100 meters out and them
+> need to see us like really close to register our existence."* · *"a rolling guard has no reason to run after
+> anyone just on sight, they must suspect you do not belong there for some reason first."*
+
+§13.21 put people on B1 and said, in the same breath, that the guards on the floors below *"are not built yet
+and whose whole point is that probing them probes back."* This is that cast, and the owner's three sentences
+are the whole of its design.
+
+**Where a round is walked, and where it deliberately is not.** Below the bar, and no deeper than the building
+admits to — `PatrolBeat.IsPatrolled` is `CanteenRegulars`'s own B1 ruling on one side and `DepthOf` on the
+other, so the floors that carry a payroll are exactly the floors the directory owns up to. **Nobody walks the
+unlisted band or the found halls**, and that is a fact rather than an omission: the unlisted band is what the
+clandestine operation was hiding *from its own staff* (§13.7), and a security rota down there would be the
+building telling on itself. The head office has none either (#411 has no gate, no shafts and a fiction of its
+own). The population going to zero on the way down is #709's horror gradient, untouched — what this adds is a
+second, narrower gradient inside it, and **where the rounds stop is a sentence a captain can read without one
+being written.**
+
+**The round comes off the floor plan and never off a constant.** The car, then every rib mouth in ascending x,
+and after each mouth the room that stands furthest down that rib — `ShaftAt`, `FloorPlan.Ribs` (published by
+#587 for precisely this) and `FloorPlan.RoomCentres`, which §13.1's sweep already proves are walkable from the
+car on every floor of every site. So a beat is walkable **by construction**, and there is an audit that walks
+it anyway. The mouths are **sorted** before the round is built: #587's lesson is that a builder whose
+correctness depends on order must sort at the point of use, and the order here is what makes a round learnable.
+
+**It rotates with the WATCH, and the watch is the canteen's.** Direction and starting stop are seeded on
+(site, floor, watch) off `PatronRota.WatchIndex` — the same shift the bar upstairs turns over on, because one
+answer to *"how long is a shift"* is a rule and two are a bug. Inside a watch the same round is walked the same
+way every time, which is what makes it learnable; across watches it turns over, which is what stops learning
+one from being the end of the feature. One or two on a floor, sharing **one route** and differing only by how
+far round it they start — the sweep team's rule (#538), for its reason: *being hidden from has to be legible.*
+
+**Four bands of knowing, and the asymmetry is the feature.**
+
+| range | what the captain gets |
+| --- | --- |
+| out past the eye | the MOTION FAN hears them through the rock, smudged, at #591's degraded reach |
+| inside earshot, unseen | *boots on shotcrete, out of sight and in no hurry* |
+| inside sightline (30 du) | a green mark on the deck — **and not one metre before** |
+| inside NINE du of them | they register you, and the round stops |
+
+The gap between the third row and the fourth is the whole stealth verb. If a guard noticed you the moment you
+could see them there would be nothing to time, and *"wait for them to pass"* would not be a sentence anybody
+could act on. One predicate answers both directions with a different reach (`PatrolBeat.EyesOn`), over
+`SurfaceCollision.HasLineOfSight` — the same wall law the captain, the pack and the sweep team obey — because
+two copies of "can this see that" is how a marker and a challenge come to disagree about whether anybody is
+there. **A guard behind poured wall is not drawn dim; they are not on the deck at all**, the #371 idiom the Old
+Ones already take.
+
+**And the instrument needed nothing.** A guard walks, so a guard is a contact: they go into
+`EverythingThatMoves` and the fan hears them, degrades with depth, smudges them behind wall and drops them the
+moment they stand still at a stop. #591 shipped an honest underground tracker eighteen months before there was
+anything down here to hear, and the bet paid: this feature added **no instrument code at all**.
+
+**A sighting is a CHALLENGE and there is no other branch.** The round stops, the wallet is read without being
+asked (#684's ruling — *the unprompted read IS the character*), and the answer is TOLD on a card with the
+consequence in its own amber row (#736). Four rungs, because a refusal that sorts the wallet is the best
+storytelling this ground has (#679): this site's pass, another site's pass **named**, the cage chit refused as
+a cage chit — *"That's for the cage. This isn't the cage."* — and an empty wallet. The worst outcome in the
+feature is a walk back to the lift and a line in a book with the time on it. **Nothing here can start a
+chase**, and it is enforced by there being nowhere for one to start.
+
+**THE BADGE, and where it comes from.** A site-scoped personnel pass in the wallet, the third grammar there:
+an authority is an office vouching for a HOLE, a chit is a foreman vouching for a SHIFT, a badge is the site
+vouching for a PERSON — and only the third is any use to a man on a round. It is issued **when the cage takes
+you down on the day-labour chit** (#752's arrival), which is the gig *completing* rather than being offered:
+the Hand's chit is a promise, going down on it is the shift you turned up for, and the field book's existing
+sentence — *"Downstairs is a place you are now paid to be"* — becomes literally true without a word of it
+changing.
+
+**Register, and it is load-bearing.** A guard is an EMPLOYEE. Bored, thorough, on a rota, halfway through a
+shift, and wholly uninterested in the captain until the form says otherwise. #618's canon constraint is the
+one this feature could most easily have broken — *"the owner's ask is a cover that can blow, not a detection
+meter"* — so there is no alert, no alarm, no lockdown, no meter and no banner, and a word-list guard keeps the
+next line in the same register.
+
+*(Enforced: `TheRoundsOnTheRestrictedFloorsTests` (Core, 22 facts) — the three exclusions swept over thirteen
+sites including the head office, both head-counts proven reachable, the circuit's order and the car's place,
+no two stops on one square, deterministic inside a watch and turned over on 90 %+ of floors across six,
+the sightline laws in both directions at ONE range with only the wall differing, the boots band, the fan
+hearing a walker the eye cannot and dropping a stander, all four challenge rungs, the pass's site scope and
+its ride in the wallet, and the canon + register greps walking the catalog itself.
+`TheRoundIsWalkableTests` (Client) floods every restricted floor of eleven sites on three watches with A\*
+over the real `DeckPlan.CollisionField` — every stop standable, reachable from the car, and connected to the
+next — plus the wiring guards for the sightline gate, the fan's one accessor, the deck's droid count and the
+pass's grant.*
+*
+*Watched go **red**: the rib order reversed → `secret-lab-site-halls-116 B4: the round goes back on itself — a
+mouth at x-5.0 after one at x93.4`, twelve times; the wall law removed from `EyesOn` → three sightline facts;
+the watch dropped from the beat seeds → `only 0 of 98 floors walk a different round on a different watch`;
+the `DepthOf` clause dropped → `europa B5: a round on the band nobody listed`; and the room stop moved twenty
+du off its centre → `996 leg(s) of a round are not walkable`.)*
+
+**Reaching it.** `/map?patrol=2` — B2 of a deep site with the two-guard watch forced; `/map?badge=1` — the
+same floor with the site's own pass already in the wallet.
+
+**Filed, not built** (the owner's own scope split, and the phase-2 note this leaves behind): the suspicion
+ladder past one sighting, false IDs, a department tier on the pass, the challenge growing MOVES on
+`Encounter.Scene` — which #746 already proved needs no new mechanics — and #715's per-entity heat taking over
+from the single filed line. And the card wants a painting; it ships caption-only, which is the house
+degradation law and not a hole.
+
+**And the loudest one, which now has both halves waiting for each other.** #803/#809 shipped
+`GunfireHeard.WithinEarshot`, whose own doc comment says it is *"the question #804 will ask of every patrol on
+the floor, written down here so it is asked once and answered the same way"* — one call, and the predicate is
+already the ground's own ear (`ReeverHearing.Noise.Gunfire`, never a second number). **It is deliberately not
+consumed here.** What a round DOES about a noise is not a predicate, it is a STATE — break off the stand, walk
+to the place, search it, resume — which is the first rung of the suspicion ladder this phase is scoped out of,
+and it wants a sentence in the guard's own register that has not been through canon review. The seam is ready
+and the caller is one `if`; the reason it is empty is a ruling rather than an oversight.
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

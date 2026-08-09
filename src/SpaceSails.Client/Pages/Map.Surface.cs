@@ -307,9 +307,15 @@ public partial class Map
     /// both are wrong now, which is precisely why the sum lives here and every caller reads it.
     ///
     /// <para>The bands, in buffer order: the crew (3), the pack (<see cref="ReeverEngineCeiling"/>), the repo
-    /// crew (<see cref="MaxCollectors"/>), the sweep team (<c>InspectionTeam.TeamSize</c>).
-    /// <see cref="FillSurfaceDroids"/> writes them at exactly these offsets.</para></summary>
+    /// crew (<see cref="MaxCollectors"/>), the sweep team (<c>InspectionTeam.TeamSize</c>), and #804's
+    /// rounds (<see cref="PatrolBand"/>). <see cref="FillSurfaceDroids"/> writes them at exactly these
+    /// offsets.</para></summary>
     private const int SurfaceDroidCount =
+        3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize + PatrolBand;
+
+    /// <summary>#804 · Where the rounds' slots start. Stated as the sum of every band before it, so a fifth
+    /// filler cannot quietly overwrite a fourth — which is precisely the bug #633 paid for.</summary>
+    private const int PatrolFirstSlot =
         3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize;
 
     private sealed class Reever
@@ -2329,6 +2335,9 @@ public partial class Map
             // #681: and the placement LAST, so if the net has to catch anybody its line is the one left on
             // screen. A rescue nobody sees is a bug nobody reports.
             StandCaptainAt(carX, carY, "the car lets you out into the shed on the surface");
+            // #804 · Nobody walks a round on the regolith. Cleared on the way out so a captain who surfaces
+            // mid-challenge does not leave two people standing in a corridor that is no longer drawn.
+            SpawnPatrolFor(ex);
             RequestVaultSave();
             return;
         }
@@ -2336,6 +2345,12 @@ public partial class Map
         (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
         StandCaptainAt(sx, sy, "the car opens onto the floor");   // #681: the same net, underground
         RendererInterop.PlayCue("board");
+
+        // #804 · WHO IS WALKING THIS ONE. Built here — at the one place a floor changes — and never in the
+        // deck rebuild, which runs every time a room is searched and would restart a round under a captain
+        // who was halfway through timing it. The watch is the one the arrival just froze, so the round and
+        // the canteen upstairs turn over on the same beat.
+        SpawnPatrolFor(ex);
 
         if (!wasUnderground)
         {
@@ -2396,6 +2411,10 @@ public partial class Map
         //
         // What stays here is what Core does not have: the cards, the nerve, the flags and the save.
         bool firstSight = ex.HiveFloorsSeen.Add(level);
+
+        // #804 · Whether THIS ride was the one the day-labour chit opened. Banked rather than acted on where
+        // it is noticed, so the pass it earns is granted after the arrival has said everything it has to say.
+        bool chitGateThisRide = false;
 
         foreach (UndergroundComplex.Saying saying in UndergroundComplex.ArrivalSayings(
                      ex.Stop.Body.Id, fromLevel, level,
@@ -2478,6 +2497,12 @@ public partial class Map
                 case UndergroundComplex.ArrivalBeat.ChitGate:
                     ex.ChitGateBeatShown = true;
                     FileNote(CanteenTable.ChitGateGist, CanteenTable.ChitGlyph);
+                    // #804 · AND THE JOB PAYS IN PAPER — but the grant is made BELOW, after the arrival has
+                    // finished speaking. Doing it here would put the pass's own sentence into the middle of
+                    // a composed arrival, where a later saying (or the held card's release) simply takes the
+                    // slot back off it (#693/#768). The gig completing is the loudest thing about this
+                    // ride, and it is said last.
+                    chitGateThisRide = true;
                     RequestVaultSave();
                     break;
 
@@ -2507,6 +2532,21 @@ public partial class Map
         // that opened on nothing but prose pulse the winner immediately — the shipped behaviour, unchanged.
         // Doors that also raised a card keep it, and the ✕ on that card is what finally says it.
         ReleaseHeldSayingsUnlessACardStopsTheWorld();
+
+        // #804 · AND THE JOB PAYS IN PAPER, said LAST. This is the gig completing, not the gig being
+        // offered: the Hand hands you a chit, the chit is a promise, and going down on it is the shift you
+        // actually turned up for. The site does the one thing a site does about a body that has arrived on
+        // somebody's account — it puts you on its books.
+        //
+        // Hung on the CHIT'S ride rather than on the table because the table's own gist already says what
+        // the paper is worth ("Downstairs is a place you are now paid to be"), and this makes that sentence
+        // literally true. After the release, because the pass's line is the loudest thing about this
+        // particular ride and the arrival's own composition would otherwise take the slot back off it.
+        if (chitGateThisRide)
+        {
+            IssueTheSitePass(ex);
+        }
+
         RequestVaultSave();
     }
 
@@ -3895,6 +3935,12 @@ public partial class Map
         // of paper — the name in the book downstairs is not on the card, which is the whole horror of it.
         Core.Satchel.Kind.Chit => $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}",
 
+        // #804 · The site's own pass, printed as it is printed. It names the SITE, which is what makes a
+        // wallet of them worth carrying and what a guard on another rock reads out loud when he refuses it.
+        Core.Satchel.Kind.Badge => PatrolBeat.SiteOfBadge(item.Id) is { Length: > 0 } badgeSite
+            ? $"{PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(badgeSite)}"
+            : $"{PatrolBeat.BadgeGlyph} a site pass",
+
         _ => "🗃 a file on somebody",
     };
 
@@ -4880,9 +4926,14 @@ public partial class Map
             // #751 · …or the one a tester pinned with ?watch=N. Applied HERE, at the one place the watch is
             // ever frozen, so the cheat cannot become a second answer to "which shift is this".
             ex.CanteenWatch = _watchCheat ?? PatronRota.WatchIndex(SimTime);
+            // #804 · The Hive's deck used to stop counting at the repo crew, which was right while nothing
+            // walked a floor. A round does, and it lives in the LAST band — so the count has to be the whole
+            // buffer or the guards would be written past DroidCount and drawn by nobody. One number, the
+            // same one the regolith and the derelict use, rather than a second arithmetic that has to be
+            // kept in step: this file has paid for that mistake once already (#633).
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
-                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied,
+                SurfaceDroidCount, FillSurfaceDroids, ex.HiveRoomsEmptied,
                 ex.CanteenWatch, ex.LocksShotOpen);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
@@ -5676,6 +5727,22 @@ public partial class Map
                       $"band {string.Join(", ", has)}.");
             }
 
+            // #804 · …and ?badge=1 mints THIS SITE'S own pass, before the car moves, so the guard the ride
+            // is about to walk you into has something to read. Site-scoped like the card above and minted
+            // the same way — into the real wallet, with the real id, so what the guard says is what he
+            // would have said about a pass that was earned.
+            if (_badgeCheat)
+            {
+                string passBody = landedOn.Stop.Body.Id;
+                if (!PatrolBeat.BadgeHeld(passBody, _satchel))
+                {
+                    _satchel = [.. Core.Satchel.Add(_satchel, PatrolBeat.Badge(passBody))];
+                }
+                ShowPulseMessage(
+                    $"🧪 DEV ?badge=1: {PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(passBody)} is in the " +
+                    "wallet — 🎒 I to read it, then let a round find you.");
+            }
+
             // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is
             // about what a FLOOR looks like rather than about finding the way in.
             if (_startingFloorCheat is { } askedFor)
@@ -6113,6 +6180,10 @@ public partial class Map
         }
         StepReevers(dtRealSeconds);
         StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
+        // #804 · …and the ROUNDS, which are the other thing about the clause above: the pack is cleared on
+        // descent and what walks the restricted floors instead is somebody on a payroll. Stepped AFTER the
+        // clear, deliberately — a guard is not a contact of the same kind and never shares a list with one.
+        AdvancePatrol(dtRealSeconds);
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
         // #370/#394: an away site runs NO endless tide (owner: "not a continuous endless stream like on
         // Miranda"). The expedition's beats may rouse a LIMITED pack; the deflection rock runs the pack OFF
@@ -8132,6 +8203,9 @@ public partial class Map
         // named bug class and exactly the thing a merge produces. The bands are stated ONCE, here and in
         // SurfaceDroidCount, and every filler is offset from the one before it.
         FillSweeperDroids(buffer, 3 + ReeverEngineCeiling + MaxCollectors);
+        // #804 · …and the rounds, in the band after the sweepers. Their filler applies the sightline gate
+        // itself: a guard the captain cannot see is parked off-map exactly as an unseen Old One is.
+        FillPatrolDroids(buffer, PatrolFirstSlot);
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
@@ -8476,11 +8550,14 @@ public partial class Map
         // underground. The buffer is cleared unconditionally so a floor with nothing on it cannot inherit
         // the smears of the last derelict the captain walked.
         //
-        // Nothing walks these corridors yet — the Old Ones are a regolith tide and are cleared on descent
-        // (owner: "I don't think there should be reevers down here"). So today this smudges an empty floor.
-        // That is the correct order of work and the issue says so: make the instrument honest first, and
-        // whatever eventually comes down here inherits a tracker that already behaves like it is
-        // underground rather than one that has to be taught afterwards.
+        // #804 · AND NOW SOMETHING DOES WALK THEM. The Old Ones are still a regolith tide and are still
+        // cleared on descent (owner: "I don't think there should be reevers down here") — what is down here
+        // is a ROUND, on a payroll, and it arrived without this seam changing by a line. That is exactly
+        // what #591 was betting on: make the instrument honest first, and whatever eventually comes down
+        // here inherits a tracker that already behaves like it is underground. The fan hears a guard
+        // through poured wall at the degraded reach, draws them as a smear rather than a dot, and does it
+        // before the eye has anything to draw at all — which is the whole of the owner's "the motion
+        // detector warns us before they spot us".
         _hudSmudges.Clear();
         if (ex.Floor < 0)
         {

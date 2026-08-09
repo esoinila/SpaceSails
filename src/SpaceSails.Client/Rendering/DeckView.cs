@@ -240,6 +240,14 @@ public sealed class DeckView
     /// captain is deciding which way to run.</summary>
     private static readonly RgbaColor SweeperColor = new(150, 205, 235);
 
+    /// <summary>#804 · A GUARD ON A ROUND reads INSTITUTIONAL GREEN — the ink of the thing that wants to see
+    /// your paperwork. It is the fifth kind of figure this deck draws and it needs its own colour for the
+    /// reason the other four do: the pack is red because it wants to eat you, the repo crew amber because
+    /// it wants your money, a professional cold blue because it will shoot you. A guard who read as any of
+    /// those would tell a player to run from the one figure in the game whose whole design is that running
+    /// is the wrong answer.</summary>
+    private static readonly RgbaColor GuardColor = new(120, 200, 150);
+
     /// <summary>
     /// #537 · The ship's own structure — closed-cell metal foam and everything packed into it.
     ///
@@ -923,9 +931,14 @@ public sealed class DeckView
             // repo crew amber, a professional cold blue: what is walking toward you matters, and two hostiles
             // that read identically on the map are one hostile with two names.
             bool sweeper = IsSweeper(droid.Name);
+            // #804 · …and a FIFTH: a guard walking a round on a restricted floor of the Hive. Institutional
+            // green, because they are the one figure on this deck that is not a hostile at all — they are
+            // an employee, and the mark has to say so before the card does.
+            bool guard = SpaceSails.Core.PatrolBeat.IsGuardName(droid.Name);
             RgbaColor mark = reever ? ReeverColor
                 : collector ? CollectorColor
                 : sweeper ? SweeperColor
+                : guard ? GuardColor
                 : DroidColor;
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
@@ -938,11 +951,11 @@ public sealed class DeckView
             // #583: a collector has a body that catches on the same radius as everyone else's, so it is
             // drawn at that radius for the same reason an Old One is — the picture IS the law. Same for a
             // sweeper (#538), and for the same reason.
-            float bodyRadius = reever || collector || sweeper ? (float)DeckPlan.AvatarRadius : 0.5f;
+            float bodyRadius = reever || collector || sweeper || guard ? (float)DeckPlan.AvatarRadius : 0.5f;
             _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
-            double facing = headsUp && !reever && !collector && !sweeper ? Math.PI / 2
+            double facing = headsUp && !reever && !collector && !sweeper && !guard ? Math.PI / 2
                 : glance?[di] ?? droid.FacingRad;
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
@@ -979,6 +992,7 @@ public sealed class DeckView
                 reever ? ReeverColor
                     : collector ? CollectorColor
                     : sweeper ? SweeperColor
+                    : guard ? GuardColor
                     : TextDim,
                 "8px monospace", TextAlign.Center);
         }
@@ -1368,7 +1382,10 @@ public sealed class DeckView
     // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
     // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
     private static bool IsCrew(string name) =>
-        name is not ("Reever" or "Collector") && !IsSweeper(name) && !IsPatron(name);
+        name is not ("Reever" or "Collector") && !IsSweeper(name)
+        // #804 · Nor a guard on a round. Nobody on a security rota is going to catch a barkeep's eye during
+        // a hull shudder, and the crew's grey would hide the one figure the Hive's floors have.
+        && !SpaceSails.Core.PatrolBeat.IsGuardName(name) && !IsPatron(name);
 
     /// <summary>#538 · A sweeper, by callsign. Never crew: nobody on that team is going to catch a barkeep's eye
     /// during a hull shudder, and giving them the crew's grey would hide the second hostile thing on the deck.</summary>

@@ -291,9 +291,17 @@ public sealed class AJambIsNotASealedDoorTests
         // The captain (DeckPlan.Move) and the #618 black-ops sweepers, who are people on somebody's payroll
         // — owner, #729: "maybe the guards can use A* also so they do not come off as reevers". Anything
         // else appearing here is a new mover that has quietly claimed a talent, and wants a ruling first.
-        Assert.Equal(2, claims.Count);
+        //
+        // #804 · AND THE THIRD ONE, WHICH IS THE RULING THIS GUARD EXISTS TO FORCE. The rounds walking the
+        // Hive's restricted floors are the sentence above wearing a uniform: a contract guard is a person on
+        // a rota, they walk A* between published stops precisely so they do not read as Old Ones, and the
+        // owner's own #804 sentence is the same one — "ideally we could see them move and wait for them to
+        // pass". They get the funnel for the sweep team's reason and no other. THE OLD ONES STILL DO NOT,
+        // which is the whole law here and is checked file by file above.
+        Assert.Equal(3, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
+        Assert.Contains(claims, c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal));
     }
 
     private static string RepoRoot
