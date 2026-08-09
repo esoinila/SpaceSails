@@ -589,10 +589,129 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
             "the park's dev row walks to the gate before it looks for a bench, so the bench row can never "
             + "fire.");
 
+        // It asks the ROOM which way a bench faces rather than typing an offset. The carve puts every bench
+        // on the OUTSIDE of its bend — some above the walk, some below it — so "a bit under the plank" is a
+        // guess, and §13.15's second cause is a caller doing geometry about furniture it did not bolt down.
+        Assert.Contains("TowardTheWalk(in green, sx, sy)", row, StringComparison.Ordinal);
+        Assert.Contains("green.Walk", bench, StringComparison.Ordinal);
+
         // The tester is told the row exists, on the page that already opens this room.
         string guide = Doc("testing-guide.md");
         Assert.Contains("?park=1&spread=1", guide, StringComparison.Ordinal);
         Assert.Contains(DevStarts.All.First(r => r.Url.Contains("park=1&spread=1", StringComparison.Ordinal)).Label,
             guide, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// #793 QA · …AND THE SPOT IT WALKS THEM TO IS ON THE GRAVEL, IN FRONT OF THE BENCH, WITHIN REACH.
+    ///
+    /// <para>The owner's own method as a test (<i>"open the scene and check the parts are in the right
+    /// place"</i>), and §13.15's second cause as an assertion: this project has set a captain down inside a
+    /// wall twice, both times because a caller did geometry about a room it did not own. So the standoff the
+    /// dev row computes is measured against the REAL collision field of the REAL floor, for every park the
+    /// generator lays: inside the room, out of the furniture, inside <see cref="DeckPlan.InteractRadius"/>
+    /// of the bench it walked to — and <b>on the walk side of the plank</b>.</para>
+    ///
+    /// <para>That last clause is the one that catches the mistake. <b>Proven RED</b> by the standoff this row
+    /// was first written with — one and a bit du <i>below</i> the bench, which is a guess about which way a
+    /// bench faces on a walk that bends three times down a 278 du room:</para>
+    /// <code>
+    /// 2 park(s) walk the dev row somewhere a tester should not be:
+    ///   ganymede B1 bench 1: the captain is set down BEHIND the bench — 6.8 du from the walk, where the
+    ///     bench end is 5.1.
+    ///   titan B1 bench 1: the captain is set down BEHIND the bench — 6.8 du from the walk, where the bench
+    ///     end is 5.1.
+    /// </code>
+    ///
+    /// <para>TWO of the ten, which is exactly why the typed offset is the dangerous kind of wrong: it is
+    /// right on eight parks and quietly wrong on the two whose first free bench happens to sit on the other
+    /// side of its bend, and nobody would have found those two except by booting them.</para>
+    ///
+    /// <para>Neither the collision check nor the reach check fires on that version — the ground behind a
+    /// bench is perfectly solid ground to stand on and the console is still in range. It is simply the wrong
+    /// side, with the seat between the tester and the room, and only a law about the WALK can say so.</para>
+    /// </summary>
+    [Fact]
+    public void THE_DEMO_ROW_LandsOnGravelInFrontOfTheBench()
+    {
+        var wrong = new List<string>();
+        int landed = 0;
+
+        foreach ((string body, int level, UndergroundComplex.Park park) in EveryPark())
+        {
+            DeckPlan deck = HiveInterior.FloorDeck(body, level, Field, 0, (_, _) => { }, [], 0);
+
+            foreach (ParkBenches.Bench bench in ParkBenches.On(in park))
+            {
+                if (bench.Taken)
+                {
+                    continue;
+                }
+
+                // The very arithmetic Map.Bench.TowardTheWalk spends — the nearest published walk sample
+                // gives the bearing, the standoff gives the distance.
+                (double ex, double ey) = bench.YourEnd;
+                (double wx, double wy) = NearestWalkSample(in park, ex, ey);
+                double dx = wx - ex, dy = wy - ey;
+                double len = Math.Sqrt((dx * dx) + (dy * dy));
+                Assert.True(len > 1e-6, $"{body} B{-level}: the park publishes no walk to stand on.");
+
+                double standoff = DeckPlan.AvatarRadius + 1.0;
+                double sx = ex + (dx / len * standoff), sy = ey + (dy / len * standoff);
+                landed++;
+
+                if (!park.Contains(sx, sy))
+                {
+                    wrong.Add($"  {body} B{-level} bench {bench.Index}: the captain is set down at "
+                        + $"({sx:F1}, {sy:F1}), which is outside the park.");
+                }
+                if (SurfaceCollision.Blocked(sx, sy, DeckPlan.AvatarRadius, deck.CollisionField))
+                {
+                    wrong.Add($"  {body} B{-level} bench {bench.Index}: the captain is set down at "
+                        + $"({sx:F1}, {sy:F1}), which is inside something solid.");
+                }
+
+                double reach = Math.Sqrt(((sx - bench.X) * (sx - bench.X))
+                                       + ((sy - bench.Y) * (sy - bench.Y)));
+                if (reach > DeckPlan.InteractRadius)
+                {
+                    wrong.Add($"  {body} B{-level} bench {bench.Index}: the captain is set down {reach:F1} du "
+                        + $"from the bench — out of [E] reach ({DeckPlan.InteractRadius:F1} du).");
+                }
+
+                // …and ON THE GRAVEL, which is the half a typed offset gets wrong. A bench stands on the
+                // OUTSIDE of its bend, so "a bit below the plank" is the walk side for some of them and the
+                // back of the seat for the rest — and a tester dropped behind a bench is standing in the
+                // planting with the room on the far side of the thing they came to sit on.
+                double fromSpot = Math.Sqrt(((sx - wx) * (sx - wx)) + ((sy - wy) * (sy - wy)));
+                if (fromSpot >= len)
+                {
+                    wrong.Add($"  {body} B{-level} bench {bench.Index}: the captain is set down BEHIND the "
+                        + $"bench — {fromSpot:F1} du from the walk, where the bench end is {len:F1}.");
+                }
+
+                break;   // the row takes the FIRST free bench, and so does this.
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} park(s) walk the dev row somewhere a tester should not be:\n"
+            + string.Join("\n", wrong.Take(8)));
+        Assert.True(landed >= 8, $"only {landed} parks were walked — this proved little.");
+    }
+
+    private static (double X, double Y) NearestWalkSample(
+        in UndergroundComplex.Park park, double fromX, double fromY)
+    {
+        double bx = fromX, by = fromY, best = double.MaxValue;
+        foreach ((double wx, double wy) in park.Walk ?? [])
+        {
+            double d = ((wx - fromX) * (wx - fromX)) + ((wy - fromY) * (wy - fromY));
+            if (d < best)
+            {
+                (best, bx, by) = (d, wx, wy);
+            }
+        }
+        return (bx, by);
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -254,10 +255,17 @@ public partial class Map
                 continue;
             }
 
-            // Stood beside the plank rather than on it — the bench is a wall, and #681's one door is the
-            // only thing in this game that ever places a body.
+            // Stood beside the plank rather than on it — a bench is a solid segment in the collision field,
+            // and this row places a body, so WHICH SIDE has to come off the room rather than off a sign.
+            //
+            // §13.15, paid attention to: a standoff typed as "one and a bit du below the bench" is a guess
+            // about which way a bench faces, and the carve puts them on the OUTSIDE of every bend — some
+            // above the walk, some below it, none of them the same. So the direction is the park's own
+            // published gravel (ParkWalkOff), and the captain lands on the walk side, on ground #790's own
+            // reachability guard has already proved you can stand on.
             (double sx, double sy) = bench.YourEnd;
-            StandCaptainAt(sx, sy - BenchStandoffDu, "you walk down the gravel to a free bench");
+            (double wx, double wy) = TowardTheWalk(in green, sx, sy);
+            StandCaptainAt(wx, wy, "you walk down the gravel to a free bench");
             SeedTheSpreadFinds();
             SitOnThisBench(bench);
             ShowPulseMessage(
@@ -270,9 +278,33 @@ public partial class Map
         return false;
     }
 
-    /// <summary>How far off the plank a captain stands to press [E] at it. Inside
-    /// <see cref="DeckPlan.InteractRadius"/> with room to spare, and clear of the bench's own collision
-    /// segment plus a body's radius — a dev row that set somebody down inside the furniture is §13.15's
-    /// second cause, which this project has paid for twice.</summary>
+    /// <summary>How far off the plank a captain stands to press [E] at it. Clear of the bench's own
+    /// collision segment plus a body's radius, and comfortably inside <see cref="DeckPlan.InteractRadius"/>
+    /// even measured to the bench's CENTRE — a dev row that set somebody down inside the furniture, or just
+    /// out of reach of the console it walked them to, is §13.15's second cause, which this project has paid
+    /// for twice.</summary>
     private const double BenchStandoffDu = DeckPlan.AvatarRadius + 1.0;
+
+    /// <summary>#793 QA · One standoff off a bench end, ON THE WALK SIDE — the park's own gravel deciding
+    /// which way that is. The nearest published walk sample gives the bearing; the standoff gives the
+    /// distance. Nothing here knows which way a bench faces, because nothing here laid one down.</summary>
+    private static (double X, double Y) TowardTheWalk(
+        in UndergroundComplex.Park green, double fromX, double fromY)
+    {
+        double bestX = fromX, bestY = fromY, best = double.MaxValue;
+        foreach ((double wx, double wy) in green.Walk ?? [])
+        {
+            double d = ((wx - fromX) * (wx - fromX)) + ((wy - fromY) * (wy - fromY));
+            if (d < best)
+            {
+                (best, bestX, bestY) = (d, wx, wy);
+            }
+        }
+
+        double dx = bestX - fromX, dy = bestY - fromY;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        return len < 1e-6
+            ? (fromX, fromY)
+            : (fromX + (dx / len * BenchStandoffDu), fromY + (dy / len * BenchStandoffDu));
+    }
 }
