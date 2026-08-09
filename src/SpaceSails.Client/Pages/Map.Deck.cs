@@ -705,6 +705,13 @@ public partial class Map
                 // down alone is a choice to be FINDABLE, and WAIT is what you do once you have made it.
                 TryTakeTable();
                 break;
+            case DeckPlan.ConsoleKind.HiveBench:
+                // #793 · SIT ON THE BENCH. #790 put them in the park as plates over solid steel and said
+                // the verb would arrive with #778; it has. A bench with somebody already on the far end
+                // still answers — half a bench is a rest, and it is the rung of the exposure ladder that
+                // teaches the privacy law by refusing the spread OUT LOUD rather than by having no control.
+                TryTakeBench();
+                break;
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
                 break;

@@ -120,6 +120,16 @@ public partial class Map
             return;
         }
 
+        // #793 · …and ?park=1 WINS. ?spread=1 implies the canteen route (it was written when the only
+        // private seat in the game was a cabinet), so `?park=1&spread=1` asks for both rooms at once and
+        // somebody has to be first. The park is the more specific ask — it names a room — and the bench row
+        // sits the captain down itself, so this one stands aside rather than sitting them in a cabinet the
+        // next line would then walk them out of.
+        if (_parkCheat)
+        {
+            return;
+        }
+
         foreach (UndergroundComplex.Amenity a in
             UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
         {
@@ -388,7 +398,14 @@ public partial class Map
         /// <summary>#783 · The picture the panel wears, or null for a table that is somebody else's. Owner,
         /// live at a taken table: <i>"the pop up could have Gen AI here."</i> Two states, two images, off the
         /// one <see cref="Relaxed"/> answer above.</summary>
-        public string? ArtUrl => Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
+        /// <para>#793 · A BENCH WEARS NEITHER. Both pictures are photographs of a canteen table — an empty
+        /// chair pulled out opposite, or boots up on that same chair — and a park bench has no chair
+        /// opposite and no table to put anything on. A panel drawing one of them over a sit on gravel would
+        /// be the picture and the sentence disagreeing, which is the fault this very field was added to
+        /// avoid. A bench is always the DOCKED strip anyway (it is never a conversation), and the strip
+        /// draws no art at all.</para>
+        public string? ArtUrl =>
+            !Bench && Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
 
         /// <summary>How many the top seats, and how many chairs are still empty — the fact that let you
         /// ask to join in the first place, kept so the panel can say it.</summary>
@@ -406,6 +423,39 @@ public partial class Map
         /// Core's own (<see cref="CanteenRegulars.TableSeat.Quiet"/>) — a client flag would be a second
         /// answer to a question about a room the client does not own.</summary>
         public bool Quiet { get; init; }
+
+        /// <summary>
+        /// #793 · Whether this seat is a PARK BENCH rather than a canteen top.
+        ///
+        /// <para>The same scene machinery holds a bench — one sitting, one panel, one WAIT beat, one short
+        /// rest — because it IS the same posture, and a second seated panel beside this one would be a second
+        /// answer to "is the captain sitting down". What the flag buys is the three places a bench is
+        /// genuinely a different seat: which rung of the exposure ladder it is
+        /// (<c>Map.Seated.SeatedIn</c>), what the room says when nobody comes (a park is not a hall), and
+        /// what somebody arriving DOES — on a bench they sit down beside you and say nothing, which is not a
+        /// conversation and must not raise one.</para>
+        /// </summary>
+        public bool Bench { get; init; }
+
+        /// <summary>#793 · Which bench, as the park's own ordinal — for the deck and for the identity of the
+        /// seat. <see cref="Index"/> carries the APPROACH ordinal instead, which is deliberately a different
+        /// number (see <see cref="ParkBenches.ApproachOrdinal"/>).</summary>
+        public int BenchIndex { get; init; }
+
+        /// <summary>
+        /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
+        ///
+        /// <para>Deliberately NOT <see cref="Solo"/>, and the distinction is the whole of the bench rung.
+        /// <c>Solo</c> means <i>this is not a conversation</i> — it is what decides whether the frame docks
+        /// or the full card comes up, and whether the wait beat and the short rest run at all. A stranger who
+        /// sits down at the far end of a plank has started no conversation with anybody; you are still
+        /// sitting, still resting, still findable. What you have lost is PRIVACY, and this is the flag that
+        /// says so — the one <c>SeatedAlone</c> reads for the spread.</para>
+        ///
+        /// <para>Settable, because one sitting can change occupancy in both directions exactly as a table's
+        /// chair opposite can.</para>
+        /// </summary>
+        public bool SharedSeat { get; set; }
 
         /// <summary>#680 · What the last move answered, said HERE and nowhere else.</summary>
         public string? Outcome { get; set; }
@@ -939,8 +989,19 @@ public partial class Map
         // than off a second clock — Map.Seated.cs owns the arithmetic and the ceiling.
         string? rested = RestOneSeatedBeat(ex, beat);
 
+        // #793 · …AND ON A BENCH THE BEAT IS ALSO A LOOK. Owner: "it is a good gumshoe move to see if anyone
+        // is following us by foot, as they would need to stop moving also." Sitting still is what makes the
+        // reading possible, so the reading is taken on the beat you spend sitting still — never on the press
+        // that sat you down, which would be an answer to a question nobody had asked yet.
+        string? seen = t.Bench ? TheTailReading() : null;
+
         // One approach per top per watch. She came over, and whichever way that went, it went.
-        bool comes = !ex.TableApproached.Contains(t.Key)
+        //
+        // #793 · …and a bench with somebody already on the far end has nowhere to put a third person. Core's
+        // own arithmetic (two ends, one of them yours), asked rather than assumed — a wait that dealt an
+        // arrival onto a full plank would be the panel claiming an occupancy the room does not have.
+        bool comes = (!t.Bench || ParkBenches.TheOtherEndIsFree(t.SharedSeat))
+            && !ex.TableApproached.Contains(t.Key)
             && (_approachCheat
                 ?? SittingAlone.SomebodyComes(
                     ex.Stop.Body.Id, ex.Floor, t.Index, ex.CanteenWatch, beat, t.Quiet));
@@ -958,13 +1019,33 @@ public partial class Map
             // reads the ordering here to prove the nobody-came line goes through the one ending, and a local
             // computed above it flips that reading while changing nothing about the behaviour. The guard is
             // right about the law, so this stays shaped the way the law is checked.
+            //
+            // #793 · …and a PARK is not a hall. The room's answer comes from the room you are sitting in:
+            // trays and eighty chairs read on gravel under grow-lamps would be #740's fault with a bench
+            // under it. The tail reading rides in front of the body's footnote because it is what the beat
+            // was SPENT on — you sat still to look, and what you saw is the answer.
             TableAnswered(ex, t, SittingAlone.Wait,
                 new CanteenTable.Answer(WithTheBodysFootnote(
-                    SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet), rested)));
+                    WithTheBodysFootnote(
+                        t.Bench
+                            ? ParkBenches.NobodyCame(beat)
+                            : SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet),
+                        seen),
+                    rested)));
             return;
         }
 
         ex.TableApproached.Add(t.Key);
+
+        // #793 · …and WHAT ARRIVING MEANS depends on the furniture. A chair opposite is a conversation; the
+        // far end of a plank is a stranger with a cup who says nothing. One branch, because they are two
+        // different events and collapsing them would raise a full card over a park.
+        if (t.Bench)
+        {
+            SomebodyTakesTheOtherEnd(ex, t);
+            return;
+        }
+
         SomebodyTakesTheChair(ex, t);
     }
 

@@ -64,6 +64,16 @@ public sealed partial class Map
         /// written by the step — one answer per frame, so the marker and the challenge cannot disagree about
         /// whether there is anybody there.</summary>
         public bool Drawn;
+
+        /// <summary>#793 · Whether this one is HELD — stopped because the captain sat down on a bench in the
+        /// open (<see cref="FootTail.MustHold"/>). One answer per frame, written by the step and read by the
+        /// filler, so the figure that has stopped and the figure DRAWN as stopped are one figure.
+        ///
+        /// <para>It is false for every guard in the game and will stay false: a round is a route the
+        /// building published before the captain arrived, and a published route cannot be a tail. The field
+        /// is here because the hold is a law about MOVERS rather than about watchers — the day something
+        /// does follow the captain, it must not need a second stepper to be stopped by a bench.</para></summary>
+        public bool Held;
     }
 
     private readonly List<Guard> _guards = [];
@@ -168,11 +178,33 @@ public sealed partial class Map
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
 
+        // #793 · DOES ANYBODY HAVE TO STOP BECAUSE THE CAPTAIN DID? Owner, on the bench: "it is a good
+        // gumshoe move to see if anyone is following us by foot, as they would need to stop moving also."
+        // The question is asked of Core once a frame, of every mover, and the answer today is always no —
+        // a round is a published route (PatrolBeat.OnTheRound) and a published route is not a tail. This is
+        // the SEAM: the hold lives on the stepper every mover already goes through, so nothing has to be
+        // rebuilt the day something on this floor is actually following somebody.
+        bool sitting = SeatedOnABenchInTheOpen;
+
         bool anythingHeard = false;
-        foreach (Guard g in _guards)
+        for (int i = 0; i < _guards.Count; i++)
         {
+            Guard g = _guards[i];
             g.SinceStop += dt;
-            WalkTheRound(g, dt, walls);
+
+            FootTail.Mover afoot = PatrolBeat.OnTheRound(i, g.X, g.Y);
+            g.Held = FootTail.MustHold(sitting, _avatarX, _avatarY, in afoot, sight);
+            if (g.Held)
+            {
+                // A tail that has been made cannot walk on past you. It stops where it stopped, and it drops
+                // off the motion fan honestly while it does — the same clause the stand at a stop keeps.
+                g.Vx = 0;
+                g.Vy = 0;
+            }
+            else
+            {
+                WalkTheRound(g, dt, walls);
+            }
 
             // WHAT THE CAPTAIN MAY KNOW. One call, one answer, used by the marker and by nothing else — so
             // a guard behind a wall is off the deck by construction rather than by a renderer's opinion.
@@ -399,8 +431,12 @@ public sealed partial class Map
                 return;
             }
 
+            // #793 · …and whether they are HELD rides along, off the same one answer the step wrote. A
+            // figure that has stopped because you sat down is drawn stopped (#795's warm seated ink), and
+            // the fact goes down from the sim rather than being worked out by the pen.
             buffer[slot] = underground && i < _guards.Count && _guards[i].Drawn
-                ? new DeckPlan.Droid(_guards[i].X, _guards[i].Y, _guards[i].Facing, _guards[i].DeckName)
+                ? new DeckPlan.Droid(
+                    _guards[i].X, _guards[i].Y, _guards[i].Facing, _guards[i].DeckName, _guards[i].Held)
                 : new DeckPlan.Droid(-9999, -9999, 0, PatrolBeat.DeckName(i));
         }
     }

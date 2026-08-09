@@ -5985,9 +5985,17 @@ public partial class Map
             return;
         }
 
+        // #793 · …and ?park=1&spread=1 goes one leg further — onto a BENCH, with three finds in the sleeve
+        // and the whole plank to yourself. Through the same handler [E] reaches, at one of the room's own
+        // benches: a dev row that assembled its own sitting would demonstrate a bench that does not ship.
+        if (SitOnAFreeBenchIfAsked(in green))
+        {
+            return;
+        }
+
         ShowPulseMessage(
             "🧪 DEV ?park=1: THE PARK. Green underfoot, the window wall back to the bar, beds and benches "
-            + "down the curve.");
+            + "down the curve — press E at one to SIT DOWN (#793).");
         StandCaptainAt(green.X, green.Y, "you step through the gate onto the gravel");
     }
 

@@ -394,8 +394,16 @@ public sealed class TheParkIsWalkableTests
     }
 
     /// <summary>The park's own signage is on the deck: the plate at the gate, a stencil on every bed, a plate
-    /// on every bench, and one figure. Consoles are deliberately NOT used — nothing in a park answers
-    /// <c>[E]</c> yet, and a console that answers nothing is #757's complaint restated in a garden.</summary>
+    /// on every bench, and one figure.
+    ///
+    /// <para>#793 · AND EXACTLY ONE VERB, WHICH IT CAN HONOUR. This guard shipped as <i>"nothing in a park
+    /// answers [E] yet, and a console that answers nothing is #757's complaint restated in a garden"</i>, and
+    /// it was right on both halves — which is why it is pointed the other way here rather than weakened. The
+    /// benches take the sit verb now, so the park has ONE console kind and this says exactly which: one
+    /// <c>HiveBench</c> per bench, on the bench's own spot, wearing <see cref="ParkBenches"/>' plate — and
+    /// nothing else in the room pressable at all. The beds, the masts, the gate plate and the lone figure
+    /// are still signage. A second verb turning up in a park fails this as loudly as the first one did.</para>
+    /// </summary>
     [Fact]
     public void TheParkIsSignedAndOffersNoVerbItCannotHonour()
     {
@@ -417,11 +425,24 @@ public sealed class TheParkIsWalkableTests
             Assert.Contains(deck.RoomLabels, l => l.Text == park.FigurePlate);
             Assert.Contains(park.FigurePlate, CanteenRegulars.StrangerPlates);
 
-            // Nothing in the park is pressable, and that includes the figure on the far bench.
-            foreach (DeckPlan.ConsoleSpot c in deck.Consoles)
+            // #793 · ONE verb in the room, and it is the bench's. Everything else — the beds, the masts, the
+            // gate's own plate, and the lone figure on the far bench — is still signage with nothing to
+            // press: you sit down NEXT to the figure, you do not talk to them.
+            var pressable = deck.Consoles.Where(c => park.Contains(c.X, c.Y)).ToList();
+            foreach (DeckPlan.ConsoleSpot c in pressable)
             {
-                Assert.False(park.Contains(c.X, c.Y),
+                Assert.True(c.Kind == DeckPlan.ConsoleKind.HiveBench,
                     $"{body} B{-level}: a console ({c.Label}) stands in the park with nothing to answer.");
+            }
+
+            // …and there is exactly one of them per bench, on the bench's own spot, wearing Core's plate.
+            Assert.Equal(park.Benches.Count, pressable.Count);
+            foreach (ParkBenches.Bench bench in ParkBenches.On(in park))
+            {
+                ParkBenches.Bench b = bench;
+                DeckPlan.ConsoleSpot on = Assert.Single(
+                    pressable, c => Math.Abs(c.X - b.X) < 0.01 && Math.Abs(c.Y - b.Y) < 0.01);
+                Assert.Equal(b.DeckPlate, on.Label);
             }
         }
 

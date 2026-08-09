@@ -60,6 +60,12 @@ public sealed class DeckPlan
         // will not open and says what is behind it, and this is paper somebody pinned up — read one notice at
         // a time, filed, and worth coming back to when you have met the people in the room.
         HiveBoard,
+        // #793 · A STEEL BENCH IN THE PARK. Its own kind and not a HiveTable: #790 shipped the benches as
+        // labelled fixtures with nothing to press, and a bench is a different seat from a canteen top in the
+        // one way this game cares about — it has two ends and no chair opposite, so somebody who takes the
+        // other end is sitting BESIDE you rather than starting a conversation. Owner: "it is a good gumshoe
+        // move to see if anyone is following us by foot" / "if we get the whole bench to ourselves."
+        HiveBench,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.
@@ -268,7 +274,14 @@ public sealed class DeckPlan
     /// and the first the underground has ever had. All FIVE bands: 3 + 24 + 4 + 3 + 2 = 36.</para></summary>
     public const int MaxDroids = 36;
 
-    public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
+    /// <summary>One figure on the deck that is not the captain.
+    ///
+    /// <para>#793 · <paramref name="Held"/> — this one has STOPPED BECAUSE THE CAPTAIN SAT DOWN, which is the
+    /// answer a park bench is for (<see cref="SpaceSails.Core.FootTail.MustHold"/>). It is handed down from
+    /// the sim per frame like every other field on this record: the pen has never heard of a tail and must
+    /// not work one out, which is #788's one-reach lesson pointed at somebody else's feet.</para></summary>
+    public readonly record struct Droid(
+        double X, double Y, double FacingRad, string Name, bool Held = false);
 
     public Wall[] Walls { get; private set; }
 
@@ -384,6 +397,21 @@ public sealed class DeckPlan
     public readonly record struct StoolSpot(
         float X, float Y, bool Taken = false, bool RowHasSomebody = false);
 
+    /// <summary>
+    /// #793 · ONE END OF A PARK BENCH. A bench is a seat with two ends
+    /// (<see cref="SpaceSails.Core.ParkBenches"/>), and which of them is free is the whole privacy
+    /// predicate — so the deck answers it the way #792 taught it to answer a stool: one entry per SEAT,
+    /// occupancy handed down, and the pen told nothing about what a park is.
+    /// </summary>
+    /// <param name="X">Where that end is.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Taken">Somebody is on it.</param>
+    /// <param name="BenchHasSomebody">Anybody at all is on this bench. A free end beside somebody is the
+    /// same offer a free chair at an occupied top is, and it is drawn in the same ink — one language for one
+    /// question (#795), rather than the park having its own dialect of "you may sit here".</param>
+    public readonly record struct BenchSpot(
+        float X, float Y, bool Taken = false, bool BenchHasSomebody = false);
+
     /// <summary>Round table tops drawn as a ring on the floor — cantina/bar dressing. Plan-driven so
     /// any room (the ship's cantina, a haven bar) can lay out its own.</summary>
     public TableTop[] Tables { get; }
@@ -391,6 +419,11 @@ public sealed class DeckPlan
     /// <summary>#792 · The tall seats along a counter, in the row's own order. Empty everywhere there is no
     /// counter, which is every deck in the game but the Hive's cantina hall.</summary>
     public StoolSpot[] Stools { get; }
+
+    /// <summary>#793 · The park's bench ends, two per bench, in the room's own bench order — bench <c>i</c>
+    /// is entries <c>2i</c> and <c>2i+1</c>. Empty everywhere there is no park, which is every deck in the
+    /// game but B1 of a branch office.</summary>
+    public BenchSpot[] BenchSeats { get; }
     public double SpawnX { get; }
     public double SpawnY { get; }
     public int DroidCount { get; }
@@ -419,7 +452,8 @@ public sealed class DeckPlan
         (float X, float Y, string Text, float Px, int Tone)[]? bigLabels = null,
         SpaceSails.Core.BodyPalette.Ink? hullInk = null,
         Structure[]? structures = null,
-        StoolSpot[]? stools = null)
+        StoolSpot[]? stools = null,
+        BenchSpot[]? benchSeats = null)
     {
         Structures = structures ?? [];
         Walls = walls;
@@ -437,6 +471,7 @@ public sealed class DeckPlan
         Doors = doors ?? [];
         Tables = tables ?? [];
         Stools = stools ?? [];
+        BenchSeats = benchSeats ?? [];
         Scenery = scenery ?? [];
         StoneInk = stoneInk;
         DoorInk = doorInk;

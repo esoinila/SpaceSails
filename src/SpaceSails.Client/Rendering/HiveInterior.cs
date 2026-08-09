@@ -212,6 +212,12 @@ public static class HiveInterior
         // once been on the floor. Same rule as the tops below it: this file ASKS, and decides nothing.
         var stools = new List<DeckPlan.StoolSpot>();
 
+        // #793 · …and the PARK'S BENCH ENDS, which have been drawn as labelled fixtures since #790 and have
+        // never once said which half of one is free. Same rule a third time: Core owns who is on a bench
+        // (ParkBenches.On, off #790's own lone figure and nothing new), and this list only carries the
+        // answer to the pen.
+        var benchSeats = new List<DeckPlan.BenchSpot>();
+
         // ── #756 · THE FLOOR WEARS ITS ART ─────────────────────────────────────────────────────────────
         //
         // Owner, walking the biggest social room in the game and finding bare grid: "let's put todo to have
@@ -453,11 +459,31 @@ public static class HiveInterior
                 labels.Add(((float)bed.X, (float)bed.Y, bed.Plate));
             }
 
-            // The benches. Labelled and NOT consoles: sitting down is #778's verb and arrives with it, and a
-            // console that answers nothing is #757's complaint restated in a park.
-            foreach ((double bx, double by) in green.Benches)
+            // ── #793 · THE BENCHES TAKE THE SIT VERB ───────────────────────────────────────────────────
+            //
+            // #790 shipped them as plates over solid furniture and said so in this very comment: "sitting
+            // down is #778's verb and arrives with it." It has arrived. A bench is a CONSOLE now, of its own
+            // kind, and the plate says the verb the way a free table's does (#783: "why not use words like
+            // SIT DOWN here if it means sitting down?").
+            //
+            // WHO IS ON WHICH BENCH IS CORE'S — ParkBenches.On reads #790's own lone figure and nothing was
+            // populated to make the answer interesting. The two ends go onto the plan as SEATS, in the
+            // counter's own idiom (#792/#795), so the deck can answer "is the whole bench free" from across
+            // the room: that is the question the privacy predicate is written on.
+            foreach (ParkBenches.Bench bench in ParkBenches.On(in green))
             {
-                labels.Add(((float)bx, (float)(by - 2.2), UndergroundComplex.ParkBenchPlate));
+                labels.Add(((float)bench.X, (float)(bench.Y - 2.2), UndergroundComplex.ParkBenchPlate));
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveBench, (float)bench.X, (float)bench.Y, bench.DeckPlate));
+
+                for (int end = 0; end < ParkBenches.Ends; end++)
+                {
+                    (double ex, double ey) = bench.End(end);
+                    benchSeats.Add(new(
+                        (float)ex, (float)ey,
+                        Taken: bench.Taken && end == ParkBenches.TakenEnd,
+                        BenchHasSomebody: bench.Taken));
+                }
             }
 
             // …and somebody on the far bench, who is scenery. Owner: "benches, the lone figure, the curve
@@ -629,6 +655,7 @@ public static class HiveInterior
             // this floor.
             tables: [.. tables],
             stools: [.. stools],
+            benchSeats: [.. benchSeats],
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.

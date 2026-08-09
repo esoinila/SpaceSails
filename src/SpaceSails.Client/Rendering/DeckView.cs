@@ -891,19 +891,18 @@ public sealed class DeckView
         foreach (DeckPlan.StoolSpot stool in plan.Stools)
         {
             (float sx, float sy) = P(stool.X, stool.Y);
-            if (stool.Taken)
-            {
-                // A round seat with somebody up on it: filled, and there is nothing to draw a back on,
-                // because a bar stool does not have one.
-                _renderer.DrawCircle(sx, sy, StoolSeatDu * scale, SeatTaken, SeatTaken, 1.5f);
-            }
-            else
-            {
-                _renderer.DrawCircle(
-                    sx, sy, StoolSeatDu * scale, null,
-                    stool.RowHasSomebody ? SeatOpen : SeatEmpty,
-                    stool.RowHasSomebody ? 2.4f : 1.5f);
-            }
+            DrawBacklessSeat(sx, sy, stool.Taken, stool.RowHasSomebody, scale);
+        }
+
+        // #793 · …and the park's benches, END BY END, in exactly those two glyphs and no third one. A plank
+        // has no back to draw any more than a bar stool has, and a free end beside somebody is the same offer
+        // a free chair at an occupied top is. THE WHOLE BENCH is the privacy predicate
+        // (SeatedSpread.CanSpreadTheCase at the ParkBench rung), so the deck has to be able to say which half
+        // is gone before a captain walks the length of a 278 du park to find out by pressing.
+        foreach (DeckPlan.BenchSpot end in plan.BenchSeats)
+        {
+            (float bx, float by) = P(end.X, end.Y);
+            DrawBacklessSeat(bx, by, end.Taken, end.BenchHasSomebody, scale);
         }
 
         // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).
@@ -960,6 +959,24 @@ public sealed class DeckView
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
+
+            // #793 · …AND WHETHER THEY STOPPED WHEN YOU DID. Owner, on the whole point of a park bench:
+            // "it is a good gumshoe move to see if anyone is following us by foot, as they would need to
+            // stop moving also." A tail that has to hold is drawn holding — a bar struck across their back,
+            // in #792's own warm SEATED ink, because that is the ink this deck already uses for a figure who
+            // has settled. Handed down on the droid (DeckPlan.Droid.Held); this pen works nothing out.
+            //
+            // NOTHING SHIPPED SETS IT: no mover in the game today is a tail (a patrol walks a round that was
+            // laid before the captain arrived). So this branch is the SEAM, and its drawing is guarded with
+            // a test-only held figure rather than with an NPC nobody designed.
+            if (droid.Held)
+            {
+                float bx = dx - ((float)Math.Cos(facing) * scale * HeldBarDu);
+                float by = dy + ((float)Math.Sin(facing) * scale * HeldBarDu);
+                float px = -(float)Math.Sin(facing) * scale * SeatChairDu;
+                float py = -(float)Math.Cos(facing) * scale * SeatChairDu;
+                DrawSeg((bx - px, by - py), (bx + px, by + py), SeatTaken, 2.4f);
+            }
 
             // #538 · THE LAMP, DRAWN AT EXACTLY THE ANGLE THE RULE CHECKS. InspectionTeam.LampConeHalfAngleDegrees
             // and LampRange are read straight from Core here rather than eyeballed, because a cone drawn wider than
@@ -2169,6 +2186,40 @@ public sealed class DeckView
                 ink, near ? 2f : 1.1f);
         }
     }
+
+    /// <summary>
+    /// #792/#793 · ONE SEAT WITH NO BACK ON IT — a stool at the counter, or one end of a park bench.
+    ///
+    /// <para>Two glyphs, and they are the counter's own: a filled round seat where somebody is, a hollow one
+    /// where nobody is, and the hollow one goes <see cref="SeatOpen"/> green when the seat NEXT to it is
+    /// taken — the invitation ink #792 gave every other sittable place. There is deliberately no third
+    /// glyph and no chair back: a bar stool does not have one and neither does a plank.</para>
+    ///
+    /// <para>It is one method because it is one question. Written twice it would be two answers to
+    /// "is this seat free", drawn in two places, and the day the ink is tuned only one of them would move.</para>
+    /// </summary>
+    /// <param name="sx">Where it is, in pixels.</param>
+    /// <param name="sy">The same.</param>
+    /// <param name="taken">Somebody is on this seat.</param>
+    /// <param name="neighbourIsThere">Somebody is on this run of seats — the counter, or this bench.</param>
+    /// <param name="scale">Deck units to pixels.</param>
+    private void DrawBacklessSeat(float sx, float sy, bool taken, bool neighbourIsThere, float scale)
+    {
+        if (taken)
+        {
+            _renderer.DrawCircle(sx, sy, StoolSeatDu * scale, SeatTaken, SeatTaken, 1.5f);
+            return;
+        }
+        _renderer.DrawCircle(
+            sx, sy, StoolSeatDu * scale, null,
+            neighbourIsThere ? SeatOpen : SeatEmpty,
+            neighbourIsThere ? 2.4f : 1.5f);
+    }
+
+    /// <summary>#793 · How far behind a held figure's shoulders the STOPPED bar is struck — the same
+    /// distance a sitter's chair back stands at, because it is the same statement in the same ink: this one
+    /// has settled.</summary>
+    private const float HeldBarDu = SeatBackDu;
 
     /// <summary>Draw the chairs round one top, and whoever is in them. Nothing here decides anything: the
     /// seat count, the occupancy and the conversation all arrive on <paramref name="top"/> from the room
