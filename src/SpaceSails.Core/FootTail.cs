@@ -171,10 +171,16 @@ public static class FootTail
     // you looked, and the park either handed you something or it did not.
 
     /// <summary>The clean reading, and it is deliberately not a reassurance: nobody stopping is evidence
-    /// about this minute on this walk, which is all a gumshoe ever gets.</summary>
+    /// about this minute on this walk, which is all a gumshoe ever gets.
+    ///
+    /// <para>FOUND BY READING IT ON SCREEN. The first draft said <i>"two figures keep their pace"</i> — and
+    /// the sim does not know how many figures are on that walk, or that there are any at all. A sentence
+    /// that counts something nothing counts is #740's fault with a bench under it, and it would have read
+    /// as a lie the first time somebody sat on an empty walk. This one owns exactly the fact the reading
+    /// has: <b>nothing out there has stopped</b>.</para></summary>
     public const string NobodyStoppedLine =
-        "Nobody on the walk stops when you do. Two figures keep their pace all the way past the beds and out "
-        + "the far gate, which is what people who are going somewhere look like.";
+        "Nobody stops when you do. The walk runs on past the beds and out the far gate with nothing on it "
+        + "that has any reason to be standing still.";
 
     /// <summary>…and the reading that is worth the sit. It names WHAT WAS SEEN and draws no conclusion — the
     /// conclusion is the player's, which is the whole of the gumshoe register.</summary>

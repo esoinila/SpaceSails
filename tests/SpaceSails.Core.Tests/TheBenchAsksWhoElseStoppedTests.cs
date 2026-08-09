@@ -573,8 +573,8 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// nothing behind it looks like:</para>
     /// <code>
     /// Assert.NotEqual() Failure: Strings are equal
-    /// Expected: Not "Nobody on the walk stops when you do. Two figures "···
-    /// Actual:       "Nobody on the walk stops when you do. Two figures "···
+    /// Expected: Not "Nobody stops when you do. The walk runs on past t"···
+    /// Actual:       "Nobody stops when you do. The walk runs on past t"···
     /// </code>
     /// </summary>
     [Fact]
