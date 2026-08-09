@@ -36,6 +36,12 @@ public sealed class TheRoundIsWalkableTests
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
 
+    /// <summary>
+    /// The floor as it is built with NOTHING shot open (#809's <c>locksShotOpen</c> left empty), which is
+    /// deliberately the HARDEST case and therefore the only one worth flooding: a lock the captain has shot
+    /// off takes a wall OUT of the collision field, so it can only ever make a leg easier to walk. A round
+    /// that connects on the un-shot building connects on every shot-open version of it.
+    /// </summary>
     private static DeckPlan DeckFor(string body, int level) =>
         HiveInterior.FloorDeck(body, level, Field, 0, (_, _) => { }, []);
 

@@ -2220,10 +2220,19 @@ du off its centre → `996 leg(s) of a round are not walkable`.)*
 same floor with the site's own pass already in the wallet.
 
 **Filed, not built** (the owner's own scope split, and the phase-2 note this leaves behind): the suspicion
-ladder past one sighting, false IDs, a department tier on the pass, gunfire pulling a round toward the noise
-(the seam is `MakeNoise`; nothing consumes it yet), the challenge growing MOVES on `Encounter.Scene` — which
-#746 already proved needs no new mechanics — and #715's per-entity heat taking over from the single filed
-line. And the card wants a painting; it ships caption-only, which is the house degradation law and not a hole.
+ladder past one sighting, false IDs, a department tier on the pass, the challenge growing MOVES on
+`Encounter.Scene` — which #746 already proved needs no new mechanics — and #715's per-entity heat taking over
+from the single filed line. And the card wants a painting; it ships caption-only, which is the house
+degradation law and not a hole.
+
+**And the loudest one, which now has both halves waiting for each other.** #803/#809 shipped
+`GunfireHeard.WithinEarshot`, whose own doc comment says it is *"the question #804 will ask of every patrol on
+the floor, written down here so it is asked once and answered the same way"* — one call, and the predicate is
+already the ground's own ear (`ReeverHearing.Noise.Gunfire`, never a second number). **It is deliberately not
+consumed here.** What a round DOES about a noise is not a predicate, it is a STATE — break off the stand, walk
+to the place, search it, resume — which is the first rung of the suspicion ladder this phase is scoped out of,
+and it wants a sentence in the guard's own register that has not been through canon review. The seam is ready
+and the caller is one `if`; the reason it is empty is a ruling rather than an oversight.
 
 ## Working method
 
