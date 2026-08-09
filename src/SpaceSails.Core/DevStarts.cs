@@ -140,6 +140,20 @@ public static class DevStarts
             + "masts against the far wall. The field book files the attendance line on the first step "
             + "(#759).",
             "/map?park=1"),
+        // #793 · …AND THE BENCHES TAKE THE SIT VERB. Owner, from play in that same park: "E at a steel bench
+        // seats you… a park bench under a painted sky is the best breather in the base", and the rule that
+        // makes it a RUNG rather than a chair: "the park bench might be used to go through inventory info
+        // loot, if we get the whole bench to ourselves." The row boots ONTO a bench with papers already in
+        // the sleeve, because the feature is the CONDITION — and a tester has to be able to meet both halves
+        // of it without walking a 278 du room twice to find out.
+        new("🌳🪑", "On a park bench with the case out",
+            "B1 of a deep site, already sat down on a steel bench with the WHOLE BENCH to yourself and three "
+            + "finds in the sleeve. The strip reads 🪑 A PARK BENCH and says the walk runs clear both ways — "
+            + "no crowd figure for a hall you cannot see. Press I and dig. Then press SIT A WHILE: sitting "
+            + "still IS the gumshoe move, and the bench tells you whether anything on the walk stopped when "
+            + "you did. Then walk to the bench with the lone figure on it, sit on the free end, and try the "
+            + "spread again — half a bench is a rest, and the refusal is the feature (#793).",
+            "/map?park=1&spread=1"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the

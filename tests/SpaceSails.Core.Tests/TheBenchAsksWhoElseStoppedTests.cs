@@ -330,8 +330,12 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     [Fact]
     public void A_SHARED_BENCH_HasNoRoomForAThirdPerson()
     {
-        Assert.True(ParkBenches.TheOtherEndIsFree(shared: false));
-        Assert.False(ParkBenches.TheOtherEndIsFree(shared: true));
+        Assert.True(ParkBenches.TheOtherEndIsFree(shared: false),
+            "an empty bench has nowhere for anybody to sit down — the wait beat on a bench can never bring "
+            + "the CompanyArrived beat at all.");
+        Assert.False(ParkBenches.TheOtherEndIsFree(shared: true),
+            "a bench you are already sharing still has room — a plank that seats three is a plank whose "
+            + "privacy predicate means nothing.");
         Assert.Equal(2, ParkBenches.Ends);
     }
 
@@ -384,11 +388,14 @@ public sealed class TheBenchAsksWhoElseStoppedTests
                     FootTail.Mover m = PatrolBeat.OnTheRound(index, x, y);
                     asked++;
 
-                    Assert.True(m.OnAPublishedRound);
-                    Assert.False(m.Tailing);
                     Assert.False(FootTail.IsTailing(in m),
                         $"{m.Name} at ({x}, {y}) is reported as FOLLOWING the captain — a round is a route "
                         + "the building published before the captain arrived, and it cannot be about them.");
+                    Assert.True(m.OnAPublishedRound,
+                        $"{m.Name} is not stamped as walking a published round, so the one clause that "
+                        + "disqualifies a rota-walker from being a tail has nothing to read.");
+                    Assert.False(m.Tailing,
+                        $"{m.Name} DECLARES itself a tail — a round has no destination but its next stop.");
 
                     // …and no bench anywhere can make one hold, however close the captain sits or how
                     // clear the line is.
@@ -435,7 +442,9 @@ public sealed class TheBenchAsksWhoElseStoppedTests
         metTrue = true;
 
         // 2 · ON YOUR FEET → nothing holds. Walking proves nothing: everybody on a walk is walking.
-        Assert.False(FootTail.MustHold(false, 0, 0, in tail, clear));
+        Assert.False(FootTail.MustHold(false, 0, 0, in tail, clear),
+            "a tail held while the captain was on their feet — walking proves nothing, because everybody "
+            + "on a walk is walking.");
         Assert.Empty(FootTail.Holding(false, 0, 0, [tail], clear));
         metFalse = true;
 
@@ -443,17 +452,25 @@ public sealed class TheBenchAsksWhoElseStoppedTests
         //     owner's own reason the move belongs in a park: "the same move at a hall table proves nothing."
         IReadOnlyList<SurfaceCollision.Segment> blocked = AWallAcross(0, 0, 6, 0);
         Assert.False(FootTail.InPlainSight(0, 0, in tail, blocked));
-        Assert.False(FootTail.MustHold(true, 0, 0, in tail, blocked));
+        Assert.False(FootTail.MustHold(true, 0, 0, in tail, blocked),
+            "a tail behind a wall was reported as having stopped when the captain sat down — the whole "
+            + "reason this move belongs in a park is that the sight lines are what make it work.");
         Assert.False(FootTail.AnythingTailing(0, 0, [tail], blocked));
 
         // 4 · TOO FAR → past the one reach this game calls seeing.
         FootTail.Mover distant = ATestOnlyTailAt(FootTail.LegibleDu * 2, 0);
-        Assert.False(FootTail.MustHold(true, 0, 0, in distant, clear));
+        Assert.False(FootTail.MustHold(true, 0, 0, in distant, clear),
+            $"a tail {FootTail.LegibleDu * 2:F1} du away — twice the reach this game calls seeing — was "
+            + "read off a bench.");
         FootTail.Mover justInside = ATestOnlyTailAt(FootTail.LegibleDu - 1, 0);
-        Assert.True(FootTail.MustHold(true, 0, 0, in justInside, clear));
+        Assert.True(FootTail.MustHold(true, 0, 0, in justInside, clear),
+            "a tail one du inside the eye's own reach was not read — the range clause has swallowed the "
+            + "whole instrument.");
 
         // 5 · A MOVER THAT SIMPLY IS NOT FOLLOWING YOU → never held, however close it stands.
-        Assert.False(FootTail.MustHold(true, 0, 0, in ordinary, clear));
+        Assert.False(FootTail.MustHold(true, 0, 0, in ordinary, clear),
+            "a mover that is not following anybody was held by a bench — a hold that selects everybody "
+            + "selects nobody, and the stop stops being a tell.");
         Assert.False(FootTail.AnythingTailing(0, 0, [ordinary], clear));
 
         // …and the empty world is quiet, which is the shipped answer.
