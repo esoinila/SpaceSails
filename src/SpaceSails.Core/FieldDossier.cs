@@ -211,8 +211,17 @@ public static class FieldDossier
 
         // They share the family name — the detail that makes the connection obvious on sight and needs no
         // sentence explaining it.
-        string family = who.Name[(who.Name.IndexOf(' ', StringComparison.Ordinal) + 1)..];
-        return new NextOfKin($"{Pick(Given, tag + ":given")} {family}", relation, where, waiting);
+        //
+        // #805 · AND THEY ARE NOT THE SAME PERSON. The kin's given name used to come off the same pool with
+        // nothing held out, so some seeded rooms handed back a next-of-kin with the deceased's IDENTICAL
+        // full name (luna / DepotApron / room 2 was the one the #741/#800 crew walked into). That reads as a
+        // bug rather than as a rhyme — and the red-pen board is the one surface in the game where a captain
+        // goes LOOKING for repeated names, so a false rhyme there is worse than a dull name: #741's spotting
+        // law is that every catch on that board must be REAL.
+        int space = who.Name.IndexOf(' ', StringComparison.Ordinal);
+        string family = who.Name[(space + 1)..];
+        return new NextOfKin(
+            $"{PickApartFrom(Given, who.Name[..space], tag + ":given")} {family}", relation, where, waiting);
     }
 
     /// <summary>What the captain is holding once the kit has assembled: not loot, an errand. It is left
@@ -387,6 +396,26 @@ public static class FieldDossier
     }
 
     private static string Pick(string[] pool, string tag) => pool[Index(pool.Length, tag)];
+
+    /// <summary>#805 · Draw from a pool with one member <b>held out of it</b> — a DISJOINT draw and not a
+    /// re-roll. The excluded name is removed and the die is thrown at what is left, so the answer stays a
+    /// pure function of the tag (a re-roll would have to loop, and a loop over a seeded die is a seed that
+    /// depends on how unlucky it was), and no surviving name is any rarer than its neighbours.</summary>
+    private static string PickApartFrom(string[] pool, string held, string tag)
+    {
+        var left = new List<string>(pool.Length);
+        foreach (string one in pool)
+        {
+            if (!string.Equals(one, held, StringComparison.Ordinal))
+            {
+                left.Add(one);
+            }
+        }
+
+        // A pool of one has nothing to hold out; there is no such pool here, and a silent wrong answer is
+        // worse than a loud one if a future edit makes one.
+        return left.Count > 0 ? left[Index(left.Count, tag)] : pool[Index(pool.Length, tag)];
+    }
 
     private static int Index(int count, string tag) =>
         (int)(DiceRule.Roll(DiceRule.Seed(tag), count).Face - 1);

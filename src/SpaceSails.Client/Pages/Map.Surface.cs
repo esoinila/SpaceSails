@@ -3573,6 +3573,22 @@ public partial class Map
             Core.Processing.SecondsLeft(hold.Elapsed, ProcessingSeconds))
         : null;
 
+    /// <summary>#784 · HOW FAR THE DIG HAS GOT, 0..1, or null when nothing is under the captain's hands.
+    ///
+    /// <para>Owner, live on the phase-2 build: <i>"the progress bar is kind of small there… it might be good
+    /// to have it on the dialog… took me a while to notice it."</i> The rectangle on the deck rides the
+    /// DeckView idiom and is honest at a glance from across the hall — but a seated captain is looking at the
+    /// DOCKED STRIP, and a clock drawn where nobody is looking is #782's readability law failing at time
+    /// rather than at type.</para>
+    ///
+    /// <para>It is <see cref="Core.Processing.Fraction"/> — the SAME call the deck rectangle is fed by (see
+    /// <c>DigProgress</c> in the surface HUD) — so the strip's bar and the deck's rectangle cannot come to
+    /// disagree about how far along one dig is. Two arithmetics for one clock is this repo's two-clocks
+    /// class, and it is cheaper to not have than to guard.</para></summary>
+    private double? ProcessingFraction() => _surface is { Processing: { } dug }
+        ? Core.Processing.Fraction(dug.Elapsed, ProcessingSeconds)
+        : null;
+
     /// <summary>#696 · What the 🫳 control promises before it is pressed. A DOCUMENT costs seconds, because
     /// leaving one means photographing it first (#691); anything else is set down and that is all. The
     /// question "is this a document" is <see cref="LeftBehind.GistOf"/>'s — the SAME call

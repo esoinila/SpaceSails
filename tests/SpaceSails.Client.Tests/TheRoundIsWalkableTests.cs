@@ -335,6 +335,48 @@ public sealed class TheRoundIsWalkableTests
         Assert.Contains("\"badge=\"", boot, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #804 · <b>THE CHALLENGE CARD IS PAINTED, AND THE PAINTING IS ON DISK.</b>
+    ///
+    /// <para>#804 shipped the stop caption-only — the markup renders without an image when none is wired,
+    /// which is the house's degradation law and exactly why a missing plate says nothing at all. The owner
+    /// generated the canvas afterwards (<i>"the contract guard, palm up, clipboard, laminated pass, bored
+    /// patience, shotcrete corridor with bolt plates"</i>) and this is the only place that gap can be made to
+    /// speak.</para>
+    ///
+    /// <para>Two halves, because either alone is a green test that asserts nothing: the card must NAME a
+    /// picture, and the picture must BE there. The name comes off Core's constant rather than a literal in
+    /// the client — a page that spells a jpg is a second answer to which plate this moment wears.</para>
+    ///
+    /// <para><b>Proven RED</b> both ways — by putting <c>null</c> back in the image slot, and by moving the
+    /// jpg out of <c>wwwroot/art</c>: see the PR body for both runs.</para>
+    /// </summary>
+    [Fact]
+    public void TheChallengeCardWearsThePaintingAndThePaintingShipped()
+    {
+        string stop = Between(
+            Pages("Map.Patrol.cs"), "private void TheRoundStopsAtYou(", "── WHERE THE PASS COMES FROM");
+
+        // The card the guard raises carries the plate, by its Core name.
+        Assert.Contains("PatrolBeat.ChallengeArtUrl", stop, StringComparison.Ordinal);
+        Assert.Contains("read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told", stop, StringComparison.Ordinal);
+
+        // …and not a filename typed into a page, which is the drift this repo has already paid for once.
+        Assert.DoesNotContain(".jpg", stop, StringComparison.Ordinal);
+
+        // The one picture serves all four rungs: nothing here branches the plate on the read, because the
+        // man in it has not finished reading the wallet either (#736 keeps the verdict in the amber row).
+        Assert.DoesNotContain("read.Satisfied ?", stop, StringComparison.Ordinal);
+
+        // AND IT IS ACTUALLY IN THE FOLDER. The art seam hides its own failure; this is the only assertion
+        // in the suite that can see an empty frame.
+        string file = Path.Combine(
+            RepoRoot(), "src", "SpaceSails.Client", "wwwroot", PatrolBeat.ChallengeArtUrl);
+        Assert.True(File.Exists(file),
+            $"{PatrolBeat.ChallengeArtUrl} is not in wwwroot/art — the challenge card would draw a hole and " +
+            "never say so.");
+    }
+
     /// <summary>The pass is issued by the SHIFT, not by the offer — hung on the arrival the day-labour chit
     /// opened, which is the moment the gig stops being a promise.</summary>
     [Fact]

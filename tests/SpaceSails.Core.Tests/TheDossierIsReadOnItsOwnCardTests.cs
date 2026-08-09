@@ -310,7 +310,85 @@ public sealed class TheDossierIsReadOnItsOwnCardTests
         }
     }
 
+    // ── #805 · THE KIN WHO SHARED THE GRAVE'S NAME ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #805 · <b>A NEXT-OF-KIN IS FAMILY, NEVER THE SAME PERSON.</b>
+    ///
+    /// <para>Flagged by the #741/#800 crew off a real board: <see cref="FieldDossier.WhoIsWaiting"/> drew the
+    /// kin's given name from the deceased's own pool with nothing held out, so some seeded rooms handed back
+    /// somebody waiting for news of a person with their IDENTICAL full name. <c>luna / DepotApron / room 2</c>
+    /// is the one that was walked into.</para>
+    ///
+    /// <para>It costs more than a dull name would, because of where those two names END UP: the red-pen
+    /// board, the one surface in this game where a captain goes hunting for a repeated name on purpose.
+    /// #741's spotting law is that the catches must be REAL — a collision manufactured by the draw is a false
+    /// positive planted in the middle of the evidence.</para>
+    ///
+    /// <para>The sweep is over every seeded room this game can put a stranger in: every body in Sol, every
+    /// landing site that body offers (site 0's empty salt included), and rooms well past any layout's count.
+    /// The surname must still MATCH — sharing it is the whole point, and a "fix" handing the kin a fresh
+    /// family name would pass a collision check while quietly deleting the family.</para>
+    ///
+    /// <para><b>Proven RED</b> by restoring the undrawn pick (<c>Pick(Given, tag + ":given")</c>): see the PR
+    /// body for the run and the rooms it named.</para>
+    /// </summary>
+    [Fact]
+    public void NoSeededRoom_HandsBackAKinWithTheDeceasedsOwnFullName()
+    {
+        var collisions = new List<string>();
+        var strangers = new List<string>();
+        int rooms = 0;
+
+        foreach (CelestialBody body in CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol()).Bodies)
+        {
+            foreach (LandingSite site in LandingSites.For(body.Id))
+            {
+                for (int room = 0; room < 80; room++)
+                {
+                    rooms++;
+                    FieldDossier.Person who = FieldDossier.Who(body.Id, site.LayoutSalt, room);
+                    FieldDossier.NextOfKin kin = FieldDossier.WhoIsWaiting(body.Id, site.LayoutSalt, room);
+
+                    if (string.Equals(who.Name, kin.Name, StringComparison.Ordinal))
+                    {
+                        collisions.Add($"{body.Id}/{site.LayoutSalt}/{room} → {who.Name}");
+                    }
+
+                    // …and they are still FAMILY. The surname is the sentence nobody has to write.
+                    Assert.Equal(Surname(who.Name), Surname(kin.Name));
+                    strangers.Add(who.Name);
+                }
+            }
+        }
+
+        // The sweep actually saw the ground — a room count of zero passes every assertion above.
+        Assert.True(rooms > 500, $"the sweep only visited {rooms} rooms; it cannot have seen the ground.");
+        Assert.True(strangers.Distinct(StringComparer.Ordinal).Count() > 20,
+            "every room produced the same stranger — this sweep is one seed wearing a loop.");
+
+        Assert.True(collisions.Count == 0,
+            "rooms whose next-of-kin has the dead person's exact full name (a false rhyme on the red-pen " +
+            $"board, #741): {string.Join(", ", collisions.Take(12))}" +
+            (collisions.Count > 12 ? $" …and {collisions.Count - 12} more" : ""));
+    }
+
+    /// <summary>#805's own repro, pinned by name so the issue's sentence stays runnable even if the sweep
+    /// above is ever refactored. They are family; they are not the same person.</summary>
+    [Fact]
+    public void TheReportedRoom_LunaDepotApronTwo_IsTwoDifferentPeople()
+    {
+        FieldDossier.Person who = FieldDossier.Who("luna", "DepotApron", 2);
+        FieldDossier.NextOfKin kin = FieldDossier.WhoIsWaiting("luna", "DepotApron", 2);
+
+        Assert.NotEqual(who.Name, kin.Name);
+        Assert.Equal(Surname(who.Name), Surname(kin.Name));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────────────────────────────
+
+    private static string Surname(string full) =>
+        full[(full.IndexOf(' ', StringComparison.Ordinal) + 1)..];
 
     private static string Short(string s) => s.Length <= 46 ? s : s[..46] + "…";
 
