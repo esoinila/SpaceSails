@@ -5528,6 +5528,11 @@ public partial class Map
 
                 // #759 · …and ?park=1 goes one room further, through the gate at the end of the corridor.
                 StandInTheParkIfAsked(landedOn);
+
+                // #775 · …and these two stop SHORT of the room: out on the MAIN CORRIDOR at the hall's own
+                // front door, and in front of the goods hoist that will not open for you.
+                StandAtTheFrontDoorIfAsked(landedOn);
+                StandAtTheGoodsHoistIfAsked(landedOn);
             }
             return;
         }
@@ -5680,6 +5685,83 @@ public partial class Map
             "🧪 DEV ?park=1: THE PARK. Green underfoot, the window wall back to the bar, beds and benches "
             + "down the curve.");
         StandCaptainAt(green.X, green.Y, "you step through the gate onto the gravel");
+    }
+
+    /// <summary>#775 QA · <c>?frontdoor=1</c> — booted on the MAIN CORRIDOR, at the hall's own entrance.
+    /// Set in Map.Sim's cheat parse.</summary>
+    private bool _frontDoorCheat;
+
+    /// <summary>#775 QA · <c>?freight=1</c> — booted at the GOODS HOIST. Set in Map.Sim's cheat parse.</summary>
+    private bool _freightCheat;
+
+    /// <summary>#775 QA · Stand the captain OUT ON THE SPINE, at the hall's front door.
+    ///
+    /// <para>The captain is put on the corridor side of the room's FIRST published opening on the spine —
+    /// the entrance, the one the carve placed at the lift — so the walk that proves the feature is the one
+    /// the owner could not make: face the wall, read the plate, step through. Off the hall's own published
+    /// door list, never a coordinate measured off a screenshot.</para></summary>
+    private void StandAtTheFrontDoorIfAsked(SurfaceExcursion ex)
+    {
+        if (!_frontDoorCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        SurfaceLayout.Field field = MoonSurface.ExpeditionField();
+        (_, double shaftY) = UndergroundComplex.ShaftAt(field);
+
+        foreach (UndergroundComplex.Amenity a in
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, field).Amenities)
+        {
+            if (a.Hall is not { } hall)
+            {
+                continue;
+            }
+            foreach (SurfaceLayout.Doorway d in hall.Openings)
+            {
+                if (Math.Abs(d.Y1 - d.Y2) > 0.001)
+                {
+                    continue;   // a gap in the rib's face, which is the way in this issue is about NOT using
+                }
+
+                // Two du out of the doorway, on whichever side the spine is — asked of the shaft rather
+                // than assumed, because half the floors in the game hang their hall off the other face.
+                double standY = d.Y1 + (d.Y1 < shaftY ? 2.0 : -2.0);
+                StandCaptainAt((d.X1 + d.X2) / 2.0, standY,
+                    "you come along the main corridor and stop at the door");
+                ShowPulseMessage(
+                    "🧪 DEV ?frontdoor=1: out on the MAIN CORRIDOR at the canteen's own entrance — the "
+                    + "plate is on the wall beside you. Walk in. Then walk the corridor and count the "
+                    + "others: a hall this size is required to have them.");
+                return;
+            }
+        }
+    }
+
+    /// <summary>#775 QA · Stand the captain in front of the GOODS HOIST, on the hall floor.
+    ///
+    /// <para>On the fixture's own published plate spot. Pressing the shutter reads the refusal; there is
+    /// nothing else to do with it, and that is the whole of the feature.</para></summary>
+    private void StandAtTheGoodsHoistIfAsked(SurfaceExcursion ex)
+    {
+        if (!_freightCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        foreach (UndergroundComplex.Amenity a in
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
+        {
+            if (a.Hall is not { Freight: { } hoist })
+            {
+                continue;
+            }
+            StandCaptainAt(hoist.PlateX, hoist.PlateY, "you cross to the shutter at the end of the counter");
+            ShowPulseMessage(
+                "🧪 DEV ?freight=1: THE GOODS HOIST, at the end of the counter's own service band. Press E "
+                + "on the shutter: it tells you whose side of it you are on.");
+            return;
+        }
     }
 
     // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of

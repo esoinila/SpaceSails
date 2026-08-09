@@ -531,6 +531,14 @@ public sealed class TheHiveAmenitiesTests
             // are the same two gaps the corridor already leaves (#585's one-gap law is the reason the carve
             // never cuts a door of its own). The conservation claim is unchanged: every doorway still leads
             // somewhere. What changed is that one of the somewheres is reached by two of them.
+            //
+            // #775 · …AND IT ASKS THE ROOM HOW MANY, rather than counting coordinates off the plan. This
+            // used to look for vertical doorways standing on either x-edge of the hall's box, which was
+            // true of every door a hall had while every door a hall had was a gap in a rib's face. #775 cut
+            // front doors into the SPINE's face — horizontal spans on the box's y-edge — and the count
+            // silently missed every one of them, so the conservation sum went red on 185 floors with the
+            // geometry perfectly correct. A guard deriving a fact the generator publishes is the same
+            // second-opinion bug this whole file is a list of; it reads Hall.Openings now.
             int extraHallDoors = 0;
             foreach (UndergroundComplex.Amenity a in floor.Amenities)
             {
@@ -538,21 +546,12 @@ public sealed class TheHiveAmenitiesTests
                 {
                     continue;
                 }
-                int doors = 0;
-                foreach (SurfaceLayout.Doorway d in floor.Doorways)
-                {
-                    if ((Math.Abs(d.X1 - hall.X0) < 0.001 || Math.Abs(d.X1 - hall.X1) < 0.001)
-                        && d.Y1 >= hall.Y0 - 0.001 && d.Y2 <= hall.Y1 + 0.001)
-                    {
-                        doors++;
-                    }
-                }
-                if (doors == 0)
+                if (hall.Openings.Count == 0)
                 {
                     return "a hall was carved with no doorway published at all — its entrances would be "
                         + "gaps nothing knows about.";
                 }
-                extraHallDoors += doors - 1;
+                extraHallDoors += hall.Openings.Count - 1;
             }
 
             // #759 · …AND THE PARK IS A PLACE. Its gate is the one doorway in the building that is not cut

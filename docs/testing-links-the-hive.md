@@ -261,6 +261,31 @@ decides that rather than a clause in the renderer.
 /map?tablescene=1                      …and the hall itself, which now has 2–4× the floor it had
 ```
 
+### 1b-3 · ADDED (#775) — THE CIRCULATION: DOORS ON THE MAIN CORRIDOR, AND WHERE THE FOOD COMES IN
+
+```
+/map?frontdoor=1                       out on the MAIN CORRIDOR at the canteen's own entrance — walk in
+/map?freight=1                         the GOODS HOIST at the end of the counter's service band
+```
+
+Owner, walking the new B1 the night #790 landed: *"The bar/canteen needs DOORS ON THE MAIN CORRIDOR —
+today you have to really look for the way in; a venue's entrance should find YOU."* / *"A canteen this size
+would have MORE THAN TWO DOORS just for safety reasons."* / *"The facility needs FREIGHT ACCESS somewhere —
+eighty seats of food and twelve beds of produce do not arrive through a personnel door."*
+
+**What to look for.** Boot `?frontdoor=1` and you are on the spine, not in the bar. There is a door in the
+wall beside you with **🍸 CANTEEN 1 · ENTRANCE** stencilled on the corridor side of it, and on most floors it is
+directly across the corridor from the lift car — the carve places the first one wherever the walker is.
+Step through. Then walk the corridor the other way and count: **⇥ EXIT 2 · KEEP CLEAR**, and on the biggest
+halls **EXIT 3**. The number is not typed anywhere — it is `HallEgressDoors` of the room's own published
+floor area, one door per 1 500 du² and never fewer than three.
+
+Then `?freight=1`. **🚛 GOODS HOIST 1** is painted on the floor in front of a shut roller door in the
+counter's own line, at the end of the service band nearest the park's gate — the beds it carries for are
+ten metres behind it through the glass. Walk into the car: you stop. Press `[E]` on the shutter: **🔒 GOODS
+HOIST 1 · DELIVERIES 04:00–06:00 · CREW SIDE ONLY**. Nothing simulates freight; the fixture exists, it is
+labelled, a body stops at it, and the refusal is a sentence rather than an absence.
+
 Owner, 2026-08-08: *"on map the park needs to Exist there next to the bar. It is an indoor park where the
 fresh stuff is grown that is served here on the plate"* — and, on the hall beside it, *"it is like cramped…
 At least double or triple it."*
@@ -570,6 +595,8 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — plated **SIT DOWN**, and the panel wears the table (#783) |
 | `&approach=1\|0` | force whether sitting a while brings somebody over (#757); `0` is the told nobody-came beat |
 | `?park=1` | boot standing INSIDE the park behind the bar (#759) — green floor, window wall, beds, benches |
+| `?frontdoor=1` | boot OUT ON THE MAIN CORRIDOR at the canteen's own front door (#775) — walk in through it |
+| `?freight=1` | boot at the GOODS HOIST (#775) — drawn, labelled, solid, and it refuses you in words |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 

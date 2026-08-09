@@ -192,16 +192,28 @@ public sealed class TheHallIsWalkableTests
             UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
             DeckPlan honest = DeckFor(body, level);
 
-            // The hall's own doorways: the gaps in the wall the hall shares with its rib corridor. Taken off
-            // the floor plan's published list rather than re-derived, so this cannot plug a hole that is not
-            // actually the door.
-            var doors = floor.Doorways
-                .Where(d => Math.Abs(d.X1 - hall.X0) < 0.001 || Math.Abs(d.X1 - hall.X1) < 0.001)
-                .Where(d => d.Y1 >= hall.Y0 - 0.001 && d.Y2 <= hall.Y1 + 0.001)
-                .ToList();
+            // EVERY WAY INTO THE ROOM, ASKED OF THE ROOM.
+            //
+            // #775 · This used to pick doorways out of floor.Doorways by their x standing on one of the
+            // hall's two vertical edges, which found every door a hall had for exactly as long as every
+            // door a hall had was a gap in its rib's face. The front doors cut into the SPINE's face (#775)
+            // stand on the box's other pair of edges and were silently missed — and a sealing experiment
+            // that misses a door is an experiment that proves nothing while reporting that it proved
+            // something, which is this house's fifth bug class wearing a red-proof's clothes.
+            //
+            // The hall publishes its openings now, and each one is checked against the plan's own drawn
+            // list before it is plugged, so this cannot brick up a hole that is not actually a door.
+            IReadOnlyList<SurfaceLayout.Doorway> doors = hall.Openings;
             if (doors.Count == 0)
             {
                 continue;
+            }
+            foreach (SurfaceLayout.Doorway d in doors)
+            {
+                Assert.True(
+                    floor.Doorways.Any(p => Math.Abs(p.X1 - d.X1) < 0.001 && Math.Abs(p.Y1 - d.Y1) < 0.001),
+                    $"{body} B{-level}: the hall names a door at ({d.X1:F1},{d.Y1:F1}) that the plan does "
+                    + "not draw — plugging it would prove nothing about the deck.");
             }
 
             // THE WORLD IS HONEST FIRST. If the tables were unreachable anyway, the red below would prove
@@ -214,12 +226,16 @@ public sealed class TheHallIsWalkableTests
             Assert.True(reachable.Count == room.Tables.Count,
                 $"{body} B{-level}: the hall is already unwalkable — this experiment would prove nothing.");
 
-            // …and now every one of its doors is a poured pillar.
+            // …and now every one of its doors is a poured pillar. The plug is grown ACROSS the opening,
+            // whichever way the opening runs — a fixed y-pad would have laid a zero-height smear along a
+            // front door in the spine's face and sealed nothing at all.
             var plugged = new List<DeckPlan.Wall>(honest.Walls);
             foreach (SurfaceLayout.Doorway d in doors)
             {
+                bool horizontal = Math.Abs(d.Y1 - d.Y2) < 0.001;
+                float px = horizontal ? 0.5f : 0f, py = horizontal ? 0f : 0.5f;
                 plugged.Add(new DeckPlan.Wall(
-                    (float)d.X1, (float)(d.Y1 - 0.5), (float)d.X2, (float)(d.Y2 + 0.5), false, true));
+                    (float)d.X1 - px, (float)d.Y1 - py, (float)d.X2 + px, (float)d.Y2 + py, false, true));
             }
 
             var sealedDeck = new DeckPlan(
