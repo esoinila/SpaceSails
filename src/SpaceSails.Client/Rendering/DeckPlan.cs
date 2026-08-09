@@ -289,9 +289,50 @@ public sealed class DeckPlan
     /// any caller that wants to know the world has grown.</summary>
     public int AppendedRegionCount { get; private set; }
 
+    /// <summary>
+    /// #792 · ONE ROUND TOP, AND WHAT A HUNGRY TRAVELLER NEEDS TO KNOW ABOUT IT WITHOUT PRESSING ANYTHING.
+    ///
+    /// <para>Owner, playtest 2026-08-08: <i>"people looking to sit down look at those like hungry wild
+    /// beasts look at their prey… Now I have trouble finding a free table."</i></para>
+    ///
+    /// <para><b>Every field is HANDED DOWN, and none of it is worked out by the pen.</b> #788's own lesson,
+    /// one fixture along: the seated captain's posture came down from the sim as a bool because an
+    /// instrument deriving what the sim already knows is how two instruments come to disagree. A renderer
+    /// that counted chairs, or decided from a plate's wording whether the people at a top were talking,
+    /// would be a second opinion about a room it did not furnish.</para>
+    /// </summary>
+    /// <param name="X">The top's centre, in deck units.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Seats">How many chairs stand round it — 0 for plain dressing (the ship's cantina, a
+    /// haven bar), which draws the bare ring it always drew and nothing more.</param>
+    /// <param name="Occupied">Somebody is at it. The chairs that are left read as an INVITATION rather than
+    /// as furniture, which is the whole of the second glance: a table with three people and one chair is
+    /// not the same offer as an empty one.</param>
+    /// <param name="Talking">…and the people at it are talking to each other, rather than sitting there on
+    /// their own. The third glance, and the affordance a future overhear verb will hang off.</param>
+    public readonly record struct TableTop(
+        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false);
+
+    /// <summary>
+    /// #792 · ONE TALL SEAT AT A COUNTER. Occupancy comes down from the sim exactly as a top's does — the
+    /// pen is never told what a stool IS, only that there is one here and whether anybody is on it.
+    /// </summary>
+    /// <param name="X">Where it is bolted down.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Taken">Somebody is on it.</param>
+    /// <param name="RowHasSomebody">Anybody at all is on this counter. A free seat beside somebody is the
+    /// same offer an empty chair at an occupied table is, and it is drawn in the same ink — one language
+    /// for one question, rather than the counter having its own dialect of "you may sit here".</param>
+    public readonly record struct StoolSpot(
+        float X, float Y, bool Taken = false, bool RowHasSomebody = false);
+
     /// <summary>Round table tops drawn as a ring on the floor — cantina/bar dressing. Plan-driven so
     /// any room (the ship's cantina, a haven bar) can lay out its own.</summary>
-    public (float X, float Y)[] Tables { get; }
+    public TableTop[] Tables { get; }
+
+    /// <summary>#792 · The tall seats along a counter, in the row's own order. Empty everywhere there is no
+    /// counter, which is every deck in the game but the Hive's cantina hall.</summary>
+    public StoolSpot[] Stools { get; }
     public double SpawnX { get; }
     public double SpawnY { get; }
     public int DroidCount { get; }
@@ -313,13 +354,14 @@ public sealed class DeckPlan
         Backdrop[] backdrops, double spawnX, double spawnY,
         int droidCount, Action<double, Droid[]> fillDroids, Func<double, double, string> location,
         Door[]? doors = null, bool shipFixtures = false, bool followCam = false,
-        (float X, float Y)[]? tables = null,
+        TableTop[]? tables = null,
         SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null,
         SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
         SpaceSails.Core.BodyPalette.Ink? doorInk = null,
         (float X, float Y, string Text, float Px, int Tone)[]? bigLabels = null,
         SpaceSails.Core.BodyPalette.Ink? hullInk = null,
-        Structure[]? structures = null)
+        Structure[]? structures = null,
+        StoolSpot[]? stools = null)
     {
         Structures = structures ?? [];
         Walls = walls;
@@ -336,6 +378,7 @@ public sealed class DeckPlan
         Backdrops = backdrops;
         Doors = doors ?? [];
         Tables = tables ?? [];
+        Stools = stools ?? [];
         Scenery = scenery ?? [];
         StoneInk = stoneInk;
         DoorInk = doorInk;
@@ -787,8 +830,9 @@ public sealed class DeckPlan
             new("art/space-head.jpg", 14.5f, -3, 3.5f, 7, 0.9f), // HEAD 🚽
         ];
 
-        // Cantina tables (plan-driven now): three tops with a view, port side.
-        (float X, float Y)[] tables = [(8, 7.5f), (11, 6), (14, 7.5f)];
+        // Cantina tables (plan-driven now): three tops with a view, port side. Dressing — no seat count, so
+        // they draw the ring they have always drawn and #792's chairs belong to the room that has patrons.
+        TableTop[] tables = [new(8, 7.5f), new(11, 6), new(14, 7.5f)];
 
         // The shuttle-bay airlock door (#163; #295 moved it to the bottom hull hatch): an amber
         // auto-door across the SHUTTLE-BAY HATCH on the bottom hull. On the bare ship it sits on the

@@ -1234,14 +1234,26 @@ public static class UndergroundComplex
     /// mark, at <see cref="SpotArtAlpha"/>. Empty on a hall with nothing painted in it, which is not a
     /// missing feature: a room's ambience and a room's furniture are two different claims and a hall may
     /// make either without making the other.</param>
+    /// <param name="Stools">#792 · WHERE THE TALL SEATS ARE BOLTED DOWN, in the counter's own order —
+    /// entry <c>s</c> is <c>Interior.TheStools</c>' stool <c>s</c>, so the seat a captain is told is free
+    /// and the seat drawn free on the deck are the same piece of furniture. Empty where the counter does
+    /// not serve. Published beside the box the counter's own three wall segments were built from, for the
+    /// reason <paramref name="BoardX"/> already answers: a renderer measuring a bar it did not carve is how
+    /// this project has twice set a captain down inside a wall.</param>
     public readonly record struct Hall(
         double X0, double Y0, double X1, double Y1, int SeatTarget, IReadOnlyList<Cabinet> Cabinets,
         double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0,
-        string? ArtUrl = null, IReadOnlyList<SpotArt>? Spots = null)
+        string? ArtUrl = null, IReadOnlyList<SpotArt>? Spots = null,
+        IReadOnlyList<(double X, double Y)>? Stools = null)
     {
         /// <summary>#780 · The furniture pictures, never null — a caller drawing a room must not have to
         /// ask whether "no spots" means an empty list or a missing one.</summary>
         public IReadOnlyList<SpotArt> Painted => Spots ?? [];
+
+        /// <summary>#792 · The row of tall seats, never null — same reason as <see cref="Painted"/>. A hall
+        /// whose counter does not serve has an empty row, which is a true statement about it and not a
+        /// missing one.</summary>
+        public IReadOnlyList<(double X, double Y)> StoolRow => Stools ?? [];
 
         /// <summary>Is the captain inside the hall? Cabinets are inside it, by construction.</summary>
         public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
@@ -2247,6 +2259,16 @@ public static class UndergroundComplex
     public const double HallEdgePadDu = 2.0;
 
     /// <summary>
+    /// #792 · How far out from the counter's line the row of stools stands — a stool's depth plus room for
+    /// a pair of knees, inside <see cref="HallCounterBandDu"/>'s own band so the seats never land on a top.
+    ///
+    /// <para>Named, and not typed into the loop that lays them: the counter band, the tops' grid and this
+    /// standoff are three numbers that have to keep out of each other's way, and a literal in the middle of
+    /// the three is how a chair ends up inside a table.</para>
+    /// </summary>
+    public const double HallStoolStandoffDu = 1.6;
+
+    /// <summary>
     /// #751 · WHICH COLUMN THE HALL STANDS ON — the same criterion #707 already uses for the canteen, asked
     /// one step earlier.
     ///
@@ -2509,6 +2531,34 @@ public static class UndergroundComplex
                 Math.Max(X(counterU0), X(counterU1)), Math.Max(Y(counterV), Y(length))));
         }
 
+        // ── #792 · AND THE STOOLS ALONG THE FRONT OF IT ────────────────────────────────────────────────
+        //
+        // Owner, playtest 2026-08-08: "people looking to sit down look at those like hungry wild beasts
+        // look at their prey… Now I have trouble finding a free table." The row has existed in Core since
+        // #756 — eight seats, occupied or not, watch by watch — and has never been anywhere on the floor,
+        // so a captain could be told the row was full only by walking up and pressing.
+        //
+        // WHERE, out of the very (u, v) the three counter segments above were built from, exactly as the
+        // desk picture is. The order is the row's own: entry s is stool s, and it has to be, because that
+        // ordinal is what Interior.TheStools.Taken answers about — a row published in some other order
+        // would draw one seat's occupancy over another seat, which is this project's drawn-versus-simulated
+        // class with somebody sitting in it.
+        //
+        // AND ONLY WHERE A COUNTER SERVES. Asked of Interior.CounterService, which is the same call the
+        // stool verb itself is gated on, rather than restated here as "upper canteen and not the head
+        // office" — two spellings of one condition is how a room grows eight seats nothing will ever sit on.
+        var stools = new List<(double X, double Y)>(Interior.TheStools.Count);
+        if (Interior.CounterService.For(bodyId, use) is not null)
+        {
+            double stoolV = counterV - HallStoolStandoffDu;
+            double stoolSpan = counterU1 - counterU0;
+            for (int s = 0; s < Interior.TheStools.Count; s++)
+            {
+                double u = counterU0 + (stoolSpan * ((s + 0.5) / Interior.TheStools.Count));
+                stools.Add((X(u), Y(stoolV)));
+            }
+        }
+
         // ── THE CABINETS · a row of doors down the hall's outer wall.
         var cabinets = new List<Cabinet>(CabinetsPerHall);
         if (cabs)
@@ -2574,7 +2624,7 @@ public static class UndergroundComplex
                 x0, y0, x1, y1, HallSeatsFor(bodyId, use), cabinets,
                 X(HallDoorAisleDu / 2.0), Y(length / 2.0),
                 X(HallDoorAisleDu / 2.0), Y(length * 0.25),
-                HallArtFor(bodyId, use), spots),
+                HallArtFor(bodyId, use), spots, stools),
             X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
             laid,
             glazed ? farWall : null);

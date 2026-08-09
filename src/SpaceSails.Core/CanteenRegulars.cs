@@ -207,9 +207,11 @@ public static class CanteenRegulars
     /// (small talk, the round, your leave) and the depth stays with the named cast.</param>
     /// <param name="Cabinet">#751 · Which cabinet this top is in, or 0 for the hall floor. It is the fact
     /// the QUIET RULE reads: the counter has eyes everywhere except in here.</param>
+    /// <param name="Talking">#792 · Are the people at this top IN A CONVERSATION WITH EACH OTHER? See
+    /// <see cref="StrangerTalks"/> for why this is authored rather than counted.</param>
     public readonly record struct TableSeat(
         int Index, double X, double Y, int Seats, string? Plate, string? Line,
-        bool Stranger = false, int Cabinet = 0)
+        bool Stranger = false, int Cabinet = 0, bool Talking = false)
     {
         /// <summary>Somebody is at this table.</summary>
         public bool Taken => Plate is not null;
@@ -220,6 +222,17 @@ public static class CanteenRegulars
 
         /// <summary>#751 · Is this a table the counter cannot see? The one source for the quiet rule.</summary>
         public bool Quiet => Cabinet > 0;
+
+        /// <summary>
+        /// #792 · SOMEBODY SITTING ON THEIR OWN — the other half of <see cref="Talking"/>, named so that a
+        /// caller asking the approachable question does not have to spell it as a negation.
+        ///
+        /// <para>Owner, playtest 2026-08-08: <i>"it determines whether there is anything to overhear as
+        /// discussion goes."</i> A lone sitter is #757's ask-to-join; a conversation already going is a
+        /// different affordance entirely, and a captain looking for one or the other must be able to tell
+        /// them apart across a room.</para>
+        /// </summary>
+        public bool Alone => Taken && !Talking;
     }
 
     /// <summary>
@@ -302,6 +315,9 @@ public static class CanteenRegulars
 
             if (who.TryGetValue(i, out int cast))
             {
+                // #792 · A named regular is ONE PERSON at a top, every one of the ten, which is the whole
+                // premise of #757's ask-to-join: there is a chair, and somebody to ask. So they are never
+                // Talking, and the deck may draw them as the approachable thing they are.
                 tops.Add(new TableSeat(i, tx, ty, seats, Cast[cast].Plate, Cast[cast].Line));
             }
             else if (crowd.TryGetValue(i, out int face))
@@ -310,7 +326,8 @@ public static class CanteenRegulars
                     i, tx, ty, seats,
                     StrangerPlates[face % StrangerPlates.Count],
                     Barks[BarkIndex(bodyId, i, watch)],
-                    Stranger: true));
+                    Stranger: true,
+                    Talking: StrangerTalks(face % StrangerPlates.Count)));
             }
             else
             {
@@ -436,26 +453,75 @@ public static class CanteenRegulars
     public static readonly IReadOnlyList<double> WatchFill = [0.30, 0.85, 0.95, 0.70, 0.45, 0.15];
 
     /// <summary>
+    /// #792 · ONE BACKGROUND PATRON — the plate, and WHETHER THERE IS ANYTHING TO OVERHEAR AT IT.
+    /// </summary>
+    /// <param name="Plate">What stands over them, before anybody speaks.</param>
+    /// <param name="Talking">Are they in a conversation with each other?</param>
+    private readonly record struct Face(string Plate, bool Talking);
+
+    /// <summary>
+    /// #792 · THE CROWD, WITH THE ONE FACT A HUNGRY TRAVELLER READS OFF A ROOM SECOND.
+    ///
+    /// <para>Owner, playtest 2026-08-08: <i>"people looking to sit down look at those like hungry wild
+    /// beasts look at their prey"</i>, and then the second glance — <i>"does a table hold somebody alone
+    /// … or a conversation already going … it determines whether there is anything to overhear."</i></para>
+    ///
+    /// <para><b>Why it is authored and not counted.</b> The obvious implementation reads the plate and
+    /// counts the people in it: TWO HAULIERS is two, so they are talking. It is wrong on the last line of
+    /// this list, and wrong in the direction that matters — <i>A COUPLE NOT TALKING</i> is two people with
+    /// nothing to overhear, and the plate says so in words. A renderer, or a Core helper, deriving the
+    /// conversation from the headcount would draw a speech mark over the one table in the room whose whole
+    /// character is silence. So the fact lives HERE, beside the sentence it belongs to, where an author
+    /// writing the eleventh plate has to decide it, and a guard proves it is not the plural rule wearing a
+    /// field name.</para>
+    /// </summary>
+    private static readonly Face[] Faces =
+    [
+        new("◈ CAGE CREW, OFF SHIFT", true),
+        new("◈ TWO HAULIERS, EATING", true),
+        new("◈ A LOADER WITH A BAD WRIST", false),
+        new("◈ SOMEBODY'S WHOLE CREW AT ONE TABLE", true),
+        new("◈ A DRIVER READING A DOCKET", false),
+        new("◈ A YARD HAND, WAITING ON A CAR", false),
+        new("◈ A PAIR FROM THE SCAFFOLD GANG", true),
+        new("◈ A WEIGHBRIDGE CLERK ON A BREAK", false),
+        new("◈ THREE ON THE SAME CONTRACT", true),
+        // …and the one that makes this a fact rather than a word count.
+        new("◈ A COUPLE NOT TALKING", false),
+    ];
+
+    /// <summary>The plates, in the crowd's own order — <see cref="StrangerPlates"/>'s backing, so the list
+    /// every existing caller reads and the list the conversation fact is authored in cannot drift apart by
+    /// one entry.</summary>
+    private static string[] PlatesOf(Face[] faces)
+    {
+        var plates = new string[faces.Length];
+        for (int i = 0; i < faces.Length; i++)
+        {
+            plates[i] = faces[i].Plate;
+        }
+        return plates;
+    }
+
+    /// <summary>
     /// #751 · The plates the crowd wears. Ten of them, and every one is duller than the last — the register
     /// test (#701) applies twice as hard here, because these are the people the cover is MADE of. A
     /// background patron who read as interesting would turn a room of eighty strangers into eighty leads.
     ///
     /// <para>Deliberately distinct strings from the named cast's, so <see cref="CanteenTable.WhoIs"/> can
     /// never match one of them and hand a stranger the Hand's conversation.</para>
+    ///
+    /// <para>#792 · Projected from <see cref="Faces"/> rather than typed a second time. Declared BELOW it
+    /// on purpose: a static field initialiser runs in the order it is written, and this list read from an
+    /// array that had not been built yet would be ten nulls at every call site in the game.</para>
     /// </summary>
-    public static readonly IReadOnlyList<string> StrangerPlates =
-    [
-        "◈ CAGE CREW, OFF SHIFT",
-        "◈ TWO HAULIERS, EATING",
-        "◈ A LOADER WITH A BAD WRIST",
-        "◈ SOMEBODY'S WHOLE CREW AT ONE TABLE",
-        "◈ A DRIVER READING A DOCKET",
-        "◈ A YARD HAND, WAITING ON A CAR",
-        "◈ A PAIR FROM THE SCAFFOLD GANG",
-        "◈ A WEIGHBRIDGE CLERK ON A BREAK",
-        "◈ THREE ON THE SAME CONTRACT",
-        "◈ A COUPLE NOT TALKING",
-    ];
+    public static readonly IReadOnlyList<string> StrangerPlates = PlatesOf(Faces);
+
+    /// <summary>#792 · Is the crowd's <paramref name="face"/>th patron a CONVERSATION rather than somebody
+    /// on their own? The one source; <see cref="TableSeat.Talking"/> is this answer carried to wherever the
+    /// top is drawn or pressed.</summary>
+    public static bool StrangerTalks(int face) =>
+        face >= 0 && face < Faces.Length && Faces[face].Talking;
 
     /// <summary>
     /// #751 · WHAT A STRANGER SAYS. Fourteen barks, drawn seeded per patron per watch — so the same table on
