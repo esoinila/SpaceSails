@@ -5533,6 +5533,7 @@ public partial class Map
                 // front door, and in front of the goods hoist that will not open for you.
                 StandAtTheFrontDoorIfAsked(landedOn);
                 StandAtTheGoodsHoistIfAsked(landedOn);
+                StandAtTheGardenWalkIfAsked(landedOn);
             }
             return;
         }
@@ -5693,6 +5694,52 @@ public partial class Map
 
     /// <summary>#775 QA · <c>?freight=1</c> — booted at the GOODS HOIST. Set in Map.Sim's cheat parse.</summary>
     private bool _freightCheat;
+
+    /// <summary>#775 QA · <c>?parkwalk=1</c> — booted on the main corridor at the mouth of the garden
+    /// walk. Set in Map.Sim's cheat parse.</summary>
+    private bool _parkWalkCheat;
+
+    /// <summary>#775 QA · Stand the captain on the SPINE, at the mouth of the garden walk.
+    ///
+    /// <para>The garden walk is the one gate into the park that is not a rib, so it is found by asking the
+    /// room for its ways and taking the one no rib stands on — off the published list, never off a
+    /// coordinate measured from a picture. The tester starts on the main corridor because the feature is a
+    /// CROSSING: walk down, over the gravel, and out of a different gate.</para></summary>
+    private void StandAtTheGardenWalkIfAsked(SurfaceExcursion ex)
+    {
+        if (!_parkWalkCheat || ex.Floor >= 0)
+        {
+            return;
+        }
+
+        SurfaceLayout.Field field = MoonSurface.ExpeditionField();
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, field);
+        if (floor.Park is not { } green)
+        {
+            return;
+        }
+        (_, double shaftY) = UndergroundComplex.ShaftAt(field);
+
+        foreach (SurfaceLayout.Doorway gate in green.Ways)
+        {
+            double gx = (gate.X1 + gate.X2) / 2.0;
+            if (floor.Ribs.Any(r => Math.Abs(r.X - gx) < 0.001))
+            {
+                continue;   // a rib's own far end, not the walk that was cut for this
+            }
+
+            // Just inside the spine, at the walk's mouth: the corridor face is CorridorHalf off the shaft
+            // line, so a step short of it is a captain standing in the main corridor looking down the walk.
+            double standY = shaftY + (green.Y1 < shaftY ? -1.5 : 1.5);
+            StandCaptainAt(gx, standY, "you stop on the main corridor at the mouth of the walk");
+            ShowPulseMessage(
+                "🧪 DEV ?parkwalk=1: the GARDEN WALK, off the main corridor. Walk down it, cross the "
+                + "gravel, and come out of a DIFFERENT gate — the park is a way through, not a room you "
+                + "visit.");
+            return;
+        }
+    }
 
     /// <summary>#775 QA · Stand the captain OUT ON THE SPINE, at the hall's front door.
     ///

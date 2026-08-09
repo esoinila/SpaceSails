@@ -277,4 +277,110 @@ public sealed class TheCirculationIsWalkableTests
             $"{bad.Count} goods hoist(s) do not collide the way they are drawn:\n"
             + string.Join("\n", bad.Take(20)));
     }
+
+    // ---- (d) THE PARK IS A WAY THROUGH -------------------------------------------------------------
+
+    /// <summary>
+    /// EVERY GATE INTO THE PARK IS A WAY THROUGH, AND THE GREEN IS ON A ROUTE BETWEEN TWO PLACES.
+    ///
+    /// <para>Owner, 2026-08-09: <i>"let's have multiple doors to the park... it is a kind of place people
+    /// like to walk through on their way."</i> Core's own guard says the gates exist, are published and
+    /// have nothing poured across them; this says a BODY gets through each of them, and then walks the one
+    /// sentence the feature is actually about: <b>in one gate and out of another</b>, with the whole flood
+    /// bounded to the park and its two doorways so the route cannot go back up the corridor and round.</para>
+    ///
+    /// <para><b>Proven RED</b> by cutting the park's near wall for the hall's own rib ONLY while still
+    /// publishing every gate — corridors that run all the way to the green and stop at poured concrete,
+    /// with a violet leaf drawn across the wall:</para>
+    /// <code>
+    /// 37 park gate(s) are not a way through:
+    ///   luna B1: the gate at (-103.4,-221.5) is a picture - the two sides of it are not connected.
+    ///   luna B1: the gate at (-54.2,-221.5) is a picture - the two sides of it are not connected.
+    ///   luna B1: the gate at (-138.5,-221.5) is a picture - the two sides of it are not connected.
+    ///   luna B1: you cannot cross the park - in at -5.0 and out at -138.5 is not a route.
+    ///   ...
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void EveryParkGateIsAWayThroughAndTheGreenIsOnTheRoute()
+    {
+        var bad = new List<string>();
+        int parks = 0, gates = 0, crossings = 0;
+
+        (double sx, double sy) = HiveInterior.SpawnOn(Field);
+        var spawn = new DeckReachability.Point(sx, sy);
+        (double, double, double, double) whole =
+            (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
+
+        foreach (string body in Bodies)
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                if (UndergroundComplex.Build(body, level, Field).Park is not { } park)
+                {
+                    continue;
+                }
+                parks++;
+                DeckPlan deck = DeckFor(body, level);
+
+                foreach (SurfaceLayout.Doorway g in park.Ways)
+                {
+                    gates++;
+                    (DeckReachability.Point a, DeckReachability.Point b, var box) =
+                        AcrossTheJamb(g, DeckPlan.AvatarRadius + 1.5);
+
+                    if (!DeckReachability.Standable(a.X, a.Y, DeckPlan.AvatarRadius, deck.CollisionField)
+                        || !DeckReachability.Standable(b.X, b.Y, DeckPlan.AvatarRadius, deck.CollisionField))
+                    {
+                        bad.Add($"  {body} B{-level}: one side of the gate at ({g.X1:F1},{g.Y1:F1}) is "
+                            + "solid - the verdict below would mean nothing.");
+                        continue;
+                    }
+                    if (!DeckReachability.CanReach(a, b, deck.CollisionField, DeckPlan.AvatarRadius, box))
+                    {
+                        bad.Add($"  {body} B{-level}: the gate at ({(g.X1 + g.X2) / 2:F1},{g.Y1:F1}) is a "
+                            + "picture - the two sides of it are not connected.");
+                        continue;
+                    }
+                    if (!DeckReachability.CanReach(
+                        spawn, b, deck.CollisionField, DeckPlan.AvatarRadius, whole))
+                    {
+                        bad.Add($"  {body} B{-level}: the gate at ({(g.X1 + g.X2) / 2:F1},{g.Y1:F1}) cannot "
+                            + "be reached from the lift.");
+                    }
+                }
+
+                // ...AND THE CROSSING ITSELF. Corridor side of the first gate to corridor side of the last,
+                // inside a box that contains the park and its own two doorways and NOTHING of the spine -
+                // so the only route between them is the gravel. That is the owner's sentence, walked.
+                if (park.Ways.Count > 1)
+                {
+                    SurfaceLayout.Doorway first = park.Ways[0], last = park.Ways[^1];
+                    double outward = park.Y1 < sy ? 2.2 : -2.2;
+                    var from = new DeckReachability.Point((first.X1 + first.X2) / 2.0, first.Y1 + outward);
+                    var to = new DeckReachability.Point((last.X1 + last.X2) / 2.0, last.Y1 + outward);
+                    (double, double, double, double) green = (
+                        Math.Min(park.X0, Math.Min(from.X, to.X)) - 4,
+                        Math.Min(park.Y0, Math.Min(from.Y, to.Y)) - 4,
+                        Math.Max(park.X1, Math.Max(from.X, to.X)) + 4,
+                        Math.Max(park.Y1, Math.Max(from.Y, to.Y)) + 4);
+
+                    crossings++;
+                    if (!DeckReachability.CanReach(
+                        from, to, deck.CollisionField, DeckPlan.AvatarRadius, green))
+                    {
+                        bad.Add($"  {body} B{-level}: you cannot cross the park - in at "
+                            + $"{(first.X1 + first.X2) / 2:F1} and out at {(last.X1 + last.X2) / 2:F1} is "
+                            + "not a route.");
+                    }
+                }
+            }
+        }
+
+        Assert.True(bad.Count == 0,
+            $"{bad.Count} park gate(s) are not a way through:\n" + string.Join("\n", bad.Take(20)));
+        Assert.True(parks > 8, $"only {parks} parks were flooded - this proved little.");
+        Assert.True(gates > 20, $"only {gates} park gates were walked - this proved little.");
+        Assert.True(crossings > 8, $"only {crossings} crossings were walked - this proved little.");
+    }
 }

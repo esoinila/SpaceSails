@@ -156,6 +156,17 @@ public static class DevStarts
             + "is drawn, it is labelled, a body stops at it, and pressing it tells you whose side of the "
             + "shutter you are on (#775).",
             "/map?freight=1"),
+        // #775 · THE PARK AS A WAY THROUGH. Owner: "let's have multiple doors to the park… it is a kind of
+        // place people like to walk through on their way." The ?park=1 row above sets a tester down INSIDE
+        // it, which is the wrong half of this: the crossing is the feature, so this one starts on the main
+        // corridor at the mouth of the garden walk and asks them to come out somewhere else.
+        new("🌳🚶", "Straight through the park, and out the other side",
+            "B1 of a deep site, out on the MAIN CORRIDOR at the mouth of the GARDEN WALK — the passage "
+            + "stencilled ⟶ THE PARK that every floor has, whichever way its ribs happen to fall. Walk "
+            + "down it, cross the gravel, and come out of a DIFFERENT gate into a different corridor: 2–5 "
+            + "ways in, every rib that points at the green opens into it, and the hall-side wall is still "
+            + "glass (#775, #759).",
+            "/map?parkwalk=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

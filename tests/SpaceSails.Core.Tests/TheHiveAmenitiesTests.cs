@@ -560,8 +560,14 @@ public sealed class TheHiveAmenitiesTests
             // claim is untouched — every doorway still leads somewhere — and this is that somewhere being
             // named. (Its OTHER wall, the one it shares with the bar, is glass and is deliberately not a
             // door: nothing is conserved through a window.)
+            //
+            // #775 · …AND IT IS A PLACE WITH SEVERAL WAYS IN, for the hall's own reason and by the owner's
+            // own instruction — "it is a kind of place people like to walk through on their way". Every rib
+            // pointing its way opens into it and the garden walk always does, so the park now accounts for
+            // as many doorways as it has gates. Asked of the room (Park.Ways) rather than counted off the
+            // plan, which is the correction #775 had to make to the hall's own line above.
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
-                + extraHallDoors + (floor.Park is null ? 0 : 1);
+                + extraHallDoors + (floor.Park is { } green ? green.Ways.Count : 0);
             if (places != floor.Doorways.Count)
             {
                 return $"{floor.Doorways.Count} doors were cut and only {places} of them lead anywhere.";

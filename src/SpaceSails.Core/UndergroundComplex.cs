@@ -1367,8 +1367,23 @@ public static class UndergroundComplex
         SurfaceLayout.Doorway Gate,
         SurfaceLayout.Wall Window,
         double X, double Y, double FigureX, double FigureY, string FigurePlate = "",
-        string? ArtUrl = null)
+        string? ArtUrl = null,
+        IReadOnlyList<SurfaceLayout.Doorway>? Gates = null)
     {
+        /// <summary>
+        /// #775 · EVERY WAY IN, and there is more than one now.
+        ///
+        /// <para>Owner, 2026-08-09: <i>"let's have multiple doors to the park… it is a kind of place people
+        /// like to walk through on their way."</i> That is what a central park is FOR — the crossing, not
+        /// the visit — and #790 shipped it with one gate at the end of one corridor, which makes it a
+        /// destination and a cul-de-sac.</para>
+        ///
+        /// <para><see cref="Gate"/> is still the hall's own — the first of these, and the one the room's
+        /// plate and its dev route are pinned to. This is all of them, published for the same reason
+        /// <see cref="Hall.Openings"/> is: a law about how a room is entered cannot be written against a
+        /// list nobody keeps.</para></summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> Ways => Gates ?? [Gate];
+
         /// <summary>Is the captain in the park? The box the walls were laid on — the hall's own law
         /// (<see cref="Hall.Contains"/>), for the same reason: a refuge-sized containment box in a room this
         /// size would say "you are not in the park" from almost everywhere in the park.</summary>
@@ -1962,6 +1977,18 @@ public static class UndergroundComplex
         var hallSpineCuts = new List<(double Lo, double Hi)>();
         double hallSpineFaceY = double.NaN;
 
+        // #775 · …and the ONE mouth on that face that is a corridor rather than a door: the garden walk down
+        // to the park. Kept in its own list because the two are drawn differently and always were — a
+        // doorway gets an imported leaf and a plate, a corridor mouth gets neither, exactly as the ribs'
+        // mouths get neither.
+        var spineMouths = new List<(double Lo, double Hi)>();
+
+        // #775 · The park's own circulation, decided with the park and read by the rib loop below.
+        var parkGateXs = new List<double>();
+        double? gardenWalkX = null;
+        bool parkSide = false;
+        double parkNear = double.NaN;   // the line every gate is cut in: the park's own near wall
+
         // One face of the spine, built as segments that stop either side of every mouth cut into it.
         void SpineFace(double y, Func<double, bool, bool> cutHere)
         {
@@ -1999,6 +2026,7 @@ public static class UndergroundComplex
             if (Math.Abs(y - hallSpineFaceY) < 0.001)
             {
                 mouths.AddRange(hallSpineCuts);
+                mouths.AddRange(spineMouths);
             }
             mouths.Sort((a, b) => a.Lo.CompareTo(b.Lo));
 
@@ -2099,12 +2127,61 @@ public static class UndergroundComplex
                 // the largest single room in the building and everything laid afterwards has to see it.
                 if (glazed)
                 {
+                    // ── #775 · EVERY CORRIDOR THAT REACHES THE GREEN, DECIDED BEFORE THE WALL IS POURED ──
+                    //
+                    // Owner: "let's have multiple doors to the park… it is a kind of place people like to
+                    // walk through on their way." Two sources, and both are known here — which is the whole
+                    // reason this list is built before the carve rather than patched into the wall after it:
+                    //
+                    //   · every RIB pointing the park's way. Their far ends stop RibReachDu off the spine
+                    //     and the park's near wall is HallRibExtraDu beyond that, so the rib loop runs each
+                    //     of them the extra sixteen du and opens where it arrives — the hall's rib gate,
+                    //     said about the other three. A route down one rib and up another now crosses the
+                    //     green instead of going round it.
+                    //   · THE GARDEN WALK, always, because the ribs' directions are seeded and on a quarter
+                    //     of the shipped sites exactly one of them points this way. A park with one door is
+                    //     a cul-de-sac however the dice fell.
+                    parkSide = ribList[slot.Rib].Down;
+                    parkNear = hfar;
+                    foreach (Rib r in ribList)
+                    {
+                        if (r.Down == parkSide)
+                        {
+                            parkGateXs.Add(r.X);
+                        }
+                    }
+                    gardenWalkX = GardenWalkX(ribList, parkSide, built.Hall, shaftX, left, right);
+                    if (gardenWalkX is { } gx)
+                    {
+                        parkGateXs.Add(gx);
+                    }
+
                     park = CarvePark(
                         walls, bodyId, level, built.Hall, built.Glass!.Value, ribList[slot.Rib],
-                        hfar, left, right, field);
+                        hfar, left, right, field, parkGateXs);
                     claimed.Add((
                         park.Value.X0 - 1.5, park.Value.Y0 - 1.5,
                         park.Value.X1 + 1.5, park.Value.Y1 + 1.5));
+
+                    // ── AND THE WALK ITSELF · two walls down to the green, and the gate at the end of them.
+                    //
+                    // Built here, with the park, so the claim ledger sees it before a single chamber is laid:
+                    // a passage is the one thing that may never be covered (#585), and the rooms either side
+                    // of a rib are placed later out of ground this one now stands on.
+                    if (gardenWalkX is { } wx)
+                    {
+                        double near = hmouth, farLine = hfar;
+                        walls.Add(new(wx - CorridorHalf, near, wx - CorridorHalf, farLine, true));
+                        walls.Add(new(wx + CorridorHalf, near, wx + CorridorHalf, farLine, true));
+                        walls.Add(new(wx - CorridorHalf, farLine, wx - DoorHalf, farLine, true));
+                        walls.Add(new(wx + DoorHalf, farLine, wx + CorridorHalf, farLine, true));
+                        spineMouths.Add((wx - CorridorHalf, wx + CorridorHalf));
+                        doorways.Add(new(wx - DoorHalf, farLine, wx + DoorHalf, farLine));
+                        claimed.Add((
+                            wx - CorridorHalf - 1.5, Math.Min(near, farLine) - 1.5,
+                            wx + CorridorHalf + 1.5, Math.Max(near, farLine) + 1.5));
+                        labels.Add(new(wx, near + (parkSide ? -4.5 : 4.5), ParkWaySign));
+                    }
                 }
             }
             else
@@ -2212,11 +2289,28 @@ public static class UndergroundComplex
             // in the building is cut to, and that gap is the ONLY way a body gets into the park. (The wall
             // it shares with the hall is glass — an eye crosses it and nothing else does.) A sealed mouth
             // with a distance stencilled on it here would be a sign lying about a door you can see through.
-            if (park is not null && hallRib)
+            //
+            // #775 · …AND IT IS NO LONGER THE ONLY ONE. Owner: "let's have multiple doors to the park — it
+            // is a kind of place people like to walk through on their way." Every rib pointing the park's
+            // way now runs the extra HallRibExtraDu that the hall's rib always ran and opens where it
+            // arrives, so a route down one rib and up another crosses the green instead of going round it.
+            // The extension is corridor, not room: the chambers were laid against `far` and nothing stands
+            // in the sixteen du beyond it — that is the same unused band the park itself came out of.
+            bool parkRib = park is not null && down == parkSide;
+            if (parkRib && !hallRib)
             {
-                doorways.Add(new(x - DoorHalf, far, x + DoorHalf, far));
-                walls.Add(new(x - CorridorHalf, far, x - DoorHalf, far, true));
-                walls.Add(new(x + DoorHalf, far, x + CorridorHalf, far, true));
+                walls.Add(new(x - CorridorHalf, far, x - CorridorHalf, parkNear, true));
+                walls.Add(new(x + CorridorHalf, far, x + CorridorHalf, parkNear, true));
+            }
+
+            if (parkRib)
+            {
+                // ONE line for all of them — the park's own near wall, which for the hall's rib is its own
+                // `far` and for every other rib is sixteen du past it. A second answer about where a gate
+                // sits is how this file's oldest bug was written.
+                doorways.Add(new(x - DoorHalf, parkNear, x + DoorHalf, parkNear));
+                walls.Add(new(x - CorridorHalf, parkNear, x - DoorHalf, parkNear, true));
+                walls.Add(new(x + DoorHalf, parkNear, x + CorridorHalf, parkNear, true));
             }
             else
             {
@@ -2975,7 +3069,8 @@ public static class UndergroundComplex
     /// </summary>
     private static Park CarvePark(
         List<SurfaceLayout.Wall> walls, string bodyId, int level, in Hall hall, SurfaceLayout.Wall glass,
-        in Rib rib, double hallFar, double leftEnd, double rightEnd, in SurfaceLayout.Field field)
+        in Rib rib, double hallFar, double leftEnd, double rightEnd, in SurfaceLayout.Field field,
+        IReadOnlyList<double> gateXs)
     {
         bool down = rib.Down;
 
@@ -3000,11 +3095,22 @@ public static class UndergroundComplex
         // …and the near wall, in the segments left between the two openings. SORTED, and the cursor may
         // only ever move forward: #587 was exactly this loop given its mouths out of order, and it sealed
         // every room on a third of the floors in the game.
+        //
+        // #775 · …and there are SEVERAL gates now, not one. Owner: "let's have multiple doors to the park —
+        // it is a kind of place people like to walk through on their way." Every corridor that reaches this
+        // side of the spine ends at this wall, and every one of them opens through it, so the natural route
+        // between two places on B1 crosses the green instead of going round it. The list is handed in: the
+        // carve does not decide which corridors exist, it opens the wall where they arrive.
         var openings = new List<(double Lo, double Hi)>
         {
-            (rib.X - CorridorHalf, rib.X + CorridorHalf),   // the gate, cut by the rib's own far end
-            (hall.X0, hall.X1),                             // the glass, which is the hall's far wall
+            (hall.X0, hall.X1),   // the glass, which is the hall's far wall — never a door (owner's rule)
         };
+        foreach (double gx in gateXs)
+        {
+            // The corridor's full width, because the corridor's own far-end stubs are what narrow it to a
+            // doorway — the same two segments the rib has always laid. One gap, cut once (#585).
+            openings.Add((gx - CorridorHalf, gx + CorridorHalf));
+        }
         openings.Sort((a, b) => a.Lo.CompareTo(b.Lo));
         double cursor = x0;
         foreach ((double lo, double hi) in openings)
@@ -3126,15 +3232,89 @@ public static class UndergroundComplex
             }
         }
 
+        // #775 · Every gate as a published doorway, the hall's own rib FIRST — it is the one the room's
+        // plate and its dev route are pinned to, and the order is the only thing that says which is which.
+        var gates = new List<SurfaceLayout.Doorway>(gateXs.Count)
+        {
+            new(rib.X - DoorHalf, hallFar, rib.X + DoorHalf, hallFar),
+        };
+        foreach (double gx in gateXs)
+        {
+            if (Math.Abs(gx - rib.X) > 0.001)
+            {
+                gates.Add(new SurfaceLayout.Doorway(gx - DoorHalf, hallFar, gx + DoorHalf, hallFar));
+            }
+        }
+
         return new Park(
             x0, y0, x1, y1, walk, beds, benches, masts,
-            new SurfaceLayout.Doorway(rib.X - DoorHalf, hallFar, rib.X + DoorHalf, hallFar),
+            gates[0],
             glass,
             rib.X, W(4.0), figX, figY,
             CanteenRegulars.StrangerPlates[
                 (int)(Frac(bodyId, $"hive:{level}:park-figure") * CanteenRegulars.StrangerPlates.Count)
                     % CanteenRegulars.StrangerPlates.Count],
-            ParkArtFor(bodyId, HallUseOn(bodyId, level)));
+            ParkArtFor(bodyId, HallUseOn(bodyId, level)),
+            gates);
+    }
+
+    /// <summary>#775 · What is stencilled at the mouth of the walk down to the park — the arrow idiom this
+    /// building already paints on a corridor whose end is somewhere else
+    /// (<see cref="SealedMouthSign"/>). The difference is the whole point: that one names a place you will
+    /// never reach, and this one is a way through.</summary>
+    public const string ParkWaySign = "⟶ THE PARK";
+
+    /// <summary>
+    /// #775 · WHERE THE DEDICATED WALK DOWN TO THE PARK IS CUT, or null where this floor has no room for
+    /// one.
+    ///
+    /// <para>Owner: <i>"multiple doors to the park"</i> — and the corridors that already reach it are the
+    /// ribs pointing its way, which on a quarter of the shipped sites is exactly ONE (the hall's own). A
+    /// park with one door is a cul-de-sac however many ribs happen to fall the right way, so the building
+    /// gets a passage whose only job is that crossing: off the main corridor, straight down, into the
+    /// green.</para>
+    ///
+    /// <para>It is placed at the point on the spine's park-side face FURTHEST from everything already
+    /// standing on that side — the hall's box, the corridors that reach the park, and the lift alcove where
+    /// the park is on the alcove's own face. Furthest rather than first-fit because the room columns either
+    /// side of a rib are ground this passage would otherwise take: the claim ledger would drop them
+    /// silently, and a floor quietly losing chambers is the shape of bug this file keeps a table of.</para>
+    /// </summary>
+    private static double? GardenWalkX(
+        List<Rib> ribs, bool parkSide, in Hall hall, double shaftX, double leftEnd, double rightEnd)
+    {
+        var keepOff = new List<(double Lo, double Hi)> { (hall.X0, hall.X1) };
+        foreach (Rib r in ribs)
+        {
+            if (r.Down == parkSide)
+            {
+                keepOff.Add((r.X - CorridorHalf, r.X + CorridorHalf));
+            }
+        }
+        if (!parkSide)
+        {
+            keepOff.Add((shaftX - ShaftHalf, shaftX + ShaftHalf));   // the alcove hangs off the top face
+        }
+
+        double clear = CorridorHalf + 2.0;
+        // …and it keeps a wall's worth of ground off the ends of the building, which the max-min search
+        // would otherwise walk straight into: the emptiest x on this face is very often the last one.
+        double lo = leftEnd + clear + CorridorHalf, hi = rightEnd - clear - CorridorHalf;
+        double bestX = double.NaN, bestRoom = clear;
+
+        for (double x = lo; x <= hi + 0.001; x += 1.0)
+        {
+            double room = double.MaxValue;
+            foreach ((double a, double b) in keepOff)
+            {
+                room = Math.Min(room, x < a ? a - x : x > b ? x - b : 0.0);
+            }
+            if (room > bestRoom)
+            {
+                (bestRoom, bestX) = (room, x);
+            }
+        }
+        return double.IsNaN(bestX) ? null : bestX;
     }
 
     /// <summary>#707 · Hang a washroom cell off the back of a room, if the room is one that earned one and

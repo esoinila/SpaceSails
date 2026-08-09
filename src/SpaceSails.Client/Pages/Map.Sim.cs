@@ -1083,6 +1083,22 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the floor the hall is on
                 }
             }
+            else if (pair.StartsWith("parkwalk=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?parkwalk=1 boots the same B1 route and stands the captain on the
+                // MAIN CORRIDOR at the mouth of the GARDEN WALK. ?park=1 sets a tester down inside the
+                // green, which is the wrong half of the owner's ask: "a kind of place people like to walk
+                // through on their way" is about the CROSSING, and a crossing has to be started outside.
+                string candidate = Uri.UnescapeDataString(pair["parkwalk=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkWalkCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
             else if (pair.StartsWith("freight=", StringComparison.OrdinalIgnoreCase))
             {
                 // #775 dev cheat: /map?freight=1 walks the last leg to the GOODS HOIST instead — the one

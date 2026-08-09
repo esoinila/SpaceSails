@@ -266,7 +266,17 @@ decides that rather than a clause in the renderer.
 ```
 /map?frontdoor=1                       out on the MAIN CORRIDOR at the canteen's own entrance — walk in
 /map?freight=1                         the GOODS HOIST at the end of the counter's service band
+/map?parkwalk=1                        the GARDEN WALK off the main corridor — cross the park, out the far gate
 ```
+
+**And the park is a way THROUGH (#775, owner 2026-08-09).** *"Let's have multiple doors to the park… it is
+a kind of place people like to walk through on their way."* #790 gave it one gate at the end of one
+corridor, which makes the largest room in the game a destination and a dead end. Now **every rib pointing
+its way runs the extra sixteen du and opens into it**, and there is always a **GARDEN WALK** — a passage
+straight off the main corridor, stencilled `⟶ THE PARK`, cut where the spine's park-side face has the most
+room. Shipped parks carry **2–5 gates**. Boot `?parkwalk=1`, walk in, and leave by a gate that is not the one you came in by:
+you come out in a different corridor, and the route between two places on B1 has crossed the green. The
+hall-side wall is still glass and still stops a body — no gate is ever cut through it.
 
 Owner, walking the new B1 the night #790 landed: *"The bar/canteen needs DOORS ON THE MAIN CORRIDOR —
 today you have to really look for the way in; a venue's entrance should find YOU."* / *"A canteen this size
@@ -597,6 +607,7 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `?park=1` | boot standing INSIDE the park behind the bar (#759) — green floor, window wall, beds, benches |
 | `?frontdoor=1` | boot OUT ON THE MAIN CORRIDOR at the canteen's own front door (#775) — walk in through it |
 | `?freight=1` | boot at the GOODS HOIST (#775) — drawn, labelled, solid, and it refuses you in words |
+| `?parkwalk=1` | boot at the mouth of the GARDEN WALK (#775) — the park is a THOROUGHFARE, 2–5 gates |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 

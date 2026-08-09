@@ -461,6 +461,7 @@ public sealed class TheCanteenHasAFrontDoorTests
             UndergroundComplex.FreightSign,
             UndergroundComplex.HallEgressPlate(2),
             UndergroundComplex.HallEgressPlate(3),
+            UndergroundComplex.ParkWaySign,
         };
         foreach (string body in new[] { "luna", "enceladus", "the-clinker" })
         {
