@@ -243,10 +243,30 @@ public partial class Map
             }
         }
 
+        // #803 · …and then TOP THEM UP. The even spread above hands each drum a share of what is left at the
+        // moment it is reached, so with two takers and forty rounds it walks off leaving nine on the shelf
+        // and both magazines short — the receipt said forty, the guns got thirty-one, and nobody could see
+        // the difference. The spread stays (a hut's find is meant to reach every gun, not the first one);
+        // this second pass is what makes it arithmetic instead of an approximation.
+        foreach (SurfaceBot bot in takers)
+        {
+            if (left <= 0)
+            {
+                break;
+            }
+            int take = System.Math.Min(SentryBot.MaxMagazine - bot.Rounds, left);
+            bot.Rounds += take;
+            left -= take;
+        }
+
         ex.OutpostLooted = true;
         RebuildSurfaceDeck();
         RendererInterop.PlayCue("board");
         ShowPulseMessage(SurfaceOutpost.CacheLine(rounds - left));
+
+        // #803 · Whatever the drums genuinely could not hold is a thing the captain owns, not a thing that
+        // stops existing — and it is the supply the put verb spends.
+        WhatTheDrumsCouldNotHold(left);
         RequestVaultSave();
     }
 

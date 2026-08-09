@@ -272,6 +272,43 @@ it, the gauge is handed its answer, and the plate by the lift asks it of the flo
   shelter is left to say it in its own voice; two lines for one threshold is the nag the tank mechanic was
   told not to become.
 
+5.5 **The rounds you find are yours, and nothing you were shown ever stops existing.** Every fixture that
+gives ammunition — the shelter's press, the hut's locker, a ruin's half-shut drawer — fills the magazines
+first, in order, and whatever the drums genuinely could not hold goes in the POCKET as loose rounds
+(`SentryHandLoad.IntoThePocket`). Silent when they took everything, which is most of the time. Two of those
+three used to drop the remainder on the floor, and the pocket rounds #603 wrote a whole verb for had, until
+this, no way at all of reaching a captain's hand.
+
+5.6 **You fill what you SET DOWN; the world fills what you CARRY.** The belts, the presses and the lockers
+reach into the sling. A sentry standing out on the line is reached by one thing only, and it is the captain
+walking rounds to it — `[I]` standing over it, any drum that is not full (#803's put verb; it used to be
+only a drum reading exactly 00). One drum, one kind: a magazine at 00 takes anything, a magazine with
+something in it takes more of the same, and the refusal says which. Nothing may put a number in a drum that
+the two-digit readout cannot say — the instrument and the machine answer about one number or they are two
+answers to one question (§the #797 law).
+
+5.7 **A captain may point a gun by hand, and it is deliberately not autopilot.** The handset's fourth verb
+(`🎯 DESIGNATE`): pick a gun you have set down, pick something it can see, say when. The arc and the sight
+test are the sentry's OWN (`SentryBot.RangeDeckUnits`, `SurfaceCollision.HasLineOfSight`) so there is one
+range law on this ground; the gun is aimed at the FACE of the door rather than its centre, because the
+plate the captain fires at is published in floats and the wall behind it is laid in doubles, and one ulp
+either way decides every lock in the game.
+
+- **You can shoot a LOCK. You cannot shoot a WALL, and you cannot shoot a READER.** The game had already
+  written this call in two sentences years apart: a room door's lock *"is mechanical and it was turned by
+  somebody who then walked away with the key"*, and a sealed way has *"no reader … the bolts go through the
+  frame and into the rock, and they were tightened from a side you are not on"*. So department doors and the
+  goods-hoist shutter go; the sealed ways (#590 call 2) refuse, in their own words, and promise nothing.
+  Every sign is recognised POSITIVELY (`UndergroundComplex.IsDoorSign` / `IsFreightShutter`) — a lock nobody
+  thought about is refused rather than waved through.
+- **It costs rounds and it costs NOISE.** Six rounds at a hasp, or one of anything that does its work on the
+  far side of the first thing it meets. The pack's ear is rung the way every loud act on this ground rings
+  it, and the shot itself is FILED — who fired, at what, where, when, how many (`GunfireHeard`). Nothing in
+  this build reacts to that ledger; it is the seam the guards' lane prices, written from the first shot
+  rather than re-derived later from a HUD line that has scrolled away.
+- **Behind a door somebody shut is a room.** Bare floor, bare walls, bolt holes where shelving was taken
+  out. Nothing that comes open ever explains the building (§13.8).
+
 ## 6 · What the ship does NOT do down here
 
 **The captain is in a suit on a moon. The hull is docked and empty somewhere above.**

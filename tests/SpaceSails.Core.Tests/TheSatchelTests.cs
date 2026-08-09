@@ -161,7 +161,7 @@ public sealed class TheSatchelTests
         {
             var item = new Satchel.Item(kind, "paper-1", kind == Satchel.Kind.Rounds ? 6 : 1);
             Assert.Equal(kind == Satchel.Kind.Rounds,
-                SatchelTry.Offer(item, SatchelTry.Target.DrySentry).Worked);
+                SatchelTry.Offer(item, SatchelTry.Target.Sentry).Worked);
             Assert.Equal(kind == Satchel.Kind.Paper,
                 SatchelTry.Offer(item, SatchelTry.Target.Tracker).Worked);
         }

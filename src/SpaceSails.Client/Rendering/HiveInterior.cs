@@ -32,10 +32,15 @@ public static class HiveInterior
     /// (<see cref="PatronRota.WatchIndex"/>). Passed in already frozen rather than read from a clock here, so
     /// the room that is DRAWN and the room the [E] key later asks about can never be two different rooms.
     /// Defaults to the first watch, which is what every audit and lab wants: a fixed roster to walk.</param>
+    /// <param name="locksShotOpen">#803 · The locks a designated shot has taken the hasp off, by
+    /// <see cref="LockKey"/>. Replayed onto every rebuild exactly the way an emptied room is, so a door that
+    /// was opened stays open through a floor change, a satchel press and a save — a world that grows its
+    /// walls back while the captain is looking somewhere else is the oldest bug on this ground.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
-        IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0)
+        IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0,
+        IReadOnlyCollection<string>? locksShotOpen = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -110,8 +115,24 @@ public static class HiveInterior
         // #585 · THE DOORS THAT NEVER OPEN. The owner asked for these by name as the illusion of scale, and
         // they are drawn Locked — cold, always shut, with a real wall behind them — so nothing about them
         // ever hints that a way through exists. [E] reads the sign; that is all it will ever do.
+        //
+        // #803 · …unless somebody took the hasp off it with a sentry. That is a LOUD, deliberate, six-round
+        // act performed with the captain's own handset, and it is the one thing in the game allowed to move
+        // one of these — so the illusion is untouched by walking past forty of them and spent, one door at a
+        // time, by a captain who decided a particular door was worth telling the whole floor about.
         foreach (UndergroundComplex.LockedDoor l in floor.Locked)
         {
+            if (locksShotOpen is not null && locksShotOpen.Contains(LockKey(level, l)))
+            {
+                // No wall behind it now, and the leaf is drawn as the ordinary way-through it has become.
+                // The plate stays readable — an affordance that vanishes when it is used is #212's shape —
+                // and it wears the hole rather than the padlock so the deck says which of the two it is.
+                doors.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, Imported: true));
+                consoles.Add(new(DeckPlan.ConsoleKind.HiveSign,
+                    (float)((l.X1 + l.X2) / 2), (float)((l.Y1 + l.Y2) / 2), $"{ShotOpenGlyph} {l.Sign}"));
+                continue;
+            }
+
             doors.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, Locked: true));
             walls.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, false, false));
             consoles.Add(new(DeckPlan.ConsoleKind.HiveSign,
@@ -549,4 +570,18 @@ public static class HiveInterior
 
     /// <summary>One key per room per floor, so a searched room on B2 is not a searched room on B3.</summary>
     public static int RoomKey(int level, int roomIndex) => (level * 1000) - roomIndex;
+
+    /// <summary>#803 · What the deck wears where a lock used to be. Not the padlock (it is not locked any
+    /// more) and not nothing (the plate is still worth reading) — the same hole the card and the field book
+    /// use for a way that has been opened.</summary>
+    public const string ShotOpenGlyph = "🕳";
+
+    /// <summary>
+    /// #803 · One key per LOCK per floor. Keyed on the door's own geometry rather than on its sign, because
+    /// a branch office reuses its door vocabulary — a floor can carry two doors reading LONG STORAGE, and a
+    /// captain who shoots one of them has not opened the other. The floor plan is pure and deterministic per
+    /// (body, level), so the same door produces the same key on every rebuild, every visit and every load.
+    /// </summary>
+    public static string LockKey(int level, UndergroundComplex.LockedDoor l) =>
+        FormattableString.Invariant($"{level}|{l.X1:F2},{l.Y1:F2},{l.X2:F2},{l.Y2:F2}");
 }
