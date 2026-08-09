@@ -1,0 +1,115 @@
+/* #741 · THE NOTEBOOK'S NODES. Its own isolated sheet because these elements are drawn by this component
+   and Map.razor.css's scope attribute does not reach into a child — the same reason DiceTray has one.
+
+   Two marks, two claims, and they are deliberately not the same mark:
+
+     .note-node.in-case  a RED RAIL down the left — "this entry belongs to a case you have drawn".
+     .note-line          a RED CONNECTOR between two rows — "somebody drew THIS line, between these two."
+
+   A block of four hung off one hub cannot be a straight path, so a page that drew the rail as if it were a
+   chain would be claiming pairs nobody connected. The rail says belonging; the connector says the line. */
+
+.note-node {
+    padding: 0.35rem 0.55rem;
+    background: #12161d;
+    border-left: 2px solid rgba(150, 170, 200, 0.28);
+    border-radius: 0.2rem;
+}
+
+/* In a case: the rail goes red. This is the collapsed list reading as a case status — the owner's own ask,
+   "notes already CONNECTED read differently at title level from unconnected ones". */
+.note-node.in-case {
+    border-left-color: rgba(196, 62, 52, 0.85);
+    background: #151319;
+}
+
+/* The end already picked up, waiting for its other. Quiet: an outline, not a flash. */
+.note-node.held {
+    outline: 1px solid rgba(196, 62, 52, 0.7);
+    outline-offset: -1px;
+    background: #1a1418;
+}
+
+.note-title {
+    display: flex;
+    gap: 0.45rem;
+    align-items: baseline;
+    width: 100%;
+    padding: 0;
+    font: inherit;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    color: #cfd8e5;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.note-title:hover { color: #e6dcc8; }
+
+/* Pen in hand, the whole row is one end of a line rather than something to read open. */
+.note-title.pen { cursor: crosshair; }
+
+.note-caret {
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    color: #7b8ca3;
+}
+
+.note-title-text { flex: 1 1 auto; }
+
+/* How many lines run off this one. Red, small, and it is a COUNT and never a score. */
+.note-threads {
+    flex: 0 0 auto;
+    font-size: 0.7rem;
+    color: #d2695f;
+    white-space: nowrap;
+}
+
+/* …and the ordinary condition of a note, said flatly. A loose end is not a failing. */
+.note-loose {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    color: #5c6a7d;
+    white-space: nowrap;
+}
+
+/* The ground, in the case reading where it is a fact about the entry rather than the heading. */
+.note-place {
+    padding-left: 1.15rem;
+    font-size: 0.7rem;
+    color: #7b8ca3;
+}
+
+/* Expanded: the entry's own sentences, one bullet each. The prose lives in the log; this is the shape a
+   line can be drawn between (owner: "structured for CONNECTING, not for prose-reading"). */
+.note-bullets {
+    margin: 0.35rem 0 0.15rem;
+    padding-left: 1.9rem;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #a9b7c9;
+}
+
+.note-bullets li { margin-bottom: 0.25rem; }
+
+/* THE LINE, between two rows a hand actually threaded. It SETTLES — a quarter of a second of scale, once,
+   the way a drawn line comes to rest. No flash, no glow, nothing that reads as a reward. */
+.note-line {
+    width: 2px;
+    height: 0.7rem;
+    margin: -0.1rem 0 -0.1rem 0.55rem;
+    background: rgba(196, 62, 52, 0.85);
+    transform-origin: top center;
+    animation: note-line-settle 260ms ease-out;
+}
+
+@keyframes note-line-settle {
+    from { transform: scaleY(0); opacity: 0.4; }
+    to   { transform: scaleY(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .note-line { animation: none; }
+}

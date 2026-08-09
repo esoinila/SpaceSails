@@ -2072,19 +2072,49 @@
                 }
                 else if (_satchelPage == SatchelPage.Notes)
                 {
-                    @* #690 · Read-only, and default to the ground underfoot: at a door the captain wants what
-                       THIS building has said, not the memoirs. Both filters come out of Core's own grouping
-                       (FieldNotes.Here / PerPlace), so the tab cannot invent a second way to name a place. *@
+                    @* #741 · THE NOTEBOOK. Owner, from the chair: "the notes become EXPANDING TEXT nodes —
+                       title-first, collapsed by default… the opened node houses its text as bullets… the
+                       note is structured for CONNECTING, not for prose-reading."
+
+                       And the instrument, in his own words: "I guess it could be a red pen only used to
+                       connect the things", with the gesture "select one, select the other — connected".
+
+                       Every arrangement decision on this page — which rows sit together, which pair carries
+                       a red edge, what a title says, whether the pen may come out — is CaseThreads', asked
+                       once per draw. This markup renders rows and decides nothing. *@
                     <div class="satchel-notes-filter">
-                        <button type="button" class="satchel-filter @(_notesEverywhere ? "" : "on")"
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Here ? "on" : "")"
                                 title="Only what this body and this site have told you"
-                                @onclick="() => _notesEverywhere = false">📍 this ground</button>
-                        <button type="button" class="satchel-filter @(_notesEverywhere ? "on" : "")"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Here)">📍 this ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Everywhere ? "on" : "")"
                                 title="The whole book, ground by ground"
-                                @onclick="() => _notesEverywhere = true">🥾 every ground</button>
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Everywhere)">🥾 every ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.TheCase ? "on" : "")"
+                                title="The whole book in the order the red lines put it"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.TheCase)">🧵 the case</button>
                     </div>
 
-                    @if (_notesEverywhere)
+                    @* #741 · THE PEN. One control, drawn everywhere and disabled nowhere (#212/#603): on
+                       your feet or at a bar top it answers with the sentence that says what would fix it,
+                       which is how the gumshoe rule gets learned. Picking it up is not a menu — it changes
+                       what pressing a title MEANS, which is the whole of the fiction. *@
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } penSaid)
+                    {
+                        <div class="satchel-outcome">@penSaid</div>
+                    }
+
+                    @if (_notesView == NotesView.Everywhere)
                     {
                         <div class="satchel-sub">
                             Every ground you have turned over, the ones you stood on most recently first.
@@ -2096,10 +2126,12 @@
                                 @foreach (SpaceSails.Core.FieldFinding found in book)
                                 {
                                     <div class="satchel-place">🥾 @found.Place</div>
-                                    @foreach (SpaceSails.Core.FieldNote line in found.Lines)
-                                    {
-                                        <div class="satchel-note">@line.Glyph @line.Text</div>
-                                    }
+                                    <NotebookNodes Rows="@NotebookPage(found.Lines)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
                                 }
                             </div>
                         }
@@ -2108,6 +2140,42 @@
                             <div class="satchel-empty">
                                 The book is blank. It fills the way everything out here fills — one room at a
                                 time, and only the ones you turn over.
+                            </div>
+                        }
+                    }
+                    else if (_notesView == NotesView.TheCase)
+                    {
+                        @* The one reading where a line drawn between two GROUNDS can put its two entries
+                           side by side. The place stops being a heading and becomes a tag on the node — the
+                           order belongs to the case here, and a ground is a fact about an entry like any
+                           other. *@
+                        <div class="satchel-sub">
+                            The whole book in the order your own lines put it. The book does not know what
+                            any of them means.
+                        </div>
+
+                        @if (TheWholeCase() is { Count: > 1 } whole)
+                        {
+                            <div class="satchel-notes">
+                                <NotebookNodes Rows="@NotebookPage(whole)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                @SpaceSails.Core.CaseThreads.NothingToConnectLine
                             </div>
                         }
                     }
@@ -2123,10 +2191,12 @@
                         @if (NotesFromThisGround() is { Count: > 0 } here)
                         {
                             <div class="satchel-notes">
-                                @foreach (SpaceSails.Core.FieldNote line in here)
-                                {
-                                    <div class="satchel-note">@line.Glyph @line.Text</div>
-                                }
+                                <NotebookNodes Rows="@NotebookPage(here)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
                             </div>
                         }
                         else if (_fieldNotes.Count == 0)

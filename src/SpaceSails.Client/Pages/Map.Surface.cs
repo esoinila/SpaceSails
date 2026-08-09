@@ -2955,6 +2955,11 @@ public partial class Map
         _showSatchel = false;
         _satchelTarget = null;
         _satchelOutcome = null;
+
+        // #741 · …and the pen goes back in the satchel with the book. A pen still in the hand of a captain
+        // who has stood up and walked to a door is a state nothing on screen would be saying, and the held
+        // end of a half-drawn line is not worth keeping across a shut lid.
+        PutTheRedPenAway();
     }
 
     private bool _showSatchel;
@@ -2988,9 +2993,26 @@ public partial class Map
 
     private SatchelPage _satchelPage = SatchelPage.Carried;
 
-    /// <summary>#690 · Whether the NOTES tab is showing the whole book rather than this ground alone. Defaults
-    /// to this ground: a captain at a door wants what THIS building has told them, not the memoirs.</summary>
-    private bool _notesEverywhere;
+    /// <summary>#690/#741 · WHICH READING OF THE BOOK the NOTES tab is showing.</summary>
+    private enum NotesView
+    {
+        /// <summary>#690 · This ground alone, and where an open always lands: a captain at a door wants what
+        /// THIS building has told them, not the memoirs.</summary>
+        Here,
+
+        /// <summary>#690 · The whole book, grouped by the ground it was written on — "where you were
+        /// standing" is the thing a walk is reconstructed from (<see cref="Core.FieldNotes.PerPlace"/>).</summary>
+        Everywhere,
+
+        /// <summary>#741 · THE CASE. The same book with the geography demoted to a tag and the ORDER given
+        /// over to the red lines — the one reading where a thread drawn between two grounds can put its two
+        /// entries side by side, which is the whole reason the pen exists. Grouping by place and clustering
+        /// by thread are two different arrangements of one list and cannot both be the layout, so they are
+        /// two readings of it instead.</summary>
+        TheCase,
+    }
+
+    private NotesView _notesView = NotesView.Here;
 
     /// <summary>#690 · Every open lands on the pocket, on this ground, whatever the last one was left on. The
     /// tab choice is not a setting — it is where you were looking a moment ago, and a moment ago is over.
@@ -2998,7 +3020,7 @@ public partial class Map
     private void TheSatchelOpensOnThePocket()
     {
         _satchelPage = SatchelPage.Carried;
-        _notesEverywhere = false;
+        _notesView = NotesView.Here;
 
         // #697 · And the wallet is folded shut. A folder that reopened expanded would be the card rows it
         // replaced with an extra line above them, which is the whole row spent for nothing.

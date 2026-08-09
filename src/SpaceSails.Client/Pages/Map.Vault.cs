@@ -403,6 +403,11 @@ public partial class Map
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             // #587 · the field book: what was found on the ground, kept so it can be re-read.
             FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,
+            // #741 · the red lines the captain drew between two of those entries. Opaque pair strings, both
+            // ends derived from the notes' own words — so the book and the lines come back together.
+            CaseThreads = _caseThreads.Count > 0
+                ? new CaseThreadsSection { Threads = [.. _caseThreads.Select(t => t.Stored)] }
+                : null,
             // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
             // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
             // the save carries the FACT and never the words.
@@ -889,6 +894,18 @@ public partial class Map
         // durable and revisitable — they survive the reload rather than living-and-vanishing in a toast.
         _overheard = vault.Overheard is { } book ? [.. book.Lines] : [];
         _fieldNotes = vault.FieldNotes is { } field ? [.. field.Notes] : [];   // #587
+
+        // #741 · …and the lines drawn across it. A pair this build cannot read is dropped rather than thrown
+        // over, the same tolerance the satchel gets three lines down; a pre-#741 file simply has none, and a
+        // book of loose ends is exactly what it was.
+        _caseThreads = [];
+        foreach (string stored in vault.CaseThreads?.Threads ?? [])
+        {
+            if (Core.CaseThreads.Thread.TryParse(stored, out Core.CaseThreads.Thread line))
+            {
+                _caseThreads = [.. Core.CaseThreads.Draw(_caseThreads, line.A, line.B)];
+            }
+        }
 
         // #603 · The satchel. Unreadable entries from an edited or future save are dropped rather than
         // thrown over — the vault is tolerant everywhere else and a mystery object is not worth a lost game.
