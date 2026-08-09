@@ -20,11 +20,13 @@ namespace SpaceSails.Core.Tests;
 /// one asks the SIM, the PANEL and the HUD's own words in the same loop and refuses to let any of the three
 /// answer alone.</para>
 ///
-/// <para><b>Why the guard is a sweep over every row and not just the surface.</b> The bug was not a wrong
-/// value, it was a TYPED value: a row that answered for itself instead of asking
-/// <see cref="UndergroundComplex.HoldsPressure"/>. <see cref="EveryButtonOnEveryPanelAgreesWithTheOnePressureFact"/>
-/// is the shape of that mistake rather than its symptom, so the next hand-written row goes red wherever it
-/// is written.</para>
+/// <para><b>And there was a second half to it, which is the more expensive one.</b>
+/// <c>TheLiftPanelTests.ThePanelSaysWhichFloorsCostAir</c> already swept every button on every panel of every
+/// body against <see cref="UndergroundComplex.HoldsPressure"/> — and began <c>stop.Level >= 0 ||</c>, an
+/// exemption cut to exactly the shape of the row that had been typed by hand. So the audit ran green on the
+/// lie, on every body, for as long as the lie existed. That clause is gone (see the block there); the shape
+/// of the mistake is guarded where it has always belonged, and this file states the LAW across the sim, the
+/// plate and the gauge as well as the button.</para>
 /// </summary>
 public sealed class TheSurfaceIsVacuumTests
 {
@@ -89,23 +91,6 @@ public sealed class TheSurfaceIsVacuumTests
                 Assert.False(
                     surface.Pressurised,
                     $"{body} B{-level}: the panel's SURFACE button says the surface holds air.");
-            }
-        }
-    }
-
-    [Fact]
-    public void EveryButtonOnEveryPanelAgreesWithTheOnePressureFact()
-    {
-        // …and not only the surface one. A row that decides for itself is the mistake; this is the mistake's
-        // shape, so a hand-written answer anywhere on the panel goes red here.
-        foreach (string body in Bodies)
-        {
-            foreach (int level in UndergroundComplex.FloorsOf(body))
-            {
-                foreach (UndergroundComplex.LiftStop stop in UndergroundComplex.LiftPanel(body, level, []))
-                {
-                    Assert.Equal(UndergroundComplex.HoldsPressure(body, stop.Level), stop.Pressurised);
-                }
             }
         }
     }
