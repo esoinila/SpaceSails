@@ -32,7 +32,10 @@
                           : (open ? "Fold it again" : "Open it and read the bullets"))"
                 @onclick="() => OnTitle.InvokeAsync(id)">
             <span class="note-caret">@(PenInHand ? "🖊" : open ? "▾" : "▸")</span>
-            <span class="note-title-text">@row.Note.Glyph @CaseThreads.TitleOf(row.Note)</span>
+            @* The glyph through Core's own law and never straight off the note: three of the four
+                   sentences a kit produces are WRITTEN with theirs at the front, so a surface that
+                   prints Glyph + Text prints it twice. Found by looking at the demo. *@
+                <span class="note-title-text">@CaseThreads.GlyphFor(row.Note) @CaseThreads.TitleOf(row.Note)</span>
             @if (row.Threads > 0)
             {
                 <span class="note-threads" title="@($"{row.Threads} drawn from this one")">

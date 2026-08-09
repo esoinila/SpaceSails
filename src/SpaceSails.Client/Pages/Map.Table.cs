@@ -145,11 +145,18 @@ public partial class Map
                     _satchelPage = SatchelPage.Notes;
                     _notesView = NotesView.TheCase;
                     _showSatchel = true;
-                    ShowPulseMessage(
-                        "🧪 DEV ?threads=1: seated in a CABINET with six entries already in the book, from "
-                        + "two grounds. Take the 🖊 RED PEN, press one title, press another — a line goes "
-                        + "between them and the list reorders around it. The same two presses take it off "
-                        + "again.");
+
+                    // SAID INSIDE THE DIALOG, not pulsed — #680/#736's law, and this row learned it the way
+                    // this repo learns everything: by being looked at. A first descent raises its own card
+                    // (#585) over the whole screen on this very boot, and the instruction pulse played and
+                    // died under it, so the demo opened onto a notebook with nothing telling a tester what
+                    // to press. The satchel's own outcome line is the one layer a card cannot cover, and it
+                    // is still there when the card is closed.
+                    _satchelOutcome =
+                        "🧪 DEV ?threads=1: six entries PRE-FILED from two grounds you are not standing on "
+                        + "(the ride down filed its own lines too). Take the 🖊 RED PEN, press one title, "
+                        + "then another — a line goes between them and the list reorders around it. The same "
+                        + "two presses take it off again.";
                     return;
                 }
 
@@ -225,7 +232,12 @@ public partial class Map
     /// </summary>
     private void PreFileTheCase()
     {
-        double at = SimTime;
+        // NOT the clock. Nothing in this file may read the sim clock at all — the watch every table fact hangs off is
+        // ex.CanteenWatch, frozen when the deck was welded, and a guard bans the clock from the whole file
+        // rather than from one method (#746/#757). Caught by that guard, and the fixed base is the better
+        // answer anyway: the demo's handles are then IDENTICAL on every boot, so a tester who draws lines,
+        // reloads the same URL and finds them still there has learned something true about the vault.
+        double at = 0.0;
         IReadOnlyList<Core.FieldNote> book = _fieldNotes;
 
         void FileFrom(string bodyId, int siteIndex, int roomIndex, int howMany)

@@ -179,6 +179,20 @@ public sealed class TheRedPenIsAnInstrumentTests
             Method(Pages("Map.RedPen.cs"), "private void NoteTitlePressed(string id)"), "RequestVaultSave()"));
     }
 
+    /// <summary>The node leads with Core's glyph law and never the raw field. Found by booting the demo:
+    /// a title that prints <c>Glyph + Text</c> prints the glyph twice, because three of the four sentences
+    /// a kit produces are already written with theirs.</summary>
+    [Fact]
+    public void TheNode_DoesNotWriteTheGlyphTwice()
+    {
+        string nodes = Components("NotebookNodes.razor");
+
+        Assert.True(nodes.Contains("CaseThreads.GlyphFor(row.Note)", StringComparison.Ordinal),
+            "the node no longer asks Core whether the entry already opens with its own mark (#741).");
+        Assert.False(nodes.Contains("row.Note.Glyph", StringComparison.Ordinal),
+            "the node prints the stored glyph straight, which doubles it on every dossier entry (#741).");
+    }
+
     // ── THE DEMO'S SEEDS ──────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -212,6 +226,16 @@ public sealed class TheRedPenIsAnInstrumentTests
         // …and every word of the case is the dossier's own. The demo invents no lore.
         Assert.True(prefile.Contains("Core.FieldDossier.Debrief(", StringComparison.Ordinal),
             "the demo no longer files shipped dossier prose — it must invent nothing (#741).");
+
+        // The instruction is SAID INSIDE THE DIALOG and never pulsed: a first descent raises its own card
+        // over the whole screen on this very boot (#585), and a pulse routed under it is in the DOM and not
+        // on the screen — #693's own lesson, found here by taking a screenshot.
+        string boot = table[table.IndexOf("_notesView = NotesView.TheCase;", System.StringComparison.Ordinal)..];
+        boot = boot[..boot.IndexOf("return;", System.StringComparison.Ordinal)];
+        Assert.True(boot.Contains("_satchelOutcome =", System.StringComparison.Ordinal),
+            "the demo no longer says what to press inside the dialog (#741, #680/#736).");
+        Assert.False(boot.Contains("ShowPulseMessage", System.StringComparison.Ordinal),
+            "the demo pulses its instruction again — it plays and dies under the first-descent card (#741).");
 
         // NOTHING ABOUT THE CASE IS FORCED: no line is drawn for the tester. Spotting is the player's act.
         Assert.False(prefile.Contains("CaseThreads.Draw", StringComparison.Ordinal),

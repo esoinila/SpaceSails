@@ -446,6 +446,40 @@ public class TheRedPenDrawsTheLineTests
         Assert.Empty(CaseThreads.BulletsOf(Note("")));
     }
 
+    /// <summary>
+    /// THE GLYPH IS NOT WRITTEN TWICE. Found by booting <c>?threads=1</c> and reading the titles off the
+    /// screen: every dossier entry came out <c>📇 📇 Nkechi Sarkisyan — …</c>, because the book stores a
+    /// skim glyph beside a text that is already written with one.
+    ///
+    /// <para>The old flat notes list had the identical bug and had never been looked at beside a title. It
+    /// was not reachable by reasoning about this feature at all — it is a fact about content that was
+    /// already shipped, and it took a browser.</para>
+    /// </summary>
+    [Fact]
+    public void TheGlyph_IsNotWrittenTwice()
+    {
+        // The shape three of the four sentences a kit produces actually have.
+        Assert.Equal("", CaseThreads.GlyphFor(new FieldNote("📇 Nkechi Sarkisyan — their old supervisor.", 1, "p", "📇")));
+
+        // …and the shape the fourth has: bare prose the book files under its own mark, which is drawn.
+        Assert.Equal("🔎", CaseThreads.GlyphFor(new FieldNote("They kept every letter.", 1, "p", "🔎")));
+
+        // Two DIFFERENT marks are two facts and both are drawn — the entry's own and the book's.
+        Assert.Equal("🛃", CaseThreads.GlyphFor(new FieldNote("🛗 The car takes a moment.", 1, "p", "🛃")));
+
+        Assert.Equal("", CaseThreads.GlyphFor(new FieldNote("anything", 1, "p", "")));
+
+        // It is the same decision FieldDossier's card has made since #774 — one entry, one reading.
+        foreach (FieldDossier.Saying one in FieldDossier.Debrief("miranda", "", 3, everySaying: true))
+        {
+            string onTheCard = FieldDossier.DebriefBlock([one]);
+            var note = new FieldNote(one.Text, 1, "p", one.Glyph);
+            Assert.Equal(
+                onTheCard.StartsWith(one.Glyph + " " + one.Text, StringComparison.Ordinal),
+                CaseThreads.GlyphFor(note) == one.Glyph);
+        }
+    }
+
     // ── WHERE THE PEN WORKS ───────────────────────────────────────────────────────────────────────────
 
     /// <summary>BOTH DIRECTIONS, over the WHOLE ladder. On your feet the pen never comes out, whatever the

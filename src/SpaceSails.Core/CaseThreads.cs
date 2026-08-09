@@ -262,6 +262,27 @@ public static class CaseThreads
     /// phone width and no more.</summary>
     public const int TitleLength = 88;
 
+    /// <summary>
+    /// THE GLYPH THE NODE LEADS WITH — the note's own, <b>unless the entry already opens with it</b>, in
+    /// which case nothing, because it is already there.
+    ///
+    /// <para>Found by booting the demo and reading the titles off the screen: every dossier entry came out
+    /// <c>📇 📇 Nkechi Sarkisyan — …</c>. The book stores a skim glyph beside the text, and three of the
+    /// four sentences a kit produces are WRITTEN with theirs at the front — so a surface that prints
+    /// <c>Glyph + Text</c> prints it twice. The old flat notes list had exactly the same bug and nobody had
+    /// looked at it beside a title.</para>
+    ///
+    /// <para>This is not a new law: <see cref="FieldDossier.DebriefBlock"/> has made this exact decision
+    /// since #774, in the same words. It is stated here so the notebook and the card cannot come to two
+    /// different views of one entry.</para>
+    /// </summary>
+    public static string GlyphFor(in FieldNote note)
+    {
+        string glyph = note.Glyph ?? "";
+        string text = (note.Text ?? "").TrimStart();
+        return glyph.Length > 0 && text.StartsWith(glyph, StringComparison.Ordinal) ? "" : glyph;
+    }
+
     /// <summary>The title of an entry: its first sentence, clipped at a word boundary with an ellipsis when
     /// it runs long. Never empty for a note with any words in it.</summary>
     public static string TitleOf(in FieldNote note) => Clip(FirstSentence(note.Text ?? ""));
