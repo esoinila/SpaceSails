@@ -72,12 +72,12 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// <para><b>Proven RED</b> by seeding the occupancy instead of matching it (a second roll for "is
     /// anybody on this plank", which is the tempting shape):</para>
     /// <code>
-    /// 30 park(s) disagree with themselves about who is sitting where:
-    ///   luna B1: 3 bench(es) read TAKEN, and a park has one lone figure.
-    ///   luna B1: the figure at (-171, -238) is on no bench this file can find.
-    ///   phobos B1: 2 bench(es) read TAKEN, and a park has one lone figure.
-    ///   …
+    /// luna B1: bench 1 reads taken and the figure is somewhere else.
     /// </code>
+    ///
+    /// <para>(The per-bench assert fires before the sweep's own tally does, which is the guard reading the
+    /// room correctly: a bench that says somebody is on it while the room's figure is on a different plank
+    /// is already the disagreement, whatever the count comes to.)</para>
     /// </summary>
     [Fact]
     public void EVERY_PARK_PublishesItsBenchesAndExactlyOneIsTaken()
@@ -145,9 +145,10 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// <para><b>Proven RED</b> twice: with <c>EndOffsetDu = 0</c> (both ends at the centre) and with
     /// <c>EndOffsetDu = UndergroundComplex.ParkBenchHalfDu</c> (the ends at the very tips):</para>
     /// <code>
-    /// bench ends at (-171.0, -238.4) and (-171.0, -238.4) are 0.00 du apart — one seat, not two.
-    /// bench end at (-172.8, -238.4) is 1.80 du from the centre of a plank 1.80 du long each way —
-    ///   that is the arm-rest, not a seat.
+    /// a bench end at 0.00 du from the centre of a plank 1.80 du long each way is either the arm-rest or
+    ///   the same seat twice.
+    /// a bench end at 1.80 du from the centre of a plank 1.80 du long each way is either the arm-rest or
+    ///   the same seat twice.
     /// </code>
     /// </summary>
     [Fact]
@@ -189,6 +190,85 @@ public sealed class TheBenchAsksWhoElseStoppedTests
         }
     }
 
+    /// <summary>
+    /// AND THE ENDS SIT ON THE PLANK THE CARVE ACTUALLY BOLTED DOWN.
+    ///
+    /// <para>This is the one assumption in the whole issue that is about the SHAPE of a park rather than its
+    /// contents: <see cref="ParkBenches.Bench.End"/> steps along X, because the carve lays every bench as a
+    /// horizontal segment beside a walk that runs the length of the room. Everything else in #793 is derived
+    /// from the published plan and does not care where the park is or which way it faces — but this would go
+    /// quietly wrong if a re-carve ever turned a plank, and the ends would land off the furniture with
+    /// nothing complaining.</para>
+    ///
+    /// <para>So it is a GUARD rather than a comment: every bench's ends are checked against the real wall
+    /// segment in the real floor plan. A park re-centred with rooms on all sides can move every bench
+    /// anywhere it likes and this stays green; the day one is laid on the other axis it goes RED and names
+    /// the single line that has to change.</para>
+    ///
+    /// <para><b>Proven RED</b> by turning the carve's own plank ninety degrees
+    /// (<c>walls.Add(new(u, by - ParkBenchHalfDu, u, by + ParkBenchHalfDu, true))</c>):</para>
+    /// <code>
+    /// 348 park(s) lay a bench the ends do not sit on:
+    ///   luna B1 bench 0: the plank runs (-116.7,-259.9)-(-116.7,-256.3) and end 0 is at (-117.6,-258.1),
+    ///     which is off it. ParkBenches.End steps along X — a turned bench needs that one line changed.
+    ///   luna B1 bench 0: the plank runs (-116.7,-259.9)-(-116.7,-256.3) and end 1 is at (-115.8,-258.1),
+    ///     which is off it. ParkBenches.End steps along X — a turned bench needs that one line changed.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void THE_ENDS_SitOnThePlankTheCarveActuallyBoltedDown()
+    {
+        var wrong = new List<string>();
+        int planks = 0;
+
+        foreach ((string body, int level, UndergroundComplex.FloorPlan floor,
+            UndergroundComplex.Park park) in EveryPark())
+        {
+            foreach (ParkBenches.Bench b in ParkBenches.On(in park))
+            {
+                // The plank: the wall segment the carve laid through this bench's own centre.
+                SurfaceLayout.Wall? found = null;
+                foreach (SurfaceLayout.Wall w in floor.Walls)
+                {
+                    if (Math.Abs(((w.X1 + w.X2) / 2.0) - b.X) <= 1e-6
+                        && Math.Abs(((w.Y1 + w.Y2) / 2.0) - b.Y) <= 1e-6)
+                    {
+                        found = w;
+                        break;
+                    }
+                }
+
+                if (found is not { } seg)
+                {
+                    wrong.Add($"  {body} B{-level} bench {b.Index}: no wall segment stands where the room "
+                        + "says a bench is — the plank is a picture, not a bench.");
+                    continue;
+                }
+
+                planks++;
+                for (int end = 0; end < ParkBenches.Ends; end++)
+                {
+                    (double ex, double ey) = b.End(end);
+                    bool onIt = ex >= Math.Min(seg.X1, seg.X2) - 1e-9
+                        && ex <= Math.Max(seg.X1, seg.X2) + 1e-9
+                        && ey >= Math.Min(seg.Y1, seg.Y2) - 1e-9
+                        && ey <= Math.Max(seg.Y1, seg.Y2) + 1e-9;
+                    if (!onIt)
+                    {
+                        wrong.Add($"  {body} B{-level} bench {b.Index}: the plank runs "
+                            + $"({seg.X1:F1},{seg.Y1:F1})-({seg.X2:F1},{seg.Y2:F1}) and end {end} is at "
+                            + $"({ex:F1},{ey:F1}), which is off it. ParkBenches.End steps along X — a turned "
+                            + "bench needs that one line changed.");
+                    }
+                }
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} park(s) lay a bench the ends do not sit on:\n" + string.Join("\n", wrong.Take(6)));
+        Assert.True(planks >= 20, $"only {planks} planks were found — this proved little.");
+    }
+
     // ── (b) THE PRIVACY PREDICATE, WITH A REAL FACT UNDER IT ─────────────────────────────────────────
 
     /// <summary>
@@ -201,8 +281,10 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// <para><b>Proven RED</b> by giving the bench the cabinet's answer
     /// (<c>SeatedHud.Seat.ParkBench =&gt; true</c>):</para>
     /// <code>
-    /// 30 park(s) let the case out on a bench somebody else is on:
-    ///   luna B1: bench 5 has the lone figure on it and the spread is allowed.
+    /// 29 bench(es) let the case out where the room says somebody can read it:
+    ///   luna B1: bench 0 has the lone figure on it and the spread is allowed.
+    ///   phobos B1: bench 0 has the lone figure on it and the spread is allowed.
+    ///   europa B1: bench 0 has the lone figure on it and the spread is allowed.
     /// </code>
     /// </summary>
     [Fact]
@@ -259,8 +341,10 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     ///
     /// <para><b>Proven RED</b> by <c>ApproachOrdinal(i) =&gt; i</c>:</para>
     /// <code>
-    /// 30 room(s) deal a bench and a table the same approach: luna B1 w0: bench 0 and top 0 share ordinal 0,
-    /// and the die agrees with itself on 6 of 6 watches.
+    /// 174 bench(es) are rolled on a canteen top's ordinal:
+    ///   luna B1: bench 0 and top 0 share an ordinal.
+    ///   luna B1: bench 1 and top 1 share an ordinal.
+    ///   luna B1: bench 2 and top 2 share an ordinal.
     /// </code>
     /// </summary>
     [Fact]
@@ -371,8 +455,8 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// (<c>IsTailing =&gt; mover.Tailing</c>) and letting the round declare itself
     /// (<c>OnARound(..., Tailing: true)</c>):</para>
     /// <code>
-    /// PATROL 1 at (4, 4) is reported as FOLLOWING the captain — a round is a route the building published
-    /// before the captain arrived, and it cannot be about them.
+    /// PATROL 1 at (-12, -12) is reported as FOLLOWING the captain — a round is a route the building
+    /// published before the captain arrived, and it cannot be about them.
     /// </code>
     /// </summary>
     [Fact]
@@ -419,10 +503,11 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// <para><b>Proven RED</b> three times, each by deleting one clause of
     /// <see cref="FootTail.MustHold"/>:</para>
     /// <code>
-    /// (no seated clause)  a tail held while the captain was on their feet — walking proves nothing, because
-    ///                     everybody on a walk is walking.
-    /// (no sight clause)   a tail behind a wall was reported as having stopped when the captain sat down.
-    /// (no range clause)   a tail 60.0 du away — twice the reach this game calls seeing — was read off a bench.
+    /// (no seated clause)  a tail held while the captain was on their feet — walking proves nothing,
+    ///                     because everybody on a walk is walking.
+    /// (no sight clause)   a tail behind a wall was reported as having stopped when the captain sat down —
+    ///                     the whole reason this move belongs in a park is that the sight lines are what
+    ///                     make it work.
     /// </code>
     /// </summary>
     [Fact]
@@ -487,8 +572,9 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// <para><b>Proven RED</b> by <c>Reading(bool) =&gt; NobodyStoppedLine</c>, which is what a seam with
     /// nothing behind it looks like:</para>
     /// <code>
-    /// the bench says the same thing whether or not something stopped when the captain did — a reading
-    /// that cannot change is not a reading.
+    /// Assert.NotEqual() Failure: Strings are equal
+    /// Expected: Not "Nobody on the walk stops when you do. Two figures "···
+    /// Actual:       "Nobody on the walk stops when you do. Two figures "···
     /// </code>
     /// </summary>
     [Fact]
@@ -528,8 +614,10 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     /// <para><b>Proven RED</b> by deleting the <c>ParkBench</c> arm from
     /// <see cref="SeatedHud.RoomClause"/>:</para>
     /// <code>
-    /// a captain sitting on gravel behind a window wall is told "the hall is heaving" — a crowd figure for
-    /// a room they cannot see.
+    /// Assert.DoesNotContain() Failure: Sub-string found
+    ///           ↓ (pos 4)
+    /// String: "the hall is thin"
+    /// Found:  "hall"
     /// </code>
     /// </summary>
     [Fact]
@@ -560,9 +648,15 @@ public sealed class TheBenchAsksWhoElseStoppedTests
     }
 
     /// <summary>
-    /// AND THE SILENCE IS THE PARK'S. <b>Proven RED</b> by handing a bench
-    /// <see cref="SittingAlone.NobodyCame"/>: <c>"A tray goes past. A chair scrapes. Your table stays your
-    /// table."</c> — read on gravel under grow-lamps.
+    /// AND THE SILENCE IS THE PARK'S — eighty chairs and a fridge cycling, read on gravel under
+    /// grow-lamps, is #740's fault with a bench under it.
+    ///
+    /// <para><b>Proven RED</b> by handing a bench <see cref="SittingAlone.NobodyCame"/>:</para>
+    /// <code>
+    /// Assert.DoesNotContain() Failure: Item found in set
+    /// Set:   ["A while goes by. Eighty chairs, and the loudest th"···, …]
+    /// Found: "A while goes by. Eighty chairs, and the loudest th"···
+    /// </code>
     /// </summary>
     [Fact]
     public void NOBODY_CAME_OnABench_IsTheParksOwnSilence()

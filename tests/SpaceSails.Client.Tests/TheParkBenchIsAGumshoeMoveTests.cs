@@ -155,9 +155,10 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// <c>BenchHasSomebody</c> from the seats <c>HiveInterior</c> publishes), which is what the room looked
     /// like before this issue:</para>
     /// <code>
-    /// 60 bench end(s) are drawn as something other than what the sim says:
+    /// 18 bench end(s) are drawn as something other than what the sim says:
     ///   luna B1 bench 0 end 0: the sim says TAKEN and the deck drew it free.
-    ///   luna B1 bench 0 end 1: the sim says free BESIDE SOMEBODY and the deck drew it as an empty room's chair.
+    ///   luna B1 bench 0 end 1: the sim says free BESIDE SOMEBODY and the deck drew it as an empty room's
+    ///     chair.
     ///   phobos B1 bench 0 end 0: the sim says TAKEN and the deck drew it free.
     ///   …
     /// </code>
@@ -348,8 +349,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// <para><b>Proven RED</b> by removing the dispatch arm — the plate says SIT DOWN and the key answers
     /// nothing, which is #757's original complaint restated in a garden:</para>
     /// <code>
-    /// Assert.Contains() Failure: Sub-string not found
-    /// Not found: "case DeckPlan.ConsoleKind.HiveBench:"
+    /// [E] no longer answers at a park bench.
     /// </code>
     /// </summary>
     [Fact]
@@ -391,7 +391,6 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// before benches existed:</para>
     /// <code>
     /// Assert.Contains() Failure: Sub-string not found
-    /// String:    "    private bool SeatedAlone\r\n    {\r\n     "···
     /// Not found: "return t.Solo &amp;&amp; !t.SharedSeat;"
     /// </code>
     /// </summary>
@@ -425,8 +424,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     ///
     /// <para><b>Proven RED</b> by pointing a bench's arrival at <c>SomebodyTakesTheChair</c>:</para>
     /// <code>
-    /// the bench's arrival flips Solo — a stranger on the far end of a plank is not a conversation, and a
-    /// full card over a park is the frame lying about what just happened.
+    /// the papers are not put away BEFORE the bench stops being yours — an interruption that fires after
+    /// the gate has shut is an interruption with nothing left to undo honestly.
     /// </code>
     /// </summary>
     [Fact]
@@ -516,8 +515,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// <para><b>Proven RED</b> by walking the round unconditionally (dropping the <c>g.Held</c> fork), which
     /// leaves a caught tail strolling past a captain who has just sat down and looked straight at them:</para>
     /// <code>
-    /// the stepper walks every mover whatever a bench has decided — a hold nothing consults is a law with
-    /// no teeth.
+    /// Assert.Contains() Failure: Sub-string not found
+    /// Not found: "else"
     /// </code>
     /// </summary>
     [Fact]
