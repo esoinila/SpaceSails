@@ -144,9 +144,21 @@ public sealed class WeTakeTimeToProcessTheLootTests
             Assert.Contains("📋 a pay sheet", said, StringComparison.Ordinal);
             Assert.Contains($"{Processing.SecondsPerDocument:F0} seconds", said, StringComparison.Ordinal);
 
-            // The tracker keeps running through the hold and the line says to watch it. That sentence IS the
-            // teeth — there is no new enemy in this feature, only a reason to be standing still.
-            Assert.Contains("fan", said, StringComparison.OrdinalIgnoreCase);
+            // EVERY register names its own teeth, because standing still is only frightening where the
+            // standing is. #784 · On the regolith the teeth are the tracker: the fan keeps sweeping through
+            // the hold and the line says to watch it, and there is no new enemy in this feature — only a
+            // reason to hold position. At a table the teeth are the CHAIR: the price of the twenty seconds
+            // is that you are in it, findable, with your papers out, and the line says THAT rather than
+            // telling a seated captain to watch a fan they are not looking at.
+            if (work == Processing.Work.Write)
+            {
+                Assert.Contains("chair", said, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("stand up", said, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                Assert.Contains("fan", said, StringComparison.OrdinalIgnoreCase);
+            }
 
             // With the clock off there is no clock to name. A cheat that made the game promise "0 seconds of
             // standing still" would read as a broken build to whoever inherits the URL.
@@ -173,13 +185,32 @@ public sealed class WeTakeTimeToProcessTheLootTests
             }
         }
 
-        // The four are four SENTENCES and not one sentence with a switch on the end: what took the paper out
-        // of your hands is the only part of an abandoned hold worth remembering.
-        var seen = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
-        foreach (Processing.Interruption why in Enum.GetValues<Processing.Interruption>())
+        // They are SENTENCES and not one sentence with a switch on the end: what took the paper out of your
+        // hands is the only part of an abandoned hold worth remembering.
+        //
+        // #784 · Swept per REGISTER, off Core's own list of the endings each one can meet
+        // (Processing.EndingsOf). A hold on the regolith cannot be ended by somebody sitting down opposite
+        // you and a hold at a table cannot be ended by walking off a spot you are not standing on — and a
+        // guard that demanded distinct words for combinations the game cannot produce would be asking for
+        // prose nobody will ever read, which is how a sweep stops meaning anything.
+        foreach (Processing.Work work in Enum.GetValues<Processing.Work>())
         {
-            Assert.True(seen.Add(Processing.AbandonedLine(Processing.Work.File, "x", why)),
-                $"two interruptions answer with the same line — {why} says nothing the others do not (#696).");
+            var seen = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+            foreach (Processing.Interruption why in Processing.EndingsOf(work))
+            {
+                Assert.True(seen.Add(Processing.AbandonedLine(work, "x", why)),
+                    $"two endings of {work} answer with the same line — {why} says nothing the others do " +
+                    "not (#696).");
+            }
+            Assert.True(seen.Count >= 3, $"{work} has fewer than three endings worth telling apart.");
+        }
+
+        // …and the two registers do not borrow each other's words: a seated dig never says "photographing",
+        // and a darkroom hold never says "chair" (#562 — the sim and the sentence must agree).
+        foreach (Processing.Interruption why in Processing.EndingsOf(Processing.Work.Write))
+        {
+            Assert.StartsWith(SeatedPosture.WriteGlyph,
+                Processing.AbandonedLine(Processing.Work.Write, "x", why), StringComparison.Ordinal);
         }
     }
 

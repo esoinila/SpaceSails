@@ -1766,7 +1766,74 @@
        #680's LAW, APPLIED FROM BIRTH: every outcome is rendered HERE, in the panel's own subtree — the one
        layer the backdrop cannot blur. Not one move pulses its line while this panel is up. The only pulse in
        the whole scene is TAKE YOUR LEAVE, and that one is correct precisely because the panel is gone. *@
+    @* #784 PHASE TWO · THE FRAME DOCKS, IT DOES NOT DIM.
+
+       Owner, live at a taken table with the panel up — his screenshot showed the card centred and the
+       backdrop dimming the whole hall AND the brand-new park behind its glass to near-black: "the seated
+       frame docks, it does not dim… the hall stays lit, the A* walkers stay visible, the park stays green.
+       The full card returns only for conversations."
+
+       So the ONE @if below forks on Map.Seated.cs's SeatedIsDocked, and the fork is the whole feature:
+
+         seated-idle  → the strip. No .view-object-backdrop is written into the DOM AT ALL — the guard
+                        asserts the scrim's ABSENCE, which is #780's lesson read in reverse.
+         conversation → the block that was always here, backdrop, art, moves and prose untouched (#778/#787).
+
+       Nothing about the CARD changed. That matters: the haulier ladder, its odds, its one-per-watch law and
+       every line in it ship exactly as they were, and when #731's walker crosses the hall for real she will
+       flip Solo from outside and this card will come up over a room the player was already watching. *@
     @if (_table is { } tab)
+    {
+    @if (SeatedIsDocked)
+    {
+        <div class="seated-dock" role="status" aria-label="@SpaceSails.Core.SeatedHud.StripLabel">
+            @* THE CUSTOMER LINE, in the AIR gauge's register (#740). Every figure on it is the figure the
+               mechanic is running on — Map.Seated.cs hands Core the pour window the rest engine doubles off,
+               the pip ledger the rest engine writes, and the watch fill the approach roll is scaled by. *@
+            @if (SeatedCustomerLine() is { Length: > 0 } customer)
+            {
+                <div class="seated-dock-line">@customer</div>
+            }
+
+            @* The latest thing that happened at this table — #757's silence lines, the body's footnote, the
+               write-up that just landed. One slot, replaced, exactly as the card's own outcome row was. *@
+            @if (tab.Outcome is { Length: > 0 } dockedSaid)
+            {
+                <div class="seated-dock-said">@dockedSaid</div>
+            }
+
+            @* …and a running dig says so here too. The BAR is on the canvas over the captain's own mark
+               (the one progress language, #562/#696); this is its sentence, and the strip is the surface the
+               captain is looking at while it fills. *@
+            @if (ProcessingUnderway() is { } dockedBusy)
+            {
+                <div class="seated-dock-said seated-dock-busy">@dockedBusy</div>
+            }
+
+            <div class="seated-dock-actions">
+                @foreach (SpaceSails.Core.Encounter.Move move in TableMovesOnTheTable())
+                {
+                    SpaceSails.Core.Encounter.Move m = move;
+                    bool open = TableMoveOnOffer(m);
+                    <button type="button"
+                            class="btn btn-sm @(TableMoveIsUrged(m) ? "btn-warning" : "btn-outline-light")"
+                            disabled="@(!open)"
+                            title="@(open ? m.Label : TableMoveRefusal(m))"
+                            @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
+                }
+                @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
+                   refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
+                   press, because that is how the gumshoe rule gets learned. *@
+                <button type="button"
+                        class="btn btn-sm @(CanSpreadTheCaseHere ? "btn-outline-light" : "btn-outline-secondary")"
+                        title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                        @onclick="OpenTheSpread">
+                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpaceSails.Core.SeatedSpread.SpreadLabel
+                </button>
+            </div>
+        </div>
+    }
+    else
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseTable)">
             <div class="deck-offer-card table-card" @onclick:stopPropagation="true">
@@ -1868,6 +1935,7 @@
             </div>
         </div>
     }
+    }   @* …and the seated region closes. Two frames, one occupation of one table. *@
 
     @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
        when sitting down it should ask with a pop-up whether I want to stand up again."
@@ -1902,7 +1970,12 @@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
             <div class="satchel" @onclick:stopPropagation="true">
                 <div class="view-object-title">
-                    @(_satchelPage == SatchelPage.Notes ? "📓 WHAT YOU WROTE DOWN" : "🎒 WHAT YOU ARE CARRYING")
+                    @(_satchelPage switch
+                    {
+                        SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
+                        SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
+                        _ => "🎒 WHAT YOU ARE CARRYING",
+                    })
                 </div>
 
                 @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
@@ -1924,9 +1997,80 @@
                             @onclick="() => _satchelPage = SatchelPage.Notes">
                         📓 NOTES
                     </button>
+                    @* #784 · THE SPREAD, and the tab exists only when there is a table under it. Owner's law:
+                       "writing things down requires sitting down to be properly done" — and the tab follows
+                       the posture rather than standing there greyed out, because on your feet this is not a
+                       page you are being refused, it is a page that does not apply. The refusal a captain
+                       DOES need to meet (the bar desk) is inside the page, on the seat that has one. *@
+                    @if (CaptainIsSeatedAnywhere)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
+                                title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                                @onclick="() => _satchelPage = SatchelPage.Spread">
+                            🗂 SPREAD
+                        </button>
+                    }
                 </div>
 
-                @if (_satchelPage == SatchelPage.Notes)
+                @* #784 · THE SPREAD. Owner: "we can't do that without a place to lay the docs we make notes
+                   from" — so this page IS the table surface, and every row on it is a paper lying on it.
+
+                   The press starts the DIGGING BAR (Map.Seated.cs → BeginProcessing, Processing.Work.Write):
+                   the one channel this surface has, the one progress rectangle it draws, over the captain's
+                   own mark on a deck that is still running. Owner's register, kept quiet in the prose:
+                   "we are digging for info and understanding."
+
+                   No control is hidden and none is disabled (#212/#603). The bar desk's refusal is a
+                   SENTENCE you get by pressing, because that is how the gumshoe rule gets learned. *@
+                @if (_satchelPage == SatchelPage.Spread)
+                {
+                    <div class="satchel-sub">@SpaceSails.Core.SeatedSpread.SpreadBlurb</div>
+
+                    @if (_satchelOutcome is { Length: > 0 } spreadSaid)
+                    {
+                        <div class="satchel-outcome">@spreadSaid</div>
+                    }
+                    else if (SpreadRefusal is { Length: > 0 } spreadNo)
+                    {
+                        <div class="satchel-outcome">@spreadNo</div>
+                    }
+
+                    @if (ProcessingUnderway() is { } spreadBusy)
+                    {
+                        <div class="satchel-outcome">@spreadBusy</div>
+                    }
+
+                    @if (SpreadableFinds() is { Count: > 0 } spreadable)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in spreadable)
+                            {
+                                SpaceSails.Core.Satchel.Item dig = lying;
+                                <div class="satchel-row">
+                                    @* Through SpreadDigClicked and not WriteItUp directly: a successful
+                                       press CLOSES this dialog (#696 shuts the pocket so the deck comes
+                                       back), and a click that closes a dialog leaves focus on a button that
+                                       no longer exists — the map then takes no keys at all. Found by
+                                       playing it. *@
+                                    <button type="button" class="satchel-item spread-item"
+                                            title="@WriteUpHint(dig)"
+                                            @onclick="() => SpreadDigClicked(dig)">
+                                        <span class="satchel-item-name">@SatchelLabel(dig)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.SeatedPosture.WriteGlyph dig it out →
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SeatedSpread.NothingToWorkLine</div>
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Notes)
                 {
                     @* #690 · Read-only, and default to the ground underfoot: at a door the captain wants what
                        THIS building has said, not the memoirs. Both filters come out of Core's own grouping

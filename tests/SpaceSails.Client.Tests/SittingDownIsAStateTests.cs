@@ -347,6 +347,15 @@ public sealed class SittingDownIsAStateTests
     /// blur.</para>
     ///
     /// <para>RED on the shipped build twice over: there was no deliberate register to gate and no gate.</para>
+    ///
+    /// <para><b>#784 phase two · RESHAPED, LAW INTACT.</b> The write is no longer instant — it runs through
+    /// #696's hold (<c>Processing.Work.Write</c>) so it wears the digging bar, and the filing therefore
+    /// happens at the FAR END, in <c>TheWriteUpLands</c>. The law this guard exists for did not move: the
+    /// gate is still Core's, it is still asked before anything at all happens, the refusal is still SAID on
+    /// the surface the captain is looking at, and nothing is filed until the gate has been passed. What
+    /// moved is which method the filing is in, so the guard now follows the seam rather than the line
+    /// number. The gate widened too — posture AND privacy (<see cref="SeatedSpread"/>) — and both halves are
+    /// Core's.</para>
     /// </summary>
     [Fact]
     public void DELIBERATE_WritingOnYourFeetIsRefusedInWords()
@@ -354,15 +363,38 @@ public sealed class SittingDownIsAStateTests
         string seated = Source("Pages", "Map.Seated.cs");
         int write = seated.IndexOf("private void WriteItUp(", StringComparison.Ordinal);
         Assert.True(write > 0, "there is no deliberate write for the posture law to gate.");
-        int endOfWrite = seated.IndexOf("private bool CanWriteUp(", StringComparison.Ordinal);
+        int endOfWrite = seated.IndexOf("private void TheWriteUpLands(", StringComparison.Ordinal);
+        Assert.True(endOfWrite > write, "the write no longer has a far end for the entry to land at.");
         string body = seated[write..endOfWrite];
 
-        int gate = body.IndexOf("SeatedPosture.RefusalIfStanding(CaptainIsSeated)", StringComparison.Ordinal);
-        int files = body.IndexOf("FileNote(", StringComparison.Ordinal);
-        Assert.True(gate > 0, "the deliberate write does not ask Core whether posture allows it.");
-        Assert.True(files > gate, "the entry is filed BEFORE the posture is asked about.");
+        // THE GATE IS ASKED FIRST, and it is the one that owns both halves of the law.
+        int gate = body.IndexOf("SpreadRefusal is { } refusal", StringComparison.Ordinal);
+        Assert.True(gate > 0, "the deliberate write does not ask the gate at all.");
         Assert.Contains("SayItWhereTheyAreLooking(refusal);", body, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowPulseMessage", body, StringComparison.Ordinal);
+
+        // NOTHING IS FILED HERE. The whole point of the hold is that an interruption has nothing to undo,
+        // so a FileNote in this method would be an entry that survived a stand-up.
+        Assert.DoesNotContain("FileNote(", body, StringComparison.Ordinal);
+        int begins = body.IndexOf("BeginProcessing(ex, Core.Processing.Work.Write", StringComparison.Ordinal);
+        Assert.True(begins > gate, "the clock starts before the gate is asked — or does not start at all.");
+
+        // …and the gate itself asks CORE, for both halves. The client decides what "seated" and "alone"
+        // MEAN; it never decides what a seat is FOR.
+        int refusal = seated.IndexOf("private string? SpreadRefusal", StringComparison.Ordinal);
+        Assert.True(refusal > 0, "there is no one gate for the two laws to live in.");
+        string ladder = seated[refusal..(refusal + 400)];
+        Assert.Contains("SeatedPosture.RefusalIfStanding(", ladder, StringComparison.Ordinal);
+        Assert.Contains("SeatedSpread.RefusalAt(", ladder, StringComparison.Ordinal);
+
+        // The far end files, and it files only after the gist and the once-per-item set have both agreed.
+        int lands = seated.IndexOf("private void TheWriteUpLands(", StringComparison.Ordinal);
+        string landing = seated[lands..seated.IndexOf("private bool CanWriteUp(", StringComparison.Ordinal)];
+        Assert.Contains("FileNote(gist, SeatedPosture.WriteGlyph);", landing, StringComparison.Ordinal);
+        Assert.True(
+            landing.IndexOf("ex.WrittenUpProperly.Add(", StringComparison.Ordinal)
+                < landing.IndexOf("FileNote(", StringComparison.Ordinal),
+            "the entry is filed before the once-per-item set has agreed to it.");
 
         // …and the automatic gist-once jot is UNTOUCHED. The owner's own words name it as the standing
         // register that stays — "a scrawl on a moving knee, #696's idiom" — so #696's leave-and-photograph

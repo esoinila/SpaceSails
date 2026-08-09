@@ -46,6 +46,21 @@ public partial class Map
     /// NOBODY at it, which is the table this whole issue is named after.</summary>
     private bool _freeTableCheat;
 
+    /// <summary>
+    /// #784 QA · <c>?spread=1</c> — THE WHOLE PHASE-TWO LOOP, in thirty seconds.
+    ///
+    /// <para>Owner's own ask, filing the demo: <i>"We probably need a start point where we have things in our
+    /// inventory we can process (when our HUD UI state is sitting down with enough privacy)."</i></para>
+    ///
+    /// <para>It boots the canteen route, walks to a CABINET top — the owner's canonical processing venue
+    /// (<i>"that is the place I want to process inventory"</i>) and the one rung of the ladder that is
+    /// private unconditionally — sits the captain down through the very handler [E] reaches, and puts three
+    /// real finds in the sleeve. From there: [I], pick a paper, watch the dig bar, read the entry in the
+    /// book. Nothing about the room, the watch or the rota is forced: which cabinet is free is the
+    /// building's answer, and the papers are ordinary sleeve items with ordinary gists.</para>
+    /// </summary>
+    private bool _spreadCheat;
+
     /// <summary>#751 QA · <c>?watch=N</c> — pin which shift the hall is on, so a tester can walk into the
     /// heaving one and the empty one without waiting four sim-hours between looks. Null off the cheat, in
     /// which case the watch is <see cref="PatronRota.WatchIndex"/> of the sim clock exactly as before.</summary>
@@ -86,6 +101,25 @@ public partial class Map
                 continue;
             }
 
+            // #784 · …or IN A CABINET, sat down, with papers in the sleeve — the phase-two loop's own row.
+            // Same call, same frozen watch, same [E] handler; the only thing the cheat chooses is which of
+            // the room's own free tops it walks to, and it asks for the QUIET one because privacy is the
+            // gate the spread is about.
+            if (_spreadCheat && FirstFreeTop(ex, a, quietOnly: true) is { } cabinet)
+            {
+                StandCaptainAt(cabinet.X, cabinet.Y, "you step into the cabinet and shut the door");
+                SeedTheSpreadFinds();
+
+                // Through TryTakeTable and not a hand-written sit: a cheat that assembled its own TableTalk
+                // would be testing a table that does not ship (and would be this repo's first named bug
+                // class, one posture over).
+                TryTakeTable();
+                ShowPulseMessage(
+                    "🧪 DEV ?spread=1: sat down in a CABINET with three finds in the sleeve. The panel is a "
+                    + "HUD strip now, not a card — press I, pick a paper, and watch the dig bar fill.");
+                return;
+            }
+
             // #757 · …or AT A FREE TOP, for ?tablescene=free. Which top that is comes off the very same
             // call the deck was drawn with, off the same frozen watch — the cheat picks one of the room's
             // own empty tables, and never a coordinate of its own (§13.15: the two times this project set
@@ -105,14 +139,36 @@ public partial class Map
         }
     }
 
+    /// <summary>
+    /// #784 QA · Three things worth digging through, put in the sleeve for <c>?spread=1</c>.
+    ///
+    /// <para>Two papers and a file on somebody: those are the only two kinds
+    /// <see cref="LeftBehind.GistOf"/> has a gist for, and the row exists to demonstrate the loop rather than
+    /// to invent content, so it uses ordinary <see cref="Core.Satchel"/> items with ordinary ids. Added
+    /// through <see cref="Core.Satchel.Add"/>, which is the one funnel every find in the game goes through
+    /// — a cheat that pushed straight onto the list would be testing a sleeve with no capacity law in it.
+    /// </para>
+    /// </summary>
+    private void SeedTheSpreadFinds()
+    {
+        IReadOnlyList<Core.Satchel.Item> sleeve = _satchel;
+        sleeve = Core.Satchel.Add(sleeve, new Core.Satchel.Item(Core.Satchel.Kind.Paper, "spread-demo-1"));
+        sleeve = Core.Satchel.Add(sleeve, new Core.Satchel.Item(Core.Satchel.Kind.Paper, "spread-demo-2"));
+        sleeve = Core.Satchel.Add(sleeve, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, "spread-demo-3"));
+        _satchel = [.. sleeve];
+    }
+
     /// <summary>#757 QA · The first top in this room that nobody is at, this watch — Core's own list, so the
     /// cheat cannot disagree with the room about which tables are free.</summary>
-    private static CanteenRegulars.TableSeat? FirstFreeTop(SurfaceExcursion ex, UndergroundComplex.Amenity a)
+    /// <param name="quietOnly">#784 · Only a CABINET top will do — the private end of the exposure ladder,
+    /// which is what <c>?spread=1</c> is booting into.</param>
+    private static CanteenRegulars.TableSeat? FirstFreeTop(
+        SurfaceExcursion ex, UndergroundComplex.Amenity a, bool quietOnly = false)
     {
         foreach (CanteenRegulars.TableSeat top in
             CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
         {
-            if (!top.Taken)
+            if (!top.Taken && (!quietOnly || top.Quiet))
             {
                 return top;
             }
@@ -398,7 +454,18 @@ public partial class Map
 
     /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
     /// Close button both come through here, so leaving a table is one act however you do it.</summary>
-    private void CloseTable() => _table = null;
+    private void CloseTable()
+    {
+        // #784 · A SPREAD IS A SPREAD ON A TABLE. Standing up with a write-up half dug abandons it, out loud
+        // and with nothing filed — the same promise every other interruption of #696's hold makes, spoken in
+        // the seated register (Processing.Interruption.StoodUp). Done BEFORE the table goes, so the line
+        // still has the strip to land on.
+        if (_surface is { Processing.Work: Core.Processing.Work.Write } ex)
+        {
+            AbandonProcessing(ex, Core.Processing.Interruption.StoodUp);
+        }
+        _table = null;
+    }
 
     /// <summary>
     /// #746 · A move, pressed with the MOUSE — and the way home when it shuts the panel.
@@ -750,6 +817,15 @@ public partial class Map
     /// </summary>
     private void SomebodyTakesTheChair(SurfaceExcursion ex, TableTalk t)
     {
+        // #784 · THE PAPERS GO AWAY WHEN SOMEBODY SITS DOWN. Owner: "your papers are OUT when somebody walks
+        // up… putting things away is a beat, not an instant." The privacy predicate that licensed the spread
+        // reads Solo, and Solo is about to become false — so the hold ends HERE, before the flag flips, and
+        // it ends the way privacy ending should end it: sleeve shut, book blank, nothing filed.
+        if (ex.Processing is { Work: Core.Processing.Work.Write })
+        {
+            AbandonProcessing(ex, Core.Processing.Interruption.CompanyArrived);
+        }
+
         t.Solo = false;
         t.Plate = SittingAlone.VisitorPlate;
         t.Scene = SittingAlone.TheVisitor();

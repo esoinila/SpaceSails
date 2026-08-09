@@ -378,6 +378,48 @@ whole feature would look like a control that did not fire.
    Sit down and press it again: the book takes the entry in your own hand **and the sheet stays in your
    pocket**, which is the whole of what a table buys.
 
+## 1b · Sitting is not a cutscene — the docked frame and the spread (#784, phase two)
+
+```
+/map?spread=1                          sat down in a CABINET, three finds in the sleeve
+/map?spread=1&process=3                the same, with a three-second dig
+/map?tablescene=free&watch=2           a hall table on a heaving watch, for the customer line's other end
+/map?stool=1                           the counter, where the spread is refused (the gumshoe rule)
+```
+
+Owner, live at a taken table with the old panel up — his screenshot showed the card centred and the backdrop
+dimming the whole hall *and* the new park behind its glass to near-black: *"the seated frame docks, it does
+not dim… the hall stays lit, the A\* walkers stay visible, the park stays green. The full card returns only
+for conversations."*
+
+**What to look at, in order.**
+
+1. **There is no scrim.** Sit down and look at the screen, not at the strip: the hall is still lit, the
+   figures at the other tops are still drawn, the deck is still animating. The seated panel is a **HUD strip**
+   docked at the foot of the deck — no backdrop element exists in the page at all while you are seated alone.
+   The card comes back **only** for a conversation: press `SIT A WHILE` on `/map?tablescene=free&approach=1`
+   until somebody crosses the room, and the moment she takes the chair the full card is up again, art and all,
+   exactly as #778/#787 shipped it.
+2. **The customer line.** The strip's first row is an instrument in the AIR gauge's register:
+   `🪑 YOUR OWN TABLE · NO POUR — … · REST 1/3 pips · the hall is working`. Every figure on it is the figure
+   the mechanic is running: press `SIT A WHILE` and the pips climb to the ceiling and then say so; buy a pour
+   at the counter first and the drink clause counts the minutes down and states the ×2; sit in a cabinet and
+   the room clause says the door is shut, because in a cabinet nobody comes and that is #757's own law.
+3. **`[I]` opens the spread — seated only.** Standing, `I` opens the pocket exactly as it always has. Seated,
+   it opens on a third page, **🗂 SPREAD**, whose tab does not exist when you are on your feet.
+4. **The dig bar.** Press a paper on the spread page. The satchel shuts, and the **digging bar** fills over the
+   captain's own mark on the live deck — the same rectangle the shovel and the darkroom draw, wearing the pen
+   glyph. The strip says how many seconds are left. When it fills, the entry is in **📓 NOTES** in your own
+   hand **and the sheet is still in the sleeve**. Stand up half way through and it is abandoned out loud with
+   nothing filed.
+5. **Privacy gates it.** In a cabinet it always works. At a hall table it works while the chair opposite is
+   empty — and if somebody takes it mid-dig, your hands are already moving and the papers go away. At the
+   **counter** (`/map?stool=1`) the spread page opens and refuses out loud: *not at the bar*. That is the
+   owner's gumshoe rule, and it is a sentence rather than a missing control on purpose.
+6. **`Esc` is sane.** Docked, `Esc` raises the same stand-up question `W` does rather than silently spending
+   the watch you sat for. In a conversation it still closes the card, because leaving a table is free and
+   always available.
+
 ## 2 · The board, and whose notice is whose (#709)
 
 ```

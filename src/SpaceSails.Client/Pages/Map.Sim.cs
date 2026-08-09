@@ -963,6 +963,28 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the top pressurised floor, where the owner put them
                 }
             }
+            else if (pair.StartsWith("spread=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #784 dev cheat: /map?spread=1 is ?tablescene=free with the last three legs walked — a
+                // CABINET top instead of a hall top, the captain already sat down in it, and three finds
+                // already in the sleeve. Owner's own ask: "we probably need a start point where we have
+                // things in our inventory we can process (when our HUD UI state is sitting down with enough
+                // privacy)."
+                //
+                // It implies the canteen's whole route rather than spelling a seventh one, exactly as
+                // ?tablescene= and ?counter= do. It forces nothing about the room: the watch, the rota and
+                // which cabinet is free are whatever the building says.
+                string candidate = Uri.UnescapeDataString(pair["spread=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _spreadCheat = true;
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
+                }
+            }
             else if (pair.StartsWith("counter=", StringComparison.OrdinalIgnoreCase))
             {
                 // #756 dev cheat: /map?counter=1 boots THE COUNTER — the B1 cantina hall of a deep site,
@@ -2852,6 +2874,13 @@ public partial class Map
         // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
         // always available, and a keyboard cancel that could not reach the one panel whose design law is
         // "you may always stand up" would be the game contradicting itself with a keystroke.
+        // #784 phase two · AND ESC MEANS THE SAME THING AS W IN THE DOCKED STATE. Once the frame stopped
+        // dimming the room, "cancel" stopped being a way OUT of a card — there is no card — and became a
+        // press that silently spends the watch you sat for and the breath you got back. So a docked seat
+        // routes the cancel key into the same question WASD raises, and standing up stays one decision taken
+        // once (#788). A CONVERSATION keeps the old behaviour exactly: leaving is free and always available,
+        // and a card you cannot Esc out of would be the game contradicting its own law.
+        if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
         if (_table is not null) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }

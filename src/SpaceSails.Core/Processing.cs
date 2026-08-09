@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SpaceSails.Core;
 
@@ -71,10 +72,11 @@ public static class Processing
     /// is the class of bug #562 filed this bar's glyph parameter to end.</summary>
     public const string Glyph = "📸";
 
-    /// <summary>Which slow thing this is. Both cost the same seconds — deciding a paper is a map is exactly
-    /// as much standing still as photographing one — and they are two members rather than one because the
-    /// SENTENCES differ, and a captain who is told the wrong story about what their hands are doing has been
-    /// lied to whatever the clock says.</summary>
+    /// <summary>Which slow thing this is. All three cost the same seconds — deciding a paper is a map is
+    /// exactly as much standing still as photographing one, and copying it into the book at a table is the
+    /// same work with your boots under a chair instead of on regolith — and they are separate members
+    /// because the SENTENCES differ, and a captain who is told the wrong story about what their hands are
+    /// doing has been lied to whatever the clock says.</summary>
     public enum Work
     {
         /// <summary>#691 · Photographing a document so the sheet can be left behind: the gist goes in the
@@ -83,7 +85,21 @@ public static class Processing
 
         /// <summary>#603 · Reading a paper as a clue — deciding it is a map and plotting it on the tracker.</summary>
         Read,
+
+        /// <summary>#784 · WRITING IT UP AT A TABLE — the seated register (<see cref="SeatedPosture"/>). The
+        /// gist goes in the book in the captain's own hand and the sheet stays in the sleeve, which is the
+        /// whole difference between this and <see cref="File"/>.
+        ///
+        /// <para>It runs on THIS clock and this bar rather than a second one, because the owner named the
+        /// register himself: <i>"we are digging for info and understanding"</i> — the dig bar is not borrowed
+        /// UI here, it is the game saying the captain digs wherever they are.</para></summary>
+        Write,
     }
+
+    /// <summary>#784 · What the bar wears for each kind of work. A pen for the seated write-up and the camera
+    /// for the two standing ones — <see cref="SeatedPosture.WriteGlyph"/> is the one place the pen is named,
+    /// so the control, the bar and the book entry cannot come to three different views of the same act.</summary>
+    public static string GlyphFor(Work work) => work == Work.Write ? SeatedPosture.WriteGlyph : Glyph;
 
     /// <summary>Has the captain moved off the spot they started on?</summary>
     public static bool Wandered(double anchorX, double anchorY, double x, double y)
@@ -121,7 +137,36 @@ public static class Processing
 
         /// <summary>The excursion ended under them — the shuttle lifted with the work half done.</summary>
         LiftedOff,
+
+        /// <summary>#784 · The captain stood up out of the chair the work was being done in. The seated
+        /// register's own way of walking off the spot: a spread is a spread on a TABLE, and the table is
+        /// what standing up gives back to the room.</summary>
+        StoodUp,
+
+        /// <summary>#784 · Somebody took the chair opposite while the papers were out. Owner's own drama
+        /// beat: <i>"your papers are OUT when somebody walks up… putting things away is a beat, not an
+        /// instant."</i> The privacy that licensed the spread is revoked by a person sitting down, and the
+        /// hold ends the way privacy ending should end it — with the sleeve shut and nothing filed.</summary>
+        CompanyArrived,
     }
+
+    /// <summary>
+    /// #784 · WHICH ENDINGS EACH REGISTER IS WRITTEN FOR — the two registers, stated once.
+    ///
+    /// <para>A hold on the regolith ends because you walked off the spot, because the suit shouted, because
+    /// something got a hand on you, or because the shuttle went. A hold at a table ends because you stood
+    /// up, because somebody sat down opposite you, or because the excursion ended under it — there is no
+    /// walking off a chair, and the two things that can come across a canteen are a person and last orders.
+    /// </para>
+    ///
+    /// <para>It exists so a guard can sweep the endings a register can actually MEET and demand a distinct
+    /// sentence for each, rather than demanding one for combinations the game cannot produce. Anything not
+    /// on a register's list still answers — the catch-all sentence is honest for all of them — it simply is
+    /// not promised its own words.</para>
+    /// </summary>
+    public static IReadOnlyList<Interruption> EndingsOf(Work work) => work == Work.Write
+        ? [Interruption.StoodUp, Interruption.CompanyArrived, Interruption.LiftedOff]
+        : [Interruption.Walked, Interruption.Alarm, Interruption.Reached, Interruption.LiftedOff];
 
     /// <summary>What the captain is told as their hands go to the paper. It names the seconds, because the
     /// decision the whole mechanic exists for — <i>here, or somewhere with air in it</i> — cannot be taken by
@@ -129,6 +174,16 @@ public static class Processing
     public static string StartLine(Work work, string what, double seconds)
     {
         ArgumentNullException.ThrowIfNull(what);
+        if (work == Work.Write)
+        {
+            // #784 · The seated register, in the owner's own metaphor. It names the chair rather than the
+            // boots because that is what this hold is spent in, and it names the seconds for the same reason
+            // the standing ones do — a cost nobody was told is a cost nobody chose.
+            string sat = seconds <= 0 ? "" : $" {seconds:F0} seconds of it —";
+            return $"{SeatedPosture.WriteGlyph} You lay {what} out on the table and start digging into it " +
+                $"for whatever it actually says —{sat} stay in the chair. Stand up and the page stays blank.";
+        }
+
         string clock = seconds <= 0 ? "" : $" {seconds:F0} seconds of standing still —";
         return work == Work.Read
             ? $"{Glyph} You get {what} out and start working it against the tracker's map —{clock} hold " +
@@ -143,6 +198,11 @@ public static class Processing
     public static string HoldLine(Work work, string what, double secondsLeft)
     {
         ArgumentNullException.ThrowIfNull(what);
+        if (work == Work.Write)
+        {
+            return $"{SeatedPosture.WriteGlyph} Digging through {what} — {secondsLeft:F0} s left, and you " +
+                "have to stay in the chair.";
+        }
         string verb = work == Work.Read ? "Working" : "Photographing";
         return $"{Glyph} {verb} {what} — {secondsLeft:F0} s left, and your boots have to stay where they are.";
     }
@@ -152,6 +212,25 @@ public static class Processing
     public static string AbandonedLine(Work work, string what, Interruption why)
     {
         ArgumentNullException.ThrowIfNull(what);
+        if (work == Work.Write)
+        {
+            // #784 · One promise, whatever ended it: the sheet is still yours and the book has nothing. The
+            // stand-up gets its own sentence because it is the one the player will actually meet.
+            return why switch
+            {
+                Interruption.StoodUp =>
+                    $"{SeatedPosture.WriteGlyph} You stand, and the page stays blank — {what} back in the " +
+                    "sleeve half dug, nothing written. The book keeps what you finish sitting down.",
+                Interruption.CompanyArrived =>
+                    $"{SeatedPosture.WriteGlyph} A chair goes back opposite you and your hands are already " +
+                    $"moving — {what} into the sleeve, nothing written, the book shut on a blank page. " +
+                    "Whatever you were digging out of it can wait until they have gone.",
+                _ =>
+                    $"{SeatedPosture.WriteGlyph} The dig stops where it stopped — {what} back in the sleeve, " +
+                    "nothing written. Whatever it says, it still says it.",
+            };
+        }
+
         string it = work == Work.Read ? "the reading" : "the exposure";
         return why switch
         {
@@ -176,6 +255,14 @@ public static class Processing
     public static string AlreadyBusyLine(Work work, string what)
     {
         ArgumentNullException.ThrowIfNull(what);
+        if (work == Work.Write)
+        {
+            // #784/#562 · The seated register never borrows the camera's word. "Photographing" over a pair
+            // of hands that are copying into a book is the sim doing one thing while the sentence reports
+            // another — and "walk away" is not even available to somebody in a chair.
+            return $"{SeatedPosture.WriteGlyph} Both hands are on {what} — you are digging through it. " +
+                "Finish it, or get up.";
+        }
         string doing = work == Work.Read ? "reading" : "photographing";
         return $"{Glyph} Both hands are on {what} — you are {doing} it. Finish, or walk away from it.";
     }
