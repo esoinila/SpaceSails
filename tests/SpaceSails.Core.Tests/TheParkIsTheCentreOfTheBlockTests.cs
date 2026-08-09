@@ -149,14 +149,15 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
     /// THE PARK IS IN THE MIDDLE OF THE FABRIC — carved building on all four sides of it, and no side of it
     /// anywhere near the edge of the world.
     ///
-    /// <para><b>Proven RED</b> by putting the green back where #759 had it — the band beyond the ribs, the
-    /// full width of the spine (<c>x0 = leftEnd, x1 = rightEnd</c> and no far ring at all):</para>
+    /// <para><b>Proven RED</b> by carving only the NEAR band — the far band's loop and the two ends' loop
+    /// each given an empty list, which is the green as #759 had it: one glazed side and three that face
+    /// whatever the field left:</para>
     /// <code>
-    /// 46 park(s) are still on the side of the map:
-    ///   luna B1: the FAR side of the park has nothing behind it — 278.0 du of frontage and 0 rooms.
-    ///   luna B1: the WEST side of the park has nothing behind it — 42.0 du of frontage and 0 rooms.
-    ///   luna B1: the EAST side of the park has nothing behind it — 42.0 du of frontage and 0 rooms.
-    ///   luna B1: the park's WEST wall stands 0.0 du off the field's own edge.
+    /// 156 park(s) are still on the side of the map:
+    ///   luna B1: the FAR side of the park has nothing behind it — 203.0 du of frontage and 0 rooms.
+    ///   luna B1: the WEST side of the park has nothing behind it — 45.0 du of frontage and 0 rooms.
+    ///   luna B1: the EAST side of the park has nothing behind it — 45.0 du of frontage and 0 rooms.
+    ///   phobos B1: the FAR side of the park has nothing behind it — 203.0 du of frontage and 0 rooms.
     /// </code>
     /// </summary>
     [Fact]
@@ -223,13 +224,16 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
     /// NOT ONE DU OF THE PARK'S PERIMETER IS WASTED. Every side of it, end to end, is either a room's front
     /// wall or a gate — the owner's "not unused, not on any side", in the one unit a guard can measure.
     ///
-    /// <para><b>Proven RED</b> by cutting the near band's gates without forcing a whole room at each end of
-    /// the band (dropping the <c>RingRoomMinDu</c> clearance from <c>BlockOn</c>'s spur test), which leaves
-    /// a strip of frontage too narrow to be a room:</para>
+    /// <para><b>Proven RED</b> by laying the far band's rooms at <see cref="UndergroundComplex.RingRoomTargetDu"/>
+    /// each from the start of their segment and letting the remainder be whatever it turned out to be —
+    /// which is the tempting version of this carve, and the one that leaves a strip of the best frontage in
+    /// the building facing nothing:</para>
     /// <code>
-    /// 46 park(s) have frontage facing nothing:
-    ///   luna B1: 3.6 du of the NEAR wall (-110.5…-106.9) is neither a room nor a gate.
-    ///   luna B1: 3.6 du of the FAR wall (-110.5…-106.9) is neither a room nor a gate.
+    /// 156 park(s) have frontage facing nothing:
+    ///   luna B1: 8.8 du of the FAR wall (-66.5…-57.7) is neither a room nor a gate.
+    ///   luna B1: 2.2 du of the FAR wall (-10.7…-8.5) is neither a room nor a gate.
+    ///   luna B1: 18.0 du of the FAR wall (78.5…96.5) is neither a room nor a gate.
+    ///   phobos B1: 8.8 du of the FAR wall (-66.5…-57.7) is neither a room nor a gate.
     /// </code>
     /// </summary>
     [Fact]
@@ -301,9 +305,13 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
     /// <para><b>Proven RED</b> by pouring the ring's view walls into <c>walls</c> instead of <c>glass</c>
     /// (<c>walls.Add(viewWall.Value)</c> in <c>RingBox</c>):</para>
     /// <code>
-    /// 46 park(s) have a view of a wall:
+    /// 624 park(s) have a view of a wall:
     ///   luna B1: ring room 2 (NEAR) has 48.8 du of frontage and 0.0 du of glass in front of it.
     ///   luna B1: a poured wall (-106.5…-57.7) lies on the NEAR view line.
+    ///   luna B1: ring room 3 (NEAR) has 42.2 du of frontage and 0.0 du of glass in front of it.
+    ///   luna B1: a poured wall (-50.7…-8.5) lies on the NEAR view line.
+    ///   luna B1: ring room 11 (WEST) has 19.0 du of frontage and 0.0 du of glass in front of it.
+    ///   luna B1: a poured wall (-253.5…-234.5) lies on the WEST view line.
     /// </code>
     /// </summary>
     [Fact]
@@ -406,9 +414,11 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
     /// <para><b>Proven RED</b> by hanging the west and east bands' doors on the park side instead of the
     /// street side (swapping <c>streetLine</c> and <c>parkLine</c> in <c>RingBox</c>):</para>
     /// <code>
-    /// 46 park(s) put a door where the view goes:
-    ///   luna B1: ring room 11 (WEST) opens onto the park at x=-106.5, not onto its street.
-    ///   luna B1: ring room 12 (WEST) opens onto the park at x=-106.5, not onto its street.
+    /// 208 park(s) put a door where the view goes:
+    ///   luna B1: ring room 11 (WEST) opens onto the park at -106.5, not onto its street.
+    ///   luna B1: ring room 12 (WEST) opens onto the park at -106.5, not onto its street.
+    ///   luna B1: ring room 13 (EAST) opens onto the park at 96.5, not onto its street.
+    ///   luna B1: ring room 14 (EAST) opens onto the park at 96.5, not onto its street.
     /// </code>
     /// </summary>
     [Fact]
@@ -491,9 +501,11 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
     /// <para><b>Proven RED</b> by dropping the two end gates (returning early from the west/east
     /// <c>RingGate</c> calls):</para>
     /// <code>
-    /// 46 park(s) cannot be crossed:
+    /// 104 park(s) cannot be crossed:
     ///   luna B1: the WEST side of the park has no way in at all.
     ///   luna B1: the EAST side of the park has no way in at all.
+    ///   phobos B1: the WEST side of the park has no way in at all.
+    ///   phobos B1: the EAST side of the park has no way in at all.
     /// </code>
     /// </summary>
     [Fact]
@@ -650,6 +662,169 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
         Assert.True(blocks > 40, $"only {blocks} blocks were measured — this proved little.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} floor(s) build on the block's ground:\n" + string.Join("\n", wrong));
+    }
+
+    // ── (g1) THE SAME LAWS, ON GROUND THE BLOCK HAS NEVER SEEN ────────────────────────────────────────
+
+    /// <summary>
+    /// THE BLOCK IS A FUNCTION OF THE GROUND, SO IT IS ASKED OF MORE THAN ONE PIECE OF GROUND.
+    ///
+    /// <para>Every other guard in this file sweeps fifty-odd sites — and every one of them lays the SAME
+    /// block, because the block's geometry is a pure function of the field and the game ships one field.
+    /// That is right for the fiction (one company drawing, poured at every site: the branch offices differ
+    /// in what is behind the doors, never in where the doors are) and it is a trap for a test suite. Fifty
+    /// floors of identical geometry prove one floor of geometry fifty times.</para>
+    ///
+    /// <para>So the laws are asked again of grounds the generator has never been handed: narrower, deeper,
+    /// shallower, and one with the cage moved far enough to change which rib column
+    /// <see cref="UndergroundComplex.RibColumnsOn"/> drops — which moves the gates, which moves the
+    /// segments, which moves every room on the ring. If the block only works on 310 × 260, this is where
+    /// that is found out.</para>
+    ///
+    /// <para><b>Proven RED</b> by the same break as
+    /// <see cref="EveryDuOfTheFrontageIsARoomOrAGate"/> — the far band laid at a fixed room width with the
+    /// remainder left over. On the shipped field that leaves 8.8 du facing nothing; on the narrow field it
+    /// leaves a different number, which is the point of asking twice.</para>
+    /// </summary>
+    [Fact]
+    public void TheLawsHoldOnGroundTheGeneratorHasNeverBeenHanded()
+    {
+        (string Name, SurfaceLayout.Field Field)[] grounds =
+        [
+            ("the shipped field", Field),
+            ("a narrower field", Field with { LeftX = -130, RightX = 120 }),
+            ("a much narrower field", Field with { LeftX = -100, RightX = 90 }),
+            ("a much wider field", Field with { LeftX = -220, RightX = 210 }),
+            ("a deeper field", Field with { BottomY = -320 }),
+            ("a shallower field", Field with { BottomY = -258 }),
+            ("the cage moved west", Field with { AnchorX = -94 }),
+        ];
+
+        var wrong = new List<string>();
+        var shapes = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach ((string name, SurfaceLayout.Field ground) in grounds)
+        {
+            UndergroundComplex.FloorPlan floor = UndergroundComplex.Build("luna", -1, ground);
+            if (floor.Park is not { } park)
+            {
+                wrong.Add($"  {name}: no block was carved at all.");
+                continue;
+            }
+
+            UndergroundComplex.Hall? hall = null;
+            foreach (UndergroundComplex.Amenity a in floor.Amenities)
+            {
+                if (a.Hall is { } h && a.Use == UndergroundComplex.Comfort.UpperCanteen)
+                {
+                    hall = h;
+                }
+            }
+            if (hall is not { } bar)
+            {
+                wrong.Add($"  {name}: a block with no hall on its near band.");
+                continue;
+            }
+
+            // The shape this ground produced, so the guard can say out loud that it met more than one.
+            shapes.Add($"{park.X1 - park.X0:F1}x{park.Y1 - park.Y0:F1}/{park.Frontage.Count}");
+
+            // LAW 1 · a room on every side.
+            foreach (UndergroundComplex.RingSide side in Enum.GetValues<UndergroundComplex.RingSide>())
+            {
+                if (side != UndergroundComplex.RingSide.Near
+                    && !park.Frontage.Any(r => r.Side == side && r.HasView))
+                {
+                    wrong.Add($"  {name}: the {side.ToString().ToUpperInvariant()} side faces nothing.");
+                }
+            }
+
+            // LAW 2 · not one du of the perimeter wasted.
+            foreach (UndergroundComplex.RingSide side in Enum.GetValues<UndergroundComplex.RingSide>())
+            {
+                bool horizontal = side is UndergroundComplex.RingSide.Near
+                    or UndergroundComplex.RingSide.Far;
+                (double Lo, double Hi) wall = horizontal ? (park.X0, park.X1) : (park.Y0, park.Y1);
+
+                var pieces = new List<(double Lo, double Hi)>();
+                foreach (UndergroundComplex.RingRoom r in park.Frontage)
+                {
+                    if (r.Side == side && r.HasView)
+                    {
+                        pieces.Add(Frontage(r));
+                    }
+                }
+                if (side == UndergroundComplex.RingSide.Near)
+                {
+                    pieces.Add((bar.X0, bar.X1));
+                }
+                foreach (SurfaceLayout.Doorway g in park.Ways)
+                {
+                    if (GateSide(park, g) == side)
+                    {
+                        pieces.Add(GateGround(g));
+                    }
+                }
+                foreach ((double lo, double hi) in Gaps(wall, pieces))
+                {
+                    wrong.Add($"  {name}: {hi - lo:F1} du of the "
+                        + $"{side.ToString().ToUpperInvariant()} wall ({lo:F1}…{hi:F1}) faces nothing.");
+                }
+            }
+
+            // LAW 3 · every room opens onto a street, never onto the green.
+            UndergroundComplex.ParkBlock made = UndergroundComplex.BlockOn(ground);
+            foreach (UndergroundComplex.RingRoom room in park.Frontage)
+            {
+                double want = room.Side switch
+                {
+                    UndergroundComplex.RingSide.Near => room.Y1,
+                    UndergroundComplex.RingSide.Far => room.Y0,
+                    UndergroundComplex.RingSide.West => room.X0,
+                    _ => room.X1,
+                };
+                double street = room.Side switch
+                {
+                    UndergroundComplex.RingSide.Near => made.SpineFaceY,
+                    UndergroundComplex.RingSide.Far => made.BackStreetY1,
+                    UndergroundComplex.RingSide.West => made.WestInnerX,
+                    _ => made.EastInnerX,
+                };
+                if (Math.Abs(want - street) > 0.001)
+                {
+                    wrong.Add($"  {name}: ring room {room.Number} does not open onto a street.");
+                }
+            }
+
+            // LAW 4 · a way through every wall.
+            foreach (UndergroundComplex.RingSide side in Enum.GetValues<UndergroundComplex.RingSide>())
+            {
+                if (!park.Ways.Any(g => GateSide(park, g) == side))
+                {
+                    wrong.Add($"  {name}: the {side.ToString().ToUpperInvariant()} wall has no gate.");
+                }
+            }
+
+            // …and the green never runs off the end of the world it was carved in.
+            if (park.X0 < ground.LeftX + SurfaceLayout.EdgeMargin
+                || park.X1 > ground.RightX - SurfaceLayout.EdgeMargin
+                || park.Y0 < ground.BottomY)
+            {
+                wrong.Add($"  {name}: the park ({park.X0:F1},{park.Y0:F1})-({park.X1:F1},{park.Y1:F1}) "
+                    + "leaves the field.");
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} problem(s) on ground the generator has never been handed:\n"
+            + string.Join("\n", wrong));
+
+        // ANTI-VACUITY, and it is the whole reason this guard exists: the five grounds really did produce
+        // five different buildings. A suite that swept a hundred sites and met one shape would pass this
+        // file without ever having asked the carve a second question.
+        Assert.True(shapes.Count >= 4,
+            "the mutated grounds all produced the same block, so this proved no more than the sweep did: "
+            + string.Join(", ", shapes.Order()));
     }
 
     // ── (g2) WHAT IS WRITTEN ON THE RING ──────────────────────────────────────────────────────────────

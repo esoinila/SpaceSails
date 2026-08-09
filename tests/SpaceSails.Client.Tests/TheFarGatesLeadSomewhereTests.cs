@@ -61,8 +61,22 @@ public sealed class TheFarGatesLeadSomewhereTests
     // ── (a) THE ROOMS BEYOND THE GREEN ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// EVERY ROOM BEHIND THE PARK CAN BE WALKED TO FROM THE CAR, AND EVERY ONE OF THEM GOES DARK WHEN ITS
-    /// DOOR IS POURED SHUT.
+    /// EVERY ROOM BEHIND THE PARK CAN BE WALKED TO FROM THE CAR — BY EITHER OF ITS TWO DOORS, AND ONLY BY
+    /// THEM. Plug one and the room is still a room; plug both and it goes dark.
+    ///
+    /// <para>#813 · THE ROOM GREW A SECOND DOOR AND THE GUARD GREW A SECOND HALF. #801 carved this row with
+    /// exactly one way in — a gap in the park's far wall — and said so in the record's own doc comment:
+    /// <i>"It is the room's ONLY door; the band behind the park is the last of the field, and there is no
+    /// corridor back there for a second one."</i> The Manhattan ruling puts a corridor back there. The back
+    /// street IS the block's far side now, so each of these rooms has a street door as well as its old door
+    /// onto the gravel, and the owner's law for the whole block — <i>"nobody walks through an office to
+    /// reach an office"</i> — is exactly the claim that both of them work.</para>
+    ///
+    /// <para>So the sealing experiment is run three times per park instead of once, and the two new runs are
+    /// the ones that carry the ruling: <b>street door plugged, the room is still reached off the gravel</b>
+    /// (#801's promise, unharmed); <b>gravel door plugged, the room is still reached off the back street</b>
+    /// (#813's); <b>both plugged, dark</b> (the wall). A guard that kept only the third would go green on a
+    /// room walled off from its own street, which is the shape the ruling exists to forbid.</para>
     ///
     /// <para><b>Proven RED, first direction</b>, with the far wall left poured as one segment and the rooms
     /// carved behind it (the drawn-versus-walked bug, exactly):</para>
@@ -76,12 +90,22 @@ public sealed class TheFarGatesLeadSomewhereTests
     /// <para><b>Proven RED, second direction</b> — the one that stops the guard passing on a park with no
     /// far wall at all — by deleting the far wall entirely: <c>48 room(s) are still reachable with every
     /// back door poured shut; the far wall is a picture, not a wall.</c></para>
+    ///
+    /// <para><b>Proven RED, third direction (#813)</b>: this guard as it stood, run against the Manhattan
+    /// carve, plugged only the gravel doors and reported that they were not doors at all —</para>
+    /// <code>
+    /// 48 room(s) behind the green are drawn and cannot be entered:
+    ///   luna B1: 📋 GROUNDS OFFICE · ROTA POSTED is STILL reachable with its door poured shut — the far
+    ///   wall is a picture, not a wall.
+    /// </code>
+    /// <para>— which was a true measurement of a perfectly correct building, and is how a sealing
+    /// experiment starts lying: not by missing a bug, but by counting a door it forgot as a hole.</para>
     /// </summary>
     [Fact]
     public void EveryRoomBehindTheGreenIsEnteredThroughItsOwnDoorAndOnlyThroughIt()
     {
         var wrong = new List<string>();
-        int parks = 0, rooms = 0;
+        int parks = 0, rooms = 0, twoDoored = 0;
 
         foreach ((string body, int level, UndergroundComplex.Park park, DeckPlan deck) in EveryPark())
         {
@@ -94,8 +118,26 @@ public sealed class TheFarGatesLeadSomewhereTests
                 DeckReachability.Standable(from.X, from.Y, DeckPlan.AvatarRadius, deck.CollisionField),
                 $"{body} B{-level}: the car's own doorstep is not standable.");
 
-            // ── THE HONEST WORLD FIRST.
+            // ── THE TWO DOORS, OFF THE RING. Park.Rooms is #801's own view of these rooms and carries the
+            //    gravel door alone; Park.Frontage is the same rooms as ring fabric and carries both. They
+            //    are ONE set of rooms carved once — Core says so where it builds them — so this PAIRS them
+            //    by box rather than re-deriving either. A second derivation of the second door would be the
+            //    mirrored-constant bug with a record's clothes on.
+            var back = new List<(UndergroundComplex.BackRoom Room, SurfaceLayout.Doorway Street)>();
             foreach (UndergroundComplex.BackRoom br in park.Rooms)
+            {
+                UndergroundComplex.BackRoom room = br;
+                UndergroundComplex.RingRoom ring = Assert.Single(
+                    park.Frontage,
+                    r => Math.Abs(r.X - room.X) < 0.01 && Math.Abs(r.Y - room.Y) < 0.01);
+                Assert.True(ring.Side == UndergroundComplex.RingSide.Far,
+                    $"{body} B{-level}: {br.Plate} is published behind the green and on the {ring.Side} "
+                    + "side of the ring — the two lists disagree about one room.");
+                back.Add((br, ring.Door));
+            }
+
+            // ── THE HONEST WORLD FIRST.
+            foreach ((UndergroundComplex.BackRoom br, _) in back)
             {
                 rooms++;
                 if (!CanWalk(deck, from, br.X, br.Y))
@@ -105,38 +147,73 @@ public sealed class TheFarGatesLeadSomewhereTests
                 }
             }
 
-            // ── AND THE SEALED ONE. Every back door plugged, grown across its own axis (the doors are
-            //    horizontal spans, so the plug is padded in y) — the #775 lesson about plugging a front
-            //    door with a wall that lies along it instead of across it.
-            var plugged = new List<DeckPlan.Wall>(deck.Walls);
-            foreach (UndergroundComplex.BackRoom br in park.Rooms)
+            // ── AND THE SEALED ONES. A plug is grown ACROSS its own opening — the #775 lesson about
+            //    plugging a front door with a wall that lies along it instead of across it — and it is
+            //    built three ways: the gravel doors alone, the street doors alone, and both.
+            UndergroundComplex.FloorPlan drawn = UndergroundComplex.Build(body, level, Field);
+            DeckPlan Seal(IEnumerable<SurfaceLayout.Doorway> doors)
             {
-                Assert.Contains(br.Door, UndergroundComplex.Build(body, level, Field).Doorways);
-                plugged.Add(new DeckPlan.Wall(
-                    (float)br.Door.X1, (float)(br.Door.Y1 - 0.5),
-                    (float)br.Door.X2, (float)(br.Door.Y2 + 0.5), false, true));
-            }
-            var sealedDeck = new DeckPlan(
-                [.. plugged], deck.Consoles, deck.RoomLabels, deck.Backdrops,
-                deck.SpawnX, deck.SpawnY, 0, (_, _) => { }, (_, _) => "sealed");
-
-            foreach (UndergroundComplex.BackRoom br in park.Rooms)
-            {
-                if (CanWalk(sealedDeck, from, br.X, br.Y))
+                var plugged = new List<DeckPlan.Wall>(deck.Walls);
+                foreach (SurfaceLayout.Doorway d in doors)
                 {
-                    wrong.Add($"  {body} B{-level}: {br.Plate} is STILL reachable with its door poured "
-                        + "shut — the far wall is a picture, not a wall.");
+                    Assert.Contains(d, drawn.Doorways);
+                    bool horizontal = Math.Abs(d.Y1 - d.Y2) < 0.001;
+                    float px = horizontal ? 0f : 0.5f, py = horizontal ? 0.5f : 0f;
+                    plugged.Add(new DeckPlan.Wall(
+                        (float)d.X1 - px, (float)d.Y1 - py,
+                        (float)d.X2 + px, (float)d.Y2 + py, false, true));
+                }
+                return new DeckPlan(
+                    [.. plugged], deck.Consoles, deck.RoomLabels, deck.Backdrops,
+                    deck.SpawnX, deck.SpawnY, 0, (_, _) => { }, (_, _) => "sealed");
+            }
+
+            DeckPlan gravelShut = Seal(back.Select(b => b.Room.Door));
+            DeckPlan streetShut = Seal(back.Select(b => b.Street));
+            DeckPlan bothShut = Seal(back.SelectMany(b => new[] { b.Room.Door, b.Street }));
+
+            foreach ((UndergroundComplex.BackRoom br, SurfaceLayout.Doorway street) in back)
+            {
+                twoDoored++;
+
+                // #813 · The street is a way in. EVERY gravel door on the floor is shut here, so a route
+                // that arrives came off the back street and nowhere else.
+                if (!CanWalk(gravelShut, from, br.X, br.Y))
+                {
+                    wrong.Add($"  {body} B{-level}: {br.Plate} cannot be reached with only its door onto "
+                        + "the gravel plugged — the street door the Manhattan ruling requires is not a "
+                        + "door.");
+                }
+
+                // #801 · …and the gravel still is. Every street door is shut, so a route that arrives here
+                // walked across the garden, which is what made this row worth carving in the first place.
+                if (!CanWalk(streetShut, from, br.X, br.Y))
+                {
+                    wrong.Add($"  {body} B{-level}: {br.Plate} cannot be reached with only its street door "
+                        + $"at ({(street.X1 + street.X2) / 2:F0}, {(street.Y1 + street.Y2) / 2:F0}) "
+                        + "plugged — walking across the green stopped being a way in.");
+                }
+
+                // …and with BOTH shut it is a box. Anything still reachable is crossing a wall.
+                if (CanWalk(bothShut, from, br.X, br.Y))
+                {
+                    wrong.Add($"  {body} B{-level}: {br.Plate} is STILL reachable with BOTH its doors "
+                        + "poured shut — a wall of that room is a picture, not a wall.");
                 }
             }
 
-            // …and the sealing measured the DOOR and not the floor: the green itself is untouched.
-            Assert.True(CanWalk(sealedDeck, from, park.X, park.Y),
+            // …and the sealing measured the DOORS and not the floor: the green itself is untouched by even
+            // the worst of the three plugs.
+            Assert.True(CanWalk(bothShut, from, park.X, park.Y),
                 $"{body} B{-level}: plugging the back doors took the park with it — the plug is in the "
                 + "wrong place and this experiment proves nothing.");
         }
 
         Assert.True(parks >= 10, $"only {parks} parks walked — this proved little.");
         Assert.True(rooms >= 40, $"only {rooms} back rooms walked — this proved little.");
+        Assert.True(twoDoored >= 40,
+            $"only {twoDoored} back rooms were sealed one door at a time — the half of this guard that "
+            + "carries the Manhattan ruling never ran.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} room(s) behind the green are drawn and cannot be entered:\n"
             + string.Join("\n", wrong.Take(20)));

@@ -6084,8 +6084,9 @@ public partial class Map
     ///
     /// <para>Off the ring's own published frontage (<see cref="UndergroundComplex.Park.Frontage"/>): the
     /// first room with a view on the SPINE side, which is the premium band, falling back to any room with a
-    /// view at all. The hall is skipped — it is a ring room and it does have the glass, and it is also the
-    /// one room down here a tester can already reach with four other URLs.</para>
+    /// view at all. Nothing in that list is ever the hall — the bar is published as this floor's Amenity
+    /// and as the park's own Window, and Core keeps it out of the ring rather than mirror it — so this
+    /// cannot quietly boot a tester into the room four other URLs already reach.</para>
     ///
     /// <para>The spot is measured off the room's OWN two walls rather than typed: back from the view wall
     /// toward the room's middle, by a few paces or by half the room's depth where the room is shallower
@@ -6107,9 +6108,9 @@ public partial class Map
         UndergroundComplex.RingRoom? chosen = null;
         foreach (UndergroundComplex.RingRoom room in green.Frontage)
         {
-            if (room.IsHall || !room.HasView)
+            if (!room.HasView)
             {
-                continue;
+                continue;   // a corner room stands past the end of the park's wall and has nothing to see
             }
             if (room.Side == UndergroundComplex.RingSide.Near)
             {

@@ -353,12 +353,27 @@ public sealed class TheCirculationIsWalkableTests
                 // ...AND THE CROSSING ITSELF. Corridor side of the first gate to corridor side of the last,
                 // inside a box that contains the park and its own two doorways and NOTHING of the spine -
                 // so the only route between them is the gravel. That is the owner's sentence, walked.
+                //
+                // #813 · WHICH WAY "OUTSIDE" IS, ASKED OF THE GATE. This used to push both points along y
+                // by a fixed sign, which was the whole truth while every gate was a gap in the park's near
+                // wall. The block is crossed from all four sides now and its west and east gates are
+                // VERTICAL: a y-offset on one of those lands ON the gate line rather than outside it, and
+                // the crossing would be measured from a point in the doorway to a point in the doorway.
+                // It happened to pass. A guard that passes for the wrong reason is one bad day from
+                // passing when it should not.
                 if (park.Ways.Count > 1)
                 {
                     SurfaceLayout.Doorway first = park.Ways[0], last = park.Ways[^1];
-                    double outward = park.Y1 < sy ? 2.2 : -2.2;
-                    var from = new DeckReachability.Point((first.X1 + first.X2) / 2.0, first.Y1 + outward);
-                    var to = new DeckReachability.Point((last.X1 + last.X2) / 2.0, last.Y1 + outward);
+                    double midX = (park.X0 + park.X1) / 2.0, midY = (park.Y0 + park.Y1) / 2.0;
+                    DeckReachability.Point Outside(SurfaceLayout.Doorway g)
+                    {
+                        double gx = (g.X1 + g.X2) / 2.0, gy = (g.Y1 + g.Y2) / 2.0;
+                        return Math.Abs(g.Y1 - g.Y2) < 0.05
+                            ? new DeckReachability.Point(gx, gy + (Math.Sign(gy - midY) * 2.2))
+                            : new DeckReachability.Point(gx + (Math.Sign(gx - midX) * 2.2), gy);
+                    }
+
+                    DeckReachability.Point from = Outside(first), to = Outside(last);
                     (double, double, double, double) green = (
                         Math.Min(park.X0, Math.Min(from.X, to.X)) - 4,
                         Math.Min(park.Y0, Math.Min(from.Y, to.Y)) - 4,
