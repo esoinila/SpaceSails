@@ -163,8 +163,59 @@ public sealed class DeckPlan
     /// the moon somebody named. It is a REGION and not a slot, which is the whole of #774 — an event with
     /// four things to say in one breath says all four, instead of writing three of them into a backdrop
     /// nobody can read and letting append order pick the survivor (the contract #693 killed).</param>
+    /// <param name="SpanX">#791 · HALF THE FIXTURE'S REACH ALONG ITSELF, as a vector off (X, Y) — so the
+    /// interaction point is the SEGMENT (X−SpanX, Y−SpanY)..(X+SpanX, Y+SpanY) rather than a dot, and
+    /// <see cref="NearestConsoleSpot"/> measures to the nearest point on it.
+    ///
+    /// <para>Owner, live at the B1 bar: <i>"The Bar desk is really long now, but there is only one spot to
+    /// get service on it… we would need an E-bus of the bar desk length instead of one bar keep cashier at a
+    /// single spot."</i> The desk is eighty-odd deck units and the press reached six of them.</para>
+    ///
+    /// <para><b>Zero everywhere else, which is every console in the game but this one.</b> A helm is a chair
+    /// and a valve is a wheel; they are points and they stay points, by the same arithmetic — a segment of
+    /// zero length is its own endpoint, so the distance below is the distance it always was. Nothing about
+    /// any other deck changes, and no caller has to learn a new idea to keep working.</para>
+    ///
+    /// <para>The span is HANDED DOWN from whoever carved the fixture (for the counter: the hall's own
+    /// <c>Service</c> run). A renderer that worked out how long a bar is would be doing geometry about a
+    /// room it did not carve, which is §13.15 and the reason this project has twice put a captain in a
+    /// wall.</para></param>
+    /// <param name="SpanY">The other half of it.</param>
     public readonly record struct ConsoleSpot(ConsoleKind Kind, float X, float Y, string Label,
-        string? ImageUrl = null, string? Caption = null, string? Outcome = null);
+        string? ImageUrl = null, string? Caption = null, string? Outcome = null,
+        float SpanX = 0f, float SpanY = 0f)
+    {
+        /// <summary>#791 · Is this fixture a RUN rather than a point? Asked, rather than compared against
+        /// zero at four call sites.</summary>
+        public bool IsRun => SpanX != 0f || SpanY != 0f;
+
+        /// <summary>#791 · One end of the run — (X, Y) itself where the fixture is a point.</summary>
+        public (float X, float Y) End0 => (X - SpanX, Y - SpanY);
+
+        /// <summary>#791 · The other end.</summary>
+        public (float X, float Y) End1 => (X + SpanX, Y + SpanY);
+
+        /// <summary>#791 · How far this spot is from the fixture — to the nearest point ON it, which for a
+        /// point console is the point itself. <see cref="SurfaceCollision.DistanceToSegment"/>, so the reach
+        /// the key uses, the reach the pen draws and the reach a guard measures are one function.</summary>
+        public double DistanceFrom(double x, double y) =>
+            SurfaceCollision.DistanceToSegment(x, y, X - SpanX, Y - SpanY, X + SpanX, Y + SpanY);
+
+        /// <summary>#791 · The point on the fixture nearest a captain — where the [E] prompt is drawn, so a
+        /// captain at the far end of a long desk sees the offer beside THEM rather than forty du away at the
+        /// plate. Clamped to the segment, which for a point console is the point.</summary>
+        public (float X, float Y) NearestPointTo(double x, double y)
+        {
+            if (!IsRun)
+            {
+                return (X, Y);
+            }
+            double ex = 2.0 * SpanX, ey = 2.0 * SpanY;
+            double t = (((x - (X - SpanX)) * ex) + ((y - (Y - SpanY)) * ey)) / ((ex * ex) + (ey * ey));
+            t = Math.Clamp(t, 0.0, 1.0);
+            return ((float)(X - SpanX + (t * ex)), (float)(Y - SpanY + (t * ey)));
+        }
+    }
 
     /// <summary>A room backdrop image: top-left at (X, Y) in deck units, W×H deck units, drawn
     /// under the vector overlay. The top-down renderer walks these; first-person textures walls.</summary>
@@ -554,7 +605,11 @@ public sealed class DeckPlan
 
         foreach (ConsoleSpot c in Consoles)
         {
-            double d = Math.Sqrt((x - c.X) * (x - c.X) + (y - c.Y) * (y - c.Y));
+            // #791 · TO THE NEAREST POINT ON THE FIXTURE, which for every point console in the game is the
+            // point and therefore is the very number this line computed before. What changed is that a
+            // fixture may now BE eighty deck units long (the B1 bar desk), and a captain standing at one
+            // end of it is standing at it.
+            double d = c.DistanceFrom(x, y);
             if (d <= InteractRadius && d < bestDistance)
             {
                 bestDistance = d;

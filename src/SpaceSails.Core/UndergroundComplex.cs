@@ -1252,6 +1252,79 @@ public static class UndergroundComplex
         public string Plate => CabinetPlate(Number);
     }
 
+    /// <summary>
+    /// #791 · THE DESK'S SERVICE RUN — the whole front of the bar, as one segment, plus the spot behind it
+    /// the service comes FROM.
+    ///
+    /// <para>Owner, live playtest 2026-08-08: <i>"The Bar desk is really long now, but there is only one
+    /// spot to get service on it… we should probably have service on the whole length indicated somehow, so
+    /// we would need an E-bus of the bar desk length instead of one bar keep cashier at a single spot. Now
+    /// the counter is in front of the desk, where the bar keep physically would be behind the bar desk
+    /// instead of being in front of it."</i></para>
+    ///
+    /// <h3>Why the fixture stopped being a point</h3>
+    ///
+    /// <para>The counter has been a POINT since #707 — one console, one interact radius — and #751 then grew
+    /// the desk to eighty-odd deck units. The picture, the collidable wall and the row of stools all ran the
+    /// length of it; the one thing that answered [E] covered about a fourteenth of it, in the middle, and
+    /// nothing on the floor said which fourteenth. That is the drawn room and the pressed room disagreeing,
+    /// which is this project's third named bug class, at the fixture the owner spends the most time at.</para>
+    ///
+    /// <para>So the fixture publishes a RUN and the client's press reaches the nearest point on it. One
+    /// fixture, one card, many approach points — the owner's own sentence, and it costs a segment.</para>
+    ///
+    /// <h3>The three bands, in order, and they are an order</h3>
+    ///
+    /// <para><b>hall floor · the run · the desk · the keep's side.</b> <see cref="X0"/>..<see cref="X1"/> is
+    /// laid on the HALL side of the counter's line, <see cref="HallServiceStandoffDu"/> out from it, which
+    /// is where a customer stands. <see cref="KeepX"/>/<see cref="KeepY"/> is the middle of the sealed band
+    /// BEHIND the desk — the strip #751 closed off because it is the one part of a bar the customer never
+    /// stands in, which is exactly where the keep (#781) will stand. The counter's own collidable wall is
+    /// between the two and stays the law: nothing here opens it, and a body may not cross it.</para>
+    ///
+    /// <para>It spans the SERVING desk only — from where the goods hoist's divider leaves off (#775) to the
+    /// far end of the counter — because a bar you can order at across a freight shutter is not a bar. That
+    /// is the same span the desk's own photograph is stretched over, so what is drawn and what serves are
+    /// one length by construction rather than by two authors agreeing.</para>
+    /// </summary>
+    /// <param name="X0">One end of the run, on the hall side of the desk.</param>
+    /// <param name="Y0">The same.</param>
+    /// <param name="X1">The other end.</param>
+    /// <param name="Y1">The same.</param>
+    /// <param name="KeepX">Where the service comes from — behind the desk, in the sealed band.</param>
+    /// <param name="KeepY">The same.</param>
+    public readonly record struct ServiceRun(
+        double X0, double Y0, double X1, double Y1, double KeepX, double KeepY)
+    {
+        /// <summary>The middle of the run — the fixture's own spot, where its one plate is read and where
+        /// <c>?counter=1</c> sets a tester down.</summary>
+        public double MidX => (X0 + X1) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double MidY => (Y0 + Y1) / 2.0;
+
+        /// <summary>Half the run, as a vector off <see cref="MidX"/>/<see cref="MidY"/>. This is the shape a
+        /// client's interaction point wants: an anchor and a reach, so a fixture that is a point today is a
+        /// run tomorrow without the press learning a new idea.</summary>
+        public double HalfSpanX => (X1 - X0) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double HalfSpanY => (Y1 - Y0) / 2.0;
+
+        /// <summary>How long the desk serves for, in deck units. The number the guards measure "the whole
+        /// length" against, so "a bus" can never quietly become "a slightly wider point".</summary>
+        public double LengthDu => Math.Sqrt(((X1 - X0) * (X1 - X0)) + ((Y1 - Y0) * (Y1 - Y0)));
+
+        /// <summary>How far this spot is from the desk's service line — <see cref="SurfaceCollision"/>'s own
+        /// segment distance, the one every other reach in this game is measured with.</summary>
+        public double DistanceTo(double x, double y) =>
+            SurfaceCollision.DistanceToSegment(x, y, X0, Y0, X1, Y1);
+
+        /// <summary>Is a captain standing here within <paramref name="reach"/> of being served? The whole of
+        /// the E-bus, in one call, so the press and every guard ask the same question.</summary>
+        public bool Serves(double x, double y, double reach) => DistanceTo(x, y) <= reach;
+    }
+
     /// <summary>#751 · A hall: the box, what it seats, and the cabinets off it.</summary>
     /// <param name="X0">Left edge, in the surface's own coordinates.</param>
     /// <param name="Y0">Bottom edge.</param>
@@ -1287,12 +1360,17 @@ public static class UndergroundComplex
     /// not serve. Published beside the box the counter's own three wall segments were built from, for the
     /// reason <paramref name="BoardX"/> already answers: a renderer measuring a bar it did not carve is how
     /// this project has twice set a captain down inside a wall.</param>
+    /// <param name="Service">#791 · WHERE THIS DESK SERVES — the whole front of it as one segment, and the
+    /// spot behind it the service comes from. Null on a hall whose counter takes no orders (the staff mess,
+    /// the head office's sideboard), which is a true statement about those rooms: there is a counter in
+    /// them, and nobody has ever been served over it. See <see cref="ServiceRun"/>.</param>
     public readonly record struct Hall(
         double X0, double Y0, double X1, double Y1, int SeatTarget, IReadOnlyList<Cabinet> Cabinets,
         double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0,
         string? ArtUrl = null, IReadOnlyList<SpotArt>? Spots = null,
         IReadOnlyList<(double X, double Y)>? Stools = null,
-        IReadOnlyList<SurfaceLayout.Doorway>? Doors = null, FreightLift? Freight = null)
+        IReadOnlyList<SurfaceLayout.Doorway>? Doors = null, FreightLift? Freight = null,
+        ServiceRun? Service = null)
     {
         /// <summary>#780 · The furniture pictures, never null — a caller drawing a room must not have to
         /// ask whether "no spots" means an empty list or a missing one.</summary>
@@ -2827,7 +2905,8 @@ public static class UndergroundComplex
 
     /// <summary>#751 · A carved hall, on its way to becoming an <see cref="Amenity"/>.</summary>
     /// <param name="Hall">The box and its cabinets, as published on the plan.</param>
-    /// <param name="X">Where the fixture console stands — in front of the counter, on clear floor.</param>
+    /// <param name="X">Where the fixture console stands — in front of the SERVING counter, on clear floor,
+    /// at the middle of the run it answers over (#791).</param>
     /// <param name="Y">The same.</param>
     /// <param name="Tops">The round tops on the hall floor. Cabinet tops are NOT in here: a cabinet's chairs
     /// are extra, and the hall's own seat law is measured on this list.</param>
@@ -3010,6 +3089,21 @@ public static class UndergroundComplex
     /// the three is how a chair ends up inside a table.</para>
     /// </summary>
     public const double HallStoolStandoffDu = 1.6;
+
+    /// <summary>
+    /// #791 · How far out from the desk's line A SERVED CUSTOMER STANDS — the line the service run is laid
+    /// along, and therefore the line the [E] bus answers from.
+    ///
+    /// <para>It is a hair further out than <see cref="HallStoolStandoffDu"/> on purpose: the stools are
+    /// bolted between it and the desk, so the standing customer is behind the row rather than inside it,
+    /// which is where a person stands at a bar with stools at it.</para>
+    ///
+    /// <para>Named rather than left as the <see cref="HallEdgePadDu"/> it used to borrow. The two happen to
+    /// be the same number today and they are not the same QUANTITY — one is how much of a room's edge is
+    /// kept clear of furniture, the other is how far a body stands off a counter — and a mirrored constant
+    /// is the second-named bug class in this file's own table.</para>
+    /// </summary>
+    public const double HallServiceStandoffDu = 2.0;
 
     /// <summary>
     /// #751 · WHICH COLUMN THE HALL STANDS ON — the same criterion #707 already uses for the canteen, asked
@@ -3351,17 +3445,46 @@ public static class UndergroundComplex
         // AND ONLY WHERE A COUNTER SERVES. Asked of Interior.CounterService, which is the same call the
         // stool verb itself is gated on, rather than restated here as "upper canteen and not the head
         // office" — two spellings of one condition is how a room grows eight seats nothing will ever sit on.
+        //
+        // #791 · …AND ALONG THE SERVING DESK, which is not the whole band. This laid the row from counterU0
+        // — the start of the band — so on every hall in the game the first stool and part of the second
+        // stood in front of the GOODS HOIST'S SHUTTER (#775 took the first twelve du of that band for a
+        // freight car). Two tall seats at a roller door, in a room whose own photograph starts twelve du
+        // further along: the drawn desk and the seated row disagreeing about where the bar is. They run the
+        // service run's length now, which is the picture's length, which is the desk's length.
         var stools = new List<(double X, double Y)>(Interior.TheStools.Count);
-        if (Interior.CounterService.For(bodyId, use) is not null)
+        bool serves = Interior.CounterService.For(bodyId, use) is not null;
+        if (serves)
         {
             double stoolV = counterV - HallStoolStandoffDu;
-            double stoolSpan = counterU1 - counterU0;
+            double stoolSpan = counterU1 - serveU0;
             for (int s = 0; s < Interior.TheStools.Count; s++)
             {
-                double u = counterU0 + (stoolSpan * ((s + 0.5) / Interior.TheStools.Count));
+                double u = serveU0 + (stoolSpan * ((s + 0.5) / Interior.TheStools.Count));
                 stools.Add((X(u), Y(stoolV)));
             }
         }
+
+        // ── #791 · AND THE RUN THE WHOLE DESK SERVES OVER ──────────────────────────────────────────────
+        //
+        // Owner, live: "there is only one spot to get service on it… we would need an E-bus of the bar desk
+        // length instead of one bar keep cashier at a single spot."
+        //
+        // Same (u, v) as the wall segments, the photograph and the stools — a fourth author measuring this
+        // desk is exactly the mistake the three above are written the way they are to avoid. serveU0 to
+        // counterU1 is the SERVING desk; the standoff puts the line on the hall side of the counter, where a
+        // customer stands; and the keep's own spot is the middle of the sealed band behind it, which is the
+        // side of the desk a keep has stood on since bars were invented and the side #781 will arrive on.
+        //
+        // Only where the counter serves, off the same one call the stools ask. A run published for a desk
+        // nobody serves at would be an [E] bus to a card that does not exist.
+        double serveMidU = (serveU0 + counterU1) / 2.0;
+        double serviceV = counterV - HallServiceStandoffDu;
+        ServiceRun? service = serves
+            ? new ServiceRun(
+                X(serveU0), Y(serviceV), X(counterU1), Y(serviceV),
+                X(serveMidU), Y(counterV + (HallCounterBandDu / 2.0)))
+            : null;
 
         // ── THE CABINETS · a row of doors down the hall's outer wall.
         var cabinets = new List<Cabinet>(CabinetsPerHall);
@@ -3501,8 +3624,15 @@ public static class UndergroundComplex
                 x0, y0, x1, y1, HallSeatsFor(bodyId, use), cabinets,
                 X(HallDoorAisleDu / 2.0), Y(length / 2.0),
                 X(HallDoorAisleDu / 2.0), Y(length * 0.25),
-                HallArtFor(bodyId, use), spots, stools, doors, freight),
-            X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
+                HallArtFor(bodyId, use), spots, stools, doors, freight, service),
+
+            // #791 · THE FIXTURE'S OWN SPOT is the MIDDLE OF THE DESK THAT SERVES, and not the middle of
+            // the band. It used to be (uLo + uHi) / 2 — the mid-point of the counter's whole length
+            // including the goods hoist's twelve du — so the one plate, the one console dot and the spot
+            // ?counter=1 sets a tester down on all sat six du off centre, toward a freight shutter. The run
+            // knows where its own middle is; nothing here works it out a second time.
+            service?.MidX ?? X((uLo + uHi) / 2.0),
+            service?.MidY ?? Y(counterV - HallServiceStandoffDu),
             laid,
             glazed ? farWall : null);
     }

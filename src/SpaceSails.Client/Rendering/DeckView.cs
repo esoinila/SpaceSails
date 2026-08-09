@@ -1179,12 +1179,35 @@ public sealed class DeckView
             // second console in range no longer claims a key it will not get.
             bool near = answering == console;
             RgbaColor c = near ? ConsoleNear : ConsoleGlow;
+
+            // ── #791 · A FIXTURE THAT IS A RUN IS DRAWN AS ONE ────────────────────────────────────────
+            //
+            // Owner, at the B1 bar: "we should probably have service on the whole length indicated somehow."
+            // The desk's front is now the press zone, so the desk's front is now MARKED — a service rail
+            // down the whole of it with a serving tick struck across it every few du, in the same console
+            // ink the dot has always used. No text is repeated along it (#782: a plate you cannot read is
+            // worse than none, and one you read forty times is a wall of noise); the plate is said once, at
+            // the fixture's own middle, exactly as it always was.
+            //
+            // IT IS THE VERY SEGMENT THE KEY MEASURES. Both come off ConsoleSpot's own span, which came off
+            // Core's Hall.Service — so the length that is lit and the length that answers cannot disagree,
+            // which is the split this deck has paid for more than any other.
+            if (console.IsRun)
+            {
+                DrawServiceRun(console, c, near, P);
+            }
+
             _renderer.DrawCircle(sx, sy, near ? 5f : 3.5f, c, c);
             _renderer.DrawText(sx, sy - 10, console.Label, near ? ConsoleNear : TextDim,
                 near ? "bold 10px monospace" : "9px monospace", TextAlign.Center);
             if (near)
             {
-                _renderer.DrawText(sx, sy + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
+                // …and the offer is drawn WHERE YOU ARE STANDING. On a point console that is the console;
+                // on an eighty-du desk it is the stretch of counter under your elbow, because an [E] forty
+                // du away at the plate would be the game answering a press it looks like it is refusing.
+                (float ex, float ey) = console.NearestPointTo(state.AvatarX, state.AvatarY);
+                (float px, float py) = P(ex, ey);
+                _renderer.DrawText(px, py + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
             }
         }
 
@@ -2084,6 +2107,68 @@ public sealed class DeckView
     /// <summary>Somebody is in it. Warm, and deliberately not the captain's amber — one figure on this deck
     /// is you.</summary>
     private static readonly RgbaColor SeatTaken = new(228, 196, 150, 240);
+
+    /// <summary>#791 · How often a SERVING TICK is struck across a service rail, and how far it reaches
+    /// either side of it. Five du is about two customers' shoulders — near enough that no stretch of the
+    /// desk reads as unattended, far enough that eighty du of bar is a marked edge rather than a comb.</summary>
+    private const float ServiceTickDu = 5.0f, ServiceTickHalfDu = 0.45f;
+
+    /// <summary>#791 · …and the cap struck across each END of the run, twice a tick's reach, so the desk's
+    /// service has a beginning and an end instead of fading into the room.</summary>
+    private const float ServiceCapHalfDu = 0.95f;
+
+    /// <summary>
+    /// #791 · THE DESK'S SERVICE RAIL — a fixture that is a RUN, drawn as the length it is.
+    ///
+    /// <para>Owner, live at the B1 bar: <i>"we should probably have service on the whole length indicated
+    /// somehow."</i> A rail down the run, a cap at each end, and a serving tick struck across it every
+    /// <see cref="ServiceTickDu"/> — so the eye reads ORDER ANYWHERE ALONG HERE from anywhere beside the
+    /// desk, in the console ink this deck has meant "you may walk up to this" in since the first spot was
+    /// drawn. It is #795's own discipline one fixture along: a language of marks rather than of words.</para>
+    ///
+    /// <para><b>It decides nothing.</b> The two ends are the interaction point's own, which are Core's
+    /// <c>Hall.Service</c>'s own — so what is lit is what answers, to the deck unit. A pen that worked out
+    /// where a bar's service starts would be the drawn room and the pressed room disagreeing, which is this
+    /// project's third named bug class and the reason this issue exists at all.</para>
+    /// </summary>
+    private void DrawServiceRun(
+        in DeckPlan.ConsoleSpot fixture, RgbaColor ink, bool near,
+        Func<double, double, (float X, float Y)> project)
+    {
+        (float ax, float ay) = fixture.End0;
+        (float bx, float by) = fixture.End1;
+        double dx = bx - ax, dy = by - ay;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        if (len < 1e-6)
+        {
+            return;
+        }
+
+        double ux = dx / len, uy = dy / len;
+        double nx = -uy, ny = ux;                 // the rail's own perpendicular, in deck units
+        float rail = near ? 2.5f : 1.4f;
+
+        DrawSeg(project(ax, ay), project(bx, by), ink, rail);
+
+        for (int end = 0; end < 2; end++)
+        {
+            double px = end == 0 ? ax : bx, py = end == 0 ? ay : by;
+            DrawSeg(
+                project(px - (nx * ServiceCapHalfDu), py - (ny * ServiceCapHalfDu)),
+                project(px + (nx * ServiceCapHalfDu), py + (ny * ServiceCapHalfDu)), ink, rail);
+        }
+
+        int ticks = Math.Max(1, (int)(len / ServiceTickDu));
+        for (int t = 1; t < ticks; t++)
+        {
+            double s = len * t / ticks;
+            double px = ax + (ux * s), py = ay + (uy * s);
+            DrawSeg(
+                project(px - (nx * ServiceTickHalfDu), py - (ny * ServiceTickHalfDu)),
+                project(px + (nx * ServiceTickHalfDu), py + (ny * ServiceTickHalfDu)),
+                ink, near ? 2f : 1.1f);
+        }
+    }
 
     /// <summary>Draw the chairs round one top, and whoever is in them. Nothing here decides anything: the
     /// seat count, the occupancy and the conversation all arrive on <paramref name="top"/> from the room

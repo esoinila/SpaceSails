@@ -282,11 +282,39 @@ public sealed class SeatsAreDrawnTests
                 }
             }
 
+            // #791 · …AND THEY ARE COUNTED AT THE TABLES, which is where a chair is. This used to count
+            // every polyline in the invitation ink anywhere on the deck — a filter that selected everything
+            // wearing one colour, which is this project's fifth named bug class. It was true only while the
+            // chairs were the only marks in that colour: the day the bar desk grew a SERVICE RAIL (#791,
+            // console ink, and SeatOpen deliberately borrowed the console ink so an invitation would not be
+            // a new word) this guard reported eighteen extra chairs and could not have said where. A chair
+            // is a mark AT A TOP; nothing else in this room is.
+            List<(double X, double Y)> tops = CanteenRegulars.Tables(Body, Level, cantina, watch)
+                .Select(t => (t.X, t.Y)).ToList();
+
+            bool AtATop(Mark m)
+            {
+                float mx = (m.Points[0] + m.Points[2]) / 2f, my = (m.Points[1] + m.Points[3]) / 2f;
+                foreach ((double tx, double ty) in tops)
+                {
+                    (float X, float Y) at = At(place, tx, ty);
+                    double dx = mx - at.X, dy = my - at.Y;
+                    // The pen's own ring plus a chair's own half-width, in pixels.
+                    if (Math.Sqrt((dx * dx) + (dy * dy)) <= 2.2f * place.Scale)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             int drawnBodies = marks.Count(m =>
                 m.Kind == "disc" && Is(m.Ink, SeatTaken)
                 && Math.Abs(m.Points[2] - (0.30f * place.Scale)) < 0.02f * place.Scale);
-            int drawnInvites = marks.Count(m => m.Kind == "polyline" && Is(m.Ink, SeatOpen));
-            int drawnPlain = marks.Count(m => m.Kind == "polyline" && Is(m.Ink, SeatEmpty));
+            int drawnInvites = marks.Count(m =>
+                m.Kind == "polyline" && m.Points.Length == 4 && Is(m.Ink, SeatOpen) && AtATop(m));
+            int drawnPlain = marks.Count(m =>
+                m.Kind == "polyline" && m.Points.Length == 4 && Is(m.Ink, SeatEmpty) && AtATop(m));
 
             Assert.True(drawnBodies == bodies,
                 $"w{watch}: {occupied} top(s) have somebody at them and {drawnBodies} bodies were drawn " +
