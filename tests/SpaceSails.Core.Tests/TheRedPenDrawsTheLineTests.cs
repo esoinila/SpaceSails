@@ -479,6 +479,127 @@ public class TheRedPenDrawsTheLineTests
         Assert.False(CaseThreads.CanConnectHere(SeatedHud.Seat.HallTable, alone: false));
     }
 
+    // ── THE DEMO'S RHYME ──────────────────────────────────────────────────────────────────────────────
+    //
+    // ?threads=1 boots six pre-filed entries off two grounds (Map.Table.cs → PreFileTheCase). The whole
+    // value of that row is that there is something in them TO SPOT, and that failure mode is silent: a seed
+    // quietly changed still boots six perfectly good sentences with nothing in common, and a tester would
+    // simply conclude the feature is dull.
+    //
+    // So the rhyme is asserted, off the same three seeds the client passes — and a source-shape guard in
+    // TheRedPenIsAnInstrumentTests holds the call site to those seeds, so the two cannot drift apart.
+
+    /// <summary>THE DEMO'S SPOTTABLE RHYME, and every word of it is shipped prose. The same DOOR — The
+    /// Tilt — stands in entries filed on two different grounds a moon apart, and the game never once
+    /// remarks on it. That is the catch a human eye can make and the model must never make for them.</summary>
+    [Fact]
+    public void TheDemoCase_RhymesAcrossTwoGrounds_AndNothingRemarksOnIt()
+    {
+        List<(string Place, string Text)> filed = [];
+        void FileFrom(string bodyId, int siteIndex, int roomIndex, int howMany)
+        {
+            LandingSite site = LandingSites.For(bodyId)[siteIndex];
+            string place = FieldNotes.PlaceLabel(BodyNames.Display(bodyId), site.Name);
+            int said = 0;
+            foreach (FieldDossier.Saying one in
+                FieldDossier.Debrief(bodyId, site.LayoutSalt, roomIndex, everySaying: true))
+            {
+                if (said++ >= howMany)
+                {
+                    break;
+                }
+                filed.Add((place, one.Text));
+            }
+        }
+
+        FileFrom("miranda", 0, 3, 4);
+        FileFrom("luna", 1, 22, 2);
+
+        Assert.Equal(6, filed.Count);
+        Assert.Equal(2, filed.Select(f => f.Place).Distinct(StringComparer.Ordinal).Count());
+
+        // THE CROSS-GROUND RHYME: the same door named in entries from two different grounds.
+        const string Door = "The Tilt";
+        List<string> grounds =
+            [.. filed.Where(f => f.Text.Contains(Door, StringComparison.Ordinal))
+                     .Select(f => f.Place).Distinct(StringComparer.Ordinal)];
+        Assert.True(grounds.Count >= 2, $"the demo's door is named on only {grounds.Count} ground(s)");
+
+        // …and the rhyme inside one kit: a phrase to drop at a door that IS the dead person's own name,
+        // and a family still waiting who share it. The dossier has always held this and never said so.
+        FieldDossier.Person who = FieldDossier.Who("miranda", LandingSites.For("miranda")[0].LayoutSalt, 3);
+        Assert.Equal(3, filed.Count(f => f.Text.Contains(Surname(who.Name), StringComparison.Ordinal)));
+        Assert.Contains(filed, f => f.Text.Contains($"\"{who.Name} sent me.\"", StringComparison.Ordinal));
+
+        // NOTHING REMARKS ON IT. No pre-filed entry contains a word that would do the spotting for the
+        // player — the whole demo is six flat facts and a captain's own eye.
+        foreach ((_, string text) in filed)
+        {
+            foreach (string tell in new[] { "connect", "the same name", "notice", "coincidence", "link" })
+            {
+                Assert.DoesNotContain(tell, text, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        // The kin who is waiting is not the person in the ground: a demo whose two names were identical
+        // would read as a bug rather than a rhyme (one seeded room on Luna does exactly that, which is why
+        // the demo's seeds are pinned rather than picked).
+        FieldDossier.Person lunaWho = FieldDossier.Who("luna", LandingSites.For("luna")[1].LayoutSalt, 22);
+        FieldDossier.NextOfKin lunaKin =
+            FieldDossier.WhoIsWaiting("luna", LandingSites.For("luna")[1].LayoutSalt, 22);
+        Assert.NotEqual(lunaWho.Name, lunaKin.Name);
+        Assert.Equal(Surname(lunaWho.Name), Surname(lunaKin.Name));
+    }
+
+    /// <summary>…and the six of them are six DISTINCT entries, so the notebook has six nodes to draw and
+    /// two of them can be threaded to each other.</summary>
+    [Fact]
+    public void TheDemoCase_IsSixDistinctNodes()
+    {
+        List<FieldNote> book = [];
+        double at = 0;
+        void FileFrom(string bodyId, int siteIndex, int roomIndex, int howMany)
+        {
+            LandingSite site = LandingSites.For(bodyId)[siteIndex];
+            string place = FieldNotes.PlaceLabel(BodyNames.Display(bodyId), site.Name);
+            int said = 0;
+            foreach (FieldDossier.Saying one in
+                FieldDossier.Debrief(bodyId, site.LayoutSalt, roomIndex, everySaying: true))
+            {
+                if (said++ >= howMany)
+                {
+                    break;
+                }
+                at += 240.0;
+                book = [.. FieldNotes.Append(book, new FieldNote(one.Text, at, place, one.Glyph))];
+            }
+        }
+
+        FileFrom("miranda", 0, 3, 4);
+        FileFrom("luna", 1, 22, 2);
+
+        Assert.Equal(6, book.Count);
+        Assert.Equal(6, book.Select(n => CaseThreads.IdentityOf(n)).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(book, n => Assert.False(string.IsNullOrWhiteSpace(CaseThreads.TitleOf(n))));
+
+        // A line drawn between the two grounds' entries puts them side by side, which is the demo's beat.
+        IReadOnlyList<CaseThreads.Thread> threads =
+            CaseThreads.Draw(null, CaseThreads.IdentityOf(book[1]), CaseThreads.IdentityOf(book[5]));
+        IReadOnlyList<CaseThreads.Row> page = CaseThreads.Page(book, threads);
+
+        // The block opens where its EARLIEST member was filed — the entry above it, a loose end filed
+        // first, does not move. That is the ordering law doing exactly what it promises: one line drawn,
+        // two rows travel, nothing else on the page jumps.
+        Assert.Equal(book[0].Text, page[0].Note.Text);
+        Assert.Equal(book[1].Text, page[1].Note.Text);
+        Assert.Equal(book[5].Text, page[2].Note.Text);
+        Assert.True(page[1].ThreadedToNext);
+        Assert.NotEqual(page[1].Note.Place, page[2].Note.Place);
+    }
+
+    private static string Surname(string name) =>
+        name[(name.IndexOf(' ', StringComparison.Ordinal) + 1)..];
+
     // ── THE CANON SWEEP ───────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Every new sentence is listed for the canon review, none is a placeholder, and none of them

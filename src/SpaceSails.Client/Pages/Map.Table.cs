@@ -61,6 +61,20 @@ public partial class Map
     /// </summary>
     private bool _spreadCheat;
 
+    /// <summary>
+    /// #741 QA · <c>?threads=1</c> — THE RED PEN, with a case already in the book.
+    ///
+    /// <para>Everything <c>?spread=1</c> boots (the cabinet, the docked strip, three finds in the sleeve),
+    /// and then the thing the pen actually needs: a BOOK WITH SOMETHING IN IT. Six entries are pre-filed
+    /// from two grounds the captain is not standing on, and there is a real rhyme running through them for
+    /// a human eye to catch — see <see cref="PreFileTheCase"/>, which invents not one word of it.</para>
+    ///
+    /// <para>It forces nothing about the case. No line is drawn, no entry is marked and nothing is
+    /// highlighted: spotting is the player's act, and a demo that pointed at the answer would be
+    /// demonstrating the one thing this feature must never do.</para>
+    /// </summary>
+    private bool _threadsCheat;
+
     /// <summary>#751 QA · <c>?watch=N</c> — pin which shift the hall is on, so a tester can walk into the
     /// heaving one and the empty one without waiting four sim-hours between looks. Null off the cheat, in
     /// which case the watch is <see cref="PatronRota.WatchIndex"/> of the sim clock exactly as before.</summary>
@@ -110,10 +124,35 @@ public partial class Map
                 StandCaptainAt(cabinet.X, cabinet.Y, "you step into the cabinet and shut the door");
                 SeedTheSpreadFinds();
 
+                // #741 · …and, for ?threads=1, a book with a case already in it. Before the sit, so the
+                // notebook is furnished by the time the strip is up.
+                if (_threadsCheat)
+                {
+                    PreFileTheCase();
+                }
+
                 // Through TryTakeTable and not a hand-written sit: a cheat that assembled its own TableTalk
                 // would be testing a table that does not ship (and would be this repo's first named bug
                 // class, one posture over).
                 TryTakeTable();
+
+                if (_threadsCheat)
+                {
+                    // The pocket is opened straight onto the notebook's case reading. A dev row is allowed
+                    // the two presses an honest open insists on (#690's reset lands every open on the
+                    // pocket and on THIS GROUND) — and this ground has nothing in it, because the whole
+                    // point of the case reading is entries from grounds you are not standing on.
+                    _satchelPage = SatchelPage.Notes;
+                    _notesView = NotesView.TheCase;
+                    _showSatchel = true;
+                    ShowPulseMessage(
+                        "🧪 DEV ?threads=1: seated in a CABINET with six entries already in the book, from "
+                        + "two grounds. Take the 🖊 RED PEN, press one title, press another — a line goes "
+                        + "between them and the list reorders around it. The same two presses take it off "
+                        + "again.");
+                    return;
+                }
+
                 ShowPulseMessage(
                     "🧪 DEV ?spread=1: sat down in a CABINET with three finds in the sleeve. The panel is a "
                     + "HUD strip now, not a card — press I, pick a paper, and watch the dig bar fill.");
@@ -156,6 +195,70 @@ public partial class Map
         sleeve = Core.Satchel.Add(sleeve, new Core.Satchel.Item(Core.Satchel.Kind.Paper, "spread-demo-2"));
         sleeve = Core.Satchel.Add(sleeve, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, "spread-demo-3"));
         _satchel = [.. sleeve];
+    }
+
+    /// <summary>
+    /// #741 QA · A CASE ALREADY IN THE BOOK, with a rhyme in it a human eye can catch.
+    ///
+    /// <para>Owner's north star: <i>"we spot connections in the data… that is the gumshoe moment."</i> The
+    /// pen is worth nothing against an empty book, and it is worth nothing against six unrelated lines
+    /// either — so this row files a case whose entries genuinely rhyme.</para>
+    ///
+    /// <h3>The rhyme, and not one word of it is invented</h3>
+    ///
+    /// <para>Every sentence here is <see cref="FieldDossier.Debrief"/>'s, shipped since #588/#774, for two
+    /// ordinary rooms on two ordinary grounds. The catch is the one the dossier has always quietly held:
+    /// <b>the in that fell out of somebody's kit is that same dead person's own name</b> — the file says so
+    /// in its own comment, <i>"nothing in the game ever remarks on this"</i> — and the next of kin still
+    /// waiting for word shares their family name. So the captain reading the titles has a specialist, a
+    /// family, and a phrase to drop at a door somewhere else, and one name is standing in all three.
+    /// Nothing labels it. Nothing connects it.</para>
+    ///
+    /// <para>Two grounds, because a rhyme inside one place group is a rhyme the LAYOUT found rather than
+    /// the captain. They are filed straight rather than through <see cref="FileNote"/> for the same reason:
+    /// that door files to the ground underfoot, and the ground underfoot is a canteen twenty floors
+    /// down.</para>
+    ///
+    /// <para>The bodies' sites are asked of Core (<see cref="Core.LandingSites.For"/>,
+    /// <see cref="Core.BodyNames.Display"/>) rather than typed here — §13.15's rule one room over: a cheat
+    /// that writes its own geography is a cheat testing a world that does not ship.</para>
+    /// </summary>
+    private void PreFileTheCase()
+    {
+        double at = SimTime;
+        IReadOnlyList<Core.FieldNote> book = _fieldNotes;
+
+        void FileFrom(string bodyId, int siteIndex, int roomIndex, int howMany)
+        {
+            Core.LandingSite site = Core.LandingSites.For(bodyId)[siteIndex];
+            string place = Core.FieldNotes.PlaceLabel(Core.BodyNames.Display(bodyId), site.Name);
+
+            int said = 0;
+            foreach (Core.FieldDossier.Saying one in
+                Core.FieldDossier.Debrief(bodyId, site.LayoutSalt, roomIndex, everySaying: true))
+            {
+                if (said++ >= howMany)
+                {
+                    break;
+                }
+
+                // Minutes apart, oldest first, the way an afternoon of turning rooms over reads.
+                at += 240.0;
+                book = Core.FieldNotes.Append(book, new Core.FieldNote(one.Text, at, place, one.Glyph));
+            }
+        }
+
+        // A whole kit assembled in one room on the canon ground, and two lines out of another room a moon
+        // away. Six entries: enough to have to look, few enough to read at phone size (#782).
+        //
+        // THESE THREE SEEDS ARE THE DEMO. What they yield is pinned in Core
+        // (TheRedPenDrawsTheLineTests.TheDemoCase_...), and a source-shape guard holds this call site to
+        // them — because a seed quietly changed is a demo that boots six lines with nothing in common, and
+        // that failure is completely silent.
+        FileFrom("miranda", 0, 3, 4);
+        FileFrom("luna", 1, 22, 2);
+
+        _fieldNotes = [.. book];
     }
 
     /// <summary>#757 QA · The first top in this room that nobody is at, this watch — Core's own list, so the

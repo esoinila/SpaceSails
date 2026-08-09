@@ -195,6 +195,17 @@ public static class DevStarts
         new("🗂🪑", "Sat down in a cabinet with the papers out",
             "B1's canteen with the captain already seated at a CABINET table — the private end of the ladder — and three finds in the sleeve. The panel is a HUD STRIP, not a card: the hall stays lit behind it, the park stays green, and the customer line reads your table, your pour, your rest pips and the watch the room is keeping. Press I, pick a paper, and the digging bar runs it into the detective book (#784).",
             "/map?spread=1"),
+        // #741 · THE RED PEN, and the one thing it needs that no other row provides: a BOOK WITH A CASE
+        // IN IT. Owner's north star for the whole feature — "we spot connections in the data… that is the
+        // gumshoe moment" — and a captain cannot spot anything in an empty notebook. Six pre-filed entries
+        // off two grounds, with a rhyme running through them that the game never once remarks on.
+        new("🖊🧵", "The red pen, and a case to draw on",
+            "The same cabinet with SIX ENTRIES already in the book, from two grounds — a specialist whose "
+            + "kit you assembled, the family still waiting for word, and a name to drop at a door somewhere "
+            + "else. Open the notebook on 🧵 THE CASE, take the 🖊 RED PEN, press one title and then "
+            + "another: a line goes between them, the list reorders around it, and nothing congratulates you "
+            + "(#741, #784).",
+            "/map?threads=1"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),

@@ -422,6 +422,28 @@ whole feature would look like a control that did not fire.
 /map?stool=1                           the counter, where the spread is refused (the gumshoe rule)
 ```
 
+## 1c · The red pen — the lines you draw between two things you wrote down (#741)
+
+```
+/map?threads=1                         the same cabinet, six entries already in the book from two grounds
+```
+
+The notebook is title-first now: collapsed nodes with a caret, a 🧵 count or *loose end*, and bullets
+under the ones you open. Take the 🖊 RED PEN and pressing a title stops meaning *read it* and starts
+meaning *one end of a line*; press a second title and the line is drawn — a soft chime, a red connector
+settling, and the list reorders so the two sit together. The same two presses take it off again.
+
+**What to look for, and it is deliberately not pointed at.** Six entries, two moons, and the same door named
+on both: **The Tilt** is where one dead specialist's family is still waiting for word, and it is where the
+phrase that fell out of their kit opens something. All of it is dossier prose that has shipped since #588.
+Nothing highlights it, nothing suggests it, and nothing tells you afterwards that you were right — the
+owner's own register for this feature: *you understand the motive now; you just cannot get used to it.*
+
+The pen is table work on the SAME ladder the spread is: a cabinet always, a hall table or a bench only
+while it is yours, the bar desk never, and never on your feet. Every refusal is a sentence that says what
+would fix it. Reading the collapsed titles is free anywhere — a captain at a sealed door still has their
+notebook (#690).
+
 Owner, live at a taken table with the old panel up — his screenshot showed the card centred and the backdrop
 dimming the whole hall *and* the new park behind its glass to near-black: *"the seated frame docks, it does
 not dim… the hall stays lit, the A\* walkers stay visible, the park stays green. The full card returns only
