@@ -76,6 +76,17 @@ public static class DevStarts
             "A hut out on the edge lane with somebody's effects still in it. Press E and the picture comes together on the first piece: the card carries all of it — the name, the family who have been waiting nine years, what they know, and the phrase that opens a door somewhere else (#774, #588).",
             "/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"),
 
+        // #728 · THE SHELTER, AND THE TWO FIXTURES NOBODY COULD TELL APART. The owner walked to this exact
+        // building in a live smoke run, read a receipt for seventy rounds, could find no magazines anywhere on
+        // screen, and said of the plates: "on shelters I always forget which is which." The shelters seed DEEP
+        // by design, so every look at any of that cost a two-minute walk — which is how the fixture pair went
+        // three months without one.
+        new("⛺", "The shelter — air on one wall, rounds on the other",
+            "Set down at a shelter's door with your sentries down to twelve rounds each. Both plates now say "
+            + "what they DO, the magazines read out under the motion tracker, and pressing the press moves a "
+            + "number you can watch move (#728, #580).",
+            "/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"),
+
         new("⛏", "An away-team gig, already accepted",
             "A mining rock parked in shuttle range with the job on the books — the shortest road to boots on the regolith (#370).",
             "/map?expedition=mining"),

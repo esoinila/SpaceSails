@@ -1079,6 +1079,44 @@ public partial class Map
                     _hurtCheat = blows;     // never MaxHits: booting a tester into a death card is not a demo
                 }
             }
+            else if (pair.StartsWith("shelter=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #728 dev cheat: /map?shelter=1 sets the boots down AT A SHELTER — the one building on the
+                // ground that fills a tank and fills a magazine, and the fixture pair the owner could not
+                // tell apart in the smoke run.
+                //
+                // It exists because the shelter is DEEP in the field by design (SurfaceShelter.PlacesOn keeps
+                // it out of the landing band on purpose) so every look at its plates, its receipts and the
+                // magazines readout above them cost a two-minute walk across 310 x 260 du of regolith. Same
+                // ruling as ?secretlab=1's doorstep drop: the hunt is the game, and it is exactly what must
+                // not stand between a developer and the thing under test.
+                //
+                // It moves ONE fact — where you are standing — and stands you OUTSIDE the door, so the
+                // proximity cycle, the arrival line, the pressure crossing and the walk to each console are
+                // all exercised the way a captain meets them.
+                //
+                //   /map?dock=the-tilt&site=0&land=1&shelter=1&mags=12
+                string candidate = Uri.UnescapeDataString(pair["shelter=".Length..]).ToLowerInvariant();
+                _shelterCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("mags=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #728 dev cheat: /map?mags=N brings the sling's sentries down holding N rounds each.
+                //
+                // Every one of them lands full (SentryBot.MaxMagazine) on a fresh ship, so the magazines
+                // readout, the shelter press's receipt and the locker's two refusals could only ever be
+                // looked at after a real firefight. It sets the ONE number and nothing else: the roster, the
+                // ammunition kind, the drain and every law downstream are the shipped ones.
+                //
+                //   ?mags=0 … ?mags=99   what each sentry is holding when the shuttle sets you down
+                string candidate = Uri.UnescapeDataString(pair["mags=".Length..]);
+                if (int.TryParse(candidate, System.Globalization.NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out int rounds)
+                    && rounds >= 0 && rounds <= SentryBot.MaxMagazine)
+                {
+                    _magazineCheat = rounds;
+                }
+            }
             else if (pair.StartsWith("watch=", StringComparison.OrdinalIgnoreCase))
             {
                 // #751 dev cheat: /map?watch=N pins which SHIFT the Hive's canteen is on.

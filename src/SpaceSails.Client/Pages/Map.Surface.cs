@@ -975,7 +975,16 @@ public partial class Map
         {
             ShipBot b = _shipBots[0];
             _shipBots.RemoveAt(0);
-            excursion.Bots.Add(new SurfaceBot { Unit = b.Unit, Rounds = b.Rounds, Deployed = false });
+            excursion.Bots.Add(new SurfaceBot
+            {
+                Unit = b.Unit,
+                // #728 QA · ?mags=N — the sling comes down holding what the URL asked for. Here, at the one
+                // place a magazine crosses into an excursion: the readout, the shelter's receipt and both of
+                // the locker's refusals all read this number, so a cheat applied any later would have shown a
+                // tester one captain in the instrument and a different one at the press.
+                Rounds = _magazineCheat ?? b.Rounds,
+                Deployed = false,
+            });
         }
 
         // #784 QA · ?hurt=N — the captain steps out already marked, so the short rest's HEALING half is
@@ -4073,6 +4082,20 @@ public partial class Map
             return;
         }
 
+        // #728 · TWO DIFFERENT NOTHINGS, and they were sharing one sentence. "Your magazines are full" is
+        // true of a captain carrying two topped-up sentries and a lie to a captain carrying none — and it was
+        // the second one the press answered most often, because the press is the reason you walked here.
+        //
+        // Asked of Core, in the same words the HUD's readout is asked (SentryBot.AnythingToFill), and NOT of
+        // ex.Bots.Count — because the tube's own GATE-1 rides that list, is permanently full, and would
+        // therefore have answered "everything is full" on behalf of a captain who owns nothing at all. Two
+        // places deciding the same fact is how this bug got here the first time.
+        if (!SentryBot.AnythingToFill(TheSlingAsTheInstrumentReadsIt(ex)))
+        {
+            ShowPulseMessage(SurfaceShelter.LockerNothingToFillLine);
+            return;
+        }
+
         var takers = ex.Bots.Where(b => b.Rounds < SentryBot.MaxMagazine).ToList();
         if (takers.Count == 0)
         {
@@ -5477,6 +5500,10 @@ public partial class Map
         // what to keep clear.
         (double dropX, double dropY, _) = SurfaceLayout.LandingApproach(MoonSurface.ExpeditionField());
         StandCaptainAt(dropX, dropY, "the shuttle sets you down on the open regolith below the pad");
+
+        // #728 · …and ?shelter=1 walks the last leg, which is the longest walk on the ground: the shelters
+        // are seeded DEEP by design and the fixtures under test are inside one of them.
+        StandAtTheShelterIfAsked(landedOn);
     }
 
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
@@ -5535,6 +5562,58 @@ public partial class Map
                 "🧪 DEV ?counter=1: THE COUNTER, in reach. Press E to open the card and order something.");
             return;
         }
+    }
+
+    /// <summary>#728 QA · <c>?shelter=1</c> — the boots set down at a shelter's door. Set in Map.Sim's cheat
+    /// parse; read in <see cref="StandAtTheShelterIfAsked"/>, the last leg of the landing.</summary>
+    private bool _shelterCheat;
+
+    /// <summary>#728 QA · <c>?mags=N</c> — what each sentry is holding as it comes down the tube. Set in
+    /// Map.Sim's cheat parse; applied in <see cref="BeginSurfaceExcursion"/> at the one place a magazine
+    /// crosses into an excursion, and never later — the readout, the receipts and both of the locker's
+    /// refusals all read this number, and a cheat that wrote it afterwards would show a tester one captain in
+    /// the instrument and a different one at the press.</summary>
+    private int? _magazineCheat;
+
+    /// <summary>#728 QA · Stand the captain at a SHELTER when <c>?shelter=1</c> asked for it.
+    ///
+    /// <para>A pace outside the door of the first shelter in the site's own stable list, facing it — the same
+    /// ruling as <c>?secretlab=1</c>'s doorstep drop. Not inside: the proximity cycle, the arrival line and
+    /// the pressure crossing are all part of what a tester came to look at, and a drop into the drum would
+    /// skip every one of them. The door's spot is asked of the building
+    /// (<c>SurfaceStructure.Build</c>) rather than measured off a picture of it, and the step outward is
+    /// taken along the door's own outward normal, so a seeded angle cannot put the boots in a wall.</para></summary>
+    private void StandAtTheShelterIfAsked(SurfaceExcursion ex)
+    {
+        if (!_shelterCheat || ex.Floor < 0)
+        {
+            return;
+        }
+
+        foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
+        {
+            foreach (SurfaceStructure.Doorway door in SurfaceStructure.Build(shelter).Doorways)
+            {
+                double outX = door.CentreX - shelter.CentreX, outY = door.CentreY - shelter.CentreY;
+                double reach = Math.Sqrt((outX * outX) + (outY * outY));
+                if (reach <= 1e-6)
+                {
+                    continue;
+                }
+
+                const double APaceClear = 4.0;
+                ShowPulseMessage(
+                    "🧪 DEV ?shelter=1: set down at a SHELTER. Walk in — the rack fills your tank, the "
+                    + "press fills your magazines, and the readout under the tracker says what is in them.");
+                StandCaptainAt(
+                    door.CentreX + (outX / reach * APaceClear),
+                    door.CentreY + (outY / reach * APaceClear),
+                    "the shuttle sets you down at the shelter's door");
+                return;
+            }
+        }
+
+        ShowPulseMessage("🧪 DEV ?shelter=1: this ground has no shelter with a door to stand at.");
     }
 
     /// <summary>#759 QA · <c>?park=1</c> — the route to the park, booted. Set in Map.Sim's cheat parse.</summary>
@@ -8317,6 +8396,22 @@ public partial class Map
         // a gauge. It is a drawn BAR now (DeckView, fed by SurfaceHud.AirSeconds); this list is back to
         // being what it always was, the affordances.
 
+        // #728 · …EXCEPT FOR THE OTHER CONSUMABLE, which had no line anywhere. The shelter's press has been
+        // announcing "N rounds into your magazines" into a stat that appeared on exactly one surface in the
+        // game — the two-digit counter painted over an already-deployed bot — so a captain who kept both in
+        // the sling could read a receipt and never see the account.
+        //
+        // It goes FIRST and directly under the air bar because it is an INSTRUMENT, not an affordance: the
+        // lines below teach keys, this one reports a quantity, and the two registers should not be shuffled
+        // together. Composed in Core off the same roster the counters read (SentryBot.MagazinesReadout), so
+        // the HUD and the bot over there cannot come to disagree about one number.
+        //
+        // First also settles what a SHORT SCREEN drops, and the answer is not arbitrary: DeckView stops
+        // drawing captions once they would reach the keybar, and every affordance below is ALSO spelled out
+        // along that keybar (BuildKeyBar names E, T, G and I). This line is told once, here, on the whole
+        // screen. Between two tellings and one telling, the one telling keeps the top of the column.
+        lines.Add(SentryBot.MagazinesReadout(TheSlingAsTheInstrumentReadsIt(ex)));
+
         // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
         // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real
         // fishing expedition, never a dead end. An own ✗ in this ground always earns its own lift line.
@@ -8360,6 +8455,12 @@ public partial class Map
 
         return lines;
     }
+
+    /// <summary>#728 · This excursion's magazines, in the shape Core reads them — one projection, so the
+    /// instrument column and the shelter's press are asking about the same list rather than each building
+    /// their own view of the same bots.</summary>
+    private static IReadOnlyList<SentryBot.Carried> TheSlingAsTheInstrumentReadsIt(SurfaceExcursion ex) =>
+        [.. ex.Bots.Select(b => new SentryBot.Carried(b.Unit, b.Rounds, b.Deployed))];
 
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.
     private ulong ReeverSeed(string bodyId) => DiceRule.Seed($"reever:{bodyId}", (long)SimTime);
