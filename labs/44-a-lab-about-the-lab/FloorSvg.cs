@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -84,7 +84,14 @@ internal static class FloorSvg
             double my = rib.Down ? shaftY - corridor : shaftY + corridor;
             Mouth(s, PX(rib.X - corridor), PX(rib.X + corridor), PY(my));
         }
-        Mouth(s, PX(shaftX - corridor), PX(shaftX + corridor), PY(shaftY + corridor));
+        // #801 · BOTH cars' alcoves, off the one published list. This marked the cage and nothing else,
+        // so a goods car walled over on the lower face would have drawn as clean corridor — which is the
+        // whole thing this lab exists to make visible.
+        foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(env))
+        {
+            Mouth(s, PX(car.X - corridor), PX(car.X + corridor),
+                PY(car.Y + ((car.Landing.Y > car.Y ? 1 : -1) * corridor)));
+        }
 
         // ── LAYER 4 · THE STRUCTURE. Everything down here is poured, welded and bolted, so it draws in the
         //    ship's own hull ink, exactly as HiveInterior draws it (#585).

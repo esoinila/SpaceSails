@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Labs.Lab44;
@@ -76,9 +76,18 @@ internal sealed class FloorReport
             }
         }
 
-        // The lift console, exactly where HiveInterior puts it — the hardest law down here.
-        (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(field);
-        bool lift = Reached(shaftX, shaftY + UndergroundComplex.CorridorHalf + 2.5);
+        // The lift consoles, exactly where HiveInterior puts them — the hardest law down here, and #801
+        // made it plural: a floor where one car is reachable and the other is not is a floor with a choke
+        // point back in it, and the report has to be able to say so.
+        bool lift = true;
+        foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(field))
+        {
+            (double cx, double cy) = car.Landing;
+            lift &= Reached(
+                cx,
+                cy + ((car.Kind == UndergroundComplex.ShaftKind.Cage ? 1 : -1)
+                    * (UndergroundComplex.CorridorHalf + 1.5)));
+        }
 
         return new FloorReport(step, wash, roomReached, lift, hits);
     }

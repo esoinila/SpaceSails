@@ -89,17 +89,21 @@ public sealed class TheOtherCarTests
     /// at the two verticals that make the box, so a car published in a list and never poured goes red.</summary>
     private static bool AlcoveIsCut(in UndergroundComplex.FloorPlan floor, in UndergroundComplex.Shaft car)
     {
+        // The face this car opens off is the one its own doorstep is a pace beyond, so the mouth's y is
+        // derived from the shaft and never typed — the two alcoves hang off opposite faces and a number
+        // written here would be right for one of them and silently vacuous for the other.
+        bool up = car.Landing.Y > car.Y;
+        double mouth = car.Y + ((up ? 1 : -1) * UndergroundComplex.CorridorHalf);
+
         bool left = false, right = false;
         foreach (SurfaceLayout.Wall w in floor.Walls)
         {
-            if (Math.Abs(w.X1 - w.X2) > 0.001)
+            if (Math.Abs(w.X1 - w.X2) > 0.001 || Math.Abs(w.Y1 - w.Y2) < 4.0)
             {
                 continue;
             }
-            bool spansTheMouth =
-                Math.Abs(Math.Min(w.Y1, w.Y2) - Math.Min(car.Y, car.Landing.Y)) < 6.0
-                && Math.Abs(w.Y1 - w.Y2) > 4.0;
-            if (!spansTheMouth)
+            double nearEnd = up ? Math.Min(w.Y1, w.Y2) : Math.Max(w.Y1, w.Y2);
+            if (Math.Abs(nearEnd - mouth) > 0.001)
             {
                 continue;
             }
