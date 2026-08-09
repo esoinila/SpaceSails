@@ -966,9 +966,9 @@ public sealed class DeckView
             // in #792's own warm SEATED ink, because that is the ink this deck already uses for a figure who
             // has settled. Handed down on the droid (DeckPlan.Droid.Held); this pen works nothing out.
             //
-            // NOTHING SHIPPED SETS IT. FootTail's answer is no for every mover in the game today (a patrol
-            // walks a round that was laid before the captain arrived), so this branch is the SEAM and its
-            // drawing is guarded with a test-only tail rather than with an NPC nobody designed.
+            // NOTHING SHIPPED SETS IT: no mover in the game today is a tail (a patrol walks a round that was
+            // laid before the captain arrived). So this branch is the SEAM, and its drawing is guarded with
+            // a test-only held figure rather than with an NPC nobody designed.
             if (droid.Held)
             {
                 float bx = dx - ((float)Math.Cos(facing) * scale * HeldBarDu);

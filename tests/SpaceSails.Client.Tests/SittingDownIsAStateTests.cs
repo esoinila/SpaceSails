@@ -312,19 +312,39 @@ public sealed class SittingDownIsAStateTests
 
     /// <summary>#784 · …and the beat's own words go on the panel the captain pressed, after the room's
     /// answer rather than instead of it. #757's silence line is the EVENT; the body's footnote is one clause
-    /// added to it, and #680 says both are said inside the panel and never pulsed under its blur.</summary>
+    /// added to it, and #680 says both are said inside the panel and never pulsed under its blur.
+    ///
+    /// <para>#793 · RESHAPED, NOT WEAKENED. The composition gained a second footnote — the bench's tail
+    /// reading, which is what a beat spent sitting still in a park is FOR — and the room gained a second
+    /// silence, because a park is not a hall. The law did not move, and it is now asserted AS the law rather
+    /// than as one spelling of it: <b>the room's sentence leads, and every footnote follows it, in the one
+    /// join, inside the panel.</b></para></summary>
     [Fact]
     public void AndTheRestSpeaksInsideThePanelAfterTheRoomHasSpoken()
     {
         string table = Source("Pages", "Map.Table.cs");
         int waited = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
-        string body = table[waited..(waited + 2400)];
+        string body = table[waited..table.IndexOf("\n    /// <summary>", waited, StringComparison.Ordinal)];
 
-        // The room's sentence is the FIRST argument to the join and the body's is the second, so the
-        // silence leads and the footnote follows — the whole of the composition law. Whitespace-normalised,
-        // because a guard about ORDERING that a reformat can fail is a guard about formatting.
+        // The room's sentence leads and the footnotes follow it — the whole of the composition law.
+        // Whitespace-normalised, because a guard about ORDERING that a reformat can fail is a guard about
+        // formatting.
         string flat = System.Text.RegularExpressions.Regex.Replace(body, @"\s+", " ");
-        Assert.Contains("WithTheBodysFootnote( SittingAlone.NobodyCame(", flat, StringComparison.Ordinal);
+
+        int join = flat.IndexOf("WithTheBodysFootnote(", StringComparison.Ordinal);
+        int room = flat.IndexOf("NobodyCame(", join + 1, StringComparison.Ordinal);
+        int look = flat.IndexOf("seen)", room + 1, StringComparison.Ordinal);
+        int rest = flat.IndexOf("rested)", look + 1, StringComparison.Ordinal);
+        Assert.True(
+            join >= 0 && room > join && look > room && rest > look,
+            "the wait beat no longer composes ROOM → footnote(s) through WithTheBodysFootnote — the silence "
+            + "is the event, and everything the body or the eye has to add is a clause after it.");
+
+        // …and BOTH silences are reachable from that one composition. A park borrowing the hall's line would
+        // narrate trays and eighty chairs to somebody sitting on gravel under grow-lamps (#740).
+        Assert.Contains("SittingAlone.NobodyCame(", flat, StringComparison.Ordinal);
+        Assert.Contains("ParkBenches.NobodyCame(", flat, StringComparison.Ordinal);
+
         Assert.Contains("TableAnswered(ex, t, SittingAlone.Wait", body, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowPulseMessage", body, StringComparison.Ordinal);
 

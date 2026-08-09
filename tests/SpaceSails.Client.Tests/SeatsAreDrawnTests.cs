@@ -475,16 +475,31 @@ public sealed class SeatsAreDrawnTests
     {
         string deckView = Source("Rendering", "DeckView.cs");
 
-        // The pen must not know what a stool, a top or a shift IS.
+        // The pen must not know what a stool, a top, a shift — or, since #793, a park bench or a FOOT-TAIL —
+        // IS. The last two are the same lesson pointed at somebody else's feet: whether a figure has stopped
+        // because you sat down is a fact about a route, and a renderer must not be able to have an opinion
+        // about it.
         foreach (string forbidden in new[]
-                 { "TheStools", "CanteenRegulars", "SittingAlone", "CanteenTable", "canteenWatch" })
+                 { "TheStools", "CanteenRegulars", "SittingAlone", "CanteenTable", "canteenWatch",
+                   "ParkBenches", "FootTail" })
         {
             Assert.DoesNotContain(forbidden, deckView, StringComparison.Ordinal);
         }
 
-        // …it is handed them, on the plan, and reads the flags it was given.
+        // …it is handed them, on the plan, and reads the flags it was given. #793 · The two BACKLESS seats in
+        // this game — a stool at a counter and one end of a plank in a park — go through one method, because
+        // it is one question; written twice they would be two answers to "is this seat free", and the day the
+        // ink is tuned only one of them would move.
         Assert.Contains("foreach (DeckPlan.StoolSpot stool in plan.Stools)", deckView, StringComparison.Ordinal);
-        Assert.Contains("if (stool.Taken)", deckView, StringComparison.Ordinal);
+        Assert.Contains(
+            "DrawBacklessSeat(sx, sy, stool.Taken, stool.RowHasSomebody, scale)",
+            deckView, StringComparison.Ordinal);
+        Assert.Contains(
+            "foreach (DeckPlan.BenchSpot end in plan.BenchSeats)", deckView, StringComparison.Ordinal);
+        Assert.Contains(
+            "DrawBacklessSeat(bx, by, end.Taken, end.BenchHasSomebody, scale)",
+            deckView, StringComparison.Ordinal);
+        Assert.Contains("if (taken)", deckView, StringComparison.Ordinal);
         Assert.Contains("if (top.Talking)", deckView, StringComparison.Ordinal);
         Assert.Contains("bool invites = top.Occupied;", deckView, StringComparison.Ordinal);
 

@@ -258,6 +258,12 @@ public sealed class SceneInventoryTests
                                            "(CanteenRegulars.PeopleSitHere), so no general sweep reaches " +
                                            "one either; YouCanSitAtAnEmptyTableTests walks every top of " +
                                            "every floor of ten sites on six watches",
+        [DeckPlan.ConsoleKind.HiveBench] = "#793 a steel bench in the PARK, which #790 carves behind the " +
+                                           "canteen's window wall on the same one floor per branch-office " +
+                                           "site (UndergroundComplex.HasPark) — no general scene sweep " +
+                                           "reaches a park any more than it reaches the hall in front of " +
+                                           "it; TheParkBenchIsAGumshoeMoveTests walks every bench of every " +
+                                           "park the generator lays",
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",
