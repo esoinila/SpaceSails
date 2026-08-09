@@ -462,7 +462,7 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
 
                 // …and the door is a door the floor published, so the deck hangs a leaf on it and the audit
                 // can find it without being told anything about rings.
-                if (!floor.Doorways.Contains(d) && !room.IsHall)
+                if (!floor.Doorways.Contains(d))
                 {
                     wrong.Add($"  {body} B{-level}: ring room {room.Number}'s door is not in the floor's "
                         + "own list of doorways.");
@@ -650,6 +650,75 @@ public sealed class TheParkIsTheCentreOfTheBlockTests
         Assert.True(blocks > 40, $"only {blocks} blocks were measured — this proved little.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} floor(s) build on the block's ground:\n" + string.Join("\n", wrong));
+    }
+
+    // ── (g2) WHAT IS WRITTEN ON THE RING ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// §13.8 · THE ROOMS WITH THE VIEW SAY WHAT A ROOM IS AND NEVER WHAT THE PLACE IS FOR.
+    ///
+    /// <para>The block's own register (<see cref="UndergroundComplex.ParkViewPlates"/>) is the one piece of
+    /// new prose the Manhattan ruling ships, and it is six lines. Every one of them names a booking, a
+    /// signature or an appointment; none of them names the facility, its purpose, or anything a captain
+    /// could take to an inspector. The nearest any of them comes to a sentence is #770's negotiation room,
+    /// and all that plate says is where you book it.</para>
+    ///
+    /// <para>…and it is HUNG WHERE THE VIEW IS, which is the amenity gradient (#775) as signage: a corner
+    /// room, which stands past the end of the park's own wall, wears the corridors' ordinary vocabulary
+    /// instead. Read along one wall of the block and the rooms get better as the green comes into
+    /// view.</para>
+    /// </summary>
+    [Fact]
+    public void TheRingsOwnPlatesSayNothingTheBuildingWouldNotSay()
+    {
+        string[] forbidden =
+            ["reever", "old one", "restore", "backup", "revive", "resurrect", "clone", "slave"];
+        foreach (string plate in UndergroundComplex.ParkViewPlates)
+        {
+            foreach (string bad in forbidden)
+            {
+                Assert.DoesNotContain(bad, plate, StringComparison.OrdinalIgnoreCase);
+            }
+            Assert.Equal(plate.ToUpperInvariant(), plate);
+            Assert.False(plate.EndsWith('.'), $"\"{plate}\" is a sentence — a stencil is not.");
+        }
+        Assert.Equal(
+            UndergroundComplex.ParkViewPlates.Count,
+            UndergroundComplex.ParkViewPlates.Distinct(StringComparer.Ordinal).Count());
+
+        // …and it is on the ring, on the rooms with the view, and NOT on the corners.
+        int viewed = 0, cornered = 0, blocks = 0;
+        foreach ((string body, int level, UndergroundComplex.Hall _, UndergroundComplex.Park park,
+            UndergroundComplex.FloorPlan _) in EveryBlock())
+        {
+            blocks++;
+            if (UndergroundComplex.IsFound(body, level))
+            {
+                continue;   // a gallery has no plates at all (#677), which is a different law
+            }
+            foreach (UndergroundComplex.RingRoom room in park.Frontage)
+            {
+                if (room.Side == UndergroundComplex.RingSide.Far)
+                {
+                    Assert.Contains(room.Plate, UndergroundComplex.ParkBackPlates);
+                    continue;
+                }
+                if (room.HasView)
+                {
+                    viewed++;
+                    Assert.Contains(room.Plate, UndergroundComplex.ParkViewPlates);
+                }
+                else
+                {
+                    cornered++;
+                    Assert.DoesNotContain(room.Plate, UndergroundComplex.ParkViewPlates);
+                }
+            }
+        }
+
+        Assert.True(blocks > 40, $"only {blocks} blocks were read — this proved little.");
+        Assert.True(viewed > 100, $"only {viewed} rooms with a view were read — this proved little.");
+        Assert.True(cornered > 40, $"only {cornered} corner rooms were read — the gradient is untested.");
     }
 
     // ── (h) THE ROOMS THE OWNER ASKED FOR ─────────────────────────────────────────────────────────────

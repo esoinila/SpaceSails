@@ -1517,10 +1517,18 @@ public static class UndergroundComplex
         IReadOnlyList<BackRoom>? Back = null,
         IReadOnlyList<RingRoom>? Ring = null)
     {
-        /// <summary>#813 · THE ROOMS WITH THE VIEW, all the way round — the near band's suites, the back of
-        /// house, and the two end blocks, in that order. The hall is in here too (<see cref="RingRoom.IsHall"/>)
-        /// because it is one of them; it is the only entry that is not also a room in
-        /// <see cref="FloorPlan.RoomCentres"/>.
+        /// <summary>
+        /// #813 · THE ROOMS WITH THE VIEW, all the way round — the near band's suites, the back of house,
+        /// and the two end blocks, in that order.
+        ///
+        /// <para><b>The HALL is not one of them, and the omission is deliberate.</b> It is a ring room in
+        /// every way that matters — its doors are gaps in the spine's face, its far wall is glass on the
+        /// green — and it is already published twice: as this floor's <see cref="Amenity"/> and, for the
+        /// wall itself, as <see cref="Window"/>. A third entry would be the same room in a third list, and
+        /// a caller summing frontage or counting rooms off two of the three would get a different answer
+        /// depending which two. So the ring is <i>the rooms the ring carved</i>, the hall is the hall, and
+        /// anything measuring the park's whole perimeter unions the two out loud (see
+        /// <c>TheParkIsTheCentreOfTheBlockTests.EveryDuOfTheFrontageIsARoomOrAGate</c>).</para>
         ///
         /// <para>Never null, so a caller asking "what faces the park" cannot mistake an empty ring for a
         /// missing one — and on the one floor that has a park, an empty ring is a bug rather than an
@@ -1859,6 +1867,35 @@ public static class UndergroundComplex
     /// that has eaten the frontage it was there to serve.</summary>
     public const double RingRoomMinDu = 16.0;
 
+    /// <summary>
+    /// #813 · WHAT IS STENCILLED ON A ROOM WITH THE VIEW — the six plates the block hangs on its park-facing
+    /// frontage, and nowhere else in the building.
+    ///
+    /// <para>#775's amenity gradient says amenities follow rank. The Manhattan ruling is where that becomes
+    /// a MAP: the rooms on the green are the expensive ones, so they get a vocabulary the corridors do not.
+    /// Every other plate down here is drawn from <see cref="SignFor"/>'s own register of departments and
+    /// refusals — <c>QUOTA OFFICE</c>, <c>DO NOT ADMIT UNESCORTED</c> — and those still go on the block's
+    /// CORNER rooms, which stand past the end of the park's wall and have nothing to look at. The gradient
+    /// is legible without a word being said about it: read along one wall and the rooms get better as the
+    /// green comes into view.</para>
+    ///
+    /// <para>§13.8 holds, and this row is a soft place to break it exactly as the back of house is. Every
+    /// one of these says what a ROOM is — a booking, a signature, an appointment — and not one of them says
+    /// what the facility is for. The nearest any of them comes is #770's negotiation room, and all it names
+    /// is where you book it: at the counter, which is the same sentence a cabinet's plate has carried since
+    /// #751 (<see cref="CabinetPlate"/>). The building rents rooms with a view of a garden it built to
+    /// squeeze morale out of a workforce, and it advertises the aspect.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> ParkViewPlates =
+    [
+        "REGISTERED OFFICE · GARDEN ASPECT",
+        "NEGOTIATION ROOM · BOOK AT THE COUNTER",
+        "SIGNATORY SUITE · TWO KEYS",
+        "SENIOR ROTA · GREEN SIDE",
+        "PRIVILEGED RECORDS · READING ROOM",
+        "RECEPTION · APPOINTMENTS HELD",
+    ];
+
     /// <summary>#813 · Which side of the park a ring room faces it from. Near is the spine's side.</summary>
     public enum RingSide
     {
@@ -1901,13 +1938,10 @@ public static class UndergroundComplex
     /// keeps #801's own way in off the gravel. Null everywhere else, and never on the hall: the owner's
     /// rule is that the glass between the bar and the green is never a door.</param>
     /// <param name="Plate">What is stencilled beside the street door.</param>
-    /// <param name="IsHall">Is this room the hall itself? The hall is a ring room in every way that matters
-    /// — spine doors, glass on the park — and it is carved by the hall's own carver, so it is published
-    /// here and NOT in <see cref="FloorPlan.RoomCentres"/>, which would count it twice.</param>
     public readonly record struct RingRoom(
         int Number, double X0, double Y0, double X1, double Y1, RingSide Side,
         SurfaceLayout.Doorway Door, SurfaceLayout.Wall? View, SurfaceLayout.Doorway? Gate,
-        string Plate, bool IsHall = false)
+        string Plate)
     {
         /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
         public double X => (X0 + X1) / 2.0;
@@ -3175,7 +3209,7 @@ public static class UndergroundComplex
         // The back of house is NOT in here — it goes in below, after both have chosen, for #801's reason.
         foreach (RingRoom room in ring)
         {
-            if (!room.IsHall && room.Side != RingSide.Far)
+            if (room.Side != RingSide.Far)
             {
                 rooms.Add((room.X, room.Y, room.Plate));
             }
@@ -4255,7 +4289,19 @@ public static class UndergroundComplex
             ? new SurfaceLayout.Doorway(mid - DoorHalf, streetLine, mid + DoorHalf, streetLine)
             : new SurfaceLayout.Doorway(streetLine, mid - DoorHalf, streetLine, mid + DoorHalf);
 
+        // ── THE PLATE. A room with the view gets the block's own register (ParkViewPlates); a CORNER room
+        //    gets the building's ordinary one, which is the amenity gradient said in signage rather than in
+        //    a sentence. The back of house keeps #801's plates, because those rooms did not become premium
+        //    by acquiring a street door.
         string plate = found ? "" : SignFor(bodyId, level, $"hive:{level}:ring:{(int)side}:{number}");
+        if (view && side != RingSide.Far)
+        {
+            plate = found
+                ? ""
+                : ParkViewPlates[
+                    (number + (int)(Frac(bodyId, $"hive:{level}:ring-view") * ParkViewPlates.Count))
+                        % ParkViewPlates.Count];
+        }
         if (side == RingSide.Far)
         {
             plate = found
