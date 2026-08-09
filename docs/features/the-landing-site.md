@@ -2371,6 +2371,17 @@ the air fact reaches a captain who arrives by it through the arrival's own sayin
 is §13.13's actual law: **one** pressure fact, said by everything that says it. Nothing is left unsaid; it is
 said once.
 
+**What this means for §13.27's rounds, said out loud rather than left for somebody to trip over.**
+`PatrolBeat.Circuit` opens at *the car* — `ShaftAt` plus a pace — and then walks the rib mouths and their far
+rooms. That is still correct: `ShaftAt` is the cage, and the cage's doorstep is still a pace off its own face.
+What is now true and was not before is that **the goods car is on nobody's round.** That is the feature
+working rather than a hole in the roster — the owner's complaint was precisely that one posted guard has the
+building — but it IS a design question the guards lane owns, and this PR does not answer it: whether a round
+should take in both cars (and pay for it in length), whether a second guard walks the other end, or whether
+the goods car being unwatched is the price the building pays for having one. Nothing here guesses. The back
+of house does not enter the question at all: `IsPatrolled` excludes the bar floor, and the park is only ever
+on the bar floor.
+
 **Two things this deliberately does NOT do, so nobody has to guess later.**
 
 - **No second SURFACE head.** The issue says "maybe a second surface shaft"; the hut is a seeded
