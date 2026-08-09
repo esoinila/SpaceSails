@@ -106,9 +106,14 @@ public sealed class TheRoundIsWalkableTests
                             continue;
                         }
 
+                        // …and the leg is walked over the box the GAME will plan it in, not over the whole
+                        // floor. A sweep that used a floor-sized lattice would prove a route nothing ever
+                        // asks for — two pathfinders agreeing by luck, which is the exact drift Core's one
+                        // LatticeFor exists to stop.
                         if (!DeckReachability.CanReach(
                                 at, new DeckReachability.Point(next.X, next.Y),
-                                deck.CollisionField, DeckPlan.AvatarRadius, bounds))
+                                deck.CollisionField, DeckPlan.AvatarRadius,
+                                PatrolBeat.LatticeFor(here, next, Field)))
                         {
                             bad.Add($"  {body} B{-level} w{watch}: the leg from {here.What} to {next.What} " +
                                     "does not connect — the round stops there forever.");
@@ -303,8 +308,16 @@ public sealed class TheRoundIsWalkableTests
     public void ThePassIsIssuedWhenTheCageTakesYouDown()
     {
         string ride = Between(
-            Pages("Map.Surface.cs"), "case UndergroundComplex.ArrivalBeat.ChitGate:", "case UndergroundComplex.ArrivalBeat.Seam:");
+            Pages("Map.Surface.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
+        Assert.Contains("chitGateThisRide = true", ride, StringComparison.Ordinal);
         Assert.Contains("IssueTheSitePass(ex)", ride, StringComparison.Ordinal);
+
+        // …and it is said AFTER the arrival has finished composing, or the pass's own sentence is a pulse
+        // the arrival's release takes straight back off it (#693/#768).
+        Assert.True(
+            ride.IndexOf("ReleaseHeldSayingsUnlessACardStopsTheWorld", StringComparison.Ordinal)
+            < ride.IndexOf("IssueTheSitePass(ex)", StringComparison.Ordinal),
+            "the pass is granted inside the arrival's own composition, where its line loses the slot.");
 
         string issue = Between(
             Pages("Map.Patrol.cs"), "private void IssueTheSitePass(", "── DRAWING THEM");

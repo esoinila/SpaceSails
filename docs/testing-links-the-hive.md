@@ -628,7 +628,9 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 and nobody asks anybody for anything there; **B21–B24 (the unlisted band) and the found halls have nobody**,
 on purpose, and that is not a gap to report.
 
-**Stand at the car on B2 and do nothing for a minute.** The order the information arrives in is the feature:
+**Stand at the car on B2 and do nothing for a minute.** Where the round happens to be when the doors open is
+the watch's own answer — sometimes it is at the far end of the spine, and once in a while it is standing right
+there, which is its own kind of beat. When it is not, the order the information arrives in is the feature:
 
 1. **the motion fan** paints a smudged, moving return with a bearing on it — a guard heard through poured
    wall, at the reach #591 gave the instrument on that depth;
