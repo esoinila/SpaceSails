@@ -673,12 +673,41 @@ public partial class Map
         _barNotice = keep.Greeting;
     }
 
+    // ── #756 · THE OTHER DOORWAY ONTO THE SAME COUNTER ──────────────────────────────────────────────────
+    //
+    // Owner, live playtest, standing at the B1 cantina hall's counter: "HOW DO I ORDER A DRINK FROM THE
+    // BAR?????? I walk to the bar to buy a drink... not possible... WHY?" — and on the fix: "just copy the
+    // stuff from the space bars as needed" / "we could copy a lot of those from say the Tilt bar at Uranus."
+    //
+    // SO NOTHING IS COPIED. This is TalkToBarkeep's sibling and not its twin: the six lines below are the
+    // whole of the difference between a spaceport bar and a counter 150 m under a rock, because everything
+    // after them — the card, the menu, the buy, the debit, the receipt, the Esc, the #736 outcome slot —
+    // is the same machine holding the same state (_barMenu, _barNotice). A second implementation of "order
+    // a drink" would have been one more thing in this repo that worked twice and told the truth once.
+    //
+    // WHICH counter is asked of Core (CounterService.For); this decides nothing about the venue.
+    //
+    // AND IT OPENS ON THE MENU. The bug being fixed is a captain who could not see anything to order. A
+    // counter that opens closed and asks you to find "See the menu" first is that same bug wearing a card.
+    private void OpenCounterService(Core.Interior.Barkeep counter)
+    {
+        if (_patronDrink is not null)
+        {
+            ClosePatronTable(); // one card at a time — the doorway family the haven counter already joins
+        }
+        CloseOracleFromBar();
+        _barMenu = counter;
+        _barNotice = counter.Greeting;
+        _showBarMenu = true;
+    }
+
     private void CloseBarkeep()
     {
         _barMenu = null;
         _barNotice = null;
         _showBarMenu = false;
         _pendingContactDrink = null; // a half-open offer moment does not survive stepping back from the bar
+        _stool = null;               // #756 · and you are not still on a stool at a counter you walked away from
     }
 
     // The oracle's corner card is one of the same mutually-exclusive doorway family — opening the counter or a
@@ -807,16 +836,28 @@ public partial class Map
         {
             return;
         }
-        if (_credits < keep.DrinkPrice)
+        // #756 · The item's OWN price, asked of Core. A card with a 2 cr coffee and a 12 cr double on it
+        // cannot be charged at one flat rate, and the button's label, the button's enabled-ness and this
+        // debit all read the same PriceAt so they can never come to three different answers.
+        int cost = drink.PriceAt(keep.DrinkPrice);
+        if (_credits < cost)
         {
-            _barNotice = $"“{drink.Name}'s {keep.DrinkPrice} cr — come back when the purse can cover it, spacer.”";
+            _barNotice = keep.SelfService
+                ? $"The reader declines: {drink.Name} is {cost} cr and the purse is short."
+                : $"“{drink.Name}'s {cost} cr — come back when the purse can cover it, spacer.”";
             ShowPulseMessage(_barNotice);
             return;
         }
-        _credits -= keep.DrinkPrice;
-        string receipt = PourRum($"{drink.Name} — {drink.Flavor}", NerveModel.DrinkKind.BarSpecial, withExcuse: true);
+        _credits -= cost;
+        // #756 · FOOD IS NOT A POUR. Owner, at the counter: "you don't have drink or food… what kind of bar
+        // is that." A tray is bought at the same counter with the same coin as a glass, and the tot law is
+        // exactly where the two part company — a fry-up does not tilt the deck, so it must not route
+        // through the ONE wobble law the Galley and every bar ashore share.
+        string receipt = drink.Category == Core.DrinkCategory.Food
+            ? $"🍽 {drink.Name} — {cost} cr. {drink.Flavor}"
+            : PourRum($"{drink.Name} — {drink.Flavor}", NerveModel.DrinkKind.BarSpecial, withExcuse: true);
         _barNotice = receipt;
-        ShowPulseMessage($"{receipt} (−{keep.DrinkPrice:N0} cr)");
+        ShowPulseMessage($"{receipt} (−{cost:N0} cr)");
         RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
     }
 

@@ -1,4 +1,4 @@
-# Test links — the Hive, floor by floor
+﻿# Test links — the Hive, floor by floor
 
 *Companion to [`testing-guide.md`](testing-guide.md) Appendix A, narrowed to one building. Every link here
 boots straight into the situation, and **every floor number below was read out of the real generator** (Lab 44,
@@ -24,6 +24,7 @@ it. Use `?secretlab=deep` for anything about the band nobody listed.
 ### The deep site, as the generator actually builds it
 
 ```
+  ──   SURFACE          dead   ← #802: the regolith, on every body. The lift's SURFACE button says so too
   B1   ADMINISTRATION   air    ← the canteen, the people, the board, the facility plate
   B2   LABORATORIES     dead
   B3   LONG STORAGE     dead
@@ -92,6 +93,438 @@ So testing it needs *time to pass*, not a page refresh:
   barely advances on a regolith (#469), which is exactly why the room holds still during an excursion.
 - The shift is **frozen when the floor is drawn** and every later question reads that same number, so the
   figures drawn and the person the game talks about can never come apart.
+
+## 1a · ADDED (#746) — sitting down at a table, and the job that goes downstairs
+
+```
+/map?tablescene=1                      the whole route, booted — B1, in the canteen, autowalk on
+/map?tablescene=1&roll=lo              …and every rolled ask refused, so the scene MOVES on demand
+/map?tablescene=1&roll=hi              …and every rolled ask lands
+```
+
+`?tablescene=1` implies `?secretlab=deep&land=1&floor=1`, sets the captain down **inside** the upper canteen
+rather than at the lift head, and turns `?autowalk=1` on — the last leg of this scene is a walk across a room,
+and clicking where you want to be is how this repo tests one.
+
+**What to look for.** The round tops now carry **SEAT COUNTS** — 2, 4 or 6, seeded off the building and never
+off the shift, so a table does not re-furnish itself between watches. Walk to a top with somebody at it and
+press **[E]**: if they are one of the three wired regulars and a chair is free, you **ask to join** and the
+table panel opens with their wave-in line. Everybody else in #709's cast keeps their one-breath tap, which is
+deliberate — a canteen where every stranger has a conversation tree is a corridor with quest-givers in it.
+
+The panel's moves are **small talk · buy the round (12 cr) · put something on the table · ask about work ·
+take your leave**. Every answer is rendered **inside the panel** (#680's law: the pulse HUD sits under a modal
+backdrop's blur, and this scene is nothing but text). The one line that is pulsed is *taking your leave*, and
+that is correct precisely because the panel is gone by then.
+
+**The three of them are three answers:**
+
+| who | what they are |
+| --- | --- |
+| `◈ A HAND WHO HAS BEEN HERE LONGER THAN THE CONTRACT SAID` | **the door.** Their ask-about-work is the only rolled move at this table |
+| `◈ A FITTER, OFF A MAINTENANCE CONTRACT` | **the dead end.** Honest scaffold work, never rolled, and the polite dodge (`Not my trade — but thanks`) costs *nothing* |
+| `◈ AN AGENCY TEMP, FIRST WEEK` | **no job, but the house's ways.** Their second line needs a round bought first, and knowing it is the +1 on the Hand's ask |
+
+**The roll** is `DiceRule`, keyed (site, floor, counterpart, move, attempt), through three Fail-Forward bands —
+**YES** / **YES, BUT** / **NO — AND THE SCENE MOVES.** Modifiers are situational and named on screen: `+1` a
+round bought at this table this watch · `+1` the right paper on the table · `+1` the house's ways learned
+first · `−1` your nerve is marked (read off the gauge's own rungs, so the modifier and the readout can never
+disagree) · `−1` you already fumbled an ask here. **Nerve is the social resource too** — YES-BUT and NO-AND
+each spend a pip through the ordinary gauge, never a parallel meter.
+
+**An answer only exists once the sentence does (#749).** Sit at the fitter and look at the moves: `Take the
+scaffold job` and `Not my trade — but thanks` are **not in the panel at all** until `Ask about work` has made
+him say *"South face scaffold, four watches, pay at the end of each. Wind's free."* — **this sitting**. Stand
+up and sit back down and they are gone again; the room still remembers you asked (that is the watch's job),
+but the offer was made to somebody who then left the table. Everything you have merely not *earned* is still
+drawn and still refused out loud (`Keep talking`, greyed, says why) — the difference is the difference between
+a locked door and a question nobody asked.
+
+**Watch the refusal, because it is the busiest outcome in the scene.** `?tablescene=1&roll=lo`, then ask the
+Hand about work: the table hardens for the watch, the **fitter's** ask lights up, and the **temp's** second
+line becomes available without a round — they overheard. That is what "no, *and*" means here.
+
+**Putting something on the table** (any satchel item) is a conversational move:
+
+- a **file on somebody** is LOUD — ask-about-work closes at that table for the watch and the field book keeps
+  the slip. (`&floor=1` plus a file picked up on a deeper floor, or just carry one down.)
+- the **SHAFT 4** authority card (band 3 or deeper) makes the Hand go quiet and auto-resolves their ask as
+  YES-BUT. Fear, not friendship.
+- anything else made of paper is weather on another moon.
+
+**The payoff is a wallet card.** A successful ask grants the **DAY-LABOUR CHIT** (`🎟 DAY-LABOUR CHIT ·
+CARRIERS & CONTRACTORS · CAGE CREW · SHOW AT THE CAGE`), and on a YES-BUT it is written in the book under a
+name the Hand picked — the same paper, a different **fact**, and the fact rides the chit's own identity in the
+satchel rather than a flag beside it (#718 will pull that thread). The chit **is** the cover state Core
+answers about (`CanteenTable.Cover`), which is what #618's guards will read.
+
+**A second payoff**, in the room the pass exists for:
+
+```
+/map?tablescene=1  → get the chit → &floor=17 (the staff mess, #743)
+```
+
+Walk into B17's mess carrying the chit and you get a one-time beat and a pip back — **additive**, never a
+replacement: #743's own room card still fires first, and the chit beat lands on the tick after you close it,
+so nothing is ever said under an open card.
+
+**…and the ending the scene was hired for (#752): take it to the lift.** The Hand's YES line says *"take this
+to the lift and don't be clever near the counter"*, so the walk finishes at the car:
+
+```
+/map?tablescene=1&roll=hi  → sit at the Hand → small talk → buy the round → ask about work
+                           → walk back to the lift → [E] → the OTHER SHAFT row
+```
+
+With the chit in the wallet the sealed row **changes in place**, into #692's affordance and not a new kind of
+button: `↓ THE OTHER SHAFT` · `🎫 opens for you` · `🎟 DAY-LABOUR CHIT · CARRIERS & CONTRACTORS · CAGE CREW ·
+SHOW AT THE CAGE — the gate will read it`. Press it and the car goes down to **the cage band's top floor**
+— B5 on this rock, and derived from Core's own band arithmetic (`BandTop(NextShaftBelow(…))`) rather than
+typed anywhere, so a site shaped differently gets its own answer. When the doors open the panel's own voice
+says it, once, last of the arrival's lines:
+
+> The gate reads the chit the way a tired man reads a timesheet: date, crew, done. The cage takes you down as
+> freight takes the cage — on somebody's account, no questions carried.
+
+…and the field book keeps the reading: *"The chit works. Downstairs is a place you are now paid to be."*
+
+**What must NOT change, and is worth checking on the same boot:**
+
+- **without** the chit (`&roll=lo`, or just walk to the lift first) the row is `↓ THE OTHER SHAFT — SEALED` ·
+  `🔒 sealed`, and pressing it still answers, in the panel, with the refusal it has given since #590.
+- the chit opens **that** gate and no other: ride to B5, press the row for the shaft below it, and it is
+  sealed exactly as it always was. A day-labour chit is cover, not a clearance.
+- the band nobody listed stays unlisted. Carrying the chit down to B20 does not put a button on the panel —
+  #592's silence is not a lock the chit can pick.
+- the countersignature card still wins the row it shares: carry the card and the row names the **card**, and
+  the arrival is still the card's own beat and its 3.0 nerve shock. No shock on the chit's — a gate that
+  reads a timesheet and waves you through is the least frightening thing this building has done.
+
+## 1b · ADDED (#751) — the CANTINA HALL, its cabinets, and the watch that decides the mood
+
+```
+/map?tablescene=1                      the hall, on whatever shift the sim clock is on
+/map?tablescene=1&watch=2              …the HEAVING watch — most of twenty tables taken
+/map?tablescene=1&watch=5              …the SMALL watch — a handful of souls and too much room
+/map?secretlab=deep&land=1&floor=17    B17: the staff mess, at the size of the shift that never came
+```
+
+Owner, 2026-08-06: *"The Canteen is way too small… It needs to house like 80 customers… I am thinking like Mos
+Eisley Space port size bar"*, then *"Definitely want to make the B1 bar be fancy ... and have cabinet-spaces
+for sensitive negotiations"*, then *"The canteen for only staff can also be a lot bigger."*
+
+**What changed.** The B1 canteen left the standard room grammar and is carved as a **HALL** — it stands on a
+whole rib room-column, its front wall is the rib's own face, and its two doorways are the two gaps that
+corridor already had (#585's one-gap law: the hall never cuts a door of its own). Twenty round tops in the
+owner's 2/4/6 mix, **eighty seats**, THE COUNTER as a long bar wall at the far end, THE BOARD by the door, and
+poured pillars breaking the sightlines.
+
+**`?watch=N` is the new lever, and it is the only way to see the design.** Nothing in the game announces
+whether the hall is busy: you walk in, and the room tells you. A watch is four sim-hours and six of them are a
+day, so `watch=2` is the middle of the day and `watch=5` is the small hours. Compare the two and the mood is
+the whole feature. It pins the watch index and nothing else — who is in and where they sat are still the
+rota's own answer for that shift, so what you walk into is the room a captain would get.
+
+**Three tiers at the tables.**
+
+| tier | what pressing `[E]` gets you |
+| --- | --- |
+| the ten **named regulars** (#709/#717) | unchanged — the wave-in, the full #746 scene, the chit |
+| **background patrons** (#751) | a THIN scene: small talk (one of fourteen barks, drawn per patron per watch), **buy the round** (the +1 applies normally), take your leave. No asks, no jobs |
+| **cabinets** | empty — geometry plus a rule. #731's walkers will put somebody in one. **#757:** you may now TAKE one, and nobody ever comes to it, which is what a door is for |
+| **an empty top** (#757) | **take the table** — see 1c below. Until #757 this was the one tier that answered nothing at all |
+
+**The cabinets, and the one mechanic they carry.** Three enclosed rooms down the hall's back wall, plated
+`CABINET n · BY ARRANGEMENT · ASK AT THE COUNTER`, six chairs each — **and their eighteen chairs are not part
+of the hall's eighty.** Walk into one and you get **🚪 THE CABINET** (a card, once per excursion) and a line in
+the field book. What it teaches, by observation and never by tooltip: #746's file-on-the-table is LOUD because
+*"the counter has eyes"* — and a cabinet is a room the counter cannot see, so putting a file down in one does
+**not** close ask-about-work. Same slip, same person, different room.
+
+**First entry into the hall** raises **🍸 THE HALL** (once per excursion). It belongs to the branch office's
+`CANTEEN 1` — the head office's dining room has its own register and its own arrival card (#411).
+
+**B17's staff mess is hall-class too, and it is the same carve** — one implementation, two customers, and the
+only line where they differ is the seat target. The mess's is derived: `ImpliedComplement(body)` = the floors
+the directory **admits to**, times four heads a department. A twenty-storey clinic runs eighty people, a
+five-floor annex twenty, and the band nobody listed has nobody on the books at all. **The mess is empty on
+every watch, forever** — that is #743's sentence (*"the shift has not come"*) at architectural scale, and the
+only new thing it says is its size, which it says by being walked across. **#757 leaves it alone on purpose:**
+the mess is hall-class and full of tops, and not one of them offers "take this table" — a room outsiders are
+not admitted to is not a room you sit down in, and Core's own B1 ruling (`CanteenRegulars.PeopleSitHere`)
+decides that rather than a clause in the renderer.
+
+## 1b-2 · ADDED (#759, RE-SITED #813) — THE PARK IN THE MIDDLE OF THE BLOCK, and the hall at two to four times its old size
+
+```
+/map?park=1                            the whole route, booted — B1, standing INSIDE the park
+/map?counter=1                         …the same wall from the other side: the counter, with the glass behind it
+/map?tablescene=1                      …and the hall itself, which now has 2–4× the floor it had
+/map?ringoffice=1                      …and the OTHER side of the glass: inside a room that faces the green
+```
+
+**#813 · It is no longer "behind the bar".** Owner, 2026-08-09: *"The central park needs to be in the
+center of all the other rooms… not on the side. Think of New York, is the park on one side or is it in the
+center?"* — and the clause that decided every number: *"make sure the park prime real estate is not wasted
+and not unused, not on any side. It is the best real estate."* The green used to be a full-width band at
+the far edge of B1, with the hall's glass along one long side and painted rock on the other three. It is
+now the middle of a **city block**: a ring of rooms all the way round it, each with its door on a street
+and its **glass on the park**, and a street on every side of the block so nobody walks through an office
+to reach an office. On the shipped field the green is **203 × 45 du** at
+`(-106.5, -253.5)`–`(96.5, -208.5)`, ringed by **14 rooms**, **6 gates** (two off the spine, two off the
+back street, one through each end) and about **15 window segments** — the bar's own pane plus every ring
+room's, and the west and east ones run **vertically**, which is the first vertical glazing in the building.
+
+### 1b-2b · ADDED (#791) — THE DESK SERVES ITS WHOLE LENGTH
+
+```
+/map?counter=1                         the counter — now walk the desk END TO END and press [E] anywhere
+/map?stool=1                           …and the row of tall seats, which no longer starts at the freight shutter
+```
+
+Owner, live at the B1 bar (2026-08-08): *"The Bar desk is really long now, but there is only one spot to get
+service on it… we would need an **E-bus** of the bar desk length instead of one bar keep cashier at a single
+spot. Now the counter is in front of the desk, where the bar keep physically would be behind the bar desk
+instead of being in front of it."*
+
+**What was wrong, measured.** The serving desk is **81.9 du** long. The console that answered `[E]` was a
+POINT, and the interact radius is 3 — so **six du of it** took an order, in the middle, with nothing on the
+floor saying which six. Walking the desk end to end, the press answered on **5.6%** of a fixture whose
+photograph, whose collidable wall and whose eight stools all ran the full length.
+
+**What to look for.**
+
+| | what you should see |
+| --- | --- |
+| **the service rail** | a line down the **whole front** of the desk with a tick struck across it every 5 du and a cap at each end — dim while you are away from it, **lit** the moment `[E]` would answer |
+| **the press** | walk from one end of the desk to the other. `[E]` answers everywhere along it, and from ~3 du out into the room |
+| **the prompt** | the `[E]` is drawn at the **stretch of counter under your elbow**, not forty du away at the plate |
+| **the plate** | said **once**, at the middle of the SERVING desk — one console, one card. Not a row of dots |
+| **the click** | click the far end of the desk and you walk to the far end of the desk, not to the plate |
+| **the stools** | hold the row against the desk photograph: every one of the eight is **on it**. Stool 1 used to stand in front of the goods shutter, twelve du before the bar begins |
+| **the keep's side** | the sealed band **behind** the desk (#781 arrives there). Try to walk round the bar — the counter's walls still hold, everywhere |
+
+### 1b-3 · ADDED (#775) — THE CIRCULATION: DOORS ON THE MAIN CORRIDOR, AND WHERE THE FOOD COMES IN
+
+```
+/map?frontdoor=1                       out on the MAIN CORRIDOR at the canteen's own entrance — walk in
+/map?freight=1                         the GOODS HOIST at the end of the counter's service band
+/map?parkwalk=1                        a gate off the MAIN CORRIDOR — down through the near band and across the green
+/map?parkback=1                        the FAR side of the green (#801) — the wall that was a horizon is a row of doors
+/map?ringoffice=1                      INSIDE one of the rooms that faces the green (#813) — the glass from the office side
+/map?goodscar=1                        the SECOND CAR (#801) at the corridor’s blind end — 170 du from the cage
+```
+
+**And the park is a way THROUGH (#775, owner 2026-08-09).** *"Let's have multiple doors to the park… it is
+a kind of place people like to walk through on their way."* #790 gave it one gate at the end of one
+corridor, which makes the largest room in the game a destination and a dead end.
+
+**#813 · and now it is crossed from all four sides.** The gates are no longer whichever ribs happened to
+point the right way — the green is the middle of a block and the block has a street on every side of it,
+so a shipped park carries **six** gates in a fixed pattern: **two down through the near band** off the main
+corridor, **two up through the far band** off the back street, and **one through each end** of the block.
+Boot `?parkwalk=1`, walk in, and leave by any of the other five: you come out on a different street, and
+the route between two places on B1 has crossed the green. The bar's own wall is still glass and still stops
+a body — no gate is ever cut through it, and that is the one pane in the ring with no door in it.
+
+Owner, walking the new B1 the night #790 landed: *"The bar/canteen needs DOORS ON THE MAIN CORRIDOR —
+today you have to really look for the way in; a venue's entrance should find YOU."* / *"A canteen this size
+would have MORE THAN TWO DOORS just for safety reasons."* / *"The facility needs FREIGHT ACCESS somewhere —
+eighty seats of food and twelve beds of produce do not arrive through a personnel door."*
+
+**What to look for.** Boot `?frontdoor=1` and you are on the spine, not in the bar. There is a door in the
+wall beside you with **🍸 CANTEEN 1 · ENTRANCE** stencilled on the corridor side of it, and on most floors it is
+directly across the corridor from the lift car — the carve places the first one wherever the walker is.
+Step through. Then walk the corridor the other way and count: **⇥ EXIT 2 · KEEP CLEAR**, and on the biggest
+halls **EXIT 3**. The number is not typed anywhere — it is `HallEgressDoors` of the room's own published
+floor area, one door per 1 500 du² and never fewer than three.
+
+Then `?freight=1`. **🚛 GOODS HOIST 1** is painted on the floor in front of a shut roller door in the
+counter's own line, at the end of the service band nearest the park's gate — the beds it carries for are
+ten metres behind it through the glass. Walk into the car: you stop. Press `[E]` on the shutter: **🔒 GOODS
+HOIST 1 · DELIVERIES 04:00–06:00 · CREW SIDE ONLY**. Nothing simulates freight; the fixture exists, it is
+labelled, a body stops at it, and the refusal is a sentence rather than an absence.
+
+Owner, 2026-08-08: *"on map the park needs to Exist there next to the bar. It is an indoor park where the
+fresh stuff is grown that is served here on the plate"* — and, on the hall beside it, *"it is like cramped…
+At least double or triple it."*
+
+**What to look for, standing in the park.**
+
+| | what you should see |
+| --- | --- |
+| **the floor** | green — `art/b1-park-walk.jpg` under the vector grid, laid in **panels** across the room so a 16:9 frame is never stretched to 6:1 |
+| **the window wall** | the near wall, along the whole width of the hall, drawn in the **window ink** (the blue-white the ship's bridge glass uses) and not the poured hull line. Walk into it: you stop. You can see the hall through it and you can never enter that way |
+| **the gate** | the ONE way in — the far end of the hall's own rib corridor, which used to be a dead end with a sealed sign on it |
+| **the beds** | raised boxes, solid, stencilled `🌱 BED n · <CROP> · TO CANTEEN 1`: table greens, stew root, breakfast tomato, soft herbs, salad stock, and six coffee trees on trial |
+| **the walk** | gravel curves — the path bends three times down the room, and every bed was laid *around* it rather than the path threaded between beds |
+| **the benches** | six steel benches, one on the outside of every bend, plated `🪑 A STEEL BENCH` |
+| **the masts** | five floodlight posts against the far wall: the artificial day, as objects |
+| **the lone figure** | one plate on the bench furthest from the gate. Nothing to press, on purpose |
+| **the field book** | one line files on the first step in, once per excursion — *ATTENDANCE IS RECORDED* is a sentence here, not a system |
+
+**The food connection is a stencil and nothing else.** The beds say `TO CANTEEN 1`; the counter's own sign
+says `CANTEEN 1`. One bed is stencilled for the stew, which the card under the glass sources *"from as far
+down as we are willing to say"* — and it is growing ten metres from the table it is served at. Nothing
+anywhere points that out.
+
+**The hall, in the same pass.** It stands on a rib that now reaches further than any other rib in the
+building, and its tables are laid at three times the floor-per-top a room module gives — so the shipped sites
+run **5 800–7 100 du²** where they used to run 1 500–2 700. On a site whose ribs all run one way the hall
+moves off the rib beside the lift, because that column has the lift alcove in front of it and could never have
+grown: the rule is now *nearest the car, of the slots that can actually hold it*.
+
+## 1c · ADDED (#757) — taking a free table, waiting at it, and who comes of it
+
+```
+/map?tablescene=free                   boots standing AT a top with nobody at it — press [E] to SIT DOWN
+/map?tablescene=free&approach=1        …and the next SIT A WHILE brings somebody across the hall
+/map?tablescene=free&watch=5&approach=0  …the quiet watch: nobody is coming, and the sit is a SHORT REST (#783)
+/map?tablescene=free&watch=2&approach=0  …the heaving watch, where the same sit is back-to-the-wall (#783)
+```
+
+Owner, live in the hall: *"I have empty table but I cannot sit down"*, and, minutes later, *"the normal way to
+operate in a bar or restaurant is still not implemented."* Correct, and by omission: #746's press is **ask to
+join**, so it needed a counterpart — and an empty top carried **no console at all**, which is why `[E]` there
+did not refuse, did not answer, and never reached the dispatch.
+
+**What to look at, in order.**
+
+1. **Every top is pressable now.** A top with somebody at it says their plate (ask to join, #746); a top with
+   nobody at it says `🪑 A FREE TABLE — SIT DOWN`. **One dot per TABLE, never one per chair** — a six-seat
+   top and a two-seat top are one prompt each. The seat is the spot you walked to; nothing teleports you onto
+   the furniture.
+2. **`[E]` sits you down, and the panel says so FIRST (#783).** Before a single verb: *"You sit down. The table
+   is yours."* Then your own plate, **a picture of the table you are at**, the chair count one short (you are
+   in one of them), and two moves: **SIT A WHILE — see who comes** and **Stand up**. Owner, live and confused
+   on the shipped build: *"What does the WAIT option mean here?"* — twice. It should not need asking now.
+3. **TWO REGISTERS, and the room picks (#783).** On a busy watch the sit is a watch: back to the wall, hands
+   where they can be seen, over `art/b1-your-own-table.jpg` — the empty chair opposite, which *is* the wait
+   beat. On a **quiet** watch (`&watch=5`), or with a **pour bought at the counter still in your hand**, it is
+   a **SHORT REST**: boots up on that same chair, over `art/b1-short-rest.jpg`, and standing up afterwards
+   says something different too. Buy a drink at `?counter=1` first and even the heaving watch turns.
+4. **SITTING A WHILE is the verb.** Owner: *"Suppose I just want to sit down and wait to be disturbed?"*
+   Sitting alone is a choice to be **findable**. Each press is a beat inside the frozen watch (the shift never
+   moves — the drawn room and the pressed room stay one room), and the room answers.
+5. **The wrong watch is a scene too.** `&watch=5&approach=0`: press it as often as you like and the hall
+   tells you, in different words each beat, that nothing is going to happen. A **busy** hall's silence and an
+   **emptied** hall's silence are different sentences and never borrow each other's words — that is the whole
+   beat, and it is the one thing most likely to be mistaken for a bug.
+6. **The approach inverts the roles.** `&approach=1`: a haulier with her coat still on crosses the hall and
+   asks for the chair. Owner's own shape — *"1. ask to sit down, 2. maybe offer to buy me a drink, 3. tell me
+   what they have in mind… think Gandalf knocking on Bilbo's door."* Pull the chair out, let her buy (or turn
+   it down — **either answer opens the next rung**, because refusing a drink is still having heard the offer),
+   then ask what is on her mind. **Not tonight** sends her away for free and leaves you the table.
+7. **What she wants lands on something that exists.** Her lead points at the Hand who has been here longest,
+   who writes the names, on the chit the cage's gate already reads (#746 → #752). It goes in the field book.
+8. **A cabinet is the opposite choice.** Take a cabinet top and wait: **nobody ever comes**, on any watch, at
+   any beat — and the lines say why without stating a rule. The counter has eyes everywhere except in there,
+   and so does everybody else.
+
+## 1d · ADDED (#784) — sitting down is a STATE: it shows, it constrains, and it heals
+
+```
+/map?tablescene=free&approach=0&nerve=low&hurt=3          take the table and WAIT — watch the short rest work
+/map?tablescene=free&approach=0&nerve=low&hurt=3&watch=5  …in the emptied hall, where the wait is all there is
+```
+
+Owner, live over the #778 table, three rulings in the same minutes: *"Let's make the graphics say I am
+sitting down at the avatar level — like different graphics etc."* · *"before moving I have to stand up… so if
+I try to move when sitting down it should ask with a pop-up whether I want to stand up again."* ·
+*"Sitting down relaxes and heals"*, and then the anchor: *"it is like short rest in TTRPG."*
+
+`&nerve=low&hurt=3` is not decoration. A recovery mechanic shown to a steady, unmarked captain demonstrates
+nothing at all — the relief seam is honest and gives nothing back to somebody who has lost nothing, so the
+whole feature would look like a control that did not fire.
+
+**What to look at, in order.**
+
+1. **The figure changes.** Before you press `[E]`, the captain is a filled circle with a spoke pointing where
+   they are walking. After: **no spoke** (you are going nowhere), a smaller body (folded into a chair), a bar
+   behind the shoulders (the chair back) and a short bar in front (arms on the table). Nothing in the panel
+   has to say "you are sitting" — the deck already did.
+2. **W does not walk you out of your own table.** Press any movement key: the captain does not move a
+   centimetre and a small confirm goes up — *"Stand up? You will lose the table."* — with the cost said
+   underneath while there is still a rest to lose. `Esc`, the backdrop and **Stay where you are** all keep
+   your seat; **Stand up** (or `Enter`) stands you up and the table is gone.
+3. **WAIT is a short rest.** Each press eases a whole nerve pip — watch the corner gauge and the **nerve
+   ledger**, which names it — and the panel adds one clause after the room's own silence line. On the third
+   beat one of the five blows knits: the condition marker under the gauge goes *badly cut* → *bleeding*.
+4. **A short rest is SHORT, and the game says so.** Keep pressing. The nerve stops moving at the ceiling and
+   the panel tells you why rather than handing back a beat that silently did nothing. One blow per watch and
+   never two: the rest of you comes back in the ship's bunk, which is the long rest.
+5. **The pour pays in tempo.** Boot `&counter=1` instead, buy THE LOCAL POUR, then walk to a free top and
+   sit: the same rest lands in half the beats. It multiplies the RATE and never the ceiling — the glass buys
+   the rest *before the room takes it off you*, which matters because #757's haulier can walk into the middle
+   of it. Three tots and it stops helping, which is the game's one drunkenness law and not a second opinion.
+6. **Writing properly is seated-only.** Open the satchel (`I`) standing up, on a document: the ✍ control
+   refuses out loud and names the register you DO have — photograph it and leave it, which is #696 untouched.
+   Sit down and press it again: the book takes the entry in your own hand **and the sheet stays in your
+   pocket**, which is the whole of what a table buys.
+
+## 1b · Sitting is not a cutscene — the docked frame and the spread (#784, phase two)
+
+```
+/map?spread=1                          sat down in a CABINET, three finds in the sleeve
+/map?spread=1&process=3                the same, with a three-second dig
+/map?tablescene=free&watch=2           a hall table on a heaving watch, for the customer line's other end
+/map?stool=1                           the counter, where the spread is refused (the gumshoe rule)
+```
+
+## 1c · The red pen — the lines you draw between two things you wrote down (#741)
+
+```
+/map?threads=1                         the same cabinet, six entries already in the book from two grounds
+```
+
+The notebook is title-first now: collapsed nodes with a caret, a 🧵 count or *loose end*, and bullets
+under the ones you open. Take the 🖊 RED PEN and pressing a title stops meaning *read it* and starts
+meaning *one end of a line*; press a second title and the line is drawn — a soft chime, a red connector
+settling, and the list reorders so the two sit together. The same two presses take it off again.
+
+**What to look for, and it is deliberately not pointed at.** Six entries, two moons, and the same door named
+on both: **The Tilt** is where one dead specialist's family is still waiting for word, and it is where the
+phrase that fell out of their kit opens something. All of it is dossier prose that has shipped since #588.
+Nothing highlights it, nothing suggests it, and nothing tells you afterwards that you were right — the
+owner's own register for this feature: *you understand the motive now; you just cannot get used to it.*
+
+The pen is table work on the SAME ladder the spread is: a cabinet always, a hall table or a bench only
+while it is yours, the bar desk never, and never on your feet. Every refusal is a sentence that says what
+would fix it. Reading the collapsed titles is free anywhere — a captain at a sealed door still has their
+notebook (#690).
+
+Owner, live at a taken table with the old panel up — his screenshot showed the card centred and the backdrop
+dimming the whole hall *and* the new park behind its glass to near-black: *"the seated frame docks, it does
+not dim… the hall stays lit, the A\* walkers stay visible, the park stays green. The full card returns only
+for conversations."*
+
+**What to look at, in order.**
+
+1. **There is no scrim.** Sit down and look at the screen, not at the strip: the hall is still lit, the
+   figures at the other tops are still drawn, the deck is still animating. The seated panel is a **HUD strip**
+   docked at the foot of the deck — no backdrop element exists in the page at all while you are seated alone.
+   The card comes back **only** for a conversation: press `SIT A WHILE` on `/map?tablescene=free&approach=1`
+   until somebody crosses the room, and the moment she takes the chair the full card is up again, art and all,
+   exactly as #778/#787 shipped it.
+2. **The customer line.** The strip's first row is an instrument in the AIR gauge's register:
+   `🪑 YOUR OWN TABLE · NO POUR — … · REST 1/3 pips · the hall is working`. Every figure on it is the figure
+   the mechanic is running: press `SIT A WHILE` and the pips climb to the ceiling and then say so; buy a pour
+   at the counter first and the drink clause counts the minutes down and states the ×2; sit in a cabinet and
+   the room clause says the door is shut, because in a cabinet nobody comes and that is #757's own law.
+3. **`[I]` opens the spread — seated only.** Standing, `I` opens the pocket exactly as it always has. Seated,
+   it opens on a third page, **🗂 SPREAD**, whose tab does not exist when you are on your feet.
+4. **The dig bar.** Press a paper on the spread page. The satchel shuts, and the **digging bar** fills over the
+   captain's own mark on the live deck — the same rectangle the shovel and the darkroom draw, wearing the pen
+   glyph. The strip says how many seconds are left. When it fills, the entry is in **📓 NOTES** in your own
+   hand **and the sheet is still in the sleeve**. Stand up half way through and it is abandoned out loud with
+   nothing filed.
+5. **Privacy gates it.** In a cabinet it always works. At a hall table it works while the chair opposite is
+   empty — and if somebody takes it mid-dig, your hands are already moving and the papers go away. At the
+   **counter** (`/map?stool=1`) the spread page opens and refuses out loud: *not at the bar*. That is the
+   owner's gumshoe rule, and it is a sentence rather than a missing control on purpose.
+6. **`Esc` is sane.** Docked, `Esc` raises the same stand-up question `W` does rather than silently spending
+   the watch you sat for. In a conversation it still closes the card, because leaving a table is free and
+   always available.
 
 ## 2 · The board, and whose notice is whose (#709)
 
@@ -228,6 +661,53 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 
 ---
 
+## 9 · The rounds on the restricted floors, and the badge (#804, v1 of the guards)
+
+```
+/map?patrol=2                    B2 of the deep site with the TWO-guard watch forced
+/map?patrol=1                    …the one-guard watch, which is the floor you can actually cross
+/map?badge=1                     …the same round with this site's own SITE PASS already in the wallet
+/map?patrol=2&watch=5            the same floor on a different shift — the same stops, a different round
+/map?patrol=1&autowalk=1         cross the floor by clicking it, which is how to time a round without WASD
+```
+
+**Which floors have one, and it is worth knowing before you go looking.** Everything **below the bar** and
+**no deeper than the directory admits to** — on the deep site that is **B2 down to B20**. B1 has the canteen
+and nobody asks anybody for anything there; **B21–B24 (the unlisted band) and the found halls have nobody**,
+on purpose, and that is not a gap to report.
+
+**Stand at the car on B2 and do nothing for a minute.** Where the round happens to be when the doors open is
+the watch's own answer — sometimes it is at the far end of the spine, and once in a while it is standing right
+there, which is its own kind of beat. When it is not, the order the information arrives in is the feature:
+
+1. **the motion fan** paints a smudged, moving return with a bearing on it — a guard heard through poured
+   wall, at the reach #591 gave the instrument on that depth;
+2. **👣 *Boots on shotcrete, out of sight and in no hurry…*** — closer, still nothing on the deck;
+3. **a green mark** with `PATROL 1` over it, the instant your own line of sight reaches them, and **gone the
+   instant a wall gets between you**;
+4. inside **nine deck units**, with a clear line, **the round stops at you** and a card goes up.
+
+They stand **five seconds at every stop** and walk between them at 3.2 du/s, which is slower than you. Watch
+one work a rib, wait at the mouth, and go past behind it.
+
+**The four things a wallet can say**, all on the same card, in its amber row:
+
+| carrying | what he says | what happens |
+| --- | --- | --- |
+| this site's pass | reads the face, the site code and the tier, hands it back, mentions the wet floor | the round picks up where it left off |
+| another site's pass | *"That's not us."* — and it NAMES the other site | walked back to the car |
+| only the cage chit | *"That's for the cage. This isn't the cage."* | walked back to the car |
+| nothing | *"He waits the entire time you are looking"* | walked back to the car |
+
+Nothing is confiscated, nobody is called, and **there is no chase in this feature.** The cost is one nerve pip
+and a line in the field book.
+
+**Earning the pass rather than minting it** is the whole cage-crew lane end to end, and it is worth walking
+once: `?tablescene=1&roll=hi` → ask the Hand about work → take the chit → walk to the lift → ride to **B5**.
+The pass is printed at the bottom of the cage.
+
+---
+
 ## Add-ons that stack on any of the above
 
 | Argument | What it does |
@@ -238,6 +718,21 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&book=N` | force catalog entry N of the odd books (#701) |
 | `&death=suffocated` | boot into the death you want to read |
 | `&credits=50000` | price anything without grinding for it |
+| `&roll=hi|lo` | force the encounter band at a table (#746) |
+| `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
+| `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — plated **SIT DOWN**, and the panel wears the table (#783) |
+| `&approach=1\|0` | force whether sitting a while brings somebody over (#757); `0` is the told nobody-came beat |
+| `?park=1` | boot standing INSIDE the park (#759/#813) — green floor, and a room's glass on all four sides of you |
+| `?frontdoor=1` | boot OUT ON THE MAIN CORRIDOR at the canteen's own front door (#775) — walk in through it |
+| `?freight=1` | boot at the GOODS HOIST (#775) — drawn, labelled, solid, and it refuses you in words |
+| `?parkwalk=1` | boot at the mouth of a gate off the spine (#775/#813) — the block is crossed from all FOUR sides, 6 gates |
+| `?parkback=1` | boot on the gravel facing the park’s FAR wall (#801/#813) — the back of house, which has a street behind it now |
+| `?ringoffice=1` | boot INSIDE a room that faces the park (#813) — the only row in the game on the OFFICE side of the glass |
+| `?goodscar=1` | boot at the SECOND CAR (#801) — the goods lift at the blind end; no surface row, no gate |
+| `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
+| `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
+| `?patrol=1\|2` | boot on B2 with a ROUND on it (#804); `2` forces the two-guard watch |
+| `?badge=1` | the same, with this site's own SITE PASS minted — the satisfied arm of the challenge |
 
 ## What has NO link yet, because it is not built
 
@@ -245,8 +740,9 @@ Filed tonight and deliberately absent from this document — adding a link for a
 testing guide starts lying:
 
 - **#719** the service stair / second way out — *and it must ship before anything is allowed to stop the car*
-- **#618** guards on the bottom floors, the noise trigger, the talk risk
-- **#715** illegal heat, owed per entity
+- **#618** the guards' *response* — the noise trigger and the talk risk. The rounds themselves shipped with
+  #804 (section 9 above); what is still unbuilt is everything that would make being seen escalate
+- **#715** illegal heat, owed per entity — the challenge files one line today and nothing accumulates
 - **#718** the rollback, the coerced job, recognition
 - **#720** the batch ending
 - the **staff cantina's own people** (B17 above is furnished and empty on purpose)

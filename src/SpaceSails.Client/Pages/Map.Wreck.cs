@@ -281,10 +281,47 @@ public sealed partial class Map
             ? $"📋 Filed on the {w.ShipName} — {outcome.CreditsNow:N0} cr."
             : $"🏴 Stripped the {w.ShipName} — {outcome.CreditsNow:N0} cr, and she stays lost.");
 
+        // #652 · AND THE HALF THAT OUTLIVES THE PAYOUT, WHICH USED TO OUTLIVE NOTHING. The honest road's one
+        // durable advantage was a boolean: the card said "somebody now owes you a straight answer" and there
+        // was no somebody anywhere in the tree. A promise the game cannot name is a promise it has not made,
+        // and it is the whole reason to file rather than strip — the numbers alone (10–15% against 100%) are
+        // not a decision, they are an answer.
+        //
+        // The contact goes on the book the game already keeps, through the seam standing a round at the bar
+        // already uses (ContactLedger.AddGoodwill). Core names them, seeded from the hull, so the same wreck
+        // always produces the same assessor; the ledger round-trips through the vault for free.
+        BookTheSalvageContact(w, outcome);
+
         RendererInterop.PlayCue(outcome.ContactEarned ? "reveal" : "board");
         RebuildWreckDeck();
         RequestVaultSave();
     }
+
+    /// <summary>#652 · Put a name to the straight answer the card promises, and say whose it is. Nothing
+    /// happens on the quiet road, and nothing happens on a filing that named the wrong cause — Core has
+    /// already decided both (<c>ContactEarned</c>), and a bad report earning a friend would be the lane's
+    /// whole point backwards.</summary>
+    private void BookTheSalvageContact(in Derelict.Wreck wreck, in Derelict.SalvageOutcome outcome)
+    {
+        if (!outcome.ContactEarned)
+        {
+            _wreckContact = null;
+            return;
+        }
+
+        (string id, string name) = Derelict.ContactFor(wreck);
+        _contacts.AddGoodwill(id, name, Derelict.ContactGoodwill);
+
+        // #761/#769 · Said on the pop-up that is about to open, not into a banner behind it. The outcome
+        // card IS this moment's surface, so the sentence rides the card's own record and cannot outlive it;
+        // the log keeps the words after the card is gone.
+        _wreckContact = name;
+        LogAutopilotEvent(Derelict.ContactLine(name));
+    }
+
+    /// <summary>Who countersigned the finding that just cleared, for the outcome card — null on any road
+    /// that earned nobody.</summary>
+    private string? _wreckContact;
 
     private void DismissWreckOutcome() => _wreckOutcome = null;
 

@@ -34,7 +34,14 @@ public sealed class DeckView
         // dim. Instruments are untouched: the motion fan, the on-grid smudges and the corner gauges are drawn
         // after the dark is laid down, because a thing you HEAR through a wall in an unlit hall is the entire
         // point of the feature.
-        bool Dark = false);
+        bool Dark = false,
+        // #784 · IS THE CAPTAIN SITTING DOWN. Owner, live 2026-08-08: "Let's make the graphics say I am
+        // sitting down at the avatar level — like different graphics etc." So it is a fact about the FIGURE
+        // and not a caption: the mark below is drawn differently, and a glance at the deck says sitting with
+        // no panel text involved. Handed down as the sim's own answer (the table panel IS the chair, #757),
+        // never re-derived here — a renderer working out for itself what the sim already knows is how two
+        // instruments come to disagree (#591).
+        bool Seated = false);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -232,6 +239,14 @@ public sealed class DeckView
     /// on one deck have to be told apart at a glance, and the colour is the only thing doing that job while a
     /// captain is deciding which way to run.</summary>
     private static readonly RgbaColor SweeperColor = new(150, 205, 235);
+
+    /// <summary>#804 · A GUARD ON A ROUND reads INSTITUTIONAL GREEN — the ink of the thing that wants to see
+    /// your paperwork. It is the fifth kind of figure this deck draws and it needs its own colour for the
+    /// reason the other four do: the pack is red because it wants to eat you, the repo crew amber because
+    /// it wants your money, a professional cold blue because it will shoot you. A guard who read as any of
+    /// those would tell a player to run from the one figure in the game whose whole design is that running
+    /// is the wrong answer.</summary>
+    private static readonly RgbaColor GuardColor = new(120, 200, 150);
 
     /// <summary>
     /// #537 · The ship's own structure — closed-cell metal foam and everything packed into it.
@@ -863,11 +878,31 @@ public sealed class DeckView
 
         }
 
-        // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor.
-        foreach ((float tx, float ty) in plan.Tables)
+        // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor, and — where the
+        // plan bothered to say — the chairs round it and who is in them (#792).
+        foreach (DeckPlan.TableTop top in plan.Tables)
         {
-            (float cx2, float cy2) = P(tx, ty);
+            (float cx2, float cy2) = P(top.X, top.Y);
             _renderer.DrawCircle(cx2, cy2, 0.9f * scale, null, InnerLine, 1.5f);
+            DrawSeatsRound(cx2, cy2, top, scale);
+        }
+
+        // #792 · The tall seats at a counter — free and taken, in the same two inks the chairs use.
+        foreach (DeckPlan.StoolSpot stool in plan.Stools)
+        {
+            (float sx, float sy) = P(stool.X, stool.Y);
+            DrawBacklessSeat(sx, sy, stool.Taken, stool.RowHasSomebody, scale);
+        }
+
+        // #793 · …and the park's benches, END BY END, in exactly those two glyphs and no third one. A plank
+        // has no back to draw any more than a bar stool has, and a free end beside somebody is the same offer
+        // a free chair at an occupied top is. THE WHOLE BENCH is the privacy predicate
+        // (SeatedSpread.CanSpreadTheCase at the ParkBench rung), so the deck has to be able to say which half
+        // is gone before a captain walks the length of a 278 du park to find out by pressing.
+        foreach (DeckPlan.BenchSpot end in plan.BenchSeats)
+        {
+            (float bx, float by) = P(end.X, end.Y);
+            DrawBacklessSeat(bx, by, end.Taken, end.BenchHasSomebody, scale);
         }
 
         // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).
@@ -895,9 +930,14 @@ public sealed class DeckView
             // repo crew amber, a professional cold blue: what is walking toward you matters, and two hostiles
             // that read identically on the map are one hostile with two names.
             bool sweeper = IsSweeper(droid.Name);
+            // #804 · …and a FIFTH: a guard walking a round on a restricted floor of the Hive. Institutional
+            // green, because they are the one figure on this deck that is not a hostile at all — they are
+            // an employee, and the mark has to say so before the card does.
+            bool guard = SpaceSails.Core.PatrolBeat.IsGuardName(droid.Name);
             RgbaColor mark = reever ? ReeverColor
                 : collector ? CollectorColor
                 : sweeper ? SweeperColor
+                : guard ? GuardColor
                 : DroidColor;
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
@@ -910,15 +950,33 @@ public sealed class DeckView
             // #583: a collector has a body that catches on the same radius as everyone else's, so it is
             // drawn at that radius for the same reason an Old One is — the picture IS the law. Same for a
             // sweeper (#538), and for the same reason.
-            float bodyRadius = reever || collector || sweeper ? (float)DeckPlan.AvatarRadius : 0.5f;
+            float bodyRadius = reever || collector || sweeper || guard ? (float)DeckPlan.AvatarRadius : 0.5f;
             _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
-            double facing = headsUp && !reever && !collector && !sweeper ? Math.PI / 2
+            double facing = headsUp && !reever && !collector && !sweeper && !guard ? Math.PI / 2
                 : glance?[di] ?? droid.FacingRad;
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
+
+            // #793 · …AND WHETHER THEY STOPPED WHEN YOU DID. Owner, on the whole point of a park bench:
+            // "it is a good gumshoe move to see if anyone is following us by foot, as they would need to
+            // stop moving also." A tail that has to hold is drawn holding — a bar struck across their back,
+            // in #792's own warm SEATED ink, because that is the ink this deck already uses for a figure who
+            // has settled. Handed down on the droid (DeckPlan.Droid.Held); this pen works nothing out.
+            //
+            // NOTHING SHIPPED SETS IT: no mover in the game today is a tail (a patrol walks a round that was
+            // laid before the captain arrived). So this branch is the SEAM, and its drawing is guarded with
+            // a test-only held figure rather than with an NPC nobody designed.
+            if (droid.Held)
+            {
+                float bx = dx - ((float)Math.Cos(facing) * scale * HeldBarDu);
+                float by = dy + ((float)Math.Sin(facing) * scale * HeldBarDu);
+                float px = -(float)Math.Sin(facing) * scale * SeatChairDu;
+                float py = -(float)Math.Cos(facing) * scale * SeatChairDu;
+                DrawSeg((bx - px, by - py), (bx + px, by + py), SeatTaken, 2.4f);
+            }
 
             // #538 · THE LAMP, DRAWN AT EXACTLY THE ANGLE THE RULE CHECKS. InspectionTeam.LampConeHalfAngleDegrees
             // and LampRange are read straight from Core here rather than eyeballed, because a cone drawn wider than
@@ -951,6 +1009,7 @@ public sealed class DeckView
                 reever ? ReeverColor
                     : collector ? CollectorColor
                     : sweeper ? SweeperColor
+                    : guard ? GuardColor
                     : TextDim,
                 "8px monospace", TextAlign.Center);
         }
@@ -1137,12 +1196,35 @@ public sealed class DeckView
             // second console in range no longer claims a key it will not get.
             bool near = answering == console;
             RgbaColor c = near ? ConsoleNear : ConsoleGlow;
+
+            // ── #791 · A FIXTURE THAT IS A RUN IS DRAWN AS ONE ────────────────────────────────────────
+            //
+            // Owner, at the B1 bar: "we should probably have service on the whole length indicated somehow."
+            // The desk's front is now the press zone, so the desk's front is now MARKED — a service rail
+            // down the whole of it with a serving tick struck across it every few du, in the same console
+            // ink the dot has always used. No text is repeated along it (#782: a plate you cannot read is
+            // worse than none, and one you read forty times is a wall of noise); the plate is said once, at
+            // the fixture's own middle, exactly as it always was.
+            //
+            // IT IS THE VERY SEGMENT THE KEY MEASURES. Both come off ConsoleSpot's own span, which came off
+            // Core's Hall.Service — so the length that is lit and the length that answers cannot disagree,
+            // which is the split this deck has paid for more than any other.
+            if (console.IsRun)
+            {
+                DrawServiceRun(console, c, near, P);
+            }
+
             _renderer.DrawCircle(sx, sy, near ? 5f : 3.5f, c, c);
             _renderer.DrawText(sx, sy - 10, console.Label, near ? ConsoleNear : TextDim,
                 near ? "bold 10px monospace" : "9px monospace", TextAlign.Center);
             if (near)
             {
-                _renderer.DrawText(sx, sy + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
+                // …and the offer is drawn WHERE YOU ARE STANDING. On a point console that is the console;
+                // on an eighty-du desk it is the stretch of counter under your elbow, because an [E] forty
+                // du away at the plate would be the game answering a press it looks like it is refusing.
+                (float ex, float ey) = console.NearestPointTo(state.AvatarX, state.AvatarY);
+                (float px, float py) = P(ex, ey);
+                _renderer.DrawText(px, py + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
             }
         }
 
@@ -1185,12 +1267,27 @@ public sealed class DeckView
             }
         }
 
-        // #473: the captain's mark already happened to equal AvatarRadius — say so, so the two can never
-        // drift apart again the way the Old Ones' mark had.
-        _renderer.DrawCircle(ax, ay, (float)DeckPlan.AvatarRadius * scale, AvatarColor, AvatarColor);
-        float hx = ax + (float)Math.Cos(state.HeadingRad) * scale * 1.1f;
-        float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
-        DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
+        if (state.Seated)
+        {
+            // ── #784 · SITTING DOWN, DRAWN ──
+            //
+            // Owner: "Let's make the graphics say I am sitting down at the avatar level." A standing captain
+            // is a body and a long spoke pointing where they are going. A seated one is going nowhere, so
+            // the spoke is gone entirely — in its place a CHAIR BACK behind the shoulders and a short bar of
+            // ARMS on the table in front, and a body that takes a little less floor because it is folded
+            // into a chair. Same ink, same anchor: it is the same captain, in a different posture, and the
+            // three marks read as one figure rather than as furniture that has appeared beside them.
+            DrawSeated(ax, ay, state.HeadingRad, scale);
+        }
+        else
+        {
+            // #473: the captain's mark already happened to equal AvatarRadius — say so, so the two can never
+            // drift apart again the way the Old Ones' mark had.
+            _renderer.DrawCircle(ax, ay, (float)DeckPlan.AvatarRadius * scale, AvatarColor, AvatarColor);
+            float hx = ax + (float)Math.Cos(state.HeadingRad) * scale * 1.1f;
+            float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
+            DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
+        }
 
         // #313 the dig channel: a shovel glyph over the captain and a crude progress bar — the
         // vulnerability window, drawn ON the grid so the player watches the tracker while it fills.
@@ -1325,7 +1422,10 @@ public sealed class DeckView
     // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
     // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
     private static bool IsCrew(string name) =>
-        name is not ("Reever" or "Collector") && !IsSweeper(name) && !IsPatron(name);
+        name is not ("Reever" or "Collector") && !IsSweeper(name)
+        // #804 · Nor a guard on a round. Nobody on a security rota is going to catch a barkeep's eye during
+        // a hull shudder, and the crew's grey would hide the one figure the Hive's floors have.
+        && !SpaceSails.Core.PatrolBeat.IsGuardName(name) && !IsPatron(name);
 
     /// <summary>#538 · A sweeper, by callsign. Never crew: nobody on that team is going to catch a barkeep's eye
     /// during a hull shudder, and giving them the crew's grey would hide the second hostile thing on the deck.</summary>
@@ -1924,6 +2024,254 @@ public sealed class DeckView
         s[0] = x; s[1] = y; s[2] = x + w; s[3] = y; s[4] = x + w; s[5] = y + h;
         s[6] = x; s[7] = y + h; s[8] = x; s[9] = y;
         _renderer.DrawPolyline(s, color, 1.5f);
+    }
+
+    // ── #784 · THE SEATED FIGURE ──────────────────────────────────────────────────────────────────────
+    //
+    // Three numbers, named, because a posture drawn out of literals is a posture nobody can tune. All of
+    // them are fractions of DeckPlan.AvatarRadius or of the deck scale, so the seated captain grows and
+    // shrinks with the standing one and the two can never drift apart the way #473's marks had.
+
+    /// <summary>How much of the standing body a seated one takes on the floor. Less, because it is folded
+    /// into a chair — and not so much less that the figure stops reading as a person.</summary>
+    private const float SeatedBodyFactor = 0.74f;
+
+    /// <summary>How far BEHIND the body the chair back is drawn, in deck units.</summary>
+    private const float SeatedChairBackDu = 0.95f;
+
+    /// <summary>How far in FRONT of the body the arms rest, in deck units — hands on the table, which is the
+    /// half of the pose that says <i>at a table</i> rather than merely <i>not walking</i>.</summary>
+    private const float SeatedArmsDu = 0.62f;
+
+    /// <summary>Draw the captain sitting down: a chair back across the shoulders, a folded body, and a short
+    /// bar of arms on the table in front. No heading spoke — a seated captain is going nowhere, and the
+    /// spoke has meant "this way" since the mark was first drawn.</summary>
+    private void DrawSeated(float ax, float ay, double headingRad, float scale)
+    {
+        float cos = (float)Math.Cos(headingRad), sin = (float)Math.Sin(headingRad);
+        // Screen Y runs the other way to deck Y, which is why the sines are negated here exactly as they
+        // are in the standing spoke above.
+        (float fx, float fy) = (cos, -sin);          // forward, on screen
+        (float px, float py) = (-fy, fx);            // and across it
+
+        float back = SeatedChairBackDu * scale, arms = SeatedArmsDu * scale;
+        float backHalf = (float)DeckPlan.AvatarRadius * scale;
+        float armHalf = (float)DeckPlan.AvatarRadius * scale * 0.8f;
+
+        // The chair back — a bar behind the shoulders, the one mark a standing captain never has.
+        DrawSeg(
+            (ax - (fx * back) - (px * backHalf), ay - (fy * back) - (py * backHalf)),
+            (ax - (fx * back) + (px * backHalf), ay - (fy * back) + (py * backHalf)),
+            AvatarColor, 2.5f);
+
+        _renderer.DrawCircle(
+            ax, ay, (float)DeckPlan.AvatarRadius * scale * SeatedBodyFactor, AvatarColor, AvatarColor);
+
+        // …and the arms, on the table.
+        DrawSeg(
+            (ax + (fx * arms) - (px * armHalf), ay + (fy * arms) - (py * armHalf)),
+            (ax + (fx * arms) + (px * armHalf), ay + (fy * arms) + (py * armHalf)),
+            AvatarColor, 2f);
+    }
+
+    // ── #792 · THE SEATS, SEEN ────────────────────────────────────────────────────────────────────────
+    //
+    // Owner, playtest 2026-08-08: "people looking to sit down look at those like hungry wild beasts look at
+    // their prey" — and the deck could not answer one of the three glances a hungry traveller takes.
+    //
+    // THREE GLYPHS AND NO WORDS, because #782's law is that the deck is read at phone size and this room is
+    // already the densest in the game. Everything below is a fraction of the deck scale, exactly as the
+    // seated captain's chair back is, so the furniture grows and shrinks with the people in it.
+    //
+    //   an EMPTY chair          a short bar on the table's ring, in the room's own furniture grey
+    //   an OPEN chair           the same bar, heavier and in the console green — a seat at a table that
+    //                           already has somebody at it, which is a different offer from an empty room
+    //   a TAKEN seat            a filled body with a chair back behind its shoulders — #788's idiom for
+    //                           the seated captain, at a stranger's size, so the two rhyme
+    //   TALKING                 two short ticks over the top: there is a conversation here, and a lone
+    //                           sitter has none. Handed down (DeckPlan.TableTop.Talking) and never read off
+    //                           a plate by this file, which is the whole reason the fact exists in Core.
+
+    /// <summary>How far out from a top's centre the chairs stand.</summary>
+    private const float SeatRingDu = 1.55f;
+
+    /// <summary>How wide a chair is across its back — the bar an empty one is drawn as.</summary>
+    private const float SeatChairDu = 0.62f;
+
+    /// <summary>A sitter's body, at a top. Smaller than the captain's (<see cref="DeckPlan.AvatarRadius"/>)
+    /// because the captain is the one figure on this deck that must never be mistaken for scenery.</summary>
+    private const float SeatBodyDu = 0.30f;
+
+    /// <summary>How far behind a sitter's shoulders their chair back is drawn.</summary>
+    private const float SeatBackDu = 0.36f;
+
+    /// <summary>The round seat of a tall chair at a counter.</summary>
+    private const float StoolSeatDu = 0.40f;
+
+    /// <summary>How far over a top the conversation ticks are struck, and how long they are.</summary>
+    private const float TalkTickDu = 0.55f, TalkRiseDu = 0.85f;
+
+    /// <summary>A chair nobody is in, at a table nobody is at — furniture, at the weight of the furniture
+    /// line it stands on. Its own constant rather than <see cref="InnerLine"/> itself: a seat is a thing the
+    /// room can be asked about, and a guard counting empty chairs must be able to tell one from the several
+    /// hundred inner walls drawn in the same grey.</summary>
+    private static readonly RgbaColor SeatEmpty = new(126, 142, 164, 210);
+
+    /// <summary>…and a chair nobody is in at a table somebody IS at. The console green this deck has used
+    /// for "you may walk up to this" since the first spot was drawn, so an invitation is not a new word.</summary>
+    private static readonly RgbaColor SeatOpen = new(120, 220, 200, 235);
+
+    /// <summary>Somebody is in it. Warm, and deliberately not the captain's amber — one figure on this deck
+    /// is you.</summary>
+    private static readonly RgbaColor SeatTaken = new(228, 196, 150, 240);
+
+    /// <summary>#791 · How often a SERVING TICK is struck across a service rail, and how far it reaches
+    /// either side of it. Five du is about two customers' shoulders — near enough that no stretch of the
+    /// desk reads as unattended, far enough that eighty du of bar is a marked edge rather than a comb.</summary>
+    private const float ServiceTickDu = 5.0f, ServiceTickHalfDu = 0.45f;
+
+    /// <summary>#791 · …and the cap struck across each END of the run, twice a tick's reach, so the desk's
+    /// service has a beginning and an end instead of fading into the room.</summary>
+    private const float ServiceCapHalfDu = 0.95f;
+
+    /// <summary>
+    /// #791 · THE DESK'S SERVICE RAIL — a fixture that is a RUN, drawn as the length it is.
+    ///
+    /// <para>Owner, live at the B1 bar: <i>"we should probably have service on the whole length indicated
+    /// somehow."</i> A rail down the run, a cap at each end, and a serving tick struck across it every
+    /// <see cref="ServiceTickDu"/> — so the eye reads ORDER ANYWHERE ALONG HERE from anywhere beside the
+    /// desk, in the console ink this deck has meant "you may walk up to this" in since the first spot was
+    /// drawn. It is #795's own discipline one fixture along: a language of marks rather than of words.</para>
+    ///
+    /// <para><b>It decides nothing.</b> The two ends are the interaction point's own, which are Core's
+    /// <c>Hall.Service</c>'s own — so what is lit is what answers, to the deck unit. A pen that worked out
+    /// where a bar's service starts would be the drawn room and the pressed room disagreeing, which is this
+    /// project's third named bug class and the reason this issue exists at all.</para>
+    /// </summary>
+    private void DrawServiceRun(
+        in DeckPlan.ConsoleSpot fixture, RgbaColor ink, bool near,
+        Func<double, double, (float X, float Y)> project)
+    {
+        (float ax, float ay) = fixture.End0;
+        (float bx, float by) = fixture.End1;
+        double dx = bx - ax, dy = by - ay;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        if (len < 1e-6)
+        {
+            return;
+        }
+
+        double ux = dx / len, uy = dy / len;
+        double nx = -uy, ny = ux;                 // the rail's own perpendicular, in deck units
+        float rail = near ? 2.5f : 1.4f;
+
+        DrawSeg(project(ax, ay), project(bx, by), ink, rail);
+
+        for (int end = 0; end < 2; end++)
+        {
+            double px = end == 0 ? ax : bx, py = end == 0 ? ay : by;
+            DrawSeg(
+                project(px - (nx * ServiceCapHalfDu), py - (ny * ServiceCapHalfDu)),
+                project(px + (nx * ServiceCapHalfDu), py + (ny * ServiceCapHalfDu)), ink, rail);
+        }
+
+        int ticks = Math.Max(1, (int)(len / ServiceTickDu));
+        for (int t = 1; t < ticks; t++)
+        {
+            double s = len * t / ticks;
+            double px = ax + (ux * s), py = ay + (uy * s);
+            DrawSeg(
+                project(px - (nx * ServiceTickHalfDu), py - (ny * ServiceTickHalfDu)),
+                project(px + (nx * ServiceTickHalfDu), py + (ny * ServiceTickHalfDu)),
+                ink, near ? 2f : 1.1f);
+        }
+    }
+
+    /// <summary>
+    /// #792/#793 · ONE SEAT WITH NO BACK ON IT — a stool at the counter, or one end of a park bench.
+    ///
+    /// <para>Two glyphs, and they are the counter's own: a filled round seat where somebody is, a hollow one
+    /// where nobody is, and the hollow one goes <see cref="SeatOpen"/> green when the seat NEXT to it is
+    /// taken — the invitation ink #792 gave every other sittable place. There is deliberately no third
+    /// glyph and no chair back: a bar stool does not have one and neither does a plank.</para>
+    ///
+    /// <para>It is one method because it is one question. Written twice it would be two answers to
+    /// "is this seat free", drawn in two places, and the day the ink is tuned only one of them would move.</para>
+    /// </summary>
+    /// <param name="sx">Where it is, in pixels.</param>
+    /// <param name="sy">The same.</param>
+    /// <param name="taken">Somebody is on this seat.</param>
+    /// <param name="neighbourIsThere">Somebody is on this run of seats — the counter, or this bench.</param>
+    /// <param name="scale">Deck units to pixels.</param>
+    private void DrawBacklessSeat(float sx, float sy, bool taken, bool neighbourIsThere, float scale)
+    {
+        if (taken)
+        {
+            _renderer.DrawCircle(sx, sy, StoolSeatDu * scale, SeatTaken, SeatTaken, 1.5f);
+            return;
+        }
+        _renderer.DrawCircle(
+            sx, sy, StoolSeatDu * scale, null,
+            neighbourIsThere ? SeatOpen : SeatEmpty,
+            neighbourIsThere ? 2.4f : 1.5f);
+    }
+
+    /// <summary>#793 · How far behind a held figure's shoulders the STOPPED bar is struck — the same
+    /// distance a sitter's chair back stands at, because it is the same statement in the same ink: this one
+    /// has settled.</summary>
+    private const float HeldBarDu = SeatBackDu;
+
+    /// <summary>Draw the chairs round one top, and whoever is in them. Nothing here decides anything: the
+    /// seat count, the occupancy and the conversation all arrive on <paramref name="top"/> from the room
+    /// that owns them (#788's one-reach lesson, applied to everybody who is not the captain).</summary>
+    private void DrawSeatsRound(float cx, float cy, in DeckPlan.TableTop top, float scale)
+    {
+        if (top.Seats <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < top.Seats; i++)
+        {
+            double ang = i * 2 * Math.PI / top.Seats;
+            // Screen Y runs the other way to deck Y — the same negated sine the heading spoke uses.
+            float ux = (float)Math.Cos(ang), uy = -(float)Math.Sin(ang);
+            (float px, float py) = (-uy, ux);   // along the chair's back, across the radius
+            float half = SeatChairDu * scale / 2f;
+
+            float sx = cx + (ux * SeatRingDu * scale), sy = cy + (uy * SeatRingDu * scale);
+
+            // The party sits in the first chair. One body per top is Core's own arithmetic (a top's Free is
+            // its seat count less at most one), so drawing a second would be the picture claiming an
+            // occupancy the room does not have.
+            if (i == 0 && top.Occupied)
+            {
+                float back = (SeatRingDu + SeatBackDu) * scale;
+                DrawSeg(
+                    (cx + (ux * back) - (px * half), cy + (uy * back) - (py * half)),
+                    (cx + (ux * back) + (px * half), cy + (uy * back) + (py * half)),
+                    SeatTaken, 2f);
+                _renderer.DrawCircle(sx, sy, SeatBodyDu * scale, SeatTaken, SeatTaken, 1f);
+                continue;
+            }
+
+            bool invites = top.Occupied;
+            DrawSeg(
+                (sx - (px * half), sy - (py * half)), (sx + (px * half), sy + (py * half)),
+                invites ? SeatOpen : SeatEmpty, invites ? 2.4f : 1.5f);
+        }
+
+        // …and whether there is anything to overhear. Struck over the top rather than on it, so it survives
+        // the plate the console draws through the same coordinate.
+        if (top.Talking)
+        {
+            float rise = cy - ((SeatRingDu + TalkRiseDu) * scale);
+            float tick = TalkTickDu * scale;
+            DrawSeg((cx - (0.34f * scale), rise), (cx - (0.34f * scale) + (0.18f * scale), rise - tick),
+                SeatTaken, 2f);
+            DrawSeg((cx + (0.10f * scale), rise), (cx + (0.10f * scale) + (0.18f * scale), rise - tick),
+                SeatTaken, 2f);
+        }
     }
 
     private void DrawSeg((float X, float Y) a, (float X, float Y) b, RgbaColor color, float width)

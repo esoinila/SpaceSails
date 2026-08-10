@@ -66,7 +66,12 @@ public partial class Map
         RequestVaultSave(); // a shard gathered is durable — save on the change (Map.Vault autosave)
         string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosLore.ReachNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
-        ShowPulseMessage(foundMessage + tail);
+
+        // #736 · Said where the captain is looking. On a shard with no plate this is the pulse, exactly as
+        // before; on the three that raise a card below it is the card, because the card goes up on this same
+        // press and a pulse under it is in the DOM and not on the screen. The order is the point: the card
+        // is raised first, and then the seam finds it.
+        string found = foundMessage + tail;
 
         // #528 · the beats that earn a picture get one. Three of this arc's turnings — the pod that was
         // held, the one who kept the berth, and the berth answering — used to be a toast that faded in a
@@ -78,6 +83,8 @@ public partial class Map
         {
             ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
         }
+
+        SayItWhereTheyAreLooking(found);
 
         if (tail.Length > 0)
         {
@@ -197,8 +204,18 @@ public partial class Map
 
         RequestVaultSave();
         RendererInterop.PlayCue("board");
-        ShowPulseMessage(KaamosLore.BounceReceipt(fee));
-        ShowRevealCard(KaamosLore.BouncePlate.Title, KaamosLore.BouncePlate.ArtFile, KaamosLore.BouncePlate.Caption);
+
+        // ── #736 · THE 350 CR AND THE RECEIPT ARE ON THE CARD THE PRESS RAISED ──
+        //
+        // Owner's repro, verbatim: take the job at the Gilt-Eye, the RETURNED TO SENDER card opens, and "the
+        // MECHANICAL outcome lands in the top pulse banner BEHIND the card's backdrop… The 350 cr and the
+        // receipt — the two facts the player acts on — are the dimmed text. The card in front carries
+        // neither." The caption is the fiction and it was doing its job; what was missing was the arithmetic,
+        // and it was missing because it was pulsed to a HUD this card is standing on top of.
+        //
+        // The receipt rides the card itself now, so it cannot be raised without it.
+        ShowRevealCard(KaamosLore.BouncePlate.Title, KaamosLore.BouncePlate.ArtFile, KaamosLore.BouncePlate.Caption,
+            outcome: KaamosLore.BounceReceipt(fee));
 
         // Durable, and in somebody's voice — the ledger's 👂 section keeps it where the captain will meet it
         // again a week later, which is when a front door has to still be standing open.
@@ -277,7 +294,8 @@ public partial class Map
                 int price = KaamosFind.BoughtCoordinateCredits;
                 if (_credits < price)
                 {
-                    ShowPulseMessage($"🌑 There's a coordinate for sale — {price:N0} cr for the where and the when — but the purse won't cover it.");
+                    // #736 · The counter is still open in front of them; the keep's card is where a "no" belongs.
+                    SayItWhereTheyAreLooking($"🌑 There's a coordinate for sale — {price:N0} cr for the where and the when — but the purse won't cover it.");
                     return;
                 }
 
@@ -288,7 +306,7 @@ public partial class Map
                 break;
 
             default:
-                ShowPulseMessage("🌑 You put the word out, quiet as you can. Nobody's talking about the ice moon today.");
+                SayItWhereTheyAreLooking("🌑 You put the word out, quiet as you can. Nobody's talking about the ice moon today.");
                 break;
         }
     }

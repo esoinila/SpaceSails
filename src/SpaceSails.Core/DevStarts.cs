@@ -68,6 +68,25 @@ public static class DevStarts
             "The far end of the run, off The Deep. A landing stage gone to rust and silence — something set down here and stayed (#585).",
             "/map?dock=the-deep&body=triton&site=2&land=1"),
 
+        // #774 · WHOSE KIT WAS THIS, with everything it has to say. The dossier is the rarest beat on the
+        // regolith — three papers rooms inside ONE excursion, at one room in eight — and its four-sentence
+        // form, the one the card had to be able to carry, is two more one-in-three rolls behind that. It was
+        // the scene the issue is about and there was no way to stand in front of it.
+        new("🗂", "Whose kit was this — the whole dossier",
+            "A hut out on the edge lane with somebody's effects still in it. Press E and the picture comes together on the first piece: the card carries all of it — the name, the family who have been waiting nine years, what they know, and the phrase that opens a door somewhere else (#774, #588).",
+            "/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"),
+
+        // #728 · THE SHELTER, AND THE TWO FIXTURES NOBODY COULD TELL APART. The owner walked to this exact
+        // building in a live smoke run, read a receipt for seventy rounds, could find no magazines anywhere on
+        // screen, and said of the plates: "on shelters I always forget which is which." The shelters seed DEEP
+        // by design, so every look at any of that cost a two-minute walk — which is how the fixture pair went
+        // three months without one.
+        new("⛺", "The shelter — air on one wall, rounds on the other",
+            "Set down at a shelter's door with your sentries down to twelve rounds each. Both plates now say "
+            + "what they DO, the magazines read out under the motion tracker, and pressing the press moves a "
+            + "number you can watch move (#728, #580).",
+            "/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"),
+
         new("⛏", "An away-team gig, already accepted",
             "A mining rock parked in shuttle range with the job on the books — the shortest road to boots on the regolith (#370).",
             "/map?expedition=mining"),
@@ -86,6 +105,191 @@ public static class DevStarts
         new("🍸", "The canteen on B1, with people in it",
             "150 m down, in the one room this facility admits outsiders to: carriers and contractors at the tables, a cork board on the wall, no pass required (#709).",
             "/map?secretlab=deep&land=1&floor=1"),
+        // #693 · The card's own row, which until here nobody could look at without a real Key hunt. #692
+        // shipped the gated button, the promise it makes and the beat it pays off, and closed with the note
+        // that none of the three had been seen in a browser — "a scene nobody can reach on demand is a scene
+        // that ships broken", written into the same file that then could not follow it.
+        // #756 · The counter that takes orders. Owner walked to this exact fixture in a live playtest and
+        // could not buy a thing; the fix is worth nothing if the next tester has to make the same walk to
+        // check it. Stands you AT the service spot, purse and all, one press from the card.
+        new("🍹", "The counter, ready to order",
+            "B1 of a deep site, standing at THE COUNTER. Press E: the service card opens on the menu — "
+            + "coffee, a fry-up, and three pours that joke about the deep. Buying answers on the card (#756).",
+            "/map?counter=1"),
+        // #756 · THE HIGH CHAIRS. Owner, live: "there should be high chairs so sitting at the bar desk is
+        // also possible." Two rows, for #757's own reason: whether the one beside you turns is a seeded roll
+        // sitting behind a seeded occupancy, so without a lever the she-speaks beat is reachable only by
+        // luck and the told silence only by more of it. Both halves are the feature.
+        new("🪑🍸", "Up on a stool, and somebody turns",
+            "B1 of a deep site, already seated at THE COUNTER: the card wears the window wall and the park "
+            + "beyond it, the menu is still under your elbow, and WAIT turns the one on the next stool — she "
+            + "never asks to sit, because she is already sitting (#756).",
+            "/map?stool=1&neighbour=1"),
+        new("🪑🤐", "…and the counter where nobody turns",
+            "The same stool with the neighbour forced OFF. Wait as long as you like: the seat beside you "
+            + "answers, in words, that nothing is going to happen. That is the beat, not a bug (#756).",
+            "/map?stool=1&neighbour=0"),
+        // #759 · THE PARK BEHIND THE BAR. Owner: "on map the park needs to Exist there next to the bar. It
+        // is an indoor park where the fresh stuff is grown that is served here on the plate." It is the
+        // largest room in the game and it stands behind a wall you can see through and cannot walk through,
+        // so the row puts a tester inside it rather than leaving them to find the one gate.
+        new("🌳", "The park behind the bar",
+            "B1 of a deep site, standing on the gravel INSIDE the park: green floor art underfoot, the "
+            + "window wall back into the canteen (drawn as glass — you can see the hall, you cannot walk "
+            + "into it), raised beds stencilled for the counter, steel benches down the curve, floodlight "
+            + "masts against the far wall. The field book files the attendance line on the first step "
+            + "(#759).",
+            "/map?park=1"),
+        // #793 · …AND THE BENCHES TAKE THE SIT VERB. Owner, from play in that same park: "E at a steel bench
+        // seats you… a park bench under a painted sky is the best breather in the base", and the rule that
+        // makes it a RUNG rather than a chair: "the park bench might be used to go through inventory info
+        // loot, if we get the whole bench to ourselves." The row boots ONTO a bench with papers already in
+        // the sleeve, because the feature is the CONDITION — and a tester has to be able to meet both halves
+        // of it without walking a 278 du room twice to find out.
+        new("🌳🪑", "On a park bench with the case out",
+            "B1 of a deep site, already sat down on a steel bench with the WHOLE BENCH to yourself and three "
+            + "finds in the sleeve. The strip reads 🪑 A PARK BENCH and says the walk runs clear both ways — "
+            + "no crowd figure for a hall you cannot see. Press I and dig. Then press SIT A WHILE: sitting "
+            + "still IS the gumshoe move, and the bench tells you whether anything on the walk stopped when "
+            + "you did. Then walk to the bench with the lone figure on it, sit on the free end, and try the "
+            + "spread again — half a bench is a rest, and the refusal is the feature (#793).",
+            "/map?park=1&spread=1"),
+        // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
+        // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
+        // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the
+        // one place none of the six canteen cheats above ever left a tester standing.
+        new("🚪", "The canteen's front door, from the corridor",
+            "B1 of a deep site, out on the MAIN CORRIDOR facing the canteen's own entrance — the plate on "
+            + "the wall beside you, the door in it, and the bar through the door. Walk in. Then walk the "
+            + "corridor and count the others: a hall this size is required to have them, and each one is "
+            + "numbered and leads somewhere (#775).",
+            "/map?frontdoor=1"),
+        // #803 · THE FEW ROUNDS FROM A HUT, SPENT ON A LOCK. Owner: "we might want to hand-load them into
+        // the bots for some special purposes, like shooting a mechanical lock ... that UI is missing." Every
+        // piece of that exists on a real run and no two of them are in the same room, so the one thing
+        // nobody could do was watch the loop go round once.
+        new("🔫🔒", "Hand-load a gun and shoot a lock off",
+            "B1 of a deep site, standing at the GOODS HOIST with a sentry SET DOWN beside you reading 05 — "
+            + "one round short of a hasp — and twelve loose rounds in your pocket. Press I over the bot to "
+            + "hand-load it, then 📻 Remote → 🎯 DESIGNATE: pick the gun, pick the shutter, say when. Six "
+            + "rounds, one very loud noise the world writes down, and the shutter comes open (#803).",
+            "/map?designate=1"),
+        new("🚛", "The goods hoist that will not take you",
+            "The same hall, standing at the GOODS HOIST at the end of the counter's own service band — "
+            + "eighty seats of food and twelve beds of produce do not arrive through a personnel door. It "
+            + "is drawn, it is labelled, a body stops at it, and pressing it tells you whose side of the "
+            + "shutter you are on (#775).",
+            "/map?freight=1"),
+        // #775 · THE PARK AS A WAY THROUGH. Owner: "let's have multiple doors to the park… it is a kind of
+        // place people like to walk through on their way." The ?park=1 row above sets a tester down INSIDE
+        // it, which is the wrong half of this: the crossing is the feature, so this one starts on the main
+        // corridor at the mouth of the garden walk and asks them to come out somewhere else.
+        new("🌳🚶", "Straight through the park, and out the other side",
+            "B1 of a deep site, out on the MAIN CORRIDOR at the mouth of the GARDEN WALK — the passage "
+            + "stencilled ⟶ THE PARK that every floor has, whichever way its ribs happen to fall. Walk "
+            + "down it, cross the gravel, and come out of a DIFFERENT gate into a different corridor — or "
+            + "out of one of the END streets, which is the crossing the Manhattan ruling added: the green "
+            + "is in the middle of a block now, so there is a way through EVERY one of its four walls, and "
+            + "the hall-side wall is still glass (#813, #775, #759).",
+            "/map?parkwalk=1"),
+        // #813 · THE MANHATTAN RULING, FROM THE ONLY SIDE OF THE GLASS NOTHING HAS EVER BOOTED ON. Owner:
+        // "make sure the park prime real estate is not wasted and not unused, not on any side. It is the
+        // best real estate." Every other park row in this list stands the tester on the GRAVEL, which is the
+        // side that shows the green and never once shows what the green is worth. This one starts in a room
+        // that pays for the view, looking out of its own window wall, with the plate for the room behind
+        // them on the corridor.
+        new("🏢🌳", "Inside an office, with the park out of the window",
+            "B1 of a deep site, standing INSIDE one of the ring's own rooms with its window wall in front "
+            + "of you — the same glass the bar has, on a room that is not the bar. Read the plate by the "
+            + "door on the way out (REGISTERED OFFICE · GARDEN ASPECT, NEGOTIATION ROOM · BOOK AT THE "
+            + "COUNTER, and four more the corridors never hang), then walk the ring: every wall of the "
+            + "park is a room's front wall, every one of those rooms opens onto a street and never onto "
+            + "the green, and the corner rooms — the ones past the end of the park's own wall — wear the "
+            + "corridors' ordinary vocabulary instead, which is the whole gradient without a word said "
+            + "about it (#813, #775).",
+            "/map?ringoffice=1"),
+        // #804 · THE ROUNDS. Two rows for one reason #757's pair has: how many walk a floor is a seeded roll
+        // on the shift, and whether the captain has anything to show is the whole of the challenge. Neither
+        // half is reachable by luck in a sensible amount of play.
+        new("👮🚶", "B2 — somebody is walking the floor",
+            "The first floor under the bar, which is the first with a security ROTA on it. Stand at the car "
+            + "and watch: the motion fan hears them through the wall long before anything is drawn, then "
+            + "boots on shotcrete, and only inside your own line of sight does a green mark appear. They "
+            + "stand five seconds at each stop — that gap is the whole game. Let one get within nine metres "
+            + "with an empty wallet and the round STOPS at you (#804).",
+            "/map?patrol=2"),
+        new("🪪", "…and the same floor with the site's own pass in your wallet",
+            "The identical round with a SITE PASS · GENERAL HANDS already minted. Walk straight at one: he "
+            + "reads the face, the site code and the tier, hands it back, mentions the wet floor, and picks "
+            + "the round up where he left it. Earned properly it comes off the cage crew's chit — the job "
+            + "does not pay in coin, it pays in paper (#804, #746, #752).",
+            "/map?badge=1"),
+        // #801 · THE PARK IS NOT THE EDGE. Owner: "we could have rooms to explore below the park also (on
+        // the map). Walking through the park is fun, it should not be the edge." The three rows above all
+        // face the near wall; this one crosses to the far one, which is the half that used to be a picture.
+        new("🌳🚪", "The far side of the green",
+            "B1 of a deep site, standing on the gravel in front of the park's FAR wall — the one that used "
+            + "to be the painted horizon. It is a row of doors now: potting, plant, a cold room stencilled "
+            + "for the same CANTEEN 1 the beds are. Walk through one (#801).",
+            "/map?parkback=1"),
+        // #801 · AND THE SECOND CAR. Owner: "it is a choke point, and the whole lab would be too easily
+        // guarded by just having the guard posted in front of the one elevator." A row that boots at the
+        // OTHER car, because the cage's console is the one every other row in this list arrives at.
+        new("🛗🛗", "The other car, at the blind end of the corridor",
+            "B1 of a deep site, standing at the SECOND lift — the goods car, a hundred and seventy du from "
+            + "the cage, on the other face of the main corridor. Press E: it runs these four floors and it "
+            + "does not climb out. Now walk to the other one and see how far that is (#801).",
+            "/map?goodscar=1"),
+        new("🎫", "The lift row the card unlocks",
+            "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
+            "/map?secretlab=deep&land=1&floor=1&card=next"),
+        // #768 · THE MOMENT A CARD STANDS ON A SENTENCE. The same paper as the row above, pressed from the
+        // SURFACE instead of from B1 — which is the one ride that raises the first-descent card (#585) and
+        // crosses a gate (#689) on the same arrival. It could not be reached on demand at all before #693's
+        // ?card= cheat, and it is the exact frame the owner filed the issue about.
+        new("🃏", "The card that lands on top of the beat",
+            "The surface of a deep site with the authority the first gate reads already in the wallet. Into the shed, press the row that is no longer sealed, and ride from daylight straight through the gate: the first-descent card stops the world — and the gate's own beat is waiting on the pulse when you close it, instead of having played under it (#768, #693).",
+            "/map?secretlab=deep&land=1&card=next"),
+        // #757 · The table the owner could not sit down at, and the two answers waiting at it can give. Both
+        // rows exist for the same reason #693's does: whether anybody crosses the room is a seeded roll at
+        // one top on one shift, so without a lever the somebody-comes beat is reachable only by luck and the
+        // told nobody-came outcome only by more of it.
+        new("🪑", "A table with nobody at it — sit down, and sit a while",
+            "B1's canteen with the captain standing at a FREE top plated SIT DOWN. [E] sits you down and the panel says so in its first line, over a picture of the chair opposite; SIT A WHILE holds the table. Somebody is forced to cross the room on the next one: she asks for the chair, offers the round, and then says what she came over for (#757, #783).",
+            "/map?tablescene=free&approach=1"),
+        new("🪑🕳", "…and the watch where nobody comes",
+            "The same table on the small watch with the approach forced OFF. Sit as long as you like: an eighty-seat hall answers, in words, that nothing is going to happen. That is the beat, not a bug — and on a watch this quiet the sit is the RESTING one, boots up on the spare chair (#757, #783).",
+            "/map?tablescene=free&watch=5&approach=0"),
+        // #784 · THE WHOLE PHASE-TWO LOOP IN THIRTY SECONDS. Owner's own ask, filing the demo: "we probably
+        // need a start point where we have things in our inventory we can process (when our HUD UI state is
+        // sitting down with enough privacy)." Everything the seated build is about — the docked frame, the
+        // customer line, the privacy gate, the digging bar, the entry landing in the book — is one URL and
+        // two presses from the front door here, and nothing about the room is forced.
+        new("🗂🪑", "Sat down in a cabinet with the papers out",
+            "B1's canteen with the captain already seated at a CABINET table — the private end of the ladder — and three finds in the sleeve. The panel is a HUD STRIP, not a card: the hall stays lit behind it, the park stays green, and the customer line reads your table, your pour, your rest pips and the watch the room is keeping. Press I, pick a paper, and the digging bar runs it into the detective book (#784).",
+            "/map?spread=1"),
+        // #741 · THE RED PEN, and the one thing it needs that no other row provides: a BOOK WITH A CASE
+        // IN IT. Owner's north star for the whole feature — "we spot connections in the data… that is the
+        // gumshoe moment" — and a captain cannot spot anything in an empty notebook. Six pre-filed entries
+        // off two grounds, with a rhyme running through them that the game never once remarks on.
+        new("🖊🧵", "The red pen, and a case to draw on",
+            "The same cabinet with SIX ENTRIES already in the book, from two grounds — a specialist whose "
+            + "kit you assembled, the family still waiting for word, and a name to drop at a door somewhere "
+            + "else. Open the notebook on 🧵 THE CASE, take the 🖊 RED PEN, press one title and then "
+            + "another: a line goes between them, the list reorders around it, and nothing congratulates you "
+            + "(#741, #784).",
+            "/map?threads=1"),
+        // #798 · THE DISPOSAL LOOP, in thirty seconds. The phase-two loop ENDS by producing a liability —
+        // the book has the gist, and the original is now the one thing connecting you to the room you took
+        // it from. This is the row where a tester meets the third verb. Owner: "those trash cans are needed
+        // so we get rid of the processed materials without connecting them to us too clearly."
+        new("🗑📄", "Standing at the bin with the papers still on you",
+            "B1's canteen with the captain at the SLOP BIN and three finds in the sleeve. Press I, press 🗑 "
+            + "on a paper: it is torn up and gone from the sleeve, the book keeps whatever you had already "
+            + "dug out of it, and the act is filed with the bucket named. The WASTE CHUTE is at the other "
+            + "end of the same room and the tidy PAPER BIN is by the lift — one verb, three different bets, "
+            + "and the game never once says which was enough (#798).",
+            "/map?rip=1"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),
@@ -99,6 +303,13 @@ public static class DevStarts
             "/map?dock=the-space-bar"),
 
         // --- Set pieces --------------------------------------------------------------------------------
+        // #777 · THE HAIL, AND IT IS COUNTED NOW. ?death=collector has existed since #621 with only a row in
+        // docs/testing-guide.md — which was fine while the demand panel was a modal, and is not fine now that
+        // it is a story beat's canvas. The beat is FRESH on any boot (the seen-set starts empty), so this URL
+        // is the one-press way to watch a HOSTED beat do its whole job.
+        new("⛓", "CAUGHT — the hail, hosted by its own card",
+            "Heat raised, muscle sent, and the grapples across the frame the moment the world is ready. The demand panel carries the collector-hail painting AND the beat's own sentence; the log behind it has the same words filed once; nothing stacks a second card on top (#777, #621).",
+            "/map?death=collector&dock=selene-gate"),
         new("☄", "The rock that must not arrive",
             "The asteroid-deflection gig accepted, the rock inbound, ship docked at Ringside — the whole clock running (#394).",
             "/map?deflection=1"),
@@ -113,12 +324,21 @@ public static class DevStarts
         new("🧊", "PROJEKTI KAAMOS — the head office",
             "The whole route already ridden: every shard, the berth-code resolved, the supply run filed, and the ship let go alongside the ice moon, boots on the ground (#411).",
             "/map?kaamos=hq&land=1"),
+        new("🛰", "PROJEKTI KAAMOS — the unlucky arrival phase",
+            "The head office reached on ARRIVAL PHASE 2 of 24 — the one placement in twenty-four that used to walk the parked hull into Enceladus at +9.54 h while the captain was 23 floors down. Ride it down, read the hall, come back up to a ship that is still there (#742).",
+            "/map?kaamos=hq&arrivalphase=2&land=1&floor=23"),
         new("🌑", "PROJEKTI KAAMOS — assembled",
             "Every fragment of the sealed ice-moon plot already gathered: the intel readout, the reach notice, the berth-code (#411).",
             "/map?kaamos=all"),
-        new("🧠", "NEBULA MUTUAL — assembled",
-            "Arc 2 complete: the cold archive, the brain-backup's true origin, and the policy's true terms (#422).",
+        // #663 / #652 · The two rows this lane owes a playtester, because a moment nobody can open on purpose
+        // is a moment that ships broken (Map.Sim's own rule). The first is the arc-news beat on arc 2; the
+        // second is the honest road's lasting half, which until now was a sentence with nobody behind it.
+        new("🧠", "NEBULA MUTUAL — assembled, and it BREAKS",
+            "Arc 2 complete: the cold archive, the brain-backup's true origin, the policy's true terms — and the moment the world notices, on the wire, in a filing clerk's flattest voice (#422, #663).",
             "/map?nebula=all"),
+        new("🤝", "The honest road, and who signs it",
+            "Aboard a derelict that died of a drive failure. Read two stations, then the cargo console: FILE THE REPORT, name the cause right, and the assessor who countersigns it has a name and stays on your contact ledger (#488, #652).",
+            "/map?wreck=drivefailure&land=1"),
         new("🛰", "THE CONVERGENCE",
             "Just enough of BOTH arcs to fire the marquee one-time reveal from a single URL — the two rabbit holes crossing (#422).",
             "/map?converge=1"),

@@ -213,8 +213,11 @@ public sealed class TheNotebookIsInTheSatchelTests
         string reset = Method("Map.Surface.cs", "private void TheSatchelOpensOnThePocket()");
         Assert.True(reset.Contains("SatchelPage.Carried", StringComparison.Ordinal),
             "the open-reset does not select the CARRIED page (#690).");
-        Assert.True(reset.Contains("_notesEverywhere = false", StringComparison.Ordinal),
-            "the open-reset leaves the notebook on whatever ground filter it was last on — at a door the " +
+        // #741 · The two-state ground filter became a three-state READING of the book (this ground / every
+        // ground / the case the red lines have made of it). The law is unchanged and so is this guard: an
+        // open lands on THIS GROUND, whichever reading was left open last.
+        Assert.True(reset.Contains("_notesView = NotesView.Here", StringComparison.Ordinal),
+            "the open-reset leaves the notebook on whatever reading it was last on — at a door the " +
             "captain wants THIS building, not the memoirs (#690).");
 
         // #688's I toggle survives the second page: the key still shuts the pocket it opens, whichever half

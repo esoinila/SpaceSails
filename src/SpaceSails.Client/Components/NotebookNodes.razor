@@ -1,0 +1,96 @@
+@using SpaceSails.Core
+
+@* #741 · THE NOTEBOOK'S NODES — one block of the case, drawn.
+
+   Owner's UI spec, from the chair where it happened: "title-first, collapsed by default: every note shows
+   its TITLE and an expand button; the reading surface is the list of titles, not walls of text… the opened
+   node houses its text as bullets… notes already CONNECTED read differently at title level from unconnected
+   ones — so the collapsed list is itself a case status: which titles are still loose ends."
+
+   It decides NOTHING. Which rows sit together, which pair carries a red edge, how many lines run off a note
+   and what its title says are all read off CaseThreads.Row, which the page handed down. A component that
+   re-derived any of that would be this repository's third named bug class — a drawn shape reporting one
+   thing while the sim does another.
+
+   The red line is drawn as a RAIL down the left of a block, plus a solid connector between two rows a hand
+   actually threaded. Those are two different claims and they are drawn as two different marks: a rail says
+   "these belong to one case", a connector says "somebody drew THIS line". A block of four hung off one hub
+   cannot be a straight path, and a page that drew it as one would be lying about which pairs were
+   connected. *@
+
+@foreach (CaseThreads.Row row in Rows)
+{
+    string id = row.Id;
+    bool open = IsOpen(id);
+    bool held = IsHeld(id);
+
+    <div class="note-node @(row.ClusterSize > 1 ? "in-case" : "") @(held ? "held" : "")">
+        <button type="button"
+                class="note-title @(PenInHand ? "pen" : "")"
+                title="@(PenInHand
+                          ? CaseThreads.PenInHandHint
+                          : (open ? "Fold it again" : "Open it and read the bullets"))"
+                @onclick="() => OnTitle.InvokeAsync(id)">
+            <span class="note-caret">@(PenInHand ? "🖊" : open ? "▾" : "▸")</span>
+            @* The glyph through Core's own law and never straight off the note: three of the four
+                   sentences a kit produces are WRITTEN with theirs at the front, so a surface that
+                   prints Glyph + Text prints it twice. Found by looking at the demo. *@
+                <span class="note-title-text">@CaseThreads.GlyphFor(row.Note) @CaseThreads.TitleOf(row.Note)</span>
+            @if (row.Threads > 0)
+            {
+                <span class="note-threads" title="@($"{row.Threads} drawn from this one")">
+                    🧵 @row.Threads
+                </span>
+            }
+            else
+            {
+                <span class="note-loose">@CaseThreads.LooseEndLabel</span>
+            }
+        </button>
+
+        @if (WithPlace)
+        {
+            @* THE CASE reading demotes the ground from a heading to a fact about the entry, because the
+               ORDER there belongs to the red lines. Nothing is lost: it is the same PlaceLabel the book
+               writes, and the every-ground reading still puts it up top where a walk is reconstructed. *@
+            <div class="note-place">🥾 @row.Note.Place</div>
+        }
+
+        @if (open)
+        {
+            <ul class="note-bullets">
+                @foreach (string bullet in CaseThreads.BulletsOf(row.Note))
+                {
+                    <li>@bullet</li>
+                }
+            </ul>
+        }
+    </div>
+
+    @if (row.ThreadedToNext)
+    {
+        <div class="note-line" aria-label="a line drawn between these two"></div>
+    }
+}
+
+@code {
+    /// <summary>The rows to draw, in the order Core put them.</summary>
+    [Parameter] public IReadOnlyList<CaseThreads.Row> Rows { get; set; } = [];
+
+    /// <summary>Whether the pen is out — which is what pressing a title MEANS, and nothing else.</summary>
+    [Parameter] public bool PenInHand { get; set; }
+
+    /// <summary>Whether the ground each entry came off is drawn on the node. True only in the case
+    /// reading, where place is no longer the heading.</summary>
+    [Parameter] public bool WithPlace { get; set; }
+
+    /// <summary>Is this node open? Asked of the page, which keys it on the HANDLE — so a node stays open
+    /// across the reorder a drawn line causes, and the reading does not close under the captain's eye.</summary>
+    [Parameter] public Func<string, bool> IsOpen { get; set; } = _ => false;
+
+    /// <summary>Is this the title already picked up, waiting for its other end?</summary>
+    [Parameter] public Func<string, bool> IsHeld { get; set; } = _ => false;
+
+    /// <summary>A title was pressed. What that means is the page's business.</summary>
+    [Parameter] public EventCallback<string> OnTitle { get; set; }
+}

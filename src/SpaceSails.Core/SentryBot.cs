@@ -86,6 +86,76 @@ public static class SentryBot
     /// homage; the client renders them seven-segment on the grid, dimmed once <see cref="IsDry"/>.</summary>
     public static string Readout(int rounds) => System.Math.Clamp(rounds, 0, MaxMagazine).ToString("D2");
 
+    // ── #728 · THE MAGAZINES, ON THE SCREEN THE CAPTAIN IS ACTUALLY LOOKING AT ────────────────────────
+
+    /// <summary>One sentry as the on-foot instrument reads it: who it is, what it is holding, and whether it
+    /// is riding your sling or standing out there holding a line.</summary>
+    public readonly record struct Carried(string Unit, int Rounds, bool Deployed);
+
+    /// <summary>#728 · What the on-foot HUD says about your ammunition — the line the shelter's receipt was
+    /// paying into and nothing on screen could show.
+    ///
+    /// <para>Owner, in the 2026-08-06 smoke run, pressing the shelter's wall press and reading <i>"70 rounds
+    /// into your magazines"</i>: the sentence was TRUE, the rounds went where it said, and there was nowhere
+    /// on the ground a captain could look to see it. A receipt into an account with no statement reads exactly
+    /// like theft even when it is not — which is how a working feature comes to be filed as a bug.</para>
+    ///
+    /// <para><b>The register is the AIR line's</b> (#740): a NAME, a figure that says what it is, and then
+    /// plain words. <c>MAGAZINES</c> heads it, each drum is printed against its own ceiling in the same two
+    /// digits the counter over a deployed bot wears (<see cref="Readout"/>), and the state — slung or set
+    /// down — is said rather than left to a glyph. There is no bare percentage anywhere in it, for the same
+    /// reason the tank has none: a fraction is a number you have to convert before you can act on it.</para>
+    ///
+    /// <para><b>It never goes quiet.</b> A captain who brought no sentry down still gets a line, because
+    /// "there is nothing here to fill" is the fact that explains the locker's whole answer — and an
+    /// instrument that vanishes when the news is bad is the one shape #212 forbids outright.</para></summary>
+    public static string MagazinesReadout(IReadOnlyList<Carried>? down)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (Carried bot in down ?? [])
+        {
+            // …AND THE TUBE'S OWN GUN IS NOT YOURS. GATE-1 hangs in the shuttle door, is topped back up after
+            // every volley and never runs dry (SurfaceArrival.DoorSentryUnit) — the boat's fixture, and
+            // "never counted against the sling" by its own law. A ledger of what you are carrying that listed
+            // a permanent 99/99 you neither bought nor can spend would misreport both halves at once, and the
+            // one figure in it that never moves is the one an eye learns to skip.
+            //
+            // Found by BOOTING THE SCENE rather than by reasoning (the owner's method): the first cut of this
+            // line read "K-77 12/99 in the sling · R-3B 12/99 in the sling · GATE-1 99/99 set down" on the
+            // very first screenshot of the shelter it was written for.
+            if (!SurfaceArrival.IsDoorSentry(bot.Unit))
+            {
+                parts.Add($"{bot.Unit} {Readout(bot.Rounds)}/{MaxMagazine} {(bot.Deployed ? "set down" : "in the sling")}");
+            }
+        }
+
+        return parts.Count == 0 ? NoMagazinesLine : $"🔫 MAGAZINES · {string.Join(" · ", parts)}";
+    }
+
+    /// <summary>#728 · Is there anything of the CAPTAIN'S on this ground with a magazine in it?
+    ///
+    /// <para>The one question the shelter's press must ask before it chooses between its two nothings, and it
+    /// is the same question <see cref="MagazinesReadout"/> answers — asked in one place so the instrument and
+    /// the press can never come to different conclusions about the same sling. The tube's own gun is not an
+    /// answer to it: it is always full, so it silently made "nothing to fill" look like "everything is
+    /// full", which is the exact lie this ticket is about wearing a different hat.</para></summary>
+    public static bool AnythingToFill(IReadOnlyList<Carried>? down)
+    {
+        foreach (Carried bot in down ?? [])
+        {
+            if (!SurfaceArrival.IsDoorSentry(bot.Unit))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>What the readout says when nothing you own has a magazine on this ground. Not silence: this
+    /// is the sentence that makes a locker press that fills nothing make sense.</summary>
+    public const string NoMagazinesLine =
+        "🔫 MAGAZINES · none down here — no sentry came with you";
+
     // ── WEAPONS TIGHT ─────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

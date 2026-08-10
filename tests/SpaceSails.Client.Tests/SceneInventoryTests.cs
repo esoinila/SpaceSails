@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -239,6 +239,9 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveHead] = "#585 the camouflaged lift head, on the surface only where a site " +
                                           "actually carries a clandestine facility (?secretlab=1)",
         [DeckPlan.ConsoleKind.HiveLift] = "#585 the lift car, in an underground floor appended on the way down",
+        [DeckPlan.ConsoleKind.HiveServiceLift] = "#801 the SECOND car — the goods lift at the blind end of " +
+                                                 "the main corridor, on an appended underground floor " +
+                                                 "wherever the ground takes one (?goodscar=1)",
         [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",
@@ -250,6 +253,17 @@ public sealed class SceneInventoryTests
                                              "B1 ruling). Every floor below is deserted on purpose, which " +
                                              "is exactly why no general scene sweep reaches one; " +
                                              "ThereArePeopleInTheBarTests walks the floors that have them",
+        [DeckPlan.ConsoleKind.HiveTable] = "#757 a canteen top with NOBODY at it — take the table. Same one " +
+                                           "room per site as the person sitting at the next one over " +
+                                           "(CanteenRegulars.PeopleSitHere), so no general sweep reaches " +
+                                           "one either; YouCanSitAtAnEmptyTableTests walks every top of " +
+                                           "every floor of ten sites on six watches",
+        [DeckPlan.ConsoleKind.HiveBench] = "#793 a steel bench in the PARK, which #790 carves behind the " +
+                                           "canteen's window wall on the same one floor per branch-office " +
+                                           "site (UndergroundComplex.HasPark) — no general scene sweep " +
+                                           "reaches a park any more than it reaches the hall in front of " +
+                                           "it; TheParkBenchIsAGumshoeMoveTests walks every bench of every " +
+                                           "park the generator lays",
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",

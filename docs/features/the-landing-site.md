@@ -1,4 +1,4 @@
-# The landing site
+﻿# The landing site
 
 *What a moon's ground has to be before it ships. Written 2026-08-01, after two days of the owner playing
 Miranda and finding, by eye, eleven things reasoning had not.*
@@ -271,6 +271,43 @@ it, the gauge is handed its answer, and the plate by the lift asks it of the flo
 - **One line on the crossing, never a state that repeats** — the tank starting or stopping, said once. A
   shelter is left to say it in its own voice; two lines for one threshold is the nag the tank mechanic was
   told not to become.
+
+5.5 **The rounds you find are yours, and nothing you were shown ever stops existing.** Every fixture that
+gives ammunition — the shelter's press, the hut's locker, a ruin's half-shut drawer — fills the magazines
+first, in order, and whatever the drums genuinely could not hold goes in the POCKET as loose rounds
+(`SentryHandLoad.IntoThePocket`). Silent when they took everything, which is most of the time. Two of those
+three used to drop the remainder on the floor, and the pocket rounds #603 wrote a whole verb for had, until
+this, no way at all of reaching a captain's hand.
+
+5.6 **You fill what you SET DOWN; the world fills what you CARRY.** The belts, the presses and the lockers
+reach into the sling. A sentry standing out on the line is reached by one thing only, and it is the captain
+walking rounds to it — `[I]` standing over it, any drum that is not full (#803's put verb; it used to be
+only a drum reading exactly 00). One drum, one kind: a magazine at 00 takes anything, a magazine with
+something in it takes more of the same, and the refusal says which. Nothing may put a number in a drum that
+the two-digit readout cannot say — the instrument and the machine answer about one number or they are two
+answers to one question (§the #797 law).
+
+5.7 **A captain may point a gun by hand, and it is deliberately not autopilot.** The handset's fourth verb
+(`🎯 DESIGNATE`): pick a gun you have set down, pick something it can see, say when. The arc and the sight
+test are the sentry's OWN (`SentryBot.RangeDeckUnits`, `SurfaceCollision.HasLineOfSight`) so there is one
+range law on this ground; the gun is aimed at the FACE of the door rather than its centre, because the
+plate the captain fires at is published in floats and the wall behind it is laid in doubles, and one ulp
+either way decides every lock in the game.
+
+- **You can shoot a LOCK. You cannot shoot a WALL, and you cannot shoot a READER.** The game had already
+  written this call in two sentences years apart: a room door's lock *"is mechanical and it was turned by
+  somebody who then walked away with the key"*, and a sealed way has *"no reader … the bolts go through the
+  frame and into the rock, and they were tightened from a side you are not on"*. So department doors and the
+  goods-hoist shutter go; the sealed ways (#590 call 2) refuse, in their own words, and promise nothing.
+  Every sign is recognised POSITIVELY (`UndergroundComplex.IsDoorSign` / `IsFreightShutter`) — a lock nobody
+  thought about is refused rather than waved through.
+- **It costs rounds and it costs NOISE.** Six rounds at a hasp, or one of anything that does its work on the
+  far side of the first thing it meets. The pack's ear is rung the way every loud act on this ground rings
+  it, and the shot itself is FILED — who fired, at what, where, when, how many (`GunfireHeard`). Nothing in
+  this build reacts to that ledger; it is the seam the guards' lane prices, written from the first shot
+  rather than re-derived later from a HUD line that has scrolled away.
+- **Behind a door somebody shut is a room.** Bare floor, bare walls, bolt holes where shelving was taken
+  out. Nothing that comes open ever explains the building (§13.8).
 
 ## 6 · What the ship does NOT do down here
 
@@ -802,7 +839,8 @@ The rule that fixes it is not a special case:
 > **A card is an object. You picked it up, so you have it.**
 
 When the shaft it runs is not in this building, it is a card for **another one** — which is exactly the wallet
-`WrongCardLine` has always described (*"every one of them countersigned, current, and for another shaft"*).
+the gate's refusal has always described (*"every one of them countersigned, current, and for another shaft"*;
+since #684 the sharper *"this one was issued for X SITE"*).
 Until now that line described a thing the game could not give you. Now the deepest floor of one facility hands
 you the way into the next, which is the best thing a bottom floor could hold, and the prose that was decoration
 became literally true without a word of it changing.
@@ -1110,6 +1148,18 @@ distinguishable **from the Line text alone**: the card works; it runs another sh
 was issued for another site, named; or the way is sealed and nothing you could ever carry opens it. The last of
 those is unchanged on purpose — #590 call 2 — and so is the mechanical room door: a refusal that hinted would
 send a captain looking for a card that does not exist.
+
+**And the panel reads it out loud** (#684). The lift panel goes through the wallet without being asked — the
+owner's ruling is that this *is* its character, and a `try it →` verb at the gate would make the building
+polite — but for three issues it answered out of a second set of sentences of its own (`WrongCardLine`), so
+the sharpened matrix above had **no client caller at all**. That is the third named bug class in a mirror: the
+sim knowing something the sentence does not say. `WrongCardLine` is gone; `UndergroundComplex.TheGateReads`
+asks `SatchelTry.ReadTheWallet` and passes its answer through untouched, and the answer goes up as a card in
+#528's idiom — the same title at a refusal and at a reading, the presented card's own office face, and the
+matrix's line verbatim as the caption. Per #736 that caption is the outcome: the line lives **on** the card
+that is up, never only in the panel row behind its backdrop. An empty wallet is pictured with
+`AuthorityCardFallbackArtUrl`, the nameless face, because painting one of the five offices onto a pass the
+captain does not have would be the game lying about a possession.
 
 | gets a card | does not |
 | --- | --- |
@@ -1922,6 +1972,430 @@ would pass just as happily on a world whose corridors had wandered outside the f
 refused for the wrong reason — the fifth bug class, a guard handed a world that cannot tell pass from fail.
 Watched go **red** on the old behaviour at `18747 of 19311 squares on a pressurised poured floor take a
 shovel`.)*
+
+13.24 **An arrival composes its sayings with a RANK, and the one pulse slot keeps the biggest** (#693).
+
+> *"#592's `UnlistedArrivalLine` — the CLIMAX of #592, the first words on the floor that does not exist — is
+> overwritten by the routine pressurisation/air line on the same arrival. The biggest sentence in the feature
+> has been losing to boilerplate since it shipped."* — owner, filing #693
+
+The HUD's pulse line has exactly **one** slot and the last write won. Stepping out of the car can have five
+things to say at once — the car dropped, the plan has no such floor, the air is good or gone, a gate read a
+paper, the pour stopped — so *which one a player actually read* was decided by the order three blocks in
+`Map.Surface.RideTheLiftTo` happened to be written in. Three of them carried a comment saying they were
+deliberately **last**; #592's climax did not, and lost to *"the doors part on warm air and standing lights"*
+every single time. #689's beat had already been shipped with an ordering test (#692) for the same reason,
+which is what a missing law looks like from the inside: **a contract that lives in comments is not one.**
+
+The law is two pieces:
+
+- **`PulseRank`** — `Status` (instruments, prices, refusals, weather — the default, and what everything
+  written before #693 is), `Beat` (something happened once and the book will keep it), `Climax` (the sentence
+  a whole feature was built to say). The rank is about what a line **is**, never about how loud it is; a
+  status line dressed as a climax to make it win is the same bug with better manners.
+- **`PulseSlot`** — *a lower-ranked line may not displace a higher-ranked one that is still held; among
+  equals the last written wins.* The **hold is short on purpose**: `MinDwellMs`, the pulse's own floor, and
+  not the winner's full dwell. A climax can dwell eight seconds, and eight seconds in which a pressed button
+  answers nothing on screen is §13.10's *"in the DOM is not on the screen"* wearing this fix as a disguise.
+  The lines that race for this slot race in the same frame or the tick after it.
+
+And the arrival is **composed once, in Core** (`UndergroundComplex.ArrivalSayings`), returning the ranked
+sayings in narrative order with the beat each one is. The client says all of them — **the book keeps every
+one, in the order they were said, whatever the screen does** — and hangs the cards, the nerve, the flags and
+the save off the beat. No call site has to know what the call sites after it are going to say, which is the
+whole point: the per-site ordering discipline #692 had to invent is gone, and its ordering test is now a rank
+test.
+
+*(Enforced: `ThePulseKeepsTheBiggestSentenceTests` sweeps **every floor arrival the generator admits** — every
+site, every from-floor, with the wallet and without it — and asserts the highest-ranked saying is the one on
+screen; plus a **permutation** guard, because the claim of a priority is that composing order is free, and
+"a list built by appending is not a list in order" (§13.2) is this repo's own named bug class. Watched go
+**red** on the old last-write-wins rule at `144 of 1319 arrivals put the wrong sentence on screen` and
+`europa B5: the floor that is not on the plan says '🕳 The doors part on a floor that is not on the …' and the
+screen kept '🎫 You find the other shaft…' instead`.)*
+
+**Reaching it.** `?card=next` mints the authority for the gate you will be standing at, so the carded row,
+the accepted beat and the wrong-card refusal are one URL away — #692 shipped all three and could not look at
+any of them. See `docs/testing-guide.md`.
+
+13.25 **An arrival that raises a CARD holds its sayings, and the card's dismissal plays the winner** (#768).
+
+> *"On a from-the-surface ride straight through a gate, #585's first-descent CARD raises on the same arrival,
+> and the gate-accepted pulse line plays UNDER its backdrop."* — the residual #693 declined, filed as #768
+
+§13.24 settles a pulse losing to a pulse. It cannot settle the other loss, and the other loss is total: the
+same arrival that composes the sayings also raises a **full-screen card**, so the winner of the one slot spends
+its whole dwell behind a blurred backdrop and there is nothing left when the captain closes it. No rank helps —
+the line is not losing to a bigger line, it is losing to the **whole HUD**. §13.10's family, arising from the
+world acting rather than from a press on a pop-up, which is why #736's *"answer on the pop-up that was
+pressed"* sweep could not reach it either: nothing was pressed.
+
+**The shape: a hold, scoped to exactly this situation.** `PulseHold` (Core) keeps one sentence back —
+
+- **the same law, minus the clock.** *A lower-ranked held line may not displace a higher-ranked one; among
+  equals the last held wins.* There is no clock inside a breath: an arrival composes its sayings in one frame,
+  so the rank is the whole of it. What survives the card is therefore **exactly the sentence that would have
+  been on screen had no card been raised**, and that equivalence — hold-then-release against write-them-all —
+  is what the sweep asserts, so there is one law about the slot and not two.
+- **a release, not a queue.** #693 declined a queue and it stays declined: this is not a lifecycle the pulse's
+  400-odd call sites share. An event that raises no card releases on the spot, which is an ordinary pulse and
+  indistinguishable from one. The released line goes through `PulseSlot.Write`, so it takes its ordinary
+  length-scaled dwell and can be outranked a breath later like anything else — **a held line is a line that
+  has not been said yet, never a line with special powers.**
+- **the book is untouched.** Every saying is filed at the moment it was said, in the order it was said. What
+  is deferred is the doorbell, never the record and never the event.
+
+The client half is three clauses: `RideTheLiftTo` holds instead of pulsing; it releases **after** the last card
+it can raise, because that is the only point at which "is something in front of the captain?" can be asked of
+the world rather than predicted from a copy of the conditions; and `CloseViewObject` / `CloseRevealCard` free
+what the card was standing on. Every road out of a card — Esc, Enter, `E` again, the backdrop, the button —
+already went through those two methods, and now nothing anywhere clears the field by hand.
+
+Two more members of the family went the same way: the repo boat's arrival line and callsign behind its
+arrival plate, and the *shelter is not a sanctuary* warning behind the siege plate (#583) — the one sentence
+in that scene that tells a captain the pressure vessel they are standing in will not save them.
+
+*(Enforced: `TheHeldSayingOutlivesTheCardTests` (Core) sweeps every from-the-surface ride that crosses a gate,
+plus every arrival the generator admits for the hold/pulse equivalence and a permutation guard, and pins the
+released line's dwell against §13.24's. `TheArrivalHoldsItsLineForTheCardTests` (Client) is the source-shape
+half, including **a method that holds always releases** — a hold with no release is a sentence lost for good,
+which is a worse bug than the one this fixes. Watched go **red**: with the hold made a no-op, i.e. the shipped
+behaviour, `10 of 10 carded descents lost their beat to their own card` and `1319 arrival(s) hold a different
+sentence than they would have pulsed`; with only the rank clause taken out, `144 arrival(s)`; with the client
+files reverted, all six wiring guards.)*
+
+**Reaching it.** `/map?secretlab=deep&land=1&card=next` — the shed, with the first gate's authority already in
+the wallet. Ride straight down from daylight and the card and the beat arrive together.
+
+13.26 **An event with FOUR things to say composes them onto its own card** (#774).
+
+> *"`AssembleSomebody` raises the dossier card and then fires 2–4 `ShowAndFile` lines UNDER it… the hold is
+> the WRONG remedy here — it releases one winner, and these four are a same-rank sequence whose survivor
+> would be decided by append order, the exact contract #693 killed."* — the owner, filing #774 off the
+> #768/#773 crew's verification
+
+§13.25 settles a card standing on ONE sentence. The field dossier (#588) stands on four: the person the kit
+assembles into, the next of kin who have been waiting nine years, what that family turns out to know, and
+the phrase that opens a door somewhere else — all composed in one breath, all at the same rank, every one of
+them pulsed under the card's own backdrop and filed where nobody was looking. A fifth is possible: the moon
+the family's knowledge names (#585), announced from inside the same method with the card already up.
+
+**Why the hold cannot help, written down so nobody re-proposes it.** A hold releases ONE winner. Among equals
+the winner is the last one held, which means the sentence the captain keeps is decided by the order somebody
+typed the calls in — §13.2's own named bug class, and the contract §13.24 was written to kill. The hold is
+right for an arrival, which composes sayings the world happened to produce at the same instant; it is wrong
+for a DEBRIEF, which is one thing said in four sentences.
+
+**The shape.** #736's law instead — *the result of an act is readable on the pop-up the act raised* — with
+the one change that makes it fit: the card's outcome is a **region, not a slot**. All four fit, so there is
+no winner to pick, and the ordering question stops being about survival and becomes a question about reading.
+
+- **The sentences and their order live in Core**, beside the rolls that decide whether each exists at all
+  (#634's law: a sentence composed in the client can drift away from the sim). `FieldDossier.Beat` declares
+  the order — *who they were → who is waiting → what that family knows → the in* — and it is an order of
+  MEANING: you work out who before you can carry news of them, you learn who is waiting before you can learn
+  what they know, and the in comes last because it is the only one that is not about the dead.
+- **Nothing may read that order off the order the sayings were composed in.** `Debrief` composes them
+  backwards on purpose and `InTheOrderTheyAreRead` walks the enum, so append order cannot decide anything
+  even by accident.
+- **The book is untouched.** Same sentences, same glyphs, same order, filed at the same moments — including
+  the named moon, which is still banked between the family's hint and the in. What changed is where a
+  sentence is READ, never what is recorded.
+- **The object card grew an outcome row**, the reveal card's own (#736), because the surface's full-screen
+  cards are `ConsoleSpot`s. `SayItWhereTheyAreLooking` now knows about it — and answers there FIRST, because
+  both cards share a backdrop class and the object card is written later in `Map.razor`, which is the case
+  the outpost's effects console reaches for real: one press raises the effects plate and the dossier over it.
+
+*(Enforced: `TheDossierIsReadOnItsOwnCardTests` (Core) sweeps 360 assemblies over six grounds — every
+sentence on the card, the reading order strictly ascending, every permutation of a real assembly's sayings
+coming back identical, and the filing rebuilt longhand from the primitives the shipped code called.
+Anti-vacuous: the sweep is asserted to contain assemblies of two, three AND four sentences.
+`TheDossierCardCarriesItsOwnSayingsTests` (Client) is the source-shape half. Watched go **red**: with the
+card carrying nothing — i.e. the shipped behaviour — `960 of 960 sentence(s) the assembly says are not on its
+card`; with the ordering rule reverted to the list as it came, `1908 composition order(s) changed what the
+card reads` and five of eight failing; with the four client files reverted, all seven wiring guards.)*
+
+**Reaching it.** `/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1` — the hut on the edge lane, and the
+dossier assembles on the first piece of kit with every sentence it can carry. Three papers rooms in one
+excursion at one room in eight, times two one-in-three rolls, is why it needed a door.
+
+13.27 **Somebody walks the working floors, the walk is a thing you can learn, and being seen is a CONVERSATION**
+(#804, v1 of the guards).
+
+> *"the rotating guards on the lower more restricted levels… ideally we could see them move and wait for them
+> to pass before we pass them."* · *"Surely we should not know their movements like 100 meters out and them
+> need to see us like really close to register our existence."* · *"a rolling guard has no reason to run after
+> anyone just on sight, they must suspect you do not belong there for some reason first."*
+
+§13.21 put people on B1 and said, in the same breath, that the guards on the floors below *"are not built yet
+and whose whole point is that probing them probes back."* This is that cast, and the owner's three sentences
+are the whole of its design.
+
+**Where a round is walked, and where it deliberately is not.** Below the bar, and no deeper than the building
+admits to — `PatrolBeat.IsPatrolled` is `CanteenRegulars`'s own B1 ruling on one side and `DepthOf` on the
+other, so the floors that carry a payroll are exactly the floors the directory owns up to. **Nobody walks the
+unlisted band or the found halls**, and that is a fact rather than an omission: the unlisted band is what the
+clandestine operation was hiding *from its own staff* (§13.7), and a security rota down there would be the
+building telling on itself. The head office has none either (#411 has no gate, no shafts and a fiction of its
+own). The population going to zero on the way down is #709's horror gradient, untouched — what this adds is a
+second, narrower gradient inside it, and **where the rounds stop is a sentence a captain can read without one
+being written.**
+
+**The round comes off the floor plan and never off a constant.** The car, then every rib mouth in ascending x,
+and after each mouth the room that stands furthest down that rib — `ShaftAt`, `FloorPlan.Ribs` (published by
+#587 for precisely this) and `FloorPlan.RoomCentres`, which §13.1's sweep already proves are walkable from the
+car on every floor of every site. So a beat is walkable **by construction**, and there is an audit that walks
+it anyway. The mouths are **sorted** before the round is built: #587's lesson is that a builder whose
+correctness depends on order must sort at the point of use, and the order here is what makes a round learnable.
+
+**It rotates with the WATCH, and the watch is the canteen's.** Direction and starting stop are seeded on
+(site, floor, watch) off `PatronRota.WatchIndex` — the same shift the bar upstairs turns over on, because one
+answer to *"how long is a shift"* is a rule and two are a bug. Inside a watch the same round is walked the same
+way every time, which is what makes it learnable; across watches it turns over, which is what stops learning
+one from being the end of the feature. One or two on a floor, sharing **one route** and differing only by how
+far round it they start — the sweep team's rule (#538), for its reason: *being hidden from has to be legible.*
+
+**Four bands of knowing, and the asymmetry is the feature.**
+
+| range | what the captain gets |
+| --- | --- |
+| out past the eye | the MOTION FAN hears them through the rock, smudged, at #591's degraded reach |
+| inside earshot, unseen | *boots on shotcrete, out of sight and in no hurry* |
+| inside sightline (30 du) | a green mark on the deck — **and not one metre before** |
+| inside NINE du of them | they register you, and the round stops |
+
+The gap between the third row and the fourth is the whole stealth verb. If a guard noticed you the moment you
+could see them there would be nothing to time, and *"wait for them to pass"* would not be a sentence anybody
+could act on. One predicate answers both directions with a different reach (`PatrolBeat.EyesOn`), over
+`SurfaceCollision.HasLineOfSight` — the same wall law the captain, the pack and the sweep team obey — because
+two copies of "can this see that" is how a marker and a challenge come to disagree about whether anybody is
+there. **A guard behind poured wall is not drawn dim; they are not on the deck at all**, the #371 idiom the Old
+Ones already take.
+
+**And the instrument needed nothing.** A guard walks, so a guard is a contact: they go into
+`EverythingThatMoves` and the fan hears them, degrades with depth, smudges them behind wall and drops them the
+moment they stand still at a stop. #591 shipped an honest underground tracker eighteen months before there was
+anything down here to hear, and the bet paid: this feature added **no instrument code at all**.
+
+**A sighting is a CHALLENGE and there is no other branch.** The round stops, the wallet is read without being
+asked (#684's ruling — *the unprompted read IS the character*), and the answer is TOLD on a card with the
+consequence in its own amber row (#736). Four rungs, because a refusal that sorts the wallet is the best
+storytelling this ground has (#679): this site's pass, another site's pass **named**, the cage chit refused as
+a cage chit — *"That's for the cage. This isn't the cage."* — and an empty wallet. The worst outcome in the
+feature is a walk back to the lift and a line in a book with the time on it. **Nothing here can start a
+chase**, and it is enforced by there being nowhere for one to start.
+
+**THE BADGE, and where it comes from.** A site-scoped personnel pass in the wallet, the third grammar there:
+an authority is an office vouching for a HOLE, a chit is a foreman vouching for a SHIFT, a badge is the site
+vouching for a PERSON — and only the third is any use to a man on a round. It is issued **when the cage takes
+you down on the day-labour chit** (#752's arrival), which is the gig *completing* rather than being offered:
+the Hand's chit is a promise, going down on it is the shift you turned up for, and the field book's existing
+sentence — *"Downstairs is a place you are now paid to be"* — becomes literally true without a word of it
+changing.
+
+**Register, and it is load-bearing.** A guard is an EMPLOYEE. Bored, thorough, on a rota, halfway through a
+shift, and wholly uninterested in the captain until the form says otherwise. #618's canon constraint is the
+one this feature could most easily have broken — *"the owner's ask is a cover that can blow, not a detection
+meter"* — so there is no alert, no alarm, no lockdown, no meter and no banner, and a word-list guard keeps the
+next line in the same register.
+
+*(Enforced: `TheRoundsOnTheRestrictedFloorsTests` (Core, 22 facts) — the three exclusions swept over thirteen
+sites including the head office, both head-counts proven reachable, the circuit's order and the car's place,
+no two stops on one square, deterministic inside a watch and turned over on 90 %+ of floors across six,
+the sightline laws in both directions at ONE range with only the wall differing, the boots band, the fan
+hearing a walker the eye cannot and dropping a stander, all four challenge rungs, the pass's site scope and
+its ride in the wallet, and the canon + register greps walking the catalog itself.
+`TheRoundIsWalkableTests` (Client) floods every restricted floor of eleven sites on three watches with A\*
+over the real `DeckPlan.CollisionField` — every stop standable, reachable from the car, and connected to the
+next — plus the wiring guards for the sightline gate, the fan's one accessor, the deck's droid count and the
+pass's grant.*
+*
+*Watched go **red**: the rib order reversed → `secret-lab-site-halls-116 B4: the round goes back on itself — a
+mouth at x-5.0 after one at x93.4`, twelve times; the wall law removed from `EyesOn` → three sightline facts;
+the watch dropped from the beat seeds → `only 0 of 98 floors walk a different round on a different watch`;
+the `DepthOf` clause dropped → `europa B5: a round on the band nobody listed`; and the room stop moved twenty
+du off its centre → `996 leg(s) of a round are not walkable`.)*
+
+**Reaching it.** `/map?patrol=2` — B2 of a deep site with the two-guard watch forced; `/map?badge=1` — the
+same floor with the site's own pass already in the wallet.
+
+**Filed, not built** (the owner's own scope split, and the phase-2 note this leaves behind): the suspicion
+ladder past one sighting, false IDs, a department tier on the pass, the challenge growing MOVES on
+`Encounter.Scene` — which #746 already proved needs no new mechanics — and #715's per-entity heat taking over
+from the single filed line. And the card wants a painting; it ships caption-only, which is the house
+degradation law and not a hole.
+
+**And the loudest one, which now has both halves waiting for each other.** #803/#809 shipped
+`GunfireHeard.WithinEarshot`, whose own doc comment says it is *"the question #804 will ask of every patrol on
+the floor, written down here so it is asked once and answered the same way"* — one call, and the predicate is
+already the ground's own ear (`ReeverHearing.Noise.Gunfire`, never a second number). **It is deliberately not
+consumed here.** What a round DOES about a noise is not a predicate, it is a STATE — break off the stand, walk
+to the place, search it, resume — which is the first rung of the suspicion ladder this phase is scoped out of,
+and it wants a sentence in the guard's own register that has not been through canon review. The seam is ready
+and the caller is one `if`; the reason it is empty is a ruling rather than an oversight.
+13.28 **The park is not the edge of the map: the far wall is a row of doors** (#801).
+
+> *"we could have rooms to explore below the park also (on the map). Walking through the park is fun, it
+> should not be the edge."* — the owner, 2026-08-09
+
+§13's park (#759) is the biggest room in the game and #775 made it a **thoroughfare** — 2–5 gates in its near
+wall, so the natural route between two corridors crosses the green. It still had a painted horizon down one
+whole side, and a crossing that ends at a horizon is a crossing you do once.
+
+**The back of house.** Behind the far wall, one room in each **bay between two floodlight masts** — four on
+the shipped field, ~46 × 12 du each, entered directly off the gravel. Their plates say what the KITCHEN and
+the GROUNDS are for and never what the building is for (§13.8): `🌱 POTTING · SOIL, TRAYS, GRIT`,
+`🧰 GROUNDS PLANT · LAMPS, FEED, TIMERS`, `❄ COLD ROOM · TO CANTEEN 1`,
+`🧤 GROUNDS STORE · TOOLS SIGNED OUT AND BACK`, `🚿 WASH-DOWN`, `📋 GROUNDS OFFICE · ROTA POSTED`. The cold
+room names the same `CANTEEN 1` the beds are stencilled for, which is the entire food connection said a third
+time and never once pointed out.
+
+**Where the ground came from, because it is not obvious and it is the whole engineering answer.** The park's
+size is a LAW — `ParkDepthDu` deep, and half again the floor of the hall behind it — and on the shipped field
+the second of those binds at 38.3 du of the 42 it has. There is 3.7 du of slack in the entire feature and a
+chamber module is twelve, so the band could **not** be bought by making the park shallower. It is bought from
+the **last strip of the field**: the park's far wall clamps at `BottomY + EdgeMargin`, and the edge margin is
+a *surface* law — the half-lane the regolith generator keeps clear of the #563 falloff. There is no falloff on
+a floor with a roof on it (a Hive deck publishes no `Unseen` wall at all, so `DrawUnseenFalloff`
+short-circuits and nothing is clipped). That band is 16.5 du of the field's own envelope no floor has ever
+used. The back wall stands `ParkBackRockDu` inside `BottomY`, and the one law that *does* bind —
+`ItNEVERLeavesTheSurfacesOwnEnvelope` — is met with rock to spare.
+
+**Three consequences that had to be got right.**
+
+- **The far wall is built in segments now**, exactly the way the near wall has been since #775, off the one
+  list of spans a cursor sweeps in order (§13.2). The gap the wall leaves and the door the room publishes are
+  one gap (§13.1's founding law).
+- **The doors are laid in the bays BETWEEN the masts**, off `ParkMastXs` — one answer, asked by the carve
+  that erects the masts and by the carve that lays the rooms — so a door can never be cut in front of a lamp
+  post.
+- **They are not `Park.Ways`.** A Way is a way *through* the green, corridor to corridor, and
+  `TheHiveAmenitiesTests`' conservation sum counts each one as a place with a doorway. A back door is a way
+  *out of* the green into a room that is already counted; publishing it on `Ways` would have taken that guard
+  red for a reason that has nothing to do with the bug it was written for. They are published as
+  `Park.BackDoors`, and each room carries its own.
+
+*(Enforced: `TheParkIsNotTheEdgeTests` (Core) sweeps 52 parks — every room on the far side, every door on the
+far line, nothing lying across one, every room on the floor's own `RoomCentres`, every plate on a wall, the
+park's own depth untouched to three decimals, and the rock left over. `TheFarGatesLeadSomewhereTests`
+(Client) floods the real `DeckPlan.CollisionField` from the car to every one of them and then **pours every
+back door shut** and demands they all go dark, with the green itself still reachable so the plug is proved to
+have measured the door. Watched go red three ways: with the carve removed, `52 park(s) are still the edge of
+the map: luna B1: the far wall has nothing behind it — the park is where the building stops`; with the rooms
+carved and the far wall left poured as one segment, Core says `208 park(s) are still the edge of the map:
+luna B1: a wall (-144.0…134.0) lies across the back door at -88.6…-82.2` and the Client says `48 room(s)
+behind the green are drawn and cannot be entered: luna B1: 📋 GROUNDS OFFICE · ROTA POSTED at (-85, -270) —
+the door is a picture`; and with the far wall deleted entirely, `48 room(s) … is STILL reachable with its
+door poured shut — the far wall is a picture, not a wall`.)*
+
+**Reaching it.** `/map?parkback=1` — B1, standing on the gravel facing the doors.
+
+13.29 **No floor has exactly one way off it: the building has two cars** (#801).
+
+> *"that elevator would be so busy it would be packed and never available… it is a choke point, and the whole
+> lab would be too easily guarded by just having the guard posted in front of the one elevator. I want to
+> remove that too-easy plot-to-catch-us plot hole."* — the owner, 2026-08-09
+
+He is right three times and the third is the one that matters. **Traffic**: a facility with a canteen for
+eighty, twelve growing beds and a goods hoist does not run on one personnel car. **Pacing**: one car is a
+come-back-here point on every floor. **The posted guard**: a single car is a single square somebody stands
+on, and no amount of writing around that makes an escape feel earned.
+
+**The shape.** `ShaftAt` is THE CAGE — the one the surface hut (#606) sits over, the one the plate stack is
+beside, the one every older law means by "the lift". Beside it now, published from `ShaftsOn(field)`, is the
+**goods car**: same spine, opposite face, at the **blind end of the main corridor** — the one stretch of
+spine past the outermost cross corridor's own chambers, which is ground no room can ever be laid in and
+exactly where a goods lift goes in a building anybody has ever worked in. On the shipped field that is 170 du
+from the cage against a law of 92.7 (a third of the corridor), so **one person cannot watch both**.
+
+**What it does NOT do, and this is the load-bearing half.** The goods car has **no SURFACE row** (there is
+one hut on the regolith and it is over the cage) and **no gate row at all**. §13.5 is a law about the
+BUILDING — depth past the first band is earned with paper — and a second car that could cross a band seam
+would be a way to buy it without. Which also makes the pair worth walking between rather than
+interchangeable: within a band either car will do; the moment you want the surface or anything deeper you
+want the cage, and the cage is at the other end of the corridor. That is route planning, and it costs nothing
+to state.
+
+It is **not** #719's executive lift (that hangs off a principal apartment, is on no panel, and costs your
+cover) and **not** #719's service stair. It is the ordinary second car a building this size has, and it ships
+first because the other two are beats and this is a topology.
+
+**The ground gets a veto.** `ServiceShaftAt` returns null on a field whose cross corridors run out to its own
+end caps, and the choke law binds *where the generator admits two* and says nothing where it does not — which
+is what keeps it a law rather than a tautology, and is asserted against a synthetic cramped field.
+
+**Every singular guard grew rather than moved.** `TheLiftIsInTheSAMEPlaceOnEveryFloor`,
+`EveryMouthCutInTheSpineIsSTILLOpenWhenTheWallIsFinished` (which had seeded its mouth list with a hard-coded
+singleton — a second alcove walled over on the lower face is #587 one face down and would never have been
+looked at), `NoRibIsRunThroughTheLiftShaft`, `ARefugeIsNeverBesideTheLift`, the hall-swallowed-the-lift
+clause, the nobody-sits-in-the-car clause, and `ThereIsAlwaysAWayBackToTheLift` — which said *"exactly one
+lift"*, i.e. it asserted the choke, and now says **one cage, one goods car, both always findable**.
+
+**And one of them found a real bug rather than needing a widening.** `ARefugeIsNeverBesideTheLift` measured
+the cage alone; widening it to both cars took **332 of 1130 floors** red, because #608's carve had been
+choosing the room furthest from ONE shaft. The carve was fixed rather than the guard: it measures every car,
+and where a tight floor has nowhere `MinRefugeDetourDu` from both it takes the **furthest** room it has
+instead of a rolled one (which alone moved the worst case from 29 du to 52). The law is restated as a
+comparison — *the refuge must be the furthest-from-both room the floor had, and must clear the number
+wherever any room does* — with the fallback counted, capped at a twentieth of the floors that clear it
+outright, and floored at 0.7 of the law, so the escape hatch is measured rather than assumed. Watched go red
+by reverting the carve to one shaft: `319 of 1130 floor(s) break the law … luna B2: the refuge is 29 du from
+the nearest car and this floor had a room 79 du out`.
+
+**#707's rank-in-plumbing law was made honest in passing.** A principal room whose ground was already claimed
+cannot be given an en-suite, and it used to keep a plate stating a rank the building could not back up. The
+fallback had never fired on the shipped field — which is exactly why it fired on four generated moons the day
+a passage moved four du. Such a room is now re-plated from the floor's own register, one step along the same
+seed.
+
+*(Enforced: `TheOtherCarTests` (Core) — every floor of 53 sites has both alcoves cut, the separation and the
+opposite-faces law, nothing standing on either car, the ground's veto, and the goods car's panel offering
+exactly its band with no surface row, no sealed row and no card named, asked with a wallet holding every card
+the site can mint. `TheFarGatesLeadSomewhereTests` (Client) proves each car's doorstep is standable and that
+from either one you can WALK to the other, which is the anti-choke claim itself. Watched go red four ways: with the second
+alcove never cut, `594 floor(s) can be sealed by one person standing on one square: luna B1: the Service
+car's alcove is not cut on this floor`; with the separation law dropped and the car placed at the NEAR blind
+end, `the two cars are 92.2 du apart and the law wants 92.7 — one person standing between them has both`;
+with the goods car given the cage's panel, `1285 goods-car panel(s) offer something the shaft does not have:
+luna B1: the goods car offers B5, which is another band's floor`; and with the doorstep left as the cage's,
+`130 floor(s) fail the two-car law: luna B1: riding the Service car puts a captain 170 du from the car they
+rode`.)*
+
+**The signage stack stays at the cage, and that is a call rather than an oversight.** §13.13's plate — the
+depth, the department, and whether you can breathe — is 44px lettering on the wall a captain steps out onto,
+and the second car does not get a copy of it. Two reasons, both already written in this file: #605 deleted a
+third plate from that wall because *three plates on one wall is a wall nobody reads*, and §13.16 settled that
+**a building says a thing where you ENTER it and nowhere else**. The goods car names itself
+(`🛗 GOODS CAR 2 · THIS BAND ONLY`), its panel states the depth in the same `DepthPaint` the plate uses, and
+the air fact reaches a captain who arrives by it through the arrival's own sayings and the suit gauge — which
+is §13.13's actual law: **one** pressure fact, said by everything that says it. Nothing is left unsaid; it is
+said once.
+
+**What this means for §13.27's rounds, said out loud rather than left for somebody to trip over.**
+`PatrolBeat.Circuit` opens at *the car* — `ShaftAt` plus a pace — and then walks the rib mouths and their far
+rooms. That is still correct: `ShaftAt` is the cage, and the cage's doorstep is still a pace off its own face.
+What is now true and was not before is that **the goods car is on nobody's round.** That is the feature
+working rather than a hole in the roster — the owner's complaint was precisely that one posted guard has the
+building — but it IS a design question the guards lane owns, and this PR does not answer it: whether a round
+should take in both cars (and pay for it in length), whether a second guard walks the other end, or whether
+the goods car being unwatched is the price the building pays for having one. Nothing here guesses. The back
+of house does not enter the question at all: `IsPatrolled` excludes the bar floor, and the park is only ever
+on the bar floor.
+
+**Two things this deliberately does NOT do, so nobody has to guess later.**
+
+- **No second SURFACE head.** The issue says "maybe a second surface shaft"; the hut is a seeded
+  `SurfaceStructure` with a discovery beat, a probe ping and its own art (#606/#592), and a second one is a
+  surface feature rather than a carve. The surface remains one way in — and #719's **service stair** is the
+  designated answer to that, which is why it is not pre-empted here.
+- **The wrong-shaft-of-this-site refusals do not get a new stage.** A card's identity is `(bodyId, band)`, so
+  those lines only fire when the wallet holds a card for a *different band* than the gate wants. Both cars
+  serve the same band, so the goods car cannot produce a case the cage does not. Reaching them in play needs
+  a car whose band coverage is OFFSET — which moves the gate from the shaft to the band SEAM, i.e. a rewrite
+  of §13.5's implementation. That wants an owner ruling, not a carve PR.
+
+**Reaching it.** `/map?goodscar=1` — B1, standing at the second car. Then walk to the other one and see how
+far that is.
 
 ## Working method
 

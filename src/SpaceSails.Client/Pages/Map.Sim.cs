@@ -226,8 +226,15 @@ public partial class Map
     private double _lastPulseSimTime = -PulseCooldownSeconds; // so the very first pulse isn't rejected
     private int _reactionMassPulses = 500;
     private const double PulseCooldownSeconds = 1.0;
-    private string? _pulseMessage;
-    private double _pulseMessageExpiresMs;
+    // #693 · THE ONE SLOT, WITH A LAW ON IT. Was a bare string plus an expiry, overwritten by whoever wrote
+    // last — which made the order of three blocks in Map.Surface load-bearing and left #592's climax losing
+    // to the routine air line. PulseSlot (Core, and therefore sweepable) keeps the rank alongside the words.
+    private PulseSlot _pulse = PulseSlot.Empty;
+
+    // #768 · …AND THE SAYINGS THAT NEVER GOT AS FAR AS THE SLOT, because the same event raised a CARD over
+    // them. The ranks cannot help there: the loser is not a lesser line, it is the whole HUD behind a
+    // backdrop. The arrival holds them here and the card's dismissal lets the winner go (PulseHold, Core).
+    private PulseHold _held = PulseHold.Empty;
     private const double AdaptiveWarpThreshold = 100; // below this, the historic fixed-1 s loop
     private const double AdaptiveWarpQuantum = 60;    // matches NpcTimeStep; frame-invariant
     private const double DaySeconds = 86400;
@@ -307,6 +314,13 @@ public partial class Map
         await RefocusMap();
     }
 
+    // #735 · The same seam, under the name the other kind of caller means. A card button that ADVANCES a
+    // card rather than closing it (the freeze beat's "…wake up" walks the death card to its next stage)
+    // needs the keyboard handed back just as badly: the button it was clicked on leaves the DOM with the
+    // stage, focus falls to <body>, and the next stage's Enter then has nowhere to land. One line, no
+    // second copy of the idiom — Dismiss is not renamed because fifty call sites do mean "dismiss".
+    private Task PressAndRefocus(Action act) => Dismiss(act);
+
     private static string Canonical(string key) => key switch
     {
         "W" or "ArrowUp" => "w",
@@ -330,22 +344,63 @@ public partial class Map
     // bare Task.Yield) reliably parks on a browser timer, giving the compositor a chance to flush the
     // loading door — the animated ⚙ gear keeps turning on its own (CSS, compositor thread), the phase
     // text updates, and the tab never reads as a dead freeze even when the block runs long on Debug WASM.
-    private async Task BootPhaseAsync(string phase)
+    private async Task BootPhaseAsync(string phase, CancellationToken abandoned)
     {
         _bootPhase = phase;
         StateHasChanged();
-        await Task.Delay(1);
+        await Task.Delay(1, abandoned);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    // #737 · THE PLAYER MAY LEAVE WHILE THE WORLD IS STILL BEING BUILT. Boot pegs the main thread for tens
+    // of seconds, so backing out of a slow load is the ordinary case rather than the corner — and the boot
+    // below is a long chain of awaits whose continuations used to resume into a component the router had
+    // already torn down, ending at InitCanvas / StartLoop / FocusAsync, every one of which names DOM that
+    // has left the page. renderer.js throws outright on a missing canvas ("no canvas element with id …"),
+    // the exception escaped OnAfterRenderAsync, and the renderer logged it as an unhandled render
+    // exception. Dispose cancels this; every yield point in the boot carries the token, so an abandoned
+    // boot stops at the first await it reaches instead of finishing into a page that is gone.
+    private readonly CancellationTokenSource _bootAbandoned = new();
+
+    /// <summary>#737 · Cancelled the moment this component is disposed — the boot's own "the player left".</summary>
+    internal CancellationToken BootAbandonedToken => _bootAbandoned.Token;
+
+    /// <summary>#737 · True once <c>StartLoop</c> has actually run for this component. <c>_started</c> only
+    /// means the boot BEGAN: a boot abandoned before the renderer stage has no rAF loop to stop, and no
+    /// canvas left to name in the stopping.</summary>
+    private bool _renderLoopRunning;
+
+    /// <summary>#737 · The running boot. The renderer fires <c>OnAfterRenderAsync</c> and keeps only an
+    /// error handler on the task it returns, so this is the one handle a guard can await to watch the
+    /// continuation that used to outlive the page.</summary>
+    internal Task? Boot { get; private set; }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _started)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _started = true;
+        return Boot = BootWithinTheLifeOfThePageAsync();
+    }
 
+    private async Task BootWithinTheLifeOfThePageAsync()
+    {
+        try
+        {
+            await BootTheWorldAsync(_bootAbandoned.Token);
+        }
+        catch (OperationCanceledException) when (_bootAbandoned.IsCancellationRequested)
+        {
+            // #737: the player navigated away mid-boot. Half a world and no page to put it on — there is
+            // nothing to unwind (every field belongs to this instance, which the router has discarded) and
+            // nothing to report. Letting this escape is exactly what raised WebAssemblyRenderer[100].
+        }
+    }
+
+    private async Task BootTheWorldAsync(CancellationToken abandoned)
+    {
         // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
         // simple slug — it becomes a URL path segment. /map?start=space-bar jumps the freshly-built
         // world straight to a named start point (see StartPoints) — the playtest "skip the set-up"
@@ -379,6 +434,7 @@ public partial class Map
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
+        bool tableSceneCheat = false; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
         var uri = new Uri(Navigation.Uri);
 
         // #729 · /map?autowalk=1 — click the deck on a surface excursion or a Hive floor and the captain
@@ -712,6 +768,26 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["outpost=".Length..]).ToLowerInvariant();
                 _outpostCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("kit=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #774 dev cheat: /map?kit=1 assembles the FIELD DOSSIER (#588) on the FIRST piece of
+                // somebody's kit this excursion turns up, and with every sentence it can carry.
+                //
+                // It exists because the assembly is the rarest beat on the regolith and its full form is
+                // rarer still: three papers rooms inside one excursion at one room in eight, and then two
+                // more one-in-three rolls for what the family knows and the in that fell out of the kit.
+                // That four-sentence version is the scene #774 is about, and nobody could reach it on demand
+                // to look at it — which is this file's own rule about a scene that ships broken.
+                //
+                // It moves those GATES and nothing else: the stranger, the family, the hint, the in and the
+                // moon they name are the seeded ones for the room you actually completed, so what a tester
+                // reads is a dossier a captain can genuinely be handed.
+                //
+                //   /map?dock=the-tilt&site=0&land=1&outpost=1&kit=1
+                //   …walk to the hut and press E on SOMEBODY'S EFFECTS.
+                string candidate = Uri.UnescapeDataString(pair["kit=".Length..]).ToLowerInvariant();
+                _kitCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("dark=", StringComparison.OrdinalIgnoreCase))
             {
                 // #708 dev cheat: /map?dark=1 puts the fixtures out on every floor of this excursion, so the
@@ -773,6 +849,30 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["watchers=".Length..]).ToLowerInvariant();
                 _watchersCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("arrivalphase=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #742 dev cheat: /map?kaamos=hq&arrivalphase=N winds the sim clock to arrival phase N of
+                // the ice moon's own orbit BEFORE the head-office park is built, so the ride lets her go on
+                // the phase you named instead of whichever one boot-time happened to be.
+                //
+                // It exists because #742 was a ONE-IN-24 bug: the window opens every 40 days and stands
+                // open for two, so the arrival phase is free, and phase 2/24 (epoch 9,866 s) was the one
+                // that put the parked hull into Enceladus at +9.54 h while the captain was 23 floors down.
+                // Nobody could reach that on demand — you booted, got phase 0, saw nothing wrong, and
+                // shipped it. This is the door to the bad one.
+                //
+                //   /map?kaamos=hq&arrivalphase=2           park on the phase that used to lithobrake
+                //   /map?kaamos=hq&arrivalphase=2&land=1&floor=23   …and go down the lift while she holds
+                //
+                // 0…23; anything else is ignored rather than clamped, because a silently-corrected phase
+                // index is a tester reading the wrong row of the sweep.
+                string candidate = Uri.UnescapeDataString(pair["arrivalphase=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int ph)
+                    && ph >= 0 && ph < CyclerWindow.ArrivalPhases)
+                {
+                    _arrivalPhaseCheat = ph;
+                }
+            }
             else if (pair.StartsWith("found=", StringComparison.OrdinalIgnoreCase))
             {
                 // #677 dev cheat: /map?found=1 parks the one rock in the game whose site has a band nobody
@@ -794,6 +894,493 @@ public partial class Map
                     _foundCheat = true;
                     secretlabCheat = true;
                 }
+            }
+            else if (pair.StartsWith("card=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #693 dev cheat: /map?card=next puts ONE authority in the wallet — the one the gate in front
+                // of you reads.
+                //
+                // The #692 report ended with the honest note that its own hero row could not be playtested:
+                // "reaching the row needs an authority card in the wallet and no dev cheat mints one." The
+                // only thing that did was ?found=1, which also parks a different rock and hands over the
+                // WHOLE wallet — so the carded lift row, the gate refusal one band lower, and the accepted
+                // beat when the doors open have never been reachable on an ordinary site at all. A scene
+                // nobody can reach on demand is a scene that ships broken.
+                //
+                //   ?card=next    the band under wherever you are set down — the gate you are standing at
+                //   ?card=N       band N specifically, for the ladder (a card that opens the WRONG gate is
+                //                 the refusal line, and it has its own guard and no way to see it)
+                //   ?card=all     every band the site has, which is ?found=1's wallet on any rock
+                //
+                //   /map?secretlab=deep&land=1&floor=1&card=next
+                //
+                // The issue proposed ?card=<bodyId>#<band>, which is the card's own id — and that is exactly
+                // what this must NOT take. A body typed into a URL is a body the landing may not be on, and a
+                // band typed for it is one that site may not have; the cheat would mint a card no gate on the
+                // ground reads and the tester would be playtesting an empty pocket. So it names a BAND, it is
+                // minted for the body actually landed on, and a band the site does not have mints nothing and
+                // says so. (Also: '#' ends a URL — the id form cannot survive a query string anyway.)
+                //
+                // It implies ?secretlab=1, because a wallet is only worth anything where there is a lift, and
+                // it never chooses the rock: pair it with ?secretlab=deep or ?found=1 for those grounds.
+                string candidate = Uri.UnescapeDataString(pair["card=".Length..]).ToLowerInvariant();
+                if (candidate is "next" or "all"
+                    || (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                            out int band) && band >= 0))
+                {
+                    _cardCheat = candidate;
+                    secretlabCheat = true;
+                }
+            }
+            else if (pair.StartsWith("tablescene=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #746 dev cheat: /map?tablescene=1 boots THE TABLE SCENE — the B1 canteen of a deep site,
+                // with people in it, one URL from the front door.
+                //
+                // "A scene nobody can reach on demand is a scene that ships broken", and this one is behind
+                // more doors than anything else we have shipped: find a rock with a lab, land on it, find the
+                // shed, ride the lift, walk to the canteen, find a table with one of THREE regulars at it. So
+                // it implies the whole route (?secretlab=deep&land=1&floor=1) rather than adding a fourth
+                // spelling of it, and it turns ?autowalk=1 on because the last leg is a walk across a room.
+                //
+                // It does NOT force who is at the tables. The rota is seeded off the site and the watch like
+                // any other shift (#709) — a cheat that seated the Hand for you would be testing a room that
+                // does not ship. If this watch has no Hand in it, that IS the room: come back next shift, or
+                // reload for a different one.
+                //
+                // #757 · …and `?tablescene=free` is the SAME route with a different last step: it stands you
+                // at a top with NOBODY at it, which is the table the owner could not sit down at ("I have
+                // empty table but I cannot sit down"). Same room, same rota, same watch — the only thing the
+                // cheat chooses is which of the room's own tops you are standing at when it lets go.
+                string candidate = Uri.UnescapeDataString(pair["tablescene=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes" or "free")
+                {
+                    tableSceneCheat = true;
+                    _freeTableCheat = candidate == "free";
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the top pressurised floor, where the owner put them
+                }
+            }
+            else if (pair.StartsWith("spread=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #784 dev cheat: /map?spread=1 is ?tablescene=free with the last three legs walked — a
+                // CABINET top instead of a hall top, the captain already sat down in it, and three finds
+                // already in the sleeve. Owner's own ask: "we probably need a start point where we have
+                // things in our inventory we can process (when our HUD UI state is sitting down with enough
+                // privacy)."
+                //
+                // It implies the canteen's whole route rather than spelling a seventh one, exactly as
+                // ?tablescene= and ?counter= do. It forces nothing about the room: the watch, the rota and
+                // which cabinet is free are whatever the building says.
+                string candidate = Uri.UnescapeDataString(pair["spread=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _spreadCheat = true;
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
+                }
+            }
+            else if (pair.StartsWith("rip=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #798 dev cheat: /map?rip=1 is ?spread=1's route with the last leg walked to a BIN rather
+                // than into a cabinet — three finds in the sleeve, the slop bin at arm's length, and the
+                // whole verb two presses from the front door. Owner: "those trash cans are needed so we get
+                // rid of the processed materials without connecting them to us too clearly, like leaving
+                // them to the table."
+                //
+                // It implies the canteen's whole route rather than spelling an eighth one, exactly as
+                // ?spread= implies ?tablescene=. It forces nothing about the room: which bin, where it
+                // stands and what is stencilled on it are the building's own answers.
+                string candidate = Uri.UnescapeDataString(pair["rip=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _ripCheat = true;
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the hall, which is the floor the CHOICE is on
+                }
+            }
+            else if (pair.StartsWith("threads=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #741 dev cheat: /map?threads=1 is ?spread=1 with a CASE ALREADY IN THE BOOK — six entries
+                // from two grounds the captain is not standing on, with a rhyme in them a human eye can
+                // catch. The pen is worth nothing against an empty book, and the whole feature is unreachable
+                // on demand without one: a book with two grounds in it is a real excursion's worth of play.
+                //
+                // It implies ?spread=1 rather than spelling the route again, exactly as ?spread= implies
+                // ?tablescene=. It forces nothing about the case: no line is drawn and nothing is marked,
+                // because spotting is the player's act.
+                string candidate = Uri.UnescapeDataString(pair["threads=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _threadsCheat = true;
+                    _spreadCheat = true;
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor with a hall and cabinets on it
+                }
+            }
+            else if (pair.StartsWith("patrol=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #804 dev cheat: /map?patrol=1 boots ONTO A RESTRICTED FLOOR WITH A ROUND ON IT — B2 of a
+                // deep site, which is the shallowest floor below the bar and therefore the shallowest floor
+                // anybody walks. ?patrol=2 forces the two-guard watch, which is otherwise a coin flip and is
+                // the harder scene to time.
+                //
+                // It implies the whole route (?secretlab=deep&land=1&floor=2) rather than spelling an eighth
+                // one, exactly as ?tablescene= and ?counter= do. It forces nothing else: which stops the
+                // round walks, which direction it runs and who is on it are whatever the watch says, because
+                // a cheat that pinned the beat would be testing a floor that does not ship.
+                string candidate = Uri.UnescapeDataString(pair["patrol=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _patrolCheat = 1;
+                }
+                else if (candidate == "2")
+                {
+                    _patrolCheat = 2;
+                }
+                if (_patrolCheat is not null)
+                {
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -2;   // B2 — the first floor under the bar, and the first with a round
+                }
+            }
+            else if (pair.StartsWith("badge=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #804 dev cheat: /map?badge=1 mints THIS SITE'S OWN PASS into the wallet at boot, so the
+                // satisfied arm of the challenge is one URL away instead of behind the whole cage-crew lane
+                // (find the bar, find the Hand, roll the ask, ride the cage). It implies ?patrol=1's route,
+                // because a pass with nobody to show it to is not a thing anybody can test.
+                //
+                // The MINTING is the only thing it does. The guard still has to see you, the wallet is still
+                // read by Core, and what is said is what would have been said had the pass been earned.
+                string candidate = Uri.UnescapeDataString(pair["badge=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _badgeCheat = true;
+                    _patrolCheat ??= 1;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -2;
+                }
+            }
+            else if (pair.StartsWith("counter=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #756 dev cheat: /map?counter=1 boots THE COUNTER — the B1 cantina hall of a deep site,
+                // with the captain standing at the service spot, one URL from the front door.
+                //
+                // Owner's standing rule for every new feature ("testing is a feature"), and this one has the
+                // longest walk in the game in front of it: find a rock with a lab, land, find the shed, ride
+                // the lift, cross a hall the size of a hangar. So it implies the whole route the same way
+                // ?tablescene=1 does rather than inventing a fifth spelling of it — the only difference is
+                // which fixture the last leg ends at.
+                //
+                // It forces nothing about the room. The watch, the rota and the purse are whatever the boot
+                // gave you: a cheat that handed you the coin would be testing a counter that does not ship.
+                string candidate = Uri.UnescapeDataString(pair["counter=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _counterCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the hall, which is the only floor with a counter on it
+                }
+            }
+            else if (pair.StartsWith("stool=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #756 dev cheat: /map?stool=1 is ?counter=1 with the last, last leg walked — the card is
+                // open AND you are up on a stool, which is the posture the issue is about.
+                //
+                // It implies the counter's whole route rather than spelling a sixth one, for the same reason
+                // ?counter=1 implies ?secretlab=deep&land=1&floor=1: the walk in front of this feature is the
+                // longest in the game, and a tester who has to make it by hand will not make it twice.
+                string candidate = Uri.UnescapeDataString(pair["stool=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _stoolCheat = true;
+                    _counterCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the hall, which is the only floor with a counter on it
+                }
+            }
+            else if (pair.StartsWith("neighbour=", StringComparison.OrdinalIgnoreCase)
+                || pair.StartsWith("neighbor=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #756 dev cheat: /map?neighbour=1 makes the next WAIT on a stool turn the one beside you;
+                // /map?neighbour=0 means nobody ever does. ?approach=1's sibling — both spellings taken,
+                // because the owner writes one and this codebase writes the other.
+                //
+                // BOTH HALVES ARE THE FEATURE, exactly as at the tables: a counter where the seat beside you
+                // stays quiet is the thing the room is saying. And it is even less reachable by luck here
+                // than at a top, because the roll sits behind a seeded OCCUPANCY as well as a seeded die.
+                //
+                // It forces WHETHER and never WHO or WHAT: her ladder and her lines are the ones a captain
+                // would get.
+                string candidate =
+                    Uri.UnescapeDataString(pair[(pair.IndexOf('=') + 1)..]).ToLowerInvariant();
+                _neighbourCheat = candidate switch
+                {
+                    "1" or "true" or "yes" or "now" => true,
+                    "0" or "false" or "no" or "never" => false,
+                    _ => null,
+                };
+            }
+            else if (pair.StartsWith("park=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #759 dev cheat: /map?park=1 boots THE PARK — the same B1 route as ?counter=1, with the
+                // last leg walked through the gate at the end of the hall's own corridor instead of to the
+                // counter. Owner's standing rule ("testing is a feature"), and this room needs it more than
+                // most: the park is on the far side of the largest room in the game, behind a wall you can
+                // see through and cannot walk through, and finding it by accident takes a while.
+                string candidate = Uri.UnescapeDataString(pair["park=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor in the building with a park behind it
+                }
+            }
+            else if (pair.StartsWith("frontdoor=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?frontdoor=1 boots the same B1 route and stops one room SHORT — out
+                // on the MAIN CORRIDOR, standing at the hall's own front door. The owner's complaint was
+                // that you had to go looking for the way in, so the row that proves the fix has to start
+                // OUTSIDE: a cheat that set the tester down inside the bar would be showing the wrong half
+                // of it.
+                string candidate = Uri.UnescapeDataString(pair["frontdoor=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _frontDoorCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the floor the hall is on
+                }
+            }
+            else if (pair.StartsWith("parkwalk=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?parkwalk=1 boots the same B1 route and stands the captain on the
+                // MAIN CORRIDOR at the mouth of the GARDEN WALK. ?park=1 sets a tester down inside the
+                // green, which is the wrong half of the owner's ask: "a kind of place people like to walk
+                // through on their way" is about the CROSSING, and a crossing has to be started outside.
+                string candidate = Uri.UnescapeDataString(pair["parkwalk=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkWalkCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("ringoffice=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #813 dev cheat: /map?ringoffice=1 boots the same B1 route and stands the captain INSIDE
+                // one of the rooms that FACES the park, a few paces back from its own window wall. Every
+                // other park row in the guide puts a tester on the gravel, which is the side of the glass
+                // the game has always shown; the Manhattan ruling's claim ("the park prime real estate is
+                // not wasted") is a claim about the rooms that paid for the view, and there was no URL that
+                // put you in one.
+                string candidate = Uri.UnescapeDataString(pair["ringoffice=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _ringOfficeCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor in the building with a block on it
+                }
+            }
+            else if (pair.StartsWith("goodscar=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #801 dev cheat: /map?goodscar=1 boots the same B1 route and walks the last leg to the
+                // SECOND CAR, at the blind end of the main corridor. A feature whose whole point is that
+                // there is another way off this floor is a feature nobody finds unless the route to it is
+                // one URL — and the cage's own console is a hundred and seventy du the other way.
+                string candidate = Uri.UnescapeDataString(pair["goodscar=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _goodsCarCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("parkback=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #801 dev cheat: /map?parkback=1 boots inside the park and stands the captain on the
+                // GRAVEL IN FRONT OF THE FAR WALL, facing the back-of-house doors. ?park=1 sets a tester
+                // down at the gate looking down the room, which is the half of the park that was never the
+                // problem: the owner's note is about the far side.
+                string candidate = Uri.UnescapeDataString(pair["parkback=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkBackCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("freight=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #775 dev cheat: /map?freight=1 walks the last leg to the GOODS HOIST instead — the one
+                // fixture in the room the captain is refused, and that refusal is a PLATE rather than an
+                // absence (#757's lesson), so it has to be stood in front of before it says anything.
+                string candidate = Uri.UnescapeDataString(pair["freight=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _freightCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("designate=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #803 dev cheat: /map?designate=1 is the freight boot with the whole manual-fire loop rigged
+                // at it — a gun set down beside you one round short of a hasp, and a hut's find in the
+                // pocket. The scenario the owner described (a few found rounds, and a lock worth them) is
+                // otherwise a lift ride and two rooms apart from itself.
+                string candidate = Uri.UnescapeDataString(pair["designate=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _designateCheat = true;
+                    _freightCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;
+                }
+            }
+            else if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #757 dev cheat: /map?approach=1 makes the next WAIT at a table you took alone bring
+                // somebody over; /map?approach=0 means nobody ever comes.
+                //
+                // Both halves are the feature. Whether anybody crosses the room is a seeded roll at one top
+                // on one shift, so without this the somebody-comes beat is reachable only by luck and the
+                // told nobody-came outcome is reachable only by more of it. Owner's own framing, again:
+                // "testing is a feature", and #693's rule that a scene nobody can reach on demand is a scene
+                // that ships broken.
+                //
+                // It forces WHETHER and never WHO or WHAT: the ladder, her lines and what she came over for
+                // are the ones a captain gets, because a cheat that showed a different scene would be worse
+                // than no cheat at all.
+                string candidate = Uri.UnescapeDataString(pair["approach=".Length..]).ToLowerInvariant();
+                _approachCheat = candidate switch
+                {
+                    "1" or "true" or "yes" or "now" => true,
+                    "0" or "false" or "no" or "never" => false,
+                    _ => null,
+                };
+            }
+            else if (pair.StartsWith("hurt=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #784 dev cheat: /map?hurt=N puts N of CaptainCondition's five blows on the captain when
+                // the excursion starts — the OTHER half of the short rest, and the half that is invisible on
+                // an unmarked captain for the same reason as above.
+                string candidate = Uri.UnescapeDataString(pair["hurt=".Length..]);
+                if (int.TryParse(candidate, System.Globalization.NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out int blows)
+                    && blows >= 0 && blows < CaptainCondition.MaxHits)
+                {
+                    _hurtCheat = blows;     // never MaxHits: booting a tester into a death card is not a demo
+                }
+            }
+            else if (pair.StartsWith("shelter=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #728 dev cheat: /map?shelter=1 sets the boots down AT A SHELTER — the one building on the
+                // ground that fills a tank and fills a magazine, and the fixture pair the owner could not
+                // tell apart in the smoke run.
+                //
+                // It exists because the shelter is DEEP in the field by design (SurfaceShelter.PlacesOn keeps
+                // it out of the landing band on purpose) so every look at its plates, its receipts and the
+                // magazines readout above them cost a two-minute walk across 310 x 260 du of regolith. Same
+                // ruling as ?secretlab=1's doorstep drop: the hunt is the game, and it is exactly what must
+                // not stand between a developer and the thing under test.
+                //
+                // It moves ONE fact — where you are standing — and stands you OUTSIDE the door, so the
+                // proximity cycle, the arrival line, the pressure crossing and the walk to each console are
+                // all exercised the way a captain meets them.
+                //
+                //   /map?dock=the-tilt&site=0&land=1&shelter=1&mags=12
+                string candidate = Uri.UnescapeDataString(pair["shelter=".Length..]).ToLowerInvariant();
+                _shelterCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("mags=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #728 dev cheat: /map?mags=N brings the sling's sentries down holding N rounds each.
+                //
+                // Every one of them lands full (SentryBot.MaxMagazine) on a fresh ship, so the magazines
+                // readout, the shelter press's receipt and the locker's two refusals could only ever be
+                // looked at after a real firefight. It sets the ONE number and nothing else: the roster, the
+                // ammunition kind, the drain and every law downstream are the shipped ones.
+                //
+                //   ?mags=0 … ?mags=99   what each sentry is holding when the shuttle sets you down
+                string candidate = Uri.UnescapeDataString(pair["mags=".Length..]);
+                if (int.TryParse(candidate, System.Globalization.NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out int rounds)
+                    && rounds >= 0 && rounds <= SentryBot.MaxMagazine)
+                {
+                    _magazineCheat = rounds;
+                }
+            }
+            else if (pair.StartsWith("watch=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #751 dev cheat: /map?watch=N pins which SHIFT the Hive's canteen is on.
+                //
+                // The whole of #751's watch-density design is a room that heaves at one hour and echoes at
+                // another with nothing anywhere announcing which — which is exactly the kind of feature a
+                // tester cannot see without waiting four sim-hours per look. Owner's own framing, twice
+                // over: "testing is a feature".
+                //
+                // It pins the WATCH INDEX and nothing else. Who is in the room and where they sat are still
+                // the rota's own answer for that shift (#709), so what a tester walks into is the room a
+                // captain would get on that shift — never a rigged one.
+                string candidate = Uri.UnescapeDataString(pair["watch=".Length..]);
+                if (long.TryParse(candidate, System.Globalization.NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out long pinned) && pinned >= 0)
+                {
+                    _watchCheat = pinned;
+                }
+            }
+            else if (pair.StartsWith("roll=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #746 dev cheat: /map?roll=hi forces every encounter band to YES, /map?roll=lo to NO-AND.
+                // Owner's own framing of it in the issue: "testing is a feature".
+                //
+                // It overrides the BAND and never the roll. The dice still cast, the modifier stack still
+                // reads truthfully on screen, and the scene that plays is the scene a captain would get —
+                // a cheat that showed you a different scene would be worse than no cheat at all.
+                string candidate = Uri.UnescapeDataString(pair["roll=".Length..]).ToLowerInvariant();
+                _rollCheat = candidate switch
+                {
+                    "hi" or "high" or "yes" => Encounter.Band.Yes,
+                    "mid" or "but" => Encounter.Band.YesBut,
+                    "lo" or "low" or "no" => Encounter.Band.NoAnd,
+                    _ => null,
+                };
             }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
@@ -942,11 +1529,20 @@ public partial class Map
                 // At N=1 the captain is NOT yet overdrawn (CaptainSuccession.EmptyThreshold sits under one
                 // pip), so what you watch is the real two-step break — a hand takes the last pip, the NEXT
                 // one breaks them — rather than an instant death the cheat invented.
+                //
+                // #784 · …and three WORDS beside the number, because the short rest's demo link is read by a
+                // person rather than by a machine and "nerve=low" says what it means where "nerve=2" needs
+                // the pip lattice explained first. Same flag, same clamp, same seed — the words are spellings
+                // of the number and never a second parser.
                 string candidate = Uri.UnescapeDataString(pair["nerve=".Length..]);
-                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pips))
+                nerveCheat = candidate.ToLowerInvariant() switch
                 {
-                    nerveCheat = pips;
-                }
+                    "shot" or "gone" => 0,
+                    "low" or "fraying" => 2,
+                    "half" or "shaken" => 5,
+                    _ => int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                            out int pips) ? pips : nerveCheat,
+                };
             }
             else if (pair.StartsWith("reevers=", StringComparison.OrdinalIgnoreCase))
             {
@@ -1045,7 +1641,7 @@ public partial class Map
             StateHasChanged();
         }
 
-        string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
+        string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json", abandoned);
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         if (ellipseCheat)
         {
@@ -1094,6 +1690,17 @@ public partial class Map
                 ring.ParentId!, impactRailTime, spinPeriod, spinPhase);
             dockCheat = "ringside-exchange"; // clamp onto the port under threat, in reach of the rock
         }
+        if (tableSceneCheat)
+        {
+            // #746 · The last leg of ?tablescene=1 is a walk across a canteen, and clicking where you want
+            // to be is how this repo tests a room. Turned on HERE rather than in the parser branch, because
+            // ?autowalk= is read off the query before the loop runs (Core's own parser) and a flag set in
+            // two places is a flag that will disagree with itself.
+            _autoWalkCheat = true;
+            _tableSceneCheat = true;
+        }
+
+
         if (secretlabCheat)
         {
             // #409: append a plain landable Moon-kind rock co-orbiting the berth (the ellipse-cheat idiom),
@@ -1188,9 +1795,9 @@ public partial class Map
         // instead of one silent multi-second freeze (badly amplified on the Debug/dev bundle). We do NOT
         // parallelise or restructure the planners — just phase-yield around them.
         // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
-        await BootPhaseAsync("plotting the traffic lanes — pods…");
+        await BootPhaseAsync("plotting the traffic lanes — pods…", abandoned);
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
-        await BootPhaseAsync("plotting the traffic lanes — freighters…");
+        await BootPhaseAsync("plotting the traffic lanes — freighters…", abandoned);
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
         // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
         // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
@@ -1198,7 +1805,7 @@ public partial class Map
         // A depot on a hidden body would leak it (the depot marker/menu would give the wreck away).
         // Filter generically on hidden+unrevealed, not the wreck's id — every future secret body is
         // covered for free (Tuesday plan PR-A).
-        await BootPhaseAsync("plotting the traffic lanes — supply depots…");
+        await BootPhaseAsync("plotting the traffic lanes — supply depots…", abandoned);
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)
             .Where(d => d.DepotBodyId is null || !IsBodyHidden(d.DepotBodyId)).ToList();
 
@@ -1214,7 +1821,7 @@ public partial class Map
             // toward the inner system, half already in flight at world-load, so the "Luna's mass
             // drivers lobbing compute-core pods" the scenario description promises is literally on the
             // map as tiny moving objects. Zero maneuver budget, empty plan — they coast their conic.
-            await BootPhaseAsync("plotting the traffic lanes — Luna's mass drivers…");
+            await BootPhaseAsync("plotting the traffic lanes — Luna's mass drivers…", abandoned);
             IReadOnlyList<NpcShip> lunaDriver = MassDriverSchedule.GenerateCadence(
                 _ephemeris, MassDriverSchedule.MassDriverRun.LunaMilkRun(), baseSimTime: _ship.SimTime, count: 4);
 
@@ -1235,6 +1842,15 @@ public partial class Map
         _camera.CenterOn(_ship.Position);
 
         await RendererInterop.EnsureModuleLoadedAsync();
+
+        // #737 · THE LAST GATE BEFORE THE DOM. Everything from here on names elements by id — the canvas,
+        // the scope inset, the focusable page div — and renderer.js throws rather than shrugging when the
+        // id resolves to nothing. If the player left during any of the planning phases above, the page
+        // those ids belong to is already gone, so this is where an abandoned boot must stop: no module
+        // wiring, no FrameTick subscription on a component the router discarded, and above all no rAF loop
+        // started against a dead canvas that nothing would ever stop.
+        abandoned.ThrowIfCancellationRequested();
+
         _renderer = new CanvasRenderer(CanvasId);
         RendererInterop.FrameTick += OnTick;
         RendererInterop.CanvasResized += OnCanvasResized;
@@ -1246,6 +1862,7 @@ public partial class Map
         _fpView = new FirstPersonView(_renderer!);
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
+        _renderLoopRunning = true;
 
         // #371 Phase 1 (perf) · PRE-DECODE the deck/surface backdrop art at boot. RegisterImage fires the
         // JS decode fire-and-forget and caches by id; doing it now means the first deck or surface paint
@@ -1423,6 +2040,10 @@ public partial class Map
         }
 
         StateHasChanged();
+
+        // The captured @ref is only a live element while the page is mounted; focusing a reference whose
+        // element has left the DOM throws out of here (#737).
+        abandoned.ThrowIfCancellationRequested();
         await _focusableDiv.FocusAsync();
 
         // #371 Phase 1 (perf) · warm the cold surface DRAW path once, idle-time, now that the map is
@@ -1466,7 +2087,9 @@ public partial class Map
         await Task.Yield();
         await Task.Delay(250);
 
-        if (_deckView is null || _renderer is null)
+        // A quarter of a second is plenty of time for the player to leave; a throwaway paint into a canvas
+        // that has gone with them is worth nothing and costs a JS throw (#737).
+        if (_deckView is null || _renderer is null || _bootAbandoned.IsCancellationRequested)
         {
             return;
         }
@@ -1645,21 +2268,34 @@ public partial class Map
         {
             return CoMovingBy(dockBody, 3_000); // just off the ~1 km station, well within dock reach
         }
+        // Every one of these is a FREE park: the ship is let go alongside, not clamped on, so she flies
+        // whatever orbit the standoff's direction gives her. #742 — laid along the Sun's radius, the
+        // Enceladus spawn struck the ice at +9.17 h on one arrival phase of its 24, and the Europa spawn
+        // struck Europa at +12.00 h on one of its own. That second one is the part nobody had looked for:
+        // the ice moon was the REPORTED case, never the only one, because the geometry belongs to the
+        // construction and not to Enceladus. CoOrbitalBy lays the standoff along the body's own track, and
+        // the arrival phase stops deciding anything at either of them.
         return id switch
         {
-            "jupiter" => CoMovingBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
-            "saturn" => CoMovingBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
-            "enceladus" => CoMovingBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
-            "wreck" => CoMovingBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
+            "jupiter" => CoOrbitalBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
+            "saturn" => CoOrbitalBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
+            "enceladus" => CoOrbitalBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
+            "wreck" => CoOrbitalBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
             _ => InitializeShipState(),
         };
     }
 
     // A ship state co-moving with a body at boot (SimTime 0), a given distance radially outward from it
     // (from the Sun's frame). offsetMeters 0 sits right on the body; a few thousand metres clears a
-    // station, ~1e7+ a moon. Delegates to the shared BerthState.CoMoving construction (#269).
+    // station, ~1e7+ a moon. Delegates to the shared BerthState.CoMoving construction (#269). This is the
+    // CLAMPED idiom — the docked starts above, where the berth owns the position the moment we arrive.
     private ShipState CoMovingBy(string bodyId, double offsetMeters)
         => BerthState.CoMoving(_ephemeris!, bodyId, 0, offsetMeters);
+
+    // …and the FREE one (#742): the same standoff laid along the body's own track about its parent, so a
+    // ship nobody is holding stays where she was let go instead of flying off on a slightly wrong ellipse.
+    private ShipState CoOrbitalBy(string bodyId, double offsetMeters)
+        => BerthState.CoOrbital(_ephemeris!, bodyId, 0, offsetMeters);
 
     // The Captain's "🧭 Set course to a start point…" button: bring the chooser back up mid-run so a
     // locale can be (re)picked from the chart-room, not just at boot. ApplyStart is re-entrant, so the
@@ -1988,10 +2624,7 @@ public partial class Map
             ReprojectTrajectory();
         }
 
-        if (_pulseMessage is not null && highResTimestampMs > _pulseMessageExpiresMs)
-        {
-            _pulseMessage = null;
-        }
+        _pulse = _pulse.Expire(highResTimestampMs);
 
         // Thunder on the rising edge of an arc (M10 polish) — once per arcing episode.
         bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
@@ -2243,7 +2876,10 @@ public partial class Map
                 NerveLedger: NerveLedgerLines,
                 // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
                 // for itself (the #591 one-reach lesson).
-                Dark: DarkHere()),
+                Dark: DarkHere(),
+                // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
+                // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
+                Seated: CaptainIsSeated),
                 _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }
@@ -2428,6 +3064,31 @@ public partial class Map
         // #633 · The StoryBeats CARD is modal too, and Esc has to reach it. The PLATE (the edge flash) is
         // deliberately NOT listed: it steals nothing and retires itself, so there is nothing for Esc to take.
         if (_storyCard is not null) { CloseStoryCard(); return true; }
+        // #735 · The told-once cards — the convergence reveal and the first-ground family (the lesson, the
+        // map-just-grew card, the tube rearm, the low-air warning). Every one of them already dismisses on
+        // a backdrop click and carries its own way-out button, so dismissal is allowed here and Esc was
+        // simply never wired to them; a card that takes the screen and ignores the cancel key is the
+        // #351 complaint again, one lane over.
+        if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
+        if (_groundLessonOpen) { CloseGroundLesson(); return true; }
+        if (_groundGrewOpen) { CloseGroundGrew(); return true; }
+        if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
+        if (_airCardOpen) { CloseAirCard(); return true; }
+        // #784 · The stand-up confirm sits ABOVE the table it is asking about, and Esc means KEEP YOUR SEAT.
+        // Owner: "one press confirms, Esc keeps you seated." Listed here rather than under the table so the
+        // cancel key cannot answer the question by doing the thing the question is about.
+        if (_standUpAsk) { KeepYourSeat(); return true; }
+        // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
+        // always available, and a keyboard cancel that could not reach the one panel whose design law is
+        // "you may always stand up" would be the game contradicting itself with a keystroke.
+        // #784 phase two · AND ESC MEANS THE SAME THING AS W IN THE DOCKED STATE. Once the frame stopped
+        // dimming the room, "cancel" stopped being a way OUT of a card — there is no card — and became a
+        // press that silently spends the watch you sat for and the breath you got back. So a docked seat
+        // routes the cancel key into the same question WASD raises, and standing up stays one decision taken
+        // once (#788). A CONVERSATION keeps the old behaviour exactly: leaving is free and always available,
+        // and a card you cannot Esc out of would be the game contradicting its own law.
+        if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
+        if (_table is not null) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
@@ -2457,6 +3118,84 @@ public partial class Map
         if (_kioskCard is not null) { CloseKioskCard(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
+        if (_celebration is not null) { DismissCelebration(); return true; }
+        return false;
+    }
+
+    // #735 · THE KEYBOARD'S WAY ON. Esc above is the keyboard CANCEL; this is the keyboard YES — Enter
+    // presses the visible primary action of a card that has exactly one.
+    //
+    // It exists because of the bug that named the issue: a story card grew taller than the screen, its one
+    // button rendered below the fold, and the player was stuck on it until they resized the browser. The
+    // card family's layout law (Map.razor.css, #735) keeps that button on the screen; this is the second
+    // road to the same button, and the one a keyboard — or a test harness — can take.
+    //
+    // Two disciplines, both of them refusals:
+    //
+    //   * ONLY CARDS THAT ASK NOTHING. A card with SUBMIT / BRIBE / RESIST on it is a question, and a key
+    //     that answers a question for the captain is worse than no key at all. Those fall through and Enter
+    //     does nothing. This is where somebody will one day be tempted to add a "default" — don't.
+    //   * THE DEATH CARD IS ACKNOWLEDGED, NOT DISMISSED. It is listed here and deliberately NOT in the Esc
+    //     chain above: it carries no ✕ and its backdrop swallows clicks, because the game does not let you
+    //     wave a death away. Enter presses the button that is already the only way on.
+    private bool TryConfirmTopOverlay()
+    {
+        // The death card draws above everything in the game, so it answers the key before anything else.
+        if (_busted is { } bust)
+        {
+            switch (bust.Phase)
+            {
+                // The freeze beat — one button, "…wake up", and it is the only road out of the sepia.
+                case BustedEncounter.Stage.FreezeFrame:
+                case BustedEncounter.Stage.Impact:
+                case BustedEncounter.Stage.SurfaceEnd:
+                    BustedResurrect();
+                    return true;
+                case BustedEncounter.Stage.ResistLost:
+                    BustedResistLostConfirm();
+                    return true;
+                // The wake, the receipt, and the three ways a catch can end: one acknowledgement each. The
+                // restore card (Resurrected) is the tall one this whole issue is about.
+                case BustedEncounter.Stage.Resurrected:
+                case BustedEncounter.Stage.Confiscated:
+                case BustedEncounter.Stage.BribedOff:
+                case BustedEncounter.Stage.ResistWon:
+                case BustedEncounter.Stage.Fled:
+                    CloseBusted();
+                    return true;
+                // Demand and Bolivia are questions. Enter does not answer them.
+                default:
+                    return false;
+            }
+        }
+
+        // #784 · THE ONE QUESTION THIS KEY IS ALLOWED TO ANSWER, and the exception is worth stating rather
+        // than smuggling. Every other card in this method asks nothing; the stand-up confirm asks something.
+        // It is here because of WHERE IT CAME FROM: it was raised by the captain pressing a movement key, so
+        // their hands are already on the keyboard, and a confirm reachable only by mouse would strand
+        // somebody who had just tried to walk. The doing-nothing default is still SEATED — Esc and every
+        // other key leave the chair where it is — so Enter confirms the thing the captain just asked for
+        // rather than deciding something for them. FLAGGED for the owner: this is a judgement call.
+        if (_standUpAsk) { StandUpFromTable(); return true; }
+        // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
+        // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
+        // on purpose, and its absence is the feature.
+        if (_revealCard is not null) { CloseRevealCard(); return true; }
+        if (_storyCard is not null) { CloseStoryCard(); return true; }
+        if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
+        if (_groundLessonOpen) { CloseGroundLesson(); return true; }
+        if (_groundGrewOpen) { CloseGroundGrew(); return true; }
+        if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
+        if (_airCardOpen) { CloseAirCard(); return true; }
+        if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
+        if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
+        if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_ventReadCard is not null) { CloseVentReadCard(); return true; }
+        if (_archiveCard is not null) { CloseArchiveCard(); return true; }
+        if (_wreckLook is not null) { CloseWreckLook(); return true; }
+        if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
+        if (_kioskCard is not null) { CloseKioskCard(); return true; }
+        if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
         return false;
     }
@@ -2533,6 +3272,19 @@ public partial class Map
                 return;
             }
             SwitchDesk(ShipDesk.Captain);
+            return;
+        }
+
+        // #735 · Enter presses the visible primary action of an open card — the keyboard YES, next to the
+        // keyboard CANCEL below. Checked BEFORE the flight keys for the same reason Esc is: while a card
+        // has the screen, the keys belong to the card. Nothing open to confirm and Enter falls through to
+        // the helm, which does not bind it either — so this is a key the game had spare.
+        if (e.Key is "Enter" or "NumpadEnter")
+        {
+            if (TryConfirmTopOverlay())
+            {
+                StateHasChanged();
+            }
             return;
         }
 
@@ -2689,7 +3441,9 @@ public partial class Map
         }
         if (_ship.SimTime < _lastVentSimTime + VentCooldownSeconds)
         {
-            ShowPulseMessage("Vent recharging…");
+            // #736 · The dump is pressed from the charge board as often as from the key, and the board's own
+            // backdrop is over the HUD — so both answers go wherever the captain actually is.
+            SayItWhereTheyAreLooking("Vent recharging…");
             return;
         }
 
@@ -2707,20 +3461,25 @@ public partial class Map
         }
         // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
         // (house voice) rather than a bare status line. Deterministic per vent via the counter.
-        ShowPulseMessage(StaticCharge.LineFor(_ventLineSeed++));
+        SayItWhereTheyAreLooking(StaticCharge.LineFor(_ventLineSeed++));
         RendererInterop.PlayCue("vent");
     }
 
-    private void ShowPulseMessage(string message)
-    {
-        _pulseMessage = message;
-        // Owner 2026-07-18 ("it autodisappears which is not convenient"): a line lingers long enough to
-        // READ — the dwell scales with its length (≈45 ms/char) so the words a player paid a round to
-        // hear aren't gone before they land. Short status pulses keep the old brisk 1.5 s floor; long
-        // intel lines get up to ~8 s. (The durable "overheard" book is the real record; this is the doorbell.)
-        double dwell = Math.Clamp((message?.Length ?? 0) * 45.0, 1500.0, 8000.0);
-        _pulseMessageExpiresMs = (_lastTimestampMs ?? 0) + dwell;
-    }
+    /// <summary>Say it on the HUD's one pulse line.
+    ///
+    /// <para>#693 · <paramref name="rank"/> is what the line IS, and it decides who wins that slot when
+    /// several want it in the same breath: a lower-ranked line may not displace a higher-ranked one that is
+    /// still held (<see cref="PulseSlot"/>). It defaults to <see cref="PulseRank.Status"/>, which is what
+    /// every instrument, price and refusal in the game is — the ranks exist for the handful of authored
+    /// sentences a whole feature was built to say, and a status line dressed up as a climax to make it win
+    /// is the same bug with better manners.</para>
+    ///
+    /// <para>The dwell is unchanged (owner 2026-07-18, "it autodisappears which is not convenient"): a line
+    /// lingers long enough to READ, scaled by its length, so the words a player paid a round to hear aren't
+    /// gone before they land. The durable "overheard" book is the real record; this is the doorbell.</para>
+    /// </summary>
+    private void ShowPulseMessage(string message, PulseRank rank = PulseRank.Status) =>
+        _pulse = _pulse.Write(message, rank, _lastTimestampMs ?? 0);
     private bool _dragMoved;
     private double _downClientX, _downClientY;
 
@@ -2970,10 +3729,18 @@ public partial class Map
 
     public void Dispose()
     {
+        // #737 · First, before anything else: tell a boot that is still running that its page is gone. The
+        // CTS is deliberately NOT disposed — a continuation parked on one of the boot's awaits is still
+        // holding this token and will read it as it resumes; a disposed source would answer that read with
+        // an ObjectDisposedException, which is the very shape of failure this cancellation exists to end.
+        _bootAbandoned.Cancel();
+
         RendererInterop.FrameTick -= OnTick;
         RendererInterop.CanvasResized -= OnCanvasResized;
 
-        if (_started)
+        // Only a loop that was actually started can be stopped (#737): _started means the boot BEGAN, and
+        // a boot abandoned before the renderer stage never registered this canvas with renderer.js.
+        if (_renderLoopRunning)
         {
             RendererInterop.StopLoop(CanvasId);
         }

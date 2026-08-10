@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -77,9 +77,14 @@ public sealed class ThereArePeopleInTheBarTests
             UndergroundComplex.FloorPlan floor =
                 UndergroundComplex.Build(body, level, MoonSurface.ExpeditionField());
 
+            // #751 · Tables() and not Sitting(). The room holds THREE TIERS now — the named cast, the
+            // background patrons that fill a hall by the watch, and the cabinets' empty tops — and the
+            // renderer draws whoever is at a table off that one call. Sitting() still answers about the
+            // named cast alone, so it is asserted separately below rather than used as the whole roster.
             var expected = floor.Amenities
-                .SelectMany(a => CanteenRegulars.Sitting(body, level, a))
-                .Select(s => ((float)s.X, (float)s.Y, s.Plate))
+                .SelectMany(a => CanteenRegulars.Tables(body, level, a))
+                .Where(t => t.Taken)
+                .Select(t => ((float)t.X, (float)t.Y, t.Plate!))
                 .ToList();
 
             var drawn = RegularsOn(DeckFor(body, level))
@@ -90,6 +95,15 @@ public sealed class ThereArePeopleInTheBarTests
             foreach ((float x, float y, string plate) in expected)
             {
                 Assert.Contains((x, y, plate), drawn);
+            }
+
+            // …and the named cast is inside that, in the chairs #709's own rota put them in.
+            foreach (UndergroundComplex.Amenity a in floor.Amenities)
+            {
+                foreach (CanteenRegulars.Seated s in CanteenRegulars.Sitting(body, level, a))
+                {
+                    Assert.Contains(((float)s.X, (float)s.Y, s.Plate), drawn);
+                }
             }
         }
     }
@@ -120,8 +134,10 @@ public sealed class ThereArePeopleInTheBarTests
                     .Select(c => (c.X, c.Y, c.Label))
                     .ToList();
 
-                var expected = CanteenRegulars.Sitting(body, level, canteen, watch)
-                    .Select(s => ((float)s.X, (float)s.Y, s.Plate))
+                // #751 · Everyone at a table this watch, which on a hall is the named cast plus the crowd.
+                var expected = CanteenRegulars.Tables(body, level, canteen, watch)
+                    .Where(t => t.Taken)
+                    .Select(t => ((float)t.X, (float)t.Y, t.Plate!))
                     .ToList();
 
                 Assert.Equal(expected.Count, drawn.Count);
@@ -189,15 +205,16 @@ public sealed class ThereArePeopleInTheBarTests
             }
 
             DeckPlan deck = DeckFor(body, level);
-            (double shaftX, double shaftY) =
-                UndergroundComplex.ShaftAt(MoonSurface.ExpeditionField());
 
             foreach (DeckPlan.ConsoleSpot who in RegularsOn(deck))
+            foreach (UndergroundComplex.Shaft car in
+                UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
             {
+                // #801 · Both cars. There are two boxes on the spine now and only one of them was checked.
                 Assert.False(
-                    System.Math.Abs(who.X - shaftX) < UndergroundComplex.CorridorHalf &&
-                    System.Math.Abs(who.Y - shaftY) < UndergroundComplex.CorridorHalf,
-                    $"{body} B{-level}: somebody is sitting in the lift car.");
+                    System.Math.Abs(who.X - car.X) < UndergroundComplex.CorridorHalf &&
+                    System.Math.Abs(who.Y - car.Y) < UndergroundComplex.CorridorHalf,
+                    $"{body} B{-level}: somebody is sitting in the {car.Kind} car.");
             }
         }
     }

@@ -243,10 +243,30 @@ public partial class Map
             }
         }
 
+        // #803 · …and then TOP THEM UP. The even spread above hands each drum a share of what is left at the
+        // moment it is reached, so with two takers and forty rounds it walks off leaving nine on the shelf
+        // and both magazines short — the receipt said forty, the guns got thirty-one, and nobody could see
+        // the difference. The spread stays (a hut's find is meant to reach every gun, not the first one);
+        // this second pass is what makes it arithmetic instead of an approximation.
+        foreach (SurfaceBot bot in takers)
+        {
+            if (left <= 0)
+            {
+                break;
+            }
+            int take = System.Math.Min(SentryBot.MaxMagazine - bot.Rounds, left);
+            bot.Rounds += take;
+            left -= take;
+        }
+
         ex.OutpostLooted = true;
         RebuildSurfaceDeck();
         RendererInterop.PlayCue("board");
         ShowPulseMessage(SurfaceOutpost.CacheLine(rounds - left));
+
+        // #803 · Whatever the drums genuinely could not hold is a thing the captain owns, not a thing that
+        // stops existing — and it is the supply the put verb spends.
+        WhatTheDrumsCouldNotHold(left);
         RequestVaultSave();
     }
 
@@ -281,10 +301,15 @@ public partial class Map
         // no picture of its own — the dossier's art is the dossier's. One canvas for all four covers, on the
         // wrecks' anti-tell law (Derelict.LogArtFile): the objects are the same four in every hut, and
         // EffectsLine already carries the whole of the difference.
+        //
+        // #736 · The plate carries EffectsLine as its outcome, because EffectsLine is the whole of what makes
+        // one hut different from another and the picture is deliberately the same in all four. Filed above
+        // and read here: the book keeps it, and the card the press raised says it where the eye already is.
         ShowRevealCard(
             SurfaceOutpost.EffectsPlate.Title,
             SurfaceOutpost.EffectsPlate.ArtFile,
-            SurfaceOutpost.EffectsPlate.Caption);
+            SurfaceOutpost.EffectsPlate.Caption,
+            outcome: SurfaceOutpost.EffectsLine(cover));
 
         // Reading somebody's last effects on a floor they did not walk off costs a little nerve. Small: the
         // place is long cold, and the captain is a pirate. It is the recognition that stings, not the fright.

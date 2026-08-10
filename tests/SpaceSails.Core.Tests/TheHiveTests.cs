@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -76,19 +76,29 @@ public sealed class TheHiveTests
         // the car now answers WHERE YOU ARE, so a third plate saying LIFT was one too many for one wall) the
         // guard went red without the law having changed at all. A test that pins the decoration reports on
         // the decoration; the law here is about ROCK, so it is the walls that get asserted.
-        (double x, double y) = UndergroundComplex.ShaftAt(Field);
-        double side = UndergroundComplex.ShaftHalf, mouth = y + UndergroundComplex.CorridorHalf;
+        // #801 · BOTH cars. This walked ShaftAt and meant "the lift"; there are two now, at opposite ends
+        // of the corridor and on opposite faces of it, and the law is the same law about each of them — a
+        // car that wandered between levels is a maze whose exit moves whichever car it is.
+        double side = UndergroundComplex.ShaftHalf;
 
         foreach (int level in Floors())
         {
             UndergroundComplex.FloorPlan floor = UndergroundComplex.Build("miranda", level, Field);
 
-            // Both sides of the car's alcove, standing off the spine at the same spot on every floor.
-            foreach (double wallX in new[] { x - side, x + side })
+            foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
             {
-                Assert.Contains(floor.Walls, w =>
-                    Math.Abs(w.X1 - wallX) < 0.001 && Math.Abs(w.X2 - wallX) < 0.001
-                    && Math.Abs(Math.Min(w.Y1, w.Y2) - mouth) < 0.001);
+                // The alcove's mouth is on the face this car opens off, which is the one its own doorstep
+                // is a pace beyond — never a sign written here.
+                bool up = car.Landing.Y > car.Y;
+                double mouth = car.Y + ((up ? 1 : -1) * UndergroundComplex.CorridorHalf);
+
+                // Both sides of the car's alcove, standing off the spine at the same spot on every floor.
+                foreach (double wallX in new[] { car.X - side, car.X + side })
+                {
+                    Assert.Contains(floor.Walls, w =>
+                        Math.Abs(w.X1 - wallX) < 0.001 && Math.Abs(w.X2 - wallX) < 0.001
+                        && Math.Abs((up ? Math.Min(w.Y1, w.Y2) : Math.Max(w.Y1, w.Y2)) - mouth) < 0.001);
+                }
             }
         }
     }
@@ -122,11 +132,18 @@ public sealed class TheHiveTests
             {
                 UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
 
-                // Every rib opens off the face it points away from; the lift alcove always off the top one.
-                var mouths = new List<(double X, double Y, string What)>
+                // Every rib opens off the face it points away from; a car's alcove off the face it stands
+                // on. #801 · Both cars, off the one published list — this test seeded its mouth list with a
+                // hard-coded singleton, so a second alcove walled over on the LOWER face (the exact #587
+                // shape, one face down) would never have been looked at.
+                var mouths = new List<(double X, double Y, string What)>();
+                foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
                 {
-                    (shaftX, shaftY + half, "the lift alcove"),
-                };
+                    mouths.Add((
+                        car.X,
+                        car.Y + ((car.Landing.Y > car.Y ? 1 : -1) * half),
+                        $"the {car.Kind} car's alcove"));
+                }
                 foreach (UndergroundComplex.Rib r in floor.Ribs)
                 {
                     mouths.Add((r.X, r.Down ? shaftY - half : shaftY + half, $"the rib at x={r.X:F0}"));
@@ -159,14 +176,20 @@ public sealed class TheHiveTests
     public void NoRibIsRunThroughTheLiftShaft()
     {
         // A cross corridor driven through the one thing you need to find again would be quietly cruel.
-        (double shaftX, _) = UndergroundComplex.ShaftAt(Field);
+        //
+        // #801 · …and there are two of those things now. A law stated about ShaftAt would have gone on
+        // passing while a chamber was laid over the second car, which is the shape of hole a widened
+        // feature leaves in a narrow guard.
         foreach (int level in Floors())
         {
             UndergroundComplex.FloorPlan floor = UndergroundComplex.Build("miranda", level, Field);
-            foreach ((double x, double _) in floor.RoomCentres)
+            foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
             {
-                Assert.True(Math.Abs(x - shaftX) > UndergroundComplex.ShaftHalf,
-                    $"{floor.Name}: a room sits on top of the lift.");
+                foreach ((double x, double _) in floor.RoomCentres)
+                {
+                    Assert.True(Math.Abs(x - car.X) > UndergroundComplex.ShaftHalf,
+                        $"{floor.Name}: a room sits on top of the {car.Kind} car.");
+                }
             }
         }
     }

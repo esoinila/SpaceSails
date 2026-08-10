@@ -37,16 +37,34 @@ public partial class Map
 {
     /// <summary>What the captain is being shown: a title, a painting, and a caption that stops. The most
     /// modal thing in the game — it opens without being asked for, so Esc takes it before anything else
-    /// (TryDismissTopOverlay in Map.Sim).</summary>
-    private readonly record struct RevealCard(string Title, string Art, string Caption);
+    /// (TryDismissTopOverlay in Map.Sim).
+    ///
+    /// <para>#736 · <paramref name="Outcome"/> is what the ACT that raised the card actually did — the coin
+    /// that moved, the paper that was kept, the shard that is now in hand. The caption is fiction and the
+    /// outcome is arithmetic, and until this issue the arithmetic was pulsed to the HUD *under this card's
+    /// own backdrop*: in the DOM and not on the screen. Null on a card raised by something that settled
+    /// nothing.</para></summary>
+    private readonly record struct RevealCard(string Title, string Art, string Caption, string? Outcome = null);
 
     private RevealCard? _revealCard;
 
-    private void CloseRevealCard() => _revealCard = null;
+    /// <summary>#768 · …and the sayings this card was standing on are freed as it goes. An event that raises
+    /// a card holds its ranked lines rather than pulsing them under the backdrop, so the ✕ is where they are
+    /// finally said. Every road out of the card comes through here (Esc, Enter, the backdrop, the button) —
+    /// which is why nothing anywhere clears <c>_revealCard</c> by hand.</summary>
+    private void CloseRevealCard()
+    {
+        _revealCard = null;
+        ReleaseHeldSayings();
+    }
 
     /// <summary>Raise the card. Deliberately silent — the caller owns its own audio cue, because the beat
     /// knows whether it is a find ("board"), a reveal ("reveal") or something louder, and a card that
-    /// always chirped the same note would flatten three different moments into one.</summary>
-    private void ShowRevealCard(string title, string art, string caption) =>
-        _revealCard = new RevealCard(title, art, caption);
+    /// always chirped the same note would flatten three different moments into one.
+    ///
+    /// <para>#736 · A caller with a mechanical result to report names it here rather than pulsing it, or
+    /// says it afterwards through <c>SayItWhereTheyAreLooking</c>, which finds this card and puts the line
+    /// on it. Both roads end in the card's own subtree — the one layer the backdrop cannot blur.</para></summary>
+    private void ShowRevealCard(string title, string art, string caption, string? outcome = null) =>
+        _revealCard = new RevealCard(title, art, caption, outcome);
 }

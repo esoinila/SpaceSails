@@ -291,9 +291,17 @@ public sealed class AJambIsNotASealedDoorTests
         // The captain (DeckPlan.Move) and the #618 black-ops sweepers, who are people on somebody's payroll
         // — owner, #729: "maybe the guards can use A* also so they do not come off as reevers". Anything
         // else appearing here is a new mover that has quietly claimed a talent, and wants a ruling first.
-        Assert.Equal(2, claims.Count);
+        //
+        // #804 · AND THE THIRD ONE, WHICH IS THE RULING THIS GUARD EXISTS TO FORCE. The rounds walking the
+        // Hive's restricted floors are the sentence above wearing a uniform: a contract guard is a person on
+        // a rota, they walk A* between published stops precisely so they do not read as Old Ones, and the
+        // owner's own #804 sentence is the same one — "ideally we could see them move and wait for them to
+        // pass". They get the funnel for the sweep team's reason and no other. THE OLD ONES STILL DO NOT,
+        // which is the whole law here and is checked file by file above.
+        Assert.Equal(3, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
+        Assert.Contains(claims, c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal));
     }
 
     private static string RepoRoot
@@ -341,6 +349,19 @@ public sealed class AJambIsNotASealedDoorTests
                     double x = cutRunsAlongX ? along : wallAt - RunUp;
                     double y = cutRunsAlongX ? wallAt - RunUp : along;
                     if (deck.Collides(x, y))
+                    {
+                        continue;
+                    }
+
+                    // …AND THERE HAS TO BE A WALL THERE TO BE STOPPED BY.
+                    //
+                    // #775 put a second opening within a body's width of some of these cuts: the hall's own
+                    // front doors are cut into the spine's face a few du from a rib's mouth, and the garden
+                    // walk stands near the end of the field. So an approach offset sideways can now start in
+                    // front of ANOTHER hole — or off the end of the building altogether — and walking
+                    // through THAT proves nothing about walls. Asked of the deck rather than assumed: if the
+                    // line is not solid at this offset, this is not an experiment about a wall.
+                    if (!deck.Collides(cutRunsAlongX ? along : wallAt, cutRunsAlongX ? wallAt : along))
                     {
                         continue;
                     }

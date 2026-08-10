@@ -168,27 +168,235 @@ public static class CanteenRegulars
     public static IReadOnlyList<Seated> Sitting(
         string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
     {
-        ArgumentNullException.ThrowIfNull(bodyId);
-
-        // The washroom and the deep staff mess get nobody. The mess is pass-only and the people who would be
-        // in it are #618's question, not this one; the washroom is the one amenity nobody sits down in.
-        if (amenity.Use != UndergroundComplex.Comfort.UpperCanteen)
+        var sat = new List<Seated>();
+        foreach ((int table, int who) in Seating(bodyId, level, amenity, watch))
         {
-            return [];
+            (double tx, double ty) = amenity.Tables[table];
+            sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
         }
 
-        // And only on the floor the owner put them on. UpperCanteen is only ever carved on the top
-        // pressurised floor today, so this is belt and braces — deliberately, because the day somebody
-        // carves a second canteen the B1 ruling must not quietly stop being true.
-        if (UndergroundComplex.TopPressurisedFloor(bodyId) != level)
+        return sat;
+    }
+
+    // ── #746 · THE TABLES HAVE SEATS, AND THE SAME LAW SAYS WHO IS IN THEM ────────────────────────────────
+    //
+    // Owner, 2026-08-06: "tables should seat 2/4/more, not all pairs" — and, one sentence later, the reason
+    // it matters mechanically rather than decoratively: "asking to sit is missing."
+    //
+    // A seat count is only worth having if somebody can ask whether one is free, and the moment two callers
+    // can answer that question this repo has its most expensive bug class back (two sources for one fact —
+    // the drawn room and the pressed room disagreeing, #709's own warning). So the renderer does not walk
+    // Amenity.Tables and separately ask who is Sitting: it asks THIS, once, and gets the tops, their seat
+    // counts and their occupancy in the same list, off the same frozen watch.
+
+    /// <summary>How many a round top seats. Two, four or six — the owner's own three (#746), stated as a
+    /// list so a guard can pin them without knowing the arithmetic that picks one.</summary>
+    public static readonly IReadOnlyList<int> SeatCounts = [2, 4, 6];
+
+    /// <summary>One round top in an amenity: where it is, how many it seats, and who — if anybody — is in
+    /// one of those seats this watch.</summary>
+    /// <param name="Index">Its ordinal in the room's own table list, so a caller can key state off it.
+    /// Cabinet tops carry on from the hall floor's, so one ordinal names one top in one room.</param>
+    /// <param name="X">Centre, in the surface's own coordinates.</param>
+    /// <param name="Y">Centre.</param>
+    /// <param name="Seats">2, 4 or 6 — furniture, decided by the building and never by the shift.</param>
+    /// <param name="Plate">Who is at it, or null for an empty table.</param>
+    /// <param name="Line">What they say, or null.</param>
+    /// <param name="Stranger">#751 · Whether the person at it is a BACKGROUND PATRON — one of the crowd
+    /// that fills a hall — rather than one of the ten named regulars. A stranger's table is a thin scene
+    /// (small talk, the round, your leave) and the depth stays with the named cast.</param>
+    /// <param name="Cabinet">#751 · Which cabinet this top is in, or 0 for the hall floor. It is the fact
+    /// the QUIET RULE reads: the counter has eyes everywhere except in here.</param>
+    /// <param name="Talking">#792 · Are the people at this top IN A CONVERSATION WITH EACH OTHER? See
+    /// <see cref="StrangerTalks"/> for why this is authored rather than counted.</param>
+    public readonly record struct TableSeat(
+        int Index, double X, double Y, int Seats, string? Plate, string? Line,
+        bool Stranger = false, int Cabinet = 0, bool Talking = false)
+    {
+        /// <summary>Somebody is at this table.</summary>
+        public bool Taken => Plate is not null;
+
+        /// <summary>Chairs nobody is in. One person per top today (<see cref="Sitting"/> never doubles
+        /// up), so this is the seat count less at most one — and it is the number "ask to join" reads.</summary>
+        public int Free => Seats - (Taken ? 1 : 0);
+
+        /// <summary>#751 · Is this a table the counter cannot see? The one source for the quiet rule.</summary>
+        public bool Quiet => Cabinet > 0;
+
+        /// <summary>
+        /// #792 · SOMEBODY SITTING ON THEIR OWN — the other half of <see cref="Talking"/>, named so that a
+        /// caller asking the approachable question does not have to spell it as a negation.
+        ///
+        /// <para>Owner, playtest 2026-08-08: <i>"it determines whether there is anything to overhear as
+        /// discussion goes."</i> A lone sitter is #757's ask-to-join; a conversation already going is a
+        /// different affordance entirely, and a captain looking for one or the other must be able to tell
+        /// them apart across a room.</para>
+        /// </summary>
+        public bool Alone => Taken && !Talking;
+    }
+
+    /// <summary>
+    /// #746/#751 · HOW MANY EACH ROUND TOP IN THIS ROOM SEATS — the one place the question is answered.
+    ///
+    /// <para>Two rooms, two laws, and they meet here so that nothing downstream has to know which it is
+    /// looking at:</para>
+    ///
+    /// <list type="bullet">
+    /// <item><b>An ordinary three-top canteen</b> rolls each top, seeded off the SITE, the room's use and
+    /// the top's ordinal — and deliberately NOT off the watch. A canteen does not re-furnish itself every
+    /// shift, and a table that seated six at breakfast and two at supper would be the picture and the sim
+    /// disagreeing about a thing the player can count.</item>
+    /// <item><b>A hall</b> reads <see cref="UndergroundComplex.HallSeatBill"/>, because a hall has a SEAT
+    /// TARGET to hit and twenty independent rolls miss it by seven on average (see that method's docs). The
+    /// caterer's stock is designed; only its arrangement is seeded.</item>
+    /// </list>
+    /// </summary>
+    public static IReadOnlyList<int> SeatBill(string bodyId, UndergroundComplex.Amenity amenity)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        if (amenity.Hall is { } hall)
         {
-            return [];
+            return UndergroundComplex.HallSeatBill(bodyId, amenity.Use, hall.SeatTarget);
+        }
+
+        var rolled = new List<int>(amenity.Tables.Count);
+        for (int i = 0; i < amenity.Tables.Count; i++)
+        {
+            ulong seed = DiceRule.Seed(
+                $"hive:canteen:seats:{bodyId}:{(int)amenity.Use}:{i}", 0);
+            rolled.Add(SeatCounts[DiceRule.Roll(seed, SeatCounts.Count).Face - 1]);
+        }
+        return rolled;
+    }
+
+    /// <summary>#746 · How many a given round top seats. <see cref="SeatBill"/>'s entry for it, and kept as
+    /// its own call because that is how the rest of the game asks.</summary>
+    public static int SeatsAt(string bodyId, UndergroundComplex.Amenity amenity, int tableIndex)
+    {
+        IReadOnlyList<int> bill = SeatBill(bodyId, amenity);
+        return tableIndex >= 0 && tableIndex < bill.Count ? bill[tableIndex] : SeatCounts[0];
+    }
+
+    /// <summary>
+    /// #746/#751 · EVERY ROUND TOP IN THE ROOM, with its seats and its occupancy — the one fact the
+    /// renderer draws and the one fact the [E] press asks. Same frozen watch (#709), so the chair on the
+    /// screen and the chair the game offers you are the same chair.
+    ///
+    /// <para>#751 · Three tiers come out of this one call, in one list, because they are one question:
+    /// the ten NAMED REGULARS keep their tables and their whole scene; BACKGROUND PATRONS fill whatever the
+    /// watch says the hall is holding and are pure data (a plate, a bark, a chair — no pathing, nothing per
+    /// frame); and the CABINET tops come last, empty, because #731's walkers are the ones who will sit in
+    /// them.</para>
+    /// </summary>
+    /// <param name="bodyId">The site.</param>
+    /// <param name="level">The floor.</param>
+    /// <param name="amenity">The room, as Core carved it (#707/#751).</param>
+    /// <param name="watch">The shift, frozen when the floor was drawn.</param>
+    public static IReadOnlyList<TableSeat> Tables(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        var who = new Dictionary<int, int>();
+        foreach ((int table, int cast) in Seating(bodyId, level, amenity, watch))
+        {
+            who[table] = cast;
+        }
+
+        IReadOnlyList<int> bill = SeatBill(bodyId, amenity);
+        Dictionary<int, int> crowd = Crowd(bodyId, level, amenity, watch, who.Keys);
+
+        var tops = new List<TableSeat>(amenity.Tables.Count + CabinetRoom(amenity));
+        for (int i = 0; i < amenity.Tables.Count; i++)
+        {
+            (double tx, double ty) = amenity.Tables[i];
+            int seats = i < bill.Count ? bill[i] : SeatCounts[0];
+
+            if (who.TryGetValue(i, out int cast))
+            {
+                // #792 · A named regular is ONE PERSON at a top, every one of the ten, which is the whole
+                // premise of #757's ask-to-join: there is a chair, and somebody to ask. So they are never
+                // Talking, and the deck may draw them as the approachable thing they are.
+                tops.Add(new TableSeat(i, tx, ty, seats, Cast[cast].Plate, Cast[cast].Line));
+            }
+            else if (crowd.TryGetValue(i, out int face))
+            {
+                tops.Add(new TableSeat(
+                    i, tx, ty, seats,
+                    StrangerPlates[face % StrangerPlates.Count],
+                    Barks[BarkIndex(bodyId, i, watch)],
+                    Stranger: true,
+                    Talking: StrangerTalks(face % StrangerPlates.Count)));
+            }
+            else
+            {
+                tops.Add(new TableSeat(i, tx, ty, seats, null, null));
+            }
+        }
+
+        // …and the cabinets, which are tops in this room like any other and are simply nobody's this watch.
+        if (amenity.Hall is { } hall)
+        {
+            foreach (UndergroundComplex.Cabinet cabinet in hall.Cabinets)
+            {
+                tops.Add(new TableSeat(
+                    tops.Count, cabinet.Table.X, cabinet.Table.Y, UndergroundComplex.CabinetSeats,
+                    null, null, Cabinet: cabinet.Number));
+            }
+        }
+
+        return tops;
+    }
+
+    /// <summary>How many cabinet tops this room adds, for the list's capacity.</summary>
+    private static int CabinetRoom(UndergroundComplex.Amenity amenity) =>
+        amenity.Hall?.Cabinets.Count ?? 0;
+
+    /// <summary>
+    /// #709/#757 · IS THIS THE ROOM PEOPLE ARE IN? The owner's B1 ruling, as a question anybody may ask.
+    ///
+    /// <para>The upper canteen, on the top pressurised floor, and nowhere else. It was already the first two
+    /// clauses of <see cref="Seating"/> and of <see cref="Crowd"/> in longhand; #757 needed a THIRD caller,
+    /// because an empty top may only offer <i>take this table</i> in a room outsiders are admitted to — the
+    /// pass-only staff mess is hall-class as well, full of tops, and its whole identity is that the shift
+    /// has not come and nobody is ever in it. A third private copy of two clauses is how one rule stops
+    /// being one rule, so the copies became this.</para>
+    /// </summary>
+    /// <param name="bodyId">The site.</param>
+    /// <param name="level">The floor.</param>
+    /// <param name="amenity">The room, as Core carved it (#707).</param>
+    public static bool PeopleSitHere(string bodyId, int level, UndergroundComplex.Amenity amenity)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return amenity.Use == UndergroundComplex.Comfort.UpperCanteen
+            && UndergroundComplex.TopPressurisedFloor(bodyId) == level;
+    }
+
+    /// <summary>WHO IS AT WHICH TABLE, as indices — the one rota, called by <see cref="Sitting"/> and by
+    /// <see cref="Tables"/>. It was inlined in Sitting until #746 needed the table's ORDINAL as well as its
+    /// coordinates; matching a person back to a top by comparing two doubles would have been a second answer
+    /// to "who is sitting where", which is the thing this class's own docs warn about hardest.</summary>
+    private static List<(int Table, int Who)> Seating(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        var seating = new List<(int Table, int Who)>();
+
+        // The washroom and the deep staff mess get nobody. The mess is pass-only and the people who would be
+        // in it are #618's question, not this one; the washroom is the one amenity nobody sits down in. And
+        // only on the floor the owner put them on — #757 lifted both clauses into PeopleSitHere so that the
+        // third caller could not become a second opinion.
+        if (!PeopleSitHere(bodyId, level, amenity))
+        {
+            return seating;
         }
 
         int seats = Math.Min(amenity.Tables.Count, MostAtOnce);
         if (seats <= 0)
         {
-            return [];
+            return seating;
         }
 
         // How many turned up THIS SHIFT. At least one — the owner asked for people in the bar, and an empty
@@ -196,7 +404,6 @@ public static class CanteenRegulars
         ulong seed = DiceRule.Seed($"hive:canteen:{bodyId}", watch);
         int here = DiceRule.Roll(seed, seats).Face;
 
-        var sat = new List<Seated>(here);
         var usedTables = new List<int>(here);
         var usedCast = new List<int>(here);
 
@@ -205,15 +412,229 @@ public static class CanteenRegulars
             int table = PickUnused(
                 DiceRule.Roll(DiceRule.Seed($"hive:canteen:table:{bodyId}:{i}", watch), amenity.Tables.Count).Face - 1,
                 amenity.Tables.Count, usedTables);
-            int who = PickUnused(
+            int cast = PickUnused(
                 DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}", watch), Cast.Length).Face - 1,
                 Cast.Length, usedCast);
 
-            (double tx, double ty) = amenity.Tables[table];
-            sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
+            seating.Add((table, cast));
         }
 
-        return sat;
+        return seating;
+    }
+
+    // ── #751 · THE CROWD, WHICH IS THE COVER ─────────────────────────────────────────────────────────────
+    //
+    // Owner: "It needs to house like 80 customers… I am thinking like Mos Eisley Space port size bar."
+    //
+    // Eighty carriers eating on the company's coin, none of whom ask what the cage carries, is #707's lie
+    // rendered as a crowd — and one nearly-empty night watch of the same hall is free horror. Nothing ever
+    // announces which watch you have walked into; the seeding just differs, and the room tells you.
+    //
+    // THEY ARE DATA. A background patron is a plate, a bark and a chair. No pathing, no schedule, no
+    // per-frame anything — the renderer draws a console at a coordinate Core already placed, exactly as it
+    // does for the ten named regulars, and the whole crowd costs one pass over the room's own table list at
+    // deck-build time. WASM perf is a law here and this is how it is kept: by there being nothing to run.
+    //
+    // AND THEY ARE ONLY EVER IN A HALL. An ordinary three-top canteen keeps #709's room exactly as it was —
+    // three tables, up to three regulars — because a "crowd" of two strangers in a nook is not a crowd, it
+    // is the named cast with the names taken off.
+
+    /// <summary>
+    /// #751 · HOW FULL THE HALL IS, WATCH BY WATCH — the fraction of its tops that have somebody at them.
+    ///
+    /// <para>Six entries, because a watch is four sim-hours (<see cref="Interior.PatronRota.WatchSeconds"/>)
+    /// and six of those are a day. Read as a day: the hall heaves through the middle of it and empties out
+    /// to a handful of tables on the small watches. <b>Nothing says so out loud</b> — there is no sign, no
+    /// caption and no line about it anywhere in the game, and a captain who walks in twice at different
+    /// hours simply finds two different rooms.</para>
+    ///
+    /// <para>FLAGGED for the owner's tuning: these six numbers are the entire mood of the room.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<double> WatchFill = [0.30, 0.85, 0.95, 0.70, 0.45, 0.15];
+
+    /// <summary>
+    /// #792 · ONE BACKGROUND PATRON — the plate, and WHETHER THERE IS ANYTHING TO OVERHEAR AT IT.
+    /// </summary>
+    /// <param name="Plate">What stands over them, before anybody speaks.</param>
+    /// <param name="Talking">Are they in a conversation with each other?</param>
+    private readonly record struct Face(string Plate, bool Talking);
+
+    /// <summary>
+    /// #792 · THE CROWD, WITH THE ONE FACT A HUNGRY TRAVELLER READS OFF A ROOM SECOND.
+    ///
+    /// <para>Owner, playtest 2026-08-08: <i>"people looking to sit down look at those like hungry wild
+    /// beasts look at their prey"</i>, and then the second glance — <i>"does a table hold somebody alone
+    /// … or a conversation already going … it determines whether there is anything to overhear."</i></para>
+    ///
+    /// <para><b>Why it is authored and not counted.</b> The obvious implementation reads the plate and
+    /// counts the people in it: TWO HAULIERS is two, so they are talking. It is wrong on the last line of
+    /// this list, and wrong in the direction that matters — <i>A COUPLE NOT TALKING</i> is two people with
+    /// nothing to overhear, and the plate says so in words. A renderer, or a Core helper, deriving the
+    /// conversation from the headcount would draw a speech mark over the one table in the room whose whole
+    /// character is silence. So the fact lives HERE, beside the sentence it belongs to, where an author
+    /// writing the eleventh plate has to decide it, and a guard proves it is not the plural rule wearing a
+    /// field name.</para>
+    /// </summary>
+    private static readonly Face[] Faces =
+    [
+        new("◈ CAGE CREW, OFF SHIFT", true),
+        new("◈ TWO HAULIERS, EATING", true),
+        new("◈ A LOADER WITH A BAD WRIST", false),
+        new("◈ SOMEBODY'S WHOLE CREW AT ONE TABLE", true),
+        new("◈ A DRIVER READING A DOCKET", false),
+        new("◈ A YARD HAND, WAITING ON A CAR", false),
+        new("◈ A PAIR FROM THE SCAFFOLD GANG", true),
+        new("◈ A WEIGHBRIDGE CLERK ON A BREAK", false),
+        new("◈ THREE ON THE SAME CONTRACT", true),
+        // …and the one that makes this a fact rather than a word count.
+        new("◈ A COUPLE NOT TALKING", false),
+    ];
+
+    /// <summary>The plates, in the crowd's own order — <see cref="StrangerPlates"/>'s backing, so the list
+    /// every existing caller reads and the list the conversation fact is authored in cannot drift apart by
+    /// one entry.</summary>
+    private static string[] PlatesOf(Face[] faces)
+    {
+        var plates = new string[faces.Length];
+        for (int i = 0; i < faces.Length; i++)
+        {
+            plates[i] = faces[i].Plate;
+        }
+        return plates;
+    }
+
+    /// <summary>
+    /// #751 · The plates the crowd wears. Ten of them, and every one is duller than the last — the register
+    /// test (#701) applies twice as hard here, because these are the people the cover is MADE of. A
+    /// background patron who read as interesting would turn a room of eighty strangers into eighty leads.
+    ///
+    /// <para>Deliberately distinct strings from the named cast's, so <see cref="CanteenTable.WhoIs"/> can
+    /// never match one of them and hand a stranger the Hand's conversation.</para>
+    ///
+    /// <para>#792 · Projected from <see cref="Faces"/> rather than typed a second time. Declared BELOW it
+    /// on purpose: a static field initialiser runs in the order it is written, and this list read from an
+    /// array that had not been built yet would be ten nulls at every call site in the game.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> StrangerPlates = PlatesOf(Faces);
+
+    /// <summary>#792 · Is the crowd's <paramref name="face"/>th patron a CONVERSATION rather than somebody
+    /// on their own? The one source; <see cref="TableSeat.Talking"/> is this answer carried to wherever the
+    /// top is drawn or pressed.</summary>
+    public static bool StrangerTalks(int face) =>
+        face >= 0 && face < Faces.Length && Faces[face].Talking;
+
+    /// <summary>
+    /// #751 · WHAT A STRANGER SAYS. Fourteen barks, drawn seeded per patron per watch — so the same table on
+    /// the same shift always says the same thing, and the hall as a whole says a different fourteen things
+    /// every shift.
+    ///
+    /// <para>Two registers, deliberately braided. Twelve are the working day of people paid not to ask
+    /// (#751's own pool); the last two are the FANCY register — #601's funding trail overheard rather than
+    /// stated, because a suspiciously nice canteen on a nowhere rock is money that does not mind being seen
+    /// feeding contractors, only being asked.</para>
+    ///
+    /// <para>Not one of them explains anything, and the guard that greps them walks THIS list.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> Barks =
+    [
+        "Two more runs and I'm wintering somewhere with weather.",
+        "They pay on the nail here. You don't ask what the nail's in.",
+        "Cage crew again? Wear the good gloves.",
+        "I had a mate went down-contract. Sends money home regular. Never writes.",
+        "The coffee's the same on every rock. That's either comforting or it isn't.",
+        "Don't sit near the board on rota day unless you want work.",
+        "Somebody asked the counter what's below. Funniest thing — nobody remembers who.",
+        "Freight doesn't weigh what the manifest says. Freight never weighs what the manifest says.",
+        "First week? It shows. Sit down, it wears off.",
+        "The lift's polite. That's more than I can say for the last three sites.",
+        "You get used to the hum. Then one day it stops and you find out you liked it.",
+        "Keep your name simple here. They'll shorten it anyway.",
+        "Real coffee. On a rock like this. Somebody's writing it off against something.",
+        "Table linen on a freight stop. I stopped asking the questions I like the answers to.",
+    ];
+
+    /// <summary>#751 · Every stranger plate and every bark, for the canon grep — the same discipline the
+    /// named cast's <see cref="AllProse"/> keeps, and a separate call so neither list's guard can be
+    /// silently made vacuous by the other growing.</summary>
+    public static IEnumerable<string> AllStrangerProse()
+    {
+        foreach (string p in StrangerPlates)
+        {
+            yield return p;
+        }
+        foreach (string b in Barks)
+        {
+            yield return b;
+        }
+    }
+
+    /// <summary>#751 · Which bark this patron has this watch. Seeded on (site, top, watch) and nothing else,
+    /// so it is stable while you stand there, different next shift, and a guard can measure that every one
+    /// of the fourteen is actually reachable rather than assuming it.</summary>
+    public static int BarkIndex(string bodyId, int tableIndex, long watch)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return DiceRule.Roll(
+            DiceRule.Seed($"hive:hall:bark:{bodyId}:{tableIndex}", watch), Barks.Count).Face - 1;
+    }
+
+    /// <summary>#751 · How many of the hall's tops have somebody at them this watch — the named regulars
+    /// included. The number the room's whole mood comes out of.</summary>
+    public static int OccupiedTops(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int taken = 0;
+        foreach (TableSeat top in Tables(bodyId, level, amenity, watch))
+        {
+            if (top.Taken)
+            {
+                taken++;
+            }
+        }
+        return taken;
+    }
+
+    /// <summary>WHICH TOPS THE CROWD IS AT, and which face each of them wears. Keyed by top ordinal, exactly
+    /// like <see cref="Seating"/>, and it skips whatever the named regulars already have.</summary>
+    private static Dictionary<int, int> Crowd(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch,
+        IEnumerable<int> takenByTheCast)
+    {
+        var crowd = new Dictionary<int, int>();
+
+        // Halls only, upper canteen only, top floor only. The middle clause is the one with teeth: the
+        // STAFF MESS is hall-class too (#751's second customer) and it must stay empty on every watch
+        // forever — its whole identity is #743's sentence at architectural scale, "the shift has not come".
+        if (amenity.Hall is null || !PeopleSitHere(bodyId, level, amenity))
+        {
+            return crowd;
+        }
+
+        int tops = amenity.Tables.Count;
+        if (tops <= 0)
+        {
+            return crowd;
+        }
+
+        double fill = WatchFill[(int)(((watch % WatchFill.Count) + WatchFill.Count) % WatchFill.Count)];
+        int want = (int)Math.Round(tops * fill, MidpointRounding.AwayFromZero);
+
+        var used = new List<int>(takenByTheCast);
+        int seatedByCast = used.Count;
+        want = Math.Clamp(want - seatedByCast, 0, tops - seatedByCast);
+
+        for (int i = 0; i < want; i++)
+        {
+            int table = PickUnused(
+                DiceRule.Roll(DiceRule.Seed($"hive:hall:top:{bodyId}:{i}", watch), tops).Face - 1,
+                tops, used);
+            int face = DiceRule.Roll(
+                DiceRule.Seed($"hive:hall:face:{bodyId}:{table}", watch), StrangerPlates.Count).Face - 1;
+            crowd[table] = face;
+        }
+
+        return crowd;
     }
 
     /// <summary>Take the rolled index, or the next free one after it. Two people on one chair and one person

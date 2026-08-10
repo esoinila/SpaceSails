@@ -136,8 +136,10 @@ public sealed class DyingUnderAMoonTests
             Assert.True(UndergroundComplex.HoldsPressure("miranda", refuge),
                 $"B{-level}: the card points at B{-refuge} as the nearest air and it does not hold pressure.");
 
-            // And the tank, so the margin is a number rather than a feeling.
-            Assert.Contains("12 min", card, StringComparison.Ordinal);
+            // And the tank, so the margin is a number rather than a feeling — quoted off the gauge rather
+            // than worked out again here (#740: this line used to pin "12 min", which was the raw play
+            // budget the HUD never shows anybody).
+            Assert.Contains(SuitAir.Clock(754), card, StringComparison.Ordinal);
         }
     }
 

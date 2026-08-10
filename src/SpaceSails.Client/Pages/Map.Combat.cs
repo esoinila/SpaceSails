@@ -301,13 +301,297 @@ public partial class Map
     /// the boring default and would only clutter the strip.</summary>
     private bool BoatClockWorthShowing => BoatState != SilentRunning.BoatState.Warm;
 
+    /// <summary>#736 · What the last switch on the remote answered, said on the remote. Three of the four
+    /// switches here order something that is somewhere ELSE — bots across the field, a boat on the pad, a
+    /// sounder in your own fist — so the sentence IS the feedback, and it was pulsed under the remote's own
+    /// backdrop. Cleared whenever the handset is taken out or pocketed.</summary>
+    private string? _remoteOutcome;
+
     private void OpenCaptainsRemote()
     {
         _showCaptainsRemote = true;
+        _remoteOutcome = null;
+        CloseDesignate();
         RendererInterop.PlayCue("board");
     }
 
-    private void CloseCaptainsRemote() => _showCaptainsRemote = false;
+    private void CloseCaptainsRemote()
+    {
+        _showCaptainsRemote = false;
+        _remoteOutcome = null;
+        CloseDesignate();
+    }
+
+    // ── #803 · DESIGNATE: THE CAPTAIN AIMS A GUN BY HAND ──────────────────────────────────────────────
+    //
+    // Owner, 2026-08-09: "we will need to use the handheld captain's control to set the guns / gun to fire
+    // at something manually, that UI is missing."
+    //
+    // It belongs on THIS handset and nowhere else. The other three switches on it order something that is
+    // somewhere else — bots across the field, a boat on the pad, a sounder in your own fist — and this is
+    // the same gesture with a target on the end of it. Three presses, and each one is a decision the captain
+    // makes out loud: WHICH GUN, WHICH THING, and SAY WHEN.
+    //
+    // Nothing here is autopilot and nothing here is allowed to become it. The sentries' own volley picks
+    // targets inside an arc because that is what a machine on watch does; this picks one thing, once,
+    // because a captain decided. The orbit-keeping law does not reach it (#803's own ruling), and neither
+    // does weapons-tight: an order that safes the machines' triggers has never touched the captain's, which
+    // is the whole authority idiom this game runs on (SentryBot.WeaponsTightLine says so in as many words).
+
+    /// <summary>Whether the handset is showing the designate flow instead of its switches.</summary>
+    private bool _designateOpen;
+
+    /// <summary>The gun the captain picked, or null while they are still picking one.</summary>
+    private string? _designateUnit;
+
+    /// <summary>What that gun can see, rebuilt the moment a gun is picked. Refusing targets are IN this list
+    /// on purpose: a lock the story needs shut has to be pressable so it can SAY so, and a target that is
+    /// simply missing from a list teaches a captain nothing except that the game is arbitrary.</summary>
+    private readonly List<DesignateTarget> _designateTargets = [];
+
+    /// <summary>One thing a gun can see: what is painted on it, where it is, how far, what it would cost,
+    /// and whether there is anything on it worth a round.</summary>
+    private sealed record DesignateTarget(
+        string Sign, double X, double Y, double RangeDu, int Cost, bool Shootable);
+
+    private void CloseDesignate()
+    {
+        _designateOpen = false;
+        _designateUnit = null;
+        _designateTargets.Clear();
+    }
+
+    /// <summary>Open the mode. If there is nothing to point, the panel says which of the two nothings it is —
+    /// no gun set down, or every gun set down reading 00 — because those are different problems with
+    /// different answers and one sentence for both is the bug #728 was filed about.</summary>
+    private void OpenDesignate()
+    {
+        _designateOpen = true;
+        _designateUnit = null;
+        _designateTargets.Clear();
+        _remoteOutcome = null;
+
+        if (DesignatableGuns().Count == 0)
+        {
+            _remoteOutcome = AnythingSetDownAtAll()
+                ? ShootTheLock.EverythingDryLine
+                : ShootTheLock.NothingSetDownLine;
+        }
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    private void BackToTheSwitches()
+    {
+        CloseDesignate();
+        _remoteOutcome = null;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// The guns a captain may point: SET DOWN, and with something in the drum.
+    ///
+    /// <para>Both halves are the feature. A bot in the sling is a machine you are carrying, not a machine
+    /// holding a position — and a bot reading 00 is the whole reason the put verb exists, so offering it
+    /// here would be the handset promising something the magazine cannot pay for.</para>
+    ///
+    /// <para>The tube's own GATE-1 is not one of yours. It hangs in the shuttle door, is topped back up
+    /// after every volley and is "never counted against the sling" by its own law — the same exclusion the
+    /// #797 magazines readout makes, asked through the same Core question, so the instrument and the handset
+    /// can never disagree about what the captain owns.</para></summary>
+    private List<SurfaceBot> DesignatableGuns()
+    {
+        var guns = new List<SurfaceBot>();
+        if (_surface is not { } ex)
+        {
+            return guns;
+        }
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (ShootTheLock.MayPoint(b.Deployed, b.Rounds, SurfaceArrival.IsDoorSentry(b.Unit)))
+            {
+                guns.Add(b);
+            }
+        }
+        return guns;
+    }
+
+    /// <summary>Is anything of the captain's standing out there at all, whatever its counter reads? The
+    /// question that tells the two nothings apart.</summary>
+    private bool AnythingSetDownAtAll()
+    {
+        if (_surface is not { } ex)
+        {
+            return false;
+        }
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (b.Deployed && !SurfaceArrival.IsDoorSentry(b.Unit))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Pick the gun, and see what it can see.</summary>
+    private void PickTheGun(string unit)
+    {
+        _designateUnit = unit;
+        _remoteOutcome = null;
+        ScanForLocks(unit);
+        if (_designateTargets.Count == 0)
+        {
+            _remoteOutcome = ShootTheLock.NothingInViewLine(unit);
+        }
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// What this gun has in front of it. The signs on the deck are the truth about what is standing there
+    /// (the renderer hangs one console on every door that will not open), and the two questions asked of
+    /// each are the SAME two a sentry asks of an Old One — inside the arc, and with stone out of the way.
+    /// One range law, one sight law: a captain who has learned what a sentry covers has learned this.
+    /// </summary>
+    private void ScanForLocks(string unit)
+    {
+        _designateTargets.Clear();
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        SurfaceBot? gun = ex.Bots.FirstOrDefault(b => b.Unit == unit && b.Deployed);
+        if (gun is null)
+        {
+            return;
+        }
+
+        Ammunition.Kind kind = Ammunition.ById(gun.AmmoId);
+        IReadOnlyList<SurfaceCollision.Segment> walls = SightBlockers();
+
+        foreach (DeckPlan.ConsoleSpot spot in _deckPlan.Consoles)
+        {
+            if (spot.Kind != DeckPlan.ConsoleKind.HiveSign)
+            {
+                continue;
+            }
+            // A door that is already open is not a target. It wears the hole rather than the padlock, which
+            // is the deck saying which of the two it is — the same string the renderer wrote.
+            if (spot.Label.StartsWith(HiveInterior.ShotOpenGlyph, StringComparison.Ordinal))
+            {
+                continue;
+            }
+            string sign = spot.Label.Replace("🔒 ", "", StringComparison.Ordinal);
+            if (!ShootTheLock.CanBreak(gun.X, gun.Y, spot.X, spot.Y, walls))
+            {
+                continue;
+            }
+            _designateTargets.Add(new DesignateTarget(
+                sign, spot.X, spot.Y,
+                ShootTheLock.RangeDu(gun.X, gun.Y, spot.X, spot.Y),
+                ShootTheLock.RoundsFor(kind),
+                ShootTheLock.IsShootable(sign)));
+        }
+
+        _designateTargets.Sort((a, b) => a.RangeDu.CompareTo(b.RangeDu));
+    }
+
+    /// <summary>
+    /// SAY WHEN. The one press that spends something.
+    ///
+    /// <para>Every consequence hangs off the single Core answer (<see cref="ShootTheLock.Fire"/>): the drum,
+    /// the door, the ear and the record all move off the same yes, so the sim and the sentence cannot come
+    /// apart — which on this repo is the third named bug class and the reason this is written as one call
+    /// rather than as four conditions that agree today.</para></summary>
+    private void FireOnTheLock(DesignateTarget target)
+    {
+        if (_surface is not { } ex || _designateUnit is not { } unit)
+        {
+            return;
+        }
+        SurfaceBot? gun = ex.Bots.FirstOrDefault(b => b.Unit == unit && b.Deployed);
+        if (gun is null)
+        {
+            _remoteOutcome = "🎯 That gun is not standing there any more.";
+            CloseDesignate();
+            StateHasChanged();
+            return;
+        }
+
+        // ASKED AGAIN AT THE TRIGGER, not trusted from the scan. The list on the panel is a snapshot taken
+        // when the gun was picked, and the world has had every frame since then to change: a door between
+        // them can have cycled shut behind the captain's back. A shot resolved off a stale row is the sim
+        // and the screen disagreeing about what a gun can see, which is the one thing this feature must not
+        // do — and re-asking costs one line.
+        IReadOnlyList<SurfaceCollision.Segment> walls = SightBlockers();
+        if (!ShootTheLock.CanBreak(gun.X, gun.Y, target.X, target.Y, walls))
+        {
+            _remoteOutcome = ShootTheLock.NothingInViewLine(gun.Unit);
+            RendererInterop.PlayCue("block");
+            ScanForLocks(unit);
+            StateHasChanged();
+            return;
+        }
+
+        Ammunition.Kind kind = Ammunition.ById(gun.AmmoId);
+        ShootTheLock.Order order = ShootTheLock.Fire(
+            gun.Unit, target.Sign, gun.Rounds, kind,
+            ShootTheLock.RangeDu(gun.X, gun.Y, target.X, target.Y));
+
+        if (!order.Fired)
+        {
+            // A refusal costs nothing and is said on the handset, where the press was made (#769).
+            _remoteOutcome = order.Line;
+            RendererInterop.PlayCue("block");
+            StateHasChanged();
+            return;
+        }
+
+        gun.Rounds = order.Magazine;
+        gun.AimX = target.X;
+        gun.AimY = target.Y;
+        gun.FiringUntilMs = (_lastTimestampMs ?? 0) + 400;
+
+        // The lock is open in the building's own grammar: the wall behind it goes, the leaf becomes a way
+        // through, and the plate stays readable wearing a hole instead of a padlock.
+        TheLockComesOff(ex, target);
+
+        // THE NOISE. Two things happen and they are deliberately different: the pack's ear is rung the way
+        // every other loud act on this ground rings it (a PLACE to walk to, #456), and the FACT is filed —
+        // who fired, at what, where, when, how many. Nothing in this build reads the ledger; #804 prices it.
+        MakeNoise(target.X, target.Y, ReeverHearing.Noise.Gunfire);
+        var shot = new GunfireHeard.Shot(
+            gun.Unit, target.Sign, target.X, target.Y, SimTime, order.RoundsSpent);
+        ex.ShotsHeard = [.. GunfireHeard.File(ex.ShotsHeard, shot)];
+
+        RendererInterop.PlayCue("fire");
+
+        // ── TOLD, WHERE THEY ARE LOOKING, IN ONE BREATH (#761 / #769 / #774) ──
+        //
+        // A gun going off indoors is the plot-significant thing here, and this event has three things to say
+        // at once: the shot, what was behind the door, and — the first time only — what the noise actually
+        // cost. Said as THREE calls they would be three writes to one slot and the captain would read the
+        // last one; a region has room for all of them, which is the whole of #774. So the paragraphs are
+        // composed here and the outcome is written once, and the book keeps each of them separately because
+        // a record is a list of facts and not a paragraph.
+        var said = new List<string> { order.Line, ShootTheLock.BehindItLine(target.Sign) };
+        if (!ex.GunfireWarned)
+        {
+            ex.GunfireWarned = true;
+            said.Add(GunfireHeard.WhatItCostLine);
+        }
+        SayItWhereTheyAreLooking(string.Join("\n\n", said));
+
+        FileNote(order.Line, "🔫");
+        FileNote(GunfireHeard.BookLine(shot), "🔫");
+
+        // The list the captain is looking at is now wrong — that door is a doorway. Rescan rather than
+        // patch: one source for what a gun can see, asked again.
+        ScanForLocks(unit);
+        RequestVaultSave();
+        StateHasChanged();
+    }
 
     /// <summary>
     /// Reverse the standing order for the boat, from the remote, wherever the captain is standing. Owner:
@@ -318,7 +602,7 @@ public partial class Map
     {
         _boatOrderedCold = !_boatOrderedCold;
 
-        ShowPulseMessage(_boatOrderedCold ? SilentRunning.BoatDarkLine : SilentRunning.BoatWakingLine);
+        SayItWhereTheyAreLooking(_boatOrderedCold ? SilentRunning.BoatDarkLine : SilentRunning.BoatWakingLine);
         LogAutopilotEvent(_boatOrderedCold
             ? $"🛸 Rigging the boat down — {SilentRunning.SecondsLeft(_boatWarmth, true):0} s to quiet."
             : $"🛸 Bringing the boat up — {SilentRunning.SecondsLeft(_boatWarmth, false):0} s to her hatch.");
@@ -388,7 +672,7 @@ public partial class Map
     {
         _weaponsTight = !_weaponsTight;
 
-        ShowPulseMessage(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
+        SayItWhereTheyAreLooking(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
         LogAutopilotEvent(_weaponsTight
             ? "🤖 WEAPONS TIGHT ordered — bots and the tube gun stand down."
             : "🤖 Weapons free — the bots have their arcs back.");
@@ -1893,6 +2177,13 @@ public partial class Map
             _busted.CollectorWrit = NebulaLore.ById("collector-writ")!.Lore;
         }
 
+        // #777 · AND THE BEAT IS FINALLY COUNTED AS TOLD. The demand panel opening IS StoryBeats' collector
+        // hail — it has rendered that beat's painting at the top of itself since #528 — so the beat is raised
+        // through the one door, HOSTED: the seam spends the cadence and writes the hail's words into the log,
+        // and raises no card, because the card is the thing we just opened. Reading a beat's ArtFile out of
+        // markup was never the same as raising it; that is what left this one an orphan through #663.
+        RaiseStoryBeat(StoryBeats.Beat.CollectorHail, hunter.Callsign);
+
         SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
         StateHasChanged();
     }
@@ -2268,7 +2559,18 @@ public partial class Map
         StateHasChanged();
     }
 
-    private void BustedResistLostConfirm() => BustedSubmit(harsher: true);
+    // #735 · Stage-guarded for the same reason the wake is (see BustedResurrect): once Enter presses this
+    // button too, a keystroke on a focused button can arrive as BOTH a key handler and the browser's own
+    // click — and a confiscation applied twice is the collector taking the cut twice off one press.
+    private void BustedResistLostConfirm()
+    {
+        if (_busted is not { Phase: BustedEncounter.Stage.ResistLost })
+        {
+            return;
+        }
+
+        BustedSubmit(harsher: true);
+    }
 
     // A Bolivia beat: fold the choice, roll it, advance. After the last beat, tally and decide.
     private void BustedBoliviaChoose(string choiceId)
@@ -2319,7 +2621,15 @@ public partial class Map
     // survives (it lives off-ship — other lanes). Never a dead save.
     private void BustedResurrect()
     {
-        if (_busted is not { } b)
+        // #735 · …and only OUT OF THE FREEZE. The guard used to be "is there a death open at all", which was
+        // true right up until Enter joined the mouse on this button: a keystroke on a focused button fires
+        // the keydown handler AND the browser's own click, so the wake could be asked for twice — and a
+        // second wake is a second clinic bill, a second succession and a second captain, off one press. The
+        // stage is the fact that decides, so the stage is what is asked. Every road in is one of these three.
+        if (_busted is not { } b
+            || b.Phase is not (BustedEncounter.Stage.FreezeFrame
+                or BustedEncounter.Stage.Impact
+                or BustedEncounter.Stage.SurfaceEnd))
         {
             return;
         }

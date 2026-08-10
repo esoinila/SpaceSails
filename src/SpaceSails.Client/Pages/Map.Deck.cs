@@ -225,7 +225,11 @@ public partial class Map
     {
         if (_deckPlan.NearestConsoleSpot(gx, gy) is { } spot)
         {
-            return (spot.X, spot.Y);
+            // #791 · …and on a fixture that IS a length (the bar's service run) it is the point you aimed at
+            // ON it, never its middle. Clicking the far end of an eighty-du desk and being marched forty du
+            // up to the plate is "walk to the thing" answered about a different thing. A point console's
+            // nearest point is itself, so no other deck in the game moves a millimetre.
+            return spot.NearestPointTo(gx, gy);
         }
 
         foreach (DeckPlan.Door door in _deckPlan.Doors)
@@ -255,6 +259,19 @@ public partial class Map
             case "a" or "A" or "ArrowLeft":
             case "s" or "S" or "ArrowDown":
             case "d" or "D" or "ArrowRight":
+                // #784 · …UNLESS THE CAPTAIN IS SITTING DOWN. Owner, live: "before moving I have to stand
+                // up… so if I try to move when sitting down it should ask with a pop-up whether I want to
+                // stand up again." So the press is CONSUMED and the chair does not slide across the hall:
+                // the question goes up instead, and the held-key set never learns the key was touched.
+                //
+                // It has to be first, above the #729 line below, for that rule's own reason one posture
+                // over: a cancel that happened after the keys were taken would have already thrown away the
+                // watch and the rest the seat is holding.
+                if (CaptainIsSeated)
+                {
+                    AskWhetherToStandUp();
+                    return true;
+                }
                 // #729 · THE KEYS ALWAYS WIN, and they win HERE — on the press itself, before the frame
                 // that follows it spends a single sub-step of the route. Cancelling anywhere further down
                 // (in MoveAvatar, say) would let the walk finish the leg it was on, and "it kept going for
@@ -325,6 +342,18 @@ public partial class Map
 
     private void MoveAvatar(double dtRealSeconds)
     {
+        // ── #784 · A CAPTAIN IN A CHAIR DOES NOT WALK ──
+        //
+        // The key handler above raises the confirm instead of taking the press, and this is the second half
+        // of the same law rather than a duplicate of it: a key HELD BEFORE the captain sat down is still in
+        // the held set, and every route the auto-walk is mid-way through is still a route. Refusing at the
+        // key alone would let a captain sit down mid-stride and keep going, chair and all — which is exactly
+        // the "the sim did one thing while the picture said another" this project has paid for three times.
+        if (CaptainIsSeated)
+        {
+            return;
+        }
+
         double dt = Math.Min(dtRealSeconds, 0.1);
 
         // Three tots of rum and the deck tilts (M21): the heading sways for a while. Purely
@@ -644,7 +673,10 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.HiveLift:
             case DeckPlan.ConsoleKind.HiveHead:
-                HiveLiftInteract();   // #585: down the shaft, or back up out of it
+            case DeckPlan.ConsoleKind.HiveServiceLift:
+                // #585: down the shaft, or back up out of it. #801: whichever of the two cars you walked
+                // to — the method asks the pressed spot, so this arm does not have to know.
+                HiveLiftInteract();
                 break;
             case DeckPlan.ConsoleKind.HiveHaul:
                 HiveHaulInteract();   // #585: turn over one room of the facility
@@ -659,7 +691,26 @@ public partial class Map
                 HiveAmenityInteract(); // #707: stand at the counter, the basins or the machines
                 break;
             case DeckPlan.ConsoleKind.HiveRegular:
-                HiveRegularInteract(); // #709: stop at a table on B1 and hear one breath of somebody's day
+                // #746 · ASK TO JOIN comes first: at a table with a free seat and one of the three regulars
+                // in it, [E] sits you down and opens the scene. Everybody else in #709's cast keeps their
+                // one breath, which is what a canteen full of quest-givers would have cost us.
+                if (!TryOpenTable())
+                {
+                    HiveRegularInteract(); // #709: one breath of somebody's day, and nothing else
+                }
+                break;
+            case DeckPlan.ConsoleKind.HiveTable:
+                // #757 · TAKE THE TABLE — the other half of the same verb, and the half the room refused
+                // outright: owner, live in the hall, "I have empty table but I cannot sit down." Sitting
+                // down alone is a choice to be FINDABLE, and WAIT is what you do once you have made it.
+                TryTakeTable();
+                break;
+            case DeckPlan.ConsoleKind.HiveBench:
+                // #793 · SIT ON THE BENCH. #790 put them in the park as plates over solid steel and said
+                // the verb would arrive with #778; it has. A bench with somebody already on the far end
+                // still answers — half a bench is a rest, and it is the rung of the exposure ladder that
+                // teaches the privacy law by refusing the spread OUT LOUD rather than by having no control.
+                TryTakeBench();
                 break;
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
@@ -1175,7 +1226,7 @@ public partial class Map
     {
         if (_viewObject is not null)
         {
-            _viewObject = null; // E again closes
+            CloseViewObject();  // E again closes — through the one door, so #768's held line is freed here too
             return;
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
@@ -1222,7 +1273,16 @@ public partial class Map
         }
     }
 
-    private void CloseViewObject() => _viewObject = null;
+    /// <summary>#768 · The card comes down and the sayings it was standing on are freed. An arrival that
+    /// raises one of these — the first descent (#585), the dead-air warning (#609), the gate's own face
+    /// (#684) — holds its ranked lines rather than pulsing them under the backdrop, so this is the moment
+    /// the winner is finally said. Every road out of the card (Esc, Enter, E again, the backdrop, Close)
+    /// comes through here.</summary>
+    private void CloseViewObject()
+    {
+        _viewObject = null;
+        ReleaseHeldSayings();
+    }
 
     private void KnockOnHatch()
     {
@@ -1283,6 +1343,11 @@ public partial class Map
     private DeckPlan.ConsoleSpot? _pinHatch; // the hatch being cracked (for the keypad's header)
     private string _pinEntry = "";           // digits keyed so far (max 4)
 
+    /// <summary>#736 · What the last submitted code did, said ON the keypad. A wrong code leaves the pad up
+    /// (you are meant to try again), and the buzz that told you it was wrong was pulsed to the HUD under the
+    /// pad's own backdrop — the display simply blanked and nothing said why. Cleared with the pad.</summary>
+    private string? _pinOutcome;
+
     // Four slots, filled left to right: keyed digits, then "·" placeholders.
     private string PinDisplay => string.Concat(Enumerable.Range(0, 4)
         .Select(i => i < _pinEntry.Length ? _pinEntry[i] : '·'));
@@ -1302,6 +1367,7 @@ public partial class Map
         _pinJob = null;
         _pinHatch = null;
         _pinEntry = "";
+        _pinOutcome = null;
     }
 
     private void SubmitPin()
@@ -1330,8 +1396,11 @@ public partial class Map
         }
         else
         {
+            // #736 · The pad STAYS UP on a wrong code — that is the whole point of a keypad — so the buzz is
+            // said on the pad. Pulsed, it played under the pad's own backdrop and all the captain saw was
+            // four dots going back to dots. The right code closes the pad above, so its receipt still pulses.
             _pinEntry = "";
-            ShowPulseMessage("The panel buzzes red — wrong code. 🔴");
+            SayItWhereTheyAreLooking("The panel buzzes red — wrong code. 🔴");
         }
     }
 

@@ -219,6 +219,143 @@ sibling's canvas), `TheSilentFindsGetACardTests` (which floor, which room, and t
 `TheSilentFindsAreRaisedOnceTests` (one caller each, each fenced by its own latch, and the mess's box holding
 exactly the machines the deck draws).
 
+## 4b. The hall, and the doors along the back of it ★ owner's ask — #751
+
+Owner, 2026-08-06: *"The Canteen is way too small… It needs to house like 80 customers… I am thinking like Mos
+Eisley Space port size bar,"* and, an hour later, *"Definitely want to make the B1 bar be fancy ... and have
+cabinet-spaces for sensitive negotiations."*
+
+Both rooms are story-grade and take §4a's pattern exactly: a first-entry card, once per excursion, raised by
+standing in the room rather than by pressing anything. The hall's card is about **money** and the cabinet's is
+about **memory**; neither is about what the building is for, and §0's canon rule holds without effort because
+neither room has anything to do with what is below.
+
+### `art/b1-cantina-hall.jpg` — 🍸 THE HALL
+
+- **Slot:** `UndergroundComplex.CantinaHallArtUrl`, raised once per excursion on **entering the B1 cantina
+  hall**. `Amenity.Contains` is the containment law and, for a hall, that is the hall's own carved box
+  (`UndergroundComplex.Hall.Contains`) rather than a room-sized one.
+- **Composition:** a *fancy* company canteen at Mos Eisley scale, underground. Poured concrete structure, but
+  laid out like a hotel dining room somebody over-funded: twenty round tops in a 2/4/6 mix with **cloth on
+  them**, a long bar counter down the far wall, poured pillars with **brass collars** breaking the sightlines,
+  and light that was chosen rather than installed. Working people in work clothes at most of the tables,
+  eating, nobody looking at the viewer. Along the back wall, a **row of three padded doors**. Muted
+  desaturated palette, painterly, warm key light off the counter. **No lettering, no logos, no numbers.**
+- **Feeling:** #601's funding trail as a room. The money does not mind being seen feeding contractors; it
+  minds being asked. Nobody in frame finds any of it strange.
+
+**#756 · The hall's art is now worn TWICE.** Besides the first-entry card above, `b1-cantina-hall.jpg` is the
+floor's own **backdrop** — drawn under the vector overlay across the hall's published box, through the same
+`DeckPlan.Backdrop` seam the ship's CANTINA has worn `art/the-space-bar.jpg` through since the 3D renovation.
+Core publishes the url on the hall (`UndergroundComplex.Hall.ArtUrl`, chosen by `HallArtFor`) so the renderer
+picks nothing; alpha is `HallArtAlpha` (0.72, a shade under the ship's 0.9 because this room is thirty times a
+cabin's floor area) and walls, plates, tops, consoles and the captain all draw OVER it. Any hall wears one by
+adding a row to `HallArtFor` — the park (#759) and the head office's dining room need nothing else.
+
+### `art/b1-bar-desk.jpg` — 🍹 THE COUNTER'S OWN DESK
+
+- **Slot:** `CounterService`'s `Barkeep.DeskArtUrl`, drawn on the **counter service card** (#756) — the dialog
+  that opens when the captain presses `[E]` at THE COUNTER. Not a floor backdrop and not a first-entry card:
+  it is the picture of the thing you are standing at, on the panel you are standing at it through.
+- **Composition:** a long polished counter top with a brass rail, backlit bottle shelves glowing out of carved
+  rock, a brass espresso machine venting steam with cups warming on top, worn red leather stools — and **NO
+  ONE behind it**. No legible lettering.
+- **Feeling:** skeleton canon (#618) said as furniture. The counter does its own serving, which is worse.
+
+**#780 — the same file now has a SECOND slot, and that is the point.** Owner, live: *"see how in the space
+bars we have the image of bar desk at the spot where the bar desk is."* The desk is drawn on the **deck** as
+well, over the counter's own carved box (`UndergroundComplex.Hall.Spots`, at `SpotArtAlpha` 0.96 — harder than
+the hall's floor art at 0.72, because a counter is an OBJECT with edges and not the room's ambience). One
+picture, two jobs: the panel you order through and the furniture you walk up to. Any fixture after it wears
+one by publishing a `SpotArt` where it is carved — the park's windows (#759) are next in line.
+
+### `art/b1-park-behind-windows.jpg` — 🌳 THE VIEW FROM THE STOOL
+
+- **Slot:** `Interior.TheStools.SeatedArtUrl`, drawn on the **counter service card** in place of the bar desk
+  **while the captain is up on a stool** (#756). Owner: *"I do not see the park through the bar windows?"* —
+  standing you are looking at the counter, seated you are looking over it, so the picture follows the posture.
+  This is the park's first appearance in the game; #759 keeps the rest of it.
+- **Composition:** a window wall behind the counter, and beyond the glass real grass in mown courses under a
+  painted sky. No people, no signage, no legible lettering.
+- **Feeling:** the most expensive thing in the building, and nobody in the room looks at it. Nothing in the
+  game ever says what a green is doing under a hundred and fifty metres of rock (§13.8), and the caption says
+  only what it IS.
+
+### The card under the glass, photographed — 🍽🥃 FIVE MENU ITEMS
+
+- **Slot:** `Drink.ArtUrl` (#780), a thumbnail beside the row on the counter's menu. Optional per item, and
+  optional on purpose: COMPANY COFFEE has none and every haven bar's card stays text, so a row without a
+  picture draws as a row and not as a hole.
+- **Files:** `art/food-cage-breakfast.jpg`, `art/food-subbasement-stew.jpg`, `art/drink-local-pour.jpg`,
+  `art/drink-bottom-shelf.jpg`, `art/drink-long-drop.jpg`.
+- **Feeling:** the menu jokes about the deep and is never right about it. The photographs are appetising in
+  the way a company canteen's photographs are appetising, which is its own joke.
+
+### `art/b1-your-own-table.jpg` — 🪑 THE TABLE YOU TOOK (waiting)
+
+- **Slot:** `SittingAlone.WaitingArtUrl`, drawn on the **sit panel** (#757/#778) — the card that opens when the
+  captain presses `[E]` at a top with nobody at it. Same idiom as the counter's desk one section up: the
+  picture of the thing you are sitting at, on the panel you are sitting at it through. Chosen by
+  `SittingAlone.ArtFor(resting: false)`, off the same flag that picks the panel's opening sentence, so the
+  picture and the prose can never describe two different minutes.
+- **Composition:** first person from your own chair. Worn scratched steel tops, a tin mug and a folded sheet of
+  paper in front of you, and **the chair opposite pulled slightly out and empty**. The hall alive and blurred
+  beyond — working people eating and arguing in overalls, poured pillars, hanging lamps — and, small in the far
+  background, a keep at the lit counter. No lettering.
+- **Feeling:** the empty chair **is** the wait beat. Sitting down alone in a room where nobody knows you is a
+  choice to be findable, and this is that choice with nobody in it yet.
+
+### `art/b1-short-rest.jpg` — 🥾 THE SHORT REST (resting)
+
+- **Slot:** `SittingAlone.RestingArtUrl`, the SECOND state of the same panel — `ArtFor(resting: true)`, which
+  `SittingAlone.SitReadsAsRelaxed` decides: a pour bought at the counter still in hand (#784's own
+  `APourInFrontOfYou`, the one reading there is), **or** a quiet watch. Owner,
+  live: *"Definitely a cold drink and legs up on adjacent chair and some notebooks / papers on table when we
+  rest there and some mystic looking food."*
+- **Composition:** the same table and the same chair — **your boots up on it**, laces trailing. A tall sweating
+  glass of something amber, an open notebook covered in handwriting with loose papers and a pen beside it, and
+  two tin plates of iridescent violet-and-green **food nobody would recognise**. The hall carries on behind,
+  warm and busy. No lettering.
+- **Feeling:** the game's one good minute. Nobody in this building needs anything from you, and it will not
+  last. The empty chair of the waiting plate is the chair your feet are on — same table, same minute, other
+  posture.
+
+**Canon note (#783):** the relaxation prose is the owner's own, lifted verbatim into `SittingAlone`
+(`RelaxedSitLine`, `TheDrinkLine`, `StoodUpRelaxedLine`). The rest has **two openings**, ruled at canon
+review: the filed line names a cold glass sweating into your hand, and the trigger fires on a quiet watch
+*with or without* a purchase — so a drinkless rest gets `RelaxedSitDryLine` instead (#740: a sentence owns its
+own facts). The boots are the rest and are always there; the glass is the purchase and is named only when
+somebody bought one. Whether a rest *heals* anything is #784's lane; this pair of pictures and the lines
+beside them are the register, not the mechanic.
+
+**Seam with #784, stated once:** `Map.CaptainIsRestingAtATable` is *"is the captain at a solo table"* — the
+short rest's own trigger, true on every solo sit. `SittingAlone.SitReadsAsRelaxed` is *"does this sit read as
+relaxed"* — words and pictures only. A back-to-the-wall watch still gives your breath back; it is simply not
+the sentence about boots, and not the picture of them. The **pour** has ONE reading and it is #784's
+(`Map.APourInFrontOfYou`), because a panel keeping its own window could say *"the cold glass sweat into your
+hand"* on a beat the rest engine had already decided there was no pour.
+
+**Guarded by** `RevealPlatesArePaintedTests.TheTablesTwoStatesArePainted` (both on disk, neither borrowing the
+counter's canvas) and `YouCanSitAtAnEmptyTableTests.THE_SIT_PANEL_DrawsTheTableItIsAPanelFor` (in the card's
+own subtree, framed, and with no text over it — #782).
+
+### `art/b1-cabinet.jpg` — 🚪 THE CABINET
+
+- **Slot:** `UndergroundComplex.CabinetArtUrl`, raised once **total** (never once per door) on entering any of
+  the three cabinets. `UndergroundComplex.Hall.CabinetAt` is the containment law.
+- **Composition:** a small enclosed side room off the hall. Six chairs around one round table wiped past
+  clean, one heavy **padded door** shut, no window and no line of sight out. On the wall a **plain wall
+  telephone with no dial**, square on and unremarked. Empty of people. Even light, catalogue-flat, nothing
+  spooky — the room is furniture, and the dimensions of what it is *for* are the whole of the horror.
+  **No lettering.**
+- **Feeling:** a room with no memory, in a building whose entire output is records.
+
+**Canon note:** the telephone with no dial is canon furniture of a cabinet from here on — it receives and
+never dials. It has no mechanics and nothing anywhere explains it.
+
+**Guarded by** `RevealPlatesArePaintedTests.TheHallAndTheCabinetArePainted` (both on disk, neither borrowing a
+sibling's canvas) and `TheCantinaHallTests` (which room, once, and the prose verbatim).
+
 ## 5. Plot items get a card of their own ★ owner's ask — #614
 
 Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door
@@ -277,3 +414,27 @@ issued against. *(House law §0, and the grep that enforces it.)*
 > low-key lighting, no text, no lettering, no numbers, no logos, no readable writing, no visible faces.
 
 - **Painted 2026-08-03**, first pass. Guarded by `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.
+
+---
+
+## #804 — the round stops at you
+
+### `art/the-round-stops-at-you.jpg` — 👮 THE CHALLENGE
+
+- **Slot:** `PatrolBeat.ChallengeArtUrl`, drawn on the ViewObject card `Map.Patrol.TheRoundStopsAtYou` raises
+  the moment a guard on a beat registers the captain. **One plate for all four rungs** of the wallet read
+  (this site's pass, another site's pass, the cage chit, nothing at all): the card's body is the same
+  sentence whichever way it goes, because the man in the picture has not read the wallet yet either, and the
+  verdict lives in the card's own amber row (#736) rather than in the art.
+- **Composition:** a contract guard in a shotcrete corridor of bolt plates, **palm out and up**, clipboard
+  under the arm, a laminated pass on his chest. Bored patience, not menace — a man who has done this a
+  hundred times tonight. Faint chalk scrawls on the walls (an accidental #794 nod). 16:9. No lettering.
+- **Feeling:** the register the owner named on the same issue — *"except when they give the
+  we-are-not-so-different-you-and-I speech"*. He is a tired employee on a rotation with a badge like the one
+  in your wallet, filed by the same hand upstairs. Nothing in the picture says so and nothing ever will.
+- **Canon-bound** (house law §0): the plate may never show what the rounds are guarding, and the guard is
+  never drawn as a villain.
+
+- **Generated by the owner 2026-08-08**; wired 2026-08-09 (#804 shipped caption-only under the degradation
+  law). Guarded by `TheRoundIsWalkableTests.TheChallengeCardWearsThePaintingAndThePaintingShipped` — the card
+  names it AND the jpg is on disk, because an art seam that hides its own failure needs both halves.

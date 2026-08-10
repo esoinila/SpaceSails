@@ -377,15 +377,28 @@ public sealed class TheLiftPanelTests
     {
         // Depth is paid for in air, and the panel is where that is decided — so it must state it rather than
         // leave the captain to remember which floors hold pressure.
+        //
+        // ── #802 · AND THIS GUARD IS WHY THE SURFACE ROW LIED FOR AS LONG AS IT DID ────────────────────────
+        //
+        // It used to read `stop.Level >= 0 || HoldsPressure(body, stop.Level)`. That first clause is not a
+        // fact about the world; it is a HOLE cut to fit the row it was auditing. Every stop on every panel
+        // was made to agree with the one pressure fact EXCEPT the one that had been typed by hand — so the
+        // sweep looked exhaustive, ran green on every body, and blessed `Pressurised: true` over SURFACE
+        // while the sim spent tank on that ground from the first step and the plate, the gauge and the card
+        // in the wallet all said vacuum.
+        //
+        // The house's fifth bug class in its cheapest form: the assertion was right, and the world it was
+        // handed could not tell pass from fail. The clause is gone. There is no floor in this game the panel
+        // may answer for itself, and the SURFACE is the last one that should ever have had an exemption —
+        // it is the ground every excursion starts and ends on. See TheSurfaceIsVacuumTests for the law
+        // stated across the sim, the plate and the gauge as well as this button.
         foreach (string body in Bodies)
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 foreach (UndergroundComplex.LiftStop stop in Panel(body, level))
                 {
-                    Assert.Equal(
-                        stop.Level >= 0 || UndergroundComplex.HoldsPressure(body, stop.Level),
-                        stop.Pressurised);
+                    Assert.Equal(UndergroundComplex.HoldsPressure(body, stop.Level), stop.Pressurised);
                 }
             }
         }

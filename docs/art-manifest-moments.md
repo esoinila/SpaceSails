@@ -68,8 +68,14 @@ Ctrl-U). It restores the session without a browser.
   needed.
 
 ## 3. `art/collector-hail.jpg` — GRAPPLES ✅ PAINTED
-- **Beat:** `CollectorHail` · every time (rare by nature) · **CARD**, and it never defers — it *is* the danger
+- **Beat:** `CollectorHail` · every time (rare by nature) · **HOSTED** (#777), and it never defers — it *is* the danger
 - **Slot:** `.busted-collector-hail` (was `docs/art-manifest-busted.md` item 3, unpainted since PR-BUSTED).
+- **Hosted, not carded (#777):** this canvas is already on screen when the beat fires, because the BUSTED demand
+  panel *is* the hail. So the beat is raised through the ordinary seam — cadence spent, seen-set filed, words
+  written into the log — and the seam then raises nothing: `StoryBeats.Presentation.Hosted`, with the host named
+  in `StoryBeats.HostCard`. A card here would have been a second modal showing this identical painting on top of
+  the first. What the host owes in return is the **caption** as well as the picture (`.busted-hail-caption`),
+  because a hosted beat has no card of its own to carry its prose (#761, #736).
 - **Composition:** interior of a spacecraft bridge over the shoulder of a silhouetted captain; through the angled
   forward viewports the armoured hull of a far larger spacecraft fills the view against stars — thrusters,
   radiator fins, plating — with magnetic grapple cables stretched taut across the frame and clamped to our hull.

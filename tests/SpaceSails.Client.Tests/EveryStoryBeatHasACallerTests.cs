@@ -25,8 +25,16 @@ namespace SpaceSails.Client.Tests;
 /// <para><b>What counts as raised.</b> Only <c>RaiseStoryBeat(…)</c> — the seam every moment must knock on,
 /// where Core's cadence and presentation rules are applied. Reading a beat's <c>ArtFile</c> straight out of
 /// markup does NOT count, and that distinction is the whole point of the issue's fourth row: the BUSTED card
-/// reaches for <c>CollectorHail</c>'s painting directly, so the hail gets a picture but no cadence and no log
+/// reached for <c>CollectorHail</c>'s painting directly, so the hail had a picture but no cadence and no log
 /// line. A picture is not a beat.</para>
+///
+/// <para>#777 · <b>And that row is now paid, without weakening this rule by a comma.</b> The hail is still
+/// not counted for showing a painting; it is counted because the two edges that open the demand panel now
+/// knock on the same door every other beat knocks on. What changed is what the door DOES with it: a
+/// <c>StoryBeats.Presentation.Hosted</c> beat gets its cadence spent, its seen-set filed and its words
+/// logged, and then the seam raises nothing, because the caller's card is already the canvas. So this
+/// scanner keeps asking the one question it has always asked — <i>who calls the seam?</i> — and the answer
+/// for <c>CollectorHail</c> stopped being "nobody".</para>
 ///
 /// <para>Two shapes of call are honoured, because both exist: a literal
 /// <c>RaiseStoryBeat(StoryBeats.Beat.X, …)</c>, and an indirect one where a pure Core chooser picks the beat
@@ -42,14 +50,24 @@ public sealed class EveryStoryBeatHasACallerTests
     /// </summary>
     private static readonly Dictionary<StoryBeats.Beat, string> KnownOrphans = new()
     {
-        // #663 · CrewTemp.StandingOf already computes Solid → Grumbling → Petition → Ultimatum → Marooning.
-        // A deputation is the Petition edge and a meeting is the Ultimatum edge; both are still silent.
-        [StoryBeats.Beat.CrewDeputation] = "#663 — the CrewTemp Petition edge is still silent",
-        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge is still silent",
+        // #663 · The Petition and Ultimatum edges are the RIGHT edges, and the shipped game cannot cross
+        // either of them. Three of the inputs that could push a crew down are honest dormant constants in
+        // Map.CrewTemp (PromisesBroken, CrewLost, DaysSinceShoreLeave); every live input either helps the
+        // crew or is capped — heat stops at 3, and honest filings pull PAY down while pushing PROSPECTS up
+        // by almost as much, so the whole live space bottoms out inside Grumbling. Swept and pinned in Core
+        // (CrewTempTests.NothingTheShipActuallyTracksCanPushTheCrewPastGrumbling), written to go RED the day
+        // one of those hooks becomes real — which is the day these two become wireable. Wiring them today
+        // would be a caller that satisfies this scanner and can never fire, which is this house's fifth bug
+        // class wearing the fix's clothes.
+        [StoryBeats.Beat.CrewDeputation] = "#663 — the CrewTemp Petition edge cannot be crossed yet (see CrewTempTests)",
+        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge cannot be crossed yet (see CrewTempTests)",
 
-        // #663 · the BUSTED markup reads this beat's ArtFile directly, so the hail gets a picture but no
-        // cadence and no log line. Raising it properly is the fix.
-        [StoryBeats.Beat.CollectorHail] = "#663 — the BUSTED card reaches for the picture, not the beat",
+        // #777 · CollectorHail CAME OFF THIS LIST. Its entry read "the BUSTED card IS the hail's card; the
+        // seam has no hosted presentation" — a debt against the SEAM rather than against the wiring, and the
+        // only one of the four that named a design change as its price. #777 paid it:
+        // StoryBeats.Presentation.Hosted exists, the two demand edges raise the beat through the ordinary
+        // door, and the seam keeps the books while the panel keeps the canvas. See
+        // TheHailIsHostedByTheCardItArrivesOnTests.
     };
 
     private static string RepoRoot()
@@ -186,5 +204,20 @@ public sealed class EveryStoryBeatHasACallerTests
     {
         Assert.DoesNotContain(StoryBeats.Beat.ArcNewsBreaks, KnownOrphans.Keys);
         Assert.Contains(StoryBeats.Beat.ArcNewsBreaks, BeatsWithACaller());
+    }
+
+    /// <summary>
+    /// #777 · And the one #663 could not fix without inventing a presentation. The hail's entry named a
+    /// design change as its price — <i>"the seam has no hosted presentation"</i> — so it is off the list for
+    /// the only reason that counts here: somebody calls the seam about it.
+    ///
+    /// <para>The two assertions are deliberately both halves of the ratchet, on one beat, in one place: off
+    /// the excuse list AND actually raised. Either alone would pass on a lie.</para>
+    /// </summary>
+    [Fact]
+    public void TheCollectorHailIsRaisedAndIsNotOnTheExcuseList()
+    {
+        Assert.DoesNotContain(StoryBeats.Beat.CollectorHail, KnownOrphans.Keys);
+        Assert.Contains(StoryBeats.Beat.CollectorHail, BeatsWithACaller());
     }
 }

@@ -1526,6 +1526,15 @@
                 <div class="view-object-title">@plate.Title</div>
                 <img class="view-object-img" src="@plate.Art" alt="@plate.Title" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@plate.Caption</div>
+                @* #736 · WHAT THE ACT ACTUALLY DID, on the card the act raised. Owner, at the Gilt-Eye: the
+                   350 cr and the kept receipt — "the two facts the player acts on" — were pulsing to the HUD
+                   under this backdrop while the caption in front carried neither. The caption is the fiction;
+                   this row is the arithmetic, and the card's own subtree is the one layer the backdrop cannot
+                   blur (#680/#686's law, third organ). *@
+                @if (plate.Outcome is { Length: > 0 } plateOutcome)
+                {
+                    <div class="reveal-outcome">@plateOutcome</div>
+                }
                 <button type="button" class="view-object-close" title="Look away"
                         @onclick="() => Dismiss(CloseRevealCard)">Look away</button>
             </div>
@@ -1610,9 +1619,13 @@
                 {
                     <div class="tm-bearing">🔥 It is in the hold, and it is hot. A collector will know it on sight.</div>
                 }
-                @if (salvageOutcome.ContactEarned)
+                @* #652 · The half that outlives the payout, WITH A NAME ON IT. This line used to read
+                   "Somebody now owes you a straight answer" and there was no somebody: nothing recorded who,
+                   nothing persisted, nothing took your call. The assessor is on the ContactLedger now (and
+                   therefore in the vault), and the card says whose name is under the finding. *@
+                @if (salvageOutcome.ContactEarned && _wreckContact is { Length: > 0 } signedBy)
                 {
-                    <div class="tm-bearing">🤝 Somebody now owes you a straight answer.</div>
+                    <div class="tm-bearing">@Derelict.ContactLine(signedBy)</div>
                 }
                 <button type="button" class="btn btn-warning btn-sm mt-2"
                         @onclick="() => Dismiss(DismissWreckOutcome)">Back to the shuttle</button>
@@ -1652,8 +1665,11 @@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
             <div class="lift-panel" @onclick:stopPropagation="true">
                 <div class="view-object-title">🛗 CAR PANEL</div>
+                @* #801 · WHICH car. The line is the panel's own no longer: two cars serve this band and
+                   only one of them climbs out, so the sentence under the title is decided beside the stops
+                   it is describing. *@
                 <div class="lift-sub">
-                    This car serves its own band and no further. You are at
+                    @LiftPanelLine() You are at
                     <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
                 </div>
 
@@ -1743,6 +1759,229 @@
         </div>
     }
 
+    @* #746 · THE TABLE. You asked to sit; they waved you in; these are your moves.
+
+       Same overlay family as the barkeep's counter card (deck-offer-card) and the same backdrop as every
+       other modal down here — because it IS the same object: a conversation with somebody, with a row of
+       things you could say. The guard stop, when it comes, renders through this exact block with a different
+       Encounter.Scene in it.
+
+       #680's LAW, APPLIED FROM BIRTH: every outcome is rendered HERE, in the panel's own subtree — the one
+       layer the backdrop cannot blur. Not one move pulses its line while this panel is up. The only pulse in
+       the whole scene is TAKE YOUR LEAVE, and that one is correct precisely because the panel is gone. *@
+    @* #784 PHASE TWO · THE FRAME DOCKS, IT DOES NOT DIM.
+
+       Owner, live at a taken table with the panel up — his screenshot showed the card centred and the
+       backdrop dimming the whole hall AND the brand-new park behind its glass to near-black: "the seated
+       frame docks, it does not dim… the hall stays lit, the A* walkers stay visible, the park stays green.
+       The full card returns only for conversations."
+
+       So the ONE @if below forks on Map.Seated.cs's SeatedIsDocked, and the fork is the whole feature:
+
+         seated-idle  → the strip. No .view-object-backdrop is written into the DOM AT ALL — the guard
+                        asserts the scrim's ABSENCE, which is #780's lesson read in reverse.
+         conversation → the block that was always here, backdrop, art, moves and prose untouched (#778/#787).
+
+       Nothing about the CARD changed. That matters: the haulier ladder, its odds, its one-per-watch law and
+       every line in it ship exactly as they were, and when #731's walker crosses the hall for real she will
+       flip Solo from outside and this card will come up over a room the player was already watching. *@
+    @if (_table is { } tab)
+    {
+    @if (SeatedIsDocked)
+    {
+        <div class="seated-dock" role="status" aria-label="@SpaceSails.Core.SeatedHud.StripLabel">
+            @* THE CUSTOMER LINE, in the AIR gauge's register (#740). Every figure on it is the figure the
+               mechanic is running on — Map.Seated.cs hands Core the pour window the rest engine doubles off,
+               the pip ledger the rest engine writes, and the watch fill the approach roll is scaled by. *@
+            @if (SeatedCustomerLine() is { Length: > 0 } customer)
+            {
+                <div class="seated-dock-line">@customer</div>
+            }
+
+            @* The latest thing that happened at this table — #757's silence lines, the body's footnote, the
+               write-up that just landed. One slot, replaced, exactly as the card's own outcome row was. *@
+            @if (tab.Outcome is { Length: > 0 } dockedSaid)
+            {
+                <div class="seated-dock-said">@dockedSaid</div>
+            }
+
+            @* …and a running dig says so here too — the sentence, AND the clock beside it.
+
+               #784, owner live on the phase-2 build: "the progress bar is kind of small there... it might be
+               good to have it on the dialog... took me a while to notice it." The rectangle over the
+               captain's own mark stays (the one progress language, #562/#696, and honest at a glance from
+               across the hall) — but a seated captain's eyes are HERE, and a clock drawn where nobody is
+               looking is #782's readability law failing at time instead of at type. So the strip carries the
+               primary read at the strip's own width, and the fraction is Core's same Fraction() the deck
+               rectangle is fed by, so the two can never disagree about one dig. *@
+            @if (ProcessingUnderway() is { } dockedBusy)
+            {
+                <div class="seated-dock-said seated-dock-busy">@dockedBusy</div>
+                @if (ProcessingFraction() is { } dockedDug)
+                {
+                    <div class="seated-dock-dig"
+                         role="progressbar"
+                         aria-label="@SpaceSails.Core.Processing.Glyph digging"
+                         aria-valuemin="0" aria-valuemax="100"
+                         aria-valuenow="@((int)(dockedDug * 100))">
+                        <div class="seated-dock-dig-fill" style="width:@((int)(dockedDug * 100))%"></div>
+                    </div>
+                }
+            }
+
+            <div class="seated-dock-actions">
+                @foreach (SpaceSails.Core.Encounter.Move move in TableMovesOnTheTable())
+                {
+                    SpaceSails.Core.Encounter.Move m = move;
+                    bool open = TableMoveOnOffer(m);
+                    <button type="button"
+                            class="btn btn-sm @(TableMoveIsUrged(m) ? "btn-warning" : "btn-outline-light")"
+                            disabled="@(!open)"
+                            title="@(open ? m.Label : TableMoveRefusal(m))"
+                            @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
+                }
+                @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
+                   refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
+                   press, because that is how the gumshoe rule gets learned. *@
+                <button type="button"
+                        class="btn btn-sm @(CanSpreadTheCaseHere ? "btn-outline-light" : "btn-outline-secondary")"
+                        title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                        @onclick="OpenTheSpread">
+                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpaceSails.Core.SeatedSpread.SpreadLabel
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseTable)">
+            <div class="deck-offer-card table-card" @onclick:stopPropagation="true">
+                <div class="deck-offer-giver">@tab.Plate</div>
+
+                @* #783 · THE TABLE YOU ARE AT, DRAWN ON THE PANEL YOU ARE AT IT THROUGH. Owner, live at a
+                   taken table: "the pop up could have Gen AI here." Same seam #756 put the counter's own desk
+                   on the barkeep card through — an image in the card's own flow, ABOVE the prose and never
+                   behind it, which is how #782's contrast law is kept by construction here: no text sits on
+                   the picture at all, so there is nothing to be unreadable over.
+
+                   TWO STATES, TWO PICTURES. The empty chair opposite IS the wait beat; boots up on that same
+                   chair with a cold glass is the other thing sitting down can be (#783's relaxation
+                   register). Which one shows is SittingAlone's own answer, off the same flag the opening
+                   line is chosen with — a panel that picked its own would be free to draw an empty chair
+                   under a sentence about your feet being on it. *@
+                @if (tab.ArtUrl is { } tableArt)
+                {
+                    <img class="table-art" src="@tableArt" alt="" aria-hidden="true" />
+                }
+
+                @* The seats are the reason you may sit here at all (#746/#739), so the panel says them.
+                   Core's numbers, not the renderer's — the same call that drew the top. *@
+                <div class="table-seats small">
+                    @tab.Scene.Setting — seats @tab.Seats, @(tab.Free == 1 ? "one chair free" : $"{tab.Free} chairs free")
+                </div>
+
+                @* #680 · THE ANSWER, INSIDE THE DIALOG. *@
+                @if (tab.Outcome is { Length: > 0 } saidAtTable)
+                {
+                    <div class="table-outcome">@saidAtTable</div>
+                }
+                @* §5.0's homage: the player watches the numbers add up. Shown only when dice actually
+                   decided something — a modifier stack printed under a fixed outcome would be theatre. *@
+                @if (tab.Math is { Length: > 0 } tableMath)
+                {
+                    <div class="table-math small">🎲 @tableMath</div>
+                }
+
+                <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
+
+                <div class="deck-offer-actions table-actions">
+                    @* #746 · ASKING TO SIT IS ITS OWN BEAT — the one the owner said was missing. Until it is
+                       pressed, the only two things a stranger standing at somebody's table may do are ask
+                       for the chair and walk away. *@
+                    @if (!tab.Joined)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning"
+                                title="Ask for the empty chair"
+                                @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Join)">@SpaceSails.Core.CanteenTable.AskToJoin</button>
+                        <button type="button" class="btn btn-sm btn-outline-light"
+                                title="Think better of it. It costs nothing."
+                                @onclick="() => Dismiss(CloseTable)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
+                    }
+                    @* #749 · ONLY WHAT IS ON THE TABLE. A move you have not earned is still drawn and still
+                       refused out loud (#603); a move that is an ANSWER to a sentence nobody has spoken yet
+                       is not drawn at all, because you cannot decline an offer that was never made. Core's
+                       own call, so a checkpoint rendering through this block gets the same law. *@
+                    @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? TableMovesOnTheTable() : [])
+                    {
+                        SpaceSails.Core.Encounter.Move m = move;
+                        bool open = TableMoveOnOffer(m);
+                        @* The fitter's ask is HIGHLIGHTED once the hand has waved you toward it — the
+                           NO-AND's second effect, and the only thing in this panel that is styling rather
+                           than state. *@
+                        <button type="button"
+                                class="btn btn-sm @(TableMoveIsUrged(m) ? "btn-warning" : "btn-outline-light")"
+                                disabled="@(!open)"
+                                title="@(open ? m.Label : TableMoveRefusal(m))"
+                                @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
+                    }
+                </div>
+
+                @* Putting something on the table fans the pocket open right here — a second press, never a
+                   mode, for #614's reason: a captain deciding WHAT to put down must not be one mis-click
+                   from having put something down. *@
+                @if (tab.Joined && tab.Showing)
+                {
+                    <div class="table-showables">
+                        @if (_satchel.Count == 0)
+                        {
+                            <div class="satchel-empty">Nothing in your pockets to put down.</div>
+                        }
+                        @foreach (SpaceSails.Core.Satchel.Item carried in TableShowables())
+                        {
+                            SpaceSails.Core.Satchel.Item show = carried;
+                            <button type="button" class="satchel-item table-showable"
+                                    title="Put it on the table where everyone can see it"
+                                    @onclick="() => TableShow(show)">
+                                <span class="satchel-item-name">@SatchelLabel(show)</span>
+                            </button>
+                        }
+                    </div>
+                }
+
+                <button type="button" class="view-object-close"
+                        title="Stand up. It costs nothing and it never will."
+                        @onclick="() => Dismiss(CloseTable)">Close</button>
+            </div>
+        </div>
+    }
+    }   @* …and the seated region closes. Two frames, one occupation of one table. *@
+
+    @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
+       when sitting down it should ask with a pop-up whether I want to stand up again."
+
+       Drawn AFTER the table so it lands on top of it — it is a question about that panel and it has to be
+       the thing the eye and the cancel key both reach first. Plain words and nothing else (#782/#783): the
+       question, what it costs when it costs something, and the two answers. Esc is the second road to "stay
+       where you are", and Enter to "stand up" (see TryConfirmTopOverlay's flagged exception). *@
+    @if (_standUpAsk)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
+            <div class="deck-offer-card stand-up-card" @onclick:stopPropagation="true">
+                <div class="deck-offer-giver">@SpaceSails.Core.SeatedPosture.StandUpAsk</div>
+                @if (StandingUpCostsARest)
+                {
+                    <div class="table-outcome">@SpaceSails.Core.SeatedPosture.StandUpCostsTheRest</div>
+                }
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            @onclick="() => Dismiss(StandUpFromTable)">@SpaceSails.Core.SeatedPosture.StandUpYes</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            @onclick="() => Dismiss(KeepYourSeat)">@SpaceSails.Core.SeatedPosture.StandUpNo</button>
+                </div>
+            </div>
+        </div>
+    }
+
     @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
        instrument it is a list of things to TRY, and every answer is definite. *@
     @if (_showSatchel)
@@ -1750,7 +1989,12 @@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
             <div class="satchel" @onclick:stopPropagation="true">
                 <div class="view-object-title">
-                    @(_satchelPage == SatchelPage.Notes ? "📓 WHAT YOU WROTE DOWN" : "🎒 WHAT YOU ARE CARRYING")
+                    @(_satchelPage switch
+                    {
+                        SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
+                        SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
+                        _ => "🎒 WHAT YOU ARE CARRYING",
+                    })
                 </div>
 
                 @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
@@ -1772,23 +2016,138 @@
                             @onclick="() => _satchelPage = SatchelPage.Notes">
                         📓 NOTES
                     </button>
+                    @* #784 · THE SPREAD, and the tab exists only when there is a table under it. Owner's law:
+                       "writing things down requires sitting down to be properly done" — and the tab follows
+                       the posture rather than standing there greyed out, because on your feet this is not a
+                       page you are being refused, it is a page that does not apply. The refusal a captain
+                       DOES need to meet (the bar desk) is inside the page, on the seat that has one. *@
+                    @if (CaptainIsSeatedAnywhere)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
+                                title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                                @onclick="() => _satchelPage = SatchelPage.Spread">
+                            🗂 SPREAD
+                        </button>
+                    }
                 </div>
 
-                @if (_satchelPage == SatchelPage.Notes)
+                @* #784 · THE SPREAD. Owner: "we can't do that without a place to lay the docs we make notes
+                   from" — so this page IS the table surface, and every row on it is a paper lying on it.
+
+                   The press starts the DIGGING BAR (Map.Seated.cs → BeginProcessing, Processing.Work.Write):
+                   the one channel this surface has, the one progress rectangle it draws, over the captain's
+                   own mark on a deck that is still running. Owner's register, kept quiet in the prose:
+                   "we are digging for info and understanding."
+
+                   No control is hidden and none is disabled (#212/#603). The bar desk's refusal is a
+                   SENTENCE you get by pressing, because that is how the gumshoe rule gets learned. *@
+                @if (_satchelPage == SatchelPage.Spread)
                 {
-                    @* #690 · Read-only, and default to the ground underfoot: at a door the captain wants what
-                       THIS building has said, not the memoirs. Both filters come out of Core's own grouping
-                       (FieldNotes.Here / PerPlace), so the tab cannot invent a second way to name a place. *@
+                    <div class="satchel-sub">@SpaceSails.Core.SeatedSpread.SpreadBlurb</div>
+
+                    @if (_satchelOutcome is { Length: > 0 } spreadSaid)
+                    {
+                        <div class="satchel-outcome">@spreadSaid</div>
+                    }
+                    else if (SpreadRefusal is { Length: > 0 } spreadNo)
+                    {
+                        <div class="satchel-outcome">@spreadNo</div>
+                    }
+
+                    @if (ProcessingUnderway() is { } spreadBusy)
+                    {
+                        <div class="satchel-outcome">@spreadBusy</div>
+                    }
+
+                    @if (SpreadableFinds() is { Count: > 0 } spreadable)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in spreadable)
+                            {
+                                SpaceSails.Core.Satchel.Item dig = lying;
+                                <div class="satchel-row">
+                                    @* Through SpreadDigClicked and not WriteItUp directly: a successful
+                                       press CLOSES this dialog (#696 shuts the pocket so the deck comes
+                                       back), and a click that closes a dialog leaves focus on a button that
+                                       no longer exists — the map then takes no keys at all. Found by
+                                       playing it. *@
+                                    <button type="button" class="satchel-item spread-item"
+                                            title="@WriteUpHint(dig)"
+                                            @onclick="() => SpreadDigClicked(dig)">
+                                        <span class="satchel-item-name">@SatchelLabel(dig)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadRowVerb(dig)
+                                        </span>
+                                    </button>
+                                    @* #798 · …AND THE OTHER END OF THE EVENING. Owner: "those trash cans
+                                       are needed so we get rid of the processed materials without
+                                       connecting them to us too clearly, like leaving them to the table."
+                                       The loop is sit, dig, book, BIN — and the bin has to be on the page
+                                       the digging happened on, or the last rung is somewhere else.
+
+                                       Never disabled: with no bin within reach it says so, on this page,
+                                       and names what would fix it. *@
+                                    @if (RipIsOffered(dig))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(dig)"
+                                                @onclick="() => RipItUp(dig)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SeatedSpread.NothingToWorkLine</div>
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Notes)
+                {
+                    @* #741 · THE NOTEBOOK. Owner, from the chair: "the notes become EXPANDING TEXT nodes —
+                       title-first, collapsed by default… the opened node houses its text as bullets… the
+                       note is structured for CONNECTING, not for prose-reading."
+
+                       And the instrument, in his own words: "I guess it could be a red pen only used to
+                       connect the things", with the gesture "select one, select the other — connected".
+
+                       Every arrangement decision on this page — which rows sit together, which pair carries
+                       a red edge, what a title says, whether the pen may come out — is CaseThreads', asked
+                       once per draw. This markup renders rows and decides nothing. *@
                     <div class="satchel-notes-filter">
-                        <button type="button" class="satchel-filter @(_notesEverywhere ? "" : "on")"
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Here ? "on" : "")"
                                 title="Only what this body and this site have told you"
-                                @onclick="() => _notesEverywhere = false">📍 this ground</button>
-                        <button type="button" class="satchel-filter @(_notesEverywhere ? "on" : "")"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Here)">📍 this ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Everywhere ? "on" : "")"
                                 title="The whole book, ground by ground"
-                                @onclick="() => _notesEverywhere = true">🥾 every ground</button>
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Everywhere)">🥾 every ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.TheCase ? "on" : "")"
+                                title="The whole book in the order the red lines put it"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.TheCase)">🧵 the case</button>
                     </div>
 
-                    @if (_notesEverywhere)
+                    @* #741 · THE PEN. One control, drawn everywhere and disabled nowhere (#212/#603): on
+                       your feet or at a bar top it answers with the sentence that says what would fix it,
+                       which is how the gumshoe rule gets learned. Picking it up is not a menu — it changes
+                       what pressing a title MEANS, which is the whole of the fiction. *@
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } penSaid)
+                    {
+                        <div class="satchel-outcome">@penSaid</div>
+                    }
+
+                    @if (_notesView == NotesView.Everywhere)
                     {
                         <div class="satchel-sub">
                             Every ground you have turned over, the ones you stood on most recently first.
@@ -1800,10 +2159,12 @@
                                 @foreach (SpaceSails.Core.FieldFinding found in book)
                                 {
                                     <div class="satchel-place">🥾 @found.Place</div>
-                                    @foreach (SpaceSails.Core.FieldNote line in found.Lines)
-                                    {
-                                        <div class="satchel-note">@line.Glyph @line.Text</div>
-                                    }
+                                    <NotebookNodes Rows="@NotebookPage(found.Lines)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
                                 }
                             </div>
                         }
@@ -1812,6 +2173,42 @@
                             <div class="satchel-empty">
                                 The book is blank. It fills the way everything out here fills — one room at a
                                 time, and only the ones you turn over.
+                            </div>
+                        }
+                    }
+                    else if (_notesView == NotesView.TheCase)
+                    {
+                        @* The one reading where a line drawn between two GROUNDS can put its two entries
+                           side by side. The place stops being a heading and becomes a tag on the node — the
+                           order belongs to the case here, and a ground is a fact about an entry like any
+                           other. *@
+                        <div class="satchel-sub">
+                            The whole book in the order your own lines put it. The book does not know what
+                            any of them means.
+                        </div>
+
+                        @if (TheWholeCase() is { Count: > 1 } whole)
+                        {
+                            <div class="satchel-notes">
+                                <NotebookNodes Rows="@NotebookPage(whole)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                @SpaceSails.Core.CaseThreads.NothingToConnectLine
                             </div>
                         }
                     }
@@ -1827,10 +2224,12 @@
                         @if (NotesFromThisGround() is { Count: > 0 } here)
                         {
                             <div class="satchel-notes">
-                                @foreach (SpaceSails.Core.FieldNote line in here)
-                                {
-                                    <div class="satchel-note">@line.Glyph @line.Text</div>
-                                }
+                                <NotebookNodes Rows="@NotebookPage(here)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
                             </div>
                         }
                         else if (_fieldNotes.Count == 0)
@@ -1955,6 +2354,38 @@
                                     <button type="button" class="satchel-leave"
                                             title="@LeaveHintFor(item)"
                                             @onclick="() => LeaveItem(item)">🫳</button>
+                                    @* #784 · WRITE IT UP PROPERLY — the field book's other register, and
+                                       posture is the gate. Owner's law: "writing things down requires
+                                       sitting down to be properly done." Standing, this refuses OUT LOUD
+                                       and the leave control beside it still files the moving-knee scrawl
+                                       exactly as it always has; seated at a table the book takes the entry
+                                       AND the sheet stays in your pocket.
+
+                                       Drawn on your FEET as well as in a chair, and live either way — the
+                                       refusal is how the law is learned, and #603 says a refusal is said
+                                       rather than hidden behind a control that is not there. It goes only
+                                       when there is genuinely nothing left to write. *@
+                                    @if (CanWriteUp(item))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@WriteUpHint(item)"
+                                                @onclick="() => WriteItUp(item)">@SpaceSails.Core.SeatedPosture.WriteGlyph</button>
+                                    }
+                                    @* #798 · RIP IT AND BIN IT — the third answer, beside take and leave.
+                                       Owner: "I would not like to leave them at table in canteen… we need
+                                       option to destroy them by ripping and binning etc?"
+
+                                       Drawn only on EVIDENCE, because on a handful of rounds this is not a
+                                       refusal, it is a verb that does not apply — the same rule the spread
+                                       tab follows about posture. Live wherever it IS drawn and never
+                                       disabled (#212/#603): with no bin in reach it answers with the
+                                       sentence that says what would fix it. *@
+                                    @if (RipIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(item)"
+                                                @onclick="() => RipItUp(item)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
                                  </div>;
                         }
 
@@ -2036,6 +2467,15 @@
                 {
                     <div class="view-object-caption">@cap</div>
                 }
+                @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
+                   (#736) on the other full-screen card, because the surface raises this one. The
+                   dossier is the case it was grown for: the assembly said two to four sentences and fired
+                   every one of them as a pulse UNDER this backdrop, so the captain closed a card onto
+                   nothing. A region, not a slot: they all fit, and nothing has to be picked. *@
+                @if (vo.Outcome is { Length: > 0 } voOutcome)
+                {
+                    <div class="reveal-outcome">@voOutcome</div>
+                }
                 <button type="button" class="view-object-close" title="Put it back down and step away" @onclick="() => Dismiss(CloseViewObject)">Close</button>
             </div>
         </div>
@@ -2100,17 +2540,23 @@
                     <button type="button" class="pin-pad-key" title="Key a zero into the access code" @onclick='() => PinPush("0")'>0</button>
                     <button type="button" class="pin-pad-key pin-pad-key-go" title="Try this code on the hatch" @onclick="SubmitPin">↵</button>
                 </div>
+                @* #736 · The buzz, said on the pad. A wrong code leaves the pad up and blanks the four slots,
+                   and the sentence that explained why was pulsing to the HUD under this backdrop. *@
+                @if (_pinOutcome is { } pinSaid)
+                {
+                    <div class="panel-outcome">@pinSaid</div>
+                }
                 <button type="button" class="pin-pad-cancel" title="Back off — leave the hatch locked" @onclick="CancelPin">Cancel</button>
             </div>
         </div>
     }
 
-    @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
+    @* Deck / first-person pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
-    @if (_deckMode && _pulseMessage is not null)
+    @if (_deckMode && _pulse.Message is not null)
     {
-        <div class="deck-pulse-toast">@_pulseMessage</div>
+        <div class="deck-pulse-toast">@_pulse.Message</div>
     }
 
     @* A bar stranger's contract, slid across the table (go-ashore quests, M-Q1): shown over the deck
@@ -2255,7 +2701,42 @@
     @if (_deckMode && _barMenu is { } keep)
     {
         <div class="deck-offer-card">
-            <div class="deck-offer-giver">🍺 @keep.Name · @keep.BarName</div>
+            @* #756 · ONE CARD, TWO KINDS OF COUNTER. Owner: "we could copy a lot of those from say the Tilt
+               bar at Uranus" — so the B1 cantina's counter is this card with a different venue behind it,
+               not a second card. Everything that needs a PERSON (the keep's own pour, a round for the room,
+               asking what they've heard) is gated on keep.SelfService, because 150 m down there is nobody
+               back there to ask: the counter does its own serving, which is worse. *@
+            @* #756 · …AND ONE CARD, TWO POSTURES. Standing at the counter it is the counter's card; up on a
+               stool it is the stool's, and the plate says which seat. Not a second card and not a second
+               menu — see Map.Stool.cs for why the one-E-per-fixture rule points here. *@
+            <div class="deck-offer-giver">
+                @if (_stool is { } seatedPlate)
+                {
+                    @(seatedPlate.WithNeighbour
+                        ? SpaceSails.Core.Interior.TheStools.NeighbourPlate
+                        : SpaceSails.Core.Interior.TheStools.StoolPlate(seatedPlate.Index))
+                }
+                else
+                {
+                    @($"{(keep.SelfService ? "🍸" : "🍺")} {keep.Name} · {keep.BarName}")
+                }
+            </div>
+            @* #756/#759 · WHAT YOU ARE LOOKING AT CHANGES WITH THE POSTURE, because the view does. Owner:
+               "I do not see the park through the bar windows?" Standing, you are looking AT the bar desk;
+               up on a stool you are above the bottles with the window wall in front of you, and what is
+               behind the glass is the green. Core owns both pictures and the caption; this picks by whether
+               you sat down. Same onerror-hide law as every other art slot — no file, no frame. *@
+            @if (_stool is not null)
+            {
+                <img class="bar-desk-art" src="@SpaceSails.Core.Interior.TheStools.SeatedArtUrl" alt=""
+                     aria-hidden="true" onerror="this.style.display='none'" />
+                <div class="bar-view-caption">@SpaceSails.Core.Interior.TheStools.SeatedArtCaption</div>
+            }
+            else if (keep.DeskArtUrl is { } deskArt)
+            {
+                <img class="bar-desk-art" src="@deskArt" alt="" aria-hidden="true"
+                     onerror="this.style.display='none'" />
+            }
             <div class="deck-offer-blurb">
                 House special: <strong>@keep.DrinkName</strong> — @keep.DrinkFlavor
             </div>
@@ -2301,14 +2782,69 @@
             }
             @* #4 SundayMorningWind — the talking drinks menu: more than one type (Space Gin, Space Beer,
                Rocket Fuel + the house special), each with its colourful Leisure-Suit-Larry-style flavour.
-               This is where the Larry colour lives. Buy any of them for yourself; all at the going rate. *@
+               This is where the Larry colour lives. Buy any of them for yourself; all at the going rate.
+
+               #780 · AND IT IS IN THE CARD'S BODY, ABOVE THE PINNED FOOT. Owner, live at the B1 counter:
+               "How do I buy the drink here?... There is no button to pay there?" and "menu is not readable —
+               text and background are both dark." Both sentences are ONE fault, and it was never a colour:
+               the menu used to be the LAST child of this card, AFTER .deck-offer-actions — which #735 pins
+               with `position: sticky; z-index: 3` and a 12rem box-shadow SCRIM whose whole job is to darken
+               whatever slides under the foot. A static sibling that follows a positioned one paints beneath
+               it, so the six priced items sat under 92%-opaque black: still in the DOM, still hit-testable,
+               and read by a captain as a greyed-out panel behind glass. #680's law one turn further on —
+               IN THE DOM IS NOT ON THE SCREEN, and neither is UNDER THE SCRIM.
+
+               So the menu is prose, and prose goes in the body: it scrolls with the card (#754's cap and
+               overscroll), and the foot pins BELOW it where the scrim falls on nothing. Every bar in the
+               game renders through this block, so the Tilt's card is fixed by the same move. *@
+            @if (_showBarMenu)
+            {
+                <div class="bar-menu">
+                    @* #756 · The header stops promising one flat rate, because a card with a 2 cr coffee
+                       and a 12 cr double on it cannot have one. Each row prices itself off Core
+                       (Drink.PriceAt), so the label, the enabled-ness and the debit are one number. *@
+                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : $"🍸 THE MENU — {keep.DrinkPrice} cr a glass")</div>
+                    @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
+                    {
+                        Core.Drink d = drink;
+                        int cost = d.PriceAt(keep.DrinkPrice);
+                        bool isFood = d.Category == Core.DrinkCategory.Food;
+                        <div class="bar-menu-item">
+                            @* #780 · THE SPECIALS, SEEN. Owner asked for the card's items to be pictured, and
+                               the art landed before the wiring. Optional per item (Drink.ArtUrl), so COMPANY
+                               COFFEE and every haven bar's text-only card render exactly as they always did —
+                               and the frame onerror-hides like every other art slot in the game, because a
+                               missing file must cost a picture and never a row.
+
+                               #782 · The thumbnail stands BESIDE the words at a fixed small size and never in
+                               place of them: the name, the price and the line are the row. *@
+                            @if (d.ArtUrl is { } dishArt)
+                            {
+                                <img class="bar-menu-art" src="@dishArt" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            }
+                            <div class="bar-menu-words">
+                                <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy" disabled="@(_credits < cost)"
+                                        title="@($"Order the {d.Name} — {cost} cr")" @onclick="@(() => BuyDrink(d))">@(isFood ? "🍽" : "🥃") @d.Name · @cost cr</button>
+                                <span class="bar-menu-flavor">@d.Flavor</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
             <div class="deck-offer-actions">
-                <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
-                        title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>
+                @if (!keep.SelfService)
+                {
+                    <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
+                            title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>
+                }
                 <button type="button" class="btn btn-sm btn-outline-light" title="See the full drinks menu" @onclick="ToggleBarMenu">📜 @(_showBarMenu ? "Hide the menu" : "See the menu")</button>
-                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
-                        title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
-                <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                @if (!keep.SelfService)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
+                            title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                }
                 @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
                    (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@
                 @if (KaamosBarSeamAvailable())
@@ -2325,23 +2861,41 @@
                        anything when your own gathered small print answers itself on your own table. *@
                     <button type="button" class="btn btn-sm btn-outline-info" title="@NebulaBarSeamTitle()" @onclick="AskAboutNebula">@NebulaBarSeamLabel()</button>
                 }
+                @* ── #756 · THE HIGH CHAIRS ────────────────────────────────────────────────────────────
+                   Owner, live: "Also there should be high chairs so sitting at the bar desk is also
+                   possible." ONE E AT THE FIXTURE, and the seat verb lives on the card that press opens —
+                   #757's rule kept rather than worked around (a row of eight consoles bolted along five
+                   deck-units would have put nine press-targets inside one arm's length of each other).
+
+                   The verb is drawn whether or not there is a free seat (#212: an affordance never hides);
+                   a full row refuses OUT LOUD in the notice slot above. *@
+                @if (CounterHasStools())
+                {
+                    @if (_stool is null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="Get up on one of the tall seats at the counter"
+                                @onclick="TakeAStool">🪑 Take a stool</button>
+                    }
+                    else
+                    {
+                        @* #749 · ONLY WHAT HAS BEEN SAID. A reply to a sentence nobody has spoken is not a
+                           control that is disabled, it is a control that is not there — Core's own call, so
+                           the stool and the table cannot end up with two ideas of when an answer exists. *@
+                        @foreach (SpaceSails.Core.Encounter.Move stoolMove in StoolMovesOnTheTable())
+                        {
+                            SpaceSails.Core.Encounter.Move sm = stoolMove;
+                            bool canPress = StoolMoveOnOffer(sm);
+                            <button type="button"
+                                    class="btn btn-sm @(canPress ? "btn-outline-light" : "btn-outline-secondary")"
+                                    disabled="@(!canPress)"
+                                    title="@(canPress ? sm.Label : StoolMoveRefusal(sm))"
+                                    @onclick="() => StoolMoveClicked(sm.Id)">@sm.Label</button>
+                        }
+                    }
+                }
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="() => Dismiss(CloseBarkeep)">Done</button>
             </div>
-            @if (_showBarMenu)
-            {
-                <div class="bar-menu small">
-                    <div class="bar-menu-head">🍸 THE MENU — @keep.DrinkPrice cr a glass</div>
-                    @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
-                    {
-                        Core.Drink d = drink;
-                        <div class="bar-menu-item">
-                            <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy" disabled="@(_credits < keep.DrinkPrice)"
-                                    title="@($"Pour yourself a {d.Name} — {keep.DrinkPrice} cr")" @onclick="@(() => BuyDrink(d))">🥃 @d.Name</button>
-                            <span class="bar-menu-flavor">@d.Flavor</span>
-                        </div>
-                    }
-                </div>
-            }
         </div>
     }
 
@@ -2909,9 +3463,59 @@
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseCaptainsRemote)">
             <div class="view-object" @onclick:stopPropagation="true">
-                <div class="view-object-title">@SilentRunning.PanelTitle</div>
-                <div class="view-object-caption">@SilentRunning.PanelBlurb</div>
+                <div class="view-object-title">@(_designateOpen ? ShootTheLock.PanelTitle : SilentRunning.PanelTitle)</div>
+                <div class="view-object-caption">@(_designateOpen ? ShootTheLock.PanelBlurb : SilentRunning.PanelBlurb)</div>
 
+                @* #803 · DESIGNATE — the handset's fourth verb, and the only one that spends anything. Two
+                   pages on one panel rather than a second pop-up: the answer to a press must be readable on
+                   the pop-up that was pressed (#769), and a captain who opened the remote to point a gun has
+                   not changed rooms. Every row here is a full sentence at phone size (#782) — a gun's row
+                   says what is in it, a target's row says how far and what it costs, and the trigger says
+                   the price on its own face, so nothing is spent by a press whose consequence was a glyph. *@
+                @if (_designateOpen)
+                {
+                    @if (_designateUnit is null)
+                    {
+                        <div class="vent-readout">WHICH GUN</div>
+                        <div class="vent-actions">
+                            @foreach (var gun in DesignatableGuns())
+                            {
+                                string unit = gun.Unit;
+                                <button type="button" class="btn btn-sm btn-outline-warning"
+                                        title="Point this one"
+                                        @onclick="() => PickTheGun(unit)">
+                                    @ShootTheLock.GunRow(unit, gun.Rounds, Ammunition.ById(gun.AmmoId))
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="vent-readout">@_designateUnit — WHAT IT CAN SEE</div>
+                        <div class="vent-actions">
+                            @foreach (var mark in _designateTargets)
+                            {
+                                DesignateTarget aimedAt = mark;
+                                <button type="button"
+                                        class="btn btn-sm @(mark.Shootable ? "btn-warning" : "btn-outline-secondary")"
+                                        title="@(mark.Shootable ? ShootTheLock.FireLabel(mark.Cost) : ShootTheLock.RefusalLine(mark.Sign))"
+                                        @onclick="() => FireOnTheLock(aimedAt)">
+                                    @ShootTheLock.TargetRow(mark.Sign, mark.RangeDu, mark.Cost)
+                                </button>
+                            }
+                        </div>
+                        @if (_designateTargets.Count > 0)
+                        {
+                            <div class="vent-sub">Press one to fire on it. Anything with nothing to break on it will say so and cost you nothing.</div>
+                        }
+                    }
+
+                    <button type="button" class="btn btn-sm btn-outline-info" @onclick="BackToTheSwitches">
+                        @ShootTheLock.BackLabel
+                    </button>
+                }
+                else
+                {
                 <div class="vent-actions">
                     <button type="button"
                             class="btn btn-sm @(_weaponsTight ? "btn-warning" : "btn-outline-warning")"
@@ -2941,10 +3545,31 @@
                             @(_soundQuietly ? "✊ QUIET SEARCH — knuckles only" : "📡 Sounder (quick, and heard)")
                         </button>
                     }
+
+                    @* #803 · The fourth switch, and the only one that points at something. On the ground
+                       only: the guns it commands are machines a captain has SET DOWN, and there is nowhere
+                       to set one down from the bridge. *@
+                    @if (_surface is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@ShootTheLock.PanelBlurb"
+                                @onclick="OpenDesignate">
+                            @ShootTheLock.OpenLabel
+                        </button>
+                    }
                 </div>
 
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
                 <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+                }
+
+                @* #736 · What the last switch DID. Every switch on this handset orders something that is
+                   somewhere else — bots across the field, a boat on the pad — so the sentence is the whole
+                   of the feedback, and it was pulsing under this panel's own backdrop. *@
+                @if (_remoteOutcome is { } remoteSaid)
+                {
+                    <div class="panel-outcome">@remoteSaid</div>
+                }
 
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseCaptainsRemote)">Pocket it</button>
             </div>
@@ -2980,6 +3605,14 @@
                         </button>
                     }
                 </div>
+
+                @* #736 · What the last door did — the one answer on this board a captain cannot check by
+                   looking, because the door is two rooms away. The refusal that names the missing card was
+                   pulsing under this board's own backdrop. *@
+                @if (_doorBoardOutcome is { } doorSaid)
+                {
+                    <div class="panel-outcome">@doorSaid</div>
+                }
 
                 <div class="vent-sub">@LockedDoor.WhichSideLine</div>
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseDoorBoard)">Step back</button>
@@ -3020,6 +3653,14 @@
                         🔔 Have a go at it
                     </button>
                 </div>
+
+                @* #736 · What the last go at it answered. The panel STAYS OPEN on every outcome but the
+                   lockdown — that is what makes it a thing you argue with — so the sentence that reads the
+                   die belongs here and not in a banner behind the blur. *@
+                @if (_alarmOutcome is { } alarmSaid)
+                {
+                    <div class="panel-outcome">@alarmSaid</div>
+                }
 
                 <div class="vent-sub">@LabSecurity.LockdownLine</div>
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseAlarmPanel)">Leave it</button>
@@ -3784,9 +4425,9 @@
                     <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
                 }
             }
-            @if (_pulseMessage is not null)
+            @if (_pulse.Message is not null)
             {
-                <div class="text-warning">@_pulseMessage</div>
+                <div class="text-warning">@_pulse.Message</div>
             }
             @if (_captureEngaged)
             {
@@ -5037,10 +5678,19 @@
                            cables across the frame and the collector's hull filling the ports. The heading rides
                            on the art rather than instead of it — the words are the alarm, the picture is why it
                            is frightening. *@
+                        @* #777 · AND IT IS THE BEAT'S OWN CANVAS NOW, not a borrowed picture. CollectorHail
+                           is presented HOSTED (StoryBeats.Presentation.Hosted): the caller raises it through
+                           the one seam, which spends the cadence and files the words in the log, and then
+                           raises nothing — because THIS panel is where the beat lands. Which makes the
+                           caption's home here or nowhere. #761: a plot-significant moment is told clearly,
+                           on the surface the player is looking at. #736: the words must not be the ones
+                           behind the backdrop. So the shipped sentence rides the shipped painting, exactly
+                           as it would have on a card of its own — and nothing is shown twice. *@
                         <div class="busted-hail busted-collector-hail">
                             <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
                                  alt="" aria-hidden="true" onerror="this.style.display='none'" />
                             <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
+                            <div class="busted-hail-caption">@StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign)</div>
                         </div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
                         <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
@@ -5126,7 +5776,7 @@
                             <div class="busted-roll">Collector: @rl.Defender.Describe()</div>
                         }
                         <div class="busted-quote">"Nice try. Now it costs extra." — they take the submission terms plus a harsher cut.</div>
-                        <button type="button" class="btn btn-danger busted-close" @onclick="BustedResistLostConfirm">Brace for it</button>
+                        <button type="button" class="btn btn-danger busted-close" @onclick="() => PressAndRefocus(BustedResistLostConfirm)">Brace for it</button>
                         break;
 
                     case BustedEncounter.Stage.Bolivia:
@@ -5187,7 +5837,7 @@
                                law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
                                was quietly going round it. Both faults are one fix: read the seam. *@
                             <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
-                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
                         </div>
                         break;
 
@@ -5208,7 +5858,7 @@
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
                             <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
-                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
                         </div>
                         break;
 
@@ -5222,7 +5872,7 @@
                             </div>
                             <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
                             <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
-                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
                         </div>
                         break;
 

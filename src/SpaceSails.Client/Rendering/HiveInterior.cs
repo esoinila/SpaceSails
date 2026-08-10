@@ -20,9 +20,31 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public static class HiveInterior
 {
-    /// <summary>Where the captain stands when the lift doors open — just off the car, on the spine.</summary>
-    public static (double X, double Y) SpawnOn(in SurfaceLayout.Field field)
+    /// <summary>Where the captain stands when the lift doors open — just off the car, on the spine.
+    ///
+    /// <para>#801 · The CAGE's doorstep. Every caller that means "the way in" still means this one; the ones
+    /// that mean "the car I just rode" say which (<see cref="SpawnOn(in SurfaceLayout.Field,
+    /// UndergroundComplex.ShaftKind)"/>).</para></summary>
+    public static (double X, double Y) SpawnOn(in SurfaceLayout.Field field) =>
+        SpawnOn(field, UndergroundComplex.ShaftKind.Cage);
+
+    /// <summary>#801 · Where the doors of THIS car open onto the floor.
+    ///
+    /// <para>The pace out of the car is the shaft's own (<see cref="UndergroundComplex.Shaft.Landing"/>) and
+    /// not a sign written here: the two alcoves hang off opposite faces of the spine, so "a pace out" is
+    /// +1 du for one of them and −1 for the other, and a renderer that kept its own copy of that would put
+    /// a captain inside a wall the first time a car moved. Falls back to the cage where the ground would not
+    /// take a second car — #602's law, said about a shaft that may not exist.</para></summary>
+    public static (double X, double Y) SpawnOn(
+        in SurfaceLayout.Field field, UndergroundComplex.ShaftKind car)
     {
+        foreach (UndergroundComplex.Shaft shaft in UndergroundComplex.ShaftsOn(field))
+        {
+            if (shaft.Kind == car)
+            {
+                return shaft.Landing;
+            }
+        }
         (double x, double y) = UndergroundComplex.ShaftAt(field);
         return (x, y + 1.0);
     }
@@ -32,10 +54,15 @@ public static class HiveInterior
     /// (<see cref="PatronRota.WatchIndex"/>). Passed in already frozen rather than read from a clock here, so
     /// the room that is DRAWN and the room the [E] key later asks about can never be two different rooms.
     /// Defaults to the first watch, which is what every audit and lab wants: a fixed roster to walk.</param>
+    /// <param name="locksShotOpen">#803 · The locks a designated shot has taken the hasp off, by
+    /// <see cref="LockKey"/>. Replayed onto every rebuild exactly the way an emptied room is, so a door that
+    /// was opened stays open through a floor change, a satchel press and a save — a world that grows its
+    /// walls back while the captain is looking somewhere else is the oldest bug on this ground.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
-        IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0)
+        IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0,
+        IReadOnlyCollection<string>? locksShotOpen = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -84,6 +111,24 @@ public static class HiveInterior
                 false, IsHull: !pastTheSeam, IsSeamless: pastTheSeam));
         }
 
+        // ── #759 · THE GLAZING, PUT BACK INTO THE DECK AS WHAT IT IS ────────────────────────────────────
+        //
+        // Owner's pinned requirement for this room's own pictures: a) A VIEW TO THE PARK and b) A WINDOW
+        // WALL BETWEEN. Core keeps these segments OUT of floor.Walls so nothing can draw them as poured
+        // concrete; they come back in here as walls carrying IsWindow — the flag the ship's bridge glass and
+        // her cantina's panoramic window have used since the deck was built, so the ink is the game's own
+        // window ink and this file invents nothing.
+        //
+        // BOTH HALVES OFF ONE SEGMENT. It is a wall, so the collision field takes it and no body crosses it;
+        // it is a window, so the eye does. Two segments on one line — one to draw, one to collide — is the
+        // drawn-versus-simulated split this house has a name for.
+        foreach (SurfaceLayout.Wall w in floor.Windows ?? [])
+        {
+            walls.Add(new(
+                (float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2,
+                IsWindow: true, IsHull: !pastTheSeam));
+        }
+
         foreach (SurfaceLayout.Doorway d in floor.Doorways)
         {
             doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: true));
@@ -92,8 +137,24 @@ public static class HiveInterior
         // #585 · THE DOORS THAT NEVER OPEN. The owner asked for these by name as the illusion of scale, and
         // they are drawn Locked — cold, always shut, with a real wall behind them — so nothing about them
         // ever hints that a way through exists. [E] reads the sign; that is all it will ever do.
+        //
+        // #803 · …unless somebody took the hasp off it with a sentry. That is a LOUD, deliberate, six-round
+        // act performed with the captain's own handset, and it is the one thing in the game allowed to move
+        // one of these — so the illusion is untouched by walking past forty of them and spent, one door at a
+        // time, by a captain who decided a particular door was worth telling the whole floor about.
         foreach (UndergroundComplex.LockedDoor l in floor.Locked)
         {
+            if (locksShotOpen is not null && locksShotOpen.Contains(LockKey(level, l)))
+            {
+                // No wall behind it now, and the leaf is drawn as the ordinary way-through it has become.
+                // The plate stays readable — an affordance that vanishes when it is used is #212's shape —
+                // and it wears the hole rather than the padlock so the deck says which of the two it is.
+                doors.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, Imported: true));
+                consoles.Add(new(DeckPlan.ConsoleKind.HiveSign,
+                    (float)((l.X1 + l.X2) / 2), (float)((l.Y1 + l.Y2) / 2), $"{ShotOpenGlyph} {l.Sign}"));
+                continue;
+            }
+
             doors.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, Locked: true));
             walls.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, false, false));
             consoles.Add(new(DeckPlan.ConsoleKind.HiveSign,
@@ -145,33 +206,204 @@ public static class HiveInterior
         // collided with by the loop at the top of this method, and nothing here has to know their shape.
         // A renderer that laid out its own bar counter would be one more caller doing geometry about a
         // building it does not own (§13.15).
-        var tables = new List<(float X, float Y)>();
+        var tables = new List<DeckPlan.TableTop>();
+
+        // #792 · …and the tall seats, which Core has known the occupancy of since #756 and which have never
+        // once been on the floor. Same rule as the tops below it: this file ASKS, and decides nothing.
+        var stools = new List<DeckPlan.StoolSpot>();
+
+        // #793 · …and the PARK'S BENCH ENDS, which have been drawn as labelled fixtures since #790 and have
+        // never once said which half of one is free. Same rule a third time: Core owns who is on a bench
+        // (ParkBenches.On, off #790's own lone figure and nothing new), and this list only carries the
+        // answer to the pen.
+        var benchSeats = new List<DeckPlan.BenchSpot>();
+
+        // ── #756 · THE FLOOR WEARS ITS ART ─────────────────────────────────────────────────────────────
+        //
+        // Owner, walking the biggest social room in the game and finding bare grid: "let's put todo to have
+        // gen-AI Bar image on the background like we have in space ports."
+        //
+        // THE SAME SEAM THE SHIP HAS USED SINCE THE 3D RENOVATION — DeckPlan.Backdrop, drawn by DeckView
+        // under every vector overlay, exactly the way the ship's CANTINA wears art/the-space-bar.jpg. This
+        // list was the bare `[]` in the constructor call at the bottom of this method; nothing about the
+        // renderer had to learn a new idea, because a hall is a floor zone and a floor zone is what a
+        // backdrop already was.
+        //
+        // WHICH PICTURE, AND OVER WHAT BOX, BOTH COME FROM CORE. The url is Hall.ArtUrl and the rectangle is
+        // the hall's own published box — so the day a hall is carved a du wider its art follows without
+        // anybody remembering to come here, and the park (#759) wears one by adding a row to HallArtFor and
+        // nothing else at all.
+        var backdrops = new List<DeckPlan.Backdrop>();
+
         foreach (UndergroundComplex.Amenity a in floor.Amenities)
         {
-            consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
-            labels.Add(((float)a.X, (float)(a.Y - 7.6), a.Plate));
-            foreach ((double tx, double ty) in a.Tables)
+            // ── #791 · ONE FIXTURE, ONE CARD, AND THE WHOLE DESK-FRONT TO PRESS IT FROM ────────────────
+            //
+            // Owner, live at the B1 bar: "The Bar desk is really long now, but there is only one spot to get
+            // service on it… we would need an E-bus of the bar desk length instead of one bar keep cashier
+            // at a single spot."
+            //
+            // It is still ONE console — one dot, one plate, one card — and that is the point of doing it
+            // this way rather than bolting a row of consoles along the bar. A row would be a dozen [E]
+            // targets in a room already dotted with table consoles, which is the very crowding #212 and
+            // both "there two e's are too close to each others" reports were about; and every one of them
+            // would open the same card, so eleven of the twelve would be furniture pretending to be a
+            // choice. A fixture that IS eighty du long says the true thing once.
+            //
+            // THE LENGTH IS CORE'S. Hall.Service is the run the carve laid, off the same (u, v) as the
+            // counter's own wall segments, its photograph and its stools. Nothing here measures a bar.
+            UndergroundComplex.ServiceRun? run = a.Hall?.Service;
+            consoles.Add(new(
+                DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture,
+                SpanX: (float)(run?.HalfSpanX ?? 0.0), SpanY: (float)(run?.HalfSpanY ?? 0.0)));
+            if (a.Hall is { ArtUrl: { } floorArt } painted)
             {
-                tables.Add(((float)tx, (float)ty));
+                // Top-left, W, H — the ship's own convention, and Y is the box's TOP edge because deck +y
+                // is up. Hall.X0/Y0/X1/Y1 are already min/max normalised where they are carved, so there is
+                // no orientation to work out here: a rib that runs down the field and one that runs up it
+                // hand this the same rectangle.
+                backdrops.Add(new(
+                    floorArt,
+                    (float)painted.X0, (float)painted.Y1,
+                    (float)(painted.X1 - painted.X0), (float)(painted.Y1 - painted.Y0),
+                    UndergroundComplex.HallArtAlpha));
             }
 
-            // ── #709 · AND, ON B1 ONLY, SOMEBODY SITTING AT THEM ──────────────────────────────────────
+            // ── #780 · AND THE FURNITURE, ON TOP OF THE FLOOR IT STANDS ON ────────────────────────────
+            //
+            // Owner, live: "see how in the space bars we have the image of bar desk at the spot where the
+            // bar desk is." AFTER the hall's own art in this list and never before it, because DeckView
+            // walks Backdrops in order — a counter painted first would have the room's wallpaper laid back
+            // over it, which is one picture drawn twice and neither of them seen. Still under every vector
+            // mark, which is the one law this whole seam exists to keep.
+            //
+            // The rectangle is Core's and the alpha is Core's; this loop measures nothing. It converts a box
+            // (X0,Y0,X1,Y1) into the ship's own top-left+W+H convention, and that is the entire contribution
+            // a renderer is allowed to make to a room somebody else carved.
+            foreach (UndergroundComplex.SpotArt spot in a.Hall is { } furnished ? furnished.Painted : [])
+            {
+                backdrops.Add(new(
+                    spot.Url,
+                    (float)spot.X0, (float)spot.Y1,
+                    (float)(spot.X1 - spot.X0), (float)(spot.Y1 - spot.Y0),
+                    UndergroundComplex.SpotArtAlpha));
+            }
+
+            // ── #792 · THE TALL SEATS, FREE AND TAKEN ──────────────────────────────────────────────────
+            //
+            // Owner: "there should be high chairs so sitting at the bar desk is also possible" (#756, built)
+            // and then, on the 8th: "Now I have trouble finding a free table… lol story of my travelling
+            // life right here."
+            //
+            // WHERE is the hall's (Core carved the row out of the counter's own segments); WHO IS ON THEM is
+            // TheStools' (the same call the [E] press asks, off the same frozen watch, so the seat drawn
+            // free is the seat pick-or-default will hand over). Both halves come from somewhere else on
+            // purpose — a renderer that laid out eight stools would be doing geometry about a bar it did not
+            // carve, and one that decided which were busy would be the drawn room and the pressed room
+            // disagreeing, which is the bug class this project has paid for most often.
+            if (a.Hall is { } counter)
+            {
+                // Asked over the whole row before any of it is drawn, because "is there anybody at this
+                // counter" is a fact about the ROW and not about a seat: the free stool beside somebody and
+                // the free stool in an empty bar are two different offers, and they are the same two offers
+                // the tops make. One language, one question.
+                bool anybody = false;
+                for (int s = 0; s < counter.StoolRow.Count; s++)
+                {
+                    anybody |= TheStools.Taken(bodyId, level, s, canteenWatch);
+                }
+                for (int s = 0; s < counter.StoolRow.Count; s++)
+                {
+                    (double sx, double sy) = counter.StoolRow[s];
+                    stools.Add(new(
+                        (float)sx, (float)sy, TheStools.Taken(bodyId, level, s, canteenWatch), anybody));
+                }
+            }
+
+            // #751 · A hall's plate is stencilled beside its DOOR, which is on whichever face the rib is
+            // on — so Core says where, exactly as it says where the board hangs. The 7.6 du offset below is
+            // measured off a 15 x 12 room and would hang the sign in mid-floor in a room fifty du deep.
+            labels.Add(a.Hall is { } signed
+                ? ((float)signed.PlateX, (float)signed.PlateY, a.Plate)
+                : ((float)a.X, (float)(a.Y - 7.6), a.Plate));
+            // ── #709/#746 · THE TOPS, AND — ON B1 ONLY — SOMEBODY SITTING AT THEM ─────────────────────
             //
             // Owner: "we should have people in the bar... we have cover story" and, in the same breath,
-            // "for now let's keep the people in B1."
+            // "for now let's keep the people in B1." Then, #746: "tables should seat 2/4/more, not all
+            // pairs" — which is only worth having if somebody can ask whether a seat is FREE.
             //
-            // The Hive's first people. WHO and WHETHER are both Core's (CanteenRegulars.Sitting) — the
-            // B1 law is a fact about the building, and a renderer that decided it here would put the
-            // owner's ruling somewhere no test can reach. This asks and draws, exactly as the facility
-            // plate does two hundred lines down (#694).
+            // ONE CALL FOR BOTH. This used to walk a.Tables for the round tops and then separately ask
+            // CanteenRegulars.Sitting who was at them, which is two sources for one fact — the exact shape
+            // #709's own docs warn about (the drawn room and the pressed room disagreeing). Core now
+            // answers with the tops, their seat counts and their occupancy in one list, off the same
+            // frozen watch, and the [E] press asks that same function. The renderer decides nothing.
             //
             // They stand ON the table's own spot rather than beside it, because the table IS the seat as
             // far as the deck is concerned: Core placed those round tops (#707) and a console offset by a
             // hand-typed du would be one more caller doing geometry about furniture it does not own.
-            foreach (CanteenRegulars.Seated who in CanteenRegulars.Sitting(bodyId, level, a, canteenWatch))
+            //
+            // #751 · …and it is the same one call now that the room holds eighty. THREE TIERS COME OUT OF
+            // IT — the named regulars, the background patrons that fill the hall by the watch, and the
+            // cabinets' empty tops — and this loop cannot tell them apart, which is the point: a patron is
+            // a plate at a coordinate, drawn like any console dot, with nothing to run per frame.
+            //
+            // #792 · THE SAME ONE CALL ANSWERS THE THREE GLANCES, TOO. A top now goes onto the plan with
+            // its seat count, whether anybody is at it and whether they are TALKING — all three off this
+            // list, off this frozen watch, so the chairs drawn free are the chairs [E] will offer. The
+            // renderer downstream is handed the answers and never works one out: DeckView has no idea what
+            // a canteen is, which is #788's own discipline for the seated captain applied to everybody else
+            // in the room.
+            foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(bodyId, level, a, canteenWatch))
             {
-                consoles.Add(new(
-                    DeckPlan.ConsoleKind.HiveRegular, (float)who.X, (float)who.Y, who.Plate));
+                tables.Add(new(
+                    (float)top.X, (float)top.Y, top.Seats, top.Taken, top.Talking));
+                // #757 · EVERY TOP IS NOW A CONSOLE, and which kind it is is the one fact the room already
+                // knows: somebody at it, or nobody. Owner, live in the hall: "I have empty table but I
+                // cannot sit down." An empty top used to be drawn as a ring on the floor and nothing else,
+                // so [E] there had literally nothing to answer — the refusal the issue is titled after was
+                // an ABSENCE, which is the one kind of refusal a player cannot read.
+                //
+                // Still one call, still the same frozen watch. The renderer does not decide who may be sat
+                // with; it labels what Core says is there.
+                //
+                // …and TAKING one is offered in the room outsiders are admitted to and NOWHERE ELSE, which is
+                // Core's own B1 ruling (CanteenRegulars.PeopleSitHere) rather than a clause typed here.
+                // B17's staff mess is hall-class as well and just as full of tops, and its whole identity is
+                // that the shift has not come — twenty FREE TABLE plates in it would be this renderer handing
+                // that room a verb its own design refuses.
+                if (top.Plate is { } plate)
+                {
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveRegular, (float)top.X, (float)top.Y, plate));
+                }
+                else if (CanteenRegulars.PeopleSitHere(bodyId, level, a))
+                {
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveTable, (float)top.X, (float)top.Y,
+                        SittingAlone.FreeTablePlate));
+                }
+            }
+
+            // ── #751 · THE CABINETS, PLATED ────────────────────────────────────────────────────────────
+            //
+            // Owner: "have cabinet-spaces for sensitive negotiations." A row of doors down the back wall of
+            // a hall, each with what it is stencilled beside it — and the plate is the whole of how you get
+            // one: BY ARRANGEMENT · ASK AT THE COUNTER. No console: there is nothing in a cabinet to work,
+            // and the card fires by standing in it (the refuge idiom, same as the staff mess).
+            if (a.Hall is { } theHall)
+            {
+                // Read from the hall side, in front of the door — never from inside the cabinet, and never
+                // from the far side of the outer wall. Which side that is comes off the hall's own box
+                // rather than a sign the renderer guessed at: the cabinets stand against whichever wall the
+                // rib put them on, and this file does not know which one that was.
+                double hallMidX = (theHall.X0 + theHall.X1) / 2.0;
+                foreach (UndergroundComplex.Cabinet cabinet in theHall.Cabinets)
+                {
+                    double inward = cabinet.X > hallMidX ? -1.0 : 1.0;
+                    labels.Add((
+                        (float)(cabinet.X + (inward * (cabinet.HalfW + 2.0))),
+                        (float)cabinet.Y, cabinet.Plate));
+                }
             }
 
             // ── #709 · AND THE CORK BOARD ON THE WALL ─────────────────────────────────────────────────
@@ -190,10 +422,108 @@ public static class HiveInterior
             }
         }
 
-        // The lift, on every floor, in the same place.
+        // ── #759 · THE PARK, DRAWN ─────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "on map the park needs to Exist there next to the bar. It is an indoor park where the fresh
+        // stuff is grown that is served here on the plate."
+        //
+        // Every solid thing in it — the walls, the raised beds, the benches, the floodlight masts — is
+        // already in floor.Walls and was therefore drawn and collided with by the loop at the top of this
+        // method. Nothing here lays out a bed or decides where a bench goes; this is the SIGNAGE and the
+        // floor art, which is the whole of a renderer's business in a room Core carved.
+        if (floor.Park is { } green)
+        {
+            // The floor it wears, in panels. One 16:9 frame stretched over a room six times wider than it is
+            // deep would be a smear; Core cuts the box (ParkArtPanels) because that is geometry about a room
+            // this file does not own.
+            if (green.ArtUrl is { } parkArt)
+            {
+                foreach ((double px0, double _, double px1, double py1) in
+                    UndergroundComplex.ParkArtPanels(green))
+                {
+                    backdrops.Add(new(
+                        parkArt, (float)px0, (float)py1,
+                        (float)(px1 - px0), (float)(green.Y1 - green.Y0),
+                        UndergroundComplex.HallArtAlpha));
+                }
+            }
+
+            // The plate at the gate, in the inspectorate voice the room is stencilled in.
+            labels.Add(((float)green.X, (float)green.Y, UndergroundComplex.ParkPlate));
+
+            // What is in each bed, and where it goes when it is picked. THE FOOD CONNECTION IS THIS LINE OF
+            // STENCIL and nothing else: the bed says CANTEEN 1 and so does the counter, and no card ever
+            // points that out.
+            foreach (UndergroundComplex.GrowingBed bed in green.Beds)
+            {
+                labels.Add(((float)bed.X, (float)bed.Y, bed.Plate));
+            }
+
+            // ── #793 · THE BENCHES TAKE THE SIT VERB ───────────────────────────────────────────────────
+            //
+            // #790 shipped them as plates over solid furniture and said so in this very comment: "sitting
+            // down is #778's verb and arrives with it." It has arrived. A bench is a CONSOLE now, of its own
+            // kind, and the plate says the verb the way a free table's does (#783: "why not use words like
+            // SIT DOWN here if it means sitting down?").
+            //
+            // WHO IS ON WHICH BENCH IS CORE'S — ParkBenches.On reads #790's own lone figure and nothing was
+            // populated to make the answer interesting. The two ends go onto the plan as SEATS, in the
+            // counter's own idiom (#792/#795), so the deck can answer "is the whole bench free" from across
+            // the room: that is the question the privacy predicate is written on.
+            foreach (ParkBenches.Bench bench in ParkBenches.On(in green))
+            {
+                labels.Add(((float)bench.X, (float)(bench.Y - 2.2), UndergroundComplex.ParkBenchPlate));
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveBench, (float)bench.X, (float)bench.Y, bench.DeckPlate));
+
+                for (int end = 0; end < ParkBenches.Ends; end++)
+                {
+                    (double ex, double ey) = bench.End(end);
+                    benchSeats.Add(new(
+                        (float)ex, (float)ey,
+                        Taken: bench.Taken && end == ParkBenches.TakenEnd,
+                        BenchHasSomebody: bench.Taken));
+                }
+            }
+
+            // …and somebody on the far bench, who is scenery. Owner: "benches, the lone figure, the curve
+            // that hides the far end." A plate at a coordinate, with nothing to press: a park that started
+            // offering things would be a park that had noticed you.
+            labels.Add((
+                (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
+        }
+
+        // ── #798 · THE BINS, PLATED ────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "those trash cans are needed so we get rid of the processed materials without connecting
+        // them to us too clearly, like leaving them to the table."
+        //
+        // The BOX is already in floor.Walls — Core stood it there, so it was drawn and collided with by the
+        // loop at the top of this method, and one rectangle carries both halves. This is the stencil on it
+        // and nothing else, which is the whole of a renderer's business in a room somebody else carved.
+        //
+        // Plated and NOT a console, the park bench's own idiom one room over: tearing a document up is the
+        // SATCHEL'S verb (you have to be holding the thing), and an [E] on a bin that answered nothing would
+        // be #757's complaint restated in a corridor.
+        foreach (RipAndBin.Bin bin in floor.TheBins)
+        {
+            labels.Add((
+                (float)bin.X, (float)(bin.Y - RipAndBin.HalfDu - 1.4), bin.Plate));
+        }
+
+        // The cars, on every floor, in the same places. #801 · Both of them, off one list, each with the
+        // sign Core paints on it — a renderer choosing which console kind goes on which car would be a
+        // second opinion about a machine it does not own.
         (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(field);
-        consoles.Add(new(DeckPlan.ConsoleKind.HiveLift,
-            (float)shaftX, (float)(shaftY + UndergroundComplex.CorridorHalf + 2.5), "🛗 LIFT"));
+        foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(field))
+        {
+            bool cage = car.Kind == UndergroundComplex.ShaftKind.Cage;
+            consoles.Add(new(
+                cage ? DeckPlan.ConsoleKind.HiveLift : DeckPlan.ConsoleKind.HiveServiceLift,
+                (float)car.X,
+                (float)(car.Y + ((cage ? 1 : -1) * (UndergroundComplex.CorridorHalf + 2.5))),
+                car.Sign));
+        }
 
         foreach (SurfaceLayout.Landmark m in floor.Labels)
         {
@@ -311,7 +641,7 @@ public static class HiveInterior
         }
 
         return new DeckPlan(
-            [.. walls], [.. consoles], [.. labels], [],
+            [.. walls], [.. consoles], [.. labels], [.. backdrops],
             spawnX: SpawnOn(field).X, spawnY: SpawnOn(field).Y,
             droidCount: droidCount, fillDroids: fillDroids,
             location: (_, _) => floor.Name,
@@ -324,6 +654,8 @@ public static class HiveInterior
             // whose coordinates mean something else. The rings belong to a room now, and the room is on
             // this floor.
             tables: [.. tables],
+            stools: [.. stools],
+            benchSeats: [.. benchSeats],
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.
@@ -332,4 +664,18 @@ public static class HiveInterior
 
     /// <summary>One key per room per floor, so a searched room on B2 is not a searched room on B3.</summary>
     public static int RoomKey(int level, int roomIndex) => (level * 1000) - roomIndex;
+
+    /// <summary>#803 · What the deck wears where a lock used to be. Not the padlock (it is not locked any
+    /// more) and not nothing (the plate is still worth reading) — the same hole the card and the field book
+    /// use for a way that has been opened.</summary>
+    public const string ShotOpenGlyph = "🕳";
+
+    /// <summary>
+    /// #803 · One key per LOCK per floor. Keyed on the door's own geometry rather than on its sign, because
+    /// a branch office reuses its door vocabulary — a floor can carry two doors reading LONG STORAGE, and a
+    /// captain who shoots one of them has not opened the other. The floor plan is pure and deterministic per
+    /// (body, level), so the same door produces the same key on every rebuild, every visit and every load.
+    /// </summary>
+    public static string LockKey(int level, UndergroundComplex.LockedDoor l) =>
+        FormattableString.Invariant($"{level}|{l.X1:F2},{l.Y1:F2},{l.X2:F2},{l.Y2:F2}");
 }

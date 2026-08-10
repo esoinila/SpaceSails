@@ -192,10 +192,23 @@ public sealed class TheSilentFindsAreRaisedOnceTests
                 }
             }
 
-            Assert.True(inside.Count == 1,
+            // #775 · …and the GOODS HOIST'S shutter, on the halls that have one. It is a locked door
+            // standing inside the room by design — freight arrives in the counter's own service band, which
+            // is the one part of a mess the shift never stands in — so its plate is a console a captain can
+            // press in here, and it is the only other one allowed. What the law is FOR is unchanged: a box
+            // that reached the room across the corridor would open the mess card in somebody else's office,
+            // and this still catches exactly that.
+            int wanted = mess.Hall is { Freight: not null } ? 2 : 1;
+            Assert.True(inside.Count == wanted,
                 $"{body} B{-level}: {inside.Count} of {deck.Consoles.Length} consoles fall inside the mess " +
-                $"card's box [{string.Join(", ", inside)}] — wanted exactly the mess's own machines.");
-            Assert.Contains("HiveAmenity", inside[0], StringComparison.Ordinal);
+                $"card's box [{string.Join(", ", inside)}] — wanted the mess's own machines" +
+                (wanted == 2 ? " and the goods hoist's plate." : "."));
+            Assert.Contains(inside, i => i.Contains("HiveAmenity", StringComparison.Ordinal));
+            if (wanted == 2)
+            {
+                Assert.Contains(inside, i =>
+                    i.Contains(UndergroundComplex.FreightPlate, StringComparison.Ordinal));
+            }
             checkedFloors++;
         }
 
