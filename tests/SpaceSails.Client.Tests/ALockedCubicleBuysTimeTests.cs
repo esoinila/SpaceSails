@@ -310,16 +310,33 @@ public sealed class ALockedCubicleBuysTimeTests
         Assert.Contains("CubicleLock.KnockLine", patrol, StringComparison.Ordinal);
 
         // …and nothing on the round opens it. There is no CALL of OpensALockedCubicle anywhere, because it
-        // is a constant false and there is nothing to call — and no path from a guard to the shut set at
-        // all, which is what makes "no guard ever opens a locked cubicle" a fact about the code rather than
-        // a branch somebody could add without noticing.
+        // is a constant false and there is nothing to call; nothing anywhere in the round takes a single
+        // cubicle off the shut set; and the WALKING half of the file — everything from AdvancePatrol on —
+        // only READS that set and never writes to it. That last clause is what makes "no guard ever opens a
+        // locked cubicle" a fact about the code rather than a branch somebody could add without noticing.
         Assert.DoesNotContain("OpensALockedCubicle(", patrol, StringComparison.Ordinal);
         Assert.DoesNotContain("CubiclesShut.Remove", patrol, StringComparison.Ordinal);
-        Assert.DoesNotContain("CubiclesShut.Clear", patrol, StringComparison.Ordinal);
+
+        int loop = patrol.IndexOf("private void AdvancePatrol", StringComparison.Ordinal);
+        Assert.True(loop > 0, "the per-frame loop is not where this guard thinks it is.");
+        foreach (string write in new[] { "CubiclesShut.Add", "CubiclesShut.Remove", "CubiclesShut.Clear" })
+        {
+            Assert.DoesNotContain(write, patrol[loop..], StringComparison.Ordinal);
+        }
+
+        // The one WRITE there is lives in the floor-change spawn, where a catch dies with the floor the
+        // hand that turned it has ridden away from.
+        Assert.Contains("ex.CubiclesShut.Clear()", patrol[..loop], StringComparison.Ordinal);
 
         // THE CARD FIRES ON OPENING, through the one approach the floor already has.
         Assert.Contains("ex.CubiclesShut.Remove(key)", press, StringComparison.Ordinal);
-        Assert.Contains("TheHail(g)", press, StringComparison.Ordinal);
+        Assert.Contains("TheHail(him)", press, StringComparison.Ordinal);
+
+        // …and EVERY guard forgets on the way out, not just the one who knocked. A second man who also
+        // watched the catch go over would otherwise keep the bit and be standing outside the NEXT cubicle
+        // the captain shut, having seen nothing at all.
+        Assert.Contains("g.SawYouShutIt = false;", press, StringComparison.Ordinal);
+        Assert.Contains("foreach (Guard g in _guards)", press, StringComparison.Ordinal);
         Assert.Contains("CubicleLock.OpenedOnHimLine", press, StringComparison.Ordinal);
     }
 

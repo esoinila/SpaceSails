@@ -210,22 +210,28 @@ public partial class Map
         ShowPulseMessage(CubicleLock.UnlockedLine);
         LogAutopilotEvent(CubicleLock.UnlockedLine);
 
+        // EVERY guard forgets, and the FIRST one who was waiting takes the stop. Both halves matter. The
+        // forgetting is swept over the whole list rather than stopped at the man who knocked, because a
+        // second guard who also watched the catch go over would otherwise keep the bit and be standing
+        // outside the NEXT cubicle the captain shut, having seen nothing at all — a hide that stopped
+        // working for reasons the player cannot read. And only one of them takes the stop, because two men
+        // doing one job is #777's stacked card.
+        Guard? waiting = null;
         foreach (Guard g in _guards)
         {
-            if (!g.Knocking)
-            {
-                continue;
-            }
-
-            // He stops waiting and starts walking again. The card is the walk-up's business and always was
-            // (#833) — there is no second challenge road out of this file.
+            waiting ??= g.Knocking ? g : null;
             g.Knocking = false;
             g.Knocked = false;
             g.SawYouShutIt = false;
+        }
+
+        if (waiting is { } him)
+        {
+            // He stops waiting and starts walking again. The card is the walk-up's business and always was
+            // (#833) — there is no second challenge road out of this file.
             ShowPulseMessage(CubicleLock.OpenedOnHimLine, PulseRank.Beat);
             LogAutopilotEvent(CubicleLock.OpenedOnHimLine);
-            TheHail(g);
-            break;
+            TheHail(him);
         }
 
         StateHasChanged();

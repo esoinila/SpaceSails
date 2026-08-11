@@ -306,7 +306,14 @@ public sealed partial class Map
 
         // #821 · …and so does the hide. A floor change is a new set of doors and a new set of men, and a
         // "he walked past" line kept from the floor above would be a beat about a room nobody is in.
+        //
+        // The CATCHES go with it, and the reason is in the field's own doc: a catch is a thing a hand is
+        // holding shut, and the hand has just ridden the lift. Today it cannot happen — the only way out of
+        // a shut cubicle is to turn the catch back — but a door left OCCUPIED on a floor nobody is standing
+        // on would be a room the building had sealed against itself, forever, with nothing to say why. The
+        // set is the excursion's rather than the vault's for the same reason (see SurfaceExcursion).
         _walkedPastSaid = false;
+        ex.CubiclesShut.Clear();
 
         string bodyId = ex.Stop.Body.Id;
         int level = ex.Floor;
