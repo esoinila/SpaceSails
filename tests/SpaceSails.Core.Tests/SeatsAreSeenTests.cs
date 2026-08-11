@@ -301,4 +301,213 @@ public sealed class SeatsAreSeenTests
         Assert.True(counts.Distinct().Count() > 1,
             $"every watch has the same {counts[0]} stools taken — the row does not read the shift at all.");
     }
+
+    // ── (c) #823 · HOW MANY OF THEM THERE ARE ────────────────────────────────────────────────────────
+    //
+    // Owner, playtest 2026-08-11, sat at a canteen four-top: "it says there are two haulers eating at a
+    // table that seats four, yet there is visual indication of only one seat out of four being taken? Does
+    // the other try sit in the others lap while both try to eat?" — and then the law, stated:
+    //
+    //     "The number of people sitting at a table should match the amount of seats that are taken."
+    //
+    // Free was Seats - (Taken ? 1 : 0). A bool cannot seat a crew, and the plates have held crews since
+    // #792. The headcount is authored beside the sentence for the same reason Talking is, and these are the
+    // three questions that keeps it honest: is it there at all, does it agree with the words when the words
+    // commit to a number, and does the room the game builds respect the furniture it has.
+
+    /// <summary>
+    /// #823 · EVERY PLATE HAS A HEADCOUNT, AND THE PLATES THAT NAME ONE AGREE WITH IT.
+    ///
+    /// <para>The authored fact is checked against the only external evidence there is — the words, on the
+    /// plates that happen to commit to a number. It is NOT the plural rule reinstated: the rule cannot
+    /// answer <i>A LOADER WITH A BAD WRIST</i> or <i>CAGE CREW, OFF SHIFT</i> at all, and it is asked here
+    /// only where the sentence has already said the number out loud. A plate that says TWO and seats three
+    /// is a caption disagreeing with a room, which is this project's third named bug class.</para>
+    ///
+    /// <para>Talking implies at least two, because you cannot converse alone — the one law that ties the
+    /// two authored facts on a Face together, and the one an author adding an eleventh plate is most likely
+    /// to get wrong.</para>
+    ///
+    /// <para><b>Proven RED</b> against the arithmetic that shipped the bug — every party a party of one
+    /// (<c>StrangerHeads</c> returning 1, which is what <c>Seats - (Taken ? 1 : 0)</c> believed about every
+    /// top in the building):</para>
+    /// <code>
+    /// Failed …EVERY_PLATE_SaysHowManyPeopleAreAtIt [5 ms]
+    ///   9 plate(s) disagree with themselves:
+    ///     '◈ CAGE CREW, OFF SHIFT' is a conversation held by 1 person.
+    ///     '◈ TWO HAULIERS, EATING' is a conversation held by 1 person.
+    ///     '◈ TWO HAULIERS, EATING' says TWO and seats 1.
+    ///     '◈ SOMEBODY'S WHOLE CREW AT ONE TABLE' is a conversation held by 1 person.
+    ///     '◈ A PAIR FROM THE SCAFFOLD GANG' is a conversation held by 1 person.
+    ///     '◈ A PAIR FROM THE SCAFFOLD GANG' says PAIR and seats 1.
+    ///     '◈ THREE ON THE SAME CONTRACT' is a conversation held by 1 person.
+    ///     '◈ THREE ON THE SAME CONTRACT' says THREE and seats 1.
+    ///     '◈ A COUPLE NOT TALKING' says COUPLE and seats 1.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void EVERY_PLATE_SaysHowManyPeopleAreAtIt()
+    {
+        // The words that commit to a number, and what they commit to. Nothing derives these — they are the
+        // external evidence the authored field is measured against, which is the whole point of writing
+        // them out here instead of counting them in the shipped code.
+        var counted = new Dictionary<string, int>(System.StringComparer.Ordinal)
+        {
+            ["TWO"] = 2,
+            ["THREE"] = 3,
+            ["PAIR"] = 2,
+            ["COUPLE"] = 2,
+        };
+
+        var wrong = new List<string>();
+        int named = 0, parties = 0;
+
+        for (int f = 0; f < CanteenRegulars.StrangerPlates.Count; f++)
+        {
+            string plate = CanteenRegulars.StrangerPlates[f];
+            int heads = CanteenRegulars.StrangerHeads(f);
+
+            if (heads < 1)
+            {
+                wrong.Add($"    '{plate}' seats {heads} people — nobody is at a top somebody is at.");
+            }
+            if (heads > 1)
+            {
+                parties++;
+            }
+            if (CanteenRegulars.StrangerTalks(f) && heads < 2)
+            {
+                wrong.Add($"    '{plate}' is a conversation held by {heads} person.");
+            }
+
+            foreach ((string word, int says) in counted)
+            {
+                if (!plate.Contains(word, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                named++;
+                if (heads != says)
+                {
+                    wrong.Add($"    '{plate}' says {word} and seats {heads}.");
+                }
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} plate(s) disagree with themselves:\n{string.Join("\n", wrong)}");
+
+        // ANTI-VACUITY. A catalogue of ten lone sitters would pass every line above without the field ever
+        // having been asked a question, and a catalogue whose plates never say a number would have measured
+        // the authored fact against nothing at all.
+        Assert.Equal(10, CanteenRegulars.StrangerPlates.Count);
+        Assert.True(parties > 0, "not one plate in the crowd is more than one person.");
+        Assert.True(named >= 4,
+            $"only {named} plate(s) name a number out loud — the words are not checking the field.");
+
+        // …and a named regular is exactly one person, which is #757's whole premise: there is a chair, and
+        // somebody to ask.
+        Assert.Equal(1, CanteenRegulars.RegularHeads);
+    }
+
+    /// <summary>
+    /// #823 · NO PARTY IS DEALT A TOP IT CANNOT SIT AT, AND EVERY TOP'S FREE CHAIRS ARE THE ONES IT HAS.
+    ///
+    /// <para>The catalogue above being right buys nothing if the DEAL ignores the furniture: a whole crew of
+    /// four at a two-top is the owner's lap joke rendered by the generator instead of by the arithmetic. So
+    /// this walks the shipped rooms — every site, every floor, all six watches — and asks the two questions
+    /// a captain could ask by counting chairs.</para>
+    ///
+    /// <para><b>Proven RED</b> by putting <c>Seats - (Taken ? 1 : 0)</c> back — 331 tops in the shipped
+    /// building, which is the size of the thing the owner caught one table of:</para>
+    /// <code>
+    /// Failed …NO_PARTY_IsSeatedAtATopThatCannotHoldIt [116 ms]
+    ///   331 top(s) seat a party the furniture cannot hold:
+    ///     luna B1 w0 top 12: '◈ TWO HAULIERS, EATING' — 2 at a 4-top reports 3 chairs free (expected 2).
+    ///     luna B1 w1 top 0: '◈ A COUPLE NOT TALKING' — 2 at a 2-top reports 1 chairs free (expected 0).
+    ///     luna B1 w2 top 3: '◈ SOMEBODY'S WHOLE CREW AT ONE TABLE' — 4 at a 4-top reports 3 chairs free
+    ///       (expected 0).
+    ///     …329 more, across every site and every watch.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void NO_PARTY_IsSeatedAtATopThatCannotHoldIt()
+    {
+        var wrong = new List<string>();
+        int swept = 0, seated = 0, parties = 0, full = 0, rooms = 0;
+
+        foreach (string body in Bodies)
+        {
+            if (UndergroundComplex.TopPressurisedFloor(body) is not { } level)
+            {
+                continue;
+            }
+
+            foreach (UndergroundComplex.Amenity a in
+                     UndergroundComplex.Build(body, level, Field).Amenities)
+            {
+                rooms++;
+                for (long watch = 0; watch < Watches; watch++)
+                {
+                    foreach (CanteenRegulars.TableSeat top in
+                             CanteenRegulars.Tables(body, level, a, watch))
+                    {
+                        swept++;
+                        string where = $"    {body} B{-level} w{watch} top {top.Index}";
+
+                        if (!top.Taken)
+                        {
+                            if (top.Heads != 0)
+                            {
+                                wrong.Add($"{where}: nobody is at it and it seats {top.Heads} people.");
+                            }
+                            if (top.Free != top.Seats)
+                            {
+                                wrong.Add($"{where}: empty, {top.Seats} seats, {top.Free} free.");
+                            }
+                            continue;
+                        }
+
+                        seated++;
+                        if (top.Heads > 1)
+                        {
+                            parties++;
+                        }
+                        if (top.Free == 0)
+                        {
+                            full++;
+                        }
+
+                        if (top.Heads < 1)
+                        {
+                            wrong.Add($"{where}: '{top.Plate}' is at it and nobody is at it.");
+                        }
+                        if (top.Heads > top.Seats)
+                        {
+                            wrong.Add($"{where}: '{top.Plate}' — {top.Heads} at a {top.Seats}-top. " +
+                                "Somebody is in somebody's lap.");
+                        }
+                        if (top.Free != top.Seats - top.Heads)
+                        {
+                            wrong.Add($"{where}: '{top.Plate}' — {top.Heads} at a {top.Seats}-top " +
+                                $"reports {top.Free} chairs free (expected {top.Seats - top.Heads}).");
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} top(s) seat a party the furniture cannot hold:\n{string.Join("\n", wrong)}");
+
+        // ANTI-VACUITY, in every direction the law can be vacuous in.
+        Assert.True(rooms >= 10, $"only {rooms} room(s) were walked — this sweep is not a sweep.");
+        Assert.True(swept > 500, $"only {swept} top(s) swept.");
+        Assert.True(seated > 50, $"only {seated} occupied top(s) in the whole sweep.");
+        Assert.True(parties > 0,
+            "every occupied top in the sweep holds exactly one person — the law is never tested.");
+        Assert.True(full > 0,
+            "no top in the sweep is ever FULL — 'ask to join' is never once made to refuse, which is the " +
+            "half of this fix that changes what the game says back.");
+    }
 }

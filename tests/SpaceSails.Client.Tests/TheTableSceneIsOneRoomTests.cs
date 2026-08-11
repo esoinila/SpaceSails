@@ -82,10 +82,13 @@ public sealed class TheTableSceneIsOneRoomTests
                             if (t.Plate is { } plate)
                             {
                                 expectedPeople.Add(((float)t.X, (float)t.Y, plate));
-                                // A top somebody is at still has room for the captain — which is the whole
-                                // premise of "ask to join", and it is checked HERE against the drawn room.
-                                Assert.True(t.Free >= 1,
-                                    $"{body} B{-level}: a table with somebody at it has no chair left.");
+                                // #823 · A top somebody is at seats the party it says it seats. This used to
+                                // insist on a free chair everywhere, which was true only while every party
+                                // was a party of one; a whole crew at a four-top is FULL, and "ask to join"
+                                // refusing there is the honest answer rather than the missing one.
+                                Assert.True(t.Heads >= 1 && t.Heads <= t.Seats,
+                                    $"{body} B{-level}: '{plate}' is {t.Heads} people at a {t.Seats}-top.");
+                                Assert.Equal(t.Seats - t.Heads, t.Free);
                             }
                         }
                     }

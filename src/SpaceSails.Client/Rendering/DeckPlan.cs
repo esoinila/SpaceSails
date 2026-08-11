@@ -381,8 +381,12 @@ public sealed class DeckPlan
     /// not the same offer as an empty one.</param>
     /// <param name="Talking">…and the people at it are talking to each other, rather than sitting there on
     /// their own. The third glance, and the affordance a future overhear verb will hang off.</param>
+    /// <param name="Heads">#823 · HOW MANY of them there are, so the picture can seat the party the sim
+    /// seated. Owner, playtest 2026-08-11: <i>"there are two haulers eating at a table that seats four, yet
+    /// there is visual indication of only one seat out of four being taken."</i> The pen drew one body
+    /// because one body was all it had been handed — it was not simplifying, it had nothing to count.</param>
     public readonly record struct TableTop(
-        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false);
+        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false, int Heads = 0);
 
     /// <summary>
     /// #792 · ONE TALL SEAT AT A COUNTER. Occupancy comes down from the sim exactly as a top's does — the
