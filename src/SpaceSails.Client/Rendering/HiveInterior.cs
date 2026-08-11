@@ -355,8 +355,11 @@ public static class HiveInterior
             // in the room.
             foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(bodyId, level, a, canteenWatch))
             {
+                // #823 · …and HOW MANY of them are at it, which the pen used to have to guess at and
+                // therefore drew as one. Handed down like every other field on this record, off the same
+                // frozen watch, so the bodies on the plan are the bodies Core seated.
                 tables.Add(new(
-                    (float)top.X, (float)top.Y, top.Seats, top.Taken, top.Talking));
+                    (float)top.X, (float)top.Y, top.Seats, top.Taken, top.Talking, top.Heads));
                 // #757 · EVERY TOP IS NOW A CONSOLE, and which kind it is is the one fact the room already
                 // knows: somebody at it, or nobody. Owner, live in the hall: "I have empty table but I
                 // cannot sit down." An empty top used to be drawn as a ring on the floor and nothing else,

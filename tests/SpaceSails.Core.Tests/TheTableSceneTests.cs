@@ -134,9 +134,12 @@ public sealed class TheTableSceneTests
 
                         foreach (CanteenRegulars.TableSeat t in tops)
                         {
-                            // A seat count that a person could exhaust would make "ask to join" unreachable
-                            // at exactly the table the whole feature is about.
-                            Assert.InRange(t.Free, t.Taken ? 1 : 2, t.Seats);
+                            // #823 · The chairs left are the seats less the PARTY, and the party is what it
+                            // says it is. This read `t.Taken ? 1 : 2` while every occupied top was assumed
+                            // to hold one person — the assumption the owner counted his way out of.
+                            Assert.Equal(t.Seats - t.Heads, t.Free);
+                            Assert.InRange(t.Free, 0, t.Seats);
+                            Assert.InRange(t.Heads, t.Taken ? 1 : 0, t.Taken ? t.Seats : 0);
                         }
                     }
                 }

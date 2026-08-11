@@ -2222,14 +2222,26 @@ public sealed class DeckView
     private const float HeldBarDu = SeatBackDu;
 
     /// <summary>Draw the chairs round one top, and whoever is in them. Nothing here decides anything: the
-    /// seat count, the occupancy and the conversation all arrive on <paramref name="top"/> from the room
-    /// that owns them (#788's one-reach lesson, applied to everybody who is not the captain).</summary>
+    /// seat count, the occupancy, the HEADCOUNT and the conversation all arrive on <paramref name="top"/>
+    /// from the room that owns them (#788's one-reach lesson, applied to everybody who is not the
+    /// captain).</summary>
     private void DrawSeatsRound(float cx, float cy, in DeckPlan.TableTop top, float scale)
     {
         if (top.Seats <= 0)
         {
             return;
         }
+
+        // #823 · HOW MANY BODIES, AND WHICH CHAIRS THEY ARE IN. A party sits SPREAD ROUND the top, not
+        // stacked in chair one: three on the same contract at a six-top leave a gap between each of them,
+        // and a captain reading the room off the deck is reading exactly that. The chair a body is in is
+        // the even walk `(i * heads) % seats < heads` — the ladder a line-drawing routine climbs, and it
+        // lands on exactly `heads` chairs for any seat count the building has.
+        //
+        // Occupied and no headcount is at least one body, never none: a top the room says has somebody at
+        // it must never draw as empty, which is the failure the old code could not have and the one a new
+        // field quietly left unfilled would introduce.
+        int heads = top.Occupied ? Math.Clamp(top.Heads, 1, top.Seats) : 0;
 
         for (int i = 0; i < top.Seats; i++)
         {
@@ -2241,10 +2253,10 @@ public sealed class DeckView
 
             float sx = cx + (ux * SeatRingDu * scale), sy = cy + (uy * SeatRingDu * scale);
 
-            // The party sits in the first chair. One body per top is Core's own arithmetic (a top's Free is
-            // its seat count less at most one), so drawing a second would be the picture claiming an
-            // occupancy the room does not have.
-            if (i == 0 && top.Occupied)
+            // Is this one of the chairs the party is in? Core's own arithmetic — a top's Free is its seat
+            // count less its heads — so the bodies drawn here and the chairs the [E] press offers come out
+            // of one number, and neither can claim an occupancy the other does not have.
+            if (heads > 0 && (i * heads) % top.Seats < heads)
             {
                 float back = (SeatRingDu + SeatBackDu) * scale;
                 DrawSeg(
