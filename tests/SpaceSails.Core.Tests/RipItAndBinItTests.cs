@@ -535,6 +535,80 @@ public sealed class RipItAndBinItTests
         return kept.ToString();
     }
 
+    // ── (f) #828 · THE BIN'S OWN DOOR — THE WORDS AND THE ORDER ───────────────────────────────────────
+
+    /// <summary>
+    /// #828 · WORKED SHEETS LEAD, and nothing is hidden.
+    ///
+    /// <para>Owner's two-tier reading law: only the dig guarantees the book kept what the sheet had, so the
+    /// finished papers are the natural feed and go under the captain's thumb. The rest still come — a picker
+    /// that dropped them would be the game deciding what a captain may do with their own paper.</para>
+    ///
+    /// <para>Swept in BOTH directions and for STABILITY, because a partition is exactly the kind of law that
+    /// passes when handed a list that was already in the right order.</para>
+    /// </summary>
+    [Fact]
+    public void THE_PICKER_LeadsWithWhatIsInTheBookAndDropsNothing()
+    {
+        string[] sleeve = ["glanced-a", "dug-a", "glanced-b", "dug-b", "glanced-c"];
+        bool Dug(string id) => id.StartsWith("dug", StringComparison.Ordinal);
+
+        List<string> order = RipAndBin.WorkedLeading(sleeve, Dug);
+
+        Assert.Equal(["dug-a", "dug-b", "glanced-a", "glanced-b", "glanced-c"], order);
+        Assert.Equal(sleeve.Length, order.Count);      // nothing is dropped…
+        Assert.Equal([.. sleeve.OrderBy(s => s)], [.. order.OrderBy(s => s)]);   // …and nothing is invented.
+
+        // Both ends of the ladder: all worked and none worked are the ordinary cases, and both must come
+        // back in the sleeve's own order rather than reversed by a partition that only got tested mixed.
+        Assert.Equal(sleeve, RipAndBin.WorkedLeading(sleeve, _ => true));
+        Assert.Equal(sleeve, RipAndBin.WorkedLeading(sleeve, _ => false));
+        Assert.Empty(RipAndBin.WorkedLeading<string>([], _ => true));
+    }
+
+    /// <summary>#828 · THE PICKER NAMES THE BUCKET IT IS OVER. A title reading "the bin" would be the one
+    /// thing this whole ladder exists to refuse: which rung you fed is the entire mechanical difference
+    /// between the three, and it is the word a later arc reads back.</summary>
+    [Fact]
+    public void THE_PICKER_TitleNamesTheRungTheCaptainIsStandingAt()
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (RipAndBin.Tier tier in RipAndBin.Ladder)
+        {
+            string title = RipAndBin.PickerTitle(tier);
+            Assert.True(seen.Add(title), $"{tier} shares its picker title with another rung.");
+            Assert.Contains(RipAndBin.TheBin(tier).ToUpperInvariant(), title, StringComparison.Ordinal);
+            Assert.Contains(RipAndBin.Glyph, title, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// #828 · THE POLITE REFUSAL, and the quiet flag that is not one.
+    ///
+    /// <para>The empty-sleeve line is <c>SeatedSpread.NothingToWorkLine</c>'s kin, bin-flavoured and kept to
+    /// ONE sentence at the owner's word — and like every refusal in this feature it names what would fix it
+    /// (#603).</para>
+    ///
+    /// <para>The unworked flag is the opposite thing and must stay the opposite thing: it is a WORD ON A ROW.
+    /// Nothing in this file may turn it into a refusal, so the warning behind it says what it costs and never
+    /// that it is not allowed.</para>
+    /// </summary>
+    [Fact]
+    public void AN_EMPTY_SLEEVE_IsRefusedPolitelyAndAGLANCEDSheetIsNotRefusedAtAll()
+    {
+        Assert.Equal(1, RipAndBin.NothingToBinLine.Count(c => c == '.'));
+        Assert.Contains("paper", RipAndBin.NothingToBinLine, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(SeatedSpread.NothingToWorkLine, RipAndBin.NothingToBinLine);
+
+        // The flag is a word, not a verdict — and the warning behind it is about the BOOK, which is the only
+        // thing a dig ever bought.
+        Assert.DoesNotContain("cannot", RipAndBin.NotYetWorkedFlag, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("cannot", RipAndBin.NotYetWorkedWarning, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("must", RipAndBin.NotYetWorkedWarning, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("book", RipAndBin.NotYetWorkedWarning, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(RipAndBin.NotYetWorkedFlag, RipAndBin.AlreadyInTheBookFlag);
+    }
+
     /// <summary>Read one of Core's own source files, for the guards that are about SHAPE rather than
     /// behaviour. Walks up from the test binary the way the client's source guards do.</summary>
     private static string CoreSource(string file)
