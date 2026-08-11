@@ -2141,9 +2141,6 @@ public sealed class DeckView
     //                           sitter has none. Handed down (DeckPlan.TableTop.Talking) and never read off
     //                           a plate by this file, which is the whole reason the fact exists in Core.
 
-    /// <summary>How far out from a top's centre the chairs stand.</summary>
-    private const float SeatRingDu = 1.55f;
-
     /// <summary>How wide a chair is across its back — the bar an empty one is drawn as.</summary>
     private const float SeatChairDu = 0.62f;
 
@@ -2276,38 +2273,42 @@ public sealed class DeckView
     /// captain).</summary>
     private void DrawSeatsRound(float cx, float cy, in DeckPlan.TableTop top, float scale)
     {
-        if (top.Seats <= 0)
+        if (top.Seats <= 0 || top.Seating.Count == 0)
         {
             return;
         }
 
-        // #823 · HOW MANY BODIES, AND WHICH CHAIRS THEY ARE IN. A party sits SPREAD ROUND the top, not
-        // stacked in chair one: three on the same contract at a six-top leave a gap between each of them,
-        // and a captain reading the room off the deck is reading exactly that. The chair a body is in is
-        // the even walk `(i * heads) % seats < heads` — the ladder a line-drawing routine climbs, and it
-        // lands on exactly `heads` chairs for any seat count the building has.
-        //
-        // Occupied and no headcount is at least one body, never none: a top the room says has somebody at
-        // it must never draw as empty, which is the failure the old code could not have and the one a new
-        // field quietly left unfilled would introduce.
-        int heads = top.Occupied ? Math.Clamp(top.Heads, 1, top.Seats) : 0;
+        // How far out this top's chairs stand, read off the chairs themselves rather than off a radius kept
+        // here — the tick that says PEOPLE ARE TALKING is struck clear of the seat backs, so it has to know
+        // how wide the ring it is clearing actually is.
+        float ring = 0f;
 
-        for (int i = 0; i < top.Seats; i++)
+        // #820 · WHERE THE CHAIRS ARE AND WHO IS IN THEM — HANDED DOWN, one entry per seat, exactly as a
+        // stool's spot and a bench end have been since #792 and #793.
+        //
+        // This loop used to work the ring out for itself, out of a radius and an angle it kept privately.
+        // That was survivable while nobody sat in these chairs; #820 seats the CAPTAIN in one, and a place
+        // a body is put must not be a place a renderer invented. So the positions and the party's
+        // occupancy both arrive on the plan (#823's spread walk included — three on the same contract at a
+        // six-top leave a gap between each of them) and nothing below decides anything.
+        //
+        // A top whose seat count and chair list disagree draws what it was HANDED rather than what it was
+        // told to expect: a pen that filled in the difference would be back to deriving.
+        foreach (DeckPlan.TableChair chair in top.Seating)
         {
-            double ang = i * 2 * Math.PI / top.Seats;
-            // Screen Y runs the other way to deck Y — the same negated sine the heading spoke uses.
-            float ux = (float)Math.Cos(ang), uy = -(float)Math.Sin(ang);
+            // Only the projection is this file's: screen Y runs the other way to deck Y.
+            float ox = chair.X - top.X, oy = chair.Y - top.Y;
+            float outward = MathF.Sqrt((ox * ox) + (oy * oy));
+            ring = MathF.Max(ring, outward);
+            float ux = outward < 1e-4f ? 1f : ox / outward, uy = outward < 1e-4f ? 0f : -oy / outward;
             (float px, float py) = (-uy, ux);   // along the chair's back, across the radius
             float half = SeatChairDu * scale / 2f;
 
-            float sx = cx + (ux * SeatRingDu * scale), sy = cy + (uy * SeatRingDu * scale);
+            float sx = cx + (ox * scale), sy = cy - (oy * scale);
 
-            // Is this one of the chairs the party is in? Core's own arithmetic — a top's Free is its seat
-            // count less its heads — so the bodies drawn here and the chairs the [E] press offers come out
-            // of one number, and neither can claim an occupancy the other does not have.
-            if (heads > 0 && (i * heads) % top.Seats < heads)
+            if (chair.Taken)
             {
-                float back = (SeatRingDu + SeatBackDu) * scale;
+                float back = (outward + SeatBackDu) * scale;
                 DrawSeg(
                     (cx + (ux * back) - (px * half), cy + (uy * back) - (py * half)),
                     (cx + (ux * back) + (px * half), cy + (uy * back) + (py * half)),
@@ -2326,7 +2327,7 @@ public sealed class DeckView
         // the plate the console draws through the same coordinate.
         if (top.Talking)
         {
-            float rise = cy - ((SeatRingDu + TalkRiseDu) * scale);
+            float rise = cy - ((ring + TalkRiseDu) * scale);
             float tick = TalkTickDu * scale;
             DrawSeg((cx - (0.34f * scale), rise), (cx - (0.34f * scale) + (0.18f * scale), rise - tick),
                 SeatTaken, 2f);

@@ -2784,6 +2784,31 @@ public static class UndergroundComplex
         /// <summary>#798 · Somewhere to put a paper on this floor, never null — a caller asking "is there a
         /// bin here" must not have to tell an empty list from a missing one.</summary>
         public IReadOnlyList<RipAndBin.Bin> TheBins => Bins ?? [];
+
+        /// <summary>
+        /// #820 · THE TALL SEATS ON THIS FLOOR, in the counter's own order — entry <c>s</c> is
+        /// <c>Interior.TheStools</c>' stool <c>s</c>, exactly as <see cref="Hall.StoolRow"/> publishes them.
+        ///
+        /// <para>The row has been carved beside the counter's own segments since #792 and had one reader,
+        /// the renderer, which walked the amenities to find it. The [E] press needs the same coordinates now
+        /// that sitting down puts the body ON the seat, and a second walk over the same list is a second
+        /// author for one row. Empty on every floor whose counter does not serve, which is a true statement
+        /// about those floors rather than a missing one.</para>
+        /// </summary>
+        public IReadOnlyList<(double X, double Y)> TheStoolRow
+        {
+            get
+            {
+                foreach (Amenity a in Amenities)
+                {
+                    if (a.Hall is { } hall && hall.StoolRow.Count > 0)
+                    {
+                        return hall.StoolRow;
+                    }
+                }
+                return [];
+            }
+        }
     }
 
     /// <summary>#587 · A CROSS CORRIDOR, PUBLISHED RATHER THAN INFERRED.

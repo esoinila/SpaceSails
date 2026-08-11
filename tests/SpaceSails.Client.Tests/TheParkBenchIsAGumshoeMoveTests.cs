@@ -364,11 +364,14 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         Assert.Contains("{ Kind: DeckPlan.ConsoleKind.HiveBench } spot", bench, StringComparison.Ordinal);
         Assert.Contains("ParkBenches.At(in green, spot.X, spot.Y)", bench, StringComparison.Ordinal);
 
-        // The press never places anybody. A bench is a solid segment in the collision field and the captain
-        // walked to it; a sit that teleported them onto the plank is §13.15's second cause.
+        // The press itself places nobody: it is a lookup, and the placing is the SITTING's (#820, where the
+        // captain is snapped onto the end they walked up to). Keeping the two apart is what lets the dev row
+        // and the key press open one bench through one method — and StandCaptainAt in particular must never
+        // appear on this path, because that nudge walks a body OUT of collision and a plank is solid.
         int sit = bench.IndexOf("private bool TryTakeBench()", StringComparison.Ordinal);
         string press = bench[sit..bench.IndexOf("\n    /// <summary>", sit, StringComparison.Ordinal)];
         Assert.DoesNotContain("StandCaptainAt", press, StringComparison.Ordinal);
+        Assert.DoesNotContain("SitCaptainOn", press, StringComparison.Ordinal);
 
         // …and the sitting is opened in ONE place — one definition, and every way in goes through it, so a
         // dev row and a key press cannot open two different benches. A second `_table = new TableTalk` in
@@ -573,7 +576,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         Assert.Contains("ParkBenches.On(in green)", row, StringComparison.Ordinal);
         Assert.Contains("SeedTheSpreadFinds();", row, StringComparison.Ordinal);
-        Assert.Contains("SitOnThisBench(bench);", row, StringComparison.Ordinal);
+        Assert.Contains("SitOnThisBench(in green, bench);", row, StringComparison.Ordinal);
         // It takes a FREE bench: the whole point of the row is the spread being allowed.
         Assert.Contains("if (bench.Taken)", row, StringComparison.Ordinal);
 
@@ -592,7 +595,10 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // on the OUTSIDE of its bend — some above the walk, some below it — so "a bit under the plank" is a
         // guess, and §13.15's second cause is a caller doing geometry about furniture it did not bolt down.
         Assert.Contains("TowardTheWalk(in green, sx, sy)", row, StringComparison.Ordinal);
-        Assert.Contains("green.Walk", bench, StringComparison.Ordinal);
+        // #820 · …and that arithmetic is CORE'S now, because standing up off a bench spends it too — the
+        // walk side of a plank stopped being a dev row's private measurement the moment it became the
+        // square a captain is stood back up on.
+        Assert.Contains("ParkBenches.TowardTheWalk(in green,", bench, StringComparison.Ordinal);
 
         // The tester is told the row exists, on the page that already opens this room.
         string guide = Doc("testing-guide.md");

@@ -362,8 +362,11 @@ public sealed class SeatsAreDrawnTests
     [Fact]
     public void THE_CHAIRS_OfOneTopNeverReachTheNext()
     {
-        // The pen's own ring radius (DeckView.SeatRingDu), transcribed rather than asked for.
-        const double ring = 1.55;
+        // The ring radius, ASKED FOR — it was transcribed here while it was a private constant of the pen,
+        // and #820 published it (the [E] press seats the captain in one of these chairs, so the drawn chair
+        // and the sat chair had to stop being two numbers). A transcribed constant is a second author, and
+        // this test exists precisely to catch a ring that has grown.
+        const double ring = CanteenRegulars.ChairRingDu;
 
         var tops = CanteenRegulars.Tables(Body, Level, Cantina()).ToList();
         Assert.True(tops.Count > 8, $"only {tops.Count} top(s) — this is not the hall.");

@@ -27,8 +27,11 @@ namespace SpaceSails.Client.Pages;
 /// <para>Owner's law, issued while this was in flight: sitting down puts the body IN the chair. The
 /// coordinate is Core's published seat and is never re-derived here — and standing up puts the captain back
 /// on <see cref="RingOffice.Chair.StandAt"/>, which is the same square, because a ring chair is not a solid
-/// and the seat is the very spot you were standing on to press [E]. Nothing can trap the dot. (The park
-/// bench still lacks the snap; that is #820's own sweep and deliberately not this PR's.)</para>
+/// and the seat is the very spot you were standing on to press [E]. Nothing can trap the dot.</para>
+///
+/// <para>The sweep that followed took the bench, the counter stool and the canteen chair the same way, and
+/// this chair moved onto the shared placement (<c>Map.Surface.SitCaptainOn</c>) with them — see that
+/// method for why one law for four seats has to be the law that works on a SOLID seat.</para>
 /// </summary>
 public partial class Map
 {
@@ -99,10 +102,13 @@ public partial class Map
     private void SitInThisChair(
         SurfaceExcursion ex, in UndergroundComplex.RingRoom room, RingOffice.Chair chair)
     {
-        // #820 · THE SNAP. The body goes into the chair, at Core's own published seat — through
-        // StandCaptainAt, so the pad-crew net has its say and a seat that somehow ended up inside a desk
-        // would be reported rather than silently swallowed.
-        StandCaptainAt(chair.X, chair.Y, "you pull out the chair and sit down");
+        // #820 · THE SNAP. The body goes into the chair, at Core's own published seat, through the one
+        // helper every seat verb in the game now sits the captain with. It was StandCaptainAt when this
+        // shipped, which was right for a ring chair and only for a ring chair: that nudge walks a body out
+        // of collision, and a park bench is solid on purpose — one law for four seats had to be the law that
+        // works on the solid one. Nothing is lost here, because a suite's chairs are proved to be real floor
+        // by Core's own guard (NoRingSuiteIsAnEmptyFloorTests) rather than by a rescue at run time.
+        SitCaptainOn(chair.X, chair.Y);
 
         _table = new TableTalk
         {
@@ -112,8 +118,11 @@ public partial class Map
             // ordinal are two seats dealt the same answer on the same shift.
             Index = RingOffice.ApproachOrdinal(room.Number, chair.Index),
             Office = true,
-            OfficeSeatX = chair.StandAt.X,
-            OfficeSeatY = chair.StandAt.Y,
+            // …and standing up puts the captain back on the same square, because a ring chair is not a solid
+            // and the seat is the very spot you were standing on to press [E]. Core publishes the pair
+            // separately all the same (RingOffice.Chair.StandAt), so the day a suite's chairs are tucked
+            // under their desks this reads the new square rather than the old assumption.
+            StepOff = chair.StandAt,
             Who = CanteenTable.Who.None,
             Plate = RingOffice.SeatPlate,
             Scene = RingOffice.TheChair(room.Plate),

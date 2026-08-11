@@ -74,6 +74,33 @@ public static class ParkBenches
         /// pressing [E] does not ask.</summary>
         public (double X, double Y) YourEnd => End(Taken ? 1 : TakenEnd);
 
+        /// <summary>Which end of this plank is nearest a body standing at (<paramref name="fromX"/>,
+        /// <paramref name="fromY"/>). The ORDINAL, so a caller who wants the coordinate asks
+        /// <see cref="End"/> for it and no second author measures a bench.</summary>
+        public int NearestEnd(double fromX, double fromY)
+        {
+            (double ax, double ay) = End(TakenEnd);
+            (double bx, double by) = End(1);
+            double a = ((ax - fromX) * (ax - fromX)) + ((ay - fromY) * (ay - fromY));
+            double b = ((bx - fromX) * (bx - fromX)) + ((by - fromY) * (by - fromY));
+            return b < a ? 1 : TakenEnd;
+        }
+
+        /// <summary>
+        /// #820 · WHICH END THE SIT PUTS YOU ON — the whole of what a bench has to decide when the captain
+        /// presses [E] from wherever they happened to be standing.
+        ///
+        /// <para>Owner, on a bench in the evening: <i>"I would move the avatar on top of the bench when I
+        /// sit… just snap it into the correct position."</i> A plank is two seats, so the snap has to pick
+        /// one, and there are exactly two honest answers. Somebody already on it and there is no choice at
+        /// all — you get the end they are not on, which is <see cref="YourEnd"/>. A bench to yourself and
+        /// you sit down on the end you WALKED UP TO: a captain who approached the left end and landed on the
+        /// right one would have been slid a plank's length sideways by the very key that was supposed to
+        /// stop them resting their legs from a metre away.</para>
+        /// </summary>
+        public (double X, double Y) EndYouTake(double fromX, double fromY) =>
+            Taken ? YourEnd : End(NearestEnd(fromX, fromY));
+
         /// <summary>What is drawn over it, and it says the VERB when there is one to say (#783's own ruling
         /// on a free table: <i>"why not use words like SIT DOWN here if it means sitting down?"</i>). A
         /// shared bench still takes the press — half a bench is a rest — and the plate says which half you
@@ -115,6 +142,41 @@ public static class ParkBenches
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// #793/#820 · ONE STANDOFF OFF A BENCH, ON THE WALK SIDE — where a captain stands beside a plank, and
+    /// therefore where standing up off one puts them back down.
+    ///
+    /// <para>A bench is a solid segment: sitting on it (#820) puts the body inside the collision field on
+    /// purpose, and the sitting has to know which way is OUT before the captain asks to stand. The direction
+    /// is the park's own published gravel — the nearest walk sample gives the bearing — because the carve
+    /// puts a bench on the OUTSIDE of every bend and some of them are above the walk while others are below
+    /// it. A standoff typed as <i>a bit below the bench</i> is a guess about which way a bench faces, and it
+    /// is right on eight parks and quietly wrong on two (see the dev row's own guard, which was proven red
+    /// exactly that way).</para>
+    ///
+    /// <para>The DISTANCE is the caller's, because it is a fact about the body being stood there rather than
+    /// about the park: a client knows its avatar's radius and Core does not.</para>
+    /// </summary>
+    public static (double X, double Y) TowardTheWalk(
+        in UndergroundComplex.Park park, double fromX, double fromY, double standoffDu)
+    {
+        double bestX = fromX, bestY = fromY, best = double.MaxValue;
+        foreach ((double wx, double wy) in park.Walk ?? [])
+        {
+            double d = ((wx - fromX) * (wx - fromX)) + ((wy - fromY) * (wy - fromY));
+            if (d < best)
+            {
+                (best, bestX, bestY) = (d, wx, wy);
+            }
+        }
+
+        double dx = bestX - fromX, dy = bestY - fromY;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        return len < 1e-6
+            ? (fromX, fromY)
+            : (fromX + (dx / len * standoffDu), fromY + (dy / len * standoffDu));
     }
 
     // ── THE ORDINAL THE APPROACH IS ROLLED ON ─────────────────────────────────────────────────────────

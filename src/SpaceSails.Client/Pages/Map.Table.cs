@@ -454,13 +454,21 @@ public partial class Map
         /// </summary>
         public bool Office { get; init; }
 
-        /// <summary>#820 · Where the captain is put back down when they stand up off an office chair —
-        /// Core's own published seat spot (<see cref="RingOffice.Chair.StandAt"/>), carried on the sitting
-        /// so the standing does not have to go and look the furniture up again.</summary>
-        public double OfficeSeatX { get; init; }
-
-        /// <summary>#820 · The same.</summary>
-        public double OfficeSeatY { get; init; }
+        /// <summary>
+        /// #820 · WHERE STANDING UP PUTS THE BODY — the square this seat is stepped off onto.
+        ///
+        /// <para>Worked out from published geometry at the moment the captain sat down and carried here, so
+        /// that standing up does not have to go and look the furniture up a second time (and cannot come to
+        /// a different answer if the watch has turned over in between). It is the seat's own square wherever
+        /// a seat is a place you could have been standing anyway — a ring-office chair
+        /// (<see cref="RingOffice.Chair.StandAt"/>), a chair round a canteen top — and the WALK SIDE of the
+        /// plank at a park bench, which is solid and would otherwise close over the dot the moment the
+        /// sitting ended.</para>
+        ///
+        /// <para>Null at a sitting that never moved the body, which is no sitting that ships today; the
+        /// standing simply leaves the captain where they are rather than inventing a square for them.</para>
+        /// </summary>
+        public (double X, double Y)? StepOff { get; init; }
 
         /// <summary>
         /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
@@ -570,10 +578,24 @@ public partial class Map
                     return false;   // somebody who is not a scene, or a top with nowhere left to sit.
                 }
 
+                // #820 · WHICH CHAIR, off Core's own ring, read before the body moves. The nearest one the
+                // party is not already in — a captain waved into a seat that had somebody in it would be
+                // the drawn room and the pressed room disagreeing about a lap (#823's own complaint).
+                (double X, double Y)? chair = top.ChairYouTake(_avatarX, _avatarY);
+                if (chair is { } sit)
+                {
+                    SitCaptainOn(sit.X, sit.Y);
+                }
+
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
+                    // …and standing up leaves the captain on the chair's own square. A canteen top is drawn
+                    // and does not collide, so the seat is floor and nothing has to be stepped off — the
+                    // square is carried all the same, because it is StandCaptainAt that gets the nudge's
+                    // opinion on whether the room agrees.
+                    StepOff = chair,
                     Who = who,
                     Plate = plate,
                     Scene = who == CanteenTable.Who.Stranger
@@ -601,12 +623,12 @@ public partial class Map
     /// so [E] there answered nothing — an absence rather than a refusal, which is the one kind of "no" a
     /// player cannot read.</para>
     ///
-    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. The seat is the spot you walked to in
-    /// order to press the key, exactly as it is at an occupied table — this file has never moved the captain
-    /// to sit down, and a solo table that teleported them onto the furniture would be §13.15's second cause
-    /// in the one room where the tops are drawn but do not collide. Which table it is comes off Core's own
-    /// list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the press
-    /// landed on — the same lookup, and still a lookup rather than a decision.</para>
+    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. Which table it is comes off Core's
+    /// own list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the
+    /// press landed on — a lookup rather than a decision — and #820's snap puts the captain in one of that
+    /// top's own published chairs, exactly as it does at an occupied table. Not one coordinate below was
+    /// measured here, which is §13.15's whole point: this project has set a captain down inside a wall twice
+    /// by letting a caller do arithmetic about a room it did not carve.</para>
     /// </summary>
     private bool TryTakeTable()
     {
@@ -654,10 +676,19 @@ public partial class Map
                 bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, ex.CanteenWatch);
                 Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink);
 
+                // #820 · …and the same snap as at an occupied top, which is the point of it being one law:
+                // an empty table has every chair free, so this is simply the one the captain walked up to.
+                (double X, double Y)? chair = top.ChairYouTake(_avatarX, _avatarY);
+                if (chair is { } sit)
+                {
+                    SitCaptainOn(sit.X, sit.Y);
+                }
+
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
+                    StepOff = chair,
                     Who = CanteenTable.Who.None,
                     Plate = SittingAlone.OwnTablePlate,
                     Scene = sat,
@@ -690,9 +721,10 @@ public partial class Map
     /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
     /// Close button both come through here, so leaving a table is one act however you do it.
     ///
-    /// <para>#820 · …and off an office chair it also puts the body down: Core's own published stand spot,
-    /// carried on the sitting (<see cref="TableTalk.OfficeSeatX"/>) rather than worked out here, because the
-    /// point of the law is that a solid seat may not be able to trap the dot.</para>
+    /// <para>#820 · …and it also STEPS THE CAPTAIN OFF THE SEAT: Core's own published square, carried on the
+    /// sitting (<see cref="TableTalk.StepOff"/>) rather than worked out here, and gone to through
+    /// <c>StandCaptainAt</c> so the nudge has its say. That is the whole reason a solid seat — a park bench
+    /// is a segment in the collision field — cannot close over the dot when the sitting ends.</para>
     ///
     /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
     /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can
@@ -710,14 +742,13 @@ public partial class Map
         }
 
         // #820 · Read, then the table goes, then the body moves. See the summary.
-        (double sx, double sy)? seat =
-            _table is { Office: true } office ? (office.OfficeSeatX, office.OfficeSeatY) : null;
+        (double X, double Y)? step = _table?.StepOff;
 
         _table = null;
 
-        if (seat is { } spot)
+        if (step is { } spot)
         {
-            StandCaptainAt(spot.sx, spot.sy, "you push the chair back and stand up");
+            StandCaptainAt(spot.X, spot.Y, "you push the seat back and stand up");
         }
     }
 

@@ -223,9 +223,12 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // #757 disagreeing about the same chair.
         Assert.Contains("top.Taken", body, StringComparison.Ordinal);
 
-        // The seat is the spot you walked to, exactly as it is at an occupied table. No new geometry: this
-        // project has set the captain down inside a wall twice by a caller typing coordinates about a room
-        // it did not own (§13.15).
+        // #820 · The seat is one of the top's OWN chairs — the nearest the party is not in — and the captain
+        // is snapped into it. No new geometry all the same: the coordinate is asked of Core and the body is
+        // moved by the one placement, because this project has set the captain down inside a wall twice by a
+        // caller typing coordinates about a room it did not own (§13.15).
+        Assert.Contains("top.ChairYouTake(_avatarX, _avatarY)", body, StringComparison.Ordinal);
+        Assert.Contains("SitCaptainOn(sit.X, sit.Y)", body, StringComparison.Ordinal);
         Assert.DoesNotContain("StandCaptainAt", body, StringComparison.Ordinal);
         Assert.DoesNotContain("_avatarX =", body, StringComparison.Ordinal);
     }

@@ -245,7 +245,98 @@ public static class CanteenRegulars
         /// them apart across a room.</para>
         /// </summary>
         public bool Alone => Taken && !Talking;
+
+        /// <summary>Where one of this top's chairs stands. See <see cref="CanteenRegulars.ChairAt"/>, which
+        /// owns the ring; this only hands it the top's own numbers.</summary>
+        public (double X, double Y) Chair(int chair) => ChairAt(X, Y, Seats, chair);
+
+        /// <summary>Is the party in this chair? See <see cref="CanteenRegulars.PartyInChair"/> — the same
+        /// walk the deck draws bodies on, asked with this top's own headcount.</summary>
+        public bool PartyIn(int chair) =>
+            PartyInChair(chair, Seats, Taken ? Math.Clamp(Heads, 1, Math.Max(1, Seats)) : 0);
+
+        /// <summary>
+        /// #820 · THE CHAIR THE CAPTAIN TAKES, given where they were standing when they pressed [E] — null
+        /// at a top with nothing left to sit on.
+        ///
+        /// <para>The NEAREST FREE one, for a park bench's reason one room along (see
+        /// <c>ParkBenches.EndYouTake</c>): a sit that walked the captain round a six-top to the far side
+        /// would be moving them further from the chair they had already chosen with their feet. Which chairs
+        /// are free is not this method's opinion — it is <see cref="PartyIn"/>, which is the same arithmetic
+        /// the deck draws the party's bodies on, so the chair the press hands over is a chair the player can
+        /// see is empty.</para>
+        /// </summary>
+        public (double X, double Y)? ChairYouTake(double fromX, double fromY)
+        {
+            if (Seats <= 0)
+            {
+                return null;
+            }
+
+            (double X, double Y)? best = null;
+            double bestD = double.MaxValue;
+            for (int c = 0; c < Seats; c++)
+            {
+                if (PartyIn(c))
+                {
+                    continue;
+                }
+                (double cx, double cy) = Chair(c);
+                double d = ((cx - fromX) * (cx - fromX)) + ((cy - fromY) * (cy - fromY));
+                if (d < bestD)
+                {
+                    (bestD, best) = (d, (cx, cy));
+                }
+            }
+            return best;
+        }
     }
+
+    // ── #820 · WHERE THE CHAIRS ROUND A TOP ACTUALLY ARE ──────────────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11: "I would move the avatar on top of the bench when I sit... just
+    // snap it into the correct position." A seat you can be snapped onto is a seat with a COORDINATE, and a
+    // canteen top's chairs had none: the deck drew them out of a radius and an angle it kept to itself, and
+    // the [E] press knew only where the TABLE was. Two authors for one piece of furniture is this repo's
+    // most expensive bug class, and the half that could not be checked was the half a body sits on.
+    //
+    // So the ring lives here, both callers ask it, and the chair a captain lands in is by construction the
+    // chair the room drew empty.
+
+    /// <summary>How far out from a top's centre its chairs stand. The deck has drawn them at this radius
+    /// since #792 (it was <c>DeckView.SeatRingDu</c>, and that constant now reads this one) — far enough
+    /// out to be clear of the top's own plate and close enough to read as belonging to it.</summary>
+    public const double ChairRingDu = 1.55;
+
+    /// <summary>
+    /// Where chair <paramref name="chair"/> of a <paramref name="seats"/>-seat top centred on
+    /// (<paramref name="topX"/>, <paramref name="topY"/>) stands, in the surface's own coordinates.
+    ///
+    /// <para>Evenly round the ring from due east, anticlockwise, which is the order the deck has drawn them
+    /// in since #792 — the ordinal is the drawing's and the sim's at once, so "the party is in chairs 0 and
+    /// 3" is one sentence about one room.</para>
+    /// </summary>
+    public static (double X, double Y) ChairAt(double topX, double topY, int seats, int chair)
+    {
+        if (seats <= 0)
+        {
+            return (topX, topY);
+        }
+        double ang = chair * 2 * Math.PI / seats;
+        return (topX + (Math.Cos(ang) * ChairRingDu), topY + (Math.Sin(ang) * ChairRingDu));
+    }
+
+    /// <summary>
+    /// #823 · Is the party sitting in this chair? A party sits SPREAD ROUND a top rather than stacked in
+    /// chair one — three on the same contract at a six-top leave a gap between each of them — and the even
+    /// walk below lands on exactly <paramref name="heads"/> chairs for any seat count the building has.
+    ///
+    /// <para>It was the deck's own loop until #820 needed the same answer for the [E] press: a captain
+    /// snapped into a chair the room had already drawn somebody in would be the drawn room and the pressed
+    /// room disagreeing about a lap.</para>
+    /// </summary>
+    public static bool PartyInChair(int chair, int seats, int heads) =>
+        seats > 0 && heads > 0 && (chair * heads) % seats < heads;
 
     /// <summary>
     /// #746/#751 · HOW MANY EACH ROUND TOP IN THIS ROOM SEATS — the one place the question is answered.
