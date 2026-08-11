@@ -310,22 +310,6 @@ public partial class Map
     /// now also where standing up puts them, which is the same question asked from the other side — and one
     /// answer to it is the reason a solid bench cannot close over the dot.</para></summary>
     private static (double X, double Y) TowardTheWalk(
-        in UndergroundComplex.Park green, double fromX, double fromY)
-    {
-        double bestX = fromX, bestY = fromY, best = double.MaxValue;
-        foreach ((double wx, double wy) in green.Walk ?? [])
-        {
-            double d = ((wx - fromX) * (wx - fromX)) + ((wy - fromY) * (wy - fromY));
-            if (d < best)
-            {
-                (best, bestX, bestY) = (d, wx, wy);
-            }
-        }
-
-        double dx = bestX - fromX, dy = bestY - fromY;
-        double len = Math.Sqrt((dx * dx) + (dy * dy));
-        return len < 1e-6
-            ? (fromX, fromY)
-            : (fromX + (dx / len * BenchStandoffDu), fromY + (dy / len * BenchStandoffDu));
-    }
+        in UndergroundComplex.Park green, double fromX, double fromY) =>
+        ParkBenches.TowardTheWalk(in green, fromX, fromY, BenchStandoffDu);
 }

@@ -144,6 +144,41 @@ public static class ParkBenches
         return null;
     }
 
+    /// <summary>
+    /// #793/#820 · ONE STANDOFF OFF A BENCH, ON THE WALK SIDE — where a captain stands beside a plank, and
+    /// therefore where standing up off one puts them back down.
+    ///
+    /// <para>A bench is a solid segment: sitting on it (#820) puts the body inside the collision field on
+    /// purpose, and the sitting has to know which way is OUT before the captain asks to stand. The direction
+    /// is the park's own published gravel — the nearest walk sample gives the bearing — because the carve
+    /// puts a bench on the OUTSIDE of every bend and some of them are above the walk while others are below
+    /// it. A standoff typed as <i>a bit below the bench</i> is a guess about which way a bench faces, and it
+    /// is right on eight parks and quietly wrong on two (see the dev row's own guard, which was proven red
+    /// exactly that way).</para>
+    ///
+    /// <para>The DISTANCE is the caller's, because it is a fact about the body being stood there rather than
+    /// about the park: a client knows its avatar's radius and Core does not.</para>
+    /// </summary>
+    public static (double X, double Y) TowardTheWalk(
+        in UndergroundComplex.Park park, double fromX, double fromY, double standoffDu)
+    {
+        double bestX = fromX, bestY = fromY, best = double.MaxValue;
+        foreach ((double wx, double wy) in park.Walk ?? [])
+        {
+            double d = ((wx - fromX) * (wx - fromX)) + ((wy - fromY) * (wy - fromY));
+            if (d < best)
+            {
+                (best, bestX, bestY) = (d, wx, wy);
+            }
+        }
+
+        double dx = bestX - fromX, dy = bestY - fromY;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        return len < 1e-6
+            ? (fromX, fromY)
+            : (fromX + (dx / len * standoffDu), fromY + (dy / len * standoffDu));
+    }
+
     // ── THE ORDINAL THE APPROACH IS ROLLED ON ─────────────────────────────────────────────────────────
 
     /// <summary>
