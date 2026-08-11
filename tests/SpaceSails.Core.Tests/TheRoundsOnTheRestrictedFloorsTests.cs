@@ -431,12 +431,26 @@ public class TheRoundsOnTheRestrictedFloorsTests
 
         // …and past earshot, wall or no wall, there is nothing to hear. That is the range the fan owns.
         Assert.False(PatrolBeat.Heard(0, 0, PatrolBeat.EarshotDu + 1, 0, AWallBetween));
+
+        // #832 · THE RETIRED-COP LAW moved this floor. It was 18 du — short of the eye — which left a band
+        // from 18 to 30 where a guard behind a wall was neither drawn nor heard, and that band is exactly
+        // the owner's <i>"at no range may a walking man be neither seen nor heard"</i>. The boots now carry
+        // as far as the eye itself and never further: the marker still owns everything you can see, because
+        // Heard() is silent about anybody in plain sight.
         Assert.True(
-            PatrolBeat.EarshotDu < PatrolBeat.MarkerSightDu,
+            PatrolBeat.EarshotDu >= PatrolBeat.MarkerSightDu,
+            "a retired cop whose boots carry less far than your own eye is a ninja (#832).");
+        Assert.True(
+            PatrolBeat.EarshotDu <= PatrolBeat.MarkerSightDu,
             "boots that carry further than the eye would make the marker pointless.");
         Assert.True(
             PatrolBeat.EarshotDu > PatrolBeat.NoticeDu,
             "boots you can only hear once they have already seen you are not a warning.");
+
+        // The band the law was raised FOR: a guard on the far side of a wall, past the old 18 du and inside
+        // the eye's reach. Nothing drew him and nothing said he was there.
+        Assert.False(PatrolBeat.DrawnFor(0, 0, 24, 0, AWallBetween));
+        Assert.True(PatrolBeat.Heard(0, 0, 24, 0, AWallBetween));
     }
 
     /// <summary>
@@ -447,9 +461,11 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void TheTrackerHearsARoundLongBeforeAnythingIsDrawn()
     {
-        // A guard walking at the round's own speed, well past the eye and behind a wall.
+        // A guard walking at the round's own speed, well past the eye and behind a wall — and carrying the
+        // register Core declares for them (#830), which is what the client's one accessor feeds the fan.
         double outThere = PatrolBeat.MarkerSightDu + 12.0;
-        var walking = new MotionTracker.Entity(outThere, 0, PatrolBeat.WalkSpeed, 0);
+        var walking = new MotionTracker.Entity(
+            outThere, 0, PatrolBeat.WalkSpeed, 0, PatrolBeat.FanRegister);
 
         Assert.False(PatrolBeat.DrawnFor(0, 0, outThere, 0, AWallBetween), "the eye reaches too far.");
         Assert.False(PatrolBeat.Heard(0, 0, outThere, 0, AWallBetween), "the ear reaches too far.");
@@ -461,10 +477,17 @@ public class TheRoundsOnTheRestrictedFloorsTests
         IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(0, 0, [walking], reach);
         Assert.Single(blips);
         Assert.Equal(outThere, blips[0].Range, 3);
+        Assert.Equal(MotionTracker.BlipKind.Crisp, blips[0].Kind);
 
-        // …and a guard STANDING at a stop drops off it, which is what makes the stand a hiding place for
-        // them as much as a window for the captain. Motion only, the instrument's oldest law.
-        Assert.Empty(MotionTracker.Sweep(0, 0, [walking with { Vx = 0 }], reach));
+        // #830 · …and a guard STANDING at a stop does NOT drop off it. That was this file's own shipped
+        // sentence — "the stand is a hiding place for them as much as a window for the captain" — and the
+        // owner overruled it from the chair, watching PATROL 2 stand in plain sight while the fan called the
+        // corridor empty: <i>"if the guard is still then it would be a blurry blob"</i>. He is still there,
+        // and the instrument says so with less confidence rather than with silence.
+        IReadOnlyList<MotionTracker.Blip> standing =
+            MotionTracker.Sweep(0, 0, [walking with { Vx = 0 }], reach);
+        Assert.Single(standing);
+        Assert.Equal(MotionTracker.BlipKind.Blob, standing[0].Kind);
     }
 
     // ── THE CHALLENGE ─────────────────────────────────────────────────────────────────────────────────

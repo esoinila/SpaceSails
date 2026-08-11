@@ -243,6 +243,11 @@ public sealed class TheRoundIsWalkableTests
     /// <summary>
     /// A GUARD THE CAPTAIN CANNOT SEE IS NOT ON THE DECK. The droid filler asks Core's one predicate and
     /// parks everybody else at the off-map coordinates an empty slot uses (#371's idiom).
+    ///
+    /// <para>#832 · That predicate is now the three-rung <c>SightingFor</c> rather than the bare
+    /// <c>DrawnFor</c> bool — the eye's edge grew a distant-figure tier — but the law this test is about is
+    /// unchanged and is asserted at the bottom rung: <see cref="PatrolBeat.Sighting.None"/> is off the deck
+    /// entirely, and a wall still puts a body there instantly.</para>
     /// </summary>
     [Fact]
     public void TheDroidFillerDrawsOnlyWhatTheCaptainCanSee()
@@ -250,16 +255,17 @@ public sealed class TheRoundIsWalkableTests
         string filler = Between(
             Pages("Map.Patrol.cs"), "private void FillPatrolDroids(", "\n}");
 
-        Assert.Contains("Drawn", filler, StringComparison.Ordinal);
+        Assert.Contains("Seen", filler, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.Sighting.None", filler, StringComparison.Ordinal);
         Assert.Contains("-9999", filler, StringComparison.Ordinal);
 
-        // …and the flag it reads is written from Core's predicate, once a frame, in the step.
+        // …and the tier it reads is written from Core's predicate, once a frame, in the step.
         string step = Between(Pages("Map.Patrol.cs"), "private void AdvancePatrol(", "private void WalkTheRound(");
-        Assert.Contains("PatrolBeat.DrawnFor(", step, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.SightingFor(", step, StringComparison.Ordinal);
         Assert.Contains("SightBlockers()", step, StringComparison.Ordinal);
 
         // The gate must be the SIGHT set, not the bare collision field: a shut door is a wall to an eye.
-        Assert.DoesNotContain("DrawnFor(_avatarX, _avatarY, g.X, g.Y, walls)", step, StringComparison.Ordinal);
+        Assert.DoesNotContain("SightingFor(_avatarX, _avatarY, g.X, g.Y, walls)", step, StringComparison.Ordinal);
     }
 
     /// <summary>The fan hears them, and it hears them from the ONE accessor — the comment in that method

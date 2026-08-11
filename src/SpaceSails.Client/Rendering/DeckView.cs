@@ -49,7 +49,12 @@ public sealed class DeckView
     public readonly record struct SurfaceHud(
         double DigProgress,          // <0 = not channeling
         bool HasDroppedChest, double DropX, double DropY,
-        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range)> Blips,
+        // #830 · A return, and WHICH KIND it is. Blob = a living contact that has stopped travelling: the
+        // unsure, smeared, nest-register return the owner asked for ("if the guard is still then it would be
+        // a blurry blob"). The kind is decided in Core (MotionTracker.BlipKind) and only DRAWN here — the
+        // alternative was faking a velocity for a standing man, which would have had the sim saying one
+        // thing while the instrument drew another.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool Blob)> Blips,
         int Cadence,                 // MotionTracker.Cadence as int
         string Readout,
         System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Haunted)> CacheMarks,
@@ -247,6 +252,12 @@ public sealed class DeckView
     /// those would tell a player to run from the one figure in the game whose whole design is that running
     /// is the wrong answer.</summary>
     private static readonly RgbaColor GuardColor = new(120, 200, 150);
+
+    /// <summary>#832 · How much of a figure's ink survives out at the far end of the eye's reach — the
+    /// DISTANT FIGURE tier. Faint enough that "I cannot make that out yet" is the honest reading, solid
+    /// enough that it is unmistakably somebody: the failure this replaces is a marker that was fully there
+    /// one deck unit and gone the next, in open air, with nothing to blame it on.</summary>
+    private const double SmearInk = 0.45;
 
     /// <summary>
     /// #537 · The ship's own structure — closed-cell metal foam and everything packed into it.
@@ -939,6 +950,16 @@ public sealed class DeckView
                 : sweeper ? SweeperColor
                 : guard ? GuardColor
                 : DroidColor;
+            // #832 · THE FAR END OF THE EYE. Owner, watching one wink out mid-stride in an open corridor:
+            // "Now the guard just vanishes into thin air .. that is like huge magic trick". A figure at the
+            // limit of what a person can resolve is drawn thinner and softer, and (below) wears no name —
+            // the same "when unsure, draw LESS" idiom the fan's blob and the on-grid smudge already use. The
+            // tier itself is Core's (PatrolBeat.SightingFor); this only spends it.
+            bool smeared = droid.Smeared;
+            if (smeared)
+            {
+                mark = mark with { A = (byte)(mark.A * SmearInk) };
+            }
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
             // were drawn a tenth of a deck unit smaller. Every law that reads their body therefore fired with
@@ -1005,13 +1026,20 @@ public sealed class DeckView
                 }
             }
 
-            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
-                reever ? ReeverColor
-                    : collector ? CollectorColor
-                    : sweeper ? SweeperColor
-                    : guard ? GuardColor
-                    : TextDim,
-                "8px monospace", TextAlign.Center);
+            // #832 · …and the DISTANT FIGURE wears no name. That is the whole of the tier: a silhouette
+            // without a plate or a round number on it, because a captain who can read "PATROL 2" off a
+            // figure has resolved it, and out here they have not. Writing the label anyway would be the
+            // picture claiming a certainty the sim just said it did not have.
+            if (!smeared)
+            {
+                _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
+                    reever ? ReeverColor
+                        : collector ? CollectorColor
+                        : sweeper ? SweeperColor
+                        : guard ? GuardColor
+                        : TextDim,
+                    "8px monospace", TextAlign.Center);
+            }
         }
 
         // ── #708 · AND HERE THE DARK IS LAID DOWN. The world is drawn; the mask comes off; the black goes on
@@ -1692,13 +1720,34 @@ public sealed class DeckView
         float surfScale = Math.Min(widthPx / 64f, heightPx / 28f);
         double visualHalfWidthDu = (widthPx / Math.Max(surfScale, 0.001f)) / 2.0;
         double detectionRange = hud.FanReach > 0 ? hud.FanReach : MotionTracker.DetectionRange(visualHalfWidthDu);
-        foreach ((double bearing, double range) in hud.Blips)
+        foreach ((double bearing, double range, bool blob) in hud.Blips)
         {
             double rr = Math.Min(range / detectionRange, 1.0) * (r - 6);
             // World bearing: +x = right, +y = port (up on screen) → screen y flips.
             float bx = cx + (float)(Math.Cos(bearing) * rr);
             float by = cy - (float)(Math.Sin(bearing) * rr);
             double firm = MotionTracker.BlipIntensity(range, detectionRange); // 1 near … FaintFloor on the rim
+
+            // #830 · THE UNSURE BLOB. Something alive is standing out there and the fan cannot tell you much
+            // more than that, so it is drawn as the nest's own register at person scale: a soft wash a few
+            // rings deep, WIDER than a body and wider still the further out it is (MotionTracker.BlobSpreadDu
+            // — the on-grid smudge's law, so the two pictures agree about how vague a thing is), and never
+            // the tight certain dot a mover gets. Same watchdog red: it is the same instrument reporting the
+            // same kind of trouble, with less confidence.
+            if (blob)
+            {
+                float wide = (float)Math.Max(
+                    6.0, MotionTracker.BlobSpreadDu(range) / detectionRange * r * 4.0);
+                byte soft = (byte)Math.Clamp(
+                    beatAlpha * MotionTracker.BlobFaintness * (0.35 + (0.65 * firm)), 22, 190);
+                for (int ring = 3; ring >= 1; ring--)
+                {
+                    var wash = new RgbaColor(235, 70, 60, (byte)(soft / (ring + 1)));
+                    _renderer.DrawCircle(bx, by, wide * ring / 3f, wash, wash);
+                }
+                continue;
+            }
+
             float sz = (float)(blipFar + ((blipNear - blipFar) * firm)) * beatScale;
             byte alpha = (byte)Math.Clamp(beatAlpha * (0.35 + (0.65 * firm)), 30, 255);
             var col = new RgbaColor(235, 70, 60, alpha); // watchdog red, pulsing — dimmer the farther out

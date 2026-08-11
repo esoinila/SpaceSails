@@ -288,7 +288,8 @@ public sealed class TheHeadlightsAreTheWholeOfTheSeeingTests
 
         DeckView.SurfaceHud Hud() => new(
             DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
-            Blips: new[] { (Math.Atan2(sy - ay, sx - ax), 30.6) },
+            // #830: a return now says WHICH KIND it is. This one is a mover, as it always was.
+            Blips: new[] { (Math.Atan2(sy - ay, sx - ax), 30.6, false) },
             Cadence: (int)MotionTracker.Cadence.Closing, Readout: "movement — 31 du",
             CacheMarks: Array.Empty<(double, double, bool)>(),
             Nerve: NerveModel.Steady, NerveReadout: "steady",

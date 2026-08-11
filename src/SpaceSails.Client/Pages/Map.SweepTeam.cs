@@ -539,9 +539,14 @@ public sealed partial class Map
         // free: the fan hears them through poured wall at #591's degraded reach, the smudge path already
         // draws a wall-blocked return as a smear, and none of that needed a line of new instrument code. A
         // guard walks, so a guard is a contact. There is no special case anywhere.
+        // #830 · …AND WITH THEIR REGISTER ON THEM, which is the other half of what a contact is. A guard
+        // walking is a mover like anything else; a guard at a beat stop is a LIVING body that has stopped
+        // travelling, and the fan owes the captain the unsure blob for it rather than clean silence. The
+        // register is Core's own answer (PatrolBeat.FanRegister) and not a flag typed here — the day a
+        // second kind of figure walks these floors it declares its own, in Core, beside its own rules.
         foreach (Guard g in _guards)
         {
-            yield return new MotionTracker.Entity(g.X, g.Y, g.Vx, g.Vy);
+            yield return new MotionTracker.Entity(g.X, g.Y, g.Vx, g.Vy, PatrolBeat.FanRegister);
         }
     }
 }

@@ -60,10 +60,16 @@ public sealed partial class Map
         /// <summary>The A* leg they are spending, or null when the next one is due.</summary>
         public AutoWalk? Route;
 
-        /// <summary>Whether the captain could see them on the frame just drawn. Read by the droid filler,
-        /// written by the step — one answer per frame, so the marker and the challenge cannot disagree about
-        /// whether there is anybody there.</summary>
-        public bool Drawn;
+        /// <summary>#832 · How many times in a row this leg has been re-planned because the ground refused a
+        /// step. Bounded, so a stop that genuinely cannot be reached is dropped rather than ground at
+        /// forever — and reset the moment they arrive anywhere.</summary>
+        public int Retries;
+
+        /// <summary>#832 · What the captain can make of them on the frame just drawn — nothing, a distant
+        /// figure, or the marker. Read by the droid filler, written by the step: one answer per frame, so
+        /// the marker, the smear and the challenge cannot disagree about whether there is anybody
+        /// there.</summary>
+        public PatrolBeat.Sighting Seen;
 
         /// <summary>#793 · Whether this one is HELD — stopped because the captain sat down on a bench in the
         /// open (<see cref="FootTail.MustHold"/>). One answer per frame, written by the step and read by the
@@ -208,7 +214,10 @@ public sealed partial class Map
 
             // WHAT THE CAPTAIN MAY KNOW. One call, one answer, used by the marker and by nothing else — so
             // a guard behind a wall is off the deck by construction rather than by a renderer's opinion.
-            g.Drawn = PatrolBeat.DrawnFor(_avatarX, _avatarY, g.X, g.Y, sight);
+            // #832 · …and it is now a THREE-rung answer, because the eye's edge is not a cliff: the far
+            // fifth of the reach is a distant figure with no round number on it, and only past the whole
+            // reach — or behind a wall — is there nothing at all.
+            g.Seen = PatrolBeat.SightingFor(_avatarX, _avatarY, g.X, g.Y, sight);
             anythingHeard |= PatrolBeat.Heard(_avatarX, _avatarY, g.X, g.Y, sight);
         }
 
@@ -260,6 +269,7 @@ public sealed partial class Map
                 // Nothing connects. The audit says this cannot happen on a floor this generator builds
                 // (§13.1) and a guard is not the place to find out otherwise — so the round simply drops
                 // the stop and carries on rather than standing in a corridor forever.
+                g.Retries = 0;
                 g.Leg = (g.Leg + 1) % _patrolBeat.Count;
                 return;
             }
@@ -268,7 +278,18 @@ public sealed partial class Map
 
         double budget = PatrolBeat.WalkSpeed * dt;
         double startX = g.X, startY = g.Y;
-        for (int step = 0; step < AutoWalkSubStepsPerFrame && budget > 0; step++)
+        // #832 · THE EPSILON, AND WHY THE FAN WAS SILENT ALL EVENING. This loop is the captain's own
+        // sub-stepper (Map.Deck.cs), copied — and the copy dropped one character of it: the captain spends
+        // his budget while `budget > 1e-9`, this spent it while `budget > 0`. A frame's budget is never
+        // consumed to exactly zero in binary, so on nearly every frame the loop took ONE MORE sub-step of
+        // about 1e-17 du, the slide moved the body by less than the snag threshold, and the route was
+        // declared refused by the ground. The arrival clause below then read that refusal as an ARRIVAL:
+        // five seconds of standing, and the stop skipped. Measured over a simulated minute of luna B2, a
+        // guard was moving 4% of the time and covered 7.7 du — which is why the owner's whole session read
+        // "no movement — for now" with a man plainly walking the corridor. The wiring was never the fault;
+        // the guard genuinely was not moving. (§13 lesson, again: a copied stepper is a copy of its bugs
+        // and of nothing else.)
+        for (int step = 0; step < AutoWalkSubStepsPerFrame && budget > 1e-9; step++)
         {
             if (!g.Route.TryStep(g.X, g.Y, budget, out double dx, out double dy))
             {
@@ -302,11 +323,31 @@ public sealed partial class Map
 
         double gx = target.X - g.X, gy = target.Y - g.Y;
         bool there = (gx * gx) + (gy * gy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
-        if (there || g.Route is not { Active: true })
+        if (there)
         {
             g.Route = null;
-            g.Standing = PatrolBeat.StandSeconds;
+            g.Retries = 0;
+            g.Standing = PatrolBeat.StandSeconds;   // THE GAP the whole feature is about
             g.Leg = (g.Leg + 1) % _patrolBeat.Count;
+            return;
+        }
+
+        // #832 · A SNAG IS NOT AN ARRIVAL. The old clause charged a full stand and skipped the stop the
+        // moment the route went inactive for any reason, which meant a body grazing a jamb halfway down a
+        // corridor stood for five seconds and then walked somewhere else entirely — a round that was mostly
+        // standing, in places that are not stops, and an unlearnable one for a captain trying to time it.
+        // Standing is earned by ARRIVING; a refused step only costs the plan, so the leg is taken again from
+        // wherever the body actually ended up. Bounded, because a stop that genuinely cannot be reached must
+        // not be ground at forever (§13.1's audit says a floor this generator builds has no such stop, and a
+        // guard is not the place to find out otherwise).
+        if (g.Route is not { Active: true })
+        {
+            g.Route = null;
+            if (++g.Retries > PatrolBeat.RePlansPerLeg)
+            {
+                g.Retries = 0;
+                g.Leg = (g.Leg + 1) % _patrolBeat.Count;
+            }
         }
     }
 
@@ -434,9 +475,14 @@ public sealed partial class Map
             // #793 · …and whether they are HELD rides along, off the same one answer the step wrote. A
             // figure that has stopped because you sat down is drawn stopped (#795's warm seated ink), and
             // the fact goes down from the sim rather than being worked out by the pen.
-            buffer[slot] = underground && i < _guards.Count && _guards[i].Drawn
+            // #832 · …as does whether this is a figure or a MARKER. Out at the far end of the eye's reach
+            // the pen gets a silhouette to draw and no round number to write over it — the sim decides which
+            // rung (PatrolBeat.SightingFor), the renderer only draws what it is handed.
+            buffer[slot] = underground && i < _guards.Count
+                           && _guards[i].Seen != PatrolBeat.Sighting.None
                 ? new DeckPlan.Droid(
-                    _guards[i].X, _guards[i].Y, _guards[i].Facing, _guards[i].DeckName, _guards[i].Held)
+                    _guards[i].X, _guards[i].Y, _guards[i].Facing, _guards[i].DeckName, _guards[i].Held,
+                    _guards[i].Seen == PatrolBeat.Sighting.Smear)
                 : new DeckPlan.Droid(-9999, -9999, 0, PatrolBeat.DeckName(i));
         }
     }

@@ -19,13 +19,72 @@ public static class MotionTracker
     /// jitter never conjures a phantom blip.</summary>
     public const double StillSpeed = 0.15;
 
-    /// <summary>One thing the tracker can see: its bearing (radians, world frame — atan2(dy,dx) from the
-    /// captain) and its range (deck units). Only moving contacts are ever emitted.</summary>
-    public readonly record struct Blip(double Bearing, double Range);
+    // ── #830 · A STANDING MAN IS NOT SILENCE ──────────────────────────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11, watching PATROL 2 in plain sight while the fan read "no movement
+    // — for now":
+    //
+    //   "the patrol should be visible in the motion detector"
+    //   "it is kind of our cheat code... if the guard is still then it would be a blurry blob"
+    //   "a living thing would have to really try hard to be still and calm to avoid being shown"
+    //   "still like the unsure nest blob we have in one space scene the guard should show there"
+    //
+    // The instrument shipped motion-only and that WAS honest arithmetic — a man at a beat stop has a
+    // velocity of zero. It was the wrong law. A body at rest is not an absence: it breathes, it shifts its
+    // weight, it puts a hand on a sling. What it stops doing is TRAVELLING, and travel is only the loudest
+    // of the things a fan can hear.
+    //
+    // So the instrument grows a second KIND of return rather than a fake velocity. Faking one would have
+    // been three lines and a lie — the sim would say "standing" while the fan drew a walker, which is the
+    // sentence-vs-sim failure this project keeps paying for. A kind lets Core decide and the renderer draw:
+    // a crisp dot for something walking, an unsure smear for something merely alive.
 
-    /// <summary>An entity the tracker sweeps: where it is and how fast it is going. The client feeds one
-    /// per Reever (and per own droid, if any move — it is a motion tracker, not a Reever detector).</summary>
-    public readonly record struct Entity(double X, double Y, double Vx, double Vy);
+    /// <summary>#830 · WHAT A CONTACT DOES WHEN IT STOPS MOVING — the one fact the fan needs about it that
+    /// its velocity cannot carry.
+    ///
+    /// <para>It is deliberately named for the DISCIPLINE and not for the biology. A set-down sentry is quiet
+    /// because it is a machine; an Old One that has settled into its own deep is quiet because it is
+    /// holding still on purpose (<see cref="ReeverIdle"/>'s shipped ruling, untouched here). The owner's law
+    /// is that stillness is EARNED — <i>"a living thing would have to really try hard to be still and calm
+    /// to avoid being shown"</i> — and a bored man on a rota has earned nothing.</para></summary>
+    public enum AtRest
+    {
+        /// <summary>Still means still. A parked droid, a set-down sentry, a contact whose owner has declared
+        /// that it is deliberately holding. Nothing comes back off the fan. FIRST so it is the zero value —
+        /// a contact that never says which it is keeps the instrument's oldest behaviour.</summary>
+        Quiet = 0,
+
+        /// <summary>A body that is merely not walking. It returns the nest's own register at person scale:
+        /// faint, smeared, unsure about range and bearing — you know SOMETHING is there and not exactly
+        /// where.</summary>
+        Restless = 1,
+    }
+
+    /// <summary>#830 · Which of the two returns the fan is holding. The distinction is Core's so the
+    /// instrument can DRAW them differently; a renderer working out for itself which dots are certain is how
+    /// two instruments come to disagree (#591's one-reach lesson, pointed at the fan's own output).</summary>
+    public enum BlipKind
+    {
+        /// <summary>Something is travelling. A tight, certain dot at a bearing and a range.</summary>
+        Crisp = 0,
+
+        /// <summary>Something alive is not travelling. The unsure blob: broader than a body, fainter than a
+        /// mover, and imprecise about where exactly it is standing.</summary>
+        Blob = 1,
+    }
+
+    /// <summary>One thing the tracker can see: its bearing (radians, world frame — atan2(dy,dx) from the
+    /// captain), its range (deck units) and WHICH KIND of return it is (#830). The kind defaults to
+    /// <see cref="BlipKind.Crisp"/> so every caller written before the still-blob existed still reads as the
+    /// motion return it always was.</summary>
+    public readonly record struct Blip(double Bearing, double Range, BlipKind Kind = BlipKind.Crisp);
+
+    /// <summary>An entity the tracker sweeps: where it is, how fast it is going, and — #830 — what it does
+    /// when it is not going anywhere. The client feeds one per Reever (and per own droid, if any move — it
+    /// is a motion tracker, not a Reever detector), and one per guard on a round, whose register is declared
+    /// by <c>PatrolBeat.FanRegister</c> rather than typed at the call site.</summary>
+    public readonly record struct Entity(
+        double X, double Y, double Vx, double Vy, AtRest Rest = AtRest.Quiet);
 
     /// <summary>How fast the blips pulse — the audible/visual cadence that quickens as the nearest mover
     /// closes. The client maps this to a blink rate (and, TODO, an audio ping when an audio system
@@ -192,16 +251,60 @@ public static class MotionTracker
         return (new ChirpState(armed, clear), false);
     }
 
+    // ── #830 · THE BLOB'S OWN NUMBERS ─────────────────────────────────────────────────────────────────
+    //
+    // The nest aboard a derelict is the precedent the owner named ("still like the unsure nest blob we have
+    // in one space scene"): a return that is always there, always in the same place, drawn far broader than
+    // a body. This is that idea at PERSON scale, and each number below is the one the on-grid smudge idiom
+    // already uses, so the two instruments say the same thing about uncertainty.
+
+    /// <summary>#830 · The share of the fan's reach at which a LIVING contact holding still still comes
+    /// back. Shorter than a walker's, because a chest rising is a smaller signal than a boot landing — but
+    /// nowhere near short: on B2 it is some seventy deck units, more than twice the eye's own reach, so a
+    /// guard at a stop is heard long before the marker could draw him. FLAGGED for the owner's tuning.</summary>
+    public const double StillReachFraction = 0.6;
+
+    /// <summary>#830 · How faint the blob paints beside a mover at the same range — the "unsure" in the
+    /// owner's own word. Never zero: an instrument that hedges its way down to invisible has not told you
+    /// anything.</summary>
+    public const double BlobFaintness = 0.55;
+
+    /// <summary>#830 · How wide a still return smears at point-blank range, in deck units. A body's own
+    /// footprint plus the fan's doubt about it — the same order as the on-grid smudge's base radius, because
+    /// they are the same claim drawn twice.</summary>
+    public const double BlobBaseSpreadDu = 2.4;
+
+    /// <summary>#830 · …and how much wider per deck unit of range. A crude fan is less sure about a far
+    /// return, which is the smudge idiom's own law (<c>SmudgeRangeSpread</c>), stated once here so the fan
+    /// and the deck plan cannot drift apart about how vague a thing is.</summary>
+    public const double BlobSpreadPerDu = 0.10;
+
+    /// <summary>#830 · How wide the unsure blob reads for a contact at <paramref name="range"/> — deck
+    /// units of smear, growing with distance. The renderer draws a wash this wide instead of a dot, because
+    /// what the captain has been handed is a REGION and drawing a point would claim a precision the
+    /// instrument does not have (#488's ruling, one instrument along).</summary>
+    public static double BlobSpreadDu(double range) =>
+        BlobBaseSpreadDu + (System.Math.Max(0.0, range) * BlobSpreadPerDu);
+
     /// <summary>Read one entity relative to the captain at (<paramref name="originX"/>,
-    /// <paramref name="originY"/>): a <see cref="Blip"/> if it is moving, else null (still → invisible).</summary>
+    /// <paramref name="originY"/>): a crisp <see cref="Blip"/> if it is moving; a
+    /// <see cref="BlipKind.Blob"/> if it is a living thing merely holding still (#830); null only for
+    /// something genuinely inert — a machine set down, or a contact whose owner has declared it is holding
+    /// on purpose. The reach gate is <see cref="Sweep"/>'s, because the two kinds do not carry the same
+    /// distance.</summary>
     public static Blip? Read(double originX, double originY, in Entity e)
     {
-        if (!IsMoving(e.Vx, e.Vy))
-        {
-            return null;
-        }
         double dx = e.X - originX, dy = e.Y - originY;
-        return new Blip(System.Math.Atan2(dy, dx), System.Math.Sqrt((dx * dx) + (dy * dy)));
+        if (IsMoving(e.Vx, e.Vy))
+        {
+            return new Blip(System.Math.Atan2(dy, dx), System.Math.Sqrt((dx * dx) + (dy * dy)));
+        }
+        if (e.Rest != AtRest.Restless)
+        {
+            return null;   // a machine, or something that has EARNED its quiet
+        }
+        return new Blip(
+            System.Math.Atan2(dy, dx), System.Math.Sqrt((dx * dx) + (dy * dy)), BlipKind.Blob);
     }
 
     /// <summary>Sweep every entity and return a blip for each mover, nearest first. Still contacts are
@@ -220,14 +323,56 @@ public static class MotionTracker
         var blips = new System.Collections.Generic.List<Blip>();
         foreach (Entity e in entities)
         {
-            if (Read(originX, originY, in e) is { } b && b.Range <= detectionRange)
+            if (Read(originX, originY, in e) is not { } b)
+            {
+                continue;
+            }
+            // #830 · The two kinds do not carry the same distance. A walker rides the whole fan; a body
+            // merely holding still rides StillReachFraction of it, which is the honest shape of a smaller
+            // signal — and is still, on every floor a round walks, far past anything the eye can do.
+            double carries = b.Kind == BlipKind.Blob ? detectionRange * StillReachFraction : detectionRange;
+            if (b.Range <= carries)
             {
                 blips.Add(b);
             }
         }
-        blips.Sort((a, b) => a.Range.CompareTo(b.Range));
+        // Nearest first, and a certain return outranks an unsure one at the same range: what the readout
+        // and the cadence want to name is the thing the instrument is SURE about.
+        blips.Sort((a, b) => a.Range != b.Range
+            ? a.Range.CompareTo(b.Range)
+            : ((int)a.Kind).CompareTo((int)b.Kind));
         return blips;
     }
+
+    /// <summary>#830 · The nearest MOVING return in a sweep, or null if the fan is holding none. This is the
+    /// number the readout's "closing/drifting" is about — a blob is not going anywhere, so asking whether it
+    /// is closing is asking a question with no answer.</summary>
+    public static double? NearestMoving(System.Collections.Generic.IReadOnlyList<Blip>? returns)
+    {
+        if (returns is null)
+        {
+            return null;
+        }
+        foreach (Blip b in returns)   // Sweep sorts nearest-first, so the first crisp one is the nearest
+        {
+            if (b.Kind == BlipKind.Crisp)
+            {
+                return b.Range;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>#830 · The nearest return of EITHER kind. The cadence reads this: a living thing standing
+    /// three metres away in the dark is not a resting instrument, whatever its velocity says.</summary>
+    public static double? NearestReturn(System.Collections.Generic.IReadOnlyList<Blip>? returns) =>
+        returns is { Count: > 0 } ? returns[0].Range : null;
+
+    /// <summary>#830 · The ping cadence for a whole sweep — the nearest return of either kind. It reads the
+    /// SAME LIST the fan draws, which is the whole of this issue's fourth law: an instrument whose pulse and
+    /// whose dots were counted separately is two instruments.</summary>
+    public static Cadence CadenceOf(System.Collections.Generic.IReadOnlyList<Blip>? returns) =>
+        CadenceFor(NearestReturn(returns));
 
     /// <summary>The ping cadence for the nearest moving contact's range, or <see cref="Cadence.Silent"/>
     /// when nothing moves. Bands: ≤6 du → imminent, ≤18 du → closing, farther → distant.</summary>
@@ -279,4 +424,27 @@ public static class MotionTracker
     public static string Readout(double? nearestRange, bool closing) => nearestRange is { } r
         ? $"movement — {r:F0} du, {(closing ? "closing" : "drifting")}"
         : "no movement — for now";
+
+    /// <summary>#830 · What the fan says about a body it can hear but cannot hear WALKING. It hedges on
+    /// purpose ("about", "not walking") because that is exactly what the instrument has: a region, a
+    /// suspicion, and the certainty that whatever is in it is not a machine.</summary>
+    public static string StillReadout(double range) =>
+        $"something alive — about {range:F0} du, not walking";
+
+    /// <summary>
+    /// #830 law 4 · THE SENTENCE AND THE SWEEP READ THE SAME LIST.
+    ///
+    /// <para>Owner: <i>"'no movement — for now' may only print when the fan holds NO returns of either
+    /// kind."</i> It is the sentence-vs-sim law turned on the instrument itself — the line that sent a
+    /// captain walking into a corridor with a guard standing in it was not wrong about the arithmetic, it
+    /// was answering a narrower question than the one the fan was drawing.</para>
+    ///
+    /// <para>A mover names itself first (it is the more urgent fact and the only one "closing" means
+    /// anything about); failing that a still body is named as a still body; and only an EMPTY sweep is
+    /// allowed the cold line.</para>
+    /// </summary>
+    public static string ReadoutOf(System.Collections.Generic.IReadOnlyList<Blip>? returns, bool closing) =>
+        NearestMoving(returns) is { } moving ? Readout(moving, closing)
+        : NearestReturn(returns) is { } still ? StillReadout(still)
+        : Readout(null, closing);
 }
