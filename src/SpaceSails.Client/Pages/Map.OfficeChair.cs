@@ -119,17 +119,20 @@ public partial class Map
     private void SitInThisCubicle(
         SurfaceExcursion ex, in UndergroundComplex.RingRoom room, RingOffice.Stall cell)
     {
-        // #820's snap, unchanged: the body goes onto Core's own published seat, through StandCaptainAt so
-        // the pad-crew net has its say.
-        StandCaptainAt(cell.SeatX, cell.SeatY, "you sit down on the lid");
+        // #820's snap, through the ONE helper every seat verb in the game sits the captain with — the sweep
+        // that took the bench, the stool and the canteen chair took this seam with them, and a cubicle's pan
+        // arriving after it must not reintroduce a fifth placement.
+        SitCaptainOn(cell.SeatX, cell.SeatY);
 
         _table = new TableTalk
         {
             Key = $"{ex.CanteenWatch}:{ex.Floor}:wc:{room.Number}:{cell.Index}",
             Index = CubicleLock.ApproachOrdinal(room.Number, cell.Index),
             Office = true,
-            OfficeSeatX = cell.StandAt.X,
-            OfficeSeatY = cell.StandAt.Y,
+            // …and standing up puts the captain back on the same square. A cubicle's pan is not a solid on
+            // the plan and the seat is the very spot you were standing on to press [E], but the pair is
+            // published separately all the same (RingOffice.Stall.StandAt) for the ring chair's own reason.
+            StepOff = cell.StandAt,
             CubicleKey = HiveInterior.CubicleKey(ex.Floor, in cell),
             Who = CanteenTable.Who.None,
             Plate = CubicleLock.SeatPlate,
