@@ -250,9 +250,19 @@ public sealed class TheRingIsWalkableTests
             //    cannot brick up a hole nobody built.
             var plugged = new List<DeckPlan.Wall>(honest.Walls);
             var shutDoors = new List<SurfaceLayout.Doorway>();
+            //
+            //    #817 · EVERY ONE OF A ROOM'S STREET DOORS, not just the first. The owner overrode the
+            //    ring's "exactly one door" from inside a landscape office ("bigger spaces must have much
+            //    more doors"), and a sealing experiment that plugged room.Door alone would have left two of
+            //    the three leaves on a 48 du suite wide open — and then reported, in confident detail, that
+            //    the ring is reached off its streets. The room's own published list, so a room that grows a
+            //    door grows this plug with it.
             foreach (UndergroundComplex.RingRoom room in park.Frontage)
             {
-                shutDoors.Add(room.Door);
+                foreach (SurfaceLayout.Doorway leaf in room.Doors)
+                {
+                    shutDoors.Add(leaf);
+                }
                 if (room.Gate is { } gravel)
                 {
                     shutDoors.Add(gravel);

@@ -443,6 +443,26 @@ public partial class Map
         public int BenchIndex { get; init; }
 
         /// <summary>
+        /// #817 · Whether this seat is a CHAIR AT A DESK in one of the park-view suites.
+        ///
+        /// <para>The same machinery again, and for the owner's own stated reason — an office table is the
+        /// restaurant's table <i>"just more rectangular"</i> with <i>"the functionality … about the same
+        /// otherwise"</i>. What the flag buys is the two places an office genuinely differs: NOBODY EVER
+        /// COMES OVER (the staff of this building are somewhere else, and the canteen's recruiter walking
+        /// across an empty office would be the scene and the room disagreeing), and the silence is described
+        /// in an office's own words rather than a hall's.</para>
+        /// </summary>
+        public bool Office { get; init; }
+
+        /// <summary>#820 · Where the captain is put back down when they stand up off an office chair —
+        /// Core's own published seat spot (<see cref="RingOffice.Chair.StandAt"/>), carried on the sitting
+        /// so the standing does not have to go and look the furniture up again.</summary>
+        public double OfficeSeatX { get; init; }
+
+        /// <summary>#820 · The same.</summary>
+        public double OfficeSeatY { get; init; }
+
+        /// <summary>
         /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
         ///
         /// <para>Deliberately NOT <see cref="Solo"/>, and the distinction is the whole of the bench rung.
@@ -668,7 +688,16 @@ public partial class Map
     }
 
     /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
-    /// Close button both come through here, so leaving a table is one act however you do it.</summary>
+    /// Close button both come through here, so leaving a table is one act however you do it.
+    ///
+    /// <para>#820 · …and off an office chair it also puts the body down: Core's own published stand spot,
+    /// carried on the sitting (<see cref="TableTalk.OfficeSeatX"/>) rather than worked out here, because the
+    /// point of the law is that a solid seat may not be able to trap the dot.</para>
+    ///
+    /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
+    /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can
+    /// put a line of its own on the screen, so it may not run while the strip is still up. Watched go red as
+    /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para></summary>
     private void CloseTable()
     {
         // #784 · A SPREAD IS A SPREAD ON A TABLE. Standing up with a write-up half dug abandons it, out loud
@@ -679,7 +708,17 @@ public partial class Map
         {
             AbandonProcessing(ex, Core.Processing.Interruption.StoodUp);
         }
+
+        // #820 · Read, then the table goes, then the body moves. See the summary.
+        (double sx, double sy)? seat =
+            _table is { Office: true } office ? (office.OfficeSeatX, office.OfficeSeatY) : null;
+
         _table = null;
+
+        if (seat is { } spot)
+        {
+            StandCaptainAt(spot.sx, spot.sy, "you push the chair back and stand up");
+        }
     }
 
     /// <summary>
@@ -1000,7 +1039,12 @@ public partial class Map
         // #793 · …and a bench with somebody already on the far end has nowhere to put a third person. Core's
         // own arithmetic (two ends, one of them yours), asked rather than assumed — a wait that dealt an
         // arrival onto a full plank would be the panel claiming an occupancy the room does not have.
-        bool comes = (!t.Bench || ParkBenches.TheOtherEndIsFree(t.SharedSeat))
+        //
+        // #817 · …and NOBODY COMES INTO AN OFFICE. The staff of this building are somewhere else on a shift
+        // this facility no longer runs; a stranger crossing a private suite to offer the captain work would
+        // be the canteen's own scene played in a room whose whole tell is that it is empty.
+        bool comes = !t.Office
+            && (!t.Bench || ParkBenches.TheOtherEndIsFree(t.SharedSeat))
             && !ex.TableApproached.Contains(t.Key)
             && (_approachCheat
                 ?? SittingAlone.SomebodyComes(
@@ -1027,9 +1071,11 @@ public partial class Map
             TableAnswered(ex, t, SittingAlone.Wait,
                 new CanteenTable.Answer(WithTheBodysFootnote(
                     WithTheBodysFootnote(
-                        t.Bench
-                            ? ParkBenches.NobodyCame(beat)
-                            : SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet),
+                        t.Office
+                            ? RingOffice.NobodyCame(beat)
+                            : t.Bench
+                                ? ParkBenches.NobodyCame(beat)
+                                : SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet),
                         seen),
                     rested)));
             return;

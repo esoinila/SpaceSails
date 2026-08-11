@@ -58,6 +58,15 @@ public sealed class AJambIsNotASealedDoorTests
     /// poured stone, and stone is allowed to stop them — that case is asserted too, below.</summary>
     private static double BandHalf => UndergroundComplex.DoorHalf + DeckPlan.AvatarRadius;
 
+    /// <summary>#817 · How far along a wall the sidestep can see — <c>SurfaceCollision</c>'s own
+    /// <c>GapReachInRadii</c> of two radii, restated here because it is private there. Used only to decide
+    /// whether a stretch of wall is stone for far enough either side to BE an experiment about a wall; it
+    /// never widens or narrows a law.</summary>
+    private static double FunnelReach => 2.0 * DeckPlan.AvatarRadius;
+
+    /// <summary>How finely that reach is sounded when asking whether a stretch of wall is really solid.</summary>
+    private const int FunnelProbes = 8;
+
     /// <summary>How many offsets the band is sounded at. Twenty-one samples over 3.9 du, and — because it
     /// divides exactly — the last of them sits ON the edge of the law rather than safely inside it.</summary>
     private const int BandSamples = 20;
@@ -365,6 +374,36 @@ public sealed class AJambIsNotASealedDoorTests
                     {
                         continue;
                     }
+
+                    // #817 · …AND ONE POINT ON THAT LINE IS NOT ENOUGH TO CALL IT A WALL.
+                    //
+                    // The paragraph above is right about WHY and was too weak about HOW. It asks whether
+                    // the body's own centre is on stone. The funnel asks a strictly wider question — is
+                    // there a way through within a sidestep — and it does not care whether that way is
+                    // another office's front door, a rib's mouth or the end of the building. So a captain
+                    // can be squarely on stone AND one stride from something they are entitled to walk
+                    // through, and walking through it proves nothing about walls: it is a captain finding a
+                    // door, which is the OTHER half of this file cheering.
+                    //
+                    // #817 made that case common rather than rare — a room's door count scales with its
+                    // street frontage now, and #822 puts a fire-code floor of two under it, so a 20 du
+                    // office carries two leaves with a 3.6 du pier between them. Watched go red on six
+                    // approaches, every one of them a captain who had correctly found the next way through.
+                    //
+                    // So the line is sounded across the whole reach the sidestep can see, at the same
+                    // radius the body has. If any of it is open, this is not an experiment about a wall.
+                    bool solidAcrossTheReach = true;
+                    for (int probe = -FunnelProbes; probe <= FunnelProbes; probe++)
+                    {
+                        double at = along + (FunnelReach * probe / FunnelProbes);
+                        solidAcrossTheReach &= deck.Collides(
+                            cutRunsAlongX ? at : wallAt, cutRunsAlongX ? wallAt : at);
+                    }
+                    if (!solidAcrossTheReach)
+                    {
+                        continue;
+                    }
+
                     tried++;
                     double dx = cutRunsAlongX ? 0 : PressStep, dy = cutRunsAlongX ? PressStep : 0;
                     for (int i = 0; i < Presses; i++)

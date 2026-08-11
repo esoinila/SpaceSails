@@ -712,6 +712,13 @@ public partial class Map
                 // teaches the privacy law by refusing the spread OUT LOUD rather than by having no control.
                 TryTakeBench();
                 break;
+            case DeckPlan.ConsoleKind.HiveOfficeChair:
+                // #817 · SIT DOWN AT A DESK. Owner, live in a park-view suite: "in office people sit
+                // down… Let's make some cubicles / desks / chairs we can sit in." Same posture, same
+                // panel, same wait beat as a canteen top — and #820's snap, so the body ends up IN the
+                // chair rather than beside it.
+                TryTakeOfficeChair();
+                break;
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
                 break;
