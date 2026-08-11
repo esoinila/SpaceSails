@@ -73,12 +73,6 @@ public partial class Map
         return null;
     }
 
-    /// <summary>#821 · Is the captain shut into one right now? The one question the round asks before it
-    /// decides whether it can see anybody — and the one the seated ladder asks before it calls the spread
-    /// unconditional.</summary>
-    private bool CaptainIsShutIn =>
-        _surface is { } ex && CubicleAround(ex) is { Key: { } key } && CubicleIsShut(key);
-
     /// <summary>
     /// #821 · [E] ON A CUBICLE'S LEAF. From the inside it turns the catch; from the outside it says why it
     /// will not.
@@ -112,7 +106,11 @@ public partial class Map
 
             // THE CATCH IS ON THE INSIDE, which is where catches are. Core owns that sentence and the rule
             // under it, so a dev row and a captain's [E] cannot come to two different answers.
-            if (!CubicleLock.MayTurnTheCatch(cell.Contains(_avatarX, _avatarY)))
+            // …and INSIDE means clear of the leaf, not merely in the box: the catch lays a wall segment on
+            // the opening, and a captain who turned it while standing in the doorway would be standing in
+            // the thing they had just made. Core's own clearance, off Core's own body radius.
+            if (!CubicleLock.MayTurnTheCatch(
+                    cell.ClearOfTheLeaf(_avatarX, _avatarY, DeckPlan.AvatarRadius)))
             {
                 ShowPulseMessage(
                     over ? CubicleLock.RefusedFromOutsideLine : CubicleLock.StepInsideFirstLine);

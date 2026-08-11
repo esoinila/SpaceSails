@@ -313,6 +313,25 @@ public static class RingOffice
         /// arithmetic <see cref="UndergroundComplex.RingRoom.Contains"/> uses one scale up.</summary>
         public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
 
+        /// <summary>
+        /// #821 · Is a body of <paramref name="bodyRadius"/> standing in here AND CLEAR OF THE LEAF — which
+        /// is what "inside" has to mean for the catch, as opposed to for the hide.
+        ///
+        /// <para>A shut cubicle is a WALL SEGMENT laid on the leaf, so a captain who turned the catch while
+        /// standing in the opening would be standing inside the thing they just made. Nothing traps the dot
+        /// on this ground (the ring chair's own law, and the oldest bug this project has), so the catch asks
+        /// for a body's clearance and the refusal that follows is the ordinary one: step in first.</para>
+        /// </summary>
+        public bool ClearOfTheLeaf(double x, double y, double bodyRadius)
+        {
+            if (!Contains(x, y))
+            {
+                return false;
+            }
+            double dx = x - DoorX, dy = y - DoorY;
+            return (dx * dx) + (dy * dy) >= bodyRadius * bodyRadius;
+        }
+
         /// <summary>#821 · Where the captain is put down when they stand up again — the seat, because a
         /// cubicle's pan is not a solid on the plan and the seat is the square you were already standing on
         /// to press [E]. The ring chair's own law (<see cref="Chair.StandAt"/>), said about a smaller
