@@ -568,14 +568,33 @@ public partial class Map
                     continue;
                 }
 
+                // #842 · A FULL TOP REFUSES OUT LOUD — and it answers FIRST, before who is at it is even
+                // asked, because "there is nowhere to sit" is true of every table with no chair left whoever
+                // is in them. Core's own arithmetic (#840's honest Heads), never a count taken here.
+                //
+                // THE PRESS IS CONSUMED (true), which is the whole of the fix: falling through returned
+                // false, and Map.Deck's arm then raised the patron's one-breath card — so [E] at a table
+                // you cannot join quietly did a different thing instead of saying no. #603's law is that a
+                // refusal is SAID, and this is the sentence.
+                //
+                // AND NOTHING ELSE HAPPENS, EVER, however many times it is pressed. The card is not behind a
+                // second press: what is being said at a full top is something you overhear by SITTING
+                // NEARBY, which the neighbour machinery already owns, and a press that eventually gave in
+                // would teach that leaning on strangers works.
+                if (top.Free <= 0)
+                {
+                    ShowPulseMessage(CanteenTable.TableIsFullLine);
+                    return true;
+                }
+
                 // #751 · WHICH TIER, off Core's own list. A background patron is a Stranger and gets the
                 // thin scene; one of the ten named regulars is matched by their plate exactly as before.
                 CanteenTable.Who who = top.Stranger
                     ? CanteenTable.Who.Stranger
                     : CanteenTable.WhoIs(top.Plate);
-                if (who == CanteenTable.Who.None || top.Free <= 0 || top.Plate is not { } plate)
+                if (who == CanteenTable.Who.None || top.Plate is not { } plate)
                 {
-                    return false;   // somebody who is not a scene, or a top with nowhere left to sit.
+                    return false;   // somebody who is not a scene: #709's one breath, and nothing else.
                 }
 
                 // #820 · WHICH CHAIR, off Core's own ring, read before the body moves. The nearest one the
