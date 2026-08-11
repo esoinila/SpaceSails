@@ -2769,26 +2769,43 @@ public static class UndergroundComplex
             ribXs.Add((rx, ribDown));
         }
 
-        // #587 · The ribs, exactly as built, published on the plan. Taken HERE — before the lift alcove is
-        // appended — because the alcove is a mouth in a wall, not a corridor anybody walks down.
+        // #587 · The ribs, exactly as built, published on the plan. This used to be taken HERE, ahead of the
+        // two alcoves being appended to the list below, because an alcove is a mouth in a wall and not a
+        // corridor anybody walks down. #819 · Nothing is appended any more — the alcoves cut their own spans
+        // — so the two lists are the same ribs said twice, and this one is the one the plan is published in.
         var ribList = new List<Rib>(ribXs.Count);
         foreach ((double rx, bool rdown) in ribXs)
         {
             ribList.Add(new Rib(rx, rdown));
         }
 
-        // The lift alcove, as a mouth in the top face at the shaft. It is APPENDED, so it is the one entry in
-        // this list that is not in x order — which is the whole of #587. See SpineFace.
-        ribXs.Add((shaftX, false));
+        // ── #819 · AN ALCOVE'S MOUTH IS CUT TO THE ALCOVE'S OWN WIDTH ────────────────────────────────────
+        //
+        // Owner, on B1 at GOODS CAR 2: "the elevator here has little gaps to the wall." He was reading a
+        // seam with two authors on it. Both alcoves used to be APPENDED INTO `ribXs` — they were mouths in a
+        // face, so the rib list looked like the place to say so — and everything that comes in by that door
+        // is cut at rx ± CorridorHalf, 3.5 du, because that is what a rib is. But the alcove BOX either side
+        // of the car stands at ± ShaftHalf, 3.0 du. The face therefore ended half a du outboard of the wall
+        // it was supposed to meet, on each side of each car, on both faces, on every floor: ~11 px of
+        // daylight between a lift and its own wall at playtest zoom, which is exactly what he saw.
+        //
+        // A CORRIDOR's width governing a SHAFT's mouth — the "one constant governing the wrong thing" class
+        // this file keeps a table of, and the fix is the one #775 already found for the hall's front door:
+        // the alcove hands the sweep a SPAN at its own width, the way the hall's and the ring's doors hand
+        // theirs at DoorHalf. One sorted list, one cursor, #587's law untouched — and the rib list goes back
+        // to holding nothing but ribs, so nothing downstream has to do arithmetic to recognise an alcove.
+        var alcoveMouths = new List<(double Y, double Lo, double Hi)>
+        {
+            (shaftY + CorridorHalf, shaftX - ShaftHalf, shaftX + ShaftHalf),
+        };
 
         // #801 · …and the GOODS CAR's alcove, as a mouth in the LOWER face at the blind end of the corridor.
         // Two cars on one face would read as one machine room; on opposite faces, at opposite ends, they read
-        // as two ways out, which is the whole of the feature. Appended for the same reason the cage is, and
-        // the sweep sorts (§13.2) so being out of x order cannot re-seal anything.
+        // as two ways out, which is the whole of the feature.
         double? serviceX = ServiceShaftAt(field) is { } car ? car.X : null;
         if (serviceX is { } sx2)
         {
-            ribXs.Add((sx2, true));
+            alcoveMouths.Add((shaftY - CorridorHalf, sx2 - ShaftHalf, sx2 + ShaftHalf));
         }
 
         // #775 · THE DOORS THE HALL CUTS IN THE SPINE'S OWN FACE, filled in by the carve below and read by
@@ -2847,12 +2864,24 @@ public static class UndergroundComplex
             // wall are no longer the same width: a rib mouth is the corridor's own CorridorHalf and a hall's
             // front door is DoorHalf, the number every other door in the building is cut to. One sweep, one
             // sorted list of spans, and the cursor still only ever moves forward.
+            //
+            // #819 · …and the alcoves come in as spans of their own now rather than as entries in the rib
+            // list, so `ribXs` is ribs and nothing else and this loop cuts corridors only. The sort stays
+            // where #587 put it for the reason #587 gave: a door span may arrive from any of four lists and
+            // none of them owes this cursor an x order.
             var mouths = new List<(double Lo, double Hi)>();
             foreach ((double rx, bool down) in ribXs)
             {
                 if (cutHere(rx, down))
                 {
                     mouths.Add((rx - CorridorHalf, rx + CorridorHalf));
+                }
+            }
+            foreach ((double ay, double lo, double hi) in alcoveMouths)
+            {
+                if (Math.Abs(y - ay) < 0.001)
+                {
+                    mouths.Add((lo, hi));
                 }
             }
             if (Math.Abs(y - hallSpineFaceY) < 0.001)
@@ -3058,9 +3087,13 @@ public static class UndergroundComplex
         // #801 · …and the LOWER face now has an alcove of its own to leave a mouth for. Same clause, same
         // wall, the other way up: the goods car opens into a sealed box otherwise, which is #585's "the lift
         // cannot be reached from the lift" said about the car nobody had built yet.
-        SpineFace(shaftY + CorridorHalf, (rx, down) => !down || Math.Abs(rx - shaftX) < 0.001);
-        SpineFace(shaftY - CorridorHalf,
-            (rx, down) => down || (serviceX is { } atX && Math.Abs(rx - atX) < 0.001));
+        //
+        // #819 · …and neither of these predicates does arithmetic on a shaft's x any more. They used to have
+        // to recognise the alcove that had been appended into the rib list and let it through; the alcove
+        // hands the sweep its own span now, so each of these is back to the one thing a face has to know —
+        // does this corridor run MY way.
+        SpineFace(shaftY + CorridorHalf, (_, down) => !down);
+        SpineFace(shaftY - CorridorHalf, (_, down) => down);
 
         // #775 · THE FRONT DOORS, PUBLISHED FROM THE VERY LIST THE WALL WAS CUT FROM. #585's one-gap law
         // with no room left for a second opinion: the segments above stop at these spans and the leaves
@@ -3121,12 +3154,11 @@ public static class UndergroundComplex
         // ── THE RIBS. Cross corridors off the spine, with rooms flanking them.
         for (int i = 0; i < ribXs.Count; i++)
         {
+            // #819 · There is no longer a test here for "is this entry actually an alcove". There cannot be
+            // an alcove in this list: the cars hand their mouths to the wall sweep as spans of their own
+            // width, and `ribXs` holds ribs. A skip kept out of caution would be a line asserting the
+            // opposite of what the list above it says.
             (double x, bool down) = ribXs[i];
-            if (Math.Abs(x - shaftX) < 0.001
-                || (serviceX is { } carMouth && Math.Abs(x - carMouth) < 0.001))
-            {
-                continue;   // that entry is a car's alcove mouth, not a corridor
-            }
             if (blockOn is not null && down)
             {
                 // #813 · The block's own gates. Their walls, their claim and the doorway at the end of them
