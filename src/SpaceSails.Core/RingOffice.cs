@@ -1161,10 +1161,17 @@ public static class RingOffice
     private static void Washroom(
         Lay lay, in UndergroundComplex.RingRoom room, double uA, double uB, double vA, double vB)
     {
-        // ── THE TERRACE, down the near pier. It stops when the room runs out of depth rather than when the
-        //    count does: a washroom with two cubicles in it is a washroom, and a cell laid past the glass
-        //    aisle would be a cubicle in the window.
-        double uStripHi = Math.Min(uA + StripDu, uB);
+        // ── THE TERRACE, down the FAR pier — the same face of the room the service strip stands against,
+        //    and that is not a preference. A cell opens off its uLo face (see Cell), so a terrace laid at
+        //    the NEAR pier opens INTO the pier: the leaves are a hand's breadth off a solid wall and #724's
+        //    jamb law goes red on 1512 approaches across every clandestine site in the game — "400 presses
+        //    left the captain at -127.35, still on the near side of the wall at -125.00", which is a captain
+        //    in the room next door walking at a door that is not there. Watched happen inside this issue.
+        //
+        //    It stops when the room runs out of DEPTH rather than when the count does: a washroom with two
+        //    cubicles in it is a washroom, and a cell laid past the glass aisle would be a cubicle in the
+        //    window.
+        double uStripLo = Math.Max(uA, uB - StripDu);
         double v = vA;
         for (int c = 0; c < PublicCubicles; c++)
         {
@@ -1173,21 +1180,22 @@ public static class RingOffice
             {
                 break;
             }
-            Cell(lay, uA, uStripHi, v, to, Fitting.Cubicle, PublicWcPlate(c + 1), publish: true);
+            Cell(lay, uStripLo, uB, v, to, Fitting.Cubicle, PublicWcPlate(c + 1), publish: true);
             v = to;
         }
 
-        // ── THE BASIN RUN, against the far pier and a gangway clear of the terrace. One counter and not one
-        //    fixture per tap: a basin run IS a worktop with holes in it (see Basin), and eleven boxes where
-        //    the eye reads one length of porcelain is eleven things for the collision field to sweep.
-        double runLo = Math.Max(uStripHi + GangwayDu, uB - (2 * CounterHalfDepthDu));
-        if (runLo >= uB - 0.001 || vB - vA < BasinPitchDu)
+        // ── THE BASIN RUN, against the NEAR pier and a gangway clear of the terrace's own leaves. One
+        //    counter and not one fixture per tap: a basin run IS a worktop with holes in it (see Basin), and
+        //    four boxes where the eye reads one length of porcelain is four things for the collision field
+        //    to sweep and three more for a degenerate-wall scan to complain about.
+        double runHi = Math.Min(uA + (2 * CounterHalfDepthDu), uStripLo - GangwayDu);
+        if (runHi <= uA + 0.001 || vB - vA < BasinPitchDu)
         {
             return;
         }
 
         double runV1 = Math.Min(vB, vA + (BasinsPerRun * BasinPitchDu));
-        if (!lay.Box(Fitting.Counter, runLo, vA, uB, runV1, BasinRunPlate, Seating.OneSide))
+        if (!lay.Box(Fitting.Counter, uA, vA, runHi, runV1, BasinRunPlate, Seating.OneSide))
         {
             return;
         }
@@ -1196,7 +1204,7 @@ public static class RingOffice
         int taps = Math.Max(1, (int)((runV1 - vA) / BasinPitchDu));
         for (int t = 0; t < taps; t++)
         {
-            lay.Tap(runLo - CounterHalfDepthDu, vA + ((runV1 - vA) * (t + 0.5) / taps));
+            lay.Tap(runHi + CounterHalfDepthDu, vA + ((runV1 - vA) * (t + 0.5) / taps));
         }
 
         // ── AND SOMEWHERE TO WAIT. A bench against the SAME PIER, past the end of the run — the plain
@@ -1209,18 +1217,18 @@ public static class RingOffice
         {
             return;
         }
-        if (!lay.Box(Fitting.Bench, uB, benchV0, uB, benchV1, BenchPlate, Seating.OneSide))
+        if (!lay.Box(Fitting.Bench, uA, benchV0, uA, benchV1, BenchPlate, Seating.OneSide))
         {
             return;
         }
 
         // A pace off the plank on the room's side of it — away from the pier, which is the direction the
         // basin run's own taps face, taken off ONE published vector rather than a second pair of numbers.
-        double seatU = Math.Max(runLo, uB - ChairSetbackDu);
+        double seatU = Math.Min(runHi, uA + ChairSetbackDu);
         (double gx, double gy) = lay.Frame.TowardTheGlass;
         for (int e = 0; e < 2; e++)
         {
-            lay.Chair(in room, seatU, benchV0 + ((benchV1 - benchV0) * (e + 0.5) / 2.0), (gy, -gx));
+            lay.Chair(in room, seatU, benchV0 + ((benchV1 - benchV0) * (e + 0.5) / 2.0), (-gy, gx));
         }
     }
 
