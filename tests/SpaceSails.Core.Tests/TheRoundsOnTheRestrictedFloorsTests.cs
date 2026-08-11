@@ -490,6 +490,71 @@ public class TheRoundsOnTheRestrictedFloorsTests
         Assert.Equal(MotionTracker.BlipKind.Blob, standing[0].Kind);
     }
 
+    // ── #833 · THE APPROACH ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A WALLET IS READ AT ARM'S LENGTH AND A NOTICE HAPPENS ACROSS A CORRIDOR — and the two numbers may
+    /// never come together. Owner: <i>"I think the guard should approach us when it does the inspection."</i>
+    /// The shipped code raised the card the frame <see cref="PatrolBeat.Notices"/> fired, which is a man
+    /// reading your pass from nine deck units off.
+    /// </summary>
+    [Fact]
+    public void TheCardsReachIsAnArmAndTheNoticesIsACorridor()
+    {
+        Assert.True(PatrolBeat.CardReachDu > 0);
+        Assert.True(PatrolBeat.CardReachDu < PatrolBeat.NoticeDu / 3,
+            $"a card at {PatrolBeat.CardReachDu} du against a notice at {PatrolBeat.NoticeDu} du is not an " +
+            "approach, it is a formality.");
+
+        // …and the predicate agrees with the number, in both directions, at the boundary.
+        Assert.True(PatrolBeat.AtCardReach(0, 0, PatrolBeat.CardReachDu - 0.01, 0));
+        Assert.False(PatrolBeat.AtCardReach(0, 0, PatrolBeat.CardReachDu + 0.01, 0));
+        Assert.False(PatrolBeat.AtCardReach(0, 0, PatrolBeat.NoticeDu - 0.01, 0));
+    }
+
+    /// <summary>
+    /// WALKING AWAY IS ALLOWED, AND IT IS THE ONLY THING THAT EVER HAPPENS TO A CAPTAIN WHO DOES. He stops
+    /// coming when the gap opens past <see cref="PatrolBeat.GivesUpBeyondDu"/> or when the walk-up has run
+    /// its clock — and there is no third answer in this file, because there is no chase in this file.
+    /// </summary>
+    [Fact]
+    public void HeStopsComingAndThatIsTheWholeOfIt()
+    {
+        // Standing still at the reach he noticed you from: he is coming.
+        Assert.True(PatrolBeat.StillComing(0.0, 0, 0, PatrolBeat.NoticeDu, 0));
+        Assert.True(PatrolBeat.StillComing(PatrolBeat.WalkUpSeconds - 0.1, 0, 0, PatrolBeat.NoticeDu, 0));
+
+        // A step or two further than he registered you at: still coming — a man who has said "hold on" does
+        // not give up because you shifted your weight.
+        Assert.True(PatrolBeat.StillComing(0.0, 0, 0, PatrolBeat.NoticeDu + 1.0, 0));
+
+        // Away down the corridor, or twenty seconds of it: he goes back to work.
+        Assert.False(PatrolBeat.StillComing(0.0, 0, 0, PatrolBeat.GivesUpBeyondDu + 0.01, 0));
+        Assert.False(PatrolBeat.StillComing(PatrolBeat.WalkUpSeconds + 0.01, 0, 0, 0.5, 0));
+        Assert.False(PatrolBeat.StillComing(double.NaN, 0, 0, 0.5, 0));
+
+        // …and he gives up at a range he can still SEE you from. Following somebody you can see is the chase
+        // this file does not have.
+        Assert.True(PatrolBeat.GivesUpBeyondDu < PatrolBeat.MarkerSightDu);
+    }
+
+    /// <summary>#833 · The escort's own numbers hang together: the captain is kept closer than the tether, he
+    /// is worked briskly enough to close a lag, and the bound on the whole walk is longer than the longest
+    /// walk the floors can ask for (which <c>TheEscortIsAWalkTests</c> measures at 56 seconds).</summary>
+    [Fact]
+    public void TheEscortsNumbersCanActuallyPutTwoPeopleAtTheSameDoor()
+    {
+        Assert.True(PatrolBeat.ShoulderDu < PatrolBeat.TetherDu,
+            "the captain is held further away than the guard is allowed to let him lag — the escort would " +
+            "stand still forever.");
+        Assert.True(PatrolBeat.CatchUpFactor > 1.0, "a lag that cannot be closed is a lag that stays.");
+        Assert.True(PatrolBeat.AtTheCarDu < PatrolBeat.AtTheStopDu,
+            "the captain would be declared home before the guard had arrived with him.");
+        Assert.True(PatrolBeat.EscortSecondsCap > 60.0);
+        Assert.True(PatrolBeat.PumpsAfterSeconds < PatrolBeat.EscortSecondsCap / 4,
+            "the small talk has to land ON the walk, not at the end of it.");
+    }
+
     // ── THE CHALLENGE ─────────────────────────────────────────────────────────────────────────────────
 
     private const string Plate = "◈ A CONTRACT GUARD, WALKING THE ROUND";

@@ -150,8 +150,13 @@ public partial class Map
 
     /// <summary>Is a click on the glass a walk order right now? Only on the WALKED views — a surface
     /// excursion or a Hive floor, top-down, with the cheat on. Off the cheat this is false everywhere, so
-    /// every pointer path in the game behaves exactly as it did before this feature existed.</summary>
-    private bool AutoWalkAvailable => _autoWalkCheat && _deckMode && !_fpMode && _surface is not null;
+    /// every pointer path in the game behaves exactly as it did before this feature existed.
+    ///
+    /// <para>#833 · …and not while somebody is walking you off his floor. The keys are consumed by the escort
+    /// in the handler above; a clicked route is the same hand on the same controls and is refused in the same
+    /// breath, or the captain would simply walk out from under the man escorting him.</para></summary>
+    private bool AutoWalkAvailable =>
+        _autoWalkCheat && _deckMode && !_fpMode && _surface is not null && !CaptainIsUnderEscort;
 
     /// <summary>Drop the route. <paramref name="tellThem"/> only when the captain did it on purpose — a
     /// route dropped because the floor changed under it needs no receipt.</summary>
@@ -272,6 +277,15 @@ public partial class Map
                     AskWhetherToStandUp();
                     return true;
                 }
+                // #833 · …NOR WHILE SOMEBODY IS WALKING YOU OFF HIS FLOOR. The escort is the one stretch of
+                // this game where the captain's legs are not his own, and it is a few seconds long. The press
+                // is CONSUMED and answered in the guard's own words, for the seat's reason above: a key that
+                // did nothing and said nothing reads as a broken key.
+                if (CaptainIsUnderEscort)
+                {
+                    ShowPulseMessage(Core.PatrolBeat.EscortHeldLine);
+                    return true;
+                }
                 // #729 · THE KEYS ALWAYS WIN, and they win HERE — on the press itself, before the frame
                 // that follows it spends a single sub-step of the route. Cancelling anywhere further down
                 // (in MoveAvatar, say) would let the walk finish the leg it was on, and "it kept going for
@@ -350,6 +364,17 @@ public partial class Map
         // key alone would let a captain sit down mid-stride and keep going, chair and all — which is exactly
         // the "the sim did one thing while the picture said another" this project has paid for three times.
         if (CaptainIsSeated)
+        {
+            return;
+        }
+
+        // ── #833 · …AND A CAPTAIN BEING WALKED OUT DOES NOT STEER ──
+        //
+        // Same law, one posture over, and the same second half of it: the key handler consumes the press, and
+        // this refuses the HELD key and the route already in flight. The escort moves the body itself
+        // (Map.Patrol.WalkTheEscort) through this file's own DeckPlan.Move, so the walls, the air and the fan
+        // all keep working — the only thing taken is the steering.
+        if (CaptainIsUnderEscort)
         {
             return;
         }

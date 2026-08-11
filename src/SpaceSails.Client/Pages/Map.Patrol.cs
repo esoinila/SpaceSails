@@ -24,6 +24,21 @@ namespace SpaceSails.Client.Pages;
 /// <para><b>Nothing in this file can start a chase.</b> A sighting raises a card, the card reads the wallet,
 /// and the worst outcome is a walk back to the lift. That is the owner's law, and it is enforced by there
 /// being no other branch.</para>
+///
+/// <para><b>#833 · AND EVERY BEAT OF IT IS WALKED.</b> Two things in this file used to be sentences over
+/// placements, and the owner caught both in one evening on B2. The card went up the frame he NOTICED you, at
+/// up to nine deck units — <i>"I think the guard should approach us when it does the inspection"</i> — so
+/// there is now a HAIL and an APPROACH between the notice and the read (<see cref="TheHail"/>,
+/// <see cref="WalkUpToTheCaptain"/>), the captain's controls stay free through all of it, and walking away is
+/// allowed. And the escort was <c>StandCaptainAt</c>: <i>"how did I jump to elevator there?"</i> — so the
+/// walk back is now a walk (<see cref="WalkTheEscort"/>), he plans the route himself, the captain is walked
+/// at his shoulder through his own collision, and both of them are moving contacts on the fan the whole way.
+/// The one placement left is behind a caption that ADMITS it is a cut.</para>
+///
+/// <para><b>One stepper.</b> The round, the walk-up and the escort all spend their frame through
+/// <see cref="SpendTheStride"/> — the captain's own sub-stepper, once. #832 was paid for by a copy of that
+/// loop drifting from its original by one epsilon; three copies of it would have been three chances to do
+/// that again.</para>
 /// </summary>
 public sealed partial class Map
 {
@@ -80,6 +95,21 @@ public sealed partial class Map
         /// is here because the hold is a law about MOVERS rather than about watchers — the day something
         /// does follow the captain, it must not need a second stepper to be stopped by a bench.</para></summary>
         public bool Held;
+
+        /// <summary>#833 · Whether this one has said <i>hold on</i> and is crossing the floor to you. The
+        /// round is suspended while it is true and resumes from wherever he ends up, whether he arrives or
+        /// gives up — a walk-up is a detour, never a new state machine.</summary>
+        public bool WalkingUp;
+
+        /// <summary>#833 · How long he has been walking up. Bounded by
+        /// <see cref="PatrolBeat.WalkUpSeconds"/>, because a captain who keeps a pillar between you and him
+        /// for twenty seconds has walked away by any honest reading.</summary>
+        public double WalkUpFor;
+
+        /// <summary>#833 · Seconds until the next re-plan. A walk-up and an escort chase a MOVING target (the
+        /// captain, and the captain's shoulder), and an A* every frame is not free in WASM — nor is it what a
+        /// man crossing a corridor does.</summary>
+        public double RePlanIn;
     }
 
     private readonly List<Guard> _guards = [];
@@ -96,6 +126,39 @@ public sealed partial class Map
     /// <summary>How long since the boots were last mentioned. One line, cooled — a warning, not a
     /// narrator.</summary>
     private double _patrolHeardAgo;
+
+    // ── #833 · THE WALK BACK, AS STATE ────────────────────────────────────────────────────────────────
+    //
+    // Deliberately four small fields on the page rather than a class: an escort is one guard, one destination
+    // and one clock, it exists only while a floor does, and the moment it needs a type of its own it will be
+    // because something other than the lift is a destination — which is a ruling nobody has made.
+
+    /// <summary>#833 · The guard walking the captain back to the car, or null. While it is set the captain's
+    /// controls are HELD (<see cref="CaptainIsUnderEscort"/>) and this guard walks the escort rather than his
+    /// round.</summary>
+    private Guard? _escort;
+
+    /// <summary>#833 · The guard whose read failed and whose walk back has not started yet. The card is up in
+    /// front of the captain at that moment; the walk begins when it comes down, so the player watches the
+    /// walk rather than reading about it over the top of one.</summary>
+    private Guard? _escortDue;
+
+    /// <summary>#833 · Where the escort is going: the car's own mouth, from the one placement the sim ever
+    /// puts the captain through (#681). It is the END STATE of the walk rather than the start of it.</summary>
+    private (double X, double Y) _escortCar;
+
+    /// <summary>#833 · How long the walk back has been going. Bounded by
+    /// <see cref="PatrolBeat.EscortSecondsCap"/> — past which the cut is ADMITTED rather than narrated.</summary>
+    private double _escortSeconds;
+
+    /// <summary>#833 · Whether the small talk has landed yet. Once per escort: a man who said the same thing
+    /// about the pumps twice on one corridor would be a loop, not a character.</summary>
+    private bool _escortSaidPumps;
+
+    /// <summary>#833 · Are the captain's controls being held by somebody walking them off the floor? Read by
+    /// the deck's own stepper and by its key handler — the same one answer, so the keys and the legs cannot
+    /// disagree about who is steering.</summary>
+    private bool CaptainIsUnderEscort => _escort is not null;
 
     /// <summary>Dev cheat: <c>?patrol=N</c> forces N rounds onto whatever restricted floor you boot onto,
     /// so the scene is reachable without waiting for a watch that rolled two.</summary>
@@ -125,6 +188,14 @@ public sealed partial class Map
         _patrolBeat.Clear();
         _patrolFloorSeconds = 0;
         _patrolHeardAgo = HeardAgainSeconds;
+
+        // #833 · …and the walk back dies with the floor it was being walked on. The car IS the destination,
+        // so a captain who has ridden it is a captain the escort is over for — and an escort holding a guard
+        // off a list that has just been cleared would hold the controls forever.
+        _escort = null;
+        _escortDue = null;
+        _escortSeconds = 0;
+        _escortSaidPumps = false;
 
         string bodyId = ex.Stop.Body.Id;
         int level = ex.Floor;
@@ -172,7 +243,7 @@ public sealed partial class Map
     /// card. Called once a frame from <c>StepSurface</c>.</summary>
     private void AdvancePatrol(double dtRealSeconds)
     {
-        if (_guards.Count == 0 || _surface is not { Floor: < 0 })
+        if (_guards.Count == 0 || _surface is not { } ex || ex.Floor >= 0)
         {
             return;
         }
@@ -183,6 +254,16 @@ public sealed partial class Map
 
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
+
+        // #833 · THE CARD HAS COME DOWN, SO THE WALK BEGINS. Asked here rather than wired into
+        // CloseViewObject because this is the one place that runs every frame of every floor: whichever road
+        // out of the card the captain took — Esc, Enter, E, the backdrop, Close — the walk starts on the
+        // first frame after it, and there is no fifth road that could miss it.
+        if (_escortDue is { } due && _viewObject is null)
+        {
+            _escortDue = null;
+            BeginTheWalkBack(due, walls);
+        }
 
         // #793 · DOES ANYBODY HAVE TO STOP BECAUSE THE CAPTAIN DID? Owner, on the bench: "it is a good
         // gumshoe move to see if anyone is following us by foot, as they would need to stop moving also."
@@ -200,12 +281,24 @@ public sealed partial class Map
 
             FootTail.Mover afoot = PatrolBeat.OnTheRound(i, g.X, g.Y);
             g.Held = FootTail.MustHold(sitting, _avatarX, _avatarY, in afoot, sight);
-            if (g.Held)
+            if (ReferenceEquals(g, _escort))
+            {
+                // #833 · The one guard who is not walking a round at all. He is ahead of everything else in
+                // this loop because an escort in progress is not a thing a bench can stop and not a thing a
+                // sighting can interrupt: the captain is at his shoulder, and there is nothing left to see.
+                g.Held = false;
+                WalkTheEscort(g, dt, walls);
+            }
+            else if (g.Held)
             {
                 // A tail that has been made cannot walk on past you. It stops where it stopped, and it drops
                 // off the motion fan honestly while it does — the same clause the stand at a stop keeps.
                 g.Vx = 0;
                 g.Vy = 0;
+            }
+            else if (g.WalkingUp)
+            {
+                WalkUpToTheCaptain(ex, g, dt, walls);
             }
             else
             {
@@ -276,50 +369,7 @@ public sealed partial class Map
             g.Route = planned.Route;
         }
 
-        double budget = PatrolBeat.WalkSpeed * dt;
-        double startX = g.X, startY = g.Y;
-        // #832 · THE EPSILON, AND WHY THE FAN WAS SILENT ALL EVENING. This loop is the captain's own
-        // sub-stepper (Map.Deck.cs), copied — and the copy dropped one character of it: the captain spends
-        // his budget while `budget > 1e-9`, this spent it while `budget > 0`. A frame's budget is never
-        // consumed to exactly zero in binary, so on nearly every frame the loop took ONE MORE sub-step of
-        // about 1e-17 du, the slide moved the body by less than the snag threshold, and the route was
-        // declared refused by the ground. The arrival clause below then read that refusal as an ARRIVAL:
-        // five seconds of standing, and the stop skipped. Measured over a simulated minute of luna B2, a
-        // guard was moving 4% of the time and covered 7.7 du — which is why the owner's whole session read
-        // "no movement — for now" with a man plainly walking the corridor. The wiring was never the fault;
-        // the guard genuinely was not moving. (§13 lesson, again: a copied stepper is a copy of its bugs
-        // and of nothing else.)
-        for (int step = 0; step < AutoWalkSubStepsPerFrame && budget > 1e-9; step++)
-        {
-            if (!g.Route.TryStep(g.X, g.Y, budget, out double dx, out double dy))
-            {
-                break;
-            }
-
-            (double nx, double ny) = SurfaceCollision.Slide(
-                g.X, g.Y, dx, dy, DeckPlan.AvatarRadius, walls, SurfaceCollision.Gait.Person);
-
-            double mx = nx - g.X, my = ny - g.Y;
-            if ((mx * mx) + (my * my) < 1e-18)
-            {
-                g.Route.Snag();
-                break;
-            }
-
-            budget -= System.Math.Sqrt((mx * mx) + (my * my));
-            g.X = nx;
-            g.Y = ny;
-        }
-
-        double tx = g.X - startX, ty = g.Y - startY;
-        g.Vx = dt > 0 ? tx / dt : 0;
-        g.Vy = dt > 0 ? ty / dt : 0;
-        if ((tx * tx) + (ty * ty) > 1e-8)
-        {
-            // Face the way they are actually travelling, not the way they wanted to — truer, and it is what
-            // makes a round readable from the far end of a corridor.
-            g.Facing = System.Math.Atan2(ty, tx);
-        }
+        SpendTheStride(g, dt, walls);
 
         double gx = target.X - g.X, gy = target.Y - g.Y;
         bool there = (gx * gx) + (gy * gy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
@@ -351,18 +401,177 @@ public sealed partial class Map
         }
     }
 
+    /// <summary>
+    /// #833 · ONE FRAME OF WALKING, FOR EVERY REASON ANYBODY ON THIS FLOOR WALKS. The round spends its leg
+    /// through here, the walk-up crosses the corridor through here and the escort walks the captain out
+    /// through here — one loop, so a man is the same man whichever errand he is on and there is exactly one
+    /// place his gait can be got wrong.
+    ///
+    /// <para>#832 · THE EPSILON, AND WHY THE FAN WAS SILENT ALL EVENING. This loop is the captain's own
+    /// sub-stepper (<c>Map.Deck.cs</c>), copied — and the copy dropped one character of it: the captain
+    /// spends his budget while <c>budget &gt; 1e-9</c>, this spent it while <c>budget &gt; 0</c>. A frame's
+    /// budget is never consumed to exactly zero in binary, so on nearly every frame the loop took ONE MORE
+    /// sub-step of about 1e-17 du, the slide moved the body by less than the snag threshold, and the route
+    /// was declared refused by the ground. The round's arrival clause then read that refusal as an ARRIVAL:
+    /// five seconds of standing, and the stop skipped. Measured over a simulated minute of luna B2, a guard
+    /// was moving 4% of the time and covered 7.7 du — which is why the owner's whole session read <i>"no
+    /// movement — for now"</i> with a man plainly walking the corridor. The wiring was never the fault; the
+    /// guard genuinely was not moving. (§13 lesson, again: a copied stepper is a copy of its bugs and of
+    /// nothing else — which is why #833 has THREE callers here and no second copy.)</para>
+    /// </summary>
+    /// <returns>Whether the body actually moved this frame — what the fan is about to be told.</returns>
+    private bool SpendTheStride(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        double budget = PatrolBeat.WalkSpeed * dt;
+        double startX = g.X, startY = g.Y;
+
+        for (int step = 0; step < AutoWalkSubStepsPerFrame && budget > 1e-9; step++)
+        {
+            if (g.Route is not { Active: true } route
+                || !route.TryStep(g.X, g.Y, budget, out double dx, out double dy))
+            {
+                break;
+            }
+
+            (double nx, double ny) = SurfaceCollision.Slide(
+                g.X, g.Y, dx, dy, DeckPlan.AvatarRadius, walls, SurfaceCollision.Gait.Person);
+
+            double mx = nx - g.X, my = ny - g.Y;
+            if ((mx * mx) + (my * my) < 1e-18)
+            {
+                route.Snag();
+                break;
+            }
+
+            budget -= System.Math.Sqrt((mx * mx) + (my * my));
+            g.X = nx;
+            g.Y = ny;
+        }
+
+        double tx = g.X - startX, ty = g.Y - startY;
+        g.Vx = dt > 0 ? tx / dt : 0;
+        g.Vy = dt > 0 ? ty / dt : 0;
+        if ((tx * tx) + (ty * ty) > 1e-8)
+        {
+            // Face the way they are actually travelling, not the way they wanted to — truer, and it is what
+            // makes a round readable from the far end of a corridor.
+            g.Facing = System.Math.Atan2(ty, tx);
+            return true;
+        }
+        return false;
+    }
+
+    // ── #833 · THE APPROACH ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// He has said <i>hold on</i>, and now he crosses the floor to say the rest of it.
+    ///
+    /// <para>The same A* and the same gait as a leg of his round — it is the same man doing the same walk,
+    /// with a moving destination — and the captain's controls are never touched. Three ways out, and only one
+    /// of them raises a card: he ARRIVES at <see cref="PatrolBeat.CardReachDu"/>, or the captain walks out
+    /// past <see cref="PatrolBeat.GivesUpBeyondDu"/>, or the floor refuses him a route to where you are
+    /// standing. The last two put him back on his round with the cooldown running.</para>
+    /// </summary>
+    private void WalkUpToTheCaptain(
+        SurfaceExcursion ex, Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        g.WalkUpFor += dt;
+        g.RePlanIn -= dt;
+
+        // THE READ HAPPENS HERE AND NOWHERE ELSE. Face to face, at card distance — which is the whole of
+        // #833's first half, and the reason this clause is above everything else in the method.
+        if (PatrolBeat.AtCardReach(g.X, g.Y, _avatarX, _avatarY))
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            g.Route = null;
+            g.Facing = System.Math.Atan2(_avatarY - g.Y, _avatarX - g.X);
+
+            // …unless something else is already in front of the captain. He simply stands there at arm's
+            // length until it comes down: a challenge behind a backdrop is a challenge nobody read (#777).
+            if (_viewObject is null)
+            {
+                g.WalkingUp = false;
+                TheRoundStopsAtYou(ex, g);
+            }
+            return;
+        }
+
+        // WALKING AWAY IS ALLOWED. Owner's own note on the approach: it is its own tell. Nothing follows and
+        // nothing escalates — that is #835's question, and this file still has no branch that could.
+        if (!PatrolBeat.StillComing(g.WalkUpFor, g.X, g.Y, _avatarX, _avatarY))
+        {
+            GiveUpTheHail(g);
+            return;
+        }
+
+        if (g.Route is not { Active: true } || g.RePlanIn <= 0)
+        {
+            g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+            AutoWalk.Attempt planned = AutoWalk.Plan(
+                true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(_avatarX, _avatarY),
+                walls, DeckPlan.AvatarRadius,
+                PatrolBeat.LatticeFor(
+                    new PatrolBeat.Stop(g.X, g.Y, "here"),
+                    new PatrolBeat.Stop(_avatarX, _avatarY, "you"),
+                    MoonSurface.ExpeditionField()));
+
+            if (planned.Route is null)
+            {
+                // He can see you and cannot walk to you — a window, a gallery, the far side of a rail. That
+                // is not a challenge, it is a man deciding it is not worth the detour.
+                GiveUpTheHail(g);
+                return;
+            }
+            g.Route = planned.Route;
+        }
+
+        SpendTheStride(g, dt, walls);
+    }
+
+    /// <summary>#833 · He thinks better of it and goes back to work — from wherever the walk-up left him,
+    /// with the cooldown running so the floor does not simply hail you again on the next frame.</summary>
+    private void GiveUpTheHail(Guard g)
+    {
+        g.WalkingUp = false;
+        g.WalkUpFor = 0;
+        g.Route = null;
+        g.Retries = 0;
+        g.Vx = 0;
+        g.Vy = 0;
+        g.SinceStop = 0;
+        ShowPulseMessage(PatrolBeat.WalkedAwayLine);
+        LogAutopilotEvent(PatrolBeat.WalkedAwayLine);
+    }
+
     // ── THE CHALLENGE ─────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// The first guard who registers the captain stops the round. One at a time, and never while a card is
-    /// already up: two of these on one screen would be the stacked-card mistake #777 named, and a challenge
-    /// behind a backdrop is a challenge nobody read.
+    /// The first guard who registers the captain HAILS him. One at a time, and never while a card is already
+    /// up: two of these on one screen would be the stacked-card mistake #777 named, and a challenge behind a
+    /// backdrop is a challenge nobody read.
+    ///
+    /// <para>#833 · This used to raise the card itself, which is what made the inspection telepathy: a notice
+    /// is registered at up to <see cref="PatrolBeat.NoticeDu"/>, and a wallet is read at arm's length. So a
+    /// notice now buys the HAIL and nothing else, and the card is the walk-up's business
+    /// (<see cref="WalkUpToTheCaptain"/>).</para>
     /// </summary>
     private void StopTheRoundIfAnybodySeesYou(IReadOnlyList<SurfaceCollision.Segment> sight)
     {
-        if (_viewObject is not null || !PatrolBeat.CanBeNoticed(_patrolFloorSeconds) || _surface is not { } ex)
+        // …and never while somebody is already on their way over, or walking you out. An approach is the
+        // stop, in progress; a second one behind it would be two men doing one job.
+        if (_viewObject is not null || !PatrolBeat.CanBeNoticed(_patrolFloorSeconds)
+            || _escort is not null || _escortDue is not null)
         {
             return;
+        }
+
+        foreach (Guard g in _guards)
+        {
+            if (g.WalkingUp)
+            {
+                return;
+            }
         }
 
         foreach (Guard g in _guards)
@@ -373,9 +582,35 @@ public sealed partial class Map
                 continue;
             }
 
-            TheRoundStopsAtYou(ex, g);
+            TheHail(g);
             return;
         }
+    }
+
+    /// <summary>
+    /// #833 · THE HAIL. He turns, says the one short line, and starts walking — and that is the whole of what
+    /// a notice buys. It is the second of warning that makes the approach a beat rather than an ambush: a
+    /// captain with a badge gets it out, and a captain mid-mischief has a corridor's length to decide.
+    ///
+    /// <para>The cooldown clock starts HERE rather than at the card, so a hail that is walked away from costs
+    /// the same silence as one that ends in a read — the floor does not get to keep asking.</para>
+    /// </summary>
+    private void TheHail(Guard g)
+    {
+        g.WalkingUp = true;
+        g.WalkUpFor = 0;
+        g.RePlanIn = 0;
+        g.Standing = 0;
+        g.Route = null;
+        g.Retries = 0;
+        g.SinceStop = 0;
+        g.Vx = 0;
+        g.Vy = 0;
+        g.Facing = System.Math.Atan2(_avatarY - g.Y, _avatarX - g.X);
+
+        ShowPulseMessage(PatrolBeat.HailLine, PulseRank.Beat);
+        LogAutopilotEvent(PatrolBeat.HailLine);
+        RendererInterop.PlayCue("blip");
     }
 
     /// <summary>
@@ -416,11 +651,203 @@ public sealed partial class Map
         ApplyNerveShock(NervePips.SightingPips * NervePips.PipUnit, "you were asked and could not answer");
         FileNote(PatrolBeat.EscortNote, "👮");
 
-        // The mildest honest consequence, and the whole of it: back to the car. Placed through the one door
-        // the sim ever puts the captain through (#681), so an escort can never end inside a wall.
-        (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
-        StandCaptainAt(sx, sy, "the guard walks you back to the lift");
+        // The mildest honest consequence, and the whole of it: back to the car — WALKED (#833). It is only
+        // ARMED here, because the card telling the captain about it is standing in front of him at this exact
+        // moment; the walk starts on the first frame after the card comes down, which is the frame he can
+        // actually watch it happen on.
+        _escortDue = g;
         RequestVaultSave();
+    }
+
+    // ── #833 · THE WALKED ESCORT ──────────────────────────────────────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11, escorted four times: "how did I jump to elevator there?" … "So the
+    // guard walk me back to the car" … "ohhh ... they should definitely show on the motion tracker".
+    //
+    // What shipped was StandCaptainAt with EscortLine's prose over it: an instant placement narrated as a
+    // walk, with the guard left standing wherever he was. Everything below exists to make that sentence
+    // literally true, and the guards on it are about the sentence rather than about the geometry.
+
+    /// <summary>
+    /// #833 · He plans the route to the car himself and the walk begins. If the ground will not give him one
+    /// — which §13.1's audit says cannot happen on a floor this generator builds — the old placement is kept,
+    /// with a caption that ADMITS it is a cut. The sentence may never claim a walk the sim did not take.
+    /// </summary>
+    private void BeginTheWalkBack(Guard g, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
+
+        AutoWalk.Attempt planned = AutoWalk.Plan(
+            true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(sx, sy),
+            walls, DeckPlan.AvatarRadius,
+            PatrolBeat.LatticeFor(
+                new PatrolBeat.Stop(g.X, g.Y, "here"), new PatrolBeat.Stop(sx, sy, "the car"),
+                MoonSurface.ExpeditionField()));
+
+        if (planned.Route is null)
+        {
+            TheCutToTheLift(sx, sy);
+            return;
+        }
+
+        // The captain's own hands come off the controls for this stretch and only this stretch — including
+        // any route he had clicked, which would otherwise walk him out from under the escort.
+        CancelAutoWalk(false);
+
+        g.Route = planned.Route;
+        g.Standing = 0;
+        g.Retries = 0;
+        g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+        _escort = g;
+        _escortCar = (sx, sy);
+        _escortSeconds = 0;
+        _escortSaidPumps = false;
+    }
+
+    /// <summary>
+    /// #833 · One frame of the walk back. He spends his route through the same stepper his round does, and
+    /// the captain is WALKED at his shoulder — through <c>DeckPlan.Move</c>, the one primitive the captain's
+    /// body is ever stepped by, so the escort obeys the same walls his own legs do and never once places him.
+    ///
+    /// <para><b>The tether is what makes them arrive together.</b> A guard who out-walked the man he was
+    /// escorting would not be escorting anybody, so he waits when the captain falls behind
+    /// (<see cref="PatrolBeat.TetherDu"/>) and the captain's legs are worked a little brisker than his
+    /// (<see cref="PatrolBeat.CatchUpFactor"/>) until the gap closes.</para>
+    ///
+    /// <para><b>The last pace is the captain's.</b> Once the guard is standing at the car the captain keeps
+    /// walking, to the car's own mouth — which is the exact square the old placement used, arrived at rather
+    /// than assigned. There is no <c>StandCaptainAt</c> on this road at all.</para>
+    /// </summary>
+    private void WalkTheEscort(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        _escortSeconds += dt;
+        g.RePlanIn -= dt;
+        (double sx, double sy) = _escortCar;
+
+        double hx = sx - g.X, hy = sy - g.Y;
+        bool heIsThere = (hx * hx) + (hy * hy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
+
+        double lx = _avatarX - g.X, ly = _avatarY - g.Y;
+        bool waitingForYou = (lx * lx) + (ly * ly) > PatrolBeat.TetherDu * PatrolBeat.TetherDu;
+
+        if (heIsThere || waitingForYou)
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            if (heIsThere)
+            {
+                g.Facing = System.Math.Atan2(ly, lx);   // at the doors, half turned back to you
+            }
+        }
+        else
+        {
+            if (g.Route is not { Active: true } || g.RePlanIn <= 0)
+            {
+                g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+                AutoWalk.Attempt again = AutoWalk.Plan(
+                    true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(sx, sy),
+                    walls, DeckPlan.AvatarRadius,
+                    PatrolBeat.LatticeFor(
+                        new PatrolBeat.Stop(g.X, g.Y, "here"), new PatrolBeat.Stop(sx, sy, "the car"),
+                        MoonSurface.ExpeditionField()));
+                if (again.Route is null)
+                {
+                    EndTheEscort(g);
+                    TheCutToTheLift(sx, sy);
+                    return;
+                }
+                g.Route = again.Route;
+            }
+
+            SpendTheStride(g, dt, walls);
+        }
+
+        // …and the captain, walked. His target is the guard's shoulder while the guard is moving, and the
+        // car's own mouth once the guard is standing at it.
+        (double tx, double ty) = heIsThere ? (sx, sy) : ShoulderOf(g);
+        double cdx = tx - _avatarX, cdy = ty - _avatarY;
+        double want = System.Math.Sqrt((cdx * cdx) + (cdy * cdy));
+        if (want > 1e-6)
+        {
+            double pace = System.Math.Min(want, PatrolBeat.WalkSpeed * PatrolBeat.CatchUpFactor * dt);
+            (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY, cdx / want * pace, cdy / want * pace);
+            _avatarHeading = System.Math.Atan2(cdy, cdx);
+            RefreshAshore();
+        }
+
+        // The small talk, once, on the walk — the punishment's whole texture is a man this unbothered.
+        if (!_escortSaidPumps && _escortSeconds >= PatrolBeat.PumpsAfterSeconds)
+        {
+            _escortSaidPumps = true;
+            ShowPulseMessage(PatrolBeat.PumpsLine);
+            LogAutopilotEvent(PatrolBeat.PumpsLine);
+        }
+
+        double adx = sx - _avatarX, ady = sy - _avatarY;
+        if (heIsThere && (adx * adx) + (ady * ady) <= PatrolBeat.AtTheCarDu * PatrolBeat.AtTheCarDu)
+        {
+            EndTheEscort(g);
+            ShowPulseMessage(PatrolBeat.EscortDoneLine, PulseRank.Beat);
+            LogAutopilotEvent(PatrolBeat.EscortDoneLine);
+            return;
+        }
+
+        // The bound. A walk that has taken a minute and a half is a walk something is wrong with, and the one
+        // honest way out of it is to say so rather than to keep narrating it.
+        if (_escortSeconds > PatrolBeat.EscortSecondsCap)
+        {
+            EndTheEscort(g);
+            TheCutToTheLift(sx, sy);
+        }
+    }
+
+    /// <summary>
+    /// #833 · A pace back and a hand's width to his left — where you walk beside somebody who is showing you
+    /// out. Taken off his FACING, so the captain swings round the corners with him instead of being dragged
+    /// through them.
+    ///
+    /// <para><b>Mostly IN HIS WAKE, and that is measured rather than styled.</b> A first cut put the captain
+    /// half a pace to the side, and a doorway is not half a pace wider than a man: the target kept landing in
+    /// stone, the captain slid along the jamb, the tether stretched and the guard stood waiting — an escort
+    /// that stuttered its way down the corridor and was moving a THIRD of the time (titan B6: 34%, and it ran
+    /// out the whole ninety-second bound without ever reaching the car). Walking where he walked is walkable
+    /// by construction, because he has just walked it: the same sweep now measures 99% moving on all 22
+    /// floors. Both numbers are <c>TheEscortIsAWalkTests</c>'s own.</para>
+    /// </summary>
+    private static (double X, double Y) ShoulderOf(Guard g)
+    {
+        double back = PatrolBeat.ShoulderDu, side = PatrolBeat.ShoulderDu * 0.25;
+        return (g.X - (System.Math.Cos(g.Facing) * back) - (System.Math.Sin(g.Facing) * side),
+                g.Y - (System.Math.Sin(g.Facing) * back) + (System.Math.Cos(g.Facing) * side));
+    }
+
+    /// <summary>#833 · The controls come back and he goes back to the round — from the car, which is where
+    /// the round starts anyway, with the cooldown running so the doors are not a place you get asked twice.</summary>
+    private void EndTheEscort(Guard g)
+    {
+        _escort = null;
+        _escortSeconds = 0;
+        _escortSaidPumps = false;
+        g.Vx = 0;
+        g.Vy = 0;
+        g.Route = null;
+        g.Retries = 0;
+        g.SinceStop = 0;
+        g.Standing = PatrolBeat.StandSeconds;
+    }
+
+    /// <summary>
+    /// #833 · THE ONE HONEST JUMP-CUT. Kept for the pathological case only — a floor that will not give a
+    /// guard a route to its own car — and it SAYS it is a cut. The old code did this every single time and
+    /// narrated it as a walk, which is the sentence-vs-sim bug class the owner caught twice in one evening.
+    /// </summary>
+    private void TheCutToTheLift(double sx, double sy)
+    {
+        // Through the one door the sim ever puts the captain through (#681), so a cut can never end inside a
+        // wall either.
+        StandCaptainAt(sx, sy, "the guard walks you back to the lift");
+        ShowPulseMessage(PatrolBeat.EscortCutLine, PulseRank.Beat);
+        LogAutopilotEvent(PatrolBeat.EscortCutLine);
     }
 
     // ── WHERE THE PASS COMES FROM ─────────────────────────────────────────────────────────────────────
