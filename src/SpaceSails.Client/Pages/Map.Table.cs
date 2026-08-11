@@ -454,13 +454,21 @@ public partial class Map
         /// </summary>
         public bool Office { get; init; }
 
-        /// <summary>#820 · Where the captain is put back down when they stand up off an office chair —
-        /// Core's own published seat spot (<see cref="RingOffice.Chair.StandAt"/>), carried on the sitting
-        /// so the standing does not have to go and look the furniture up again.</summary>
-        public double OfficeSeatX { get; init; }
-
-        /// <summary>#820 · The same.</summary>
-        public double OfficeSeatY { get; init; }
+        /// <summary>
+        /// #820 · WHERE STANDING UP PUTS THE BODY — the square this seat is stepped off onto.
+        ///
+        /// <para>Worked out from published geometry at the moment the captain sat down and carried here, so
+        /// that standing up does not have to go and look the furniture up a second time (and cannot come to
+        /// a different answer if the watch has turned over in between). It is the seat's own square wherever
+        /// a seat is a place you could have been standing anyway — a ring-office chair
+        /// (<see cref="RingOffice.Chair.StandAt"/>), a chair round a canteen top — and the WALK SIDE of the
+        /// plank at a park bench, which is solid and would otherwise close over the dot the moment the
+        /// sitting ended.</para>
+        ///
+        /// <para>Null at a sitting that never moved the body, which is no sitting that ships today; the
+        /// standing simply leaves the captain where they are rather than inventing a square for them.</para>
+        /// </summary>
+        public (double X, double Y)? StepOff { get; init; }
 
         /// <summary>
         /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
@@ -690,9 +698,10 @@ public partial class Map
     /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
     /// Close button both come through here, so leaving a table is one act however you do it.
     ///
-    /// <para>#820 · …and off an office chair it also puts the body down: Core's own published stand spot,
-    /// carried on the sitting (<see cref="TableTalk.OfficeSeatX"/>) rather than worked out here, because the
-    /// point of the law is that a solid seat may not be able to trap the dot.</para>
+    /// <para>#820 · …and it also STEPS THE CAPTAIN OFF THE SEAT: Core's own published square, carried on the
+    /// sitting (<see cref="TableTalk.StepOff"/>) rather than worked out here, and gone to through
+    /// <c>StandCaptainAt</c> so the nudge has its say. That is the whole reason a solid seat — a park bench
+    /// is a segment in the collision field — cannot close over the dot when the sitting ends.</para>
     ///
     /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
     /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can

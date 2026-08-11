@@ -5076,6 +5076,11 @@ public partial class Map
     /// <para>Past <see cref="SpawnNudge.MaxDu"/> it refuses to help and shouts instead. A site with no
     /// standing room within six paces of its own spawn is built wrong, and papering that over would hand the
     /// player a working-looking excursion on ground that is not.</para>
+    ///
+    /// <para>#820 · There is now exactly one placement that does NOT come through here, and it is the one
+    /// that is not a spawn at all: <see cref="SitCaptainOn"/>, which puts a captain ON a seat that may be
+    /// solid by design. Standing back UP off one is this method's job again, which is what keeps a bench
+    /// from being able to trap the dot.</para>
     /// </summary>
     /// <param name="where">What the sim was trying to do, in the captain's own words — it is what the loud
     /// failure names, so "the shuttle sets you down at the lift head" beats "spawn".</param>
@@ -5097,6 +5102,34 @@ public partial class Map
 
         (_avatarX, _avatarY) = (spot.X, spot.Y);
         ShowAndFile(SpawnNudge.ClearedLine(spot.MovedDu), "🧤");
+    }
+
+    /// <summary>
+    /// #820 · THE SNAP — the one place SITTING DOWN moves the body, and the only placement in the game that
+    /// deliberately does not go through <see cref="StandCaptainAt"/>.
+    ///
+    /// <para>Owner, evening playtest 2026-08-11, on a park bench: <i>"I like the sit down symbol. The bench
+    /// is nice also. I would move the avatar on top of the bench when I sit… just snap it into the correct
+    /// position."</i> Every seat verb in the game used to leave the captain standing wherever they had been
+    /// when they pressed [E], so the dot rested its legs a full step from the plank while the rest pips
+    /// ticked.</para>
+    ///
+    /// <para><b>Why not the nudge.</b> <c>StandCaptainAt</c> walks a body OUT of collision, and a park bench
+    /// is a solid segment in the collision field on purpose — you cannot walk through a bench. Putting the
+    /// sit through it would therefore undo the very snap the owner asked for, one frame after it happened,
+    /// and print a rescue line about it. A seat is not a spawn: it is a place the captain is being PUT ON,
+    /// and the thing that keeps a solid one from ever trapping the dot is the other half of this law —
+    /// nothing walks while seated (<c>MoveAvatar</c> refuses on <see cref="CaptainIsSeated"/>) and every
+    /// standing up goes back out through <c>StandCaptainAt</c>, nudge and all, at the seat's own published
+    /// step-off square (<c>TableTalk.StepOff</c>).</para>
+    ///
+    /// <para>The coordinate is always Core's — a bench end, a stool in the counter's published row, a chair
+    /// off a top's ring, a ring-office chair — and never one this file measured (§13.15).</para>
+    /// </summary>
+    private void SitCaptainOn(double x, double y)
+    {
+        (_avatarX, _avatarY) = (x, y);
+        RebuildSurfaceDeck();
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the

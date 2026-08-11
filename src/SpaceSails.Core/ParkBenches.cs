@@ -74,6 +74,33 @@ public static class ParkBenches
         /// pressing [E] does not ask.</summary>
         public (double X, double Y) YourEnd => End(Taken ? 1 : TakenEnd);
 
+        /// <summary>Which end of this plank is nearest a body standing at (<paramref name="fromX"/>,
+        /// <paramref name="fromY"/>). The ORDINAL, so a caller who wants the coordinate asks
+        /// <see cref="End"/> for it and no second author measures a bench.</summary>
+        public int NearestEnd(double fromX, double fromY)
+        {
+            (double ax, double ay) = End(TakenEnd);
+            (double bx, double by) = End(1);
+            double a = ((ax - fromX) * (ax - fromX)) + ((ay - fromY) * (ay - fromY));
+            double b = ((bx - fromX) * (bx - fromX)) + ((by - fromY) * (by - fromY));
+            return b < a ? 1 : TakenEnd;
+        }
+
+        /// <summary>
+        /// #820 · WHICH END THE SIT PUTS YOU ON — the whole of what a bench has to decide when the captain
+        /// presses [E] from wherever they happened to be standing.
+        ///
+        /// <para>Owner, on a bench in the evening: <i>"I would move the avatar on top of the bench when I
+        /// sit… just snap it into the correct position."</i> A plank is two seats, so the snap has to pick
+        /// one, and there are exactly two honest answers. Somebody already on it and there is no choice at
+        /// all — you get the end they are not on, which is <see cref="YourEnd"/>. A bench to yourself and
+        /// you sit down on the end you WALKED UP TO: a captain who approached the left end and landed on the
+        /// right one would have been slid a plank's length sideways by the very key that was supposed to
+        /// stop them resting their legs from a metre away.</para>
+        /// </summary>
+        public (double X, double Y) EndYouTake(double fromX, double fromY) =>
+            Taken ? YourEnd : End(NearestEnd(fromX, fromY));
+
         /// <summary>What is drawn over it, and it says the VERB when there is one to say (#783's own ruling
         /// on a free table: <i>"why not use words like SIT DOWN here if it means sitting down?"</i>). A
         /// shared bench still takes the press — half a bench is a rest — and the plate says which half you
