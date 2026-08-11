@@ -106,6 +106,29 @@ public static class SeatedSpread
         "Papers out on the table. Pick one and dig: what it actually says goes in the book in your own hand, " +
         "and the sheet stays yours.";
 
+    /// <summary>
+    /// #784 · THE SAME DOOR, ONCE THE CASE HAS BEGUN — the label, hint and blurb the controls switch to
+    /// after the first sheet of this sitting is in the book.
+    ///
+    /// <para>Owner, mid-dig at his own table (2026-08-11): <i>"maybe it could say continue working on the
+    /// case (select next item to work the case) etc something that indicates that we change the thing we
+    /// look at."</i> He had just finished a sheet and wanted the next one, and the button still spoke as if
+    /// nothing had happened — a control that reads the same before and after work is a control that cannot
+    /// say the work moved. The words are the state (#603's rule pointed at a label): begun and not-begun
+    /// are different facts, so they get different sentences.</para>
+    /// </summary>
+    public const string SpreadAgainLabel = "Back to the case — next sheet";
+
+    /// <summary>The hint on that control once a sheet of this sitting is already in the book.</summary>
+    public const string SpreadAgainHint =
+        "The spread again: what you finished is in the book — pick the next sheet and dig";
+
+    /// <summary>…and what the page says over the rows on a return visit, so the list reads as the case
+    /// in progress rather than a fresh pile.</summary>
+    public const string SpreadAgainBlurb =
+        "Papers out again. What you finished is in the book — pick the next sheet and dig, or deal with " +
+        "what is left.";
+
     /// <summary>…and what it says when the sleeve has nothing in it worth digging through.</summary>
     public const string NothingToWorkLine =
         "Nothing in the sleeve to work. Rounds and relics are not evidence — paper is, and dirt on somebody " +
@@ -120,6 +143,9 @@ public static class SeatedSpread
         yield return SpreadLabel;
         yield return SpreadHint;
         yield return SpreadBlurb;
+        yield return SpreadAgainLabel;
+        yield return SpreadAgainHint;
+        yield return SpreadAgainBlurb;
         yield return NothingToWorkLine;
     }
 

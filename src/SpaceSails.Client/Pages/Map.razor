@@ -1842,12 +1842,14 @@
                 }
                 @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
                    refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
-                   press, because that is how the gumshoe rule gets learned. *@
+                   press, because that is how the gumshoe rule gets learned. Once a sheet of this sitting
+                   is in the book the door says so (SpreadDoorLabel) — the owner asked the words to carry
+                   the fact that the NEXT press looks at a different sheet. *@
                 <button type="button"
                         class="btn btn-sm @(CanSpreadTheCaseHere ? "btn-outline-light" : "btn-outline-secondary")"
-                        title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                        title="@SpreadDoorHint"
                         @onclick="OpenTheSpread">
-                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpaceSails.Core.SeatedSpread.SpreadLabel
+                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
                 </button>
             </div>
         </div>
@@ -2025,7 +2027,7 @@
                     {
                         <button type="button"
                                 class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
-                                title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                                title="@SpreadDoorHint"
                                 @onclick="() => _satchelPage = SatchelPage.Spread">
                             🗂 SPREAD
                         </button>
@@ -2044,7 +2046,7 @@
                    SENTENCE you get by pressing, because that is how the gumshoe rule gets learned. *@
                 @if (_satchelPage == SatchelPage.Spread)
                 {
-                    <div class="satchel-sub">@SpaceSails.Core.SeatedSpread.SpreadBlurb</div>
+                    <div class="satchel-sub">@(CaseHasBegun ? SpaceSails.Core.SeatedSpread.SpreadAgainBlurb : SpaceSails.Core.SeatedSpread.SpreadBlurb)</div>
 
                     @if (_satchelOutcome is { Length: > 0 } spreadSaid)
                     {
