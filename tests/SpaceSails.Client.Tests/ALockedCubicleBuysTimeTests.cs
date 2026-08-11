@@ -323,6 +323,36 @@ public sealed class ALockedCubicleBuysTimeTests
         Assert.Contains("CubicleLock.OpenedOnHimLine", press, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #821 · THE ROUND DOES NOT CARVE A FLOOR EVERY FRAME.
+    ///
+    /// <para>The hide asks "is the captain shut in?" once a frame, of a list that comes off
+    /// <c>UndergroundComplex.Build</c> — which carves a whole floor, allocating a dozen lists and several
+    /// hundred wall segments. This repo runs in WASM, where a Debug build is a hundred times slower than the
+    /// machine it is written on, and a per-frame carve is the shape of hitch #832 was paid for. It is also
+    /// completely invisible to every other test in the repository: the code compiles, the answer is right,
+    /// and the frame simply takes longer.</para>
+    ///
+    /// <para>So the read is CACHED per (site, level) — the two facts the generator is pure in — and the
+    /// cache is checked before the carve, which is an ordering and is checked as one.</para>
+    /// </summary>
+    [Fact]
+    public void THE_HIDE_ReadsTheFloorsCubiclesOnceAndKeepsThem()
+    {
+        string src = Code("Map.Cubicle.cs");
+
+        int cached = src.IndexOf("_cubicleFloorKey, key", StringComparison.Ordinal);
+        int carved = src.IndexOf("UndergroundComplex.Build", StringComparison.Ordinal);
+
+        Assert.True(cached > 0, "nothing caches the floor's cubicles — the round carves a floor every frame.");
+        Assert.True(carved > cached,
+            "the floor is carved before the cache is consulted, which is a carve per frame in WASM.");
+
+        // …and the key is the two facts the generator is pure in, and nothing about the state of any door —
+        // a cache keyed on a door would be rebuilt by the very act it exists to make cheap.
+        Assert.Contains("$\"{ex.Stop.Body.Id}|{ex.Floor}\"", src, StringComparison.Ordinal);
+    }
+
     /// <summary>THE LADDER READS THE CATCH, NOT A FLAG CAPTURED WHEN THE CAPTAIN SAT DOWN. A captain can sit
     /// down in an open cubicle, reach back and turn the catch, and the spread has to become allowed on that
     /// very frame — so the seat carries the cell's KEY and the rung is decided by asking the one set of shut

@@ -36,25 +36,52 @@ public partial class Map
     private bool CubicleIsShut(string key) =>
         _surface is { } ex && ex.CubiclesShut.Contains(key);
 
-    /// <summary>#821 · Every cubicle on this floor, in the order Core published them. A lookup and never a
-    /// measurement (§13.15): the cells and their leaves were paired by the placer that laid both.</summary>
-    private static IEnumerable<(UndergroundComplex.RingRoom Room, RingOffice.Stall Cell)> CubiclesOn(
-        SurfaceExcursion ex)
+    /// <summary>#821 · The floor <see cref="_floorCubicles"/> was read off, or null before anything has been
+    /// read. See <see cref="CubiclesOn"/> for why there is a cache here at all.</summary>
+    private string? _cubicleFloorKey;
+
+    /// <summary>#821 · This floor's cubicles, in the order Core published them.</summary>
+    private readonly List<(UndergroundComplex.RingRoom Room, RingOffice.Stall Cell)> _floorCubicles = [];
+
+    /// <summary>
+    /// #821 · Every cubicle on this floor. A lookup and never a measurement (§13.15): the cells and their
+    /// leaves were paired by the placer that laid both.
+    ///
+    /// <para><b>Read ONCE per floor and kept.</b> The round asks this every frame — is the captain shut in? —
+    /// and <c>UndergroundComplex.Build</c> is not free: it carves a whole floor, allocating a dozen lists and
+    /// several hundred wall segments, and this repo runs in WASM where a Debug build is a hundred times
+    /// slower than the machine it is written on. A per-frame floor carve is the shape of hitch #832 was paid
+    /// for, and it would have been invisible to every test in the repository.</para>
+    ///
+    /// <para>The generator is pure and deterministic per (site, level), so a cache of it cannot go stale —
+    /// which is why the key is exactly those two facts and nothing about the state of any door.</para>
+    /// </summary>
+    private List<(UndergroundComplex.RingRoom Room, RingOffice.Stall Cell)> CubiclesOn(SurfaceExcursion ex)
     {
+        string key = $"{ex.Stop.Body.Id}|{ex.Floor}";
+        if (string.Equals(_cubicleFloorKey, key, StringComparison.Ordinal))
+        {
+            return _floorCubicles;
+        }
+
+        _cubicleFloorKey = key;
+        _floorCubicles.Clear();
+
         if (ex.Floor >= 0
             || UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park
                 is not { } green)
         {
-            yield break;
+            return _floorCubicles;
         }
 
         foreach (UndergroundComplex.RingRoom room in green.Frontage)
         {
             foreach (RingOffice.Stall cell in room.Cubicles)
             {
-                yield return (room, cell);
+                _floorCubicles.Add((room, cell));
             }
         }
+        return _floorCubicles;
     }
 
     /// <summary>#821 · The cubicle the captain is standing IN, with its key — or null out on the floor. The
