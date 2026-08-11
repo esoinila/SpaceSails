@@ -1995,6 +1995,12 @@
                     {
                         SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
                         SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
+                        // #828 · The bucket is NAMED, and it is the one the boots are at — never "a bin".
+                        // Away from one the title falls back to the verb, because a page whose fixture has
+                        // walked off is a page about the verb and nothing else.
+                        SatchelPage.Bin => BinWithinReach() is { } titleBin
+                            ? SpaceSails.Core.RipAndBin.PickerTitle(titleBin.Tier)
+                            : SpaceSails.Core.RipAndBin.Label,
                         _ => "🎒 WHAT YOU ARE CARRYING",
                     })
                 </div>
@@ -2030,6 +2036,20 @@
                                 title="@SpreadDoorHint"
                                 @onclick="() => _satchelPage = SatchelPage.Spread">
                             🗂 SPREAD
+                        </button>
+                    }
+                    @* #828 · THE BIN, and the tab follows the FIXTURE the way the spread tab follows the
+                       posture: standing at a bucket it is a page, three du away it is not a page you are
+                       being refused. It exists so the captain who opened the pocket by reflex ([I]) can
+                       still find the bin they are standing at, and so the one who came in through [E] can
+                       get back to their pockets and their book without walking away first. *@
+                    @if (BinWithinReach() is { } binTab)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Bin ? "on" : "")"
+                                title="@SpaceSails.Core.RipAndBin.Hint(binTab.Tier)"
+                                @onclick="() => _satchelPage = SatchelPage.Bin">
+                            @SpaceSails.Core.RipAndBin.Glyph THE BIN
                         </button>
                     }
                 </div>
@@ -2248,6 +2268,60 @@
                                 nothing to say — the book does not know which, and neither do you.
                             </div>
                         }
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Bin)
+                {
+                    @* #828 · THE BIN — the sleeve held open over the bucket the captain is standing at.
+                       Owner: "I think the trash could be an e-use ... where we select from inventory the
+                       processed items we rip and deposit into trash."
+
+                       Nothing on this page is a second shredder. The rows are the sleeve's own papers, the
+                       order is Core's (worked sheets lead), the words on them are Core's, and the press is
+                       RipItUp — the SAME act the spread row fires, which is why the filed fact reads the
+                       same whichever grip the captain took. No control is disabled (#212/#603): a sheet
+                       nothing has been dug out of yet carries a flag and a warning in its hint, and then
+                       does exactly what it is asked, because it is the captain's paper. *@
+
+                    @* The bet is spoken at the bin and nowhere else (RipAndBin.TierBet) — and when the
+                       captain has walked off mid-picker the page says THAT instead, rather than going on
+                       describing a bucket that is now down the corridor. *@
+                    @if (BinWithinReach() is { } overIt)
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.TierBet(overIt.Tier)</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.NoBinLine</div>
+                    }
+
+                    @if (_satchelOutcome is { Length: > 0 } binSaid)
+                    {
+                        <div class="satchel-outcome">@binSaid</div>
+                    }
+
+                    @if (BinnableFinds() is { Count: > 0 } feed)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in feed)
+                            {
+                                SpaceSails.Core.Satchel.Item paper = lying;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@BinRowHint(paper)"
+                                            @onclick="() => RipItUp(paper)">
+                                        <span class="satchel-item-name">@SatchelLabel(paper)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.RipAndBin.Glyph @BinRowFlag(paper)
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.RipAndBin.NothingToBinLine</div>
                     }
                 }
                 else

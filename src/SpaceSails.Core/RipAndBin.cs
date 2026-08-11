@@ -244,6 +244,92 @@ public static class RipAndBin
         "That is not a thing anybody reads over your shoulder. Paper is, and a file on somebody is. Rounds, "
         + "cards and the paperwork for something too big to lift are not evidence — they are property.";
 
+    // ── #828 · THE OTHER DOOR: THE BIN TAKES [E] ─────────────────────────────────────────────────────────
+    //
+    // Owner, at his own table in the upper canteen (2026-08-11): "I think the trash could be an e-use …
+    // where we select from inventory the processed items we rip and deposit into trash."
+    //
+    // #798 shipped this verb PAPER-FIRST — it lives on the row and the bin is a range check. This is the
+    // mirror: stand at the bin, open the sleeve over it, feed it. Nothing below is a second shredder. It is
+    // the WORDS a picker needs and the ORDER it lists in, and the act on the far side of a press is the one
+    // in this file already, which is why the filed fact reads the same whichever grip you took.
+
+    /// <summary>
+    /// #828 · What the picker says when the sleeve holds nothing a bin has any business with — the
+    /// bin-flavoured kin of <c>SeatedSpread.NothingToWorkLine</c>.
+    ///
+    /// <para>One sentence, and it names what WOULD go in, because a refusal a player cannot act on is a wall
+    /// with a sign on it (#603) — the same discipline <see cref="NoBinLine"/> is written under, pointed the
+    /// other way round: there the bin was missing, here it is the paper.</para>
+    /// </summary>
+    public const string NothingToBinLine =
+        "Nothing in the sleeve this bin has any business with — paper is what it takes off your hands, and "
+        + "rounds and relics are not evidence.";
+
+    /// <summary>#828 · The picker's own title, naming the bucket the captain is actually standing at. The
+    /// bin is never guessed at on this page: it is the one you walked to, and the title says which.</summary>
+    public static string PickerTitle(Tier tier) => $"{Glyph} WHAT GOES IN {TheBin(tier).ToUpperInvariant()}";
+
+    /// <summary>#828 · …and what the KEYBAR says while the captain stands at one. A verb nobody is told
+    /// about is a verb nobody has (#212/#537, and the owner pressing T at a map that never mentioned it):
+    /// the strip at the bottom of the screen reads "E — use" on every floor of this building, which is
+    /// exactly nothing at the one spot where [E] does this. It names the RUNG, like every other sentence
+    /// here, because which bucket you are about to feed is the whole decision.</summary>
+    public static string KeyPrompt(Tier tier) => $"{Glyph} E — feed {TheBin(tier)}";
+
+    /// <summary>
+    /// #828 · THE QUIET FLAG on a sheet nothing has been dug out of yet.
+    ///
+    /// <para>Owner's two-tier reading law, same issue: <i>"the read from inventory and dig at it… If we dig
+    /// at something then we have really read it with care"</i> — and his ruling on what the picker does about
+    /// it: glanced-only papers <b>deserve a quiet flag rather than a refusal</b>. So this is a word on a row
+    /// and never a gate. The captain may always bin their own paper; the game simply says what it costs.</para>
+    /// </summary>
+    public const string NotYetWorkedFlag = "not yet worked";
+
+    /// <summary>#828 · …and the warning behind that flag, said BEFORE the press, because the price of a press
+    /// is known before the press. It is the completeness law read backwards: after a dig the book holds
+    /// everything the sheet could show, so binning costs nothing — and before one it costs the sheet.</summary>
+    public const string NotYetWorkedWarning =
+        "Nothing has been dug out of this one yet: tear it up and whatever it had to say goes with it, "
+        + "because the book was never told.";
+
+    /// <summary>#828 · …and what a row that IS done says instead, in the book's own register.</summary>
+    public const string AlreadyInTheBookFlag = "in the book";
+
+    /// <summary>
+    /// #828 · THE ORDER THE PICKER LISTS IN: worked sheets lead.
+    ///
+    /// <para>The natural feed, and the two-tier law's own consequence — <i>you can only safely destroy what
+    /// you have DUG, because only the dig guarantees the book kept it</i> — so the finished ones are the ones
+    /// under the captain's thumb. Nothing is hidden: the rest follow, flagged, one press away.</para>
+    ///
+    /// <para>STABLE within each half, so the sleeve's own order survives inside the two groups: a list that
+    /// re-shuffled the unworked papers every time somebody dug one would be a list nobody can learn. It lives
+    /// in Core, over a predicate, because "which of these is done" is the client's fact about a running
+    /// world and "which end of the list they go" is a law.</para>
+    /// </summary>
+    public static List<T> WorkedLeading<T>(IReadOnlyList<T> rows, Func<T, bool> worked)
+    {
+        ArgumentNullException.ThrowIfNull(worked);
+        var order = new List<T>((rows ?? []).Count);
+        foreach (T row in rows ?? [])
+        {
+            if (worked(row))
+            {
+                order.Add(row);
+            }
+        }
+        foreach (T row in rows ?? [])
+        {
+            if (!worked(row))
+            {
+                order.Add(row);
+            }
+        }
+        return order;
+    }
+
     /// <summary>
     /// What the captain is told as it comes apart in their hands. One sentence per rung, because the hands
     /// are doing three different things and a captain told the wrong story about their own hands has been
@@ -380,12 +466,18 @@ public static class RipAndBin
         yield return Label;
         yield return NoBinLine;
         yield return NotEvidenceLine;
+        yield return NothingToBinLine;
+        yield return NotYetWorkedFlag;
+        yield return NotYetWorkedWarning;
+        yield return AlreadyInTheBookFlag;
         foreach (Tier tier in Ladder)
         {
             yield return TheBin(tier);
             yield return PlateFor(tier);
             yield return TierBet(tier);
             yield return Hint(tier);
+            yield return PickerTitle(tier);
+            yield return KeyPrompt(tier);
             yield return RippedLine("the manifest", tier);
             yield return DisposalNote("the manifest", tier);
         }

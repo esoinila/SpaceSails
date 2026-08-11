@@ -405,7 +405,7 @@ public partial class Map
             return;
         }
 
-        if (ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}"))
+        if (ex.WrittenUpProperly.Contains(WrittenUpKey(item)))
         {
             SayItWhereTheyAreLooking(SeatedPosture.AlreadyWrittenLine);
             return;
@@ -447,7 +447,7 @@ public partial class Map
         {
             return;
         }
-        if (!ex.WrittenUpProperly.Add($"{item.Kind}:{item.Id}"))
+        if (!ex.WrittenUpProperly.Add(WrittenUpKey(item)))
         {
             return;
         }
@@ -471,7 +471,7 @@ public partial class Map
     private bool CanWriteUp(Core.Satchel.Item item) =>
         _surface is { } ex
         && LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
-        && !ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}");
+        && !ex.WrittenUpProperly.Contains(WrittenUpKey(item));
 
     /// <summary>What the pen's tooltip says — the hint when it will work, the refusal when it will not, so
     /// the price of a press is known before the press (#696's own discipline, one control over).</summary>
@@ -494,7 +494,7 @@ public partial class Map
             }
             foreach (Core.Satchel.Item item in _satchel)
             {
-                if (ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}"))
+                if (ex.WrittenUpProperly.Contains(WrittenUpKey(item)))
                 {
                     return true;
                 }
@@ -542,4 +542,20 @@ public partial class Map
     /// still there for the SHREDDER's sake does not go on offering an evening's work that is already done.</summary>
     private string SpreadRowVerb(Core.Satchel.Item item) =>
         CanWriteUp(item) ? "dig it out →" : "already in the book";
+
+    /// <summary>
+    /// #784/#828 · HOW THE REGISTER NAMES ONE SHEET — the key, built once.
+    ///
+    /// <para>A satchel row has a kind and an id and neither alone is a document: two moons can hand out
+    /// paper #3. This project has paid four times for a law transcribed at its call sites, and #828 was
+    /// about to add a fifth copy of this one from the far side of the building, so the format lives here and
+    /// every hand that writes the set or reads it goes through it.</para>
+    /// </summary>
+    private static string WrittenUpKey(Core.Satchel.Item item) => $"{item.Kind}:{item.Id}";
+
+    /// <summary>#828 · Is this sheet already in the book in the captain's own hand? The bin picker's own
+    /// question, asked of the seated register's set rather than of a second one — the dig is the only thing
+    /// that puts a paper in here, and the picker only reads.</summary>
+    private bool AlreadyWrittenUp(Core.Satchel.Item item) =>
+        _surface is { } ex && ex.WrittenUpProperly.Contains(WrittenUpKey(item));
 }

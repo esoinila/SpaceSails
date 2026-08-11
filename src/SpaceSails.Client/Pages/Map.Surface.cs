@@ -3136,6 +3136,12 @@ public partial class Map
         /// while seated: the tab is not drawn on your feet, and the page itself refuses out loud if you
         /// somehow arrive on it standing (<see cref="SeatedSpread"/>).</summary>
         Spread,
+
+        /// <summary>#828 · THE BIN — the sleeve held open over the bucket you are standing at, worked sheets
+        /// leading. Reachable only while a bin is within reach, exactly as the spread follows the posture:
+        /// away from one this is not a page you are being refused, it is a page that does not apply. The
+        /// press on a row is the same act the spread's own shredder fires (<see cref="RipAndBin"/>).</summary>
+        Bin,
     }
 
     private SatchelPage _satchelPage = SatchelPage.Carried;
@@ -9063,7 +9069,12 @@ public partial class Map
         var parts = new List<string>
         {
             "WASD — move",
+            // #828 · …and the BIN says so, in the same ladder and the same order the [E] dispatch itself
+            // asks: your feet first, then the bucket you are standing at, then the ground. Underground this
+            // strip read "E — use" everywhere, which is exactly nothing at the one spot where the key opens
+            // the sleeve over a bin — and a verb nobody is told about is a verb nobody has (#212/#537).
             StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : TheBinTakingYourPress() is { } atTheBin ? RipAndBin.KeyPrompt(atTheBin.Tier)
                 : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
                 : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
                 : "E — dig / use",
