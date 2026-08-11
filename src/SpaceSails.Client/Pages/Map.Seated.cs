@@ -479,6 +479,38 @@ public partial class Map
         !CanWriteUp(item) ? SeatedPosture.AlreadyWrittenLine
         : SpreadRefusal ?? SeatedSpread.SpreadHint;
 
+    /// <summary>#784 · HAS THE CASE BEGUN — is any sheet still in the sleeve already in the book? The one
+    /// fact the spread door's own words switch on (owner: the button should say "we change the thing we
+    /// look at" once a sheet is done): begun means <see cref="SeatedSpread.SpreadAgainLabel"/>, untouched
+    /// means <see cref="SeatedSpread.SpreadLabel"/>. Read off <c>WrittenUpProperly</c> against the sleeve
+    /// as it stands — a worked paper that was since binned no longer argues the case is open here.</summary>
+    private bool CaseHasBegun
+    {
+        get
+        {
+            if (_surface is not { } ex)
+            {
+                return false;
+            }
+            foreach (Core.Satchel.Item item in _satchel)
+            {
+                if (ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>The spread door's label for the current state of the case — see <see cref="CaseHasBegun"/>.</summary>
+    private string SpreadDoorLabel =>
+        CaseHasBegun ? SeatedSpread.SpreadAgainLabel : SeatedSpread.SpreadLabel;
+
+    /// <summary>…and its hint, unless a refusal outranks it.</summary>
+    private string SpreadDoorHint =>
+        SpreadRefusal ?? (CaseHasBegun ? SeatedSpread.SpreadAgainHint : SeatedSpread.SpreadHint);
+
     /// <summary>
     /// #784/#798 · THE ROWS THE SPREAD OFFERS — everything in the sleeve this table has business with.
     ///
