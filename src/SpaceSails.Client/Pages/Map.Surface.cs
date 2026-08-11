@@ -5023,7 +5023,10 @@ public partial class Map
             monolithEpoch: Monolith.EpochAt(SimTime),
             // #585: whether this ground carries a clandestine site is ALREADY decided (ResolveSecretLab, which
             // honours ?secretlab=1). The renderer is told; it never rolls again.
-            hasSecretSite: ex.Lab is { HasLab: true });
+            hasSecretSite: ex.Lab is { HasLab: true },
+            // #835 · KICKED OUT, on the shed wall, in the descent plate's own typography — and null on every
+            // other rebuild this game has ever done, which is nearly all of them.
+            bigLabels: TheKickedOutPlate(ex));
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
         // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly

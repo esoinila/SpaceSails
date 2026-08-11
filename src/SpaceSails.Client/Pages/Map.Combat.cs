@@ -586,6 +586,13 @@ public partial class Map
         FileNote(order.Line, "🔫");
         FileNote(GunfireHeard.BookLine(shot), "🔫");
 
+        // #835 · …AND WHETHER ANYBODY ON THE ROTA WAS LOOKING AT YOU WHILE YOU DID IT. The comment above says
+        // "nothing in this build reads the ledger; #804 prices it" — and this is not that: the ledger is
+        // still unread, and a bang heard three corridors away still buys nothing. This is the one man who was
+        // watching your hands, and it is the only crime these floors have a verb for. Below the surface only,
+        // his eye only; on a moon's own regolith there is nobody to see it.
+        SomebodySawThat(Core.PatrolBeat.Provocation.SeenAtTheHasp);
+
         // The list the captain is looking at is now wrong — that door is a doorway. Rescan rather than
         // patch: one source for what a gun can see, asked again.
         ScanForLocks(unit);

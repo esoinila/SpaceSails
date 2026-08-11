@@ -274,13 +274,18 @@ public static class MoonSurface
     /// (<paramref name="ownCaches"/>). <paramref name="fillDroids"/> and <paramref name="droidCount"/> come
     /// from the caller so the crew and the live Old Ones share one buffer.
     /// </summary>
+    /// <param name="bigLabels">#835 · A wall stencil for the shed, or nothing — which is what the regolith
+    /// normally has. It is passed OUTSIDE the memoized layout on purpose: the cache holds the ground (walls,
+    /// consoles, labels), and a sign that is up for fourteen seconds is not the ground. The one caller today
+    /// is the kick-out's KICKED OUT plate.</param>
     public static DeckPlan SurfaceDeck(
         string bodyId,
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
         string siteSalt = "", string siteName = "", long monolithEpoch = 0,
-        bool hasSecretSite = false)
+        bool hasSecretSite = false,
+        (float X, float Y, string Text, float Px, int Tone)[]? bigLabels = null)
     {
         ArgumentNullException.ThrowIfNull(fillDroids);
         ownCaches ??= [];
@@ -328,7 +333,9 @@ public static class MoonSurface
             // #592: and its doors, so an IMPORTED one stands out as the sentence it is.
             doorInk: BodyPalette.DoorInk(bodyId),
             // #649: the monolith's filled mass — the one object on any moon drawn without a join in it.
-            structures: layout.Structures);
+            structures: layout.Structures,
+            // #835: the shed's wall stencil, when there is one to paint. Outside the memo on purpose.
+            bigLabels: bigLabels);
     }
 
     // #371 Phase 1 · the memoized, delegate-free layout: everything in a surface deck that is a pure
