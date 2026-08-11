@@ -318,6 +318,21 @@ public static class HiveInterior
                     stools.Add(new(
                         (float)sx, (float)sy, TheStools.Taken(bodyId, level, s, canteenWatch), anybody));
                 }
+
+                // ── #827 · AND THE HOLES IN THE ROW, WHICH ARE FIXTURES TOO ──────────────────────────
+                //
+                // Owner, completing the counter model: "there are gaps for people to walk to the cashier
+                // etc." A gap with nothing painted on it is a seat somebody unbolted; a gap with its own
+                // stencil is a place to stand. Both the position and the words are Core's — this loop reads
+                // the same one published row the stools above came out of, so a gap cannot end up somewhere
+                // the seats do not agree with.
+                foreach (UndergroundComplex.CounterPlace place in counter.CounterRow)
+                {
+                    if (!place.Seated)
+                    {
+                        labels.Add(((float)place.X, (float)place.Y, place.Plate));
+                    }
+                }
             }
 
             // #751 · A hall's plate is stencilled beside its DOOR, which is on whichever face the rib is

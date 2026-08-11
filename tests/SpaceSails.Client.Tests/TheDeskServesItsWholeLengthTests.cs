@@ -238,8 +238,13 @@ public sealed class TheDeskServesItsWholeLengthTests
         (int Cx, int Cy) Cell(double x, double y) =>
             ((int)Math.Round((x - hall.X0) / Step), (int)Math.Round((y - hall.Y0) / Step));
 
-        (int sx, int sy) = Cell(a.X, a.Y);
-        Assert.False(plan.Collides(a.X, a.Y), "the fixture's own spot is inside a wall.");
+        // #827 · Started on the counter's own STANDING SQUARE. The amenity's spot is the desk's face now —
+        // the console dot is drawn on the counter, which is the whole of that issue — so a flood started on
+        // it would start inside the very wall this guard is about.
+        UndergroundComplex.ServiceRun start = hall.Service!.Value;
+        (int sx, int sy) = Cell(start.StandX, start.StandY);
+        Assert.False(plan.Collides(start.StandX, start.StandY),
+            "the square a customer stands on is inside a wall.");
 
         var queue = new Queue<(int X, int Y)>();
         queue.Enqueue((sx, sy));
