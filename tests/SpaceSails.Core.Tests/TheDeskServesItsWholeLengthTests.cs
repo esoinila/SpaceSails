@@ -285,16 +285,19 @@ public sealed class TheDeskServesItsWholeLengthTests
                 wrong.Add($"  {body} B{-level}: the keep stands beyond the far wall of his own bar.");
             }
 
-            // The fixture's plate — the console dot, and what the deck writes THE COUNTER beside — is ON the
-            // run, which since #827 means it is on the counter.
-            if (Math.Abs(plateAcross) > 0.01)
-            {
-                wrong.Add($"  {body} B{-level}: the fixture's plate is {plateAcross:F2} du off its own run.");
-            }
-
-            // #827 · …and the square a tester is SET DOWN on is on the captain's side of it, out on clear
-            // floor. The two used to be the same point and could not be any more: the plate is on a wall.
+            // The fixture's plate — and the square a tester is set down on — is on the CAPTAIN's side.
+            //
+            // #827 · Which is a real clause now rather than a tautology. The run used to be laid on this
+            // very square, so "the plate is on the run" was one point compared with itself; the run is the
+            // desk's front FACE now, and the plate is the customer's own standing square in front of it —
+            // the one the walkability audits stand a body on. Two different points, and the order between
+            // them is the law.
             (double _, double standAcross) = Frame(run, run.StandX, run.StandY);
+            if (Math.Abs(plateAcross - standAcross) > 0.01)
+            {
+                wrong.Add($"  {body} B{-level}: the fixture's plate is {plateAcross:F2} du off the run and "
+                    + $"the customer's own square is {standAcross:F2} — the card would never open.");
+            }
             if (Math.Sign(standAcross) == behind || Math.Abs(standAcross) < 0.01)
             {
                 wrong.Add($"  {body} B{-level}: the customer's standing square is {standAcross:F2} du off "

@@ -1465,8 +1465,11 @@ public static class UndergroundComplex
     /// till.</param>
     /// <param name="KeepY">The same.</param>
     /// <param name="StandX">#827 · Where a customer stands to be served — clear floor on the hall side of
-    /// the face, in front of the till. The run itself is ON a wall now, so a caller that wants a SQUARE
-    /// rather than a segment asks for one instead of taking the middle of the rail and hoping.</param>
+    /// the face, at the middle of the desk, one <see cref="HallServiceStandoffDu"/> out. The run itself is
+    /// ON a wall now, so a caller that wants a SQUARE rather than a segment asks for one instead of taking
+    /// the middle of the rail and hoping. It is the fixture's own spot (<c>Amenity.X/Y</c>), which is the
+    /// square every walkability audit in the game stands a body on and the square <c>?counter=1</c> sets a
+    /// tester down on.</param>
     /// <param name="StandY">The same.</param>
     public readonly record struct ServiceRun(
         double X0, double Y0, double X1, double Y1, double KeepX, double KeepY,
@@ -3843,12 +3846,18 @@ public static class UndergroundComplex
     /// a chair in open floor. A body's radius puts the dot's edge on the desk's edge, which is what
     /// "bellying up to the bar" looks like from above.</para>
     ///
+    /// <para><b>Three quarters of a body's width</b>: the radius, plus a quarter more. The extra quarter is
+    /// not a taste — <c>SurfaceCollision</c> stops a body that is TOUCHING a wall (<c>distance &lt;
+    /// radius</c>), so a seat laid at exactly a radius off the counter is a seat #820's snap cannot put the
+    /// captain on. Watched go red at <c>the seat at (18.0,-202.8) is inside something solid</c>, eight seats
+    /// a hall, on every hall in the game.</para>
+    ///
     /// <para>Off <see cref="SurfaceScale.CaptainWidthDu"/> and never a literal — it is the captain's own
     /// body, the same one the collision measures, so the day the avatar changes size the row follows. It
     /// stays well inside <see cref="HallCounterBandDu"/>'s clearance, so a seat still cannot land on a
     /// top.</para>
     /// </summary>
-    public static double HallStoolStandoffDu => SurfaceScale.CaptainWidthDu / 2.0;
+    public static double HallStoolStandoffDu => SurfaceScale.CaptainWidthDu * 0.75;
 
     /// <summary>
     /// #827 · HOW MANY GAPS ARE LEFT IN THE ROW OF STOOLS — the standing service points a customer walks UP
@@ -4185,12 +4194,12 @@ public static class UndergroundComplex
         FreightLift? freight = null;
         if (hoisted)
         {
-            // #827 · AND THE SHUTTER IS SHUT. The hoist took the first twelve du of the counter's line and
-            // nothing was ever built across them, so the one gap in the bar was a twelve-du walk-in to the
-            // goods car — the captain could stroll through the counter and stand in the crew's own band,
-            // beside a plate that says CREW SIDE ONLY. A roller door that is drawn shut, plated shut and
-            // pressed shut has to BE shut; the line is continuous now from end cap to end cap.
-            walls.Add(new(X(counterU0), Y(counterV), X(hoistU1), Y(counterV), true));
+            // #827 · AND THE SHUTTER STAYS A DOOR. The serving desk's own front is walled by its face
+            // above; the twelve du in front of the car are not, and they must not be — the
+            // shutter is a LOCKED DOOR (see Build's freight clause), which is this building's grammar for a
+            // way through that will not open: the client hangs a leaf on it, walls it behind, and #803 lets
+            // a captain take the hasp off it with a sentry. A poured wall laid here as well would be a door
+            // that opens in the sentence and stays walled on the plan, which is the same bug read backwards.
             walls.Add(new(X(hoistU1), Y(counterV), X(hoistU1), Y(length), true));   // the car's divider
             freight = new FreightLift(
                 Math.Min(X(counterU0), X(hoistU1)), Math.Min(Y(counterV), Y(length)),
@@ -4280,7 +4289,6 @@ public static class UndergroundComplex
             double nx = (paid.FaceX - paid.X) / paid.StandoffDu;
             double ny = (paid.FaceY - paid.Y) / paid.StandoffDu;
             (keepX, keepY) = (paid.FaceX + (nx * bandHalf), paid.FaceY + (ny * bandHalf));
-            (standX, standY) = (paid.X, paid.Y);
         }
 
         ServiceRun? service = serves
@@ -4435,13 +4443,14 @@ public static class UndergroundComplex
             // ?counter=1 sets a tester down on all sat six du off centre, toward a freight shutter. The run
             // knows where its own middle is; nothing here works it out a second time.
             //
-            // #827 · …and the run's middle is now ON the desk, because the run IS the desk's front face. So
-            // the console dot and the plate that reads THE COUNTER are drawn on the counter instead of a
-            // step out in the floor, which is the whole of what the owner was looking at. Where a tester is
-            // SET DOWN is a different question and has its own published answer (ServiceRun.StandX/StandY) —
-            // one that is on clear floor, because a spawn point on a wall is a spawn point that gets nudged.
-            service?.MidX ?? X((uLo + uHi) / 2.0),
-            service?.MidY ?? Y(counterV - HallServiceStandoffDu),
+            // #827 · …and it is the run's own STANDING SQUARE, not the run's middle, because the run is now
+            // the desk's front FACE — a wall. The fixture's spot has to be somewhere a body can be: every
+            // walkability audit in the game asks whether a room's own console can be stood on and walked to,
+            // and a plate on a wall is a plate the audits report as a sealed room. What moved onto the
+            // counter is the RAIL the client draws and the [E] reach, which is what the owner was looking
+            // at; where you stand to press it is the same square it has always been.
+            service?.StandX ?? X((uLo + uHi) / 2.0),
+            service?.StandY ?? Y(counterV - HallServiceStandoffDu),
             laid,
             glazed ? farWall : null);
     }
@@ -5637,11 +5646,17 @@ public static class UndergroundComplex
             // (u, v) — u out from the rib's face, v in from the spine — and threw the frame away. It is
             // recoverable exactly, from two points the room hangs signs on: the PLATE is a quarter of the
             // way down the door wall at u = HallDoorAisleDu / 2, and the AMENITY's own spot is the middle
-            // of the counter at v = counterV - HallEdgePadDu. Two signs, two signs' worth of arithmetic,
-            // and not one number typed here that the room did not already say out loud.
+            // of the counter. Two signs, two signs' worth of arithmetic, and not one number typed here that
+            // the room did not already say out loud.
+            //
+            // #827 · …and WHERE THE COUNTER'S LINE IS comes off the DESK now rather than being inferred
+            // from the amenity's own standoff. It used to read `a.Y + HallEdgePadDu`, which is a second
+            // opinion about the fixture's offset dressed up as arithmetic — and the moment #827 moved the
+            // console onto the desk's face it would have walked both bins two du toward the bar. The desk
+            // publishes its face; this reads it.
             int su = Math.Sign(a.X - h.PlateX);
             int sv = Math.Sign(a.Y - h.PlateY);
-            if (su == 0 || sv == 0)
+            if (su == 0 || sv == 0 || h.Desk is not { } bar)
             {
                 continue;   // a hall that cannot say which way round it is gets no bins, and says so.
             }
@@ -5651,9 +5666,8 @@ public static class UndergroundComplex
             double U(double u) => faceX + (su * u);
             double V(double v) => mouthY + (sv * v);
 
-            double counterV = ((a.Y - mouthY) * sv) + HallEdgePadDu;
-            double cabBand = a.Use == Comfort.UpperCanteen ? HallCabinetDepthDu : 0.0;
-            double counterU1 = (h.X1 - h.X0) - cabBand - HallEdgePadDu;
+            double counterV = (bar.FaceY0 - mouthY) * sv;
+            double counterU1 = (bar.FaceX1 - faceX) * su;
             double midX = (h.X0 + h.X1) / 2.0, midY = (h.Y0 + h.Y1) / 2.0;
 
             // The chute first, because it is the better bet and a room with only one of the two should keep

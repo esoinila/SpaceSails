@@ -220,12 +220,7 @@ public partial class Map
 
             ShowPulseMessage(
                 "🧪 DEV ?tablescene=1: the upper canteen. Walk to a table with somebody at it and press E.");
-
-            // #827 · …on the counter's own standing square where the room has one. The amenity's spot is the
-            // desk's FACE now (the console dot is drawn on the counter), and a cheat that set a tester down
-            // on it would be leaning on the spawn nudge to push them back out of a wall.
-            (double inX, double inY) = a.Hall?.Service is { } desk ? (desk.StandX, desk.StandY) : (a.X, a.Y);
-            StandCaptainAt(inX, inY, "you step into the canteen");
+            StandCaptainAt(a.X, a.Y, "you step into the canteen");
             return;
         }
     }

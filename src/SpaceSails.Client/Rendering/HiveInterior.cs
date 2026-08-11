@@ -252,10 +252,16 @@ public static class HiveInterior
             //
             // THE LENGTH IS CORE'S. Hall.Service is the run the carve laid, off the same (u, v) as the
             // counter's own wall segments, its photograph and its stools. Nothing here measures a bar.
+            //
+            // #827 · …and the run is the DESK'S FRONT FACE, which is not concentric with the plate: the
+            // console dot stands on the square a body stands on, and the rail is drawn on the counter a step
+            // behind it. Both coordinates are Core's; the only thing that happens here is a cast.
             UndergroundComplex.ServiceRun? run = a.Hall?.Service;
             consoles.Add(new(
                 DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture,
-                SpanX: (float)(run?.HalfSpanX ?? 0.0), SpanY: (float)(run?.HalfSpanY ?? 0.0)));
+                Run: run is { } bus
+                    ? ((float)bus.X0, (float)bus.Y0, (float)bus.X1, (float)bus.Y1)
+                    : null));
             if (a.Hall is { ArtUrl: { } floorArt } painted)
             {
                 // Top-left, W, H — the ship's own convention, and Y is the box's TOP edge because deck +y

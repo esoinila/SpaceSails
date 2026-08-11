@@ -95,13 +95,19 @@ public sealed class OneCounterAndOnlyOneTests
         }
     }
 
-    /// <summary>The walls a body is actually stopped by, as the collision's own segments. The glass goes in
-    /// too: an eye crosses it, a body does not, and a walk that ignored it would find a way out through the
-    /// park.</summary>
+    /// <summary>The walls a body is actually stopped by, as the collision's own segments — the same three
+    /// lists <c>HiveInterior</c> hands the deck the captain's boots collide with.
+    ///
+    /// <para>The GLASS goes in because an eye crosses it and a body does not, and a walk that ignored it
+    /// would find a way out through the park. The LOCKED DOORS go in because that is what a locked door is
+    /// down here: a leaf, a plate, and a wall behind it. The goods hoist's shutter is one of them (#775),
+    /// and leaving it out would have this guard walk through a door the game does not open — which is the
+    /// same mistake in reverse.</para></summary>
     private static SurfaceCollision.Segment[] Solid(in UndergroundComplex.FloorPlan floor) =>
     [
         .. floor.Walls.Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)),
         .. (floor.Windows ?? []).Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)),
+        .. floor.Locked.Select(l => new SurfaceCollision.Segment(l.X1, l.Y1, l.X2, l.Y2)),
     ];
 
     /// <summary>Which way is OUT of the desk and into the hall, as a unit vector — read off a published
@@ -254,13 +260,13 @@ public sealed class OneCounterAndOnlyOneTests
     /// lesson), and a control walk to the other end of the same counter must SUCCEED, so a bounds slip
     /// cannot quietly make every walk fail.</para>
     ///
-    /// <para><b>Proven RED</b> by leaving the goods hoist's shutter open, which is how it shipped: #775 cut
-    /// a twelve-du car out of the counter's band and never built a front on it, so the counter had a
-    /// twelve-du hole in it and the captain could stroll through the bar into the crew's own side —</para>
+    /// <para><b>Proven RED</b> by taking the desk's own front face out of the wall list — the one line the
+    /// whole counter rests on:</para>
     /// <code>
-    /// 41 counter(s) can be walked through:
-    ///   europa B1: the keep's own square is reachable from the customer's side in 71 steps.
-    ///   titan B1: the keep's own square is reachable from the customer's side in 71 steps.
+    /// 41 counter(s) can be walked through, or cannot be ordered at:
+    ///   luna B1: the keep's own square is reachable from the customer's side in 6 steps.
+    ///   luna B1: a captain can walk off the hall floor into the goods hoist's car — the crew's own side of
+    ///       the counter is open floor.
     ///   …
     /// </code>
     /// </summary>
@@ -307,11 +313,11 @@ public sealed class OneCounterAndOnlyOneTests
                     + $"side in {across.Steps} steps.");
             }
 
-            // …AND THE GOODS HOIST'S OWN CAR, which is the same band and the same law. #775 built the car's
-            // end cap, its divider and the wall behind it and left the SHUTTER — the twelve du of the
-            // counter's line in front of it — as open floor, so the one hole in the bar was a freight door
-            // with CREW SIDE ONLY stencilled on it. The flood the client already runs could not see this:
-            // it watches the desk's own photograph, and the car is the twelve du before the picture starts.
+            // …AND THE GOODS HOIST'S OWN CAR, which is the same band and the same law. It is behind the same
+            // line — its front is the shutter, which is a locked door and therefore a wall until somebody
+            // takes the hasp off it with a sentry (#803). The flood the client already runs cannot see this
+            // one: it watches the desk's own photograph, and the car is the twelve du before the picture
+            // starts. So the counter is asked about its WHOLE length here, hoist and all.
             if (hall.Freight is { } hoist)
             {
                 double carX = (hoist.X0 + hoist.X1) / 2.0, carY = (hoist.Y0 + hoist.Y1) / 2.0;
@@ -324,7 +330,7 @@ public sealed class OneCounterAndOnlyOneTests
                     from, new DeckReachability.Point(carX, carY), solid, BodyRadiusDu, bounds).Reached)
                 {
                     wrong.Add($"  {body} B{-level}: a captain can walk off the hall floor into the goods "
-                        + "hoist's car — the shutter in the counter's line is not shut.");
+                        + "hoist's car — the crew's own side of the counter is open floor.");
                 }
             }
 

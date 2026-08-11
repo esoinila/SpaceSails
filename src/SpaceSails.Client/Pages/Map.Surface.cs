@@ -5915,16 +5915,14 @@ public partial class Map
 
     /// <summary>#756 QA · Stand the captain AT THE COUNTER when <c>?counter=1</c> asked for it.
     ///
-    /// <para>The counter's own published STANDING SQUARE — <c>ServiceRun.StandX/StandY</c>, the gap in the
-    /// stool row where the till is — so this walks the captain to the fixture rather than to a coordinate
+    /// <para>The amenity's own published spot, which is the service side of the counter and the very square
+    /// the console dot is drawn on — so this walks the captain to the fixture rather than to a coordinate
     /// somebody measured off a picture of it. Through <c>StandCaptainAt</c>, so the pad-crew net (#681) has
     /// its say if the hall ever carves a table onto that square.</para>
     ///
-    /// <para>#827 · It used to use the amenity's own spot, which was fine while that spot was two du out in
-    /// the floor. The desk's face is the fixture now — the console dot is drawn ON the counter — so a cheat
-    /// that still set a tester down on it would be dropping them inside a wall and relying on the spawn
-    /// nudge to get them out. Where the desk is and where a body stands at it are two questions and the
-    /// carve answers both.</para></summary>
+    /// <para>#827 · That spot is the counter's own <c>ServiceRun.StandX/StandY</c> now — published rather
+    /// than implied, and in exactly the place it always was. What moved onto the desk is the [E] RUN, which
+    /// is the desk's front face, and the rail the deck draws down it.</para></summary>
     private void StandAtTheCounterIfAsked(SurfaceExcursion ex)
     {
         if (!_counterCheat || ex.Floor >= 0)
@@ -5940,10 +5938,7 @@ public partial class Map
                 continue;
             }
 
-            (double standX, double standY) = a.Hall?.Service is { } run
-                ? (run.StandX, run.StandY)
-                : (a.X, a.Y);
-            StandCaptainAt(standX, standY, "you step up to the counter");
+            StandCaptainAt(a.X, a.Y, "you step up to the counter");
 
             // #756 · …and ?stool=1 walks the last, last leg: the card is opened and a stool is taken, so the
             // posture this issue is about is one URL away rather than one URL and two presses. Through the
