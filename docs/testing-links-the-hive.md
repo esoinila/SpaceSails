@@ -661,7 +661,7 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 
 ---
 
-## 9 · The rounds on the restricted floors, and the badge (#804, v1 of the guards)
+## 9 · The rounds on the restricted floors, and the badge (#804, #830/#832 instruments, #833 the walk)
 
 ```
 /map?patrol=2                    B2 of the deep site with the TWO-guard watch forced
@@ -685,10 +685,18 @@ there, which is its own kind of beat. When it is not, the order the information 
 2. **👣 *Boots on shotcrete, out of sight and in no hurry…*** — closer, still nothing on the deck;
 3. **a green mark** with `PATROL 1` over it, the instant your own line of sight reaches them, and **gone the
    instant a wall gets between you**;
-4. inside **nine deck units**, with a clear line, **the round stops at you** and a card goes up.
+4. inside **nine deck units**, with a clear line, **he hails you** — *"You there — hold on."* — and starts
+   **walking over**;
+5. and only when he is **at arm's length** does the card go up.
 
 They stand **five seconds at every stop** and walk between them at 3.2 du/s, which is slower than you. Watch
 one work a rib, wait at the mouth, and go past behind it.
+
+**The approach is a beat you can act on (#833).** From the hail to the card is a real walk across a real
+corridor — a couple of seconds at least, on the same A* and gait as his round, and he is on the fan and the
+marker the whole way. **Your controls are never taken during it**, so *walking away is allowed*: out-walk him
+(you do 9 du/s, he does 3.2) and he stops, watches you go, and writes something short on his clipboard. It
+costs the same cooldown as being read, and nothing follows you.
 
 **The four things a wallet can say**, all on the same card, in its amber row:
 
@@ -698,6 +706,15 @@ one work a rib, wait at the mouth, and go past behind it.
 | another site's pass | *"That's not us."* — and it NAMES the other site | walked back to the car |
 | only the cage chit | *"That's for the cage. This isn't the cage."* | walked back to the car |
 | nothing | *"He waits the entire time you are looking"* | walked back to the car |
+
+**And "walked back" means WALKED (#833).** Close the card and the escort starts there and then: he plans his
+own route to the lift, you are walked along at his shoulder — controls held for that stretch, and he says so
+if you try them — and somewhere on the way he mentions that they have had the pumps out on three since
+Tuesday. Both of you are moving contacts on the motion fan for the whole walk, which is the one guaranteed
+long walk beside a guard in the game and the best place to watch #830/#832's instruments work. It ends with
+him standing at the doors with you. From the far room of the far rib that is **the better part of a minute of
+corridor**; from the spine it is a few seconds. If you ever see *"Next thing you know, you are at the lift"*,
+the floor refused him a route and the game is telling you it cut — **report that one**.
 
 Nothing is confiscated, nobody is called, and **there is no chase in this feature.** The cost is one nerve pip
 and a line in the field book.
