@@ -109,6 +109,17 @@ public partial class Map
     /// <para>Which seat is free is Core's answer off the frozen watch (<see cref="TheStools.FirstFreeStool"/>),
     /// so the row a captain lands on is the row the room has. A full row is an answer with words on it and
     /// never a control that did nothing.</para>
+    ///
+    /// <para>#820 · AND THE CAPTAIN GOES UP ONTO IT. Owner's law, filed off a park bench and swept across
+    /// every seat: sitting down puts the body on the seat. WHERE that stool is bolted down is the counter's
+    /// own carve (<see cref="UndergroundComplex.FloorPlan.TheStoolRow"/>), read by ordinal — entry
+    /// <c>s</c> is stool <c>s</c>, which is the same ordinal <see cref="TheStools.Taken"/> answers about, so
+    /// the captain lands on the seat the deck drew free rather than in somebody's lap.</para>
+    ///
+    /// <para>There is no step-off to carry. A stool stands on the hall side of the desk on floor a captain
+    /// could have walked to anyway (the row is laid at <c>HallStoolStandoffDu</c> off the counter's
+    /// segments), so getting down leaves you standing exactly where the stool is — which is what getting
+    /// down off a bar stool does.</para>
     /// </summary>
     private void TakeAStool()
     {
@@ -121,6 +132,17 @@ public partial class Map
         {
             _barNotice = TheStools.RowIsFullLine;
             return;
+        }
+
+        // The bound is a bound and not a decision: a serving counter publishes exactly TheStools.Count
+        // seats (guarded in EverySeatIsSomewhereYouCanSitTests), so the only way past this test is a carve
+        // that has stopped agreeing with the row the verb is dealt from — in which case the captain keeps
+        // their feet rather than being placed by arithmetic on a list that is not the room's.
+        IReadOnlyList<(double X, double Y)> row =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).TheStoolRow;
+        if (seat < row.Count)
+        {
+            SitCaptainOn(row[seat].X, row[seat].Y);
         }
 
         _stool = new StoolSeat

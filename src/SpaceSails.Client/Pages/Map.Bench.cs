@@ -92,13 +92,23 @@ public partial class Map
             return false;
         }
 
-        SitOnThisBench(bench);
+        SitOnThisBench(in green, bench);
         return true;
     }
 
-    /// <summary>The one place a bench sitting is opened, so a dev row and a captain's [E] cannot open two
-    /// different benches.</summary>
-    private void SitOnThisBench(ParkBenches.Bench bench)
+    /// <summary>
+    /// The one place a bench sitting is opened, so a dev row and a captain's [E] cannot open two different
+    /// benches.
+    ///
+    /// <para>#820 · …and the one place the captain is put ON one. Owner, from the bench: <i>"I would move the
+    /// avatar on top of the bench when I sit… just snap it into the correct position."</i> WHICH END is
+    /// Core's (<see cref="ParkBenches.Bench.EndYouTake"/>: the free one when somebody is already sitting
+    /// there, else the one you walked up to) and this file measures nothing. The step off is read here too,
+    /// while the park is in hand, and carried on the sitting — because standing up off a PLANK is the one
+    /// stand in the game that has to move the captain: the bench is a solid segment in the collision field,
+    /// and a captain left where they sat would be standing inside the furniture.</para>
+    /// </summary>
+    private void SitOnThisBench(in UndergroundComplex.Park green, ParkBenches.Bench bench)
     {
         if (_surface is not { } ex)
         {
@@ -108,8 +118,15 @@ public partial class Map
         bool shared = bench.Taken;
         Encounter.Scene sat = ParkBenches.TheBench(shared);
 
+        // Read BEFORE the body moves: the end you take is the end you walked up to, and asking after the
+        // snap would be asking where the captain is now sitting, which answers itself.
+        (double seatX, double seatY) = bench.EndYouTake(_avatarX, _avatarY);
+        (double offX, double offY) = TowardTheWalk(in green, seatX, seatY);
+        SitCaptainOn(seatX, seatY);
+
         _table = new TableTalk
         {
+            StepOff = (offX, offY),
             Key = BenchKey(ex, bench.Index),
             // THE APPROACH ORDINAL, and deliberately not the bench's own. SomebodyComes is seeded on
             // (site, floor, ordinal, watch, beat), and bench 0 sharing table 0's ordinal would deal the two
@@ -267,7 +284,7 @@ public partial class Map
             (double wx, double wy) = TowardTheWalk(in green, sx, sy);
             StandCaptainAt(wx, wy, "you walk down the gravel to a free bench");
             SeedTheSpreadFinds();
-            SitOnThisBench(bench);
+            SitOnThisBench(in green, bench);
             ShowPulseMessage(
                 "🧪 DEV ?park=1&spread=1: sat on a park bench with the WHOLE BENCH to yourself and three "
                 + "finds in the sleeve. Press I and dig. Then walk to the bench with somebody on it and try "
@@ -278,16 +295,20 @@ public partial class Map
         return false;
     }
 
-    /// <summary>How far off the plank a captain stands to press [E] at it. Clear of the bench's own
-    /// collision segment plus a body's radius, and comfortably inside <see cref="DeckPlan.InteractRadius"/>
-    /// even measured to the bench's CENTRE — a dev row that set somebody down inside the furniture, or just
-    /// out of reach of the console it walked them to, is §13.15's second cause, which this project has paid
-    /// for twice.</summary>
+    /// <summary>How far off the plank a captain stands beside it — walking up to press [E], and stepping off
+    /// again when they stand up (#820). Clear of the bench's own collision segment plus a body's radius, and
+    /// comfortably inside <see cref="DeckPlan.InteractRadius"/> even measured to the bench's CENTRE — a
+    /// placement that set somebody down inside the furniture, or just out of reach of the console it walked
+    /// them to, is §13.15's second cause, which this project has paid for twice.</summary>
     private const double BenchStandoffDu = DeckPlan.AvatarRadius + 1.0;
 
-    /// <summary>#793 QA · One standoff off a bench end, ON THE WALK SIDE — the park's own gravel deciding
+    /// <summary>#793/#820 · One standoff off a bench end, ON THE WALK SIDE — the park's own gravel deciding
     /// which way that is. The nearest published walk sample gives the bearing; the standoff gives the
-    /// distance. Nothing here knows which way a bench faces, because nothing here laid one down.</summary>
+    /// distance. Nothing here knows which way a bench faces, because nothing here laid one down.
+    ///
+    /// <para>It was the dev row's alone until sitting down started snapping the captain onto the plank. It is
+    /// now also where standing up puts them, which is the same question asked from the other side — and one
+    /// answer to it is the reason a solid bench cannot close over the dot.</para></summary>
     private static (double X, double Y) TowardTheWalk(
         in UndergroundComplex.Park green, double fromX, double fromY)
     {

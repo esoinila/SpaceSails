@@ -2141,8 +2141,11 @@ public sealed class DeckView
     //                           sitter has none. Handed down (DeckPlan.TableTop.Talking) and never read off
     //                           a plate by this file, which is the whole reason the fact exists in Core.
 
-    /// <summary>How far out from a top's centre the chairs stand.</summary>
-    private const float SeatRingDu = 1.55f;
+    /// <summary>How far out from a top's centre the chairs stand. #820 · CORE'S NUMBER now, not this file's:
+    /// the [E] press sits the captain in one of these chairs, so the ring had to become a published fact
+    /// about the furniture rather than a radius the renderer kept to itself. A drawn chair and a sat chair
+    /// that were two numbers would be this repo's most expensive bug class with somebody in it.</summary>
+    private const float SeatRingDu = (float)CanteenRegulars.ChairRingDu;
 
     /// <summary>How wide a chair is across its back — the bar an empty one is drawn as.</summary>
     private const float SeatChairDu = 0.62f;
@@ -2294,18 +2297,22 @@ public sealed class DeckView
 
         for (int i = 0; i < top.Seats; i++)
         {
-            double ang = i * 2 * Math.PI / top.Seats;
-            // Screen Y runs the other way to deck Y — the same negated sine the heading spoke uses.
-            float ux = (float)Math.Cos(ang), uy = -(float)Math.Sin(ang);
+            // #820 · WHERE THIS CHAIR IS, asked of Core. It was an angle and a radius worked out here until
+            // the [E] press started seating the captain in one of them; a drawn chair and a sat chair that
+            // came out of two authors would be the picture and the sim disagreeing about a place a body is.
+            // Only the projection is this file's: screen Y runs the other way to deck Y.
+            (double chx, double chy) = CanteenRegulars.ChairAt(top.X, top.Y, top.Seats, i);
+            float ox = (float)(chx - top.X), oy = (float)(chy - top.Y);
+            float ux = ox / SeatRingDu, uy = -oy / SeatRingDu;
             (float px, float py) = (-uy, ux);   // along the chair's back, across the radius
             float half = SeatChairDu * scale / 2f;
 
-            float sx = cx + (ux * SeatRingDu * scale), sy = cy + (uy * SeatRingDu * scale);
+            float sx = cx + (ox * scale), sy = cy - (oy * scale);
 
-            // Is this one of the chairs the party is in? Core's own arithmetic — a top's Free is its seat
-            // count less its heads — so the bodies drawn here and the chairs the [E] press offers come out
-            // of one number, and neither can claim an occupancy the other does not have.
-            if (heads > 0 && (i * heads) % top.Seats < heads)
+            // Is this one of the chairs the party is in? Core's own walk — the same one the press reads to
+            // find a chair nobody is in — so the bodies drawn here and the chair the captain lands in come
+            // out of one arithmetic, and neither can claim an occupancy the other does not have.
+            if (CanteenRegulars.PartyInChair(i, top.Seats, heads))
             {
                 float back = (SeatRingDu + SeatBackDu) * scale;
                 DrawSeg(

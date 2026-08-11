@@ -578,10 +578,24 @@ public partial class Map
                     return false;   // somebody who is not a scene, or a top with nowhere left to sit.
                 }
 
+                // #820 · WHICH CHAIR, off Core's own ring, read before the body moves. The nearest one the
+                // party is not already in — a captain waved into a seat that had somebody in it would be
+                // the drawn room and the pressed room disagreeing about a lap (#823's own complaint).
+                (double X, double Y)? chair = top.ChairYouTake(_avatarX, _avatarY);
+                if (chair is { } sit)
+                {
+                    SitCaptainOn(sit.X, sit.Y);
+                }
+
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
+                    // …and standing up leaves the captain on the chair's own square. A canteen top is drawn
+                    // and does not collide, so the seat is floor and nothing has to be stepped off — the
+                    // square is carried all the same, because it is StandCaptainAt that gets the nudge's
+                    // opinion on whether the room agrees.
+                    StepOff = chair,
                     Who = who,
                     Plate = plate,
                     Scene = who == CanteenTable.Who.Stranger
@@ -609,12 +623,12 @@ public partial class Map
     /// so [E] there answered nothing — an absence rather than a refusal, which is the one kind of "no" a
     /// player cannot read.</para>
     ///
-    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. The seat is the spot you walked to in
-    /// order to press the key, exactly as it is at an occupied table — this file has never moved the captain
-    /// to sit down, and a solo table that teleported them onto the furniture would be §13.15's second cause
-    /// in the one room where the tops are drawn but do not collide. Which table it is comes off Core's own
-    /// list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the press
-    /// landed on — the same lookup, and still a lookup rather than a decision.</para>
+    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. Which table it is comes off Core's
+    /// own list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the
+    /// press landed on — a lookup rather than a decision — and #820's snap puts the captain in one of that
+    /// top's own published chairs, exactly as it does at an occupied table. Not one coordinate below was
+    /// measured here, which is §13.15's whole point: this project has set a captain down inside a wall twice
+    /// by letting a caller do arithmetic about a room it did not carve.</para>
     /// </summary>
     private bool TryTakeTable()
     {
@@ -662,10 +676,19 @@ public partial class Map
                 bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, ex.CanteenWatch);
                 Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink);
 
+                // #820 · …and the same snap as at an occupied top, which is the point of it being one law:
+                // an empty table has every chair free, so this is simply the one the captain walked up to.
+                (double X, double Y)? chair = top.ChairYouTake(_avatarX, _avatarY);
+                if (chair is { } sit)
+                {
+                    SitCaptainOn(sit.X, sit.Y);
+                }
+
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
+                    StepOff = chair,
                     Who = CanteenTable.Who.None,
                     Plate = SittingAlone.OwnTablePlate,
                     Scene = sat,
@@ -719,14 +742,13 @@ public partial class Map
         }
 
         // #820 · Read, then the table goes, then the body moves. See the summary.
-        (double sx, double sy)? seat =
-            _table is { Office: true } office ? (office.OfficeSeatX, office.OfficeSeatY) : null;
+        (double X, double Y)? step = _table?.StepOff;
 
         _table = null;
 
-        if (seat is { } spot)
+        if (step is { } spot)
         {
-            StandCaptainAt(spot.sx, spot.sy, "you push the chair back and stand up");
+            StandCaptainAt(spot.X, spot.Y, "you push the seat back and stand up");
         }
     }
 
