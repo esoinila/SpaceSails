@@ -3136,6 +3136,12 @@ public partial class Map
         /// while seated: the tab is not drawn on your feet, and the page itself refuses out loud if you
         /// somehow arrive on it standing (<see cref="SeatedSpread"/>).</summary>
         Spread,
+
+        /// <summary>#828 · THE BIN — the sleeve held open over the bucket you are standing at, worked sheets
+        /// leading. Reachable only while a bin is within reach, exactly as the spread follows the posture:
+        /// away from one this is not a page you are being refused, it is a page that does not apply. The
+        /// press on a row is the same act the spread's own shredder fires (<see cref="RipAndBin"/>).</summary>
+        Bin,
     }
 
     private SatchelPage _satchelPage = SatchelPage.Carried;

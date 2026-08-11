@@ -497,6 +497,20 @@ public partial class Map
             return;
         }
 
+        // ── #828 · AND THE BIN TAKES THE KEY WHEN YOU ARE STANDING AT ONE ──
+        //
+        // Owner, evening playtest at his own table: "I think the trash could be an e-use ... where we select
+        // from inventory the processed items we rip and deposit into trash."
+        //
+        // A bin is a plated box on the plan and deliberately not a console (#798), so its press is claimed
+        // here rather than as a ConsoleKind arm. It cannot shadow anything: TheBinTakingYourPress answers
+        // only when the bin is NEARER than whatever console is in reach, which is the same rule
+        // NearestConsoleSpot itself had to learn — walk to a thing, and the thing you walked to answers.
+        if (TryOpenTheBinOverTheSleeve())
+        {
+            return;
+        }
+
         switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
             case DeckPlan.ConsoleKind.None:
