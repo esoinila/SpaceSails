@@ -801,12 +801,22 @@ public sealed partial class Map
         }
     }
 
-    /// <summary>#833 · Half a pace back and half a pace to his left — where you walk beside somebody who is
-    /// showing you out. Taken off his FACING, so the captain swings round the corners with him instead of
-    /// being dragged through them.</summary>
+    /// <summary>
+    /// #833 · A pace back and a hand's width to his left — where you walk beside somebody who is showing you
+    /// out. Taken off his FACING, so the captain swings round the corners with him instead of being dragged
+    /// through them.
+    ///
+    /// <para><b>Mostly IN HIS WAKE, and that is measured rather than styled.</b> A first cut put the captain
+    /// half a pace to the side, and a doorway is not half a pace wider than a man: the target kept landing in
+    /// stone, the captain slid along the jamb, the tether stretched and the guard stood waiting — an escort
+    /// that stuttered its way down the corridor and was moving a THIRD of the time (titan B6: 34%, and it ran
+    /// out the whole ninety-second bound without ever reaching the car). Walking where he walked is walkable
+    /// by construction, because he has just walked it: the same sweep now measures 99% moving on all 22
+    /// floors. Both numbers are <c>TheEscortIsAWalkTests</c>'s own.</para>
+    /// </summary>
     private static (double X, double Y) ShoulderOf(Guard g)
     {
-        double back = PatrolBeat.ShoulderDu * 0.7, side = PatrolBeat.ShoulderDu * 0.5;
+        double back = PatrolBeat.ShoulderDu, side = PatrolBeat.ShoulderDu * 0.25;
         return (g.X - (System.Math.Cos(g.Facing) * back) - (System.Math.Sin(g.Facing) * side),
                 g.Y - (System.Math.Sin(g.Facing) * back) + (System.Math.Cos(g.Facing) * side));
     }
