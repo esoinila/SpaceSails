@@ -270,6 +270,13 @@ public static class RipAndBin
     /// bin is never guessed at on this page: it is the one you walked to, and the title says which.</summary>
     public static string PickerTitle(Tier tier) => $"{Glyph} WHAT GOES IN {TheBin(tier).ToUpperInvariant()}";
 
+    /// <summary>#828 · …and what the KEYBAR says while the captain stands at one. A verb nobody is told
+    /// about is a verb nobody has (#212/#537, and the owner pressing T at a map that never mentioned it):
+    /// the strip at the bottom of the screen reads "E — use" on every floor of this building, which is
+    /// exactly nothing at the one spot where [E] does this. It names the RUNG, like every other sentence
+    /// here, because which bucket you are about to feed is the whole decision.</summary>
+    public static string KeyPrompt(Tier tier) => $"{Glyph} E — feed {TheBin(tier)}";
+
     /// <summary>
     /// #828 · THE QUIET FLAG on a sheet nothing has been dug out of yet.
     ///
@@ -470,6 +477,7 @@ public static class RipAndBin
             yield return TierBet(tier);
             yield return Hint(tier);
             yield return PickerTitle(tier);
+            yield return KeyPrompt(tier);
             yield return RippedLine("the manifest", tier);
             yield return DisposalNote("the manifest", tier);
         }

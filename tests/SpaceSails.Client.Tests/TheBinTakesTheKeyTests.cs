@@ -193,6 +193,27 @@ public sealed class TheBinTakesTheKeyTests
         Assert.True(bad.Count == 0, string.Join("\n", ["a bin nobody can use:", .. bad]));
     }
 
+    /// <summary>
+    /// #828 · THE BAR SAYS SO. A verb nobody is told about is a verb nobody has (#212/#537 — the owner
+    /// pressing T at a map that never mentioned it).
+    ///
+    /// <para>Underground the keybar reads <i>"E — use"</i> on every square of the building, which is exactly
+    /// nothing at the one spot where the key opens the sleeve over a bucket. So the strip names the RUNG
+    /// while the captain stands at it, and goes back to the room's own words a few paces off.</para>
+    /// </summary>
+    [Fact]
+    public void THE_KEYBAR_NamesTheBucketYouAreStandingAt()
+    {
+        (string body, int level, RipAndBin.Bin bin) = ABinSomewhere();
+        Pages.Map map = Bench(body, level, bin, new Satchel.Item(Satchel.Kind.Paper, "p"), worked: true);
+
+        Assert.Contains(RipAndBin.KeyPrompt(bin.Tier), TheKeyBar(map), StringComparison.Ordinal);
+
+        Set(map, "_avatarX", bin.X + (RipAndBin.ReachDu * 3));
+        Set(map, "_avatarY", bin.Y + (RipAndBin.ReachDu * 3));
+        Assert.DoesNotContain(RipAndBin.Glyph, TheKeyBar(map), StringComparison.Ordinal);
+    }
+
     // ── (c) NO SECOND SHREDDER ────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -296,6 +317,12 @@ public sealed class TheBinTakesTheKeyTests
         Set(map, "_showSatchel", true);
         return map;
     }
+
+    /// <summary>The contextual strip along the bottom of the surface HUD, built for the live excursion —
+    /// the shipping method, so what is asserted is what a player reads.</summary>
+    private static string TheKeyBar(Pages.Map map) =>
+        (string)typeof(Pages.Map).GetMethod("BuildSurfaceKeyHints", Hidden)!
+            .Invoke(map, [Get(map, "_surface")])!;
 
     private static void PressE(Pages.Map map) =>
         typeof(Pages.Map).GetMethod("InteractAtConsole", Hidden)!.Invoke(map, null);

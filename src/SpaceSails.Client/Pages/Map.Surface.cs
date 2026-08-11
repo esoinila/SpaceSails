@@ -9069,7 +9069,12 @@ public partial class Map
         var parts = new List<string>
         {
             "WASD — move",
+            // #828 · …and the BIN says so, in the same ladder and the same order the [E] dispatch itself
+            // asks: your feet first, then the bucket you are standing at, then the ground. Underground this
+            // strip read "E — use" everywhere, which is exactly nothing at the one spot where the key opens
+            // the sleeve over a bin — and a verb nobody is told about is a verb nobody has (#212/#537).
             StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : TheBinTakingYourPress() is { } atTheBin ? RipAndBin.KeyPrompt(atTheBin.Tier)
                 : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
                 : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
                 : "E — dig / use",
