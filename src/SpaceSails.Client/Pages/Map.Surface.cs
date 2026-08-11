@@ -93,7 +93,9 @@ public partial class Map
     // because the SurfaceHud that borrows them is consumed synchronously inside the same DrawWalkFrame call
     // (the previous frame's HUD is dead before the next refill), so nothing outlives a buffer's contents.
     private readonly List<MotionTracker.Entity> _hudEntities = [];
-    private readonly List<(double Bearing, double Range)> _hudBlips = [];
+    // #830 · …and each return carries WHICH KIND it is, because a fan that reports a standing man and a
+    // walking one with the same dot has thrown away the only fact the captain wanted.
+    private readonly List<(double Bearing, double Range, bool Blob)> _hudBlips = [];
     private readonly List<(double X, double Y, bool Haunted)> _hudMarks = [];
     private readonly List<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)> _hudBots = [];
     private readonly List<(double X, double Y)> _hudHusks = [];
@@ -8640,7 +8642,10 @@ public partial class Map
                 _hudEntities.Add(new MotionTracker.Entity(nx.X, nx.Y, NestChurn, 0));
             }
             IReadOnlyList<MotionTracker.Blip> aboardBlips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
-            double? aboardNearest = aboardBlips.Count > 0 ? aboardBlips[0].Range : null;
+            // #830 · "Closing" is a fact about something TRAVELLING, so it is asked of the nearest MOVER
+            // rather than of the nearest return: a blob is not going anywhere, and the honest answer to
+            // whether it is closing is that the question does not apply.
+            double? aboardNearest = MotionTracker.NearestMoving(aboardBlips);
             bool aboardClosing = aboardNearest is { } an && _lastNearestReeverRange is { } prevAboard
                                  && an < prevAboard - 0.01;
             _lastNearestReeverRange = aboardNearest;
@@ -8648,7 +8653,7 @@ public partial class Map
             _hudBlips.Clear();
             foreach (MotionTracker.Blip b in aboardBlips)
             {
-                _hudBlips.Add((b.Bearing, b.Range));
+                _hudBlips.Add((b.Bearing, b.Range, b.Kind == MotionTracker.BlipKind.Blob));
             }
             _wreckTrackerLive |= aboardBlips.Count > 0;
 
@@ -8721,8 +8726,10 @@ public partial class Map
                 DigProgress: ex.DoorChannel?.Progress ?? -1,   // a forced door is a ship thing; digging is not
                 HasDroppedChest: false, DropX: 0, DropY: 0,
                 Blips: _hudBlips,
-                Cadence: (int)MotionTracker.CadenceFor(aboardNearest),
-                Readout: MotionTracker.Readout(aboardNearest, aboardClosing),
+                // #830 law 4 · The pulse and the sentence read the SWEEP, not a number somebody kept beside
+                // it — "no movement — for now" may only print when the fan is holding nothing of either kind.
+                Cadence: (int)MotionTracker.CadenceOf(aboardBlips),
+                Readout: MotionTracker.ReadoutOf(aboardBlips, aboardClosing),
                 CacheMarks: [],                                // nothing is buried on a steel deck
                 Nerve: _nerve,
                 NerveReadout: NerveModel.Readout(_nerve),
@@ -8752,14 +8759,16 @@ public partial class Map
         double fanReach = FanReach();
         IReadOnlyList<MotionTracker.Blip> blips =
             MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities, fanReach);
-        double? nearest = blips.Count > 0 ? blips[0].Range : null;
+        // #830 · The nearest MOVER is what "closing" can be asked about; the nearest RETURN of either kind
+        // is what the pulse and the sentence are about. Both come off this one sweep.
+        double? nearest = MotionTracker.NearestMoving(blips);
         bool closing = nearest is { } n && _lastNearestReeverRange is { } prev && n < prev - 0.01;
         _lastNearestReeverRange = nearest;
 
         _hudBlips.Clear();
         foreach (MotionTracker.Blip b in blips)
         {
-            _hudBlips.Add((b.Bearing, b.Range));
+            _hudBlips.Add((b.Bearing, b.Range, b.Kind == MotionTracker.BlipKind.Blob));
         }
 
         // ── #591 · A CONTACT BEHIND A WALL IS A SMUDGE, NOT A CLEAN BLIP ──
@@ -8793,7 +8802,12 @@ public partial class Map
                 {
                     continue;   // you can see it. Your own eyes beat the fan, exactly as they do aboard.
                 }
-                _hudSmudges.Add((bx, by, SmudgeBaseRadius + (b.Range * SmudgeRangeSpread)));
+                // #830 · An unsure return smears wider on the plan than a mover does, off Core's own number,
+                // because the deck plan and the fan are two drawings of ONE claim and may not disagree about
+                // how vague it is.
+                _hudSmudges.Add((bx, by, b.Kind == MotionTracker.BlipKind.Blob
+                    ? MotionTracker.BlobSpreadDu(b.Range)
+                    : SmudgeBaseRadius + (b.Range * SmudgeRangeSpread)));
             }
         }
 
@@ -8874,8 +8888,11 @@ public partial class Map
             ChannelIsAid: SurfaceChannelIsAid(ex),
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
-            Cadence: (int)MotionTracker.CadenceFor(nearest),
-            Readout: MotionTracker.Readout(nearest, closing),
+            // #830 law 4 · The sentence and the sweep read the same list. This is the line that told a
+            // captain a corridor was empty while a man stood in it — not because the arithmetic was wrong,
+            // but because it was answering a narrower question than the fan was drawing.
+            Cadence: (int)MotionTracker.CadenceOf(blips),
+            Readout: MotionTracker.ReadoutOf(blips, closing),
             CacheMarks: _hudMarks,
             Nerve: _nerve,
             NerveReadout: NerveModel.Readout(_nerve),

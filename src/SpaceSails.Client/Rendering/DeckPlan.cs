@@ -279,9 +279,15 @@ public sealed class DeckPlan
     /// <para>#793 · <paramref name="Held"/> — this one has STOPPED BECAUSE THE CAPTAIN SAT DOWN, which is the
     /// answer a park bench is for (<see cref="SpaceSails.Core.FootTail.MustHold"/>). It is handed down from
     /// the sim per frame like every other field on this record: the pen has never heard of a tail and must
-    /// not work one out, which is #788's one-reach lesson pointed at somebody else's feet.</para></summary>
+    /// not work one out, which is #788's one-reach lesson pointed at somebody else's feet.</para>
+    ///
+    /// <para>#832 · <paramref name="Smeared"/> — this one is at the far end of what the captain's eye can
+    /// do, and is drawn as a DISTANT FIGURE: the silhouette, softened, with no name written over it. The
+    /// tier is the sim's own answer (<see cref="SpaceSails.Core.PatrolBeat.SightingFor"/>), handed down for
+    /// the same reason every other field here is — the alternative is a renderer with an opinion about how
+    /// far a person is visible, which is a second answer to a question Core already owns.</para></summary>
     public readonly record struct Droid(
-        double X, double Y, double FacingRad, string Name, bool Held = false);
+        double X, double Y, double FacingRad, string Name, bool Held = false, bool Smeared = false);
 
     public Wall[] Walls { get; private set; }
 

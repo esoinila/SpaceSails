@@ -2106,7 +2106,7 @@ public partial class Map
             {
                 var hud = new DeckView.SurfaceHud(
                     DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
-                    Blips: System.Array.Empty<(double, double)>(), Cadence: 0, Readout: "",
+                    Blips: System.Array.Empty<(double, double, bool)>(), Cadence: 0, Readout: "",
                     CacheMarks: System.Array.Empty<(double, double, bool)>(),
                     Nerve: NerveModel.Steady, NerveReadout: "");
                 _deckView.Draw(
