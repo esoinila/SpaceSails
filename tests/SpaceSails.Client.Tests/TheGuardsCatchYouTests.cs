@@ -392,6 +392,29 @@ public sealed class TheGuardsCatchYouTests
         return text[start..end];
     }
 
+    /// <summary>
+    /// THE FILE WITH ITS COMMENTS TAKEN OUT — and it is not tidiness, it is the fifth named bug class.
+    ///
+    /// <para>A source-shape guard reads a text, and this file's texts are heavily doc-commented BY DESIGN:
+    /// the prose above a method names the very calls the method makes. So <c>Contains("PatrolBeat.Notices(")</c>
+    /// against the raw slice can be satisfied by a SENTENCE ABOUT the call rather than the call — an
+    /// assertion that is right, handed a world that cannot tell pass from fail. Every pin below reads
+    /// this.</para>
+    /// </summary>
+    private static string Code(string text)
+    {
+        var kept = new List<string>();
+        foreach (string line in text.Split('\n'))
+        {
+            string trimmed = line.TrimStart();
+            if (!trimmed.StartsWith("//", StringComparison.Ordinal))
+            {
+                kept.Add(line);
+            }
+        }
+        return string.Join("\n", kept);
+    }
+
     private static int Count(string text, string needle)
     {
         int n = 0;
@@ -417,8 +440,8 @@ public sealed class TheGuardsCatchYouTests
     {
         string patrol = Pages("Map.Patrol.cs");
 
-        string sighting = Between(
-            patrol, "private void StopTheRoundIfAnybodySeesYou(", "private void TheHail(");
+        string sighting = Code(Between(
+            patrol, "private void StopTheRoundIfAnybodySeesYou(", "private void TheHail("));
 
         // #833's beat is intact: a notice hails, and the hail is what the loop is for.
         Assert.Contains("PatrolBeat.Notices(", sighting, StringComparison.Ordinal);
@@ -434,28 +457,29 @@ public sealed class TheGuardsCatchYouTests
 
         // Every road into a run, counted: the declaration and exactly three seams. A fourth appearing is a
         // fourth trigger nobody ruled on.
-        Assert.Equal(4, Count(patrol, "TheRadioCall("));
+        Assert.Equal(4, Count(Code(patrol), "TheRadioCall("));
 
         // Two of them name their provocation on the spot…
-        Assert.Contains("TheRadioCall(g, PatrolBeat.Provocation.WalkedAwayTwice, index);", patrol,
+        Assert.Contains("TheRadioCall(g, PatrolBeat.Provocation.WalkedAwayTwice, index);", Code(patrol),
             StringComparison.Ordinal);
-        Assert.Contains("TheRadioCall(g, PatrolBeat.Provocation.BookedTooManyTimes, i);", patrol,
+        Assert.Contains("TheRadioCall(g, PatrolBeat.Provocation.BookedTooManyTimes, i);", Code(patrol),
             StringComparison.Ordinal);
 
         // …and the third is the crime seam, whose one caller in the whole game names its own.
-        string seam = Between(patrol, "private void SomebodySawThat(", "// ── #835 · THE TOP RUNG");
+        string seam = Code(Between(patrol, "private void SomebodySawThat(", "// ── #835 · THE TOP RUNG"));
         Assert.Contains("PatrolBeat.EarnsIt(why)", seam, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.Notices(", seam, StringComparison.Ordinal);
-        Assert.Contains("SomebodySawThat(Core.PatrolBeat.Provocation.SeenAtTheHasp);",
-            Pages("Map.Combat.cs"), StringComparison.Ordinal);
-        Assert.Equal(1, Count(Pages("Map.Combat.cs"), "SomebodySawThat("));
+        string combat = Code(Pages("Map.Combat.cs"));
+        Assert.Contains("SomebodySawThat(Core.PatrolBeat.Provocation.SeenAtTheHasp);", combat,
+            StringComparison.Ordinal);
+        Assert.Equal(1, Count(combat, "SomebodySawThat("));
 
         // …and the call itself is gated, so a provocation of None can never move anybody.
-        string radio = Between(patrol, "private void TheRadioCall(", "/// #835 · ONE FRAME OF BEING COME");
+        string radio = Code(Between(patrol, "private void TheRadioCall(", "/// #835 · ONE FRAME OF BEING COME"));
         Assert.Contains("if (!PatrolBeat.EarnsIt(why))", radio, StringComparison.Ordinal);
 
         // …and the first walk-away is still free: the count is taken and TESTED, not merely taken.
-        string giveUp = Between(patrol, "private void GiveUpTheHail(", "// ── THE CHALLENGE");
+        string giveUp = Code(Between(patrol, "private void GiveUpTheHail(", "// ── THE CHALLENGE"));
         Assert.Contains("PatrolBeat.WalkingOffEarnsIt(++_walkedAwayThisWatch)", giveUp, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.WalkedAwayLine", giveUp, StringComparison.Ordinal);
     }
@@ -473,12 +497,11 @@ public sealed class TheGuardsCatchYouTests
 
         // The spellings a hit would have to be written in. (The words themselves appear in this file's own
         // prose, saying that they do not appear in its code — which is the doc-comment the ruling asked for.)
-        Assert.DoesNotContain(".HitsTaken", patrol, StringComparison.Ordinal);
-        Assert.DoesNotContain("HitsTaken =", patrol, StringComparison.Ordinal);
-        Assert.DoesNotContain("CaptainCondition.", patrol, StringComparison.Ordinal);
+        Assert.DoesNotContain("HitsTaken", Code(patrol), StringComparison.Ordinal);
+        Assert.DoesNotContain("CaptainCondition", Code(patrol), StringComparison.Ordinal);
 
         // What it DOES cost: one pip of nerve, the lump the model already keeps for a hand laid on you.
-        string caught = Between(patrol, "private void HeHasYou(", "private void HeLosesYou(");
+        string caught = Code(Between(patrol, "private void HeHasYou(", "private void HeLosesYou("));
         Assert.Contains("NervePips.TouchPips * NervePips.PipUnit", caught, StringComparison.Ordinal);
         Assert.Equal(1, NervePips.TouchPips);
 
@@ -498,7 +521,7 @@ public sealed class TheGuardsCatchYouTests
     {
         string patrol = Pages("Map.Patrol.cs");
 
-        string run = Between(patrol, "private void RunAfterTheCaptain(", "private void HeHasYou(");
+        string run = Code(Between(patrol, "private void RunAfterTheCaptain(", "private void HeHasYou("));
         Assert.Contains("ReeverChase.Step(", run, StringComparison.Ordinal);
         Assert.Contains("SurfaceCollision.Gait.Person", run, StringComparison.Ordinal);
         Assert.Contains("HeHasYou(ex, g);", run, StringComparison.Ordinal);
@@ -512,14 +535,14 @@ public sealed class TheGuardsCatchYouTests
 
         // …and the list of guards is only ever emptied where a FLOOR ends, which is the one honest reason a
         // man stops being on it.
-        Assert.Equal(1, Count(patrol, "_guards.Clear()"));
-        Assert.Equal(0, Count(patrol, "_guards.Remove"));
+        Assert.Equal(1, Count(Code(patrol), "_guards.Clear()"));
+        Assert.Equal(0, Count(Code(patrol), "_guards.Remove"));
         Assert.Contains("_guards.Clear()",
-            Between(patrol, "private void SpawnPatrolFor(", "// ── THE LOOP"), StringComparison.Ordinal);
+            Code(Between(patrol, "private void SpawnPatrolFor(", "// ── THE LOOP")), StringComparison.Ordinal);
 
         // The controls stay the captain's for a run. They are held for the walk OUT and for nothing else —
         // the three places #833 put them and no fourth.
-        string deck = Pages("Map.Deck.cs");
+        string deck = Code(Pages("Map.Deck.cs"));
         Assert.Equal(3, Count(deck, "CaptainIsUnderEscort"));
         Assert.DoesNotContain("AfterYou", deck, StringComparison.Ordinal);
     }
@@ -537,7 +560,7 @@ public sealed class TheGuardsCatchYouTests
     {
         string patrol = Pages("Map.Patrol.cs");
 
-        string kick = Between(patrol, "private void TheKickOut(", "/// #835 · THE BIG TEXT");
+        string kick = Code(Between(patrol, "private void TheKickOut(", "/// #835 · THE BIG TEXT"));
 
         // The pass leaves the satchel, and it is SAID as it goes — and only when there was one to take.
         Assert.Contains("Satchel.Remove(_satchel, Satchel.Kind.Badge, PatrolBeat.BadgeId(bodyId))", kick,
@@ -549,7 +572,7 @@ public sealed class TheGuardsCatchYouTests
         // The ride is the lift's own, and there is no placement anywhere on this road.
         Assert.Contains("RideTheLiftTo(ex, 0);", kick, StringComparison.Ordinal);
         Assert.DoesNotContain("StandCaptainAt(", kick, StringComparison.Ordinal);
-        Assert.Equal(1, Count(patrol, "StandCaptainAt("));   // still only #833's admitted cut
+        Assert.Equal(1, Count(Code(patrol), "StandCaptainAt("));   // still only #833's admitted cut
 
         // …and the owner's own last line lands last.
         Assert.Contains("PatrolBeat.DoorsCloseLine", kick, StringComparison.Ordinal);
@@ -560,7 +583,7 @@ public sealed class TheGuardsCatchYouTests
 
         // The big text is the descent plate, in the descent plate's own three sizes, read off the same two
         // functions every other plate in the game reads them off.
-        string plate = Between(patrol, "TheKickedOutPlate(", "private void FadeTheKickedOutPlate(");
+        string plate = Code(Between(patrol, "TheKickedOutPlate(", "private void FadeTheKickedOutPlate("));
         Assert.Contains("PatrolBeat.KickedOutBigText", plate, StringComparison.Ordinal);
         Assert.Contains("UndergroundComplex.DepthPaint(0)", plate, StringComparison.Ordinal);
         Assert.Contains("SuitAir.PlateLine(air)", plate, StringComparison.Ordinal);
@@ -569,7 +592,7 @@ public sealed class TheGuardsCatchYouTests
 
         // …and which floor the walk ends on is decided ONCE, off the same predicate the card was composed
         // from — the sentence-vs-sim law, which this feature has already paid for twice.
-        Assert.Equal(1, Count(patrol, "_kickOutDue = PatrolBeat.BookedTooOften(_escortsThisWatch);"));
+        Assert.Equal(1, Count(Code(patrol), "_kickOutDue = PatrolBeat.BookedTooOften(_escortsThisWatch);"));
     }
 
     /// <summary>#835 · The plate is a MOMENT, not wallpaper: one deck carries it, and one rebuild takes it
@@ -579,11 +602,11 @@ public sealed class TheGuardsCatchYouTests
     public void TheSignComesDownAgain()
     {
         string patrol = Pages("Map.Patrol.cs");
-        string fade = Between(patrol, "private void FadeTheKickedOutPlate(", "// ── DRAWING THEM");
+        string fade = Code(Between(patrol, "private void FadeTheKickedOutPlate(", "// ── DRAWING THEM"));
         Assert.Contains("RebuildSurfaceDeck();", fade, StringComparison.Ordinal);
         Assert.Contains("_kickedOutPlateFor = 0;", fade, StringComparison.Ordinal);
 
         // …and it is asked for on the one rebuild that draws the regolith.
-        Assert.Contains("bigLabels: TheKickedOutPlate(ex)", Pages("Map.Surface.cs"), StringComparison.Ordinal);
+        Assert.Contains("bigLabels: TheKickedOutPlate(ex)", Code(Pages("Map.Surface.cs")), StringComparison.Ordinal);
     }
 }

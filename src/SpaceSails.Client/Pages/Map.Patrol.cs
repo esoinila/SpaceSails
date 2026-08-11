@@ -1336,17 +1336,22 @@ public sealed partial class Map
         _kickedOutPlateFor = PatrolBeat.KickedOutPlateSeconds;
         RideTheLiftTo(ex, 0);
 
+        // ONE REGION, NOT TWO PULSES — #774's law, and this moment is exactly what it is for. The ejection
+        // has two things to say in one breath (the pass, and the doors) and the slot holds one line: said as
+        // two calls they are two writes to it and the captain reads only the second, which would have made
+        // "the removal is spoken" a sentence that was technically emitted and never seen. The quiet line goes
+        // LAST because it is the closer, and it is the owner's copy verbatim.
+        var said = new List<string>();
         if (hadOne)
         {
-            ShowPulseMessage(PatrolBeat.PassRevokedLine, PulseRank.Beat);
-            LogAutopilotEvent(PatrolBeat.PassRevokedLine);
+            said.Add(PatrolBeat.PassRevokedLine);
             FileNote(PatrolBeat.PassRevokedNote, PatrolBeat.BadgeGlyph);
         }
+        said.Add(PatrolBeat.DoorsCloseLine);
 
-        // …and the quiet line last, so it is the sentence left standing under the big text. Owner's copy,
-        // verbatim: no red, no klaxon, no shake. The vacuum banner over the shed does the real talking.
-        ShowPulseMessage(PatrolBeat.DoorsCloseLine, PulseRank.Beat);
-        LogAutopilotEvent(PatrolBeat.DoorsCloseLine);
+        string closing = string.Join("\n\n", said);
+        ShowPulseMessage(closing, PulseRank.Beat);
+        LogAutopilotEvent(closing);
         FileNote(PatrolBeat.KickOutNote, "👮");
         RequestVaultSave();
     }
