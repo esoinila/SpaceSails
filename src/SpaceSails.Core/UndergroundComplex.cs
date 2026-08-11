@@ -1917,16 +1917,29 @@ public static class UndergroundComplex
     /// </summary>
     public const double FireCodeSmallRoomDu = 8.0;
 
-    /// <summary>#822 · How many doors a run of street frontage this long is served by, fire code included.
-    /// The whole of the door law in one function, so the carve, the guards and any later sweep are reading
-    /// one sentence.</summary>
+    /// <summary>
+    /// #822 · How many doors a run of street frontage this long is served by, fire code included. The whole
+    /// of the door law in one function, so the carve, the guards and any later sweep are reading one
+    /// sentence.
+    ///
+    /// <para>The fire code is about WAYS OUT and not about street doors, so a room that already has another
+    /// one — a suite with a gate onto the green — is not made to cut a second leaf in a face that has no
+    /// room for it. That is not a softening: it is #724's jamb law and this one meeting. A 19 du end block
+    /// forced to carry two 6.4 du leaves has 2 du of pier between them and 1.5 du at each end, and a captain
+    /// standing anywhere on that face is within a sidestep of two different openings — which the funnel
+    /// reads as <i>standing in a doorway</i> and answers by holding still. Watched go red exactly there:
+    /// <c>+3.90 du off the centreline … 400 presses left the captain on the near side of the wall</c>. The
+    /// room needs two ways out; it does not need both of them in the same wall.</para>
+    /// </summary>
     /// <param name="frontageDu">The room's street face.</param>
-    public static int DoorsForFrontage(double frontageDu)
+    /// <param name="hasAnotherWayOut">Whether the room has an exit that is not in this face — today, a gate
+    /// onto the park.</param>
+    public static int DoorsForFrontage(double frontageDu, bool hasAnotherWayOut = false)
     {
-        int wanted = (int)Math.Round(
-            frontageDu / RingStreetFaceDuPerDoor, MidpointRounding.AwayFromZero);
-        return frontageDu <= FireCodeSmallRoomDu
-            ? Math.Max(1, wanted)
+        int wanted = Math.Max(1, (int)Math.Round(
+            frontageDu / RingStreetFaceDuPerDoor, MidpointRounding.AwayFromZero));
+        return frontageDu <= FireCodeSmallRoomDu || hasAnotherWayOut
+            ? wanted
             : Math.Max(FireCodeMinExits, wanted);
     }
 
@@ -4304,9 +4317,13 @@ public static class UndergroundComplex
             foreach ((double lo, double hi) in RingSegments(
                 block.Y0, block.Y1, [mid], CorridorHalf))
             {
+                // #817 · …and the two ends are premium suites too: they look at the green out of one whole
+                // wall, so they get the same door onto it the near band's do. It is also what keeps their
+                // street face sane — see DoorsForFrontage: a 19 du end block with two leaves in it is a
+                // face with nowhere to stand.
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
-                    ring.Count + 1, side, inner, lo, outer, hi, block, gate: false));
+                    ring.Count + 1, side, inner, lo, outer, hi, block, gate: true));
             }
         }
 
@@ -4403,7 +4420,7 @@ public static class UndergroundComplex
         //    number typed here — and they are spaced evenly down the face, so a room with ONE door still puts
         //    it exactly where it has always been (the frontage's midpoint) and nothing about the single-door
         //    case moved.
-        int leaves = DoorsForFrontage(faceHi - faceLo);
+        int leaves = DoorsForFrontage(faceHi - faceLo, hasAnotherWayOut: gate && view);
         var openings = new List<SurfaceLayout.Doorway>(leaves);
         var cuts = new List<double>(leaves);
         for (int d = 0; d < leaves; d++)

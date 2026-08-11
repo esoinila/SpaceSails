@@ -169,15 +169,23 @@ public static class RingOffice
     /// <summary>How wide the service strip is, measured off the pier it stands against.</summary>
     public const double StripDu = 6.0;
 
-    /// <summary>How long a WC cubicle is down the strip.</summary>
-    public const double CubicleDu = 5.0;
+    /// <summary>The stub of wall left either side of a cell's opening. A jamb and not a wall: a cell is a
+    /// box you step into, and the whole of it is the door.</summary>
+    public const double CellJambDu = 0.4;
 
-    /// <summary>…and a privacy booth, which is one seat and a door and nothing else.</summary>
-    public const double BoothDu = 4.5;
-
-    /// <summary>The gap between two boxes down the strip, so the strip reads as a row of cells rather than as
-    /// one long cupboard. Nobody walks between two cubicles, so it is a joint and not a passage.</summary>
-    public const double StripGapDu = 1.5;
+    /// <summary>
+    /// How long a cell of the strip is — a WC cubicle or a privacy booth.
+    ///
+    /// <para>DERIVED FROM THE BUILDING'S OWN DOOR (<see cref="UndergroundComplex.DoorHalf"/>) plus a jamb
+    /// either side, and that is not tidiness. The first cut of this feature gave the cubicles a leaf half the
+    /// building's width, on the reasoning that a bedroom-small room takes a bedroom-small door — and #724's
+    /// jamb law went red on 612 approaches across every site in the game. That law is <i>a captain one
+    /// body-width off a doorway cut, pressing only the axis through it, must pass</i>, and it is measured out
+    /// to <c>DoorHalf + a radius</c> because that is where the body stops overlapping the opening. A narrower
+    /// leaf makes that sentence false about itself: the guard walks at a hole that is not there. One door
+    /// width in this building; the cell is sized to it rather than the other way round.</para>
+    /// </summary>
+    public static double CellDu => (2 * UndergroundComplex.DoorHalf) + (2 * CellJambDu);
 
     /// <summary>
     /// How much floor is left BETWEEN two fittings a body has to walk between. Wide enough for a captain and
@@ -192,12 +200,11 @@ public static class RingOffice
     /// something in front of a bank hands the bank a start line this far past its own edge, and the screens
     /// are measured from there.</para>
     /// </summary>
-    public const double GangwayDu = 3.0;
-
-    /// <summary>Half the width of the leaf on a cubicle or a booth. A bedroom-small room takes a
-    /// bedroom-small door (#822): the building's own <see cref="UndergroundComplex.DoorHalf"/> is 3.2, and a
-    /// 6.4 du opening in a 5 du wall is not a door, it is a missing wall.</summary>
-    public const double CubicleDoorHalfDu = 1.6;
+    /// <para>It is FIVE and not three for a second reason found the same way: the strip's cells open onto
+    /// this gangway, and a captain walking at a cubicle door from a pace or two out was starting behind the
+    /// end of a desk bank and pinning there. It is a corridor, so it is corridor-width — the same aisle the
+    /// street and the glass keep.</para>
+    public const double GangwayDu = 5.0;
 
     /// <summary>How many WC cubicles a big suite gets. The owner said <i>"couple toilets"</i> and a couple is
     /// two.</summary>
@@ -865,31 +872,42 @@ public static class RingOffice
     /// and one stub of a fixture inside it so it reads as what it is at plate scale. The cubicles' gaps are
     /// PUBLISHED DOORS (#821 will lock them from the inside); the booths' are open fronts, because a phone
     /// box you can be shut into is a different feature and this issue is not it.</para>
+    ///
+    /// <h3>The cells ABUT, and that is load-bearing</h3>
+    ///
+    /// <para>They were laid with a joint between them first, so the strip would read as a row of separate
+    /// boxes, and #724's jamb law went red on every site: a captain walking at the edge of a cubicle door was
+    /// funnelled AWAY from it into the du and a half between two cells — an opening as far as the sidestep
+    /// can see, and a dead slot as far as a body is concerned. A terrace has no such slot. Past a cell's end
+    /// wall is the next cell's door, which is a place a captain can actually go, and the pier between two
+    /// leaves is two jambs wide — narrower than a body, so there is nowhere on this face to stand that is
+    /// not in front of a door.</para>
     /// </summary>
     private static void ServiceStrip(
         Lay lay, in UndergroundComplex.RingRoom room, double uLo, double uHi, double vA, double vB)
     {
         double v = vA;
 
-        // ── THE KITCHENETTE, in the corner nearest the door: a counter block against the pier.
+        // ── THE KITCHENETTE, in the corner nearest the door: a counter block against the pier. Its far
+        //    edge is the first cell's own end wall, which is why no cell below lays one at its near end.
         double kitchenTo = v + StripDu;
         if (kitchenTo > vB)
         {
             return;
         }
         lay.Box(Fitting.Kitchenette, uLo, v, uHi, kitchenTo, KitchenettePlate);
-        v = kitchenTo + StripGapDu;
+        v = kitchenTo;
 
         // ── THE TWO WCs. A box, a door in the face it opens off, and a pan against the far wall.
         for (int c = 0; c < Cubicles; c++)
         {
-            double to = v + CubicleDu;
+            double to = v + CellDu;
             if (to > vB)
             {
                 break;
             }
             Cell(lay, uLo, uHi, v, to, Fitting.Cubicle, WcPlate(c + 1), publish: true);
-            v = to + StripGapDu;
+            v = to;
         }
 
         // ── AND THE PRIVACY BOOTHS. One seat each, facing out of the open front the way somebody on a call
@@ -897,20 +915,20 @@ public static class RingOffice
         (double gx, double gy) = lay.Frame.TowardTheGlass;
         for (int b = 0; b < Booths; b++)
         {
-            double to = v + BoothDu;
+            double to = v + CellDu;
             if (to > vB)
             {
                 break;
             }
             Cell(lay, uLo, uHi, v, to, Fitting.Booth, BoothPlate(b + 1), publish: false);
             lay.Chair(in room, (uLo + uHi) / 2.0, (v + to) / 2.0, (-gx, -gy));
-            v = to + StripGapDu;
+            v = to;
         }
     }
 
     /// <summary>One cell of the service strip: three solid sides, and the fourth split either side of the
-    /// way in. The gap is <see cref="CubicleDoorHalfDu"/> wide and centred — a bedroom-small room takes a
-    /// bedroom-small door (#822).</summary>
+    /// way in. The opening is the BUILDING'S own door, centred, with <see cref="CellJambDu"/> either side —
+    /// see <see cref="CellDu"/> for why it may not be anything narrower.</summary>
     private static void Cell(
         Lay lay, double uLo, double uHi, double vLo, double vHi,
         Fitting kind, string plate, bool publish)
@@ -923,19 +941,20 @@ public static class RingOffice
             return;
         }
 
-        // The two ends and the back — the back being the pier side, which is the strip's outer face.
-        lay.Wall(uLo, vLo, uHi, vLo);
+        // The FAR end and the back — the back being the pier side, which is the strip's outer face. The
+        // near end is the previous cell's far end and is never laid twice: two segments where the eye reads
+        // one is this repo's own named way of ending up with two answers about one wall.
         lay.Wall(uLo, vHi, uHi, vHi);
         lay.Wall(uHi, vLo, uHi, vHi);
 
         // …and the face it opens off, in two segments with the leaf between them.
         double mid = (vLo + vHi) / 2.0;
-        lay.Wall(uLo, vLo, uLo, mid - CubicleDoorHalfDu);
-        lay.Wall(uLo, mid + CubicleDoorHalfDu, uLo, vHi);
+        lay.Wall(uLo, vLo, uLo, mid - UndergroundComplex.DoorHalf);
+        lay.Wall(uLo, mid + UndergroundComplex.DoorHalf, uLo, vHi);
 
         if (publish)
         {
-            lay.Door(uLo, mid - CubicleDoorHalfDu, uLo, mid + CubicleDoorHalfDu);
+            lay.Door(uLo, mid - UndergroundComplex.DoorHalf, uLo, mid + UndergroundComplex.DoorHalf);
 
             // The fixture, against the back wall — the en-suite's own one-segment pan, which is the whole of
             // what makes a 5 du box read as a WC on a plan.

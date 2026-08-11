@@ -688,7 +688,16 @@ public partial class Map
     }
 
     /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
-    /// Close button both come through here, so leaving a table is one act however you do it.</summary>
+    /// Close button both come through here, so leaving a table is one act however you do it.
+    ///
+    /// <para>#820 · …and off an office chair it also puts the body down: Core's own published stand spot,
+    /// carried on the sitting (<see cref="TableTalk.OfficeSeatX"/>) rather than worked out here, because the
+    /// point of the law is that a solid seat may not be able to trap the dot.</para>
+    ///
+    /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
+    /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can
+    /// put a line of its own on the screen, so it may not run while the strip is still up. Watched go red as
+    /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para></summary>
     private void CloseTable()
     {
         // #784 · A SPREAD IS A SPREAD ON A TABLE. Standing up with a write-up half dug abandons it, out loud
@@ -700,16 +709,16 @@ public partial class Map
             AbandonProcessing(ex, Core.Processing.Interruption.StoodUp);
         }
 
-        // #820 · GETTING UP OFF AN OFFICE CHAIR PUTS THE BODY DOWN SOMEWHERE. Core's own published stand
-        // spot, carried on the sitting (TableTalk.OfficeSeat*), and never a coordinate worked out here —
-        // the whole point of the law is that a solid seat may not be able to trap the dot, and the one way
-        // to be sure of that is to hand the answer over rather than to derive it twice.
-        if (_table is { Office: true } office)
-        {
-            StandCaptainAt(office.OfficeSeatX, office.OfficeSeatY, "you push the chair back and stand up");
-        }
+        // #820 · Read, then the table goes, then the body moves. See the summary.
+        (double sx, double sy)? seat =
+            _table is { Office: true } office ? (office.OfficeSeatX, office.OfficeSeatY) : null;
 
         _table = null;
+
+        if (seat is { } spot)
+        {
+            StandCaptainAt(spot.sx, spot.sy, "you push the chair back and stand up");
+        }
     }
 
     /// <summary>

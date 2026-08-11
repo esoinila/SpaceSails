@@ -575,7 +575,7 @@ public sealed class NoRingSuiteIsAnEmptyFloorTests
     /// <para><b>Proven RED</b> by putting the single door back (<c>int leaves = 1;</c> in
     /// <c>RingBox</c>):</para>
     /// <code>
-    /// 1456 ring room(s) are under-doored:
+    /// 1040 ring room(s) are under-doored:
     ///   luna B1: ring room 1 (20.0 du) has 1 street door(s) and the law wants 2.
     ///   luna B1: ring room 1 has 1 way(s) out altogether, and the fire code wants 2.
     ///   luna B1: ring room 2 (48.8 du) has 1 street door(s) and the law wants 3.
@@ -595,7 +595,7 @@ public sealed class NoRingSuiteIsAnEmptyFloorTests
             {
                 rooms++;
                 double frontage = RingOffice.FrontageOf(room);
-                int want = UndergroundComplex.DoorsForFrontage(frontage);
+                int want = UndergroundComplex.DoorsForFrontage(frontage, room.Gate is not null);
 
                 if (room.Doors.Count != want)
                 {
@@ -604,7 +604,9 @@ public sealed class NoRingSuiteIsAnEmptyFloorTests
                 }
 
                 // The owner's own case, said in the shape the issue is written in: a room wide enough to be
-                // called a landscape office is never served by one leaf.
+                // called a landscape office is never served by one leaf. Stated on the FRONTAGE alone, so
+                // the gate a suite has onto the green cannot buy its way out of this one — a 48 du office
+                // with one street door is what he was standing in when he filed it.
                 if (frontage >= 2 * UndergroundComplex.RingStreetFaceDuPerDoor)
                 {
                     wide++;
@@ -691,12 +693,14 @@ public sealed class NoRingSuiteIsAnEmptyFloorTests
     ///   luna B1: ring room 2's door at (-82.1,-157.0) is drawn on a poured wall — the spine was never
     ///   cut for it.
     /// </code>
-    /// <para>…and putting the near band back to <c>gate: false</c>, which is what it was before the owner's
+    /// <para>…and putting the suites back to <c>gate: false</c>, which is what they were before the owner's
     /// ruling:</para>
     /// <code>
-    /// 104 door(s) open onto a wall:
+    /// 312 door(s) open onto a wall:
     ///   luna B1: ring room 2 — SENIOR ROTA · GREEN SIDE — looks at the green through glass with no door
     ///   in it. The premium suites get a way OUT onto the garden they are sold on.
+    ///   luna B1: ring room 11 — REGISTERED OFFICE · GARDEN ASPECT — looks at the green through glass
+    ///   with no door in it. …
     /// </code>
     /// </summary>
     [Fact]
@@ -736,7 +740,10 @@ public sealed class NoRingSuiteIsAnEmptyFloorTests
                     }
                 }
 
-                if (!IsViewSuite(in room) || room.Side != UndergroundComplex.RingSide.Near)
+                // #817 · EVERY suite with a view — the near band's and the block's two ends — has a way OUT
+                // onto the garden it is sold on. The far band has had one since #801 and is checked by its
+                // own guards; a corner room has no park in front of it and correctly has none.
+                if (!IsViewSuite(in room))
                 {
                     continue;
                 }
@@ -754,10 +761,19 @@ public sealed class NoRingSuiteIsAnEmptyFloorTests
                     continue;
                 }
 
-                if (Math.Abs(((gate.Y1 + gate.Y2) / 2.0) - park.Y1) > 0.001)
+                // …and it is cut in the park's OWN wall, whichever of the four this room stands on.
+                double gx = (gate.X1 + gate.X2) / 2.0, gy = (gate.Y1 + gate.Y2) / 2.0;
+                bool onThePark = room.Side switch
                 {
-                    wrong.Add($"  {body} B{-level}: ring room {room.Number}'s gate is not in the park's "
-                        + "near wall.");
+                    UndergroundComplex.RingSide.Near => Math.Abs(gy - park.Y1) < 0.001,
+                    UndergroundComplex.RingSide.Far => Math.Abs(gy - park.Y0) < 0.001,
+                    UndergroundComplex.RingSide.West => Math.Abs(gx - park.X0) < 0.001,
+                    _ => Math.Abs(gx - park.X1) < 0.001,
+                };
+                if (!onThePark)
+                {
+                    wrong.Add($"  {body} B{-level}: ring room {room.Number}'s gate at ({gx:F1},{gy:F1}) is "
+                        + "not in the park's own wall.");
                 }
                 if (!UndergroundComplex.IsFound(body, level) && !floor.Doorways.Contains(gate))
                 {
