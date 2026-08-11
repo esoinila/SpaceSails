@@ -1551,18 +1551,31 @@ public static class UndergroundComplex
         /// makes them the park's is only where their doors are.</para></summary>
         public IReadOnlyList<BackRoom> Rooms => Back ?? [];
 
-        /// <summary>#801 · The doors in the FAR wall, in the order the rooms behind them are laid. Kept out
-        /// of <see cref="Ways"/> on purpose: a Way is a way THROUGH the park, corridor to corridor, and
-        /// these are ways OUT OF it into a room. The distinction is not decorative — the amenities'
-        /// conservation sum counts a Way as a place and would count these twice.</summary>
+        /// <summary>
+        /// #801 · The doors OFF THE GRAVEL, in the ring's own order. Kept out of <see cref="Ways"/> on
+        /// purpose: a Way is a way THROUGH the park, corridor to corridor, and these are ways OUT OF it into
+        /// a room. The distinction is not decorative — the amenities' conservation sum counts a Way as a
+        /// place and would count these twice.
+        ///
+        /// <para>#817 · IT IS READ OFF <see cref="Frontage"/> NOW, not off <see cref="Rooms"/>. The far
+        /// band's back doors used to be the only openings in the park's boundary that led into a room, so
+        /// "the back rooms' doors" and "the doors off the gravel" were the same list; the owner's ruling
+        /// that every premium suite gets a door onto the green made them two different lists, and the one
+        /// this property has always MEANT is this one. The sealing experiment in
+        /// <c>TheParkIsWalkableTests</c> plugs whatever is in here and says out loud that anything adding a
+        /// way onto the green belongs in it — reading the narrower list would have left that guard passing
+        /// while proving nothing.</para></summary>
         public IReadOnlyList<SurfaceLayout.Doorway> BackDoors
         {
             get
             {
-                var doors = new List<SurfaceLayout.Doorway>(Rooms.Count);
-                foreach (BackRoom r in Rooms)
+                var doors = new List<SurfaceLayout.Doorway>(Frontage.Count);
+                foreach (RingRoom r in Frontage)
                 {
-                    doors.Add(r.Door);
+                    if (r.Gate is { } onto)
+                    {
+                        doors.Add(onto);
+                    }
                 }
                 return doors;
             }
@@ -1868,6 +1881,56 @@ public static class UndergroundComplex
     public const double RingRoomMinDu = 16.0;
 
     /// <summary>
+    /// #817 · HOW MUCH STREET FACE ONE DOOR SERVES.
+    ///
+    /// <para>Owner, live in a 40 du landscape office with one leaf in it: <i>"Oh just one door in a landscape
+    /// office?"</i> and, the same evening, <i>"bigger spaces must have much more doors."</i> That overrode
+    /// <see cref="RingRoom.Door"/>'s documented "exactly one", and this is the number the override is stated
+    /// as: a room's street frontage divided by this, rounded, is how many leaves it gets.</para>
+    ///
+    /// <para>Eighteen du is the precedent already standing in the building rather than a figure somebody
+    /// liked — the hall's own corridor face carries four to five doors over its run (#775/#812), which is
+    /// this ratio to within a leaf. It is also comfortably more than twice
+    /// <see cref="DoorHalf"/>, so two doors on the narrowest frontage the ring will ever cut
+    /// (<see cref="RingRoomMinDu"/>) still leave a pier of wall between them.</para>
+    /// </summary>
+    public const double RingStreetFaceDuPerDoor = 18.0;
+
+    /// <summary>
+    /// #822 · THE FIRE CODE — no space may have only one way out, except the bedroom-small ones.
+    ///
+    /// <para>Owner's standing law, issued mid-build: <i>"no space may have only one door except bedroom-small
+    /// rooms."</i> Every ring room takes at least this many exits, counting its street doors and its gate
+    /// onto the green, however little frontage it has. The exemption is
+    /// <see cref="FireCodeSmallRoomDu"/>.</para>
+    /// </summary>
+    public const int FireCodeMinExits = 2;
+
+    /// <summary>
+    /// #822 · How big a room may be and still be let off with one door. A space whose LONGEST side is no
+    /// longer than this is bedroom-small: a WC cubicle, a privacy booth, a cell you can cross in two paces
+    /// and whose one door you are always within reach of.
+    ///
+    /// <para>Named here rather than inside <see cref="RingOffice"/> because the sweep this law is really
+    /// about is building-wide (#818 will walk every carved room in the facility), and a threshold that lived
+    /// in the ring's own furniture file would be re-typed the moment a laboratory needed it.</para>
+    /// </summary>
+    public const double FireCodeSmallRoomDu = 8.0;
+
+    /// <summary>#822 · How many doors a run of street frontage this long is served by, fire code included.
+    /// The whole of the door law in one function, so the carve, the guards and any later sweep are reading
+    /// one sentence.</summary>
+    /// <param name="frontageDu">The room's street face.</param>
+    public static int DoorsForFrontage(double frontageDu)
+    {
+        int wanted = (int)Math.Round(
+            frontageDu / RingStreetFaceDuPerDoor, MidpointRounding.AwayFromZero);
+        return frontageDu <= FireCodeSmallRoomDu
+            ? Math.Max(1, wanted)
+            : Math.Max(FireCodeMinExits, wanted);
+    }
+
+    /// <summary>
     /// #813 · WHAT IS STENCILLED ON A ROOM WITH THE VIEW — the six plates the block hangs on its park-facing
     /// frontage, and nowhere else in the building.
     ///
@@ -1930,19 +1993,50 @@ public static class UndergroundComplex
     /// <param name="X1">Right edge.</param>
     /// <param name="Y1">Top edge.</param>
     /// <param name="Side">Which of the park's four walls this room is one of.</param>
-    /// <param name="Door">The way in, cut in the street's face. Every ring room has exactly one.</param>
+    /// <param name="Door">The FIRST way in, cut in the street's face. #817 · It used to be the only one and
+    /// this parameter used to say so; the owner overrode that from inside a landscape office with one leaf
+    /// in it. Every caller that means "the way in" still means this one, and every caller that means "all of
+    /// them" says <see cref="RingRoom.Doors"/>.</param>
     /// <param name="View">The park-facing wall, as the segment it was built as — null on a CORNER room,
     /// which stands past the end of the park's own wall and therefore has nothing to look at. A corner
     /// office with no view is the amenity gradient (#775) drawn on the plan.</param>
-    /// <param name="Gate">The door in the park-facing wall, where this room has one — the back of house
-    /// keeps #801's own way in off the gravel. Null everywhere else, and never on the hall: the owner's
-    /// rule is that the glass between the bar and the green is never a door.</param>
-    /// <param name="Plate">What is stencilled beside the street door.</param>
+    /// <param name="Gate">The door in the park-facing wall, where this room has one. #817 · EVERY ROOM WITH
+    /// A VIEW HAS ONE — owner's ruling, live: a premium office on a garden gets a door to the garden and not
+    /// only a window at it. The far band's back of house has kept #801's own way in off the gravel since it
+    /// was carved, and this is the same door, granted to the rooms that were paying for the aspect. Null on
+    /// a corner room, which has no park in front of it — and null on the HALL, whose glass is still never a
+    /// door: that rule was always about the bar's window wall and never about the ring's.</param>
+    /// <param name="Plate">What is stencilled beside the FIRST street door.</param>
+    /// <param name="Ways">#817 · Every street door, in the order they were cut along the frontage. Null on a
+    /// room built before the count scaled, which is why <see cref="Doors"/> falls back to
+    /// <paramref name="Door"/> rather than to an empty list — an empty list would make "every ring room
+    /// opens onto a street" vacuously true, which is the one way a law about a list can fail silently.</param>
+    /// <param name="Fittings">#817 · What is standing on the floor of it. See <see cref="RingOffice"/>.</param>
+    /// <param name="Chairs">#817 · Every seat in it, in the room's own order. Chairs face the GLASS, because
+    /// the view is what the room rents for and the furniture should agree.</param>
     public readonly record struct RingRoom(
         int Number, double X0, double Y0, double X1, double Y1, RingSide Side,
         SurfaceLayout.Doorway Door, SurfaceLayout.Wall? View, SurfaceLayout.Doorway? Gate,
-        string Plate)
+        string Plate,
+        IReadOnlyList<SurfaceLayout.Doorway>? Ways = null,
+        IReadOnlyList<RingOffice.Fixture>? Fittings = null,
+        IReadOnlyList<RingOffice.Chair>? Chairs = null)
     {
+        /// <summary>#817 · EVERY STREET DOOR. Owner: <i>"bigger spaces must have much more doors."</i>
+        /// Published for the reason <see cref="Hall.Openings"/> is: a law about how a room is entered cannot
+        /// be written against a list nobody keeps.</summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> Doors => Ways ?? [Door];
+
+        /// <summary>#817 · The furniture, never null.</summary>
+        public IReadOnlyList<RingOffice.Fixture> Furniture => Fittings ?? [];
+
+        /// <summary>#817 · The seats, never null.</summary>
+        public IReadOnlyList<RingOffice.Chair> Seats => Chairs ?? [];
+
+        /// <summary>#822 · How many ways out of it there are altogether — the street doors and the gate onto
+        /// the green. The number the fire code is stated in, asked of the room's own published lists.</summary>
+        public int Exits => Doors.Count + (Gate is null ? 0 : 1);
+
         /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
         public double X => (X0 + X1) / 2.0;
 
@@ -3101,10 +3195,17 @@ public static class UndergroundComplex
             // Their plates are the building's own vocabulary rather than the venue's, and they go on the
             // corridor side for the reason the hall's do: a walker on the spine is told what the wall beside
             // them is before they have to wonder.
+            //
+            // #817 · …and a room with three of them is stencilled ONCE. The carve hands the plate over with
+            // the FIRST of a room's cuts and hands the rest over blank, so a landscape office that earned
+            // more leaves does not also earn three copies of its own name across one wall.
             foreach ((double lo, double hi, double plateX, string plate) in ringSpineCuts)
             {
                 doorways.Add(new(lo, hallSpineFaceY, hi, hallSpineFaceY));
-                labels.Add(new(plateX, plateY, plate));
+                if (plate.Length > 0)
+                {
+                    labels.Add(new(plateX, plateY, plate));
+                }
             }
         }
 
@@ -4159,9 +4260,19 @@ public static class UndergroundComplex
             for (int k = 0; k < n; k++)
             {
                 double rx0 = lo + ((hi - lo) * k / n), rx1 = lo + ((hi - lo) * (k + 1) / n);
+
+                // #817 · AND A DOOR ONTO THE GREEN. Owner's ruling, live in one of these: a premium office
+                // that sold on the aspect gets a way OUT into the garden, not only a window at it. The far
+                // band's back of house has had exactly this door since #801 and it is the same door.
+                //
+                // The hall's glass is untouched and always was: the segment the hall stands in is stepped
+                // over above, and #751's "the glass between the bar and the green is never a door" was
+                // always a rule about the BAR's window wall — a public room with eighty seats in it, whose
+                // egress is its own front doors on the spine. RingBox cuts one only where there is park in
+                // front of the room to cut it into, so the block's corner offices still have none.
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
-                    ring.Count + 1, RingSide.Near, rx0, block.Y1, rx1, sf, block, gate: false));
+                    ring.Count + 1, RingSide.Near, rx0, block.Y1, rx1, sf, block, gate: true));
             }
         }
 
@@ -4282,12 +4393,28 @@ public static class UndergroundComplex
             walls.Add(new(x0, y1, x1, y1, true));
         }
 
-        // ── THE STREET DOOR. On the near band the street is the SPINE, and its face is poured by the spine
-        //    builder from one sorted list of spans — so the gap is handed over rather than cut here, which
+        // ── THE STREET DOORS. On the near band the street is the SPINE, and its face is poured by the spine
+        //    builder from one sorted list of spans — so the gaps are handed over rather than cut here, which
         //    is #585's one-gap law said about the one wall this room does not own.
-        SurfaceLayout.Doorway door = horizontal
-            ? new SurfaceLayout.Doorway(mid - DoorHalf, streetLine, mid + DoorHalf, streetLine)
-            : new SurfaceLayout.Doorway(streetLine, mid - DoorHalf, streetLine, mid + DoorHalf);
+        //
+        //    #817 · THERE ARE SEVERAL OF THEM NOW. Owner, live, from inside one of these: "Oh just one door
+        //    in a landscape office?" … "bigger spaces must have much more doors." The count is the room's own
+        //    frontage divided by DoorsForFrontage's ratio, with #822's fire-code floor under it — never a
+        //    number typed here — and they are spaced evenly down the face, so a room with ONE door still puts
+        //    it exactly where it has always been (the frontage's midpoint) and nothing about the single-door
+        //    case moved.
+        int leaves = DoorsForFrontage(faceHi - faceLo);
+        var openings = new List<SurfaceLayout.Doorway>(leaves);
+        var cuts = new List<double>(leaves);
+        for (int d = 0; d < leaves; d++)
+        {
+            double at = faceLo + ((faceHi - faceLo) * (d + 0.5) / leaves);
+            cuts.Add(at);
+            openings.Add(horizontal
+                ? new SurfaceLayout.Doorway(at - DoorHalf, streetLine, at + DoorHalf, streetLine)
+                : new SurfaceLayout.Doorway(streetLine, at - DoorHalf, streetLine, at + DoorHalf));
+        }
+        SurfaceLayout.Doorway door = openings[0];
 
         // ── THE PLATE. A room with the view gets the block's own register (ParkViewPlates); a CORNER room
         //    gets the building's ordinary one, which is the amenity gradient said in signage rather than in
@@ -4322,28 +4449,51 @@ public static class UndergroundComplex
         //
         // Stepped along the room's own wall rather than out into the corridor, and clamped inside the
         // room's span so a narrow room's plate cannot wander onto its neighbour's frontage.
+        //
+        // #817 · …and it is beside the FIRST door only, however many the frontage earned. Two plates on one
+        // room would be two answers to "which room is this", and the room's own signage is the only thing
+        // telling fourteen identical poured boxes apart.
         double aside = DoorHalf + 3.0;
-        double plateAt = Math.Clamp(mid + aside, faceLo + 1.5, faceHi - 1.5);
+        double plateAt = Math.Clamp(cuts[0] + aside, faceLo + 1.5, faceHi - 1.5);
 
         if (side == RingSide.Near)
         {
-            spineDoors.Add((mid - DoorHalf, mid + DoorHalf, plateAt, plate));
+            for (int d = 0; d < cuts.Count; d++)
+            {
+                spineDoors.Add((cuts[d] - DoorHalf, cuts[d] + DoorHalf, plateAt, d == 0 ? plate : ""));
+            }
         }
         else
         {
-            if (horizontal)
+            // #817 · ONE SORTED SWEEP WITH A CURSOR THAT MAY ONLY MOVE FORWARD (§13.2), because this wall
+            // has several holes in it now. The cuts are generated in ascending order and the sweep is
+            // written as if they were not, for #587's own reason: a wall built by a cursor over a list it
+            // was handed in the wrong order is the bug this file keeps a monument to.
+            double cursor = horizontal ? x0 : y0, end = horizontal ? x1 : y1;
+            foreach (double at in cuts)
             {
-                walls.Add(new(x0, streetLine, mid - DoorHalf, streetLine, true));
-                walls.Add(new(mid + DoorHalf, streetLine, x1, streetLine, true));
+                double near = Math.Max(cursor, at - DoorHalf);
+                if (near > cursor)
+                {
+                    walls.Add(horizontal
+                        ? new SurfaceLayout.Wall(cursor, streetLine, near, streetLine, true)
+                        : new SurfaceLayout.Wall(streetLine, cursor, streetLine, near, true));
+                }
+                cursor = Math.Max(cursor, at + DoorHalf);
             }
-            else
+            if (end > cursor)
             {
-                walls.Add(new(streetLine, y0, streetLine, mid - DoorHalf, true));
-                walls.Add(new(streetLine, mid + DoorHalf, streetLine, y1, true));
+                walls.Add(horizontal
+                    ? new SurfaceLayout.Wall(cursor, streetLine, end, streetLine, true)
+                    : new SurfaceLayout.Wall(streetLine, cursor, streetLine, end, true));
             }
+
             if (!found)
             {
-                doorways.Add(door);
+                foreach (SurfaceLayout.Doorway leaf in openings)
+                {
+                    doorways.Add(leaf);
+                }
                 labels.Add(new(
                     horizontal ? plateAt : streetLine + (side == RingSide.West ? -2.5 : 2.5),
                     horizontal ? streetLine + (side == RingSide.Far ? -2.5 : 2.5) : plateAt,
@@ -4389,7 +4539,35 @@ public static class UndergroundComplex
         }
 
         claimed.Add((x0 - 1.5, y0 - 1.5, x1 + 1.5, y1 + 1.5));
-        return new RingRoom(number, x0, y0, x1, y1, side, door, viewWall, parkDoor, plate);
+
+        // ── #817 · AND WHAT IS ON THE FLOOR OF IT.
+        //
+        // Owner, live, standing in one of these on a bare deck: "It really needs tables … the cubicles etc
+        // chairs maybe tables etc. It is way too empty." The room is furnished LAST, because a placer that
+        // ran before the doors were cut would be measuring its clearances against a wall with no holes in
+        // it — and it is furnished by RingOffice, which is handed the finished room and answers what is
+        // standing in it. Nothing here decides where a desk goes.
+        //
+        // The solids go into the SAME wall list every other piece of furniture down here goes into (the
+        // park's raised beds, the en-suite's pan) so one segment is both the drawing and the collision, and
+        // the cubicles' leaves go into the same doorway list every door in the building is in — #821's lock
+        // has to be able to find them without knowing what a WC is.
+        var furnished = new RingRoom(
+            number, x0, y0, x1, y1, side, door, viewWall, parkDoor, plate, openings);
+        RingOffice.Furnishing fit = RingOffice.Fit(in furnished);
+        foreach (SurfaceLayout.Wall solid in fit.Solids)
+        {
+            walls.Add(solid);
+        }
+        if (!found)
+        {
+            foreach (SurfaceLayout.Doorway leaf in fit.Doors)
+            {
+                doorways.Add(leaf);
+            }
+        }
+
+        return furnished with { Fittings = fit.Fixtures, Chairs = fit.Chairs };
     }
 
     /// <summary>#813 · One gate through the ring — a corridor's width of spur, and the park's own wall

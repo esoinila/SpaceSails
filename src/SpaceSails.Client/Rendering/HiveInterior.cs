@@ -491,6 +491,38 @@ public static class HiveInterior
             // offering things would be a park that had noticed you.
             labels.Add((
                 (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
+
+            // ── #817 · THE SUITES, FURNISHED ──────────────────────────────────────────────────────────
+            //
+            // Owner, standing in one of these on a bare deck: "It really needs tables … the cubicles etc
+            // chairs maybe tables etc. It is way too empty" / "in office people sit down".
+            //
+            // EVERY SOLID THING IN HERE IS ALREADY IN floor.Walls — Core laid the desks, the screens, the
+            // kitchenette and the cubicles as segments, so they were drawn and collided with by the loop at
+            // the top of this method, exactly as the park's raised beds and the en-suite's own pan are (the
+            // fixture idiom the owner named as the one interior in the building that reads right). What is
+            // left for a renderer is the STENCIL and the VERB, which is the whole of a renderer's business
+            // in a room somebody else furnished.
+            foreach (UndergroundComplex.RingRoom suite in green.Frontage)
+            {
+                foreach (RingOffice.Fixture fitting in suite.Furniture)
+                {
+                    if (fitting.Plate.Length > 0)
+                    {
+                        labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
+                    }
+                }
+
+                // The chairs take the SIT verb, on the seam the stools and the park benches already use:
+                // Core says where a seat is and this hangs a console on it. The plate carries the VERB
+                // (#783: "why not use words like SIT DOWN here if it means sitting down?").
+                foreach (RingOffice.Chair chair in suite.Seats)
+                {
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveOfficeChair,
+                        (float)chair.X, (float)chair.Y, chair.DeckPlate));
+                }
+            }
         }
 
         // ── #798 · THE BINS, PLATED ────────────────────────────────────────────────────────────────────

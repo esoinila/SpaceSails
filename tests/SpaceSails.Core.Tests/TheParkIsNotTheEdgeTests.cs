@@ -260,6 +260,13 @@ public sealed class TheParkIsNotTheEdgeTests
     /// one as a place with a doorway. A back door is a way OUT of the park into a room, and the room is
     /// already counted — publishing it on <c>Ways</c> would have made the sum count it twice, which is a
     /// guard going red for a reason that has nothing to do with the bug it was written for.</para>
+    ///
+    /// <para>#817 · THE COUNT OF BACK DOORS IS NO LONGER THE COUNT OF BACK ROOMS, and the change is
+    /// deliberate rather than a loosening. The owner ruled that a premium suite on a garden gets a door onto
+    /// the garden, so the NEAR band's rooms now have one too — and <c>BackDoors</c> means "the doors off the
+    /// gravel", which is what the sealing experiment in <c>TheParkIsWalkableTests</c> plugs. What is asserted
+    /// instead is the containment that actually carries the law: every back room's own door is still in the
+    /// list, and the list is still disjoint from <c>Ways</c>.</para>
     /// </summary>
     [Fact]
     public void TheBackDoorsAreNotWaysThroughAndTheSumStillBalances()
@@ -271,7 +278,14 @@ public sealed class TheParkIsNotTheEdgeTests
             parks++;
             ways += park.Ways.Count;
             backs += park.BackDoors.Count;
-            Assert.Equal(park.Rooms.Count, park.BackDoors.Count);
+
+            Assert.True(park.BackDoors.Count >= park.Rooms.Count,
+                $"{body} B{-level}: {park.Rooms.Count} rooms open off the gravel and only "
+                + $"{park.BackDoors.Count} doors are published in the wall they open through.");
+            foreach (UndergroundComplex.BackRoom room in park.Rooms)
+            {
+                Assert.Contains(room.Door, park.BackDoors);
+            }
 
             foreach (SurfaceLayout.Doorway back in park.BackDoors)
             {
