@@ -264,6 +264,14 @@ public sealed class SceneInventoryTests
                                            "reaches a park any more than it reaches the hall in front of " +
                                            "it; TheParkBenchIsAGumshoeMoveTests walks every bench of every " +
                                            "park the generator lays",
+        [DeckPlan.ConsoleKind.HiveOfficeChair] = "#817 a chair at a desk in one of the PARK-VIEW SUITES, " +
+                                                 "which #813 carves round the same one park per " +
+                                                 "branch-office site the bench above lives in — the ring " +
+                                                 "is on that floor and nowhere else, so a general scene " +
+                                                 "sweep reaches an office chair exactly as often as it " +
+                                                 "reaches a bench, which is never. " +
+                                                 "NoRingSuiteIsAnEmptyFloorTests walks every seat of every " +
+                                                 "suite of every ring the generator lays, over 53 sites",
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",
