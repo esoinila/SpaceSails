@@ -358,8 +358,19 @@ public static class HiveInterior
                 // #823 · …and HOW MANY of them are at it, which the pen used to have to guess at and
                 // therefore drew as one. Handed down like every other field on this record, off the same
                 // frozen watch, so the bodies on the plan are the bodies Core seated.
+                // #820 · …and WHERE ITS CHAIRS ARE, off Core's own ring, with Core's own answer about which
+                // of them the party is in. Handed down for the reason every other field on this record is:
+                // the captain is seated in one of these chairs now, and a pen that placed them itself would
+                // be the drawn chair and the sat chair coming out of two authors.
+                var chairs = new List<DeckPlan.TableChair>(Math.Max(0, top.Seats));
+                for (int c = 0; c < top.Seats; c++)
+                {
+                    (double chx, double chy) = top.Chair(c);
+                    chairs.Add(new((float)chx, (float)chy, top.PartyIn(c)));
+                }
+
                 tables.Add(new(
-                    (float)top.X, (float)top.Y, top.Seats, top.Taken, top.Talking, top.Heads));
+                    (float)top.X, (float)top.Y, top.Seats, top.Taken, top.Talking, top.Heads, chairs));
                 // #757 · EVERY TOP IS NOW A CONSOLE, and which kind it is is the one fact the room already
                 // knows: somebody at it, or nobody. Owner, live in the hall: "I have empty table but I
                 // cannot sit down." An empty top used to be drawn as a ring on the floor and nothing else,

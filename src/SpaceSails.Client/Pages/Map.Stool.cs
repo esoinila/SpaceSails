@@ -135,7 +135,7 @@ public partial class Map
         }
 
         // The bound is a bound and not a decision: a serving counter publishes exactly TheStools.Count
-        // seats (guarded in EverySeatIsSomewhereYouCanSitTests), so the only way past this test is a carve
+        // seats (guarded in SittingSnapsYouOntoTheSeatTests), so the only way past this test is a carve
         // that has stopped agreeing with the row the verb is dealt from — in which case the captain keeps
         // their feet rather than being placed by arithmetic on a list that is not the room's.
         IReadOnlyList<(double X, double Y)> row =

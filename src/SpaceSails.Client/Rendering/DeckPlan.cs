@@ -398,8 +398,33 @@ public sealed class DeckPlan
     /// seated. Owner, playtest 2026-08-11: <i>"there are two haulers eating at a table that seats four, yet
     /// there is visual indication of only one seat out of four being taken."</i> The pen drew one body
     /// because one body was all it had been handed — it was not simplifying, it had nothing to count.</param>
+    /// <param name="Chairs">#820 · WHERE ITS CHAIRS ACTUALLY STAND, and who is in them — one entry per
+    /// seat, in the top's own chair order, handed down exactly as a stool's spot and a bench end are.
+    ///
+    /// <para>The pen used to work these out from a radius and an angle of its own, which was survivable
+    /// while nobody sat in them. #820 seats the CAPTAIN in one — <c>CanteenRegulars.TableSeat.ChairYouTake</c>
+    /// — so the drawn chair and the sat chair had to become one piece of furniture rather than two authors,
+    /// and the way this deck does that is to be told. Empty for plain dressing (the ship's cantina, a haven
+    /// bar), which draws the bare ring it always drew.</para></param>
     public readonly record struct TableTop(
-        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false, int Heads = 0);
+        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false, int Heads = 0,
+        IReadOnlyList<TableChair>? Chairs = null)
+    {
+        /// <summary>Its chairs, never null — a pen drawing a room must not have to tell an empty list from
+        /// a missing one.</summary>
+        public IReadOnlyList<TableChair> Seating => Chairs ?? [];
+    }
+
+    /// <summary>
+    /// #820 · ONE CHAIR ROUND A CANTEEN TOP. The third seat this deck is handed rather than deriving, after
+    /// #792's stool and #793's bench end, and for the same reason all three exist: a seat is a place a body
+    /// can be, and the instrument that draws one must not be the instrument that decides where it is.
+    /// </summary>
+    /// <param name="X">Where the chair stands — Core's own ring.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Taken">One of the party is in it. Core's own walk over the headcount (#823), so the
+    /// bodies drawn here are the bodies the [E] press refuses to seat the captain on top of.</param>
+    public readonly record struct TableChair(float X, float Y, bool Taken = false);
 
     /// <summary>
     /// #792 · ONE TALL SEAT AT A COUNTER. Occupancy comes down from the sim exactly as a top's does — the

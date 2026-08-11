@@ -231,6 +231,102 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
             $"{wrong.Count} seat(s) are somewhere a body cannot stand:\n" + string.Join("\n", wrong.Take(20)));
     }
 
+    /// <summary>
+    /// #820 · THE CHAIR THAT IS DRAWN IS THE CHAIR THE PRESS SEATS YOU IN.
+    ///
+    /// <para>The ring was <c>DeckView</c>'s own radius and angle until this issue, which was survivable
+    /// while nobody sat in it. Now the captain lands in one of these chairs, so the drawn chair and the sat
+    /// chair have to be one piece of furniture — and the way this deck does that (#792's stool, #793's bench
+    /// end, and now this) is that the pen is HANDED the seats and derives nothing. This walks the real plan
+    /// and asserts the hand-down is faithful: every chair on the deck is at Core's own coordinate, and the
+    /// body drawn in it is a body Core seated.</para>
+    ///
+    /// <para><b>Proven RED</b> by handing the pen a ring of its own, a quarter du wider
+    /// (<c>top.Chair(c)</c> nudged out in <c>HiveInterior</c>):</para>
+    /// <code>
+    /// 1176 drawn chair(s) are not the chairs the press offers:
+    ///   luna B1 top 0 chair 0: drawn at (11.1,-164.1), and the press seats you at (10.9,-164.1).
+    ///   luna B1 top 0 chair 1: drawn at (8.0,-164.1), and the press seats you at (7.8,-164.1).
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void THE_DRAWN_CHAIRS_AreTheChairsThePressSeatsYouIn()
+    {
+        var wrong = new List<string>();
+        int drawn = 0, seated = 0;
+
+        foreach ((string body, int level, UndergroundComplex.FloorPlan floor, DeckPlan deck) in EveryFloor())
+        {
+            foreach (UndergroundComplex.Amenity a in floor.Amenities)
+            {
+                foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(body, level, a, watch: 0))
+                {
+                    if (top.Seats <= 0)
+                    {
+                        continue;
+                    }
+
+                    // The plan's own entry for this top — matched on the coordinate the console is hung on,
+                    // which is a lookup and not a decision.
+                    DeckPlan.TableTop? on = null;
+                    foreach (DeckPlan.TableTop t in deck.Tables)
+                    {
+                        if (Math.Abs(t.X - top.X) < 0.5 && Math.Abs(t.Y - top.Y) < 0.5)
+                        {
+                            on = t;
+                            break;
+                        }
+                    }
+                    if (on is not { } plan)
+                    {
+                        continue;   // a top in a room this deck does not draw; #751's own tiers decide that.
+                    }
+
+                    string what = $"  {body} B{-level} top {top.Index}";
+                    if (plan.Seating.Count != top.Seats)
+                    {
+                        wrong.Add($"{what}: seats {top.Seats} and the deck was handed "
+                            + $"{plan.Seating.Count} chair(s).");
+                        continue;
+                    }
+
+                    for (int c = 0; c < top.Seats; c++)
+                    {
+                        drawn++;
+                        (double cx, double cy) = top.Chair(c);
+                        DeckPlan.TableChair chair = plan.Seating[c];
+                        if (Math.Abs(chair.X - cx) > 0.01 || Math.Abs(chair.Y - cy) > 0.01)
+                        {
+                            wrong.Add($"{what} chair {c}: drawn at ({chair.X:F1},{chair.Y:F1}), and the "
+                                + $"press seats you at ({cx:F1},{cy:F1}).");
+                        }
+
+                        // …and the same about who is in it. A chair drawn empty that the press refuses, or
+                        // drawn full that it hands over, is the drawn room and the pressed room disagreeing
+                        // about a lap (#823).
+                        bool party = top.PartyIn(c);
+                        if (party)
+                        {
+                            seated++;
+                        }
+                        if (chair.Taken != party)
+                        {
+                            wrong.Add($"{what} chair {c}: drawn " + (chair.Taken ? "taken" : "empty")
+                                + ", and the press says " + (party ? "taken" : "empty") + ".");
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.True(drawn > 200, $"only {drawn} drawn chair(s) were measured — this proved little.");
+        Assert.True(seated > 20, $"only {seated} of them had anybody in them — the occupancy clause never "
+            + "really fired.");
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} drawn chair(s) are not the chairs the press offers:\n"
+            + string.Join("\n", wrong.Take(20)));
+    }
+
     // ── (c) THE WIRE · EVERY SIT VERB SNAPS, AND ASKS CORE WHERE ─────────────────────────────────────
 
     /// <summary>
