@@ -123,7 +123,13 @@ public sealed class TheFarGatesLeadSomewhereTests
             //    are ONE set of rooms carved once — Core says so where it builds them — so this PAIRS them
             //    by box rather than re-deriving either. A second derivation of the second door would be the
             //    mirrored-constant bug with a record's clothes on.
-            var back = new List<(UndergroundComplex.BackRoom Room, SurfaceLayout.Doorway Street)>();
+            //
+            //    #817 · …and "the street door" is a LIST now. The owner overrode the ring's one-door record
+            //    from inside a landscape office ("bigger spaces must have much more doors"), so a 48 du room
+            //    on the back street carries three leaves, and a sealing experiment that plugged the first of
+            //    them would report a room with two open doors as a sealed box.
+            var back =
+                new List<(UndergroundComplex.BackRoom Room, IReadOnlyList<SurfaceLayout.Doorway> Street)>();
             foreach (UndergroundComplex.BackRoom br in park.Rooms)
             {
                 UndergroundComplex.BackRoom room = br;
@@ -133,7 +139,7 @@ public sealed class TheFarGatesLeadSomewhereTests
                 Assert.True(ring.Side == UndergroundComplex.RingSide.Far,
                     $"{body} B{-level}: {br.Plate} is published behind the green and on the {ring.Side} "
                     + "side of the ring — the two lists disagree about one room.");
-                back.Add((br, ring.Door));
+                back.Add((br, ring.Doors));
             }
 
             // ── THE HONEST WORLD FIRST.
@@ -169,10 +175,10 @@ public sealed class TheFarGatesLeadSomewhereTests
             }
 
             DeckPlan gravelShut = Seal(back.Select(b => b.Room.Door));
-            DeckPlan streetShut = Seal(back.Select(b => b.Street));
-            DeckPlan bothShut = Seal(back.SelectMany(b => new[] { b.Room.Door, b.Street }));
+            DeckPlan streetShut = Seal(back.SelectMany(b => b.Street));
+            DeckPlan bothShut = Seal(back.SelectMany(b => b.Street.Append(b.Room.Door)));
 
-            foreach ((UndergroundComplex.BackRoom br, SurfaceLayout.Doorway street) in back)
+            foreach ((UndergroundComplex.BackRoom br, IReadOnlyList<SurfaceLayout.Doorway> street) in back)
             {
                 twoDoored++;
 
@@ -189,9 +195,11 @@ public sealed class TheFarGatesLeadSomewhereTests
                 // walked across the garden, which is what made this row worth carving in the first place.
                 if (!CanWalk(streetShut, from, br.X, br.Y))
                 {
-                    wrong.Add($"  {body} B{-level}: {br.Plate} cannot be reached with only its street door "
-                        + $"at ({(street.X1 + street.X2) / 2:F0}, {(street.Y1 + street.Y2) / 2:F0}) "
-                        + "plugged — walking across the green stopped being a way in.");
+                    wrong.Add($"  {body} B{-level}: {br.Plate} cannot be reached with only its "
+                        + $"{street.Count} street door(s) — the first at "
+                        + $"({(street[0].X1 + street[0].X2) / 2:F0}, "
+                        + $"{(street[0].Y1 + street[0].Y2) / 2:F0}) — plugged. Walking across the green "
+                        + "stopped being a way in.");
                 }
 
                 // …and with BOTH shut it is a box. Anything still reachable is crossing a wall.

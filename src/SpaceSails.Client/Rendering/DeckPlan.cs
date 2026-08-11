@@ -66,6 +66,13 @@ public sealed class DeckPlan
         // other end is sitting BESIDE you rather than starting a conversation. Owner: "it is a good gumshoe
         // move to see if anyone is following us by foot" / "if we get the whole bench to ourselves."
         HiveBench,
+        // #817 · A CHAIR AT A DESK IN A PARK-VIEW SUITE. Its own kind and not a HiveTable: a canteen top is
+        // a place in a room full of people, where sitting down is a choice to be FINDABLE and somebody may
+        // come over. An office chair is in a room with a door, in a building whose staff are somewhere else
+        // — the same posture, the same panel, the same wait beat, and nobody ever arrives. Owner, live in
+        // one of these on a bare deck: "in office people sit down … Let's make some cubicles / desks /
+        // chairs we can sit in."
+        HiveOfficeChair,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.
