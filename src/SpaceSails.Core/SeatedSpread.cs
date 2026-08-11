@@ -42,6 +42,17 @@ public static class SeatedSpread
     /// </summary>
     public static bool CanSpreadTheCase(SeatedHud.Seat seat, bool alone) => seat switch
     {
+        // #821 · THE TOP RUNG. Owner, in the park: "the cubicle is the one place the spread ([I]) is ALWAYS
+        // allowed — smaller than a bench, more private than an office. Half a bench is not a desk; a locked
+        // cubicle absolutely is :-D"
+        //
+        // ALWAYS, and the word is load-bearing: `alone` is not read on this arm, because there is no version
+        // of a locked cubicle with somebody else in it. Every other rung on this ladder is a question about
+        // who else is in the room; this one is a question about a catch, and the captain has already
+        // answered it. (It buys time and not safety — that is CubicleLock's law and it is about the door,
+        // never about the papers: a man knocking cannot read them.)
+        SeatedHud.Seat.LockedCubicle => true,
+
         // The door is what you paid for. Nothing can walk up, so nothing has to be put away — this is the
         // owner's canonical processing venue and it is unconditional by ruling.
         SeatedHud.Seat.Cabinet => true,

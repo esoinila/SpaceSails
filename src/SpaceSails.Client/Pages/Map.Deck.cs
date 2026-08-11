@@ -758,6 +758,17 @@ public partial class Map
                 // chair rather than beside it.
                 TryTakeOfficeChair();
                 break;
+            case DeckPlan.ConsoleKind.HiveCubicle:
+                // #821 · TURN THE CATCH. Owner, standing in the park: "we might want to hide from guards in
+                // one toilet cubicle we lock from inside :-D" — from the inside only, and from the outside
+                // the door says why it will not give.
+                TryTurnTheCatch();
+                break;
+            case DeckPlan.ConsoleKind.HiveBasin:
+                // #821 · WASH YOUR HANDS. A short beat, one pip, and one line out of the authored pool —
+                // "some film noir comment at the end ... about if we ever feel like our hands are clean."
+                TryWashYourHands();
+                break;
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
                 break;

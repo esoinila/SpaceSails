@@ -87,9 +87,68 @@ public partial class Map
                 SitInThisChair(ex, room, chair);
                 return true;
             }
+
+            // #821 · …AND THE SEAT INSIDE A CUBICLE TAKES THE SAME VERB. Owner: <i>"Sitting available (it is
+            // a toilet; the SIT verb and #820's snap apply)."</i> It is the office chair's own seam, the same
+            // panel and the same snap, because it is the same posture — what a cubicle adds is a CATCH, and
+            // that is a fact the sitting carries (TableTalk.CubicleKey) rather than a second way to sit down.
+            foreach (RingOffice.Stall cell in room.Cubicles)
+            {
+                if (Math.Abs(cell.SeatX - spot.X) >= SameChairDu
+                    || Math.Abs(cell.SeatY - spot.Y) >= SameChairDu)
+                {
+                    continue;
+                }
+
+                SitInThisCubicle(ex, room, cell);
+                return true;
+            }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// #821 · The one place a cubicle sitting is opened.
+    ///
+    /// <para>Everything about it that is NOT the office chair is one flag and one key: nobody ever comes over
+    /// (<c>Office</c>, which is true of a WC for a blunter reason than it is of an empty suite), and WHICH
+    /// cell this is, so the exposure ladder can ask whether the catch is over on every frame rather than
+    /// once when the captain sat down.</para>
+    /// </summary>
+    private void SitInThisCubicle(
+        SurfaceExcursion ex, in UndergroundComplex.RingRoom room, RingOffice.Stall cell)
+    {
+        // #820's snap, unchanged: the body goes onto Core's own published seat, through StandCaptainAt so
+        // the pad-crew net has its say.
+        StandCaptainAt(cell.SeatX, cell.SeatY, "you sit down on the lid");
+
+        _table = new TableTalk
+        {
+            Key = $"{ex.CanteenWatch}:{ex.Floor}:wc:{room.Number}:{cell.Index}",
+            Index = CubicleLock.ApproachOrdinal(room.Number, cell.Index),
+            Office = true,
+            OfficeSeatX = cell.StandAt.X,
+            OfficeSeatY = cell.StandAt.Y,
+            CubicleKey = HiveInterior.CubicleKey(ex.Floor, in cell),
+            Who = CanteenTable.Who.None,
+            Plate = CubicleLock.SeatPlate,
+            Scene = CubicleLock.TheCubicle(),
+            Seats = 1,
+            Free = 0,
+            // NOT the cabinet's flag. A cabinet's door was PAID for; this one is a catch on a partition, and
+            // the difference is the whole of #821 — an unlocked cubicle must not be dealt the top rung of the
+            // exposure ladder, and CubicleKey is what earns it once the catch is actually over.
+            Quiet = false,
+            Solo = true,
+            Relaxed = false,
+            DrinkInHand = APourInFrontOfYou,
+            Joined = true,
+            Outcome = CubicleLock.SatDownLine,
+        };
+
+        RendererInterop.PlayCue("reveal");
+        StateHasChanged();
     }
 
     /// <summary>How close a console has to be to a published seat to BE that seat. A rounding tolerance and
