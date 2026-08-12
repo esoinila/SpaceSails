@@ -627,10 +627,14 @@ public static class HiveInterior
 
                 // ── #821 · AND THE BASIN RUN, AS ONE FIXTURE THE LENGTH OF ITSELF ─────────────────────
                 //
-                // #791's E-bus, borrowed whole: the run is one console with a SPAN on it rather than a tap
+                // #791's E-bus, borrowed whole: the run is one console with a LENGTH on it rather than a tap
                 // per basin, for the reason the bar desk is — four [E] dots in a row all opening the same
-                // beat would be three pieces of furniture pretending to be a choice. The span is taken off
+                // beat would be three pieces of furniture pretending to be a choice. The run is taken off
                 // the published taps, so nothing here measures a length of porcelain.
+                //
+                // #827 · …as the two END TAPS rather than a half-span about their midpoint, which is what a
+                // run became when the counter's plate stopped standing at the middle of its own desk. Here
+                // the two are the same segment either way; there it is the whole issue.
                 if (suite.Basins.Count > 0)
                 {
                     RingOffice.Basin first = suite.Basins[0], last = suite.Basins[^1];
@@ -638,8 +642,7 @@ public static class HiveInterior
                         DeckPlan.ConsoleKind.HiveBasin,
                         (float)((first.X + last.X) / 2.0), (float)((first.Y + last.Y) / 2.0),
                         RingOffice.BasinRunPlate,
-                        SpanX: (float)Math.Abs(last.X - first.X) / 2f,
-                        SpanY: (float)Math.Abs(last.Y - first.Y) / 2f));
+                        Run: ((float)first.X, (float)first.Y, (float)last.X, (float)last.Y)));
                 }
             }
         }

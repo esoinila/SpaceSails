@@ -195,15 +195,19 @@ public sealed class ALockedCubicleBuysTimeTests
                 "the leaf and the seat are on top of each other — one press, two verbs, no way to choose.");
         }
 
-        // THE BASIN RUN: one console with a SPAN on it, #791's E-bus, so the whole length of the porcelain
-        // answers rather than one tap somebody has to find.
+        // THE BASIN RUN: one console with a LENGTH on it, #791's E-bus, so the whole length of the porcelain
+        // answers rather than one tap somebody has to find. (#827 · a run is its two ENDS now, not a
+        // half-span about the plate — the counter's plate stopped standing at the middle of its own desk.)
         DeckPlan.ConsoleSpot basins = deck.Consoles.Single(
             c => c.Kind == DeckPlan.ConsoleKind.HiveBasin);
         Assert.Equal(RingOffice.BasinRunPlate, basins.Label);
-        Assert.True(basins.SpanX + basins.SpanY > 0.5f,
-            "the basin run is a dot — a row of four taps with one press in the middle of it.");
+        Assert.True(basins.IsRun, "the basin run is a dot — a row of four taps with one press in the middle.");
+        (float bx0, float by0) = basins.End0;
+        (float bx1, float by1) = basins.End1;
+        Assert.True(Math.Abs(bx1 - bx0) + Math.Abs(by1 - by0) > 1.0f,
+            "the basin run has no length — a row of four taps with one press in the middle of it.");
 
-        // …and it reaches every tap Core published, which is what the span is FOR.
+        // …and it reaches every tap Core published, which is what the length is FOR.
         foreach (RingOffice.Basin tap in room.Basins)
         {
             Assert.True(
