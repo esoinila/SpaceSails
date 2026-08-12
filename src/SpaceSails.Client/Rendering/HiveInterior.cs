@@ -287,10 +287,16 @@ public static class HiveInterior
             //
             // THE LENGTH IS CORE'S. Hall.Service is the run the carve laid, off the same (u, v) as the
             // counter's own wall segments, its photograph and its stools. Nothing here measures a bar.
+            //
+            // #827 · …and the run is the DESK'S FRONT FACE, which is not concentric with the plate: the
+            // console dot stands on the square a body stands on, and the rail is drawn on the counter a step
+            // behind it. Both coordinates are Core's; the only thing that happens here is a cast.
             UndergroundComplex.ServiceRun? run = a.Hall?.Service;
             consoles.Add(new(
                 DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture,
-                SpanX: (float)(run?.HalfSpanX ?? 0.0), SpanY: (float)(run?.HalfSpanY ?? 0.0)));
+                Run: run is { } bus
+                    ? ((float)bus.X0, (float)bus.Y0, (float)bus.X1, (float)bus.Y1)
+                    : null));
             if (a.Hall is { ArtUrl: { } floorArt } painted)
             {
                 // Top-left, W, H — the ship's own convention, and Y is the box's TOP edge because deck +y
@@ -352,6 +358,21 @@ public static class HiveInterior
                     (double sx, double sy) = counter.StoolRow[s];
                     stools.Add(new(
                         (float)sx, (float)sy, TheStools.Taken(bodyId, level, s, canteenWatch), anybody));
+                }
+
+                // ── #827 · AND THE HOLES IN THE ROW, WHICH ARE FIXTURES TOO ──────────────────────────
+                //
+                // Owner, completing the counter model: "there are gaps for people to walk to the cashier
+                // etc." A gap with nothing painted on it is a seat somebody unbolted; a gap with its own
+                // stencil is a place to stand. Both the position and the words are Core's — this loop reads
+                // the same one published row the stools above came out of, so a gap cannot end up somewhere
+                // the seats do not agree with.
+                foreach (UndergroundComplex.CounterPlace place in counter.CounterRow)
+                {
+                    if (!place.Seated)
+                    {
+                        labels.Add(((float)place.X, (float)place.Y, place.Plate));
+                    }
                 }
             }
 
@@ -606,10 +627,14 @@ public static class HiveInterior
 
                 // ── #821 · AND THE BASIN RUN, AS ONE FIXTURE THE LENGTH OF ITSELF ─────────────────────
                 //
-                // #791's E-bus, borrowed whole: the run is one console with a SPAN on it rather than a tap
+                // #791's E-bus, borrowed whole: the run is one console with a LENGTH on it rather than a tap
                 // per basin, for the reason the bar desk is — four [E] dots in a row all opening the same
-                // beat would be three pieces of furniture pretending to be a choice. The span is taken off
+                // beat would be three pieces of furniture pretending to be a choice. The run is taken off
                 // the published taps, so nothing here measures a length of porcelain.
+                //
+                // #827 · …as the two END TAPS rather than a half-span about their midpoint, which is what a
+                // run became when the counter's plate stopped standing at the middle of its own desk. Here
+                // the two are the same segment either way; there it is the whole issue.
                 if (suite.Basins.Count > 0)
                 {
                     RingOffice.Basin first = suite.Basins[0], last = suite.Basins[^1];
@@ -617,8 +642,7 @@ public static class HiveInterior
                         DeckPlan.ConsoleKind.HiveBasin,
                         (float)((first.X + last.X) / 2.0), (float)((first.Y + last.Y) / 2.0),
                         RingOffice.BasinRunPlate,
-                        SpanX: (float)Math.Abs(last.X - first.X) / 2f,
-                        SpanY: (float)Math.Abs(last.Y - first.Y) / 2f));
+                        Run: ((float)first.X, (float)first.Y, (float)last.X, (float)last.Y)));
                 }
             }
         }

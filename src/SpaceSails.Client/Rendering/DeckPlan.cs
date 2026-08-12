@@ -180,57 +180,71 @@ public sealed class DeckPlan
     /// the moon somebody named. It is a REGION and not a slot, which is the whole of #774 — an event with
     /// four things to say in one breath says all four, instead of writing three of them into a backdrop
     /// nobody can read and letting append order pick the survivor (the contract #693 killed).</param>
-    /// <param name="SpanX">#791 · HALF THE FIXTURE'S REACH ALONG ITSELF, as a vector off (X, Y) — so the
-    /// interaction point is the SEGMENT (X−SpanX, Y−SpanY)..(X+SpanX, Y+SpanY) rather than a dot, and
-    /// <see cref="NearestConsoleSpot"/> measures to the nearest point on it.
+    /// <param name="Run">#791 · THE FIXTURE'S REACH ALONG ITSELF, as the SEGMENT it actually is — so the
+    /// interaction point is a line rather than a dot, and <see cref="NearestConsoleSpot"/> measures to the
+    /// nearest point on it.
     ///
     /// <para>Owner, live at the B1 bar: <i>"The Bar desk is really long now, but there is only one spot to
     /// get service on it… we would need an E-bus of the bar desk length instead of one bar keep cashier at a
     /// single spot."</i> The desk is eighty-odd deck units and the press reached six of them.</para>
     ///
-    /// <para><b>Zero everywhere else, which is every console in the game but this one.</b> A helm is a chair
-    /// and a valve is a wheel; they are points and they stay points, by the same arithmetic — a segment of
-    /// zero length is its own endpoint, so the distance below is the distance it always was. Nothing about
-    /// any other deck changes, and no caller has to learn a new idea to keep working.</para>
+    /// <para><b>Null everywhere else, which is every console in the game but this one.</b> A helm is a chair
+    /// and a valve is a wheel; they are points and they stay points — a fixture with no run is its own
+    /// endpoint, so the distance below is the distance it always was. Nothing about any other deck changes,
+    /// and no caller has to learn a new idea to keep working.</para>
     ///
-    /// <para>The span is HANDED DOWN from whoever carved the fixture (for the counter: the hall's own
-    /// <c>Service</c> run). A renderer that worked out how long a bar is would be doing geometry about a
-    /// room it did not carve, which is §13.15 and the reason this project has twice put a captain in a
-    /// wall.</para></param>
-    /// <param name="SpanY">The other half of it.</param>
+    /// <para>#827 · <b>It is the segment and not a half-span off (X, Y), because the two are not concentric
+    /// any more.</b> A counter's PLATE stands in front of the desk, on the square a body can stand on and
+    /// every walkability audit walks to; the desk's own front FACE is a step behind it, and the face is what
+    /// you order over. While the run was a span about the plate, the deck drew a cyan service rail two du
+    /// clear of the bar's own photograph and the owner read the picture as the counter — because the picture
+    /// WAS the counter.</para>
+    ///
+    /// <para>The segment is HANDED DOWN from whoever carved the fixture (for the counter: the hall's own
+    /// <c>Service</c> run, which is its desk's front face). A renderer that worked out how long a bar is
+    /// would be doing geometry about a room it did not carve, which is §13.15 and the reason this project
+    /// has twice put a captain in a wall.</para></param>
     public readonly record struct ConsoleSpot(ConsoleKind Kind, float X, float Y, string Label,
         string? ImageUrl = null, string? Caption = null, string? Outcome = null,
-        float SpanX = 0f, float SpanY = 0f)
+        (float X0, float Y0, float X1, float Y1)? Run = null)
     {
         /// <summary>#791 · Is this fixture a RUN rather than a point? Asked, rather than compared against
         /// zero at four call sites.</summary>
-        public bool IsRun => SpanX != 0f || SpanY != 0f;
+        public bool IsRun => Run.HasValue;
 
         /// <summary>#791 · One end of the run — (X, Y) itself where the fixture is a point.</summary>
-        public (float X, float Y) End0 => (X - SpanX, Y - SpanY);
+        public (float X, float Y) End0 => Run is { } r ? (r.X0, r.Y0) : (X, Y);
 
         /// <summary>#791 · The other end.</summary>
-        public (float X, float Y) End1 => (X + SpanX, Y + SpanY);
+        public (float X, float Y) End1 => Run is { } r ? (r.X1, r.Y1) : (X, Y);
 
         /// <summary>#791 · How far this spot is from the fixture — to the nearest point ON it, which for a
         /// point console is the point itself. <see cref="SurfaceCollision.DistanceToSegment"/>, so the reach
         /// the key uses, the reach the pen draws and the reach a guard measures are one function.</summary>
-        public double DistanceFrom(double x, double y) =>
-            SurfaceCollision.DistanceToSegment(x, y, X - SpanX, Y - SpanY, X + SpanX, Y + SpanY);
+        public double DistanceFrom(double x, double y)
+        {
+            (float ax, float ay) = End0;
+            (float bx, float by) = End1;
+            return SurfaceCollision.DistanceToSegment(x, y, ax, ay, bx, by);
+        }
 
         /// <summary>#791 · The point on the fixture nearest a captain — where the [E] prompt is drawn, so a
         /// captain at the far end of a long desk sees the offer beside THEM rather than forty du away at the
         /// plate. Clamped to the segment, which for a point console is the point.</summary>
         public (float X, float Y) NearestPointTo(double x, double y)
         {
-            if (!IsRun)
+            if (Run is not { } r)
             {
                 return (X, Y);
             }
-            double ex = 2.0 * SpanX, ey = 2.0 * SpanY;
-            double t = (((x - (X - SpanX)) * ex) + ((y - (Y - SpanY)) * ey)) / ((ex * ex) + (ey * ey));
-            t = Math.Clamp(t, 0.0, 1.0);
-            return ((float)(X - SpanX + (t * ex)), (float)(Y - SpanY + (t * ey)));
+            double ex = r.X1 - r.X0, ey = r.Y1 - r.Y0;
+            double len2 = (ex * ex) + (ey * ey);
+            if (len2 <= 0)
+            {
+                return (r.X0, r.Y0);
+            }
+            double t = Math.Clamp((((x - r.X0) * ex) + ((y - r.Y0) * ey)) / len2, 0.0, 1.0);
+            return ((float)(r.X0 + (t * ex)), (float)(r.Y0 + (t * ey)));
         }
     }
 

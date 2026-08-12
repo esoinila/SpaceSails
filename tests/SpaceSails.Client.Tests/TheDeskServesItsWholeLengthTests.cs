@@ -245,8 +245,13 @@ public sealed class TheDeskServesItsWholeLengthTests
         (int Cx, int Cy) Cell(double x, double y) =>
             ((int)Math.Round((x - hall.X0) / Step), (int)Math.Round((y - hall.Y0) / Step));
 
-        (int sx, int sy) = Cell(a.X, a.Y);
-        Assert.False(plan.Collides(a.X, a.Y), "the fixture's own spot is inside a wall.");
+        // #827 · Started on the counter's own STANDING SQUARE. The amenity's spot is the desk's face now —
+        // the console dot is drawn on the counter, which is the whole of that issue — so a flood started on
+        // it would start inside the very wall this guard is about.
+        UndergroundComplex.ServiceRun start = hall.Service!.Value;
+        (int sx, int sy) = Cell(start.StandX, start.StandY);
+        Assert.False(plan.Collides(start.StandX, start.StandY),
+            "the square a customer stands on is inside a wall.");
 
         var queue = new Queue<(int X, int Y)>();
         queue.Enqueue((sx, sy));
@@ -387,7 +392,13 @@ public sealed class TheDeskServesItsWholeLengthTests
             && ((Near(m.Points[0], m.Points[1], p, tol) && Near(m.Points[2], m.Points[3], q, tol))
                 || (Near(m.Points[0], m.Points[1], q, tol) && Near(m.Points[2], m.Points[3], p, tol)));
 
-        List<Mark> rail = marks.Where(m => Ends(m, (e0x, e0y), (e1x, e1y), 1.5f)).ToList();
+        // …IN THE CONSOLE'S OWN INK. #827 moved the run ONTO the desk's front face, which is also where the
+        // counter's collidable wall is drawn — so "a line between these two points" now matches the wall as
+        // well, and the thing this guard is about is the one drawn in the ink that means YOU MAY PRESS THIS.
+        List<Mark> rail = marks
+            .Where(m => Ends(m, (e0x, e0y), (e1x, e1y), 1.5f)
+                && (Is(m.Ink, ConsoleNear) || Is(m.Ink, ConsoleGlow)))
+            .ToList();
         Assert.True(rail.Count == 1,
             $"{rail.Count} rail(s) drawn down the desk's service run — expected exactly one, from "
             + $"({run.X0:F1},{run.Y0:F1}) to ({run.X1:F1},{run.Y1:F1}).");

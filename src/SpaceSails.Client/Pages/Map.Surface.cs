@@ -5973,7 +5973,11 @@ public partial class Map
     /// <para>The amenity's own published spot, which is the service side of the counter and the very square
     /// the console dot is drawn on — so this walks the captain to the fixture rather than to a coordinate
     /// somebody measured off a picture of it. Through <c>StandCaptainAt</c>, so the pad-crew net (#681) has
-    /// its say if the hall ever carves a table onto that square.</para></summary>
+    /// its say if the hall ever carves a table onto that square.</para>
+    ///
+    /// <para>#827 · That spot is the counter's own <c>ServiceRun.StandX/StandY</c> now — published rather
+    /// than implied, and in exactly the place it always was. What moved onto the desk is the [E] RUN, which
+    /// is the desk's front face, and the rail the deck draws down it.</para></summary>
     private void StandAtTheCounterIfAsked(SurfaceExcursion ex)
     {
         if (!_counterCheat || ex.Floor >= 0)
