@@ -33,15 +33,18 @@ namespace SpaceSails.Core.Tests;
 /// Core (<see cref="UndergroundComplex.FireCodeSmallRoomDu"/>,
 /// <see cref="UndergroundComplex.FireCodeMinExits"/>) rather than restated.</para>
 ///
-/// <para><b>Proven RED on the world of 2026-08-12</b> by taking the fire recesses and the cabinets' second
-/// leaf back out of the carve (<c>continue;</c> at the top of the recess pass, and <c>atV = [vMid]</c>):</para>
+/// <para><b>Proven RED on the world of 2026-08-12</b> by taking the fire recesses and the cabinets' party
+/// doors back out of the carve (a <c>continue;</c> at the top of the recess pass, and the booths back on
+/// their old inset lines). Worst first, which is the room the owner walked into:</para>
 /// <code>
-/// 2158 room(s) have only one way out:
-///   luna B4 · 15.0 x 12.0 du (CREW MUSTER) at (163.6,-33.0) — 1 way out, the code wants 2.
-///   luna B4 · 15.0 x 12.0 du (BONDED HOLD) at (163.6,-65.0) — 1 way out, the code wants 2.
+/// 4631 room(s) have only one way out:
+///   secret-lab-site-halls-116 B20 · 20.0 x 16.0 du at (8.5,-125.8) — 1 way(s) out, the code wants 2.
+///   secret-lab-site-halls-116 B19 · 18.2 x 14.5 du at (-17.6,-125.8) — 1 way(s) out, the code wants 2.
 ///   ...
-///   luna B1 · 27.9 x 10.0 du (CABINET 1 · ENGAGED WHEN LIT) at (238.2,-14.5) — 1 way out, the code wants 2.
+///   enceladus B1 · 10.0 x 18.2 du (CABINET 1 · BY ARRANGEMENT · ASK AT THE COUNTER) — 1 way(s) out.
 /// </code>
+/// <para>The recess alone accounts for 4472 of them and the cabinets for the remaining 159. Green after:
+/// nought.</para>
 /// </summary>
 public sealed class NoRoomHasOnlyOneWayOutTests
 {
@@ -244,6 +247,103 @@ public sealed class NoRoomHasOnlyOneWayOutTests
             return false;
         }
     }
+
+    /// <summary>
+    /// …AND THE SECOND WAY IS A WAY OUT, not a niche — SEAL THE FRONT DOOR AND WALK OUT ANYWAY.
+    ///
+    /// <para>This is the guard that makes the count above mean something, and it is aimed at the shape of
+    /// every expensive bug on this ground: a room correct on the plan and wrong to walk. Two published ways
+    /// prove nothing if the second one lets into a cupboard. So for a sample of chambers on every named
+    /// site, the front door is WALLED OVER — a segment laid across the gap, which is how this game has said
+    /// "shut" since #465 — and the walk is asked to get from inside the room out into the rib anyway. It has
+    /// to come out through the fire recess, because there is nowhere else left to go.</para>
+    ///
+    /// <para>The lattice, the radius and the step are Core's own (<see cref="DeckReachability"/>), so this
+    /// asks the same question the live movement answers every frame. The bounds are a box round the room, so
+    /// a whole-floor A* is not run three hundred times.</para>
+    ///
+    /// <para><b>Proven RED</b> by taking the recess back out: <c>308 of 308 chamber(s) could not be left
+    /// with the front door sealed</c> — which is the whole of what a one-door room is.</para>
+    /// </summary>
+    [Fact]
+    public void SealTheFrontDoorAndAChamberCanStillBeLeft()
+    {
+        var wrong = new List<string>();
+        int walked = 0;
+
+        foreach (string body in Bodies)
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
+                var lines = new List<SurfaceCollision.Segment>();
+                foreach (SurfaceLayout.Wall w in floor.Walls)
+                {
+                    lines.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
+                }
+
+                int tried = 0;
+                foreach (UndergroundComplex.Room room in floor.TheRooms)
+                {
+                    if (room.Kind != UndergroundComplex.RoomKind.Chamber || tried >= 2)
+                    {
+                        continue;
+                    }
+
+                    // The front door is the first way the carve published — the gap in the room's own
+                    // corridor face. Which edge of the box it stands on says where the rib is.
+                    SurfaceLayout.Doorway front = room.Ways[0];
+                    double faceX = (front.X1 + front.X2) / 2.0;
+                    double outward = Math.Abs(faceX - room.X1) < 0.01 ? 1.0 : -1.0;
+
+                    var walls = new List<SurfaceCollision.Segment>(lines)
+                    {
+                        // …and now it is shut.
+                        new(front.X1, front.Y1, front.X2, front.Y2),
+                    };
+
+                    var from = new DeckReachability.Point(
+                        faceX - (outward * (room.WidthDu / 2.0)), (front.Y1 + front.Y2) / 2.0);
+                    var into = new DeckReachability.Point(
+                        faceX + (outward * UndergroundComplex.CorridorHalf), (front.Y1 + front.Y2) / 2.0);
+
+                    // A start or a goal nobody could stand on would report "unreachable" for a reason that
+                    // is not this law's business — a fixture in the middle of a canteen has its own guards.
+                    if (!DeckReachability.Standable(from.X, from.Y, Radius, walls)
+                        || !DeckReachability.Standable(into.X, into.Y, Radius, walls))
+                    {
+                        continue;
+                    }
+                    tried++;
+                    walked++;
+
+                    (double MinX, double MinY, double MaxX, double MaxY) bounds =
+                        (Math.Min(room.X0, into.X) - 30, room.Y0 - 40,
+                         Math.Max(room.X1, into.X) + 30, room.Y1 + 40);
+
+                    if (!DeckReachability.Path(from, into, walls, Radius, bounds).Reached)
+                    {
+                        wrong.Add(
+                            string.Create(CultureInfo.InvariantCulture,
+                                $"  {body} B{-level}: the chamber at ({room.X:F1},{room.Y:F1}) publishes ")
+                            + $"{room.Exits} ways out, and with the front one shut there is no way into the "
+                            + "corridor at all — the second is a niche, not an exit.");
+                    }
+                }
+            }
+        }
+
+        Assert.True(walked > 100, $"only {walked} chamber(s) were walked — this proved little.");
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} of {walked} chamber(s) could not be left with the front door sealed:\n"
+            + string.Join("\n", wrong.Take(20)));
+    }
+
+    /// <summary>The captain's own width, which is what makes a gap a way out rather than a line on a
+    /// plan — <c>DeckPlan.AvatarRadius</c>, which lives in the client and which a Core test may not
+    /// reference. Written here rather than guessed at: it is the number the live movement collides on, and
+    /// a sweep run at a smaller one would pass a gap the captain cannot fit through.</summary>
+    private const double Radius = 0.7;
 
     /// <summary>
     /// THE LABS OBEY THE CODE THE BUILDING PRETENDS TO FOLLOW — two ways out of every chamber in the

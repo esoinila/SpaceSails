@@ -2111,6 +2111,30 @@ public static class UndergroundComplex
     /// </summary>
     public const double FireCodeSmallRoomDu = 8.0;
 
+    /// <summary>#822 · What KIND of carved space this is. Not decoration: a law about how you leave a room
+    /// is often a law about one kind of room, and a guard that had to tell a chamber from a cabinet by its
+    /// dimensions would be reading a coincidence.</summary>
+    public enum RoomKind
+    {
+        /// <summary>A room off a rib — the module the whole building is made of.</summary>
+        Chamber,
+
+        /// <summary>A suite in the ring round the park, back of house included (#813/#817).</summary>
+        RingSuite,
+
+        /// <summary>The cantina hall (#751).</summary>
+        Hall,
+
+        /// <summary>A negotiating cabinet down the hall's outer wall (#751).</summary>
+        Cabinet,
+
+        /// <summary>A WC cubicle in the block's washroom (#821). Bedroom-small, by design.</summary>
+        Cubicle,
+
+        /// <summary>An en-suite cell hung off a principal chamber (#707). Bedroom-small, by design.</summary>
+        Cell,
+    }
+
     /// <summary>
     /// #822 · ONE CARVED ROOM, WITH ITS OWN WAYS OUT — the list the fire code is swept over.
     ///
@@ -2137,7 +2161,8 @@ public static class UndergroundComplex
     /// onto the green, the door through to the recess next door. Never the locked ones.</param>
     public readonly record struct Room(
         double X0, double Y0, double X1, double Y1, string Plate,
-        IReadOnlyList<SurfaceLayout.Doorway> Ways)
+        IReadOnlyList<SurfaceLayout.Doorway> Ways,
+        RoomKind Kind = RoomKind.Chamber)
     {
         /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
         public double X => (X0 + X1) / 2.0;
@@ -3699,7 +3724,8 @@ public static class UndergroundComplex
         {
             if (room.Side != RingSide.Far)
             {
-                rooms.Add(new Room(room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut));
+                rooms.Add(new Room(
+                    room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite));
             }
         }
 
@@ -3728,8 +3754,10 @@ public static class UndergroundComplex
             {
                 if (room.Side == RingSide.Far)
                 {
-                    rooms.Add(new Room(room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut));
-                    published.Add(new Room(room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut));
+                    var back = new Room(
+                        room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite);
+                    rooms.Add(back);
+                    published.Add(back);
                 }
             }
         }
@@ -3744,12 +3772,12 @@ public static class UndergroundComplex
             Hall theHall = venue.Hall;
             published.Add(new Room(
                 theHall.X0, theHall.Y0, theHall.X1, theHall.Y1,
-                AmenitySigns(bodyId, HallUseOn(bodyId, level)).Item1, theHall.Openings));
+                AmenitySigns(bodyId, HallUseOn(bodyId, level)).Item1, theHall.Openings, RoomKind.Hall));
             foreach (Cabinet cab in theHall.Cabinets)
             {
                 published.Add(new Room(
                     cab.X - cab.HalfW, cab.Y - cab.HalfH, cab.X + cab.HalfW, cab.Y + cab.HalfH,
-                    cab.Plate, cab.Ways));
+                    cab.Plate, cab.Ways, RoomKind.Cabinet));
             }
         }
         foreach (RingRoom room in ring)
@@ -3757,7 +3785,7 @@ public static class UndergroundComplex
             foreach (RingOffice.Stall cell in room.Cubicles)
             {
                 published.Add(new Room(
-                    cell.X0, cell.Y0, cell.X1, cell.Y1, cell.Plate, [cell.Door]));
+                    cell.X0, cell.Y0, cell.X1, cell.Y1, cell.Plate, [cell.Door], RoomKind.Cubicle));
             }
         }
         foreach (EnSuite cell in ensuites)
@@ -3765,7 +3793,7 @@ public static class UndergroundComplex
             published.Add(new Room(
                 cell.X - (EnSuiteDepth / 2.0), cell.Y - EnSuiteHalfHeight,
                 cell.X + (EnSuiteDepth / 2.0), cell.Y + EnSuiteHalfHeight,
-                cell.Of, cell.Ways));
+                cell.Of, cell.Ways, RoomKind.Cell));
         }
 
         var centres = new List<(double X, double Y)>(rooms.Count);
@@ -6515,13 +6543,27 @@ public static class UndergroundComplex
             var cutFar = new bool[centres.Count];
             List<(double Lo, double Hi)> mouthsHere = face == 0 ? minusMouths : plusMouths;
 
+            // #822 · AS FEW RECESSES AS THE LAW NEEDS, and they are taken from the BLIND END back toward the
+            // spine. Every open chamber wants a second way; a recess between two of them gives it to BOTH,
+            // so walking the column outward-in and skipping whoever is already served halves the number of
+            // pockets cut into the rib — and the ones it drops are the pockets nearest the mouth, which is
+            // the busiest ten du of corridor in the building. That is not tidiness: the escort walk went
+            // from 56 s to 68 s against a 67.5 s canary the first time this cut one beside every room
+            // (#833's bound, watched go red on luna B10 and B12 at 82% moving). Fewer holes in the wall a
+            // guard walks down, and the same law.
+            var wants = new bool[centres.Count];
             for (int i = 0; i < centres.Count; i++)
+            {
+                wants[i] = column[face, i].Built && !column[face, i].Shut;
+            }
+
+            for (int i = centres.Count - 1; i >= 0; i--)
             {
                 (bool built, bool shut, double x1, _, double x2, _, _, double backX, _, double cy, _) =
                     column[face, i];
-                if (!built || shut)
+                if (!built || shut || !wants[i])
                 {
-                    continue;   // nothing to let out of, or nobody in there to let out
+                    continue;   // nothing to let out of, nobody in there, or already let out
                 }
 
                 double nearEdge = cy - (dir * roomH / 2.0);
@@ -6553,6 +6595,7 @@ public static class UndergroundComplex
                 walls.Add(new(backX, lo, backX, hi, true));
                 mouthsHere.Add((lo, hi));
                 cutNear[i] = true;
+                wants[i] = false;
 
                 // Its outer end is the neighbour's own end wall where the gap runs the whole way to it —
                 // then there is nothing to build and the recess is SHARED, so that room takes a connecting
@@ -6568,6 +6611,7 @@ public static class UndergroundComplex
                 else if (!column[face, i - 1].Shut)
                 {
                     cutFar[i - 1] = true;
+                    wants[i - 1] = false;   // served by the same recess — a shared one is a connecting door
                 }
 
             }
