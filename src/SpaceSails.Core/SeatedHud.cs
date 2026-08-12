@@ -49,6 +49,16 @@ public static class SeatedHud
     /// (conditional) &gt; hall table &gt; bar desk."</i></summary>
     public enum Seat
     {
+        /// <summary>#821 · A WC cubicle with the catch over. The TOP of the ladder and the reason it grew a
+        /// rung: smaller than a bench, more private than an office, and the one seat in the game whose
+        /// privacy does not depend on anybody else's behaviour — the owner's own reading, <i>"half a bench
+        /// is not a desk; a locked cubicle absolutely is"</i>.
+        ///
+        /// <para>It is FIRST because this enum is ordered private end to public end and says so, and because
+        /// nothing in the game reads a <c>Seat</c> off a stored number: it is derived from the seat the
+        /// captain is in, every frame, by <c>Map.Seated</c>.</para></summary>
+        LockedCubicle,
+
         /// <summary>A table behind a cabinet door. Nobody comes (<see cref="SittingAlone.SomebodyComes"/>
         /// returns false for a quiet top) and nobody sees.</summary>
         Cabinet,
@@ -68,6 +78,7 @@ public static class SeatedHud
     /// because neither has ever had a panel of its own.</summary>
     public static string SeatLabel(Seat seat) => seat switch
     {
+        Seat.LockedCubicle => "A LOCKED CUBICLE",
         Seat.Cabinet => "A CABINET TABLE",
         Seat.ParkBench => "A PARK BENCH",
         Seat.BarStool => "THE BAR DESK",
@@ -118,6 +129,16 @@ public static class SeatedHud
             return "the door is shut — nobody is crossing the room to you";
         }
 
+        // #821 · …AND A LOCKED CUBICLE IS NOT A ROOM YOU CAN BE CROSSED IN EITHER — but for a different
+        // reason, and the strip says the true one. A cabinet's door was PAID for and nobody comes; this door
+        // is a catch on a partition and the floor is still out there, walking. Reporting a crowd figure here
+        // would be #740's fault; reporting the cabinet's line would be worse, because it would say the
+        // captain was safe.
+        if (seat == Seat.LockedCubicle)
+        {
+            return LockedCubicleClause;
+        }
+
         // #793 · …AND A BENCH IS NOT IN THE HALL AT ALL. Same law, the other way out: a strip that reported
         // "the hall is heaving" to a captain sitting on gravel behind a window wall would be quoting a crowd
         // figure for a room they cannot see, which is the exact fault this file was built to be incapable of
@@ -145,6 +166,11 @@ public static class SeatedHud
     /// on the walk is on the walk in front of you.</summary>
     public const string OpenWalkClause =
         "the walk runs clear both ways — nobody crosses this gravel out of sight";
+
+    /// <summary>#821 · The room clause a LOCKED CUBICLE gets. The sentry's own law on the instrument row: it
+    /// states what the catch has actually bought, which is a door and a delay and not a hiding place.</summary>
+    public const string LockedCubicleClause =
+        "the catch is over — the door buys time, and the floor is still out there";
 
     // ── THE LINE ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -185,6 +211,7 @@ public static class SeatedHud
         yield return PourClause(240);
         yield return RestClause(0, ShortRest.NervePipCapPerWatch);
         yield return RestClause(ShortRest.NervePipCapPerWatch, ShortRest.NervePipCapPerWatch);
+        yield return RoomClause(Seat.LockedCubicle, 0);
         yield return RoomClause(Seat.Cabinet, 0);
         yield return RoomClause(Seat.ParkBench, 0);
         yield return RoomClause(Seat.HallTable, 1);

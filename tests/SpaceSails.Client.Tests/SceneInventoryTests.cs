@@ -272,6 +272,18 @@ public sealed class SceneInventoryTests
                                                  "reaches a bench, which is never. " +
                                                  "NoRingSuiteIsAnEmptyFloorTests walks every seat of every " +
                                                  "suite of every ring the generator lays, over 53 sites",
+        [DeckPlan.ConsoleKind.HiveCubicle] = "#821 a WC cubicle's own leaf — the row in the block's PUBLIC " +
+                                             "WASHROOM and the staff pair in every big suite's service " +
+                                             "strip, all of them on the one ring per branch-office site " +
+                                             "the office chair above lives on, which no general scene " +
+                                             "sweep reaches. ALockedCubicleBuysTimeTests walks the leaf " +
+                                             "shut and open on a real floor and measures the refusal on " +
+                                             "DeckPlan.Collides; TheCubicleYouLockFromInsideTests walks " +
+                                             "every cell of every ring the generator lays",
+        [DeckPlan.ConsoleKind.HiveBasin] = "#821 the basin run in that same washroom — one console with a " +
+                                           "span down the whole length of the porcelain (#791's E-bus), " +
+                                           "and therefore exactly as reachable by a scene sweep as the " +
+                                           "cubicles it stands opposite, which is never",
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",

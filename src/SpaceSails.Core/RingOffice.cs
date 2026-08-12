@@ -210,6 +210,18 @@ public static class RingOffice
     /// two.</summary>
     public const int Cubicles = 2;
 
+    /// <summary>#821 · How many cubicles the block's PUBLIC washroom gets. Owner, standing in the park:
+    /// <i>"let's add toilets there.. we might want to hide from guards in one toilet cubicle we lock from
+    /// inside"</i> — and a row you can choose from is what makes the hide a decision rather than a
+    /// corridor. Three, because two is a pair and a public washroom is a row.</summary>
+    public const int PublicCubicles = 3;
+
+    /// <summary>#821 · The narrowest frontage that can hold a public washroom: the two piers, the cubicle
+    /// terrace against one of them, a corridor between, and the basin run against the other. Derived rather
+    /// than typed, so a terrace that grows a du takes the gate with it.</summary>
+    public static double WashroomMinFrontageDu =>
+        (2 * PierClearDu) + StripDu + GangwayDu + (2 * CounterHalfDepthDu);
+
     /// <summary>…and how many privacy booths. <i>"maybe some privacy cabinets also"</i> — enough that
     /// somebody else being in one still leaves you one, which is the smallest number that makes the fixture
     /// a fact about the room rather than a prop.</summary>
@@ -255,6 +267,91 @@ public static class RingOffice
         /// <summary>A privacy booth — one seat, open-fronted, phone-box shaped.</summary>
         Booth,
     }
+
+    /// <summary>
+    /// #821 · ONE CUBICLE, PUBLISHED AS THE THING THE LOCK LANDS ON.
+    ///
+    /// <para>A <see cref="Fitting.Cubicle"/> fixture is the BOX and the floor's doorway list holds the LEAF,
+    /// and until this record existed nothing said which leaf belonged to which box. That pairing is the
+    /// whole of #821 — a lock is a fact about one door of one cell — so it is published by the placer that
+    /// laid both rather than recovered afterwards by a client measuring midpoints, which is §13.15 and the
+    /// shape of bug this ground has twice paid for.</para>
+    /// </summary>
+    /// <param name="Index">Its ordinal in the room, so a watch-scoped key can name it.</param>
+    /// <param name="X0">Left edge of the box, in the surface's own coordinates.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="Door">Its own leaf — the very doorway the floor published, not a copy of one.</param>
+    /// <param name="SeatX">Where a body goes when it sits down in here. The middle of the box: clear of the
+    /// pan against the back wall and clear of the leaf, so the snap (#820's law, kept) can put the captain
+    /// ON this coordinate and standing up leaves them exactly there.</param>
+    /// <param name="SeatY">The same.</param>
+    /// <param name="StepX">Where somebody stands OUTSIDE it — a door's clearance off the leaf, on the room's
+    /// side. Where a guard knocks from, and published rather than derived for that reason: a man who walked
+    /// to a coordinate this file did not choose would be standing somewhere nobody laid out.</param>
+    /// <param name="StepY">The same.</param>
+    /// <param name="Plate">What is stencilled on it while it is free.</param>
+    public readonly record struct Stall(
+        int Index, double X0, double Y0, double X1, double Y1,
+        SurfaceLayout.Doorway Door, double SeatX, double SeatY, double StepX, double StepY, string Plate)
+    {
+        /// <summary>The middle of it.</summary>
+        public double X => (X0 + X1) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double Y => (Y0 + Y1) / 2.0;
+
+        /// <summary>Where the leaf's own console hangs — the middle of the doorway, which is the square a
+        /// captain is standing on when they reach behind them and turn the catch.</summary>
+        public double DoorX => (Door.X1 + Door.X2) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double DoorY => (Door.Y1 + Door.Y2) / 2.0;
+
+        /// <summary>Is the captain in it? The box the three walls were laid on, and nothing else — the same
+        /// arithmetic <see cref="UndergroundComplex.RingRoom.Contains"/> uses one scale up.</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+
+        /// <summary>
+        /// #821 · Is a body of <paramref name="bodyRadius"/> standing in here AND CLEAR OF THE LEAF — which
+        /// is what "inside" has to mean for the catch, as opposed to for the hide.
+        ///
+        /// <para>A shut cubicle is a WALL SEGMENT laid on the leaf, so a captain who turned the catch while
+        /// standing in the opening would be standing inside the thing they just made. Nothing traps the dot
+        /// on this ground (the ring chair's own law, and the oldest bug this project has), so the catch asks
+        /// for a body's clearance and the refusal that follows is the ordinary one: step in first.</para>
+        /// </summary>
+        public bool ClearOfTheLeaf(double x, double y, double bodyRadius)
+        {
+            if (!Contains(x, y))
+            {
+                return false;
+            }
+            double dx = x - DoorX, dy = y - DoorY;
+            return (dx * dx) + (dy * dy) >= bodyRadius * bodyRadius;
+        }
+
+        /// <summary>#821 · Where the captain is put down when they stand up again — the seat, because a
+        /// cubicle's pan is not a solid on the plan and the seat is the square you were already standing on
+        /// to press [E]. The ring chair's own law (<see cref="Chair.StandAt"/>), said about a smaller
+        /// room.</summary>
+        public (double X, double Y) StandAt => (SeatX, SeatY);
+    }
+
+    /// <summary>
+    /// #821 · ONE WASHBASIN. Owner: <i>"also a function to wash hands with some film noir comment at the
+    /// end."</i>
+    ///
+    /// <para>The RUN is one <see cref="Fitting.Counter"/> — a basin run is a worktop with holes in it, and
+    /// calling it what it is keeps every guard about worktops true about this room without a second kind to
+    /// teach them. These are the taps along it, and they exist so the press has somewhere to be that is not
+    /// the middle of a six-du counter.</para>
+    /// </summary>
+    /// <param name="Index">Its ordinal along the run.</param>
+    /// <param name="X">Where a body stands to use it.</param>
+    /// <param name="Y">The same.</param>
+    public readonly record struct Basin(int Index, double X, double Y);
 
     /// <summary>
     /// #827 · WHICH SIDES OF A PIECE OF FURNITURE CARRY SEATS.
@@ -344,16 +441,28 @@ public static class RingOffice
     /// <param name="Doors">The cubicles' own leaves, as published doorways. #821 · A real door and never a
     /// decorative gap: the lock-from-inside is coming and it must land on a door the building already
     /// knows about.</param>
+    /// <param name="Stalls">#821 · The cubicles, each paired with its OWN leaf. See <see cref="Stall"/>: the
+    /// lock is a fact about one door of one cell, and the placer that laid both is the only thing that can
+    /// say which is which.</param>
+    /// <param name="Basins">#821 · The taps along a public washroom's basin run.</param>
     public readonly record struct Furnishing(
         IReadOnlyList<Fixture> Fixtures,
         IReadOnlyList<Chair> Chairs,
         IReadOnlyList<SurfaceLayout.Wall> Solids,
-        IReadOnlyList<SurfaceLayout.Doorway> Doors)
+        IReadOnlyList<SurfaceLayout.Doorway> Doors,
+        IReadOnlyList<Stall>? Stalls = null,
+        IReadOnlyList<Basin>? Basins = null)
     {
         /// <summary>Nothing at all — what a room too small to stand a desk in gets, and what nothing in the
         /// ring actually gets today. Kept so a degenerate box returns an empty answer rather than a
         /// half-built one.</summary>
         public static Furnishing Empty { get; } = new([], [], [], []);
+
+        /// <summary>The cubicles, never null.</summary>
+        public IReadOnlyList<Stall> Cells => Stalls ?? [];
+
+        /// <summary>The taps, never null.</summary>
+        public IReadOnlyList<Basin> Taps => Basins ?? [];
     }
 
     // ── HOW THE ROOM IS READ ──────────────────────────────────────────────────────────────────────────
@@ -381,13 +490,30 @@ public static class RingOffice
         /// <summary>Shelving and a bench. What a corner office with no view and the back of house get:
         /// cheap is fine, empty is not.</summary>
         Plain,
+
+        /// <summary>#821 · A terrace of cubicles down one pier, a basin run down the other, and a bench to
+        /// wait on. The block's own public washroom.</summary>
+        Washroom,
     }
+
+    /// <summary>#821 · Is this the block's public washroom? Off the PLATE, which is the only thing that says
+    /// what a room is for — the same one question <see cref="DressingFor"/> asks, published so a guard, a
+    /// renderer and the size gate cannot each answer it their own way.</summary>
+    public static bool IsWashroom(in UndergroundComplex.RingRoom room) =>
+        room.Plate.Contains("WASHROOM", StringComparison.Ordinal);
 
     /// <summary>What this room is dressed as. The back of house keeps #801's plates and its own character —
     /// a potting shed is not an office — and a corner room has no view to sit facing, so both take the plain
     /// version.</summary>
     public static Dressing DressingFor(in UndergroundComplex.RingRoom room)
     {
+        // #821 · THE WASHROOM IS ASKED FIRST, and before the view clause, because it is the one dressing
+        // that is not an office at all: a room of cubicles with desks in it would be the plate and the floor
+        // disagreeing, which is the bug class this switch was written to be incapable of.
+        if (IsWashroom(in room))
+        {
+            return Dressing.Washroom;
+        }
         if (!room.HasView || room.Side == UndergroundComplex.RingSide.Far)
         {
             return Dressing.Plain;
@@ -410,8 +536,12 @@ public static class RingOffice
     /// <summary>Does this room earn the service strip? Measured on the STREET FRONTAGE, which is the
     /// dimension the owner was looking down when he called the room big — and the same dimension the door
     /// count is scaled on, so "big" means one thing in this file.</summary>
+    /// <para>#821 · …and never the block's own washroom, however wide it is. The service strip is the tier a
+    /// PREMIUM OFFICE earns — a kitchenette, two staff WCs and the privacy booths — and a public washroom
+    /// that grew a kitchenette would be the amenity ladder handing the same room both rungs.</para>
     public static bool IsBigSuite(in UndergroundComplex.RingRoom room) =>
-        room.HasView && room.Side != UndergroundComplex.RingSide.Far && FrontageOf(room) >= BigSuiteDu;
+        room.HasView && room.Side != UndergroundComplex.RingSide.Far && !IsWashroom(in room)
+        && FrontageOf(room) >= BigSuiteDu;
 
     /// <summary>How much street face a room presents — X on the two bands, Y on the two ends.</summary>
     public static double FrontageOf(in UndergroundComplex.RingRoom room) =>
@@ -510,11 +640,13 @@ public static class RingOffice
         var chairs = new List<Chair>();
         var solids = new List<SurfaceLayout.Wall>();
         var doors = new List<SurfaceLayout.Doorway>();
+        var stalls = new List<Stall>();
+        var basins = new List<Basin>();
 
         // Where the room's own centre falls in the room's own grid — the square the A* audit stands on.
         double uCentre = (frame.ULo + frame.UHi) / 2.0, vCentre = frame.Depth / 2.0;
 
-        var lay = new Lay(frame, uCentre, vCentre, fixtures, chairs, solids, doors);
+        var lay = new Lay(frame, uCentre, vCentre, fixtures, chairs, solids, doors, stalls, basins);
 
         // THE SERVICE STRIP first, because it takes frontage away from everything else. A big suite's desks
         // stop short of it; a small one never had it and keeps its whole width.
@@ -529,6 +661,10 @@ public static class RingOffice
 
         switch (DressingFor(in room))
         {
+            case Dressing.Washroom:
+                Washroom(lay, in room, uA, uB, vA, vB);
+                break;
+
             case Dressing.LongTable:
                 LongTable(lay, in room, uA, workUB, vA, vB);
                 break;
@@ -554,7 +690,7 @@ public static class RingOffice
                 break;
         }
 
-        return new Furnishing(fixtures, chairs, solids, doors);
+        return new Furnishing(fixtures, chairs, solids, doors, stalls, basins);
     }
 
     /// <summary>Push a fitting's centre line clear of the room's own centre, on whichever side of it the
@@ -575,7 +711,7 @@ public static class RingOffice
     private sealed class Lay(
         Frame frame, double uCentre, double vCentre,
         List<Fixture> fixtures, List<Chair> chairs, List<SurfaceLayout.Wall> solids,
-        List<SurfaceLayout.Doorway> doors)
+        List<SurfaceLayout.Doorway> doors, List<Stall> stalls, List<Basin> basins)
     {
         private readonly Frame _frame = frame;
 
@@ -647,11 +783,34 @@ public static class RingOffice
         /// are not four sides of a rectangle because one of them has a door in it.</summary>
         internal void Note(Fixture fixture) => fixtures.Add(fixture);
 
-        /// <summary>Publish one door. Cubicles only (#821): a real leaf the lock can land on later.</summary>
-        internal void Door(double uLo, double vLo, double uHi, double vHi)
+        /// <summary>Publish one door. Cubicles only (#821): a real leaf the lock can land on later. Returns
+        /// the leaf, so the cell that cut it can keep it — the pairing of box to door is #821's whole
+        /// question and it is answered where both were laid.</summary>
+        internal SurfaceLayout.Doorway Door(double uLo, double vLo, double uHi, double vHi)
         {
             (double x0, double y0, double x1, double y1) = _frame.Box(uLo, vLo, uHi, vHi);
-            doors.Add(new SurfaceLayout.Doorway(x0, y0, x1, y1));
+            var leaf = new SurfaceLayout.Doorway(x0, y0, x1, y1);
+            doors.Add(leaf);
+            return leaf;
+        }
+
+        /// <summary>#821 · Record one cubicle: its box, its own leaf, the square you sit on inside it and the
+        /// square somebody knocks from outside it. All four in the room's own grid, mapped here.</summary>
+        internal void Cubicle(
+            in Fixture box, in SurfaceLayout.Doorway leaf, double seatU, double seatV,
+            double stepU, double stepV, string plate)
+        {
+            (double sx, double sy) = _frame.At(seatU, seatV);
+            (double kx, double ky) = _frame.At(stepU, stepV);
+            stalls.Add(new Stall(
+                stalls.Count, box.X0, box.Y0, box.X1, box.Y1, leaf, sx, sy, kx, ky, plate));
+        }
+
+        /// <summary>#821 · Record one tap along a basin run, in the room's own grid.</summary>
+        internal void Tap(double u, double v)
+        {
+            (double x, double y) = _frame.At(u, v);
+            basins.Add(new Basin(basins.Count, x, y));
         }
 
         /// <summary>Seat one person, in the room's own grid, facing the way they were told.</summary>
@@ -952,19 +1111,137 @@ public static class RingOffice
         lay.Wall(uLo, vLo, uLo, mid - UndergroundComplex.DoorHalf);
         lay.Wall(uLo, mid + UndergroundComplex.DoorHalf, uLo, vHi);
 
+        var box = new Fixture(
+            kind, x0, y0, x1, y1, plate,
+            kind == Fitting.Booth ? Seating.OneSide : Seating.None);
+
         if (publish)
         {
-            lay.Door(uLo, mid - UndergroundComplex.DoorHalf, uLo, mid + UndergroundComplex.DoorHalf);
+            SurfaceLayout.Doorway leaf = lay.Door(
+                uLo, mid - UndergroundComplex.DoorHalf, uLo, mid + UndergroundComplex.DoorHalf);
 
             // The fixture, against the back wall — the en-suite's own one-segment pan, which is the whole of
             // what makes a 5 du box read as a WC on a plan.
-            lay.Wall(uHi - 1.4, mid - 1.1, uHi - 1.4, mid + 1.1);
+            lay.Wall(uHi - PanInsetDu, mid - PanHalfDu, uHi - PanInsetDu, mid + PanHalfDu);
+
+            // #821 · …and the cell as the thing a LOCK lands on: the box, its own leaf, the square you sit
+            // on in the middle of it and the square somebody knocks from a door's clearance outside it.
+            lay.Cubicle(
+                in box, in leaf, (uLo + uHi) / 2.0, mid, uLo - DoorClearDu, mid, plate);
         }
 
-        lay.Note(new Fixture(
-            kind, x0, y0, x1, y1, plate,
-            kind == Fitting.Booth ? Seating.OneSide : Seating.None));
+        lay.Note(box);
     }
+
+    /// <summary>How far in from a cell's back wall the pan stands. The en-suite's own inset (#707), named
+    /// now that a second room lays one — a number typed twice is two answers waiting to disagree.</summary>
+    public const double PanInsetDu = 1.4;
+
+    /// <summary>…and half the length of it.</summary>
+    public const double PanHalfDu = 1.1;
+
+    /// <summary>
+    /// #821 · THE BLOCK'S PUBLIC WASHROOM — a terrace of cubicles down one pier, a basin run down the other,
+    /// and a bench between them.
+    ///
+    /// <para>Owner, standing in the park on the evening of 2026-08-11: <i>"let's add toilets there.. we
+    /// might want to hide from guards in one toilet cubicle we lock from inside :-D"</i>, and then
+    /// <i>"also a function to wash hands with some film noir comment at the end."</i></para>
+    ///
+    /// <para>It is the SERVICE STRIP'S OWN IDIOM and deliberately not a second one: the same
+    /// <see cref="Cell"/> lays a public cubicle and a big suite's staff WC, so the door the lock lands on is
+    /// one kind of door and there is exactly one place its geometry can be got wrong. What is different is
+    /// only what stands opposite — a run of basins rather than a kitchenette, because this is a room the
+    /// whole floor walks into rather than a corner of somebody's office.</para>
+    ///
+    /// <para>The terrace stands against a PIER, which is the one pair of walls in a ring room that can never
+    /// carry a door, so a row of little boxes runs down the suite without ever coming near a doorway's
+    /// clearance — <see cref="ServiceStrip"/>'s reason, unchanged, and the reason the cells still ABUT.</para>
+    /// </summary>
+    private static void Washroom(
+        Lay lay, in UndergroundComplex.RingRoom room, double uA, double uB, double vA, double vB)
+    {
+        // ── THE TERRACE, down the FAR pier — the same face of the room the service strip stands against,
+        //    and that is not a preference. A cell opens off its uLo face (see Cell), so a terrace laid at
+        //    the NEAR pier opens INTO the pier: the leaves are a hand's breadth off a solid wall and #724's
+        //    jamb law goes red on 1512 approaches across every clandestine site in the game — "400 presses
+        //    left the captain at -127.35, still on the near side of the wall at -125.00", which is a captain
+        //    in the room next door walking at a door that is not there. Watched happen inside this issue.
+        //
+        //    It stops when the room runs out of DEPTH rather than when the count does: a washroom with two
+        //    cubicles in it is a washroom, and a cell laid past the glass aisle would be a cubicle in the
+        //    window.
+        double uStripLo = Math.Max(uA, uB - StripDu);
+        double v = vA;
+        for (int c = 0; c < PublicCubicles; c++)
+        {
+            double to = v + CellDu;
+            if (to > vB)
+            {
+                break;
+            }
+            Cell(lay, uStripLo, uB, v, to, Fitting.Cubicle, PublicWcPlate(c + 1), publish: true);
+            v = to;
+        }
+
+        // ── THE BASIN RUN, against the NEAR pier and a gangway clear of the terrace's own leaves. One
+        //    counter and not one fixture per tap: a basin run IS a worktop with holes in it (see Basin), and
+        //    four boxes where the eye reads one length of porcelain is four things for the collision field
+        //    to sweep and three more for a degenerate-wall scan to complain about.
+        double runHi = Math.Min(uA + (2 * CounterHalfDepthDu), uStripLo - GangwayDu);
+        if (runHi <= uA + 0.001 || vB - vA < BasinPitchDu)
+        {
+            return;
+        }
+
+        double runV1 = Math.Min(vB, vA + (BasinsPerRun * BasinPitchDu));
+        if (!lay.Box(Fitting.Counter, uA, vA, runHi, runV1, BasinRunPlate, Seating.OneSide))
+        {
+            return;
+        }
+
+        // The taps, spaced along it, standing a body clear of the porcelain on the room's side.
+        int taps = Math.Max(1, (int)((runV1 - vA) / BasinPitchDu));
+        for (int t = 0; t < taps; t++)
+        {
+            lay.Tap(runHi + CounterHalfDepthDu, vA + ((runV1 - vA) * (t + 0.5) / taps));
+        }
+
+        // ── AND SOMEWHERE TO WAIT. A bench against the SAME PIER, past the end of the run — the plain
+        //    room's own plank (see Plain), stood on its side because this pier already has porcelain on the
+        //    first half of it. Two places on it, because the ring's furnishing law is that a captain can sit
+        //    down in more than one place in a room, and a public washroom with nowhere to wait is a corridor
+        //    with taps in it.
+        double benchV0 = runV1 + GangwayDu, benchV1 = Math.Min(vB, benchV0 + BenchDu);
+        if (benchV1 - benchV0 < 2.0)
+        {
+            return;
+        }
+        if (!lay.Box(Fitting.Bench, uA, benchV0, uA, benchV1, BenchPlate, Seating.OneSide))
+        {
+            return;
+        }
+
+        // A pace off the plank on the room's side of it — away from the pier, which is the direction the
+        // basin run's own taps face, taken off ONE published vector rather than a second pair of numbers.
+        double seatU = Math.Min(runHi, uA + ChairSetbackDu);
+        (double gx, double gy) = lay.Frame.TowardTheGlass;
+        for (int e = 0; e < 2; e++)
+        {
+            lay.Chair(in room, seatU, benchV0 + ((benchV1 - benchV0) * (e + 0.5) / 2.0), (-gy, gx));
+        }
+    }
+
+    /// <summary>#821 · How many basins a run holds. Enough that a queue is a queue and not a line — and it
+    /// is a CAP, because the run is cut to whatever depth the room has left after the terrace.</summary>
+    public const int BasinsPerRun = 4;
+
+    /// <summary>#821 · Between two people at the basin run. The EN-SUITE'S OWN PAN, end to end
+    /// (<see cref="PanHalfDu"/>), and a jamb between them: a basin is a fixture of the same scale as the
+    /// thing in a cubicle, because on this plan it is one. Deliberately not <see cref="SeatPitchDu"/> —
+    /// that is the width of a person SITTING at a worktop, which at eight du would have laid four taps down
+    /// thirty-three du of porcelain and read as a swimming bath.</summary>
+    public static double BasinPitchDu => (2 * PanHalfDu) + CellJambDu;
 
     // ── WHAT IT SAYS ──────────────────────────────────────────────────────────────────────────────────
 
@@ -998,6 +1275,14 @@ public static class RingOffice
 
     /// <summary>One of the privacy booths.</summary>
     public static string BoothPlate(int n) => $"🕻 PRIVACY BOOTH {n}";
+
+    /// <summary>#821 · One of the public washroom's cubicles, with the verb on it (#783) — a door you can
+    /// shut is the whole of what this room offers and the plate should say so.</summary>
+    public static string PublicWcPlate(int n) => $"🚻 CUBICLE {n} · STEP IN";
+
+    /// <summary>#821 · The basin run. The building's own register — it names the fixture and nothing about
+    /// what the facility is for (§13.8) — and it carries the verb, because [E] here washes your hands.</summary>
+    public const string BasinRunPlate = "🚰 THE BASIN RUN · WASH YOUR HANDS";
 
     /// <summary>Where you are, when you are sitting in one of these.</summary>
     public const string Setting = "A chair in one of the park-view suites";
@@ -1093,6 +1378,10 @@ public static class RingOffice
         yield return BenchPlate;
         yield return ReceptionPlate;
         yield return KitchenettePlate;
+        yield return WcPlate(1);
+        yield return BoothPlate(1);
+        yield return PublicWcPlate(1);
+        yield return BasinRunPlate;
         yield return Setting;
         yield return TookAChairLine("");
         yield return StoodUpLine;
