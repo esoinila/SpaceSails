@@ -337,6 +337,24 @@ public sealed class ALockedCubicleBuysTimeTests
         // the captain shut, having seen nothing at all.
         Assert.Contains("g.SawYouShutIt = false;", press, StringComparison.Ordinal);
         Assert.Contains("foreach (Guard g in _guards)", press, StringComparison.Ordinal);
+
+        // #835 · …AND THE DOOR MAY NOT DOWNGRADE A RUN INTO A REQUEST FOR PAPERS. A man who had called it
+        // in and was coming at a run is still that man — the door stopped his legs, it did not un-say the
+        // radio. Hailing him on the way out would hand a captain a way to turn a chase into a polite
+        // inspection by shutting a door on it, which is the door buying SAFETY, and that is the one thing
+        // this feature may never do.
+        Assert.Contains("if (!him.AfterYou)", press, StringComparison.Ordinal);
+        Assert.DoesNotContain("him.AfterYou = false", press, StringComparison.Ordinal);
+        Assert.DoesNotContain("g.AfterYou = false", press, StringComparison.Ordinal);
+
+        // …and the round's own chase branch is BELOW the wait, so a man coming at a run cannot run through a
+        // partition: he arrives, and then he is a man standing outside a door.
+        int waits = patrol.IndexOf("CubicleLock.WaitsAtTheDoor", StringComparison.Ordinal);
+        int runs = patrol.IndexOf("else if (g.AfterYou)", StringComparison.Ordinal);
+        Assert.True(waits > 0 && runs > 0, "the hide and the run are not where this guard thinks they are.");
+        Assert.True(waits < runs,
+            "the run is taken before the wait, so a guard at a locked door would keep running at it — and "
+            + "PatrolBeat.HasYou would land a hand on an arm through a partition.");
         Assert.Contains("CubicleLock.OpenedOnHimLine", press, StringComparison.Ordinal);
     }
 

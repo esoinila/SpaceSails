@@ -227,11 +227,23 @@ public partial class Map
 
         if (waiting is { } him)
         {
-            // He stops waiting and starts walking again. The card is the walk-up's business and always was
-            // (#833) — there is no second challenge road out of this file.
             ShowPulseMessage(CubicleLock.OpenedOnHimLine, PulseRank.Beat);
             LogAutopilotEvent(CubicleLock.OpenedOnHimLine);
-            TheHail(him);
+
+            // #835 · AND HE GETS BACK THE RUNG HE WAS ON, never a softer one.
+            //
+            // A man who had called it in and was coming at a RUN is still that man: the door stopped his
+            // legs, it did not un-say the radio. Hailing him here would hand a captain a way to turn a chase
+            // into a polite request for papers by shutting a door on it — which is the door buying SAFETY,
+            // and the one thing this feature may never do. He simply carries on (AfterYou is untouched, and
+            // he is standing a pace outside), so the ladder resumes where the captain left it.
+            //
+            // Everybody else gets the hail, which is #833's own approach: the card raises face to face at
+            // arm's length, and there is no second challenge road out of this file.
+            if (!him.AfterYou)
+            {
+                TheHail(him);
+            }
         }
 
         StateHasChanged();
