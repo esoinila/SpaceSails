@@ -693,6 +693,20 @@ public partial class Map
         // does not grow its wall back while the captain is two rooms away.
         public HashSet<string> LocksShotOpen { get; } = [];
 
+        // #821 · …and which WC cubicles have the catch over (HiveInterior.CubicleKey). Replayed on every
+        // rebuild for the very same reason, and kept on the EXCURSION rather than in the vault: a catch is a
+        // thing a hand is holding shut, and a save that restored a locked cubicle on a floor the captain is
+        // no longer standing in would be the building keeping a secret nobody is behind any more.
+        public HashSet<string> CubiclesShut { get; } = [];
+
+        // #821 · How many times a basin has been used this excursion, so two washes are two lines and not
+        // one line said twice — the beat the pool is seeded on.
+        public int WashBeats { get; set; }
+
+        // #821 · …and whether this watch has already paid its one pip for a wash (CubicleLock.
+        // WashPipsPerWatch). A row of four basins is a room, not an income.
+        public long WashPaidWatch { get; set; } = long.MinValue;
+
         // #803 · …and what the shot itself was: the fired-shot facts this ground has heard, in the order
         // they happened. Nothing in this build reads them beyond the field book — the pack's ear is rung by
         // MakeNoise, as it always has been — and #804 prices them.
@@ -4995,7 +5009,7 @@ public partial class Map
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
                 SurfaceDroidCount, FillSurfaceDroids, ex.HiveRoomsEmptied,
-                ex.CanteenWatch, ex.LocksShotOpen);
+                ex.CanteenWatch, ex.LocksShotOpen, ex.CubiclesShut);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
@@ -5023,7 +5037,10 @@ public partial class Map
             monolithEpoch: Monolith.EpochAt(SimTime),
             // #585: whether this ground carries a clandestine site is ALREADY decided (ResolveSecretLab, which
             // honours ?secretlab=1). The renderer is told; it never rolls again.
-            hasSecretSite: ex.Lab is { HasLab: true });
+            hasSecretSite: ex.Lab is { HasLab: true },
+            // #835 · KICKED OUT, on the shed wall, in the descent plate's own typography — and null on every
+            // other rebuild this game has ever done, which is nearly all of them.
+            bigLabels: TheKickedOutPlate(ex));
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
         // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly

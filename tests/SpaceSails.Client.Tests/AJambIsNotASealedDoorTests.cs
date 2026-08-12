@@ -307,10 +307,21 @@ public sealed class AJambIsNotASealedDoorTests
         // owner's own #804 sentence is the same one — "ideally we could see them move and wait for them to
         // pass". They get the funnel for the sweep team's reason and no other. THE OLD ONES STILL DO NOT,
         // which is the whole law here and is checked file by file above.
-        Assert.Equal(3, claims.Count);
+        //
+        // #835 · AND THE FOURTH CLAIM IS THE SAME MAN RUNNING. Owner, reversing the no-chase law with the
+        // implementation named: "they need to catch us .... like reevers :-D we could use that code :-D" —
+        // so a guard now spends a run through ReeverChase.Step, the Old Ones' own homing step, and hands it
+        // Gait.Person as the ONE thing a uniform changes about it. That is this guard forcing its ruling and
+        // getting one, exactly as #804 did: the gait travels with the MOVER (a person on a rota, however
+        // fast he is going) and never with the machinery. ReeverChase.cs itself is unchanged and is still
+        // checked, line by line, above — it defaults to the stagger, so nothing an Old One steps through was
+        // helped by any of this.
+        Assert.Equal(4, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
-        Assert.Contains(claims, c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal));
+
+        // Twice, and both times it is a contract guard: the round's own stride, and #835's run.
+        Assert.Equal(2, claims.FindAll(c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal)).Count);
     }
 
     private static string RepoRoot

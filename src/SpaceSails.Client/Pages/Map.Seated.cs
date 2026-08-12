@@ -254,9 +254,14 @@ public partial class Map
     /// a second seated state, because a bench and a cabinet are the same POSTURE and a different
     /// EXPOSURE.</para>
     /// </summary>
+    /// <remarks>#821 · AND THE LADDER GAINED A TOP RUNG. A cubicle with the catch over is the one seat whose
+    /// privacy does not depend on anybody else's behaviour, so it is asked FIRST — and it is asked of the one
+    /// set of shut doors the deck is rebuilt from (<c>ex.CubiclesShut</c>), never of a flag captured when the
+    /// captain sat down, because the catch can go over while they are already sitting on it.</remarks>
     private SeatedHud.Seat? SeatedIn =>
         _table is { } t
-            ? t.Bench ? SeatedHud.Seat.ParkBench
+            ? t.CubicleKey is { Length: > 0 } wc && CubicleIsShut(wc) ? SeatedHud.Seat.LockedCubicle
+                : t.Bench ? SeatedHud.Seat.ParkBench
                 : t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable
         : _stool is not null ? SeatedHud.Seat.BarStool
         : null;

@@ -86,7 +86,11 @@ public sealed class DeckPlan
         // somebody here but there was nothing marked onto the map?" One mark per SPOT — never per item —
         // appended onto whatever deck the excursion is standing on, and the only console in the game whose
         // [E] is answered before the dispatch ever reaches this enum (#691: your feet before the walls).
-        LeftBehind }
+        LeftBehind,
+        // #821 · THE PUBLIC WASHROOM ON THE PARK BLOCK: a WC cubicle's own leaf (press it from inside and
+        // the catch goes over), and the basin run, which is a fixture with a SPAN on it the way the bar desk
+        // is — one console down the whole length of the porcelain rather than a tap you have to find.
+        HiveCubicle, HiveBasin }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

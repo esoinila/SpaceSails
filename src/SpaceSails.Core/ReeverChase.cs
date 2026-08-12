@@ -70,11 +70,22 @@ public static class ReeverChase
     /// corner instead of dithering at the face, and a pack of mixed hands flows around a slab from both
     /// ends. Only when both hands are walled too does it truly hold — then it is stationary and drops off
     /// the motion tracker (the motion-only law still composes the dread, now for a genuinely boxed-in
-    /// hunter). The crew-only barrier still caps Y.</para></summary>
+    /// hunter). The crew-only barrier still caps Y.</para>
+    ///
+    /// <para>#835 · <b>AND NOW A MAN IN A UNIFORM RUNS ON IT TOO.</b> Owner, reversing a standing law:
+    /// <i>"they need to catch us .... like reevers :-D we could use that code :-D"</i> — so
+    /// <paramref name="gait"/> is the one thing a guard changes about this loop. It defaults to
+    /// <see cref="SurfaceCollision.Gait.Stagger"/>, which keeps the Old Ones' own walk and the owner's
+    /// ruling about it (<i>"Lets not help reevers move in any easier if possible"</i>) exactly as they
+    /// were; a guard passes <see cref="SurfaceCollision.Gait.Person"/> and therefore finds the doorway a
+    /// shambler grinds its shoulder on. Same homing step, same handrail, same catch radius, different legs
+    /// — which is the whole difference #835 asks for between feral and procedural.</para></summary>
     public static (double X, double Y) Step(
         double reeverX, double reeverY, double avatarX, double avatarY, double stepDistance, double barrierY,
-        IReadOnlyList<SurfaceCollision.Segment>? walls, double radius, int wallSide = 1)
+        IReadOnlyList<SurfaceCollision.Segment>? walls, double radius, int wallSide = 1,
+        SurfaceCollision.Gait? gait = null)
     {
+        SurfaceCollision.Gait legs = gait ?? Stagger;
         double dx = avatarX - reeverX;
         double dy = avatarY - reeverY;
         double dist = System.Math.Sqrt((dx * dx) + (dy * dy));
@@ -88,7 +99,7 @@ public static class ReeverChase
         double nx, ny;
         if (walls is { Count: > 0 })
         {
-            (nx, ny) = SurfaceCollision.Slide(reeverX, reeverY, moveX, moveY, radius, walls, Stagger);
+            (nx, ny) = SurfaceCollision.Slide(reeverX, reeverY, moveX, moveY, radius, walls, legs);
 
             // The direct run is spent on the stone — try the wall itself as a handrail, preferred hand
             // first, then the other. Whichever moves, it takes; if neither does, it is boxed in and holds.
@@ -99,14 +110,14 @@ public static class ReeverChase
                 double perpX = -dy / dist * stepDistance * hand;
                 double perpY = dx / dist * stepDistance * hand;
 
-                (double ax, double ay) = SurfaceCollision.Slide(reeverX, reeverY, perpX, perpY, radius, walls, Stagger);
+                (double ax, double ay) = SurfaceCollision.Slide(reeverX, reeverY, perpX, perpY, radius, walls, legs);
                 if (!Spent(reeverX, reeverY, ax, ay, stepDistance))
                 {
                     (nx, ny) = (ax, ay);
                 }
                 else
                 {
-                    (double bx, double by) = SurfaceCollision.Slide(reeverX, reeverY, -perpX, -perpY, radius, walls, Stagger);
+                    (double bx, double by) = SurfaceCollision.Slide(reeverX, reeverY, -perpX, -perpY, radius, walls, legs);
                     if (!Spent(reeverX, reeverY, bx, by, stepDistance))
                     {
                         (nx, ny) = (bx, by);

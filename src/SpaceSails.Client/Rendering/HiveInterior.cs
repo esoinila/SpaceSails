@@ -58,11 +58,16 @@ public static class HiveInterior
     /// <see cref="LockKey"/>. Replayed onto every rebuild exactly the way an emptied room is, so a door that
     /// was opened stays open through a floor change, a satchel press and a save — a world that grows its
     /// walls back while the captain is looking somewhere else is the oldest bug on this ground.</param>
+    /// <param name="cubiclesShut">#821 · The WC cubicles whose catch is over, by <see cref="CubicleKey"/>.
+    /// Replayed onto every rebuild for the reason a shot hasp is: a room searched, a satchel opened or a bin
+    /// used rebuilds this deck, and a door that came open again while the captain sat still behind it would
+    /// be the world growing its walls back with somebody looking straight at them.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
         IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0,
-        IReadOnlyCollection<string>? locksShotOpen = null)
+        IReadOnlyCollection<string>? locksShotOpen = null,
+        IReadOnlyCollection<string>? cubiclesShut = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -129,8 +134,38 @@ public static class HiveInterior
                 IsWindow: true, IsHull: !pastTheSeam));
         }
 
+        // ── #821 · WHICH CUBICLE LEAVES HAVE THE CATCH OVER ────────────────────────────────────────────
+        //
+        // Worked out BEFORE the doorway loop, because a shut cubicle is a door that is drawn shut AND a wall
+        // that a body cannot cross — the very idiom #585's never-opening doors already use, one scale down.
+        // Keyed on the leaf's own geometry so the doorway list and the cubicle list cannot come to two
+        // different opinions about which hole in which partition this is.
+        var shut = new HashSet<string>(StringComparer.Ordinal);
+        if (cubiclesShut is { Count: > 0 } && floor.Park is { } shutPark)
+        {
+            foreach (UndergroundComplex.RingRoom suite in shutPark.Frontage)
+            {
+                foreach (RingOffice.Stall cell in suite.Cubicles)
+                {
+                    if (cubiclesShut.Contains(CubicleKey(level, in cell)))
+                    {
+                        shut.Add(LeafKey(cell.Door));
+                    }
+                }
+            }
+        }
+
         foreach (SurfaceLayout.Doorway d in floor.Doorways)
         {
+            if (shut.Contains(LeafKey(d)))
+            {
+                // Drawn as the shut door it is, with the partition behind it. #821's law is that this buys
+                // TIME and not safety: what it buys is exactly this one segment, and the man outside is
+                // still on the floor.
+                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Locked: true));
+                walls.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, false, false));
+                continue;
+            }
             doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: true));
         }
 
@@ -557,6 +592,55 @@ public static class HiveInterior
                         DeckPlan.ConsoleKind.HiveOfficeChair,
                         (float)chair.X, (float)chair.Y, chair.DeckPlate));
                 }
+
+                // ── #821 · THE CUBICLES: A LEAF YOU PRESS, AND A SEAT INSIDE ──────────────────────────
+                //
+                // Owner, standing in the park: "we might want to hide from guards in one toilet cubicle we
+                // lock from inside :-D"
+                //
+                // TWO consoles per cell and deliberately not one, because they are two verbs and the room
+                // separates them: the LEAF is at the opening and the SEAT is at the pan, three du apart —
+                // which is exactly DeckPlan.InteractRadius, so a captain at the door presses the door and a
+                // captain at the pan presses the pan. A single console that meant "lock" or "sit down"
+                // depending on which half of a six-du box you stood in would be one key doing two things
+                // with no way for the plate to say which.
+                //
+                // The leaf's plate is the STATE (CubicleLock.PlateFor): a washroom door says VACANT or
+                // OCCUPIED, and that is the whole of what a guard walking past this room can read.
+                foreach (RingOffice.Stall cell in suite.Cubicles)
+                {
+                    bool over = cubiclesShut is not null
+                        && cubiclesShut.Contains(CubicleKey(level, in cell));
+
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveCubicle,
+                        (float)cell.DoorX, (float)cell.DoorY, CubicleLock.PlateFor(over)));
+
+                    // The seat takes the OFFICE CHAIR's verb, on the same seam and with the same snap
+                    // (#820): Core says where the seat is and this hangs the press on it. The plate is the
+                    // cell's own, so a captain reads which cubicle they are stepping into rather than
+                    // "AN OFFICE CHAIR" in a WC.
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveOfficeChair,
+                        (float)cell.SeatX, (float)cell.SeatY, cell.Plate));
+                }
+
+                // ── #821 · AND THE BASIN RUN, AS ONE FIXTURE THE LENGTH OF ITSELF ─────────────────────
+                //
+                // #791's E-bus, borrowed whole: the run is one console with a SPAN on it rather than a tap
+                // per basin, for the reason the bar desk is — four [E] dots in a row all opening the same
+                // beat would be three pieces of furniture pretending to be a choice. The span is taken off
+                // the published taps, so nothing here measures a length of porcelain.
+                if (suite.Basins.Count > 0)
+                {
+                    RingOffice.Basin first = suite.Basins[0], last = suite.Basins[^1];
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveBasin,
+                        (float)((first.X + last.X) / 2.0), (float)((first.Y + last.Y) / 2.0),
+                        RingOffice.BasinRunPlate,
+                        SpanX: (float)Math.Abs(last.X - first.X) / 2f,
+                        SpanY: (float)Math.Abs(last.Y - first.Y) / 2f));
+                }
             }
         }
 
@@ -745,4 +829,20 @@ public static class HiveInterior
     /// </summary>
     public static string LockKey(int level, UndergroundComplex.LockedDoor l) =>
         FormattableString.Invariant($"{level}|{l.X1:F2},{l.Y1:F2},{l.X2:F2},{l.Y2:F2}");
+
+    /// <summary>
+    /// #821 · One key per CUBICLE per floor, keyed on the cell's own box for <see cref="LockKey"/>'s reason
+    /// — a floor carries a row of cubicles all plated CUBICLE 1 · STEP IN, one per big suite plus the row in
+    /// the public washroom, and a captain who shut one of them has not shut the others. The generator is pure
+    /// and deterministic per (body, level), so the same cell keys the same on every rebuild.
+    /// </summary>
+    /// <summary>#821 · One leaf, as the string the doorway sweep matches on. Its own geometry and nothing
+    /// else, so a cell's door and the floor's copy of that same door key identically — they ARE the same
+    /// record, and this is only how the sweep says so without a nested loop per floor.</summary>
+    private static string LeafKey(in SurfaceLayout.Doorway d) =>
+        FormattableString.Invariant($"{d.X1:F2},{d.Y1:F2},{d.X2:F2},{d.Y2:F2}");
+
+    public static string CubicleKey(int level, in RingOffice.Stall stall) =>
+        FormattableString.Invariant(
+            $"wc|{level}|{stall.X0:F2},{stall.Y0:F2},{stall.X1:F2},{stall.Y1:F2}");
 }

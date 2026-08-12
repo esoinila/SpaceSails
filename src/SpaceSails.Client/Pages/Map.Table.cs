@@ -471,6 +471,17 @@ public partial class Map
         public (double X, double Y)? StepOff { get; init; }
 
         /// <summary>
+        /// #821 · WHICH WC CUBICLE THIS SEAT IS IN, by <c>HiveInterior.CubicleKey</c>, or null anywhere else.
+        ///
+        /// <para>An office chair and a cubicle's pan are the same POSTURE and the same panel — the seam
+        /// <see cref="Office"/> already opened — and what the cubicle adds is one question the ladder has to
+        /// be able to ask: <b>is the catch over right now?</b> The key is carried rather than the answer,
+        /// because the answer changes while you are sitting on it: a captain can sit down in an open cubicle,
+        /// reach back, turn the catch, and the spread has to become allowed on that very frame.</para>
+        /// </summary>
+        public string? CubicleKey { get; init; }
+
+        /// <summary>
         /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
         ///
         /// <para>Deliberately NOT <see cref="Solo"/>, and the distinction is the whole of the bench rung.
@@ -568,14 +579,33 @@ public partial class Map
                     continue;
                 }
 
+                // #842 · A FULL TOP REFUSES OUT LOUD — and it answers FIRST, before who is at it is even
+                // asked, because "there is nowhere to sit" is true of every table with no chair left whoever
+                // is in them. Core's own arithmetic (#840's honest Heads), never a count taken here.
+                //
+                // THE PRESS IS CONSUMED (true), which is the whole of the fix: falling through returned
+                // false, and Map.Deck's arm then raised the patron's one-breath card — so [E] at a table
+                // you cannot join quietly did a different thing instead of saying no. #603's law is that a
+                // refusal is SAID, and this is the sentence.
+                //
+                // AND NOTHING ELSE HAPPENS, EVER, however many times it is pressed. The card is not behind a
+                // second press: what is being said at a full top is something you overhear by SITTING
+                // NEARBY, which the neighbour machinery already owns, and a press that eventually gave in
+                // would teach that leaning on strangers works.
+                if (top.Free <= 0)
+                {
+                    ShowPulseMessage(CanteenTable.TableIsFullLine);
+                    return true;
+                }
+
                 // #751 · WHICH TIER, off Core's own list. A background patron is a Stranger and gets the
                 // thin scene; one of the ten named regulars is matched by their plate exactly as before.
                 CanteenTable.Who who = top.Stranger
                     ? CanteenTable.Who.Stranger
                     : CanteenTable.WhoIs(top.Plate);
-                if (who == CanteenTable.Who.None || top.Free <= 0 || top.Plate is not { } plate)
+                if (who == CanteenTable.Who.None || top.Plate is not { } plate)
                 {
-                    return false;   // somebody who is not a scene, or a top with nowhere left to sit.
+                    return false;   // somebody who is not a scene: #709's one breath, and nothing else.
                 }
 
                 // #820 · WHICH CHAIR, off Core's own ring, read before the body moves. The nearest one the
@@ -1102,7 +1132,12 @@ public partial class Map
             TableAnswered(ex, t, SittingAlone.Wait,
                 new CanteenTable.Answer(WithTheBodysFootnote(
                     WithTheBodysFootnote(
-                        t.Office
+                        // #821 · …and a CUBICLE is not an office either. A chair creaking down the row and
+                        // lamps over a garden, read from inside a locked WC, would be the room's answer
+                        // describing a room the captain is not in — #740's fault with a partition round it.
+                        t.CubicleKey is { Length: > 0 }
+                            ? CubicleLock.NothingHappens(beat)
+                            : t.Office
                             ? RingOffice.NobodyCame(beat)
                             : t.Bench
                                 ? ParkBenches.NobodyCame(beat)

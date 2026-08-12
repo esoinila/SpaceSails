@@ -21,9 +21,23 @@ namespace SpaceSails.Client.Pages;
 /// there is a real window in which you can see them and they cannot see you. That window is the whole
 /// stealth verb: watch the round, wait, step out behind it.</para>
 ///
-/// <para><b>Nothing in this file can start a chase.</b> A sighting raises a card, the card reads the wallet,
-/// and the worst outcome is a walk back to the lift. That is the owner's law, and it is enforced by there
-/// being no other branch.</para>
+/// <para><b>A sighting still cannot start a chase, and that is still the default.</b> A round that registers
+/// somebody standing there hails, walks over, reads the wallet, and at worst walks you back to the lift.
+/// That is the owner's original law and it is untouched.</para>
+///
+/// <para><b>#835 · THE OTHER BRANCH, WHICH IS EARNED AND NEVER AMBIENT.</b> Owner, reversing his own
+/// standing law with the implementation named: <i>"they need to catch us .... like reevers :-D we could use
+/// that code :-D"</i> — and, in the same breath, <i>"just no damage by default :-D"</i>. So there are now
+/// exactly three doors into a run (<see cref="PatrolBeat.Provocation"/>): walking off on a hail for the
+/// SECOND time in a watch, being watched taking a hasp off with a gun, and having been booked
+/// <see cref="PatrolBeat.EscortsAWatchAllows"/> times already. Every one of them is a thing the captain did,
+/// and the paragraph above is what happens on every floor where none of them has. He calls it in before he
+/// moves (<see cref="TheRadioCall"/>), comes on the Old Ones' own homing step at a person's gait
+/// (<see cref="RunAfterTheCaptain"/> → <c>ReeverChase.Step</c>), and ends either with a hand on your arm
+/// (<see cref="HeHasYou"/>) or standing in a corridor watching you go (<see cref="HeLosesYou"/>). He is
+/// never removed from the floor by either. <b>Nothing on this road touches the captain's health</b> — there
+/// is no <c>HitsTaken</c> in this file and there never will be — and the ladder it feeds is the escort you
+/// already know, which past the threshold simply keeps going up (<see cref="TheKickOut"/>).</para>
 ///
 /// <para><b>#833 · AND EVERY BEAT OF IT IS WALKED.</b> Two things in this file used to be sentences over
 /// placements, and the owner caught both in one evening on B2. The card went up the frame he NOTICED you, at
@@ -110,6 +124,53 @@ public sealed partial class Map
         /// captain, and the captain's shoulder), and an A* every frame is not free in WASM — nor is it what a
         /// man crossing a corridor does.</summary>
         public double RePlanIn;
+
+        /// <summary>#835 · Whether this one has called it in and is coming at a run. False for every guard on
+        /// every floor until the captain earns it, which is the whole of the ambient law.</summary>
+        public bool AfterYou;
+
+        /// <summary>#835 · Why he is. Carried on the man rather than on the page because it is what he SAYS
+        /// when he reaches you (<see cref="PatrolBeat.WhyHeCame"/>), and a reason kept anywhere else could
+        /// be a different reason by the time the card goes up.</summary>
+        public PatrolBeat.Provocation Why;
+
+        /// <summary>#835 · How long he has been at it. Bounded by
+        /// <see cref="PatrolBeat.AfterYouSecondsCap"/> — he is a retired cop, not a wolf.</summary>
+        public double AfterYouFor;
+
+        /// <summary>#835 · Seconds of radio left before he moves. He stands still for this, and that beat IS
+        /// the warning the run is starting.</summary>
+        public double CallingIn;
+
+        /// <summary>#835 · Which hand he takes a wall on when the direct run is spent — <c>ReeverChase</c>'s
+        /// own stable handedness, so he rounds a corner instead of dithering at the face of it. Fixed when
+        /// the run starts, per #324's reason: a side that changed frame to frame is a body that never gets
+        /// anywhere.</summary>
+        public int WallSide = 1;
+
+        /// <summary>
+        /// #821 · WAS HE LOOKING AT YOU WHEN THE CATCH WENT OVER?
+        ///
+        /// <para>THE one bit the whole hide turns on. It is written by the press
+        /// (<c>Map.Cubicle.ShutTheCubicle</c>) off <see cref="PatrolBeat.Notices"/> — the same predicate the
+        /// challenge is gated on, over the same sight blockers, on the frame the catch turned — and never
+        /// re-derived here, because a partition goes across the opening on the very next rebuild and every
+        /// answer after that would be "no".</para>
+        ///
+        /// <para>False is the ordinary case and the one the feature is FOR: a man who came round the corner
+        /// afterwards is looking at a door with OCCUPIED on it, which is what a washroom door says all
+        /// day.</para>
+        /// </summary>
+        public bool SawYouShutIt;
+
+        /// <summary>#821 · Whether he is standing outside a shut cubicle waiting for it to open. The round is
+        /// suspended while it is true and resumes from wherever he ends up — a wait is a detour, exactly as a
+        /// walk-up is, and never a new state machine.</summary>
+        public bool Knocking;
+
+        /// <summary>#821 · Whether the two knuckles have already landed. Once per wait: a man who knocked
+        /// twice would be a loop, and the whole of the line is that he does not knock again.</summary>
+        public bool Knocked;
     }
 
     private readonly List<Guard> _guards = [];
@@ -157,8 +218,47 @@ public sealed partial class Map
 
     /// <summary>#833 · Are the captain's controls being held by somebody walking them off the floor? Read by
     /// the deck's own stepper and by its key handler — the same one answer, so the keys and the legs cannot
-    /// disagree about who is steering.</summary>
+    /// disagree about who is steering.
+    ///
+    /// <para>#835 · A run is deliberately NOT in here. The controls are held for the walk out and for nothing
+    /// else: a captain being come after must be able to run, or rung five ("escape is possible") would be a
+    /// sentence with no keys behind it.</para></summary>
     private bool CaptainIsUnderEscort => _escort is not null;
+
+    // ── #835 · WHAT THE WATCH REMEMBERS ───────────────────────────────────────────────────────────────
+    //
+    // Two counters and the shift they belong to. They are on the PAGE rather than on a guard because they
+    // are facts about the captain's evening, not about a man: the owner's complaint was that the same FACE
+    // had been booked four times, and the fourth guard to write it down is as entitled to know as the first.
+    // They survive a floor change (the floors are one site's evening) and they turn over with the watch, the
+    // same clock everything else down here turns over on.
+
+    /// <summary>#835 · Which watch <see cref="_escortsThisWatch"/> and <see cref="_walkedAwayThisWatch"/>
+    /// belong to. Anything else is last night's paperwork.</summary>
+    private long _patrolWatch = long.MinValue;
+
+    /// <summary>#835 · How many times a round has walked the captain back to a car this watch. The number the
+    /// owner's own evening produced, and the one both halves of the escalation ask
+    /// (<see cref="PatrolBeat.BookedTooOften"/>).</summary>
+    private int _escortsThisWatch;
+
+    /// <summary>#835 · How many hails the captain has simply walked away from this watch. The first is free
+    /// and stays free.</summary>
+    private int _walkedAwayThisWatch;
+
+    /// <summary>#835 · Whether the walk in progress ends at the sky rather than at the car. Decided ONCE,
+    /// where the walk begins, off the same predicate the card's own sentence was composed from — so the man
+    /// who said he was not pressing the button for your floor is the man who does not press it.</summary>
+    private bool _kickOutDue;
+
+    /// <summary>#835 · The escort has reached the car and the ride up is owed. Armed rather than taken, the
+    /// same way <see cref="_escortDue"/> is: the ride happens on a frame of its own, outside the loop that is
+    /// walking the list of guards it is about to empty.</summary>
+    private bool _kickOutRideDue;
+
+    /// <summary>#835 · How long the KICKED OUT plate stays painted on the shed wall. Counted down on the
+    /// surface, where nothing else in this file runs, and one rebuild takes it away again.</summary>
+    private double _kickedOutPlateFor;
 
     /// <summary>Dev cheat: <c>?patrol=N</c> forces N rounds onto whatever restricted floor you boot onto,
     /// so the scene is reachable without waiting for a watch that rolled two.</summary>
@@ -197,8 +297,37 @@ public sealed partial class Map
         _escortSeconds = 0;
         _escortSaidPumps = false;
 
+        // #835 · …and so does the run and the ride it was owed. A captain who got into the car mid-run has
+        // ESCAPED — rung five, and the honest one — so the man who was coming is left standing on a floor
+        // this page is no longer simulating. The ride owed is cleared for the same reason it is cleared at
+        // the top of TheKickOut: it has either just happened or it never will.
+        _kickOutDue = false;
+        _kickOutRideDue = false;
+
+        // #821 · …and so does the hide. A floor change is a new set of doors and a new set of men, and a
+        // "he walked past" line kept from the floor above would be a beat about a room nobody is in.
+        //
+        // The CATCHES go with it, and the reason is in the field's own doc: a catch is a thing a hand is
+        // holding shut, and the hand has just ridden the lift. Today it cannot happen — the only way out of
+        // a shut cubicle is to turn the catch back — but a door left OCCUPIED on a floor nobody is standing
+        // on would be a room the building had sealed against itself, forever, with nothing to say why. The
+        // set is the excursion's rather than the vault's for the same reason (see SurfaceExcursion).
+        _walkedPastSaid = false;
+        ex.CubiclesShut.Clear();
+
         string bodyId = ex.Stop.Body.Id;
         int level = ex.Floor;
+
+        // #835 · THE WATCH'S OWN MEMORY, turned over with the shift and with nothing else. Asked before the
+        // patrolled-floor gate below, because a captain who has been thrown out and has come back down to a
+        // floor with nobody on it is still the same evening.
+        if (_patrolWatch != ex.CanteenWatch)
+        {
+            _patrolWatch = ex.CanteenWatch;
+            _escortsThisWatch = 0;
+            _walkedAwayThisWatch = 0;
+        }
+
         if (!PatrolBeat.IsPatrolled(bodyId, level))
         {
             return;
@@ -243,6 +372,11 @@ public sealed partial class Map
     /// card. Called once a frame from <c>StepSurface</c>.</summary>
     private void AdvancePatrol(double dtRealSeconds)
     {
+        // #835 · …and the one clause that runs where nothing else here does. The KICKED OUT plate is painted
+        // on the SURFACE, which is the one place this file has no guards, no beat and no floor — so its clock
+        // is above the gate rather than behind it.
+        FadeTheKickedOutPlate(dtRealSeconds);
+
         if (_guards.Count == 0 || _surface is not { } ex || ex.Floor >= 0)
         {
             return;
@@ -265,6 +399,16 @@ public sealed partial class Map
             BeginTheWalkBack(due, walls);
         }
 
+        // #835 · …and the same clause for the rung above it. The ride up is armed at the car and taken here,
+        // on a frame of its own: the ride empties the list of guards this method is about to walk, and a loop
+        // that cleared its own collection mid-iteration is a bug looking for a rare afternoon.
+        if (_kickOutRideDue && _viewObject is null)
+        {
+            _kickOutRideDue = false;
+            TheKickOut(ex);
+            return;
+        }
+
         // #793 · DOES ANYBODY HAVE TO STOP BECAUSE THE CAPTAIN DID? Owner, on the bench: "it is a good
         // gumshoe move to see if anyone is following us by foot, as they would need to stop moving also."
         // The question is asked of Core once a frame, of every mover, and the answer today is always no —
@@ -272,6 +416,18 @@ public sealed partial class Map
         // the SEAM: the hold lives on the stepper every mover already goes through, so nothing has to be
         // rebuilt the day something on this floor is actually following somebody.
         bool sitting = SeatedOnABenchInTheOpen;
+
+        // ── #821 · IS THE CAPTAIN SHUT INTO A CUBICLE? ─────────────────────────────────────────────────
+        //
+        // Asked ONCE a frame and handed to everything below, so the door that is drawn shut, the door the
+        // round cannot see through and the door the exposure ladder calls private are one door.
+        //
+        // THE SENTRY'S OWN LAW LIVES IN THE TWO BRANCHES IT OPENS, and in nothing else: a guard who watched
+        // the catch go over stands outside it (WaitAtTheDoor); a guard who did not walks his beat past an
+        // OCCUPIED plate without breaking stride. IT BUYS TIME, NOT SAFETY — there is no branch here in
+        // which a locked door ends a challenge, and CubicleLock.OpensALockedCubicle is a constant false
+        // rather than a rule, so no future edit can quietly make one.
+        (RingOffice.Stall Cell, string Key)? hide = TheCubicleTheCaptainIsShutIn(ex);
 
         bool anythingHeard = false;
         for (int i = 0; i < _guards.Count; i++)
@@ -289,6 +445,45 @@ public sealed partial class Map
                 g.Held = false;
                 WalkTheEscort(g, dt, walls);
             }
+            else if (hide is { } shut && CubicleLock.WaitsAtTheDoor(g.SawYouShutIt))
+            {
+                // #821 · He watched the catch go over. He does not open it — nothing in this game does
+                // (CubicleLock.OpensALockedCubicle) — he walks over, knocks once, and waits.
+                //
+                // ABOVE #835's RUN, and that is the whole of what the door is worth. A man coming at a run
+                // cannot run through a partition: he arrives, and then he is a man standing outside a door.
+                // What he is NOT is finished — he keeps AfterYou and he keeps his reason, so opening the
+                // door gives the captain back the exact rung of the ladder they ducked out of rather than a
+                // softer one. IT BUYS TIME, NOT SAFETY, and this branch is where that sentence is spent.
+                g.Held = false;
+                WaitOutsideTheCubicle(g, dt, walls, in shut.Cell);
+            }
+            else if (g.AfterYou)
+            {
+                // #835 · The other man who is not walking a round. He is held off the bench law for the
+                // escort's own reason and one of his own: #793's hold is a law about a TAIL — something
+                // following you covertly, which has to stop when you stop or the trick is up. A man who has
+                // said your floor and your direction into a radio is not being covert about anything.
+                //
+                // #821 · A run that did NOT see the catch turn carries on to where you were, which is what
+                // losing somebody looks like, and #835's own cap ends it. A locked door is not a smoke bomb.
+                g.Held = false;
+                RunAfterTheCaptain(ex, g, dt, walls);
+            }
+            else if (hide is not null && g.WalkingUp)
+            {
+                // …and a man who was crossing the floor to somebody who is now behind a door has lost them.
+                //
+                // #835 · NOT BOOKED AS WALKING OFF, and the distinction is exact rather than generous. This
+                // branch is only ever reached by a guard who did NOT see the catch turn — the man who did is
+                // two branches up, knocking — so what happened is that somebody came round a corner into an
+                // empty washroom. That is the GROUND ending it, and #835's own rule is that a refusal by the
+                // ground may never be booked against the man standing in front of it. The captain who ducks
+                // in where he can see them does not get this branch at all; they get the knock, which is the
+                // whole of what the door was ever worth.
+                GiveUpTheHail(g, i, walkedAway: false);
+                g.Held = false;
+            }
             else if (g.Held)
             {
                 // A tail that has been made cannot walk on past you. It stops where it stopped, and it drops
@@ -298,7 +493,7 @@ public sealed partial class Map
             }
             else if (g.WalkingUp)
             {
-                WalkUpToTheCaptain(ex, g, dt, walls);
+                WalkUpToTheCaptain(ex, g, i, dt, walls);
             }
             else
             {
@@ -323,7 +518,140 @@ public sealed partial class Map
             LogAutopilotEvent(PatrolBeat.HeardLine);
         }
 
-        StopTheRoundIfAnybodySeesYou(sight);
+        // #821 · A SHUT DOOR IS NOT A DISGUISE, IT IS A WALL. Nobody new registers the captain while it is
+        // over — not because the door hides them, but because there is a partition between the two of them
+        // and PatrolBeat.Notices is a sightline question. Asked here, once, rather than inside the loop: a
+        // hail raised on the frame the catch turned would be a man challenging a door.
+        if (hide is null)
+        {
+            StopTheRoundIfAnybodySeesYou(sight);
+        }
+        else
+        {
+            TheRoundWalkedPast();
+        }
+    }
+
+    // ── #821 · THE HIDE ───────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#821 · Which cubicle the captain is shut into, or null. One question, off the one set of
+    /// shut cells the deck itself is rebuilt from — a second opinion about which doors are over is a second
+    /// answer to whether the captain is hidden at all.</summary>
+    private (RingOffice.Stall Cell, string Key)? TheCubicleTheCaptainIsShutIn(SurfaceExcursion ex) =>
+        CubicleAround(ex) is { Cell: { } cell, Key: { } key } && ex.CubiclesShut.Contains(key)
+            ? (cell, key)
+            : null;
+
+    /// <summary>#821 · Whether the round has already been heard going past this hide. One line per shut
+    /// door: it is the reward for having got in unseen, and a sentence repeated every time a man crosses the
+    /// room would be a narrator rather than a beat.</summary>
+    private bool _walkedPastSaid;
+
+    /// <summary>
+    /// #821 · A ROUND THAT NEVER SAW YOU, HEARD THROUGH A PARTITION.
+    ///
+    /// <para>Said once, and only for somebody who has actually come into the room — inside
+    /// <see cref="PatrolBeat.NoticeDu"/>, which is the reach at which he WOULD have registered you had the
+    /// door been open. That is the whole point of the sentence: it is the moment the lock paid, and a captain
+    /// who never hears it has not learned that the plate did nothing for them.</para>
+    /// </summary>
+    private void TheRoundWalkedPast()
+    {
+        if (_walkedPastSaid)
+        {
+            return;
+        }
+
+        foreach (Guard g in _guards)
+        {
+            if (g.SawYouShutIt)
+            {
+                continue;
+            }
+
+            double dx = g.X - _avatarX, dy = g.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) > PatrolBeat.NoticeDu * PatrolBeat.NoticeDu)
+            {
+                continue;
+            }
+
+            _walkedPastSaid = true;
+            ShowPulseMessage(CubicleLock.WalkedPastLine);
+            LogAutopilotEvent(CubicleLock.WalkedPastLine);
+            return;
+        }
+    }
+
+    /// <summary>
+    /// #821 · HE WALKS OVER, KNOCKS ONCE, AND WAITS.
+    ///
+    /// <para>Owner's law, word for word: <i>"A guard who SAW you duck in knocks, then waits, then the escort
+    /// line is waiting when you open the door."</i> So this method has no branch that opens anything, no
+    /// timer that gives up, and no road to a card — the challenge is raised by the door being OPENED
+    /// (<c>Map.Cubicle.OpenTheCubicle</c>), through #833's own walk-up, face to face at arm's length.</para>
+    ///
+    /// <para>He walks to Core's published STEP square (<see cref="RingOffice.Stall.StepX"/>), which is a
+    /// door's clearance outside the leaf — a coordinate the placer chose, never one measured here — on the
+    /// same A* and the same gait his round uses, because it is the same man doing the same walk.</para>
+    /// </summary>
+    private void WaitOutsideTheCubicle(
+        Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, in RingOffice.Stall cell)
+    {
+        g.WalkingUp = false;
+        g.RePlanIn -= dt;
+
+        double dx = cell.StepX - g.X, dy = cell.StepY - g.Y;
+        if ((dx * dx) + (dy * dy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu)
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            g.Route = null;
+            g.Facing = System.Math.Atan2(cell.DoorY - g.Y, cell.DoorX - g.X);
+
+            if (!g.Knocking)
+            {
+                g.Knocking = true;
+                g.Standing = 0;
+            }
+            if (!g.Knocked)
+            {
+                g.Knocked = true;
+                ShowPulseMessage(CubicleLock.KnockLine, PulseRank.Beat);
+                LogAutopilotEvent(CubicleLock.KnockLine);
+                ShowPulseMessage(CubicleLock.BoughtTimeLine);
+                RendererInterop.PlayCue("blip");
+            }
+            return;
+        }
+
+        if (g.Route is not { Active: true } || g.RePlanIn <= 0)
+        {
+            g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+            AutoWalk.Attempt planned = AutoWalk.Plan(
+                true, new DeckReachability.Point(g.X, g.Y),
+                new DeckReachability.Point(cell.StepX, cell.StepY),
+                walls, DeckPlan.AvatarRadius,
+                PatrolBeat.LatticeFor(
+                    new PatrolBeat.Stop(g.X, g.Y, "here"),
+                    new PatrolBeat.Stop(cell.StepX, cell.StepY, "the cubicle door"),
+                    MoonSurface.ExpeditionField()));
+
+            if (planned.Route is null)
+            {
+                // The ground will not give him a route to a door he watched shut. He is not left crossing a
+                // washroom forever: he forgets he saw anything and goes back on the round, which is the
+                // mildest honest outcome and the only one this file has ever had.
+                g.SawYouShutIt = false;
+                g.Knocking = false;
+                g.Knocked = false;
+                g.Route = null;
+                return;
+            }
+            g.Route = planned.Route;
+        }
+
+        g.Knocking = false;
+        SpendTheStride(g, dt, walls);
     }
 
     /// <summary>
@@ -473,7 +801,7 @@ public sealed partial class Map
     /// standing. The last two put him back on his round with the cooldown running.</para>
     /// </summary>
     private void WalkUpToTheCaptain(
-        SurfaceExcursion ex, Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+        SurfaceExcursion ex, Guard g, int index, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         g.WalkUpFor += dt;
         g.RePlanIn -= dt;
@@ -497,11 +825,13 @@ public sealed partial class Map
             return;
         }
 
-        // WALKING AWAY IS ALLOWED. Owner's own note on the approach: it is its own tell. Nothing follows and
-        // nothing escalates — that is #835's question, and this file still has no branch that could.
+        // WALKING AWAY IS ALLOWED — and #835 did not take that away. Owner's own note on the approach: it is
+        // its own tell. The FIRST one in a watch still ends exactly as it always has, with a man stopping
+        // where he is and writing something short. It is doing it twice that <see cref="GiveUpTheHail"/> now
+        // has an answer for, and that answer is a whole rung further up the ladder.
         if (!PatrolBeat.StillComing(g.WalkUpFor, g.X, g.Y, _avatarX, _avatarY))
         {
-            GiveUpTheHail(g);
+            GiveUpTheHail(g, index, walkedAway: true);
             return;
         }
 
@@ -519,8 +849,10 @@ public sealed partial class Map
             if (planned.Route is null)
             {
                 // He can see you and cannot walk to you — a window, a gallery, the far side of a rail. That
-                // is not a challenge, it is a man deciding it is not worth the detour.
-                GiveUpTheHail(g);
+                // is not a challenge, it is a man deciding it is not worth the detour. #835 · And it is NOT
+                // walking away: the captain did nothing, so it may never be counted as the second time he
+                // did it. The ground refused him, and the ground is not the captain's fault.
+                GiveUpTheHail(g, index, walkedAway: false);
                 return;
             }
             g.Route = planned.Route;
@@ -529,9 +861,19 @@ public sealed partial class Map
         SpendTheStride(g, dt, walls);
     }
 
-    /// <summary>#833 · He thinks better of it and goes back to work — from wherever the walk-up left him,
-    /// with the cooldown running so the floor does not simply hail you again on the next frame.</summary>
-    private void GiveUpTheHail(Guard g)
+    /// <summary>
+    /// #833 · He thinks better of it and goes back to work — from wherever the walk-up left him, with the
+    /// cooldown running so the floor does not simply hail you again on the next frame.
+    ///
+    /// <para>#835 · …unless this is the second time tonight you have done it to him. The first is free and
+    /// stays free (<see cref="PatrolBeat.HailsYouMayWalkAwayFrom"/>) — a man who followed you the first time
+    /// would make #833's whole approach a trap rather than a decision. The second is one of the three things
+    /// that earn a run, and the count is the WATCH's, not this man's: walking off on two different guards is
+    /// walking off twice.</para>
+    /// </summary>
+    /// <param name="walkedAway">Whether the CAPTAIN ended it. False when the floor did — no route, a rail, a
+    /// gallery — and a refusal by the ground may never be booked against the man standing in front of it.</param>
+    private void GiveUpTheHail(Guard g, int index, bool walkedAway)
     {
         g.WalkingUp = false;
         g.WalkUpFor = 0;
@@ -540,6 +882,13 @@ public sealed partial class Map
         g.Vx = 0;
         g.Vy = 0;
         g.SinceStop = 0;
+
+        if (walkedAway && PatrolBeat.WalkingOffEarnsIt(++_walkedAwayThisWatch))
+        {
+            TheRadioCall(g, PatrolBeat.Provocation.WalkedAwayTwice, index);
+            return;
+        }
+
         ShowPulseMessage(PatrolBeat.WalkedAwayLine);
         LogAutopilotEvent(PatrolBeat.WalkedAwayLine);
     }
@@ -568,18 +917,29 @@ public sealed partial class Map
 
         foreach (Guard g in _guards)
         {
-            if (g.WalkingUp)
+            if (g.WalkingUp || g.AfterYou)
             {
                 return;
             }
         }
 
-        foreach (Guard g in _guards)
+        for (int i = 0; i < _guards.Count; i++)
         {
+            Guard g = _guards[i];
             if (g.SinceStop < PatrolBeat.AfterTheStopSeconds
                 || !PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight))
             {
                 continue;
+            }
+
+            // #835 · THE ONE PLACE A SIGHTING CAN BUY ANYTHING BUT A HAIL, and it is not the sighting that
+            // buys it — it is the four lines already on the clipboard. Owner: the fiction strains when the
+            // same guard books the same face four times and just keeps walking. Everything else about this
+            // loop is #833's, unchanged: notice, hail, walk over, read.
+            if (PatrolBeat.BookedTooOften(_escortsThisWatch))
+            {
+                TheRadioCall(g, PatrolBeat.Provocation.BookedTooManyTimes, i);
+                return;
             }
 
             TheHail(g);
@@ -676,6 +1036,15 @@ public sealed partial class Map
     private void BeginTheWalkBack(Guard g, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
+
+        // #835 · WHICH FLOOR THIS WALK ENDS ON, decided ONCE and here — above the route, so that even the
+        // pathological cut below still ends where the card said it would. It is asked of the escorts BEFORE
+        // this one, which is the same number and the same predicate the card in front of the captain was
+        // composed from a moment ago (PatrolBeat.TheGuardHasYou): the man who said he was not pressing the
+        // button for your floor is the man who does not press it. Two answers to one question, worked out in
+        // two places, is the sentence-vs-sim bug class this feature has already paid for twice.
+        _kickOutDue = PatrolBeat.BookedTooOften(_escortsThisWatch);
+        _escortsThisWatch++;
 
         AutoWalk.Attempt planned = AutoWalk.Plan(
             true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(sx, sy),
@@ -786,7 +1155,18 @@ public sealed partial class Map
         double adx = sx - _avatarX, ady = sy - _avatarY;
         if (heIsThere && (adx * adx) + (ady * ady) <= PatrolBeat.AtTheCarDu * PatrolBeat.AtTheCarDu)
         {
+            bool up = _kickOutDue;
             EndTheEscort(g);
+
+            // #835 · THE WALK THAT KEEPS GOING. Owner: "If we get kicked out then maybe we end up back to the
+            // surface :-D" — and the picture is all existing geography, so this is one longer walk and no new
+            // machinery. He does not go back to his round from here; he gets in with you.
+            if (up)
+            {
+                _kickOutRideDue = true;
+                return;
+            }
+
             ShowPulseMessage(PatrolBeat.EscortDoneLine, PulseRank.Beat);
             LogAutopilotEvent(PatrolBeat.EscortDoneLine);
             return;
@@ -848,6 +1228,14 @@ public sealed partial class Map
         StandCaptainAt(sx, sy, "the guard walks you back to the lift");
         ShowPulseMessage(PatrolBeat.EscortCutLine, PulseRank.Beat);
         LogAutopilotEvent(PatrolBeat.EscortCutLine);
+
+        // #835 · …and a cut may shorten the walk but it may never change where it ends. If the card said he
+        // was riding up with you, he rides up with you: a jump-cut that quietly downgraded a kick-out to an
+        // escort would be the sentence and the sim disagreeing about the one consequence that costs anything.
+        if (_kickOutDue)
+        {
+            _kickOutRideDue = true;
+        }
     }
 
     // ── WHERE THE PASS COMES FROM ─────────────────────────────────────────────────────────────────────
@@ -875,6 +1263,359 @@ public sealed partial class Map
         ShowPulseMessage(PatrolBeat.BadgeIssuedLine);
         LogAutopilotEvent(PatrolBeat.BadgeIssuedLine);
         FileNote(PatrolBeat.BadgeGist, PatrolBeat.BadgeGlyph);
+    }
+
+    // ── #835 · THE OTHER BRANCH ───────────────────────────────────────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11: "they need to catch us .... like reevers :-D we could use that code
+    // :-D" … "just no damage by default :-D" … "If we get kicked out then maybe we end up back to the surface
+    // :-D".
+    //
+    // THREE THINGS ABOUT EVERYTHING BELOW, and all three are what keep it from being a stealth level:
+    //
+    //   1. IT IS EARNED. The only callers of TheRadioCall are the three provocations, and every one of them
+    //      is a thing the captain chose to do. A round that merely sees somebody still hails (#833).
+    //   2. HE IS PROCEDURAL, NOT FERAL. The radio comes first and he stands still to say it, which is the
+    //      warning; then he runs on the Old Ones' own homing step (the owner named that code) at a PERSON's
+    //      gait, so he finds a doorway rather than grinding his shoulder on the jamb.
+    //   3. NOTHING HERE TOUCHES THE BODY. There is no HitsTaken in this file, no swing, no roll. Being caught
+    //      costs one pip of nerve and the rest of your evening; the horror stays with the Old Ones.
+    //
+    // AND HE CANNOT OPEN ANYTHING YOU CANNOT. The run is spent through SurfaceCollision.Slide against
+    // _deckPlan.CollisionField — the captain's own walls, the same list his own legs are stepped against — so
+    // a door that is shut for the captain is a wall for the man behind him, by construction rather than by a
+    // clause. That is the whole of rung five's promise about a locked room: whatever the door's state is, it
+    // is one state, and both of them are asking it.
+
+    /// <summary>
+    /// #835 · HE SAYS IT INTO THE RADIO, AND THEN HE COMES. The one road into a run, so a fourth trigger
+    /// invented tomorrow has to come through here and be a <see cref="PatrolBeat.Provocation"/> to do it.
+    ///
+    /// <para>The round is suspended while it lasts and resumes from wherever he ends up, exactly as a walk-up
+    /// does — a run is a longer detour, never a second state machine.</para>
+    /// </summary>
+    /// <param name="index">His place in the list, which fixes the hand he takes a wall on. Two men rounding a
+    /// slab from opposite ends is <c>ReeverChase</c>'s own idiom and its own reason.</param>
+    private void TheRadioCall(Guard g, PatrolBeat.Provocation why, int index)
+    {
+        if (!PatrolBeat.EarnsIt(why))
+        {
+            return;   // the gate, asked rather than assumed: nothing may run on Provocation.None
+        }
+
+        g.AfterYou = true;
+        g.Why = why;
+        g.AfterYouFor = 0;
+        g.CallingIn = PatrolBeat.CallItInSeconds;
+        g.WallSide = index % 2 == 0 ? 1 : -1;
+        g.WalkingUp = false;
+        g.WalkUpFor = 0;
+        g.Standing = 0;
+        g.Route = null;
+        g.Retries = 0;
+        g.SinceStop = 0;
+        g.Vx = 0;
+        g.Vy = 0;
+        g.Facing = System.Math.Atan2(_avatarY - g.Y, _avatarX - g.X);
+
+        ShowPulseMessage(PatrolBeat.CallsItInLine, PulseRank.Beat);
+        LogAutopilotEvent(PatrolBeat.CallsItInLine);
+        RendererInterop.PlayCue("blip");
+    }
+
+    /// <summary>
+    /// #835 · ONE FRAME OF BEING COME AFTER. <c>ReeverChase.Step</c>, which is the code the owner pointed at,
+    /// with the one thing a uniform changes about it: the legs are <c>Gait.Person</c>, so he goes through the
+    /// doorway a shambler would grind against.
+    ///
+    /// <para><b>He is not planned and that is deliberate.</b> The round and the walk-up are A*, because a man
+    /// doing his job takes a route; a man running after somebody does not plan, he comes at you and grazes
+    /// the walls. The handrail is #324's own crude try-perpendicular and it is the whole of his cleverness —
+    /// which is why a corner is worth taking and a shut door is worth being behind.</para>
+    ///
+    /// <para>Three ways out, and none of them removes him from the floor: he has you
+    /// (<see cref="HeHasYou"/>), he loses you (<see cref="HeLosesYou"/>), or the captain rides the car and
+    /// the whole floor stops being simulated — which is the escape rung five is about.</para>
+    /// </summary>
+    private void RunAfterTheCaptain(
+        SurfaceExcursion ex, Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        g.AfterYouFor += dt;
+
+        // THE RADIO FIRST, AND HE STANDS STILL FOR IT. This beat is the warning, and a man who talked while
+        // he ran would have spent it. He is off the fan for it too, honestly — he is not travelling.
+        if (g.CallingIn > 0)
+        {
+            g.CallingIn -= dt;
+            g.Vx = 0;
+            g.Vy = 0;
+            g.Facing = System.Math.Atan2(_avatarY - g.Y, _avatarX - g.X);
+            return;
+        }
+
+        if (PatrolBeat.HasYou(g.X, g.Y, _avatarX, _avatarY))
+        {
+            HeHasYou(ex, g);
+            return;
+        }
+
+        if (!PatrolBeat.StillAfterYou(g.AfterYouFor, g.X, g.Y, _avatarX, _avatarY))
+        {
+            HeLosesYou(g);
+            return;
+        }
+
+        double startX = g.X, startY = g.Y;
+        (g.X, g.Y) = ReeverChase.Step(
+            g.X, g.Y, _avatarX, _avatarY, PatrolBeat.AfterYouSpeed * dt,
+            // No barrier. The Old Ones are penned on their side of a crew-only door; a man on the payroll is
+            // already inside the building and there is nothing down here he is not allowed past. What stops
+            // him is the walls, and the walls are the captain's own.
+            barrierY: double.PositiveInfinity,
+            walls, DeckPlan.AvatarRadius, g.WallSide, SurfaceCollision.Gait.Person);
+
+        // …and the fan is told what actually happened, not what was asked for — #832's whole lesson. A man
+        // flat against stone is a man standing still, and the instrument may say so.
+        double mx = g.X - startX, my = g.Y - startY;
+        g.Vx = dt > 0 ? mx / dt : 0;
+        g.Vy = dt > 0 ? my / dt : 0;
+        if ((mx * mx) + (my * my) > 1e-8)
+        {
+            g.Facing = System.Math.Atan2(my, mx);
+        }
+    }
+
+    /// <summary>
+    /// #835 · A HAND ON YOUR ARM — and that is the entire physical event.
+    ///
+    /// <para><b>Zero damage, by the owner's own ruling.</b> Nothing in this method reads or writes
+    /// <c>HitsTaken</c>, swings anything or rolls anything, and the whole file is grep-able for that. One pip
+    /// of nerve moves, because being run down in a corridor is frightening, and it is the TOUCH pip — the
+    /// lump the model already keeps for a hand laid on you — rather than a new cause nobody ruled on.</para>
+    ///
+    /// <para>Then it is the ladder, and the ladder is the escort you already know: the card goes up, and the
+    /// walk it names starts on the first frame after it comes down (<see cref="_escortDue"/>), which is the
+    /// frame the captain can watch it happen on.</para>
+    /// </summary>
+    private void HeHasYou(SurfaceExcursion ex, Guard g)
+    {
+        // …unless something else is in front of the captain. He stands there with your arm until it comes
+        // down: a catch behind a backdrop is a catch nobody read (#777).
+        if (_viewObject is not null)
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            return;
+        }
+
+        PatrolBeat.Provocation why = g.Why;
+        EndTheRun(g);
+        g.Standing = PatrolBeat.StandSeconds;
+        g.SinceStop = 0;
+        g.Facing = System.Math.Atan2(_avatarY - g.Y, _avatarX - g.X);
+
+        // The same two-armed card the wallet read is told on, with the guard's own plate behind it — one
+        // picture for the whole feature, because the man in it has not decided anything yet either (#804).
+        PatrolBeat.Read held = PatrolBeat.TheGuardHasYou(g.Plate, why, _escortsThisWatch);
+        _viewObject = new DeckPlan.ConsoleSpot(
+            DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+            held.Label, PatrolBeat.ChallengeArtUrl, held.Card, held.Told);
+        RendererInterop.PlayCue("reveal");
+        LogAutopilotEvent($"{held.Label} — {held.Told}");
+
+        ApplyNerveShock(NervePips.TouchPips * NervePips.PipUnit, "a hand closed on your arm in a corridor");
+        FileNote(PatrolBeat.EscortNote, "👮");
+
+        _escortDue = g;
+        RequestVaultSave();
+    }
+
+    /// <summary>#835 · HE HAS LOST YOU, AND HE IS STILL THERE. The other end of the run, and the one the
+    /// captain's own legs earn: he stops, he says one more thing into the radio, and he goes back to the
+    /// round from wherever he has ended up — with the cooldown running, so the floor does not simply start
+    /// again on the next frame. Nothing is removed from the list; a despawn would be the building rubbing out
+    /// a man who is standing in a corridor you can walk back down.</summary>
+    private void HeLosesYou(Guard g)
+    {
+        EndTheRun(g);
+        g.Standing = PatrolBeat.StandSeconds;
+        g.SinceStop = 0;
+        ShowPulseMessage(PatrolBeat.LostYouLine, PulseRank.Beat);
+        LogAutopilotEvent(PatrolBeat.LostYouLine);
+    }
+
+    /// <summary>#835 · He stops running. One place, so the two ends of a run cannot leave different amounts
+    /// of it behind on the man.</summary>
+    private static void EndTheRun(Guard g)
+    {
+        g.AfterYou = false;
+        g.AfterYouFor = 0;
+        g.CallingIn = 0;
+        g.Why = PatrolBeat.Provocation.None;
+        g.Route = null;
+        g.Retries = 0;
+        g.Vx = 0;
+        g.Vy = 0;
+    }
+
+    /// <summary>
+    /// #835 · SOMEBODY SAW YOU DO THAT — the seam a crime comes in through, and the only one.
+    ///
+    /// <para>ONE crime is wired today and it is wired honestly: the gun (#803's DESIGNATE, the hasp coming
+    /// off a door). It is the only thing a captain can do on these floors that this game already calls a
+    /// crime — the door-forcing channels are all surface ground, and turning over a room is the floor's
+    /// ordinary verb rather than something anybody has ruled on. The day a door-force lands down here it
+    /// hangs off this same call and needs nothing else.</para>
+    ///
+    /// <para><b>SEEN, not heard.</b> <c>GunfireHeard</c> already keeps the noise ledger and deliberately does
+    /// not react to it; a man who came running at a bang three corridors away would be the floor-wide hunt
+    /// this feature does not have. This asks the one question <see cref="PatrolBeat.Notices"/> answers — his
+    /// eye, his own short reach, over the same walls everything else on this floor sees through.</para>
+    ///
+    /// <para>The car's four-second grace is deliberately not asked. That grace exists so that stepping out of
+    /// a lift into somebody's face is a beat rather than an instant; a gun going off is not somebody standing
+    /// there being looked at, and a man who ignored it because his shift had just started would be the
+    /// building refusing to notice its own doors coming apart.</para>
+    /// </summary>
+    private void SomebodySawThat(PatrolBeat.Provocation why)
+    {
+        if (!PatrolBeat.EarnsIt(why) || _guards.Count == 0 || _surface is not { Floor: < 0 })
+        {
+            return;
+        }
+
+        // Not while somebody is already walking you out, and not while somebody is already coming: an
+        // escalation on top of an escalation is two men doing one job.
+        if (_escort is not null || _escortDue is not null || _kickOutRideDue)
+        {
+            return;
+        }
+
+        IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
+        for (int i = 0; i < _guards.Count; i++)
+        {
+            if (_guards[i].AfterYou)
+            {
+                return;
+            }
+        }
+
+        for (int i = 0; i < _guards.Count; i++)
+        {
+            Guard g = _guards[i];
+            if (!PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight))
+            {
+                continue;
+            }
+            TheRadioCall(g, why, i);
+            return;
+        }
+    }
+
+    // ── #835 · THE TOP RUNG: BACK TO THE SKY ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #835 · THE KICK-OUT. The escort has reached the car and he gets in with you.
+    ///
+    /// <para><b>No new machinery, one longer walk.</b> The ride is <c>RideTheLiftTo(ex, 0)</c> — the ONE
+    /// transition this game has ever had between a floor and the regolith, the same one the panel's SURFACE
+    /// row presses — so the captain comes out of the cage inside the shed, a pace in from its door, through
+    /// the one net every placement in the excursion goes through (#681). There is no
+    /// <c>StandCaptainAt</c> on this road: the walk to the car was walked (#833) and the ride is a ride.</para>
+    ///
+    /// <para><b>The pass goes first, and it is SAID.</b> A possession that leaves the satchel in silence is
+    /// the sim doing something the prose never mentioned — the bug class this feature has paid for twice. It
+    /// is only said when there was one to take: a captain who never had a pass is thrown out of a site he was
+    /// never on the books of, and nothing about that needs a sentence.</para>
+    ///
+    /// <para><b>And the way back in is left exactly where the building already keeps it.</b> The shaft's own
+    /// gate reads the wallet (#752), so a captain with nothing in it is refused in words by machinery that
+    /// was already there. Nothing here has to invent a re-entry rule, and #836's wallet of names can grow one
+    /// later without this method changing.</para>
+    /// </summary>
+    private void TheKickOut(SurfaceExcursion ex)
+    {
+        string bodyId = ex.Stop.Body.Id;
+        bool hadOne = PatrolBeat.BadgeHeld(bodyId, _satchel);
+        if (hadOne)
+        {
+            _satchel = [.. Satchel.Remove(_satchel, Satchel.Kind.Badge, PatrolBeat.BadgeId(bodyId))];
+        }
+
+        // The plate is armed BEFORE the ride, because the ride rebuilds the deck the plate is painted on.
+        _kickedOutPlateFor = PatrolBeat.KickedOutPlateSeconds;
+        RideTheLiftTo(ex, 0);
+
+        // ONE REGION, NOT TWO PULSES — #774's law, and this moment is exactly what it is for. The ejection
+        // has two things to say in one breath (the pass, and the doors) and the slot holds one line: said as
+        // two calls they are two writes to it and the captain reads only the second, which would have made
+        // "the removal is spoken" a sentence that was technically emitted and never seen. The quiet line goes
+        // LAST because it is the closer, and it is the owner's copy verbatim.
+        var said = new List<string>();
+        if (hadOne)
+        {
+            said.Add(PatrolBeat.PassRevokedLine);
+            FileNote(PatrolBeat.PassRevokedNote, PatrolBeat.BadgeGlyph);
+        }
+        said.Add(PatrolBeat.DoorsCloseLine);
+
+        string closing = string.Join("\n\n", said);
+        ShowPulseMessage(closing, PulseRank.Beat);
+        LogAutopilotEvent(closing);
+        FileNote(PatrolBeat.KickOutNote, "👮");
+        RequestVaultSave();
+    }
+
+    /// <summary>
+    /// #835 · THE BIG TEXT, as the tube doors part — and it is the DESCENT PLATE, not a new instrument.
+    ///
+    /// <para>The stack is the one <c>HiveInterior</c> paints over every car mouth in the building, in the
+    /// same three sizes and the same stencil ink: the big line, the floor's name, and whether you can breathe
+    /// on it. The bottom two are read off the same two functions every other plate in the game reads them off
+    /// (<c>UndergroundComplex.DepthPaint</c> and <c>SuitAir.PlateLine</c>), so the sign over the shed and the
+    /// gauge on the suit are physically incapable of disagreeing — and what they say is exactly what the
+    /// owner's copy says they say: SURFACE, and a tank running.</para>
+    ///
+    /// <para>It hangs over the shed's roof, off the hut's own envelope rather than off a number typed here,
+    /// and it comes down after <see cref="PatrolBeat.KickedOutPlateSeconds"/> because a sign that stayed
+    /// would be #694's facility name on all thirteen floors: a thing you stop reading.</para>
+    /// </summary>
+    private (float X, float Y, string Text, float Px, int Tone)[]? TheKickedOutPlate(SurfaceExcursion ex)
+    {
+        if (_kickedOutPlateFor <= 0)
+        {
+            return null;
+        }
+
+        MoonSurface.LiftHeadBox shed = MoonSurface.LiftHead(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+        double x = shed.CentreX, top = shed.CentreY + shed.HalfH;
+
+        SuitAir.Supply air = SuitAir.SourceOf(ex.Stop.Body.Id, 0, insideShelter: false, aboard: false);
+        return
+        [
+            ((float)x, (float)(top + 8.6), PatrolBeat.KickedOutBigText, 44f, 0),
+            ((float)x, (float)(top + 5.8), UndergroundComplex.DepthPaint(0), 19f, 0),
+            ((float)x, (float)(top + 3.4), SuitAir.PlateLine(air), 17f, SuitAir.Drawing(air) ? 2 : 1),
+        ];
+    }
+
+    /// <summary>#835 · The plate's own clock, ticked where nothing else in this file runs — the surface. When
+    /// it runs out ONE rebuild takes the sign down; the guard clause above it is what keeps that rebuild from
+    /// being a per-frame cost on every excursion this game has.</summary>
+    private void FadeTheKickedOutPlate(double dtRealSeconds)
+    {
+        if (_kickedOutPlateFor <= 0)
+        {
+            return;
+        }
+
+        _kickedOutPlateFor -= System.Math.Min(dtRealSeconds, MaxSurfaceStepSeconds);
+        if (_kickedOutPlateFor <= 0)
+        {
+            _kickedOutPlateFor = 0;
+            RebuildSurfaceDeck();
+        }
     }
 
     // ── DRAWING THEM, AND HEARING THEM ────────────────────────────────────────────────────────────────
