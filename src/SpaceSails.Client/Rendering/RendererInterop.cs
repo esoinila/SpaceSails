@@ -42,9 +42,25 @@ internal static partial class RendererInterop
     internal static partial void StopLoop(string canvasId);
 
     /// <summary>Fire an audio cue ("pulse", "vent", "board", "arc"). Decoration only — JS
-    /// swallows every audio failure, so callers never need to guard.</summary>
+    /// swallows every audio failure, so callers never need to guard.
+    ///
+    /// <para>#837 · …AND NEITHER DOES A BENCH WITH NO SPEAKER IN IT. The deck-audit project drives the
+    /// SHIPPING acts (that is the whole reason it references the client), and an act that ends in a cue was
+    /// throwing <c>PlatformNotSupportedException</c> off-browser — so the one shape of guard this repo
+    /// trusts, the one that presses what the page presses, could not be written for any verb that makes a
+    /// noise. A cue is decoration in a browser and it is decoration on a test runner; the only difference is
+    /// that one of them has an audio context. Silent there, unchanged here.</para></summary>
+    internal static void PlayCue(string kind)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            PlayTheCue(kind);
+        }
+    }
+
+    /// <inheritdoc cref="PlayCue"/>
     [JSImport("playCue", ModuleName)]
-    internal static partial void PlayCue(string kind);
+    private static partial void PlayTheCue(string kind);
 
     /// <summary>#338 addendum — THE GAME'S FIRST SOUND: the motion tracker's first-contact chirp (two short
     /// rising tones). Fired on the Core-gated 0→N tracker edge; respects the master audio switch JS-side.</summary>
