@@ -465,6 +465,20 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     gear at narrow bands — it is what makes the QUIET gear usable, and it is now sold as nothing more. Wired into
     CI as `HullSoundingTests`.
 
+45. [**What a frame costs**](45-what-a-frame-costs/README.md) — the owner, watching one man walk a corridor:
+    *"the guard seems to move somehow much more heavily than the reevers who we can have so many on the screen
+    without slowdown."* He is reading a real ratio — a guard prices out at **~47× a Reever per body per
+    frame** — and the issue's hypothesis is confirmed as mechanism: `HasLineOfSight` really is strictly
+    **O(walls) at ~18–25 ns a segment**, because the eye is handed a plain `List<Segment>` while every pair
+    of legs on the floor is handed the `WallIndex` the same deck already carries (**29×** on a 436-wall
+    sweep, and flat in wall count). But 47× a very small number is a very small number: every steady-state
+    row is **under 0.4% of a 60 fps frame**, and 200 Reevers cost the same on a 465-wall floor as on a 135-wall
+    one. The one number that can eat a frame is `AutoWalk.Plan` — **6.4 ms, 38.6% of a whole frame, spent in
+    the single frame a guard reaches a stop, about twice a minute per guard**, and this game ships to WASM. Also
+    answers #841's sim-side gate (furniture costs ~0.36% of a frame at the game's own limits — culling cannot
+    be justified on sim cost) and caught **two of its own measurement bugs** before publishing: tiered JIT timing
+    tier-0 code, and an early-exiting predicate timed on a mixed query set.
+
 ## Framing rule
 
 Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons

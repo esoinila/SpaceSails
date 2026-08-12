@@ -6998,22 +6998,70 @@ public partial class Map
     // walls PLUS whatever doors are shut this instant, and collision keeps getting the walls alone.
     private readonly List<SurfaceCollision.Segment> _sightBlockers = [];
 
+    // #858 · AND THE EYE IS HANDED THE INDEX, like everything that walks already is.
+    //
+    // Lab 45 measured what this list cost: the sightline sweep is strictly O(walls) at ~18–25 ns a segment,
+    // it is 63% of a guard's whole per-frame bill on the 465-segment floor, and the SAME query against the
+    // SAME walls filed into the SAME grid DeckPlan already carries (_deckPlan.CollisionField, #448) is 29×
+    // faster at 436 segments and FLAT — 1.6× for 8× the stone. The legs were handed the index and the eye
+    // was handed a plain list, one line apart, and nobody had noticed because the eye is small until it is
+    // not. It also refilled that list EVERY frame, at O(walls), whether or not anybody was looking at
+    // anything (0.0011 ms on B1) — and some callers ask for it inside a loop, once per candidate pair.
+    //
+    // So the list is filed into a WallIndex and KEPT. One source of truth: the index is built FROM
+    // _sightBlockers, the very list this method used to return, so what the eye sweeps and what a hand-swept
+    // list would sweep are the same segments by construction rather than by two authorities agreeing.
+    //
+    // WHEN IT IS REBUILT is the whole of the caching, and it is derived rather than timed: the stone changes
+    // only when the plan does (a fresh deck, or #371's AppendRegion — both of which hand CollisionSegments a
+    // NEW array, so reference identity is the honest generation token), and the door set changes only when a
+    // door's shut-state actually flips. Those flips are still ASKED every frame — IsDoorShut is a handful of
+    // doors and the renderer's own answer must never lag the sim's by a frame — but they are cheap, and a
+    // frame that answers "the same doors are shut as last frame" does no work at all.
+    private SurfaceCollision.WallIndex? _sightIndex;
+    private SurfaceCollision.Segment[]? _sightStone;   // the stone _sightIndex was filed from, by identity
+    private bool[] _sightDoorShut = [];                // …and which doors were shut when it was
+
     private IReadOnlyList<SurfaceCollision.Segment> SightBlockers()
     {
+        DeckPlan.Door[] doors = _deckPlan.Doors;
+        bool asFiled = _sightIndex is not null && ReferenceEquals(_sightStone, _deckPlan.CollisionSegments);
+        if (_sightDoorShut.Length != doors.Length)
+        {
+            _sightDoorShut = new bool[doors.Length];
+            asFiled = false;
+        }
+        for (int i = 0; i < doors.Length; i++)
+        {
+            bool shut = IsDoorShut(doors[i]);
+            if (_sightDoorShut[i] != shut)
+            {
+                _sightDoorShut[i] = shut;
+                asFiled = false;
+            }
+        }
+        if (asFiled)
+        {
+            return _sightIndex!;
+        }
+
         _sightBlockers.Clear();
         foreach (SurfaceCollision.Segment seg in _deckPlan.CollisionSegments)
         {
             _sightBlockers.Add(seg);
         }
-        foreach (DeckPlan.Door d in _deckPlan.Doors)
+        for (int i = 0; i < doors.Length; i++)
         {
-            if (!IsDoorShut(d))
+            if (!_sightDoorShut[i])
             {
                 continue; // standing open — you can see (and shoot) straight down the tube
             }
+            DeckPlan.Door d = doors[i];
             _sightBlockers.Add(new SurfaceCollision.Segment(d.X1, d.Y1, d.X2, d.Y2));
         }
-        return _sightBlockers;
+        _sightStone = _deckPlan.CollisionSegments;
+        _sightIndex = SurfaceCollision.WallIndex.Build(_sightBlockers);
+        return _sightIndex;
     }
 
     // The same rule DeckView draws with (Core Airlock), so what blocks a shot is exactly what the player

@@ -397,6 +397,22 @@ public static class PatrolBeat
     /// this generator builds connects, so this is the belt on top of the braces.</summary>
     public const int RePlansPerLeg = 6;
 
+    /// <summary>#858 · How much of the NEXT leg's A* a standing guard walks per frame
+    /// (<see cref="AutoWalk.Planner"/>), in lattice cells.
+    ///
+    /// <para>Lab 45 measured the plan the round asks for at a median 1.6–2.2 ms and a worst 6.4 ms — 38.6%
+    /// of a 60 fps frame — spent whole on the frame he leaves a stop, which is the one number in that lab
+    /// that can miss a frame. He is standing for <see cref="StandSeconds"/> either way; this is the rate
+    /// that gets the same work done during it.</para>
+    ///
+    /// <para><b>Derived, not tuned.</b> The stand is 5 s ≈ 300 frames, and the biggest lattice
+    /// <see cref="LatticeFor"/> poses on the floors this generator builds is 29,002 cells (Lab 45 §C). At
+    /// 128 a frame the whole of that lattice is walked in ~227 frames — inside the stand with a quarter of
+    /// it to spare — while one frame's share of that worst 6.4 ms plan is about a fiftieth of it. Being a
+    /// CELL budget rather than a millisecond one is the point: it means the same thing in WASM, where the
+    /// clock this was measured on does not.</para></summary>
+    public const int PlanCellsAFrame = 128;
+
     // ── WHAT IS KNOWN, AND BY WHOM ────────────────────────────────────────────────────────────────────
     //
     // Owner: "we should not know their movements like 100 meters out and them need to see us like really
