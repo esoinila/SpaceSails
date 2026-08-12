@@ -2159,11 +2159,31 @@ public static class UndergroundComplex
     /// <param name="Plate">What is stencilled on it, empty in the found band and on the plainer fittings.</param>
     /// <param name="Ways">Every hole in its walls a body can pass — street doors, corridor mouths, the gate
     /// onto the green, the door through to the recess next door. Never the locked ones.</param>
+    /// <param name="Fittings">#818 · What is standing ON THE FLOOR of it. The owner's law — <i>"never ever
+    /// empty floor"</i> — is a law about a list, and a law about a list nobody keeps is a law nobody can
+    /// fail. Appended, so every caller that builds one positionally still means the same room. See
+    /// <see cref="ChamberFitting"/> for the chambers and <see cref="RingOffice"/> for the suites: the two
+    /// placers are different and the LIST is one, which is what lets a single sweep walk the building.</param>
+    /// <param name="Chairs">#818 · Every seat in it, in the room's own order. Empty in a room nobody sits
+    /// down in, which is a true statement about a store rather than a missing one.</param>
     public readonly record struct Room(
         double X0, double Y0, double X1, double Y1, string Plate,
         IReadOnlyList<SurfaceLayout.Doorway> Ways,
-        RoomKind Kind = RoomKind.Chamber)
+        RoomKind Kind = RoomKind.Chamber,
+        IReadOnlyList<RingOffice.Fixture>? Fittings = null,
+        IReadOnlyList<RingOffice.Chair>? Chairs = null)
     {
+        /// <summary>#818 · The furniture, never null — a caller asking "is this floor bare" must not have to
+        /// tell an empty list from a missing one.</summary>
+        public IReadOnlyList<RingOffice.Fixture> Furniture => Fittings ?? [];
+
+        /// <summary>#818 · The seats, never null. Same reason.</summary>
+        public IReadOnlyList<RingOffice.Chair> Seats => Chairs ?? [];
+
+        /// <summary>#818 · Does this room show what it is for? The owner's law asked of the room itself, so
+        /// the carve, the renderer and the guard read one sentence.</summary>
+        public bool IsFurnished => Furniture.Count > 0;
+
         /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
         public double X => (X0 + X1) / 2.0;
 
@@ -3111,8 +3131,14 @@ public static class UndergroundComplex
         IReadOnlyList<RipAndBin.Bin>? Bins = null,
         // #822 · EVERY CARVED SPACE A CAPTAIN CAN STAND IN, with the holes in its own walls. The fire code
         // is swept over this and nothing else. Appended, for the reason above.
-        IReadOnlyList<Room>? Rooms = null)
+        IReadOnlyList<Room>? Rooms = null,
+        // #853 · The conference posters on a laboratories floor's corridor walls. Appended, same reason.
+        IReadOnlyList<LabPosters.Poster>? Posters = null)
     {
+        /// <summary>#853 · The framed posters on this floor, never null. Empty on every floor that is not a
+        /// laboratories floor, which is a true statement about them rather than a missing one.</summary>
+        public IReadOnlyList<LabPosters.Poster> TheWalls => Posters ?? [];
+
         /// <summary>#798 · Somewhere to put a paper on this floor, never null — a caller asking "is there a
         /// bin here" must not have to tell an empty list from a missing one.</summary>
         public IReadOnlyList<RipAndBin.Bin> TheBins => Bins ?? [];
@@ -3724,8 +3750,13 @@ public static class UndergroundComplex
         {
             if (room.Side != RingSide.Far)
             {
+                // #818 · …carrying the furniture #817 already stood in it. The suites were furnished at the
+                // carve and the sweep reads ONE list for the whole building, so what a ring room holds is
+                // handed over here rather than looked up again through the park — a second reader of the
+                // same fact is a second answer waiting to disagree with the first.
                 rooms.Add(new Room(
-                    room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite));
+                    room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite,
+                    room.Furniture, room.Seats));
             }
         }
 
@@ -3755,7 +3786,8 @@ public static class UndergroundComplex
                 if (room.Side == RingSide.Far)
                 {
                     var back = new Room(
-                        room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite);
+                        room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite,
+                        room.Furniture, room.Seats);
                     rooms.Add(back);
                     published.Add(back);
                 }
@@ -3796,6 +3828,75 @@ public static class UndergroundComplex
                 cell.Of, cell.Ways, RoomKind.Cell));
         }
 
+        // ── #818 · AND WHAT IS STANDING ON THE FLOOR OF EVERY ONE OF THEM ────────────────────────────────
+        //
+        // Owner, generalising #817 past the ring: "Same for labs etc spaces… they have chairs and desks and
+        // equipment … never ever empty floor."
+        //
+        // HERE, and not down in AddRoomsAlong, for the reason RingOffice is called last in the ring's carve:
+        // a placer that ran before the recesses were cut would be measuring its clearances against a wall
+        // with no holes in it yet, and #822's fire doors are the newest holes in this building. By this line
+        // every way out of every room is published and the furnisher can be handed the finished box.
+        //
+        // The solids go into the SAME wall list every other piece of furniture down here goes into (the
+        // park's raised beds, the en-suite's pan, the ring's desks) so one segment is both the drawing and
+        // the collision — and it happens BEFORE the bins, which measure their own clearance against every
+        // wall the floor ended up with and would otherwise fit a bin inside a fume hood.
+        var cellLeaves = new List<SurfaceLayout.Doorway>(ensuites.Count);
+        foreach (EnSuite cell in ensuites)
+        {
+            foreach (SurfaceLayout.Doorway leaf in cell.Ways)
+            {
+                // An en-suite's leaf is NOT a way out (a cell is a dead end, and the fire code says so), so
+                // it is not in Room.Ways — and it is still a hole a body goes through, which is the only
+                // thing the furnisher needs to know about it. Handed over as a floor-wide list rather than
+                // matched to a parent: a leaf in somebody else's wall is too far away to claim any of this
+                // room's line, so the conservative reading costs nothing and cannot mis-pair.
+                cellLeaves.Add(leaf);
+            }
+        }
+
+        string? department = ChamberFitting.DepartmentOn(bodyId, level);
+        Kind trade = KindOn(bodyId, level);
+
+        // …counted PER KIT as the floor is walked, which is what turns "a laboratories floor has fume hoods,
+        // vacuum chambers and furnaces on it" from a probability into a fact. See ChamberFitting.Fit's
+        // ordinal: a seeded pick left fifteen floors in the sweep short of one piece each.
+        var dealt = new Dictionary<ChamberFitting.Kit, int>();
+        for (int r = 0; r < published.Count; r++)
+        {
+            Room carved = published[r];
+            if (carved.Kind != RoomKind.Chamber)
+            {
+                continue;   // the suites, the hall, its cabinets and the cells are furnished by their own
+            }
+
+            var holes = new List<SurfaceLayout.Doorway>(carved.Ways.Count + cellLeaves.Count);
+            holes.AddRange(carved.Ways);
+            holes.AddRange(cellLeaves);
+
+            ChamberFitting.Kit trade0 = ChamberFitting.KitFor(carved.Plate, department, trade);
+            int ordinal = dealt.TryGetValue(trade0, out int seen) ? seen : 0;
+            dealt[trade0] = ordinal + 1;
+
+            RingOffice.Furnishing kit = ChamberFitting.Fit(in carved, trade0, holes, ordinal);
+            if (kit.Fixtures.Count == 0)
+            {
+                continue;   // a gallery, an empty store, or a room whose every wall is a doorway's clearance
+            }
+
+            published[r] = carved with { Fittings = kit.Fixtures, Chairs = kit.Chairs };
+            foreach (SurfaceLayout.Wall solid in kit.Solids)
+            {
+                walls.Add(solid);
+            }
+        }
+
+        // #853 · …and the conference posters, on the one department they are about. Hung off the chambers'
+        // own doorways, so a floor whose rooms move takes its wall dressing with it.
+        IReadOnlyList<LabPosters.Poster> posters =
+            LabPosters.On(bodyId, level, published, shaftX, shaftY);
+
         var centres = new List<(double X, double Y)>(rooms.Count);
         foreach (Room pooled in rooms)
         {
@@ -3812,7 +3913,7 @@ public static class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins, published);
+            glass, park, bins, published, posters);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,
@@ -6486,6 +6587,24 @@ public static class UndergroundComplex
                 {
                     plate = NotPrincipal(bodyId, level, tag);
                 }
+
+                // ── #818 · THE ONE ROOM THE LAW LETS OFF, AND IT HAS TO SAY SO ──────────────────────────
+                //
+                // Owner, stating the exception in the same breath as the law: "let's not have any empty
+                // storage space unless the space is actually an empty storage."
+                //
+                // So a bare floor stops being a default and becomes a CLAIM — made on a store floor, by the
+                // building, in its own stencil voice, on the one wall a captain reads before walking in.
+                // Only on the floors that keep stock (ChamberFitting.StoresOn), only on rooms anybody can
+                // walk into, and never over a principal plate: a room important enough to be plumbed is not
+                // a room somebody emptied and forgot.
+                if (!shut && !found && !IsPrincipalRoom(plate)
+                    && ChamberFitting.StoresOn(ChamberFitting.DepartmentOn(bodyId, level))
+                    && Frac(bodyId, tag + ":emptied") < ChamberFitting.EmptyStoreChance)
+                {
+                    plate = ChamberFitting.EmptyStorePlate;
+                }
+
                 if (!cell)
                 {
                     walls.Add(new(backX, y1, backX, y2, true));

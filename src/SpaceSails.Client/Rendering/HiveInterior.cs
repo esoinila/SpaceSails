@@ -665,6 +665,69 @@ public static class HiveInterior
                 (float)bin.X, (float)(bin.Y - RipAndBin.HalfDu - 1.4), bin.Plate));
         }
 
+        // ── #818 · WHAT IS STANDING IN EVERY OTHER ROOM IN THE BUILDING ────────────────────────────────
+        //
+        // Owner, generalising #817 past the ring: "Same for labs etc spaces… they have chairs and desks and
+        // equipment … never ever empty floor."
+        //
+        // EVERY SOLID THING IN HERE IS ALREADY IN floor.Walls — Core laid the benches, the fume hoods, the
+        // racking and the machines as segments, so they were drawn and collided with by the loop at the top
+        // of this method, exactly as the ring's desks and the en-suite's pan are. What is left for a renderer
+        // is the STENCIL and the VERB, which is the whole of a renderer's business in a room somebody else
+        // furnished.
+        //
+        // ONE STENCIL PER ROOM, and that is Core's doing rather than a filter here: the placer plates the
+        // signature fitting and hands the rest over blank, because a plate over every bay of racking in a
+        // long store is a floor nobody can read. The `if` below is the ring's own (#817) and is what makes
+        // that decision visible from this end.
+        for (int r = 0; r < floor.TheRooms.Count; r++)
+        {
+            UndergroundComplex.Room room = floor.TheRooms[r];
+            if (room.Kind != UndergroundComplex.RoomKind.Chamber)
+            {
+                continue;   // the suites, the hall and its booths are drawn by their own passes above
+            }
+
+            foreach (RingOffice.Fixture fitting in room.Furniture)
+            {
+                if (fitting.Plate.Length > 0)
+                {
+                    labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
+                }
+            }
+
+            // The stools take the SIT verb on the seam the office chairs, the stools at the bar and the park
+            // benches already use: Core says where a seat is and this hangs a console on it. The plate
+            // carries the VERB (#783: "why not use words like SIT DOWN here if it means sitting down?").
+            foreach (RingOffice.Chair seat in room.Seats)
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveOfficeChair,
+                    (float)seat.X, (float)seat.Y, ChamberFitting.StoolPlate));
+            }
+        }
+
+        // ── #853 · AND THE CONFERENCE POSTERS, ON THE ONE DEPARTMENT THEY ARE ABOUT ────────────────────
+        //
+        // Owner, a postdoc's own gag: "as gags we could have gen-ai conference posters … jokes about how
+        // hydrogen is the new promising tech (still 100 years in future)".
+        //
+        // A ViewObject and NOT a new console kind, because it is not a new verb: stop at a thing on a wall,
+        // look at it, and read the card. That is the same press the monolith, the false slab and the ports'
+        // own PIRATE INSURANCE poster have taken since #380 — and the art slot degrades exactly as theirs
+        // do, which is why these can ship with the copy today and the pictures whenever they are shot.
+        //
+        // The kicker hangs crooked. The deck draws its labels straight, so the crookedness is TOLD — Core
+        // puts it in the plate (LabPosters.Poster.Plate) rather than this file inventing a rotation nobody
+        // asked for. A renderer that can tilt a label cheaply has the flag published and waiting.
+        foreach (LabPosters.Poster poster in floor.TheWalls)
+        {
+            consoles.Add(new(
+                DeckPlan.ConsoleKind.ViewObject,
+                (float)poster.X, (float)poster.Y,
+                poster.Plate, poster.ArtUrl, poster.Card));
+        }
+
         // The cars, on every floor, in the same places. #801 · Both of them, off one list, each with the
         // sign Core paints on it — a renderer choosing which console kind goes on which car would be a
         // second opinion about a machine it does not own.

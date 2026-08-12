@@ -68,8 +68,39 @@ public partial class Map
             return false;
         }
 
-        if (UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park
-            is not { } green)
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+
+        // ── #818 · …AND THE STOOL AT A WORKTOP TAKES THE SAME VERB ────────────────────────────────────
+        //
+        // Owner's kit for the rest of the building opens with the word "chairs", and a bench you cannot sit
+        // at is a bench in a catalogue. It is the office chair's own seam, the same panel and the same snap
+        // (#820), because it is the same posture — what a laboratory adds is the room it is in, and that is
+        // a fact the sitting carries rather than a second way to sit down.
+        //
+        // Asked BEFORE the ring, because a chamber exists on every floor in the game and the park exists on
+        // one: a floor with no block would otherwise return before this loop ever ran.
+        for (int r = 0; r < floor.TheRooms.Count; r++)
+        {
+            UndergroundComplex.Room room = floor.TheRooms[r];
+            if (room.Kind != UndergroundComplex.RoomKind.Chamber)
+            {
+                continue;
+            }
+            foreach (RingOffice.Chair seat in room.Seats)
+            {
+                if (Math.Abs(seat.X - spot.X) >= SameChairDu
+                    || Math.Abs(seat.Y - spot.Y) >= SameChairDu)
+                {
+                    continue;
+                }
+
+                SitOnThisStool(ex, in room, r, seat);
+                return true;
+            }
+        }
+
+        if (floor.Park is not { } green)
         {
             return false;
         }
@@ -148,6 +179,50 @@ public partial class Map
             DrinkInHand = APourInFrontOfYou,
             Joined = true,
             Outcome = CubicleLock.SatDownLine,
+        };
+
+        RendererInterop.PlayCue("reveal");
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// #818 · The one place a chamber sitting is opened — a stool at a laboratory bench, a desk in an
+    /// administration room, an examination bench in a back room.
+    ///
+    /// <para>Everything about it that is not the ring chair is the ROOM: the key, the approach ordinal and
+    /// the scene's opening line all name a poured box off a corridor rather than a suite on a garden, and
+    /// #783's own reason applies — the plate beside the door is the only thing that tells one of these from
+    /// another, so a captain who has walked in off a rib deserves to be told which one they are sitting
+    /// in.</para>
+    /// </summary>
+    private void SitOnThisStool(
+        SurfaceExcursion ex, in UndergroundComplex.Room room, int roomIndex, RingOffice.Chair seat)
+    {
+        // #820's snap, through the ONE helper every seat verb in this game sits the captain with.
+        SitCaptainOn(seat.X, seat.Y);
+
+        _table = new TableTalk
+        {
+            // Its own prefix, so a stool, a chair, a bench and a canteen top with the same ordinal on the
+            // same floor can never share a wait counter — one key for four seats would be one source
+            // consumed as if it were four.
+            Key = $"{ex.CanteenWatch}:{ex.Floor}:bench:{roomIndex}:{seat.Index}",
+            Index = ChamberFitting.ApproachOrdinal(roomIndex, seat.Index),
+            Office = true,
+            StepOff = seat.StandAt,
+            Who = CanteenTable.Who.None,
+            Plate = ChamberFitting.SeatPlate,
+            Scene = ChamberFitting.TheStool(room.Plate),
+            Seats = Math.Max(1, room.Seats.Count),
+            Free = Math.Max(0, room.Seats.Count - 1),
+            // A room with a door and nobody in it — the ring chair's own flag, and true here for the same
+            // reason: nothing at a counter can see you.
+            Quiet = true,
+            Solo = true,
+            Relaxed = false,
+            DrinkInHand = APourInFrontOfYou,
+            Joined = true,
+            Outcome = ChamberFitting.TookAStoolLine(room.Plate),
         };
 
         RendererInterop.PlayCue("reveal");
