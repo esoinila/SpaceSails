@@ -650,6 +650,9 @@ public sealed class TheTableSceneTests
             CanteenTable.HandWorkNoAnd, CanteenTable.FitterWorkLine, CanteenTable.ScaffoldDodgedLine,
             CanteenTable.ScaffoldTakenNote, CanteenTable.LeaveLine, CanteenTable.ChitGist,
             CanteenTable.ChitUnderAnotherNameGist, CanteenTable.ChitTitle, CanteenTable.MessBeatLine,
+            // #842 · the sentence a top with no chair left answers [E] with. It says nothing about the
+            // building either, and it is swept with everything else that can reach a screen from here.
+            CanteenTable.TableIsFullLine,
         })
         {
             Assert.False(string.IsNullOrWhiteSpace(line));
