@@ -2375,7 +2375,63 @@
                     <div class="satchel-outcome">@busy</div>
                 }
 
-                @if (_satchel.Count == 0)
+                @* ── #837 · THE LOAD CHOOSER ────────────────────────────────────────────────────────────
+                   Owner, satchel open on '12 loose rounds': "I would expect like load it into one or both
+                   guns" / "and like how many each .. by default I guess it would be all into one in most
+                   cases, but we should give flexibility here."
+
+                   One row per gun the captain's hands can reach — the sling first, because a gun on your own
+                   back is the least demanding version of this verb, then whatever is set down within arm's
+                   length. Every figure on it is Core's: the counts are SentryBot.MagazineCell, which is the
+                   same function the MAGAZINES readout is built out of, and the arrow shows what that line
+                   will read AFTER the press, before the press (#696 — the price known beforehand).
+
+                   The page decides nothing. It has no arithmetic, no mutation and no words of its own. *@
+                @if (TheLoadChooser() is { } loading)
+                {
+                    <div class="satchel-sub">@SpaceSails.Core.SentryHandLoad.ChooserBlurb(loading.Pocket, loading.KindName)</div>
+
+                    @if (loading.Picks.Count == 0)
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SentryHandLoad.NothingInReachLine</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.SentryHandLoad.Pick offering in loading.Picks)
+                            {
+                                SpaceSails.Core.SentryHandLoad.Pick gun = offering;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@gun.Note"
+                                            @onclick="() => LoadIntoIt(gun)">
+                                        <span class="satchel-item-name">
+                                            🔫 @gun.Unit @gun.Now @(gun.Worked ? "→ " + gun.After : "") <span class="satchel-where">@gun.Where</span>
+                                        </span>
+                                        <span class="satchel-item-try">@SpaceSails.Core.SentryHandLoad.LoadLabel</span>
+                                    </button>
+                                    @* THE COUNT STEPPER, and it is only drawn where there is a choice to
+                                       make: a row whose ceiling is nought has a refusal to say and no
+                                       interesting difference between one nothing and another. *@
+                                    @if (gun.Ceiling > 0)
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.FewerHint"
+                                                @onclick="() => NudgeShare(gun, -1)">−</button>
+                                        <span class="satchel-share">@gun.Share of @gun.Pocket</span>
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.MoreHint"
+                                                @onclick="() => NudgeShare(gun, 1)">+</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <button type="button" class="satchel-back"
+                            @onclick="CloseTheLoadChooser">@SpaceSails.Core.SentryHandLoad.BackLabel</button>
+                }
+                else if (_satchel.Count == 0)
                 {
                     <div class="satchel-empty">
                         Empty. Rooms down here are worth searching — most are stripped, and the ones that
@@ -2461,6 +2517,21 @@
                                         <button type="button" class="satchel-leave"
                                                 title="@RipHint(item)"
                                                 @onclick="() => RipItUp(item)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
+                                    @* #837 · LOAD IT FROM THE ROW — the hand-load's second grip. Owner, with
+                                       the satchel open on twelve loose rounds: "I would expect like load it
+                                       into one or both guns."
+
+                                       Drawn only on ROUNDS, for the shredder's reason one control over: on a
+                                       keycard this is not a refusal, it is a verb that does not apply. Live
+                                       wherever it IS drawn and never disabled — with nothing within arm's
+                                       reach it opens onto the sentence that says what would fix it, which is
+                                       how the reach rule is learned. *@
+                                    @if (LoadIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-load"
+                                                title="@LoadHint(item)"
+                                                @onclick="() => OpenTheLoadChooser(item)">@SpaceSails.Core.SentryHandLoad.LoadLabel</button>
                                     }
                                  </div>;
                         }

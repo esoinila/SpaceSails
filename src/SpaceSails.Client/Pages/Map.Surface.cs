@@ -3121,6 +3121,11 @@ public partial class Map
         // who has stood up and walked to a door is a state nothing on screen would be saying, and the held
         // end of a half-drawn line is not worth keeping across a shut lid.
         PutTheRedPenAway();
+
+        // #837 · …and the load chooser is not left half-open behind a shut lid either. Its whole content is
+        // live — the pocket, the guns, the reach — so a page reopened onto yesterday's split would be the
+        // dialog remembering a world that has walked off.
+        CloseTheLoadChooser();
     }
 
     private bool _showSatchel;
@@ -3787,7 +3792,7 @@ public partial class Map
         if (outcome.Worked && item is { Kind: Core.Satchel.Kind.Rounds } fed
             && at.Target == SatchelTry.Target.Sentry && _surface is { } loadEx)
         {
-            outcome = TheRoundsGoInByHand(loadEx, fed, at.Context);
+            outcome = TheRoundsGoInByHand(loadEx, fed, at.Context, fed.Count);
         }
 
         if (!outcome.Worked)
@@ -3840,9 +3845,16 @@ public partial class Map
     /// report is the sim and the #797 instrument disagreeing about one number, which is this repo's third
     /// named bug class with a gun in its hand. <see cref="SentryHandLoad.Offer"/> owns all of it; what is
     /// left here is applying the answer.</para>
+    ///
+    /// <para><b>#837 · AND IT IS NOW THE WHOLE OF BOTH GRIPS.</b> The [I]-over-the-bot press and the satchel
+    /// row's chooser end HERE, in this method, with a unit and a count — which is what makes the issue's law
+    /// ("both grips end in the identical magazine mutation and pocket remainder for the same rounds and
+    /// target") structural rather than a promise. <paramref name="rounds"/> arrived as <c>fed.Count</c> when
+    /// there was only one grip and no way to load less than everything; the stepper made it a decision, so
+    /// it is a parameter. Nothing else about the act moved.</para>
     /// </summary>
     private SatchelTry.Outcome TheRoundsGoInByHand(
-        SurfaceExcursion ex, Core.Satchel.Item fed, string? unit)
+        SurfaceExcursion ex, Core.Satchel.Item fed, string? unit, int rounds)
     {
         SurfaceBot? gun = ex.Bots.FirstOrDefault(b => b.Unit == unit);
         if (gun is null)
@@ -3850,8 +3862,13 @@ public partial class Map
             return new(false, "🔫 That gun is not down here any more.");
         }
 
+        // The pocket as it stands, not as the row remembered it: a chooser stays open across a press, and a
+        // stack whose Count was read two presses ago is a figure about a pocket that has since changed.
+        int pocket = Core.Satchel.CountOf(_satchel, fed.Kind, fed.Id);
+        int offering = Math.Clamp(rounds, 0, pocket);
+
         SentryHandLoad.Load load = SentryHandLoad.Offer(
-            gun.Unit, gun.Rounds, gun.AmmoId, gun.Deployed, fed.Count, fed.Id);
+            gun.Unit, gun.Rounds, gun.AmmoId, WithinHandsOf(gun), offering, fed.Id);
         if (!load.Worked)
         {
             return new(false, load.Line);
@@ -3872,7 +3889,28 @@ public partial class Map
             line += $" It will not fire these at anything closer than {kind.MinimumRangeDu:F0} du — they " +
                 "arm after travel, and that is the whole point of them.";
         }
+
+        // #837 · …and the rounds the captain CHOSE to keep are named separately from the rounds the drum
+        // would not take. Core writes both sentences; conflating them would blame a willing magazine for a
+        // decision the captain made, and leave the seam between pocket and drum unaccounted for either way.
+        int kept = pocket - load.Accepted;
+        if (kept > load.LeftOver)
+        {
+            line += $" {SentryHandLoad.KeptBackLine(kept - load.LeftOver)}";
+        }
         return new(true, line);
+    }
+
+    /// <summary>#837 · Can the captain's hands reach this gun? Core's amended law
+    /// (<see cref="SentryHandLoad.WithinHands"/>) asked with the one fact only a running world has — how far
+    /// off it is standing — and at the same arm's length the positional grip has always used. Asked in one
+    /// place so the chooser's list, the chooser's hint and the act itself cannot come to three views of a
+    /// reach.</summary>
+    private bool WithinHandsOf(SurfaceBot gun)
+    {
+        double dx = gun.X - _avatarX, dy = gun.Y - _avatarY;
+        return SentryHandLoad.WithinHands(
+            gun.Deployed, Math.Sqrt((dx * dx) + (dy * dy)), DeckPlan.InteractRadius);
     }
 
     /// <summary>
