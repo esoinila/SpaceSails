@@ -60,9 +60,24 @@ public sealed class OneCounterAndOnlyOneTests
     /// the last bit of a double.</summary>
     private const double Eps = 0.001;
 
+    /// <summary>Every hall the generator lays, on every floor that has one — swept ONCE and shared by the
+    /// five guards below.
+    ///
+    /// <para>The generator is pure and deterministic per (body, level), so a second sweep is the identical
+    /// answer bought a second time: thirty-three sites, eight floors each, five times over. That is most of
+    /// what this file costs, and the A* walk it pays for is the whole reason it is worth having.</para>
+    /// </summary>
+    private static readonly IReadOnlyList<(string Body, int Level, UndergroundComplex.Comfort Use,
+        UndergroundComplex.Amenity Amenity, UndergroundComplex.Hall Hall,
+        UndergroundComplex.FloorPlan Floor)> TheHalls = [.. SweepTheHalls()];
+
     private static IEnumerable<(string Body, int Level, UndergroundComplex.Comfort Use,
         UndergroundComplex.Amenity Amenity, UndergroundComplex.Hall Hall,
-        UndergroundComplex.FloorPlan Floor)> Halls()
+        UndergroundComplex.FloorPlan Floor)> Halls() => TheHalls;
+
+    private static IEnumerable<(string Body, int Level, UndergroundComplex.Comfort Use,
+        UndergroundComplex.Amenity Amenity, UndergroundComplex.Hall Hall,
+        UndergroundComplex.FloorPlan Floor)> SweepTheHalls()
     {
         foreach (string body in Sweep())
         {
@@ -273,18 +288,27 @@ public sealed class OneCounterAndOnlyOneTests
     /// <para><b>Proven RED</b> by taking the desk's own front face out of the wall list — the one line the
     /// whole counter rests on:</para>
     /// <code>
-    /// 32 counter(s) can be walked through, or cannot be ordered at:
+    /// 12 counter(s) can be walked through, or cannot be ordered at:
     ///   luna B1: the keep's own square is reachable from the customer's side in 35 steps.
     ///   phobos B1: the keep's own square is reachable from the customer's side in 35 steps.
     ///   europa B1: the keep's own square is reachable from the customer's side in 35 steps.
+    ///   ganymede B1: the keep's own square is reachable from the customer's side in 35 steps.
     ///   …
     /// </code>
+    ///
+    /// <para><b>Walked on the NAMED sites and not on the twenty probe moons as well.</b> A refusal costs a
+    /// walker its whole reachable set, and the twenty probes carve the same hall the named sites do — the
+    /// red above says so in its own voice, every line identical but for the moon. The laws that are cheap
+    /// (the drift, the row, the picture) are still measured over every hall the generator lays; this one is
+    /// measured on a dozen of them, which is a dozen more than nought and does not put ten minutes of
+    /// pathfinding into every build. The other clause, [E] along the whole front, is measured on all of
+    /// them because it costs nothing.</para>
     /// </summary>
     [Fact]
     public void THE_COUNTER_CannotBeWalkedThroughAndSERVESAnywhereAlongIt()
     {
         var wrong = new List<string>();
-        int counters = 0, served = 0;
+        int counters = 0, served = 0, walked = 0;
 
         foreach ((string body, int level, _, UndergroundComplex.Hall hall,
             UndergroundComplex.CounterDesk desk, UndergroundComplex.FloorPlan floor) in Counters())
@@ -295,67 +319,76 @@ public sealed class OneCounterAndOnlyOneTests
             }
 
             counters++;
-            SurfaceCollision.Segment[] solid = Solid(in floor);
-            (double MinX, double MinY, double MaxX, double MaxY) bounds =
-                (hall.X0 - 1, hall.Y0 - 1, hall.X1 + 1, hall.Y1 + 1);
+            (double ox, double oy) = IntoTheHall(in desk);
 
-            var from = new DeckReachability.Point(run.StandX, run.StandY);
-            var keep = new DeckReachability.Point(run.KeepX, run.KeepY);
+            if (Array.IndexOf(Bodies, body) >= 0)
+            {
+                walked++;
+                SurfaceCollision.Segment[] solid = Solid(in floor);
+                (double MinX, double MinY, double MaxX, double MaxY) bounds =
+                    (hall.X0 - 1, hall.Y0 - 1, hall.X1 + 1, hall.Y1 + 1);
 
-            // Both ends first. A refusal that came from standing in a wall would prove nothing at all.
-            if (!DeckReachability.Standable(from.X, from.Y, BodyRadiusDu, solid))
-            {
-                wrong.Add($"  {body} B{-level}: the customer's own standing square is solid wall — the "
-                    + "walk below would refuse for the wrong reason.");
-                continue;
-            }
-            if (!DeckReachability.Standable(keep.X, keep.Y, BodyRadiusDu, solid))
-            {
-                wrong.Add($"  {body} B{-level}: the keep's own square is solid wall — the walk below would "
-                    + "refuse for the wrong reason.");
-                continue;
-            }
+                var from = new DeckReachability.Point(run.StandX, run.StandY);
+                var keep = new DeckReachability.Point(run.KeepX, run.KeepY);
 
-            DeckReachability.Walk across = DeckReachability.Path(from, keep, solid, BodyRadiusDu, bounds);
-            if (across.Reached)
-            {
-                wrong.Add($"  {body} B{-level}: the keep's own square is reachable from the customer's "
-                    + $"side in {across.Steps} steps.");
-            }
-
-            // …AND THE GOODS HOIST'S OWN CAR, which is the same band and the same law. It is behind the same
-            // line — its front is the shutter, which is a locked door and therefore a wall until somebody
-            // takes the hasp off it with a sentry (#803). The flood the client already runs cannot see this
-            // one: it watches the desk's own photograph, and the car is the twelve du before the picture
-            // starts. So the counter is asked about its WHOLE length here, hoist and all.
-            if (hall.Freight is { } hoist)
-            {
-                double carX = (hoist.X0 + hoist.X1) / 2.0, carY = (hoist.Y0 + hoist.Y1) / 2.0;
-                if (!DeckReachability.Standable(carX, carY, BodyRadiusDu, solid))
+                // Both ends first. A refusal that came from standing in a wall would prove nothing at all.
+                if (!DeckReachability.Standable(from.X, from.Y, BodyRadiusDu, solid))
                 {
-                    wrong.Add($"  {body} B{-level}: the goods car has no floor in it — the walk below "
+                    wrong.Add($"  {body} B{-level}: the customer's own standing square is solid wall — the "
+                        + "walk below would refuse for the wrong reason.");
+                }
+                else if (!DeckReachability.Standable(keep.X, keep.Y, BodyRadiusDu, solid))
+                {
+                    wrong.Add($"  {body} B{-level}: the keep's own square is solid wall — the walk below "
                         + "would refuse for the wrong reason.");
                 }
-                else if (DeckReachability.Path(
-                    from, new DeckReachability.Point(carX, carY), solid, BodyRadiusDu, bounds).Reached)
+                else
                 {
-                    wrong.Add($"  {body} B{-level}: a captain can walk off the hall floor into the goods "
-                        + "hoist's car — the crew's own side of the counter is open floor.");
-                }
-            }
+                    DeckReachability.Walk across =
+                        DeckReachability.Path(from, keep, solid, BodyRadiusDu, bounds);
+                    if (across.Reached)
+                    {
+                        wrong.Add($"  {body} B{-level}: the keep's own square is reachable from the "
+                            + $"customer's side in {across.Steps} steps.");
+                    }
 
-            // THE CONTROL. The far end of the same desk, on the customer's side — a walk that must succeed,
-            // so the refusal above cannot be a bounds slip or a walker that never reaches anything.
-            (double ox, double oy) = IntoTheHall(in desk);
-            var along = new DeckReachability.Point(
-                run.X1 + (ox * SurfaceScale.CaptainWidthDu * 2),
-                run.Y1 + (oy * SurfaceScale.CaptainWidthDu * 2));
-            if (DeckReachability.Standable(along.X, along.Y, BodyRadiusDu, solid)
-                && !DeckReachability.Path(from, along, solid, BodyRadiusDu, bounds).Reached)
-            {
-                wrong.Add($"  {body} B{-level}: the far end of the captain's own side of the bar cannot be "
-                    + "walked to either — this room is broken in some other way and the refusal above "
-                    + "means nothing.");
+                    // …AND THE GOODS HOIST'S OWN CAR, which is the same band and the same law. It is behind
+                    // the same line — its front is the shutter, which is a locked door and therefore a wall
+                    // until somebody takes the hasp off it with a sentry (#803). The flood the client
+                    // already runs cannot see this one: it watches the desk's own photograph, and the car is
+                    // the twelve du before the picture starts. So the counter is asked about its WHOLE
+                    // length here, hoist and all.
+                    if (hall.Freight is { } hoist)
+                    {
+                        double carX = (hoist.X0 + hoist.X1) / 2.0, carY = (hoist.Y0 + hoist.Y1) / 2.0;
+                        if (!DeckReachability.Standable(carX, carY, BodyRadiusDu, solid))
+                        {
+                            wrong.Add($"  {body} B{-level}: the goods car has no floor in it — the walk "
+                                + "would refuse for the wrong reason.");
+                        }
+                        else if (DeckReachability.Path(
+                            from, new DeckReachability.Point(carX, carY), solid, BodyRadiusDu,
+                            bounds).Reached)
+                        {
+                            wrong.Add($"  {body} B{-level}: a captain can walk off the hall floor into the "
+                                + "goods hoist's car — the crew's own side of the counter is open floor.");
+                        }
+                    }
+
+                    // THE CONTROL. The far end of the same desk, on the customer's side — a walk that must
+                    // succeed, so the refusals above cannot be a bounds slip or a walker that never reaches
+                    // anything.
+                    var along = new DeckReachability.Point(
+                        run.X1 + (ox * SurfaceScale.CaptainWidthDu * 2),
+                        run.Y1 + (oy * SurfaceScale.CaptainWidthDu * 2));
+                    if (DeckReachability.Standable(along.X, along.Y, BodyRadiusDu, solid)
+                        && !DeckReachability.Path(from, along, solid, BodyRadiusDu, bounds).Reached)
+                    {
+                        wrong.Add($"  {body} B{-level}: the far end of the captain's own side of the bar "
+                            + "cannot be walked to either — this room is broken in some other way and the "
+                            + "refusal above means nothing.");
+                    }
+                }
             }
 
             // …AND IT STILL SERVES. Every step of the way along the front, at the distance a customer
@@ -378,7 +411,8 @@ public sealed class OneCounterAndOnlyOneTests
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} counter(s) can be walked through, or cannot be ordered at:\n"
             + string.Join("\n", wrong.Take(12)));
-        Assert.True(counters >= 20, $"only {counters} counter(s) were walked.");
+        Assert.True(counters >= 20, $"only {counters} serving counter(s) in the sweep.");
+        Assert.True(walked >= 10, $"only {walked} counter(s) were WALKED — the A* proved little.");
         Assert.True(served >= 400, $"only {served} press point(s) — the desk was barely walked.");
     }
 
