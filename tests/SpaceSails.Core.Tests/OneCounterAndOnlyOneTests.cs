@@ -110,14 +110,21 @@ public sealed class OneCounterAndOnlyOneTests
         .. floor.Locked.Select(l => new SurfaceCollision.Segment(l.X1, l.Y1, l.X2, l.Y2)),
     ];
 
-    /// <summary>Which way is OUT of the desk and into the hall, as a unit vector — read off a published
-    /// place rather than worked out from the room's axes, because the places are the only thing in the
-    /// record that knows which side the customers are on.</summary>
+    /// <summary>Which way is OUT of the desk and into the hall, as a unit vector.
+    ///
+    /// <para>Off the RECT and never off the row: the face is one edge of the box, so the step from the box's
+    /// own middle to the middle of that edge points away from the counter by construction. Reading it off a
+    /// published place instead would let a row laid entirely on the wrong side define "the right side" for
+    /// the guard that is judging it — a world that cannot tell pass from fail, which is this house's fifth
+    /// named bug class. Watched: with the whole row flipped into the band, the row-derived version reported
+    /// only "inside the desk itself" and had nothing to say about sides at all.</para></summary>
     private static (double X, double Y) IntoTheHall(in UndergroundComplex.CounterDesk desk)
     {
-        UndergroundComplex.CounterPlace p = desk.Row[0];
-        double d = p.StandoffDu;
-        return d > 0 ? ((p.X - p.FaceX) / d, (p.Y - p.FaceY) / d) : (0, 0);
+        double cx = (desk.X0 + desk.X1) / 2.0, cy = (desk.Y0 + desk.Y1) / 2.0;
+        double mx = (desk.FaceX0 + desk.FaceX1) / 2.0, my = (desk.FaceY0 + desk.FaceY1) / 2.0;
+        double dx = mx - cx, dy = my - cy;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        return len > 0 ? (dx / len, dy / len) : (0, 0);
     }
 
     // ── (a) THE DRIFT, KILLED ─────────────────────────────────────────────────────────────────────────
@@ -134,10 +141,13 @@ public sealed class OneCounterAndOnlyOneTests
     /// <para><b>Proven RED against the bar as it shipped</b> — the run at <c>HallServiceStandoffDu</c> and
     /// the row at the old <c>HallStoolStandoffDu = 1.6</c>:</para>
     /// <code>
-    /// 41 counter(s) are in more than one place:
-    ///   europa B1: the [E] run is 2.00 du off the desk's own face — the rail floats in open floor.
-    ///   europa B1 stool 0: sits 1.60 du off the desk's face, further than a body is wide (1.40) —
+    /// 352 counter(s) are in more than one place:
+    ///   luna B1: the [E] run is 2.00 du off the desk's own face at one end — the rail floats in open floor.
+    ///   luna B1: the [E] run is 2.00 du off the desk's own face at the other end — …
+    ///   luna B1: the [E] run is 2.00 du off the desk's own face at the middle — …
+    ///   luna B1 stool 0: sits 1.60 du off the desk's face, further than a body is wide (1.40) —
     ///       a seat at a counter that is not there.
+    ///   luna B1 stool 1: sits 1.60 du off the desk's face, further than a body is wide (1.40) — …
     ///   …
     /// </code>
     /// </summary>
@@ -263,10 +273,10 @@ public sealed class OneCounterAndOnlyOneTests
     /// <para><b>Proven RED</b> by taking the desk's own front face out of the wall list — the one line the
     /// whole counter rests on:</para>
     /// <code>
-    /// 41 counter(s) can be walked through, or cannot be ordered at:
-    ///   luna B1: the keep's own square is reachable from the customer's side in 6 steps.
-    ///   luna B1: a captain can walk off the hall floor into the goods hoist's car — the crew's own side of
-    ///       the counter is open floor.
+    /// 32 counter(s) can be walked through, or cannot be ordered at:
+    ///   luna B1: the keep's own square is reachable from the customer's side in 35 steps.
+    ///   phobos B1: the keep's own square is reachable from the customer's side in 35 steps.
+    ///   europa B1: the keep's own square is reachable from the customer's side in 35 steps.
     ///   …
     /// </code>
     /// </summary>
@@ -392,11 +402,23 @@ public sealed class OneCounterAndOnlyOneTests
     /// stool <c>s</c>, which is what #820's snap and #792's occupancy both read the row by. A gap that
     /// renumbered the seats would sit a captain in somebody's lap.</para>
     ///
-    /// <para><b>Proven RED</b> by laying the row the way #792 did — eight seats, evenly, no holes:</para>
+    /// <para><b>Proven RED twice.</b> By laying the row the way #792 did — eight seats, evenly, no
+    /// holes:</para>
     /// <code>
-    /// 41 counter row(s) are wrong:
-    ///   europa B1: 8 place(s) in the row and no TILL in it at all.
-    ///   europa B1: 8 place(s) in the row and no COLLECTION in it at all.
+    /// 96 counter row(s) are wrong:
+    ///   luna B1: 8 place(s) in the row and no Till in it at all.
+    ///   luna B1: 8 place(s) in the row and no Collection in it at all.
+    ///   luna B1: 0 gap(s) in the row, and the counter says there are 2.
+    ///   …
+    /// </code>
+    ///
+    /// <para>…and by laying the whole row on the KEEP's side of the face (<c>faceV + standoff</c>, the sign
+    /// slip this room's v axis invites), which is the clause that says the keep's side seats nobody:</para>
+    /// <code>
+    /// 640 counter row(s) are wrong:
+    ///   luna B1: place 0 (Stool) is 1.05 du on the KEEP's side of the desk.
+    ///   luna B1: place 0 (Stool) is inside the desk itself.
+    ///   luna B1: place 2 (Till) is 2.00 du on the KEEP's side of the desk.
     ///   …
     /// </code>
     /// </summary>
