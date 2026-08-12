@@ -200,6 +200,23 @@ public partial class Map
             consoles.Add(new(DeckPlan.ConsoleKind.LabDoor, (float)d.X, (float)(d.Y - LabDoorHalf - 0.9),
                              $"{LockedDoor.Label(state, _hasVantarCard)} · {d.Deeper}"));
         }
+
+        // ── #822 · AND THE CRAWL, which is the same law one more time: shut is a WALL. Owner's ruling on
+        //    the fire-code sweep — "the second exit is itself hidden ... two doors nobody can see." It is
+        //    NOT a lab door: it never appears on the board, the lockdown cannot throw it, and it carries no
+        //    plate naming what is on the other side. A captain meets it by walking to the back wall of the
+        //    deepest room in the mountain and finding that the rock there answers.
+        foreach (SecretLab.HiddenWay way in region.TheHidden)
+        {
+            if (ex.SecretLabCrawlForced)
+            {
+                continue;   // forced: the plug is gone and the mountain has a back door
+            }
+            walls.Add(new((float)way.Plug.X1, (float)way.Plug.Y1,
+                          (float)way.Plug.X2, (float)way.Plug.Y2, false, way.Plug.IsHull));
+            consoles.Add(new(DeckPlan.ConsoleKind.SecretDoor, (float)way.X, (float)way.Y,
+                             "⚙ THE ROCK HERE RINGS HOLLOW — set your shoulder to it"));
+        }
     }
 
     /// <summary>Half the height of a lab doorway. The same 1.6 the hidden door's own gap uses, so every opening
@@ -217,9 +234,19 @@ public partial class Map
         {
             return;
         }
-        ex.SecretLabDoorChannel = new DoorChannel { DoorId = "secretlab", AnchorX = spot.X, AnchorY = spot.Y };
+        // #822 · The same console kind serves the crawl at the back of the heart, and it is told apart by
+        // WHERE THE CAPTAIN IS rather than by a second kind: the front door's own spot is removed the moment
+        // it is forced, so inside the lab this is the only one of these there is. One verb, one channel, one
+        // progress bar — the owner's hidden second exit reusing the hidden first exit's whole flow.
+        bool crawl = ex.SecretLabForced;
+        ex.SecretLabDoorChannel = new DoorChannel
+        {
+            DoorId = crawl ? "labcrawl" : "secretlab", AnchorX = spot.X, AnchorY = spot.Y,
+        };
         RendererInterop.PlayCue("board");
-        ShowPulseMessage("⚙ Setting your shoulder to the hidden door… hold position. Whatever's behind it has waited a long time. Step away to abort.");
+        ShowPulseMessage(crawl
+            ? "⚙ Setting your shoulder to the hollow rock… hold position. It moves. Somebody meant it to. Step away to abort."
+            : "⚙ Setting your shoulder to the hidden door… hold position. Whatever's behind it has waited a long time. Step away to abort.");
     }
 
     private void StepSecretLabDoorChannel(double dtRealSeconds)
@@ -239,8 +266,37 @@ public partial class Map
         if (ch.Progress >= 1.0)
         {
             ex.SecretLabDoorChannel = null;
-            ForceSecretLabDoor(ex);
+            if (ch.DoorId == "labcrawl")
+            {
+                ForceLabCrawl(ex);
+            }
+            else
+            {
+                ForceSecretLabDoor(ex);
+            }
         }
+    }
+
+    // #822 · The crawl gives. The plug comes out of the geometry on the next compose — the deck is rebuilt
+    // rather than appended to, because this is a wall going AWAY and every other force in this file is a
+    // region arriving. RebuildSurfaceDeck replays the whole site, crawl included, which is the same path a
+    // bury/lift/drop already takes.
+    private void ForceLabCrawl(SurfaceExcursion ex)
+    {
+        if (ex.Lab is not { HasLab: true } placement)
+        {
+            return;
+        }
+        ex.SecretLabCrawlForced = true;
+
+        SecretLab.Region region = SecretLab.Build(
+            ex.Stop.Body.Id, MoonSurface.ExpeditionField(), placement.DoorX, placement.DoorY);
+        string line = region.TheHidden.Count > 0 ? region.TheHidden[0].Line : "";
+
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+        RendererInterop.PlayCue("reveal");
+        ShowPulseMessage($"⛏ The plate shifts and grates aside. {line} It goes OUT.");
     }
 
     // The door gives — the lab APPENDS to the live plan (walls + benches/pods/spine + Vantar's consoles), and

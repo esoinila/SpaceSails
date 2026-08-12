@@ -637,6 +637,11 @@ public partial class Map
         public SecretLab.Placement? Lab { get; set; }
         public bool SecretLabDoorRevealed { get; set; }
         public bool SecretLabForced { get; set; }
+
+        // #822 · …and whether the crawl at the back of THE HEART has been forced. The fire code's second
+        // exit, and it is hidden the way the front door is: nothing marks it, nothing is on the tracker, and
+        // it stays a wall until a captain sets their shoulder to it. Session-only, like Forced.
+        public bool SecretLabCrawlForced { get; set; }
         public bool SecretLabCacheLooted { get; set; }
         public bool SecretLabRevealFired { get; set; }
         public HashSet<string> SecretLabLogsRead { get; } = [];

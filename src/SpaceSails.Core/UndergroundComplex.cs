@@ -816,7 +816,7 @@ public static class UndergroundComplex
     /// <para>It stops being a haul room when it becomes one: a pressure vessel somebody maintained is not a
     /// drawer to turn over, and the air is what it pays.</para></summary>
     private static List<Refuge> CarveRefuges(
-        string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
+        string bodyId, int level, List<Room> rooms,
         in SurfaceLayout.Field field)
     {
         var refuges = new List<Refuge>();
@@ -893,9 +893,9 @@ public static class UndergroundComplex
         }
 
         int pick = pool[DiceRule.Roll(DiceRule.Seed($"hive:refuge:{bodyId}:{level}"), pool.Count).Face - 1];
-        (double rx, double ry, string _) = rooms[pick];
+        Room chosen = rooms[pick];
         rooms.RemoveAt(pick);
-        refuges.Add(new Refuge(rx, ry, RefugeSign(bodyId, level, 0)));
+        refuges.Add(new Refuge(chosen.X, chosen.Y, RefugeSign(bodyId, level, 0)));
         return refuges;
     }
 
@@ -1241,8 +1241,15 @@ public static class UndergroundComplex
     /// <param name="HalfH">Half-height.</param>
     /// <param name="Table">The one round top in it, at its own centre.</param>
     public readonly record struct Cabinet(
-        int Number, double X, double Y, double HalfW, double HalfH, (double X, double Y) Table)
+        int Number, double X, double Y, double HalfW, double HalfH, (double X, double Y) Table,
+        // #822 · The gaps in its own face. Appended, so every caller that builds one positionally still
+        // means the same booth.
+        IReadOnlyList<SurfaceLayout.Doorway>? Leaves = null)
     {
+        /// <summary>#822 · Every way out of it, never null. A cabinet is a room with a door in one wall and
+        /// three solid ones, so this is the whole of its egress and the fire code reads it directly.</summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> Ways => Leaves ?? [];
+
         /// <summary>Is the captain inside this cabinet? The box the walls were laid on, and nothing
         /// else.</summary>
         public bool Contains(double x, double y) =>
@@ -2105,6 +2112,68 @@ public static class UndergroundComplex
     public const double FireCodeSmallRoomDu = 8.0;
 
     /// <summary>
+    /// #822 · ONE CARVED ROOM, WITH ITS OWN WAYS OUT — the list the fire code is swept over.
+    ///
+    /// <para>The building has published a room's CENTRE since #707 and its walls since the beginning, and
+    /// neither of those can answer the owner's question. "How do you leave this room" is a fact about a
+    /// BOX and the holes in it, and until this record existed the only way to ask it was to guess a room's
+    /// extent by firing rays at the wall list — which walks straight out through the very doorway it is
+    /// trying to count. So every placer down here hands over the box it laid and the gaps it cut, exactly
+    /// as <see cref="Hall.Openings"/> and <see cref="RingRoom.Doors"/> already do, and the sweep reads one
+    /// list nobody has to reconstruct.</para>
+    ///
+    /// <para><b>A way is a GAP, not a leaf.</b> The galleries of the found band hang no doors at all
+    /// (#677 — an imported leaf down there would say somebody fitted it), so a room's ways are counted off
+    /// the holes its own carver left in its own walls and never off <see cref="FloorPlan.Doorways"/>. A
+    /// locked chamber is not in this list at all: it is not a space a captain can stand in, and the fire
+    /// code is about the ones who are standing in them.</para>
+    /// </summary>
+    /// <param name="X0">Left edge of the box the walls were laid on.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="Plate">What is stencilled on it, empty in the found band and on the plainer fittings.</param>
+    /// <param name="Ways">Every hole in its walls a body can pass — street doors, corridor mouths, the gate
+    /// onto the green, the door through to the recess next door. Never the locked ones.</param>
+    public readonly record struct Room(
+        double X0, double Y0, double X1, double Y1, string Plate,
+        IReadOnlyList<SurfaceLayout.Doorway> Ways)
+    {
+        /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
+        public double X => (X0 + X1) / 2.0;
+
+        /// <summary>The same.</summary>
+        public double Y => (Y0 + Y1) / 2.0;
+
+        /// <summary>How wide it is.</summary>
+        public double WidthDu => X1 - X0;
+
+        /// <summary>How deep it is.</summary>
+        public double DepthDu => Y1 - Y0;
+
+        /// <summary>Its longest wall — the number <see cref="FireCodeSmallRoomDu"/> is stated in.</summary>
+        public double LongestSideDu => Math.Max(WidthDu, DepthDu);
+
+        /// <summary>How much floor it has.</summary>
+        public double FloorDu2 => WidthDu * DepthDu;
+
+        /// <summary>#822 · Is it let off with one door? A space you can cross in two paces and whose one
+        /// door you are never out of reach of — a WC cubicle, a privacy booth, an en-suite cell. The
+        /// exemption #821's lock mechanic stands on.</summary>
+        public bool BedroomSmall => LongestSideDu <= FireCodeSmallRoomDu;
+
+        /// <summary>How many ways out of it there are — the number the fire code is stated in.</summary>
+        public int Exits => Ways.Count;
+
+        /// <summary>#822 · Does this room satisfy the standing law? Asked here rather than in the guard, so
+        /// the carve and the sweep are reading one sentence.</summary>
+        public bool MeetsFireCode => BedroomSmall || Exits >= FireCodeMinExits;
+
+        /// <summary>Is the captain in it? The box the walls were laid on, and nothing else.</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+    }
+
+    /// <summary>
     /// #822 · How many doors a run of street frontage this long is served by, fire code included. The whole
     /// of the door law in one function, so the carve, the guards and any later sweep are reading one
     /// sentence.
@@ -2265,9 +2334,15 @@ public static class UndergroundComplex
         /// <summary>#817 · The seats, never null.</summary>
         public IReadOnlyList<RingOffice.Chair> Seats => Chairs ?? [];
 
+        /// <summary>#822 · EVERY WAY OUT OF IT — the street doors and, where it has one, the gate onto the
+        /// green. The list <see cref="Room.Ways"/> is filled from, so a suite's egress is one fact told
+        /// once rather than a count here and a list somewhere else.</summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> WaysOut =>
+            Gate is { } onto ? [.. Doors, onto] : Doors;
+
         /// <summary>#822 · How many ways out of it there are altogether — the street doors and the gate onto
         /// the green. The number the fire code is stated in, asked of the room's own published lists.</summary>
-        public int Exits => Doors.Count + (Gate is null ? 0 : 1);
+        public int Exits => WaysOut.Count;
 
         /// <summary>The middle of it — where its plate is read from and where the audit walks to.</summary>
         public double X => (X0 + X1) / 2.0;
@@ -2531,7 +2606,17 @@ public static class UndergroundComplex
     /// <param name="Of">The plate of the room it hangs off — the reason it is there.</param>
     /// <param name="Open">Whether its parent room's own door opens. False behind a locked plate, where the
     /// cell is a thing you can only read from the corridor, exactly like the room it belongs to.</param>
-    public readonly record struct EnSuite(double X, double Y, string Of, bool Open);
+    public readonly record struct EnSuite(
+        double X, double Y, string Of, bool Open,
+        // #822 · The gap cut in the parent's back wall — the cell's one door, and the whole of its egress.
+        // Appended for the reason every optional on these records is appended.
+        SurfaceLayout.Doorway? Leaf = null)
+    {
+        /// <summary>#822 · Every way out of it, never null. A cell is <see cref="EnSuiteDepth"/> by twice
+        /// <see cref="EnSuiteHalfHeight"/> — eight du on its longest side, which is
+        /// <see cref="FireCodeSmallRoomDu"/> exactly. It is the room the exemption was measured on.</summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> Ways => Leaf is { } leaf ? [leaf] : [];
+    }
 
     /// <summary>How deep the en-suite cell hangs off the back of its room, in deck units.</summary>
     public const double EnSuiteDepth = 5.0;
@@ -2998,11 +3083,19 @@ public static class UndergroundComplex
         Park? Park = null,
         // #798 · Somewhere to put a document you never want read again. Appended and never inserted: every
         // caller of this record builds it positionally.
-        IReadOnlyList<RipAndBin.Bin>? Bins = null)
+        IReadOnlyList<RipAndBin.Bin>? Bins = null,
+        // #822 · EVERY CARVED SPACE A CAPTAIN CAN STAND IN, with the holes in its own walls. The fire code
+        // is swept over this and nothing else. Appended, for the reason above.
+        IReadOnlyList<Room>? Rooms = null)
     {
         /// <summary>#798 · Somewhere to put a paper on this floor, never null — a caller asking "is there a
         /// bin here" must not have to tell an empty list from a missing one.</summary>
         public IReadOnlyList<RipAndBin.Bin> TheBins => Bins ?? [];
+
+        /// <summary>#822 · Every room on this floor, never null. <see cref="RoomCentres"/> is the POOL the
+        /// amenities and the refuge were drawn out of and it shrinks as they take from it; this is the
+        /// building as carved, and it is the list the fire code walks.</summary>
+        public IReadOnlyList<Room> TheRooms => Rooms ?? [];
 
         /// <summary>
         /// #820 · THE TALL SEATS ON THIS FLOOR, in the counter's own order — entry <c>s</c> is
@@ -3065,7 +3158,7 @@ public static class UndergroundComplex
         // the generator the moment rank became readable in plumbing: which rooms get an en-suite, and which
         // rooms are the wrong ones to turn into a canteen, are both questions about the plate. Carried in the
         // same list rather than in a second one kept in lockstep beside it, for the obvious reason.
-        var rooms = new List<(double X, double Y, string Plate)>();
+        var rooms = new List<Room>();
         var ensuites = new List<EnSuite>();
 
         // #585 · A CLAIM LEDGER, DOWN HERE TOO. The A* audit found rooms that were drawn and could not be
@@ -3541,8 +3634,16 @@ public static class UndergroundComplex
             // a facility and the collision field was a set of sealed boxes beside a sealed tube. Two walls on
             // one line, each correct on its own, and neither aware of the other — the same shape as every
             // expensive bug on this ground.
-            RibFace(walls, x - CorridorHalf, mouth, far, bodyId, level, i, -1, down, roomScale);
-            RibFace(walls, x + CorridorHalf, mouth, far, bodyId, level, i, +1, down, roomScale);
+            // #822 · …and the rooms are laid FIRST now, because the face has one more kind of gap in it and
+            // only the room placer knows where those fell. Nothing else about the order changes: the two
+            // builders touch different walls, and the one wall they share is the one this hands over.
+            (List<(double Lo, double Hi)> minusMouths, List<(double Lo, double Hi)> plusMouths) =
+                AddRoomsAlong(
+                    walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, i, x, mouth, far, down,
+                    roomScale, hallSlot is { } taken && taken.Rib == i ? taken.Side : 0);
+
+            RibFace(walls, x - CorridorHalf, mouth, far, bodyId, level, i, -1, down, roomScale, minusMouths);
+            RibFace(walls, x + CorridorHalf, mouth, far, bodyId, level, i, +1, down, roomScale, plusMouths);
 
             // The rib's far end. #585: it is ALWAYS closed — by a sealed door with a distance on it, or by a
             // plain wall. It was 40/60 before, and a corridor that simply stops in mid-air is the same
@@ -3578,9 +3679,6 @@ public static class UndergroundComplex
             // #751 · …and on the column the hall is standing on, no rooms at all. The rib's own face is
             // still built above (RibFace), with its doorway at every slot — those gaps ARE the hall's doors,
             // and they are the same gaps the corridor has because nothing ever cut a second set.
-            AddRoomsAlong(
-                walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, i, x, mouth, far, down,
-                roomScale, hallSlot is { } taken && taken.Rib == i ? taken.Side : 0);
         }
 
         // #608 · LAST, because a refuge is taken out of the rooms this floor actually managed to build. Any
@@ -3601,9 +3699,15 @@ public static class UndergroundComplex
         {
             if (room.Side != RingSide.Far)
             {
-                rooms.Add((room.X, room.Y, room.Plate));
+                rooms.Add(new Room(room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut));
             }
         }
+
+        // #822 · THE BUILDING AS CARVED, taken here — before the amenities and the refuge start REMOVING
+        // rooms from the pool. A canteen is a chamber with a counter in it and a refuge is a chamber with a
+        // tank in it: both are still rooms a captain stands in, both still have to have two ways out, and a
+        // sweep read off the pool after they had taken theirs would quietly stop asking about them.
+        var published = new List<Room>(rooms);
 
         List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY, hallSite);
         List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, field);
@@ -3624,15 +3728,50 @@ public static class UndergroundComplex
             {
                 if (room.Side == RingSide.Far)
                 {
-                    rooms.Add((room.X, room.Y, room.Plate));
+                    rooms.Add(new Room(room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut));
+                    published.Add(new Room(room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut));
                 }
             }
         }
 
-        var centres = new List<(double X, double Y)>(rooms.Count);
-        foreach ((double rx, double ry, string _) in rooms)
+        // #822 · …and the rooms that were never in the pool at all, because nothing may ever take them: the
+        // hall, the cabinets down its outer wall, the WC cubicles in the block's washroom and the en-suite
+        // cells hung off the principal chambers. The last three are the exemption the law is written with —
+        // a booth and a cell are bedroom-small (see <see cref="FireCodeSmallRoomDu"/>) and keep their single
+        // leaf, which is exactly what #821's catch is bolted to.
+        if (hallSite is { } venue)
         {
-            centres.Add((rx, ry));
+            Hall theHall = venue.Hall;
+            published.Add(new Room(
+                theHall.X0, theHall.Y0, theHall.X1, theHall.Y1,
+                AmenitySigns(bodyId, HallUseOn(bodyId, level)).Item1, theHall.Openings));
+            foreach (Cabinet cab in theHall.Cabinets)
+            {
+                published.Add(new Room(
+                    cab.X - cab.HalfW, cab.Y - cab.HalfH, cab.X + cab.HalfW, cab.Y + cab.HalfH,
+                    cab.Plate, cab.Ways));
+            }
+        }
+        foreach (RingRoom room in ring)
+        {
+            foreach (RingOffice.Stall cell in room.Cubicles)
+            {
+                published.Add(new Room(
+                    cell.X0, cell.Y0, cell.X1, cell.Y1, cell.Plate, [cell.Door]));
+            }
+        }
+        foreach (EnSuite cell in ensuites)
+        {
+            published.Add(new Room(
+                cell.X - (EnSuiteDepth / 2.0), cell.Y - EnSuiteHalfHeight,
+                cell.X + (EnSuiteDepth / 2.0), cell.Y + EnSuiteHalfHeight,
+                cell.Of, cell.Ways));
+        }
+
+        var centres = new List<(double X, double Y)>(rooms.Count);
+        foreach (Room pooled in rooms)
+        {
+            centres.Add((pooled.X, pooled.Y));
         }
 
         // #798 · LAST OF ALL, THE BINS — because a bin is fitted into a room that is already finished. It
@@ -3645,7 +3784,7 @@ public static class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins);
+            glass, park, bins, published);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,
@@ -4335,24 +4474,66 @@ public static class UndergroundComplex
         {
             double band = (length - (2 * HallEdgePadDu)) / CabinetsPerHall;
             double cabU0 = width - HallCabinetDepthDu;
+            double ccU = (cabU0 + width) / 2.0;
+
+            // ── #822 · THE ROW INTERCONNECTS, AND THAT IS WHERE THE SECOND WAY OUT COMES FROM ───────────
+            //
+            // A cabinet is nowhere near bedroom-small — it is a negotiating room, not a phone booth — so a
+            // single leaf made it the most literal trap on the floor: a windowless box off the back wall of
+            // a bar, with the only way out behind whoever you came in to meet.
+            //
+            // Two leaves in its own face is the obvious answer and it is the WRONG one here, and the ring
+            // already paid to learn why (#817/#724): this face is thirteen to eighteen du long, and two
+            // full-width leaves in it leave a pier of about a du — which the movement funnel reads as
+            // standing in a doorway and answers by holding still. The room needs two ways out; it does not
+            // need both of them in the same wall.
+            //
+            // So the PARTY WALLS carry them. The cabinets are laid edge to edge on the band's own division
+            // lines instead of with a du of rock between them, each dividing wall is built once, and the
+            // inner ones have a leaf in the middle of their depth. Three booths become a run you can pass
+            // through — and a captain cornered in cabinet 3 leaves through cabinet 2, which is exactly the
+            // kind of route the standing law was asked for.
+            var partyLeaf = new SurfaceLayout.Doorway?[CabinetsPerHall + 1];
+            for (int k = 0; k <= CabinetsPerHall; k++)
+            {
+                double v = HallEdgePadDu + (k * band);
+                if (k == 0 || k == CabinetsPerHall)
+                {
+                    walls.Add(new(X(cabU0), Y(v), X(width), Y(v), true));   // the two ends of the run
+                    continue;
+                }
+                walls.Add(new(X(cabU0), Y(v), X(ccU - DoorHalf), Y(v), true));
+                walls.Add(new(X(ccU + DoorHalf), Y(v), X(width), Y(v), true));
+                partyLeaf[k] = new SurfaceLayout.Doorway(X(ccU - DoorHalf), Y(v), X(ccU + DoorHalf), Y(v));
+            }
+
             for (int c = 0; c < CabinetsPerHall; c++)
             {
-                double vLo = HallEdgePadDu + (c * band) + 1.0;
-                double vHi = HallEdgePadDu + ((c + 1) * band) - 1.0;
+                double vLo = HallEdgePadDu + (c * band);
+                double vHi = HallEdgePadDu + ((c + 1) * band);
                 double vMid = (vLo + vHi) / 2.0;
 
-                // Three sides and a face with one gap in it — the same shape every room down here has, and
-                // the gap is the same DoorHalf the corridor and the en-suites are cut to.
-                walls.Add(new(X(cabU0), Y(vLo), X(width), Y(vLo), true));
-                walls.Add(new(X(cabU0), Y(vHi), X(width), Y(vHi), true));
+                // The face, with the one gap it has always had — cut to the same DoorHalf the corridor and
+                // the en-suites are cut to. The party walls above are the other two sides.
                 walls.Add(new(X(cabU0), Y(vLo), X(cabU0), Y(vMid - DoorHalf), true));
                 walls.Add(new(X(cabU0), Y(vMid + DoorHalf), X(cabU0), Y(vHi), true));
 
-                double ccU = (cabU0 + width) / 2.0;
+                var leaves = new List<SurfaceLayout.Doorway>(3)
+                {
+                    new(X(cabU0), Y(vMid - DoorHalf), X(cabU0), Y(vMid + DoorHalf)),
+                };
+                foreach (int k in (int[])[c, c + 1])
+                {
+                    if (partyLeaf[k] is { } through)
+                    {
+                        leaves.Add(through);
+                    }
+                }
+
                 cabinets.Add(new Cabinet(
                     c + 1, (X(cabU0) + X(width)) / 2.0, Y(vMid),
                     HallCabinetDepthDu / 2.0, (vHi - vLo) / 2.0,
-                    (X(ccU), Y(vMid))));
+                    (X(ccU), Y(vMid)), leaves));
             }
         }
 
@@ -5505,7 +5686,9 @@ public static class UndergroundComplex
         double basinX = backX + (outward * 0.76);
         walls.Add(new(basinX, cy + 1.0, basinX, cy + 3.2, true));
 
-        ensuites.Add(new EnSuite(backX + (outward / 2.0), cy, plate, open));
+        ensuites.Add(new EnSuite(
+            backX + (outward / 2.0), cy, plate, open,
+            new SurfaceLayout.Doorway(backX, cy - DoorHalf, backX, cy + DoorHalf)));
         return true;
     }
 
@@ -5524,7 +5707,7 @@ public static class UndergroundComplex
     /// en-suites only appearing on floors that breathe, which is why §13's amenity law is one rule and not
     /// three.</para></summary>
     private static List<Amenity> CarveAmenities(
-        string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
+        string bodyId, int level, List<Room> rooms,
         List<SurfaceLayout.Wall> walls, double shaftX, double shaftY, HallSite? hall)
     {
         var built = new List<Amenity>();
@@ -5566,7 +5749,8 @@ public static class UndergroundComplex
 
             Nearest(near, rooms, site.X, site.Y);
             int washroom = near[0];
-            (double wx, double wy, string _) = rooms[washroom];
+            Room wet = rooms[washroom];
+            (double wx, double wy) = (wet.X, wet.Y);
             rooms.RemoveAt(washroom);
             (string wplate, string wfixture) = AmenitySigns(bodyId, Comfort.Washroom);
             built.Add(new Amenity(
@@ -5626,7 +5810,7 @@ public static class UndergroundComplex
         taken.Sort((a, b) => b.Index.CompareTo(a.Index));
         foreach ((int index, Comfort use) in taken)
         {
-            (double rx, double ry, string _) = rooms[index];
+            (double rx, double ry) = (rooms[index].X, rooms[index].Y);
             rooms.RemoveAt(index);
             (string plate, string fixtureName) = AmenitySigns(bodyId, use);
             built.Add(new Amenity(use, rx, ry, plate, fixtureName, Fitting(walls, use, rx, ry)));
@@ -5928,7 +6112,7 @@ public static class UndergroundComplex
     /// <summary>Sort room indices by how far they are from a point, ties broken by index — <c>List.Sort</c>
     /// is not stable, and a floor being the same floor every visit is law down here.</summary>
     private static void Nearest(
-        List<int> which, List<(double X, double Y, string Plate)> rooms, double px, double py)
+        List<int> which, List<Room> rooms, double px, double py)
     {
         which.Sort((a, b) =>
         {
@@ -5937,7 +6121,7 @@ public static class UndergroundComplex
             return by != 0 ? by : a.CompareTo(b);
         });
 
-        static double Dist2((double X, double Y, string Plate) room, double px, double py)
+        static double Dist2(Room room, double px, double py)
         {
             double dx = room.X - px, dy = room.Y - py;
             return (dx * dx) + (dy * dy);
@@ -6015,10 +6199,17 @@ public static class UndergroundComplex
         return ys;
     }
 
-    /// <summary>One side of a rib corridor, built as segments with a gap at every room door.</summary>
+    /// <summary>One side of a rib corridor, built as segments with a gap at every room door.
+    ///
+    /// <para>#822 · …and at every fire recess. Those spans are not worked out here: they are handed over by
+    /// <see cref="AddRoomsAlong"/>, which is the placer that knows which slots were built and which of them
+    /// hold a room anybody can stand in. #585's law is that the gap a room cuts and the gap its corridor
+    /// leaves are ONE gap, and a second opinion here about where a recess fell would be that bug wearing a
+    /// new coat.</para></summary>
     private static void RibFace(
         List<SurfaceLayout.Wall> walls, double x, double mouth, double far,
-        string bodyId, int level, int rib, int side, bool down, double roomScale)
+        string bodyId, int level, int rib, int side, bool down, double roomScale,
+        IReadOnlyList<(double Lo, double Hi)>? recesses = null)
     {
         var doors = RoomCentresAlong(mouth, far, down, roomScale);
         double lo = Math.Min(mouth, far), hi = Math.Max(mouth, far);
@@ -6027,6 +6218,10 @@ public static class UndergroundComplex
         foreach (double cy in doors)
         {
             cuts.Add((cy - DoorHalf, cy + DoorHalf));
+        }
+        if (recesses is not null)
+        {
+            cuts.AddRange(recesses);
         }
         cuts.Sort((a, b) => a.Lo.CompareTo(b.Lo));
 
@@ -6052,6 +6247,17 @@ public static class UndergroundComplex
     /// would have wide doors anyway; this is one of the happy cases where the honest fiction and the robust
     /// number are the same number.</para></summary>
     public const double DoorHalf = 3.2;
+
+    /// <summary>#822 · The narrowest a fire recess may be and still be a way out. Half a doorway — the
+    /// narrowest gap this building has ever asked a body to pass, and comfortably more than twice the
+    /// captain's own width at the step the reachability lattice samples on.
+    ///
+    /// <para>It is a floor, not a target: the gap the room module leaves between two slots is wider than
+    /// this everywhere the generator has ever laid one, and this exists so that a floor whose module leaves
+    /// no useful gap gets NO recess rather than a slot too narrow to walk out of. The sweep then reports
+    /// that chamber as the violation it is, which is the honest failure — a recess a body cannot enter
+    /// would be a second exit only on the plan.</para></summary>
+    public const double FireRecessMinDu = DoorHalf;
 
     /// <summary>#585/#677 · THE ROOM MODULE — how wide and how deep one room off a rib is, at the scale a
     /// facility builds at.
@@ -6116,9 +6322,37 @@ public static class UndergroundComplex
         return string.Empty;
     }
 
-    private static void AddRoomsAlong(
+    /// <summary>
+    /// #822 · THE FIRE RECESS — how a chamber comes to have a second way out.
+    ///
+    /// <para>Owner's standing law, mid-build: <i>"no space except a small bedroom can only have one door …
+    /// it's a fire hazard otherwise."</i> Every chamber down here was a box with a single leaf onto a
+    /// dead-end cross corridor, which is the most literal trap the plan can draw, and there are ~1,500 of
+    /// them.</para>
+    ///
+    /// <para><b>The idiom is the room module's own leftover.</b> The slots along a rib are pitched a few du
+    /// further apart than a chamber is deep — <see cref="RoomCentresAlong"/> has always left that gap and
+    /// nothing has ever stood in it. Sealed at the back, it becomes a recess: it opens straight onto the rib
+    /// at its own width, and the chamber beside it takes a fire door through its own end wall into it. So
+    /// the second exit is derived from the walls the room already had and not one coordinate is typed —
+    /// and a captain leaves by a hole in a different wall from the one somebody is standing in.</para>
+    ///
+    /// <para><b>And where two open chambers share one recess it is a connecting door</b>, which is the
+    /// reading that makes sense for a pair of offices off the same corridor: the recess takes a leaf from
+    /// each room it touches, so two neighbours become a suite you can pass through. A LOCKED chamber takes
+    /// none — it is not a space a captain can stand in, the fire code has nothing to say about it, and
+    /// cutting it a fire door would throw away half of the owner's illusion of scale.</para>
+    ///
+    /// <para>The recess itself is circulation and not a room: it is an alcove off a corridor exactly as the
+    /// lift's own alcove is, so it is not in <see cref="FloorPlan.Rooms"/> and the sweep does not ask it for
+    /// two doors — though it has them.</para>
+    /// </summary>
+    /// <returns>The mouths it wants cut in each face of the rib, handed back rather than cut here, because
+    /// the wall that carries them belongs to <see cref="RibFace"/> — #585's law, said about one more gap.
+    /// </returns>
+    private static (List<(double Lo, double Hi)> Minus, List<(double Lo, double Hi)> Plus) AddRoomsAlong(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
-        List<(double X, double Y, string Plate)> rooms, List<EnSuite> ensuites,
+        List<Room> rooms, List<EnSuite> ensuites,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
         string bodyId, int level, int rib, double x, double mouth, double far, bool down, double roomScale,
         int hallSide = 0)
@@ -6131,6 +6365,20 @@ public static class UndergroundComplex
         // game — it would name a purpose, and a purpose implies somebody who had one.
         bool found = IsFound(bodyId, level);
         List<double> centres = RoomCentresAlong(mouth, far, down, roomScale);
+
+        // #822 · WHAT WAS ALREADY STANDING WHEN THIS RIB STARTED. The recesses are carved after every room
+        // on this rib is up, and they need to know the ground they are stepping into was free BEFORE this
+        // rib laid anything — the ledger by then also holds this rib's own rooms and their cells, and a
+        // recess is expected to sit against those. The ledger is still law (#585); this is the same law read
+        // at the moment the recess is actually about to occupy new ground.
+        int beforeThisRib = claimed.Count;
+
+        // #822 · Every chamber this rib built, so the recess pass can see the column rather than one room at
+        // a time: whether the slot beside it was built at all, and whether it is a room anybody can stand
+        // in. Index 0 is the rib's minus side, 1 its plus side.
+        var column = new (bool Built, bool Shut, double X1, double Y1, double X2, double Y2,
+            double FaceX, double BackX, double Cx, double Cy, List<SurfaceLayout.Doorway> Ways)
+            [2, centres.Count];
 
         for (int i = 0; i < centres.Count; i++)
         {
@@ -6176,9 +6424,11 @@ public static class UndergroundComplex
                 string plate = found ? "" : SignFor(bodyId, level, tag);
                 bool shut = !found && Frac(bodyId, tag + ":locked") < 0.5;
 
-                // Three walls and a corridor-facing face with a gap in it.
-                walls.Add(new(x1, y1, x2, y1, true));
-                walls.Add(new(x1, y2, x2, y2, true));
+                // #822 · The two end walls are laid in the SECOND pass below, because whether either of them
+                // carries a fire door is not a question about this room alone — it is a question about the
+                // recess it shares with the slot beside it, and that slot has not been built yet. Everything
+                // else about the room is decided here, in the order it always was, so the plates, the locks,
+                // the cells and the pool's own numbering are untouched.
 
                 // #707 · …and the back wall, which is the one that says whether anybody important sat here.
                 //
@@ -6217,6 +6467,7 @@ public static class UndergroundComplex
                 walls.Add(new(faceX, y1, faceX, cy - DoorHalf, true));
                 walls.Add(new(faceX, cy + DoorHalf, faceX, y2, true));
 
+                var ways = new List<SurfaceLayout.Doorway>(2);
                 if (shut)
                 {
                     locked.Add(new(faceX, cy - DoorHalf, faceX, cy + DoorHalf, plate));
@@ -6232,10 +6483,132 @@ public static class UndergroundComplex
                     {
                         doorways.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
                     }
-                    rooms.Add((cx, cy, plate));
+
+                    // #822 · …and the gap is a WAY OUT whether or not a leaf was hung in it, which is the
+                    // one place the fire code and the doorway list have to part company: the galleries
+                    // publish no doorways at all and every one of their chambers is still a room a captain
+                    // walks into and has to be able to walk out of. The list is the room's own and the
+                    // recess pass below appends to it.
+                    ways.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
+                    rooms.Add(new Room(x1, y1, x2, y2, plate, ways));
                 }
+
+                column[side < 0 ? 0 : 1, i] = (true, shut, x1, y1, x2, y2, faceX, backX, cx, cy, ways);
             }
         }
+
+        // ── #822 · THE RECESSES, AND THE END WALLS THAT ARE DECIDED WITH THEM ────────────────────────────
+        //
+        // One pass per face of the rib, walking the column outward from the spine exactly as the slots were
+        // laid. A room's recess is the gap on its MOUTH side — the one between it and the slot before it,
+        // or between it and the rib's own mouth for the first room in the column. That side rather than the
+        // blind end for one reason worth stating: it is the same gap for every room in the column, so the
+        // rule is one sentence, and the recess a captain steps out of always puts them a pace nearer the
+        // way home.
+        var minusMouths = new List<(double Lo, double Hi)>();
+        var plusMouths = new List<(double Lo, double Hi)>();
+        double dir = down ? -1.0 : 1.0;
+
+        for (int face = 0; face < 2; face++)
+        {
+            var cutNear = new bool[centres.Count];
+            var cutFar = new bool[centres.Count];
+            List<(double Lo, double Hi)> mouthsHere = face == 0 ? minusMouths : plusMouths;
+
+            for (int i = 0; i < centres.Count; i++)
+            {
+                (bool built, bool shut, double x1, _, double x2, _, _, double backX, _, double cy, _) =
+                    column[face, i];
+                if (!built || shut)
+                {
+                    continue;   // nothing to let out of, or nobody in there to let out
+                }
+
+                double nearEdge = cy - (dir * roomH / 2.0);
+                double limit = i > 0 ? centres[i - 1] + (dir * roomH / 2.0) : mouth;
+                double available = Math.Abs(nearEdge - limit);
+                double depth = Math.Min(available, 2 * DoorHalf);
+                if (depth < FireRecessMinDu)
+                {
+                    continue;   // the module left no gap here. The sweep says so out loud rather than here.
+                }
+
+                double endY = nearEdge - (dir * depth);
+                double lo = Math.Min(nearEdge, endY), hi = Math.Max(nearEdge, endY);
+
+                // #585 · The ledger is law for a recess exactly as it is for a room. Read against what was
+                // standing before this rib began — see the snapshot above.
+                bool taken = false;
+                for (int k = 0; k < beforeThisRib; k++)
+                {
+                    (double ax0, double ay0, double ax1, double ay1) = claimed[k];
+                    taken |= x1 < ax1 && x2 > ax0 && lo < ay1 && hi > ay0;
+                }
+                if (taken)
+                {
+                    continue;
+                }
+
+                // Sealed at the back, open to the rib. The mouth goes back to the wall builder.
+                walls.Add(new(backX, lo, backX, hi, true));
+                mouthsHere.Add((lo, hi));
+                cutNear[i] = true;
+
+                // Its outer end is the neighbour's own end wall where the gap runs the whole way to it —
+                // then there is nothing to build and the recess is SHARED, so that room takes a connecting
+                // leaf into it too, if it is a room anybody can stand in. Where the module left more ground
+                // than a recess needs, the recess ends in a wall of its own and the neighbour keeps a solid
+                // one: a fire door onto six du of rock would be the drawn world lying again.
+                bool sharesWithNeighbour = i > 0 && column[face, i - 1].Built
+                    && Math.Abs(depth - available) < 1e-6;
+                if (!sharesWithNeighbour)
+                {
+                    walls.Add(new(x1, endY, x2, endY, true));
+                }
+                else if (!column[face, i - 1].Shut)
+                {
+                    cutFar[i - 1] = true;
+                }
+
+            }
+
+            // …and NOW the end walls, each with the gap the pass above decided it carries.
+            for (int i = 0; i < centres.Count; i++)
+            {
+                (bool built, _, double x1, _, double x2, _, _, _, double cx, double cy,
+                    List<SurfaceLayout.Doorway> ways) = column[face, i];
+                if (!built)
+                {
+                    continue;
+                }
+
+                double nearY = cy - (dir * roomH / 2.0), farY = cy + (dir * roomH / 2.0);
+                EndWall(nearY, cutNear[i]);
+                EndWall(farY, cutFar[i]);
+
+                void EndWall(double y, bool cut)
+                {
+                    if (!cut)
+                    {
+                        walls.Add(new(x1, y, x2, y, true));
+                        return;
+                    }
+                    // #822 · A FIRE RECESS IS A GAP AND NOT A LEAF, so nothing is added to the floor's
+                    // doorway list — the wall simply stops, exactly as it stops at a rib's mouth, at the
+                    // cabinets' party walls and everywhere in the galleries. Every doorway in this building
+                    // is drawn as an IMPORTED leaf (#592's material language: somebody flew this here), and
+                    // an egress opening is the one thing in a facility nobody fits a door to. It is a way
+                    // out all the same, which is why <see cref="Room.Ways"/> and the doorway list are two
+                    // different lists and this is the room's own.
+                    walls.Add(new(x1, y, cx - DoorHalf, y, true));
+                    walls.Add(new(cx + DoorHalf, y, x2, y, true));
+                    ways.Add(new SurfaceLayout.Doorway(cx - DoorHalf, y, cx + DoorHalf, y));
+                }
+
+            }
+        }
+
+        return (minusMouths, plusMouths);
     }
 
     /// <summary>
