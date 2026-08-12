@@ -22,6 +22,14 @@ namespace SpaceSails.Labs.Lab45;
 /// <para>A lab that flattened those into one segment list would measure a game nobody ships and would have
 /// nothing to say about the owner's question. So both are built here, from the same
 /// <see cref="HiveInterior.FloorDeck"/>, and every bench below says which one it is timing.</para>
+///
+/// <para><b>#858 · AND THE SPLIT ABOVE IS NOW HISTORY.</b> This lab's findings closed it: the page files
+/// <c>SightBlockers()</c> into a <c>WallIndex</c> and keeps it, so the eye and the legs are handed the same
+/// kind of object. <see cref="Sight"/> is deliberately NOT updated to match — every table in the README was
+/// measured against this shape, and a harness quietly changed under a published number is how a lab comes to
+/// print a confident, wrong table (see the README's own two measurement bugs). What this world models is the
+/// client as it stood when it was measured. Measuring the AFTER means a fresh run, said out loud, with its
+/// own date on it.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 internal sealed class World

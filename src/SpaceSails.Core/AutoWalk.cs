@@ -161,6 +161,11 @@ public sealed class AutoWalk
         /// <summary>Walk a slice of the search. True once there is nothing left to do.</summary>
         public bool Advance(int cells) => _search.Advance(cells);
 
+        /// <summary>Is the route already worked out? Nobody has to ask — <see cref="Finish"/> answers
+        /// whatever the state — but a test that could not tell a plan finished during the stand from one
+        /// finished on the frame it was needed would be measuring the wrong thing entirely.</summary>
+        public bool Done => _search.Done;
+
         /// <summary>The route, finishing whatever is left of the search first. The same
         /// <see cref="Attempt"/> <see cref="Plan"/> hands back, because it is the same search.</summary>
         public Attempt Finish()

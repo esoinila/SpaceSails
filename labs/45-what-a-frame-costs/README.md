@@ -293,6 +293,18 @@ and stops depending on wall count for good. Then cap or spread `AutoWalk.Plan` (
 or amortise the A\* across frames), which is the only thing in the table that can cost a frame.
 Both are filed as **#858**, with these numbers, rather than smuggled into a lab.
 
+**Both have since landed (#858).** `SightBlockers()` files its list into the `WallIndex` and keeps it —
+rebuilt only when the stone changes or a door's shut-state flips, which also retires the `sight[]` column
+above — and the round's A\* is spread across the five-second stand it was always going to be planned from
+(`DeckReachability.Search`, `AutoWalk.Planner`, `PatrolBeat.PlanCellsAFrame`). Section B's own index column
+is the prediction: flat, and 29× at 436 segments.
+
+**Every number in this file is therefore a BEFORE, and the harness still is.** `World.Sight` transcribes the
+plain list on purpose — that was the shape under test — so re-running the lab as written re-measures the old
+client, not the new one. Measuring the after means changing the harness to hand the eye the index the way the
+page now does, and that is a fresh run with its own machine and its own date, not a number to be edited into
+these tables.
+
 ## The #841 gate — does wall/fixture count measurably matter at sim level?
 
 **Measurably yes, in exactly one place, and it is small — and that one place is a bug, not a budget.**
