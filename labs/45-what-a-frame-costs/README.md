@@ -291,7 +291,7 @@ line:** hand `SightBlockers()`'s output — or better, `_deckPlan.CollisionField
 doors — to the eye instead of a plain `List<Segment>`, and the dominant per-frame term drops **29×**
 and stops depending on wall count for good. Then cap or spread `AutoWalk.Plan` (per-leg route cache,
 or amortise the A\* across frames), which is the only thing in the table that can cost a frame.
-Filed as its own issue rather than smuggled into a lab.
+Both are filed as **#858**, with these numbers, rather than smuggled into a lab.
 
 ## The #841 gate — does wall/fixture count measurably matter at sim level?
 
@@ -311,7 +311,7 @@ So **#841's viewport culling cannot be justified on sim cost**: the sim-side dep
 fixture count is real, linear, and worth about a third of one percent of a frame at the game's own
 limits. If culling is worth doing it has to be justified on **draw** cost, and this lab could not
 measure draw cost (Section D). And if the sightline fix above lands, even the third of a percent
-goes away — after it, wall count does not appear anywhere in the sim's cost model at all.
+goes away — after it, wall count does not appear anywhere in the sim's cost model at all (**#858**).
 
 ## Break it yourself
 
