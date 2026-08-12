@@ -2597,6 +2597,50 @@
         </div>
     }
 
+    @* #836 · THE FLETCH WALLET, FANNED WHILE HE CROSSES THE FLOOR. Owner: "I think I should be able to pick
+       the badge I show the guard... like Fletch ... suppose we have 4 different ID's ... one of them real".
+
+       It opens on the HAIL and it is gone by the time his hand is out — the 2026-08-08 ruling stands, the
+       read is still automatic and still told on a card, and the only thing that moved is when the captain
+       decided. One row per paper, and every row is the captain's own knowledge and nothing else: the glyph,
+       the NAME ON IT, what it CLAIMS (its printed face, verbatim from the file that prints it) and what the
+       book itself filed about that paper at this site. No percentages, no ticks, no oracle — the man has not
+       read it yet, and neither has this dialog. *@
+    @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
+    {
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseTheWalletFan)">
+            <div class="treasure-map-card wallet-fan" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.WalletChoice.ChooserLabel</div>
+                <div class="tm-caption">@SpaceSails.Core.WalletChoice.ChooserHint</div>
+
+                <div class="wallet-fan-rows">
+                    @foreach (SpaceSails.Core.Satchel.Item paper in fanPapers)
+                    {
+                        bool inHand = _paperInHand is { } held
+                                      && held.Kind == paper.Kind && held.Id == paper.Id;
+                        <button type="button"
+                                class="@(inHand ? "wallet-paper picked" : "wallet-paper")"
+                                @onclick="() => ChooseThePaper(paper)">
+                            <span class="wallet-paper-face">
+                                <span class="wallet-paper-glyph">@SpaceSails.Core.WalletChoice.GlyphOf(paper)</span>
+                                <span class="wallet-paper-name">@SpaceSails.Core.WalletChoice.NameOn(paper, NameOnYourOwnPapers)</span>
+                                @if (inHand)
+                                {
+                                    <span class="wallet-paper-held">@SpaceSails.Core.WalletChoice.InYourHandLine</span>
+                                }
+                            </span>
+                            <span class="wallet-paper-claims">@SpaceSails.Core.WalletChoice.Claims(paper)</span>
+                            <span class="wallet-paper-book">@SpaceSails.Core.WalletChoice.HistoryLine(paper, fanEx.Stop.Body.Id, _shownBook)</span>
+                        </button>
+                    }
+                </div>
+
+                <button type="button" class="view-object-close"
+                        @onclick="() => Dismiss(CloseTheWalletFan)">@SpaceSails.Core.WalletChoice.KeepItLine</button>
+            </div>
+        </div>
+    }
+
     @if (_viewObject is { } vo)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">

@@ -3116,6 +3116,12 @@ public partial class Map
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
         if (_showWreckChoice) { CloseWreckChoice(); return true; }
         if (_kioskCard is not null) { CloseKioskCard(); return true; }
+        // #836 · The wallet, fanned while a guard crosses the floor. Esc means KEEP THE ONE YOU HAVE — the
+        // #784 discipline, one system along: the cancel key may shut the question but it may never answer
+        // it, and the paper already in the hand is not a choice this key made. It is deliberately NOT in the
+        // Enter chain below for the same reason: a fan is a question, and Enter answers only cards that ask
+        // nothing.
+        if (WalletFanIsUp) { CloseTheWalletFan(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }

@@ -3759,6 +3759,75 @@
     font-weight: 600;
 }
 
+/* #836 — THE FLETCH WALLET, fanned while a guard crosses the floor. Same card frame as the derelict's
+   decision (an artifact, held up, decided on), and the rows are papers rather than options: the face on
+   top, what the card claims under it, and what your own book says about it here in the smallest type on
+   the dialog. Nothing in here is coloured by whether a paper is GOOD — the whole feature is that you do
+   not know until he reads it. */
+.wallet-fan-rows {
+    margin: 0.6rem 0 0.4rem;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.wallet-paper {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.35rem;
+    padding: 0.42rem 0.55rem;
+    border: 1px solid rgba(150, 170, 190, 0.28);
+    border-radius: 4px;
+    background: rgba(10, 14, 20, 0.55);
+    color: #d8e2ee;
+}
+
+.wallet-paper:hover {
+    border-color: rgba(196, 214, 232, 0.55);
+    background: rgba(18, 24, 32, 0.75);
+}
+
+.wallet-paper.picked {
+    border-color: rgba(224, 178, 90, 0.75);
+}
+
+.wallet-paper-face {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.86rem;
+    letter-spacing: 0.04em;
+}
+
+.wallet-paper-glyph {
+    font-size: 0.95rem;
+}
+
+.wallet-paper-name {
+    font-weight: 600;
+}
+
+.wallet-paper-held {
+    color: #e0b25a;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+}
+
+.wallet-paper-claims {
+    display: block;
+    color: #9fb1c6;
+    font-size: 0.72rem;
+    margin-top: 0.12rem;
+}
+
+.wallet-paper-book {
+    display: block;
+    color: #7f8fa3;
+    font-size: 0.68rem;
+    font-style: italic;
+    margin-top: 0.1rem;
+}
+
 /* #488 — THE VALVE BOARD. A damage-control mimic drawn from the ship own geometry: bow taper, transom,
    spine and every compartment in its real place. You point at the PLACE; the name is written in it. */
 

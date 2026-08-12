@@ -5887,9 +5887,20 @@ public partial class Map
                 {
                     _satchel = [.. Core.Satchel.Add(_satchel, PatrolBeat.Badge(passBody))];
                 }
+
+                // #836 · …and the paper that makes it a CHOICE. A captain who worked the lane arrives on
+                // this floor carrying both — the cage chit is never spent, it just stops being cover once
+                // you are off the cage — so the cheat mints the same wallet the earned road produces rather
+                // than a wallet nobody could ever have. Two papers is what opens the fan (WalletChoice.Fans).
+                if (!CanteenTable.Cover.Held(_satchel))
+                {
+                    _satchel = [.. Core.Satchel.Add(_satchel, CanteenTable.Chit(underAnotherName: true))];
+                }
+
                 ShowPulseMessage(
-                    $"🧪 DEV ?badge=1: {PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(passBody)} is in the " +
-                    "wallet — 🎒 I to read it, then let a round find you.");
+                    $"🧪 DEV ?badge=1: {PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(passBody)} and " +
+                    $"{CanteenTable.ChitGlyph} the cage chit are in the wallet — 🎒 I to read them, then " +
+                    "let a round find you and pick which one of you he meets.");
             }
 
             // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is

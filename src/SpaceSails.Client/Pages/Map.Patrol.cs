@@ -260,6 +260,32 @@ public sealed partial class Map
     /// surface, where nothing else in this file runs, and one rebuild takes it away again.</summary>
     private double _kickedOutPlateFor;
 
+    // ── #836 · THE FLETCH WALLET, AS STATE ────────────────────────────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11: "I think I should be able to pick the badge I show the guard...
+    // like Fletch ... suppose we have 4 different ID's ... one of them real".
+    //
+    // Three fields, and the division between them is the whole of the feature: what is IN YOUR HAND (decided
+    // during the approach, spent at the read), whether the fan is OPEN in front of you, and what the book
+    // remembers about every paper you have ever handed anybody. The first two die with the floor; the third
+    // is durable, because it is the only thing a chooser row's hint is ever derived from.
+
+    /// <summary>#836 · The paper that goes into his hand when he arrives. Seeded at the hail from
+    /// <see cref="WalletChoice.DefaultFor"/> — last shown at this site, else the real one — so a captain who
+    /// ignores the fan entirely still hands over the paper a reasonable person would already be holding.</summary>
+    private Satchel.Item? _paperInHand;
+
+    /// <summary>#836 · Is the fan up? Only ever while somebody is walking over
+    /// (<see cref="WalletChoice.Fans"/> said there was a choice to make), and it comes down the moment he is
+    /// at arm's length: no swapping papers in front of a guard.</summary>
+    private bool _walletFanOpen;
+
+    /// <summary>#836 · THE CAPTAIN'S OWN PAPER TRAIL — one row per read, naming which identity was shown and
+    /// how it went. Durable (it rides the vault), because <i>worked here, twice</i> is worth nothing if it
+    /// forgets between excursions, and because the owner's own reading of it is the horror: <i>two names on
+    /// one face across one watch is the facility's own case against you</i>, pointed back at the captain.</summary>
+    private readonly List<WalletChoice.Shown> _shownBook = [];
+
     /// <summary>Dev cheat: <c>?patrol=N</c> forces N rounds onto whatever restricted floor you boot onto,
     /// so the scene is reachable without waiting for a watch that rolled two.</summary>
     private int? _patrolCheat;
@@ -303,6 +329,12 @@ public sealed partial class Map
         // the top of TheKickOut: it has either just happened or it never will.
         _kickOutDue = false;
         _kickOutRideDue = false;
+
+        // #836 · …and so does the paper in your hand. A hand goes to a pocket for a man who is walking over,
+        // and the man is a floor above now. The BOOK is not cleared here — that is the durable half, and a
+        // captain who has ridden one floor has not forgotten which name worked downstairs.
+        _walletFanOpen = false;
+        _paperInHand = null;
 
         // #821 · …and so does the hide. A floor change is a new set of doors and a new set of men, and a
         // "he walked past" line kept from the floor above would be a beat about a room nobody is in.
@@ -875,6 +907,11 @@ public sealed partial class Map
     /// gallery — and a refusal by the ground may never be booked against the man standing in front of it.</param>
     private void GiveUpTheHail(Guard g, int index, bool walkedAway)
     {
+        // #836 · Nobody is coming, so the fan comes down. A wallet open in front of a captain with no man
+        // crossing the floor is a dialog with no clock on it — and the paper stays in the hand, because
+        // deciding who you are is not undone by somebody thinking better of asking.
+        _walletFanOpen = false;
+
         g.WalkingUp = false;
         g.WalkUpFor = 0;
         g.Route = null;
@@ -957,6 +994,7 @@ public sealed partial class Map
     /// </summary>
     private void TheHail(Guard g)
     {
+        FanTheWallet();
         g.WalkingUp = true;
         g.WalkUpFor = 0;
         g.RePlanIn = 0;
@@ -973,6 +1011,84 @@ public sealed partial class Map
         RendererInterop.PlayCue("blip");
     }
 
+    // ── #836 · THE WALLET, FANNED DURING THE APPROACH ─────────────────────────────────────────────────
+    //
+    // Owner: "I think I should be able to pick the badge I show the guard... like Fletch ... suppose we have
+    // 4 different ID's ... one of them real ... but not authorized for access to all places we roam."
+    //
+    // WHERE IT LIVES IS THE WHOLE RULING. The 2026-08-08 call — no TRY verb, the read is automatic and told
+    // on a card — is untouched, because the choice happens one beat EARLIER: he has said hold on and is
+    // crossing the floor, and the fan is up over the walk-up while he does it. By the time he is at arm's
+    // length your hand is already in your pocket, and what is in it is what he reads.
+    //
+    // The controls are never taken for it. A captain may ignore the fan, or walk away from the whole thing
+    // (#833/#835) — the default is seeded at the hail precisely so ignoring it is a real option rather than
+    // an accident.
+
+    /// <summary>#836 · The name on your own papers. Everything the site issued you carries it, spelled the
+    /// way the rota spells it — read off the thread the captain is being played on, so a renamed captain's
+    /// wallet renames itself with them.</summary>
+    private string NameOnYourOwnPapers =>
+        ActiveThreadInfo is { } row ? Captains.For(row).Name : Captains.Name(_activeThreadId);
+
+    /// <summary>#836 · The papers a guard's palm is for, in the fan's own stable order. One list, read by the
+    /// dialog and by the default alike.</summary>
+    private IReadOnlyList<Satchel.Item> TheWalletFan =>
+        _surface is { } ex ? WalletChoice.Fan(ex.Stop.Body.Id, _satchel) : [];
+
+    /// <summary>#836 · Is the fan actually in front of the captain? Asked by the dialog that draws it AND by
+    /// the cancel key that shuts it, so Esc can never swallow a keystroke for a dialog nobody can see — a
+    /// wallet that lost a paper between the hail and the frame is a wallet with no choice left in it.</summary>
+    private bool WalletFanIsUp => _walletFanOpen && TheWalletFan.Count > 1;
+
+    /// <summary>
+    /// #836 · THE HAIL PUTS A PAPER IN YOUR HAND, and — only when there is a choice to make — opens the fan.
+    ///
+    /// <para>With one paper in the wallet nothing happens that did not happen before this feature existed: no
+    /// dialog, no friction, and the same paper goes into the same hand. That is the promise the
+    /// <see cref="WalletChoice.Fans"/> gate keeps, and it is asked of Core so the dialog and the read cannot
+    /// come to different conclusions about whether the captain had a decision.</para>
+    /// </summary>
+    private void FanTheWallet()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        string bodyId = ex.Stop.Body.Id;
+        _paperInHand = WalletChoice.DefaultFor(bodyId, _satchel, _shownBook);
+        _walletFanOpen = WalletChoice.Fans(bodyId, _satchel);
+    }
+
+    /// <summary>#836 · ONE CHOICE, and picking is the whole of it. There is no confirm step — the row IS the
+    /// decision, the same way the bin's row is (#798) — and the fan comes down with it, because a modal left
+    /// standing over the approach would hide the man who is walking at you. Owner's own framing: <i>one
+    /// choice, under time pressure, made BEFORE the read.</i></summary>
+    private void ChooseThePaper(Satchel.Item paper)
+    {
+        _paperInHand = paper;
+        _walletFanOpen = false;
+        RendererInterop.PlayCue("blip");
+    }
+
+    /// <summary>#836 · Shutting the fan without touching it. Whatever was already in the hand stays in it —
+    /// no arm of this dialog can leave a captain holding nothing they did not choose to hold.</summary>
+    private void CloseTheWalletFan() => _walletFanOpen = false;
+
+    /// <summary>
+    /// #836 · WHAT ACTUALLY GOES INTO HIS HAND, asked at the read and not before.
+    ///
+    /// <para>The chosen paper, if it is still in the wallet — a pass can be taken off you between the hail and
+    /// the arrival (<see cref="PatrolBeat.PassRevokedLine"/>), and a hand holding a paper the satchel no longer
+    /// has would be the sim and the pocket disagreeing. Otherwise the default, which is what a captain who
+    /// never opened the fan is holding anyway.</para>
+    /// </summary>
+    private Satchel.Item? ThePaperHandedOver(string bodyId) =>
+        _paperInHand is { } chosen && WalletChoice.StillHeld(_satchel, chosen)
+            ? chosen
+            : WalletChoice.DefaultFor(bodyId, _satchel, _shownBook);
+
     /// <summary>
     /// He stops, reads what is in your wallet, and tells you the answer. The judgement is Core's and only
     /// Core's; this raises the card, spends the nerve and — when it comes to that — walks you back.
@@ -985,7 +1101,13 @@ public sealed partial class Map
         g.Vy = 0;
         g.Facing = System.Math.Atan2(_avatarY - g.Y, _avatarX - g.X);
 
-        PatrolBeat.Read read = PatrolBeat.TheGuardReads(ex.Stop.Body.Id, g.Plate, _satchel);
+        // #836 · THE PAPER, AND THEN THE READ OF IT. The fan comes down here whether or not the captain ever
+        // touched it — his hand is out, and the whole ruling is that there is no swapping in front of him.
+        string bodyId = ex.Stop.Body.Id;
+        _walletFanOpen = false;
+        Satchel.Item? handed = ThePaperHandedOver(bodyId);
+
+        PatrolBeat.Read read = PatrolBeat.TheGuardReads(bodyId, g.Plate, handed);
 
         // #684's idiom, one building along: the read is TOLD on a card, with the outcome in the card's own
         // amber row (#736) rather than pulsed under a backdrop nobody can see through. #804 shipped it
@@ -999,12 +1121,19 @@ public sealed partial class Map
 
         LogAutopilotEvent($"{read.Label} — {read.Told}");
 
+        // #836 · THE ROUND LOG REMEMBERS THE NAME. Owner: "every challenge writes down which identity you
+        // showed." This is the captain's own half of that ledger, filed on BOTH arms — and the clean arm is
+        // the one that had to change, because a paper that worked here is exactly the thing the next chooser
+        // row has to be able to say. It is the escort note's idiom (a fact, never a mechanic), and it is the
+        // ONLY thing the hint on a row is ever derived from.
+        FileTheNameYouGave(bodyId, ex.Floor, handed);
+
         // A PASS THAT WORKS COSTS NOTHING. Encounter.NervePipsFor's own arithmetic — the band that lands is
         // free and the two that hurt cost a pip — and it has to be, or the badge is worth nothing: a captain
-        // who paid the same either way would have earned a longer sentence and no mechanic. It files nothing
-        // either, because a notebook full of manners is a notebook nobody reads.
+        // who paid the same either way would have earned a longer sentence and no mechanic.
         if (read.Satisfied)
         {
+            RequestVaultSave();
             return;
         }
 
@@ -1017,6 +1146,41 @@ public sealed partial class Map
         // actually watch it happen on.
         _escortDue = g;
         RequestVaultSave();
+    }
+
+    /// <summary>
+    /// #836 · THE BOOK KEEPS WHICH NAME YOU GAVE HIM — one line in the field book, and one row in the
+    /// captain's own paper trail, composed from the SAME outcome the card was composed from
+    /// (<see cref="WalletChoice.WhatHappens"/>).
+    ///
+    /// <para>That single source is the point. The sentence the captain reads on the amber row and the line
+    /// their book keeps about the same thirty seconds are two readings of one fact, so no future edit can make
+    /// the book remember a challenge differently from the way it was told — which on this ground is the third
+    /// named bug class, in the one system whose entire register is procedure.</para>
+    ///
+    /// <para>An empty hand is filed too. <i>Nothing came out of the wallet</i> is a thing that happened to
+    /// you, and a book that only kept the interesting nights would be a book that flattered its owner.</para>
+    /// </summary>
+    private void FileTheNameYouGave(string bodyId, int level, Satchel.Item? handed)
+    {
+        WalletChoice.Outcome how = WalletChoice.WhatHappens(bodyId, handed);
+        string name = NameOnYourOwnPapers;
+
+        if (handed is { } paper)
+        {
+            IReadOnlyList<WalletChoice.Shown> filed = WalletChoice.Remember(
+                _shownBook, new WalletChoice.Shown(paper.Id, bodyId, level, how));
+            _shownBook.Clear();
+            _shownBook.AddRange(filed);
+
+            FileNote(
+                WalletChoice.ShownNote(paper, bodyId, level, how, name), WalletChoice.GlyphOf(paper));
+            return;
+        }
+
+        // Nothing was handed over, so there is no paper to remember — but there is still an evening, and it
+        // still gets a line. Filed against no id, which is why it never colours a chooser row.
+        FileNote(WalletChoice.ShownNote(null, bodyId, level, how, name), PatrolBeat.BadgeGlyph);
     }
 
     // ── #833 · THE WALKED ESCORT ──────────────────────────────────────────────────────────────────────
@@ -1302,6 +1466,11 @@ public sealed partial class Map
         {
             return;   // the gate, asked rather than assumed: nothing may run on Provocation.None
         }
+
+        // #836 · …and the fan comes down here too. A man who has said your floor into a radio is not going to
+        // look at a piece of paper, and a chooser left up over a run would be a decision with nothing on the
+        // other end of it.
+        _walletFanOpen = false;
 
         g.AfterYou = true;
         g.Why = why;
