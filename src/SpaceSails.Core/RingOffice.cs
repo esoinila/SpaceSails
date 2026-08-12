@@ -266,6 +266,41 @@ public static class RingOffice
 
         /// <summary>A privacy booth — one seat, open-fronted, phone-box shaped.</summary>
         Booth,
+
+        // ── #818 · THE REST OF THE BUILDING'S FITTINGS ────────────────────────────────────────────────
+        //
+        // Owner, generalising #817 past the ring: "Same for labs etc spaces… they have chairs and desks and
+        // equipment … never ever empty floor", and then the kit itself, from somebody who has run these
+        // rooms: "chairs / tables / vacuum chambers (cough !!), chemical test ventilation boxes [fume
+        // hoods], etc where do I put my test tube? Etc furnaces".
+        //
+        // They live HERE and not in a second enum beside ChamberFitting for the reason a Fixture is one
+        // record: a renderer that draws a piece of furniture, a guard that counts one, and a plate that
+        // names one should read ONE vocabulary. This list stopped being the ring's the moment the law went
+        // building-wide; the ring is only where it was first written down.
+
+        /// <summary>A laboratory bench, with the glassware racked along it. The answer to <i>where do I put
+        /// my test tube?</i></summary>
+        LabBench,
+
+        /// <summary>A chemical test ventilation box, against a wall. The owner's own phrase for it.</summary>
+        FumeHood,
+
+        /// <summary>A vacuum vessel. Asked for by name, with a cough.</summary>
+        VacuumChamber,
+
+        /// <summary>A furnace.</summary>
+        Furnace,
+
+        /// <summary>A run of bays in a long store. Shelving's heavy cousin, and its own kind because a store
+        /// that reported <see cref="Shelving"/> would be a warehouse pretending to be a reading room.</summary>
+        Racking,
+
+        /// <summary>A machine bolted to a plant floor.</summary>
+        Machinery,
+
+        /// <summary>A bank of filing in an administration chamber.</summary>
+        FilingCabinet,
     }
 
     /// <summary>

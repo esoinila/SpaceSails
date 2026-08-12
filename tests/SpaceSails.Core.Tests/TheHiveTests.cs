@@ -351,6 +351,15 @@ public sealed class TheHiveTests
         {
             text.AddRange(UndergroundComplex.SignsFor(kind));
         }
+        // #818/#853 · …and the two newest voices in the building, which are the two most tempting places to
+        // break this rule that have ever existed down here. A fixture plate names an object; a conference
+        // poster is a JOKE, and a joke is where an author reaches for the thing nobody is allowed to say.
+        // The eighth poster comes closest — an eternally-future symposium on the very technology humming in
+        // this basement — and it comes closest by DISAGREEING with the building rather than explaining it,
+        // which is exactly the line this grep exists to hold.
+        text.AddRange(ChamberFitting.AllProse());
+        text.AddRange(LabPosters.AllProse());
+
         for (int i = 0; i < 40; i++)
         {
             foreach (UndergroundComplex.Haul haul in Enum.GetValues<UndergroundComplex.Haul>())
