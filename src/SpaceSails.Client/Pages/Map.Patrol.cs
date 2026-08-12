@@ -1036,6 +1036,11 @@ public sealed partial class Map
     private IReadOnlyList<Satchel.Item> TheWalletFan =>
         _surface is { } ex ? WalletChoice.Fan(ex.Stop.Body.Id, _satchel) : [];
 
+    /// <summary>#836 · Is the fan actually in front of the captain? Asked by the dialog that draws it AND by
+    /// the cancel key that shuts it, so Esc can never swallow a keystroke for a dialog nobody can see — a
+    /// wallet that lost a paper between the hail and the frame is a wallet with no choice left in it.</summary>
+    private bool WalletFanIsUp => _walletFanOpen && TheWalletFan.Count > 1;
+
     /// <summary>
     /// #836 · THE HAIL PUTS A PAPER IN YOUR HAND, and — only when there is a choice to make — opens the fan.
     ///

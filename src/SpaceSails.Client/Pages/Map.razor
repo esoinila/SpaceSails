@@ -2535,7 +2535,7 @@
        the NAME ON IT, what it CLAIMS (its printed face, verbatim from the file that prints it) and what the
        book itself filed about that paper at this site. No percentages, no ticks, no oracle — the man has not
        read it yet, and neither has this dialog. *@
-    @if (_walletFanOpen && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
+    @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
     {
         <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseTheWalletFan)">
             <div class="treasure-map-card wallet-fan" @onclick:stopPropagation="true">
