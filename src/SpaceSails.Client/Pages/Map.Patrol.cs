@@ -89,6 +89,16 @@ public sealed partial class Map
         /// <summary>The A* leg they are spending, or null when the next one is due.</summary>
         public AutoWalk? Route;
 
+        /// <summary>#858 · The NEXT leg, being planned a slice at a time while he stands at this one. Null
+        /// whenever he is not standing at a stop.
+        ///
+        /// <para>Lab 45 priced the plan he used to make on the frame he left a stop at up to 6.4 ms — 38.6%
+        /// of a 60 fps frame, natively, in a game that ships to WASM — and it lands on a frame the player is
+        /// often watching him on. He stands for five seconds either way; this is the same work, done then.
+        /// It carries the two points it was planned between (<c>AutoWalk.Planner.PlannedFor</c>), so a man
+        /// whose errand changed while he stood can never be handed a route he did not ask for.</para></summary>
+        public AutoWalk.Planner? Planning;
+
         /// <summary>#832 · How many times in a row this leg has been re-planned because the ground refused a
         /// step. Bounded, so a stop that genuinely cannot be reached is dropped rather than ground at
         /// forever — and reset the moment they arrive anywhere.</summary>
@@ -698,6 +708,7 @@ public sealed partial class Map
             g.Standing -= dt;
             g.Vx = 0;   // a stopped mover drops off a motion fan, honestly
             g.Vy = 0;
+            PlanTheNextLegWhileHeStands(g, walls);
             return;
         }
 
@@ -708,14 +719,15 @@ public sealed partial class Map
             var from = new DeckReachability.Point(g.X, g.Y);
             var to = new DeckReachability.Point(target.X, target.Y);
 
-            // The lattice is the LEG's box and not the floor's — Core's own answer, so the audit that
-            // proves every leg walkable proves the route this actually plans. See PatrolBeat.LatticeFor for
-            // why the difference is not a micro-optimisation: a floor-sized lattice on every arrival would
-            // hitch the frame in WASM.
-            AutoWalk.Attempt planned = AutoWalk.Plan(
-                true, from, to, walls, DeckPlan.AvatarRadius,
-                PatrolBeat.LatticeFor(
-                    new PatrolBeat.Stop(g.X, g.Y, "here"), target, MoonSurface.ExpeditionField()));
+            // #858 · …and most of the time this costs nothing, because the stand he has just finished spent
+            // its three hundred frames doing it (PlanTheNextLegWhileHeStands). Finish() completes whatever
+            // is left — everything, when there was no stand, or when what he stood planning was a walk he is
+            // no longer making — so the man always leaves the stop with a route in his hand.
+            AutoWalk.Planner plan = g.Planning is { } ahead && ahead.PlannedFor(from, to)
+                ? ahead
+                : PlanTheLeg(g, target, walls);
+            g.Planning = null;
+            AutoWalk.Attempt planned = plan.Finish();
 
             if (planned.Route is null)
             {
@@ -760,6 +772,59 @@ public sealed partial class Map
             }
         }
     }
+
+    /// <summary>
+    /// #858 · THE PLAN, MADE WHILE HE IS STANDING THERE ANYWAY.
+    ///
+    /// <para>Lab 45's only frame-eating measurement: the A* this round asks for costs a median 1.6–2.2 ms
+    /// and a worst <b>6.4 ms — 38.6% of a 60 fps frame</b>, spent whole on the frame a guard leaves a stop,
+    /// about twice a minute per guard, and that is native on a desk machine while this game ships to WASM.
+    /// It lands on the frame the player is most likely to be looking straight at him.</para>
+    ///
+    /// <para>He stands at a stop for <see cref="PatrolBeat.StandSeconds"/> — five seconds, ~300 frames in
+    /// which he does not move and already knows which stop is next. So the same search runs then, a slice at
+    /// a time (<see cref="PatrolBeat.PlanCellsAFrame"/>), and the departure frame usually finds it done.</para>
+    ///
+    /// <para><b>NOTHING HE DOES CHANGES.</b> The route is the same route — <c>AutoWalk.Planner</c> is
+    /// <c>AutoWalk.Plan</c>'s own search, paused, from the same spot to the same stop over the same walls,
+    /// and he cannot move while he is standing — and the stand is the same five seconds, because the slicing
+    /// is not allowed to end it or extend it. If the errand changes under him, the plan is simply not the
+    /// plan for the walk he makes, and the departure frame pays the old bill exactly as it always did.</para>
+    /// </summary>
+    private void PlanTheNextLegWhileHeStands(Guard g, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        if (_patrolBeat.Count == 0)
+        {
+            return;
+        }
+
+        PatrolBeat.Stop next = _patrolBeat[g.Leg % _patrolBeat.Count];
+        if (g.Planning is not { } ahead
+            || !ahead.PlannedFor(
+                new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(next.X, next.Y)))
+        {
+            ahead = PlanTheLeg(g, next, walls);
+            g.Planning = ahead;
+        }
+        ahead.Advance(PatrolBeat.PlanCellsAFrame);
+    }
+
+    /// <summary>The A* for one leg of the round, opened but not walked — the ONE place the round says what
+    /// it is asking for, so the plan made during a stand and the plan made on the frame a man leaves one are
+    /// the same question by construction.
+    ///
+    /// <para>The lattice is the LEG's box and not the floor's — Core's own answer
+    /// (<see cref="PatrolBeat.LatticeFor"/>), so the audit that proves every leg walkable proves the route
+    /// this actually plans. See that method for why the difference is not a micro-optimisation: a
+    /// floor-sized lattice on every arrival would hitch the frame in WASM.</para></summary>
+    private static AutoWalk.Planner PlanTheLeg(
+        Guard g, in PatrolBeat.Stop target, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        AutoWalk.Planner.Begin(
+            new DeckReachability.Point(g.X, g.Y),
+            new DeckReachability.Point(target.X, target.Y),
+            walls, DeckPlan.AvatarRadius,
+            PatrolBeat.LatticeFor(
+                new PatrolBeat.Stop(g.X, g.Y, "here"), target, MoonSurface.ExpeditionField()));
 
     /// <summary>
     /// #833 · ONE FRAME OF WALKING, FOR EVERY REASON ANYBODY ON THIS FLOOR WALKS. The round spends its leg

@@ -99,10 +99,77 @@ public sealed class AutoWalk
             return default;
         }
 
-        DeckReachability.Walk walk = DeckReachability.Path(from, to, walls, radius, bounds, step);
-        return walk is { Reached: true, Path.Count: > 0 }
-            ? new Attempt(new AutoWalk(walk.Path), null)
-            : new Attempt(null, RefusalLine);
+        return Planner.Begin(from, to, walls, radius, bounds, step).Finish();
+    }
+
+    /// <summary>
+    /// #858 · A ROUTE PLANNED WHILE THE MAN IS STANDING THERE ANYWAY.
+    ///
+    /// <para>Lab 45's one frame-eating number: a single <see cref="Plan"/> over a guard's leg is a median
+    /// 1.6–2.2 ms and a worst 6.4 ms — 38.6% of a 60 fps frame — and it is spent whole, in the one frame he
+    /// leaves a stop, roughly twice a minute per guard, natively, in a game that ships to WASM.</para>
+    ///
+    /// <para><b>Why the stand and not a smaller lattice.</b> Of the three fixes the lab put up, coarsening
+    /// the lattice CHANGES THE ROUTE (and would put #804's §13.1 reachability audit and the game back on two
+    /// different pathfinders), and caching a whole beat's circuit means planning seven legs on the frame a
+    /// floor is entered — the same spike, larger, moved somewhere else. This one changes nothing at all: a
+    /// guard at a stop stands for <c>PatrolBeat.StandSeconds</c> = 5 s, which is ~300 frames in which he
+    /// does not move, cannot move, and already knows exactly where he is going next. The work was always
+    /// going to be done from that spot to that stop; this only stops it being done all at once, afterwards.
+    /// The state it costs is ONE field on the guard, and it is self-invalidating: the plan carries the two
+    /// points it was made for (<see cref="PlannedFor"/>), so a man whose errand changed while he stood
+    /// cannot be handed somebody else's route — he plans his real one on the spot, exactly as before.</para>
+    ///
+    /// <para><b>He can never stand forever.</b> <see cref="Finish"/> completes whatever slicing did not, on
+    /// the frame it is asked — at worst the old bill, on the old frame. #843's lesson class is that a body
+    /// waiting on a plan is a body that never walks again, so there is no path through this class in which
+    /// the answer is "not yet".</para>
+    /// </summary>
+    public sealed class Planner
+    {
+        private readonly DeckReachability.Search _search;
+
+        private Planner(DeckReachability.Search search, DeckReachability.Point from, DeckReachability.Point to)
+        {
+            _search = search;
+            From = from;
+            To = to;
+        }
+
+        /// <summary>Open the plan without walking any of it.</summary>
+        public static Planner Begin(
+            DeckReachability.Point from,
+            DeckReachability.Point to,
+            IReadOnlyList<SurfaceCollision.Segment> walls,
+            double radius,
+            (double MinX, double MinY, double MaxX, double MaxY) bounds,
+            double step = DeckReachability.DefaultStep) =>
+            new(DeckReachability.Search.Begin(from, to, walls, radius, bounds, step), from, to);
+
+        /// <summary>Where the route this is planning starts.</summary>
+        public DeckReachability.Point From { get; }
+
+        /// <summary>…and where it ends.</summary>
+        public DeckReachability.Point To { get; }
+
+        /// <summary>Is this the plan for THIS walk? The caller's whole invalidation, asked of the plan rather
+        /// than remembered beside it — a route half-searched from a spot the body has since left is not a
+        /// stale answer to be spotted later, it is simply not this walk's plan.</summary>
+        public bool PlannedFor(DeckReachability.Point from, DeckReachability.Point to) =>
+            From == from && To == to;
+
+        /// <summary>Walk a slice of the search. True once there is nothing left to do.</summary>
+        public bool Advance(int cells) => _search.Advance(cells);
+
+        /// <summary>The route, finishing whatever is left of the search first. The same
+        /// <see cref="Attempt"/> <see cref="Plan"/> hands back, because it is the same search.</summary>
+        public Attempt Finish()
+        {
+            DeckReachability.Walk walk = _search.Finish();
+            return walk is { Reached: true, Path.Count: > 0 }
+                ? new Attempt(new AutoWalk(walk.Path), null)
+                : new Attempt(null, RefusalLine);
+        }
     }
 
     /// <summary>A lattice box big enough to hold the deck's stone and both ends of the walk, with a margin
