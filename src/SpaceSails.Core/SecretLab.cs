@@ -144,7 +144,42 @@ public static class SecretLab
         int DiscoveryBonus,
         double MinX, double MinY, double MaxX, double MaxY,
         double RevealX, double RevealY,
-        IReadOnlyList<LabDoor> Doors);
+        IReadOnlyList<LabDoor> Doors,
+        // #822 · The ways out of here that are not on any board. Appended, so every caller that builds a
+        // region positionally still means the same mountain.
+        IReadOnlyList<HiddenWay>? Hidden = null)
+    {
+        /// <summary>#822 · The lab's hidden ways out, never null.</summary>
+        public IReadOnlyList<HiddenWay> TheHidden => Hidden ?? [];
+    }
+
+    /// <summary>
+    /// #822 · A WAY OUT OF THE MOUNTAIN THAT IS ITSELF HIDDEN.
+    ///
+    /// <para>Owner's ruling on the fire-code sweep, 2026-08-11: <i>"the second exit is itself hidden — a
+    /// service crawl or second hidden door, found the way the first one is. The lab obeys the code the
+    /// building pretends to follow: two doors nobody can see."</i></para>
+    ///
+    /// <para>THE HEART was the one room in this game you could be sealed into: three chambers in a line,
+    /// each behind a door the board can throw, and the deepest of them ended in solid rock. A captain who
+    /// let the alarm lock the run down was in a box. Now the rock at the back of it is a plate, and behind
+    /// the plate is a crawl out into the mountain — and the fire code is satisfied by a facility that would
+    /// never have admitted to owning one.</para>
+    ///
+    /// <para><b>Shut is a WALL</b>, exactly as a shut <see cref="LabDoor"/> is (#465): the region's own wall
+    /// list leaves the gap, and whoever is drawing the ground lays <see cref="HiddenWay.Plug"/> across it
+    /// until the way has been forced. So nothing is walkable that has not been found, and nothing about the
+    /// sealed lab changes by one segment.</para>
+    /// </summary>
+    /// <param name="Id">Stable key for its state, and what the force channel calls it. Never shown.</param>
+    /// <param name="Chamber">Which chamber it lets out of.</param>
+    /// <param name="X">The middle of the gap — the rock you set your shoulder to, going out.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Plug">The segment that stands in the gap while it is still rock.</param>
+    /// <param name="Line">What a captain standing at it is told. It names no destination and no department:
+    /// a plate would make it a door, and the whole of the ruling is that this is not one.</param>
+    public readonly record struct HiddenWay(
+        string Id, string Chamber, double X, double Y, SurfaceLayout.Wall Plug, string Line);
 
     /// <summary>
     /// One door between chambers. Owner: <i>"a secret lab that extends into a mountain … Doors that lock is a
@@ -647,7 +682,20 @@ public static class SecretLab
         double c3Half = half * 0.62;
         walls.Add(new(c2Far, cy + c3Half, c3Far, cy + c3Half, true));
         walls.Add(new(c2Far, cy - c3Half, c3Far, cy - c3Half, true));
-        walls.Add(new(c3Far, cy + c3Half, c3Far, cy - c3Half, true));
+
+        // #822 · …and the heart's back wall is TWO STUBS AND A GAP now, with the gap standing plugged. See
+        // HiddenWay: the deepest room in the mountain had one door and a lockdown board that could throw it,
+        // which is the only genuinely sealed box in the game. The crawl is cut to the same DoorwayHalf every
+        // other opening in here is cut to, so a captain never has to judge one by eye.
+        walls.Add(new(c3Far, cy + c3Half, c3Far, cy + DoorwayHalf, true));
+        walls.Add(new(c3Far, cy - c3Half, c3Far, cy - DoorwayHalf, true));
+        var hidden = new List<HiddenWay>
+        {
+            new("lab-crawl", ChamberNames[2], c3Far, cy,
+                new SurfaceLayout.Wall(c3Far, cy - DoorwayHalf, c3Far, cy + DoorwayHalf, true),
+                "The rock at the back of the heart rings HOLLOW - and it is dressed rock, not a face. "
+                + "Somebody cut a way out of here and then made it look like the end of the world."),
+        };
 
         // The clean room carries the two control panels — the owner's own asks, and they belong TOGETHER in the
         // middle: "Surely some control panels based on the vent panel can be added 🤠" and "Alarm system panel
@@ -670,7 +718,7 @@ public static class SecretLab
 
         double minX = System.Math.Min(cx, c3Far), maxX = System.Math.Max(cx, c3Far);
         return new Region("VANTAR'S SECRET LAB", walls, marks, consoles, DiscoveryCacheCredits,
-            minX, nearLoY, maxX, nearHiY, heartX, heartY, doors);
+            minX, nearLoY, maxX, nearHiY, heartX, heartY, doors, hidden);
     }
 
     // ── The reveal roll (house law: the die is shown). ──
