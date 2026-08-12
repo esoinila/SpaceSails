@@ -1061,9 +1061,10 @@ public sealed partial class Map
         _walletFanOpen = WalletChoice.Fans(bodyId, _satchel);
     }
 
-    /// <summary>#836 · One choice, and it closes the fan. There is no confirm step: the row IS the decision,
-    /// the same way the bin's row is (#798) — and a captain who wants a different one may pick again for as
-    /// long as he is still walking.</summary>
+    /// <summary>#836 · ONE CHOICE, and picking is the whole of it. There is no confirm step — the row IS the
+    /// decision, the same way the bin's row is (#798) — and the fan comes down with it, because a modal left
+    /// standing over the approach would hide the man who is walking at you. Owner's own framing: <i>one
+    /// choice, under time pressure, made BEFORE the read.</i></summary>
     private void ChooseThePaper(Satchel.Item paper)
     {
         _paperInHand = paper;
