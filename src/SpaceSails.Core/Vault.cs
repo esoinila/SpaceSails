@@ -64,6 +64,11 @@ public sealed class Vault
     /// loose ends, which is exactly what it was.</summary>
     public CaseThreadsSection? CaseThreads { get; init; }
 
+    /// <summary>#836 · WHICH NAME THE CAPTAIN GAVE, AND WHERE. Its own independently optional section; a
+    /// pre-#836 file simply lacks it and the wallet's every row reads <i>never shown</i> — which is the
+    /// truth about a captain this build has no record of.</summary>
+    public PapersShownSection? PapersShown { get; init; }
+
     /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
     /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
     public AuthoritiesSection? Authorities { get; init; }
@@ -378,6 +383,23 @@ public sealed record CaseThreadsSection
 {
     /// <summary>The threads, in the order they were drawn. Capped by the writer (see <c>CaseThreads</c>).</summary>
     public IReadOnlyList<string> Threads { get; init; } = [];
+}
+
+/// <summary>#836 · THE CAPTAIN'S OWN PAPER TRAIL: which identity was shown, where, on what floor, and how it
+/// went — one row per guard's read.
+///
+/// <para>Stored as opaque row strings (<c>WalletChoice.Shown.Stored</c>), the same shape
+/// <see cref="SatchelSection"/> and <see cref="CaseThreadsSection"/> use and for the same reason: the file
+/// carries the FACT and never the words, because every sentence built out of these rows is a seeded property
+/// of the world. A row this build cannot parse is dropped on load rather than thrown over.</para>
+///
+/// <para>It is durable because the wallet's hint is: <i>worked here, twice</i> is worth nothing if it forgets
+/// between excursions, and the paper you handed a man last night is exactly what a gumshoe would remember
+/// about him.</para></summary>
+public sealed record PapersShownSection
+{
+    /// <summary>The reads, oldest first. Capped by the writer (see <c>WalletChoice.BookKeeps</c>).</summary>
+    public IReadOnlyList<string> Shown { get; init; } = [];
 }
 
 /// <summary>#590 · WHAT THE CAPTAIN IS CARRYING THAT OPENS SOMETHING. Owner: <i>"could there be like a

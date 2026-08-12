@@ -562,7 +562,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void ThePassSatisfiesAndNothingElseHappens()
     {
-        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, [PatrolBeat.Badge("luna")]);
+        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, PatrolBeat.Badge("luna"));
         Assert.True(read.Satisfied);
         Assert.Equal(PatrolBeat.SatisfiedLine, read.Line);
         Assert.Null(read.Consequence);
@@ -578,19 +578,20 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void EveryOtherWalletEndsAtTheLiftAndSaysWhyFirst()
     {
-        (string What, Satchel.Item[] Carried, string Expect)[] cases =
+        // #836 · One paper per case, because a read takes one paper. What was a wallet is now a HAND.
+        (string What, Satchel.Item? Handed, string Expect)[] cases =
         [
-            ("nothing at all", [], PatrolBeat.NothingLine),
-            ("only the cage chit", [CanteenTable.Chit(underAnotherName: false)], PatrolBeat.WrongPaperLine),
-            ("somebody else's site", [PatrolBeat.Badge("europa")], PatrolBeat.WrongSiteLine("europa")),
+            ("nothing at all", null, PatrolBeat.NothingLine),
+            ("only the cage chit", CanteenTable.Chit(underAnotherName: false), PatrolBeat.WrongPaperLine),
+            ("somebody else's site", PatrolBeat.Badge("europa"), PatrolBeat.WrongSiteLine("europa")),
             ("an authority card, which is not a person",
-                [new Satchel.Item(Satchel.Kind.Authority, new UndergroundComplex.AuthorityCard("luna", 1).Id)],
+                new Satchel.Item(Satchel.Kind.Authority, new UndergroundComplex.AuthorityCard("luna", 1).Id),
                 PatrolBeat.NothingLine),
         ];
 
-        foreach ((string what, Satchel.Item[] carried, string expect) in cases)
+        foreach ((string what, Satchel.Item? handed, string expect) in cases)
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, carried);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, handed);
             Assert.False(read.Satisfied, $"{what} satisfied a guard.");
             Assert.Equal(expect, read.Line);
             Assert.Equal(PatrolBeat.EscortLine, read.Consequence);
@@ -612,11 +613,11 @@ public class TheRoundsOnTheRestrictedFloorsTests
         Assert.True(PatrolBeat.BadgeHeld("luna", luna));
         Assert.False(PatrolBeat.BadgeHeld("europa", luna));
 
-        Assert.True(PatrolBeat.TheGuardReads("luna", Plate, luna).Satisfied);
-        Assert.False(PatrolBeat.TheGuardReads("europa", Plate, luna).Satisfied);
+        Assert.True(PatrolBeat.TheGuardReads("luna", Plate, luna[0]).Satisfied);
+        Assert.False(PatrolBeat.TheGuardReads("europa", Plate, luna[0]).Satisfied);
         Assert.Contains(
             BodyNames.Designation("luna"),
-            PatrolBeat.TheGuardReads("europa", Plate, luna).Line,
+            PatrolBeat.TheGuardReads("europa", Plate, luna[0]).Line,
             StringComparison.Ordinal);
 
         // The id round-trips, and nothing else in the wallet is mistaken for one.
@@ -746,15 +747,15 @@ public class TheRoundsOnTheRestrictedFloorsTests
         // …and the escort is the only consequence the read can hand back. A second one would be the
         // suspicion ladder arriving without a ruling.
         var consequences = new HashSet<string>(StringComparer.Ordinal);
-        foreach (Satchel.Item[] carried in new[]
+        foreach (Satchel.Item? handed in new Satchel.Item?[]
                  {
-                     Array.Empty<Satchel.Item>(),
-                     [PatrolBeat.Badge("luna")],
-                     [PatrolBeat.Badge("europa")],
-                     [CanteenTable.Chit(underAnotherName: true)],
+                     null,
+                     PatrolBeat.Badge("luna"),
+                     PatrolBeat.Badge("europa"),
+                     CanteenTable.Chit(underAnotherName: true),
                  })
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, carried);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, handed);
             consequences.Add(read.Consequence ?? "<nothing at all>");
         }
         Assert.Equal(

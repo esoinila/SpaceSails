@@ -355,6 +355,9 @@ public sealed class AGuardOnlyRunsWhenYouGiveHimAReasonTests
             "throwing a captain off one site took another site's paper out of his wallet.");
 
         // …and the man standing on that floor tomorrow reads the empty wallet the way he always has.
-        Assert.False(PatrolBeat.TheGuardReads("luna", Plate, after).Satisfied);
+        // #836 · …and what he is handed is what a captain with that wallet would be holding: the default,
+        // which is now europa's pass, because luna's is in somebody's breast pocket.
+        Assert.False(
+            PatrolBeat.TheGuardReads("luna", Plate, WalletChoice.DefaultFor("luna", after, null)).Satisfied);
     }
 }

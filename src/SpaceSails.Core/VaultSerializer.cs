@@ -66,6 +66,7 @@ public static class VaultSerializer
     private const string SecOverheard = "overheard";
     private const string SecFieldNotes = "fieldnotes";   // #587 · the field book
     private const string SecCaseThreads = "casethreads"; // #741 · the red lines between entries
+    private const string SecPapersShown = "papersshown"; // #836 · which name was given, and where
     private const string SecAuthorities = "authorities";  // #590 · the cards that run a shaft
     private const string SecSatchel = "satchel";          // #603 · everything carried on foot
     private const string SecKaamos = "kaamos";
@@ -94,6 +95,7 @@ public static class VaultSerializer
         AddSection(sections, SecOverheard, vault.Overheard);
         AddSection(sections, SecFieldNotes, vault.FieldNotes);
         AddSection(sections, SecCaseThreads, vault.CaseThreads);
+        AddSection(sections, SecPapersShown, vault.PapersShown);
         AddSection(sections, SecAuthorities, vault.Authorities);
         AddSection(sections, SecSatchel, vault.Satchel);
         AddSection(sections, SecKaamos, vault.Kaamos);
@@ -172,6 +174,7 @@ public static class VaultSerializer
             Overheard = Harvest<OverheardSection>(sections, SecOverheard, warnings),
             FieldNotes = Harvest<FieldNotesSection>(sections, SecFieldNotes, warnings),
             CaseThreads = Harvest<CaseThreadsSection>(sections, SecCaseThreads, warnings),
+            PapersShown = Harvest<PapersShownSection>(sections, SecPapersShown, warnings),
             Authorities = Harvest<AuthoritiesSection>(sections, SecAuthorities, warnings),
             Satchel = Harvest<SatchelSection>(sections, SecSatchel, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),

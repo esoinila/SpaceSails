@@ -858,41 +858,51 @@ public static class PatrolBeat
     /// #804 · WHAT HE FINDS IN YOUR WALLET. Four rungs, and each one teaches something different — #683's
     /// ladder, kept because the ladder is the storytelling: this site's pass, somebody else's site's pass,
     /// the wrong class of paper entirely, and nothing.
+    ///
+    /// <para>#836 · <b>AND IT READS WHAT WAS HANDED OVER.</b> Owner: <i>"I think I should be able to pick the
+    /// badge I show the guard... like Fletch"</i>. This used to take the whole satchel and walk it — pass
+    /// first, then anybody's pass, then the chit — which meant the answer was always the BEST paper in the
+    /// wallet. A captain who chose the bad one was quietly rescued by the sim, and a wallet with four names
+    /// in it would have had no game in it at all.</para>
+    ///
+    /// <para>So it takes ONE paper, chosen during #833's approach (<see cref="WalletChoice"/>), and the
+    /// judgement itself is <see cref="WalletChoice.WhatHappens"/> — one ladder, read by this card and by the
+    /// line the book files about it, so the sentence and the paper trail cannot disagree.</para>
+    ///
+    /// <para>The 2026-08-08 ruling is untouched: there is no TRY verb here, nothing is pressed, and the read
+    /// is as automatic as it ever was. What moved is WHEN the captain decided, not whether the man asks.</para>
     /// </summary>
     /// <param name="bodyId">The site whose floor you are standing on.</param>
     /// <param name="plate">Who stopped you (<see cref="PlateOf"/>).</param>
-    /// <param name="carried">The satchel. Anything that is not a pass or a chit is not in this wallet.</param>
-    public static Read TheGuardReads(string bodyId, string plate, IReadOnlyList<Satchel.Item>? carried)
+    /// <param name="shown">The paper that went into his hand, or null when nothing did — an empty wallet, or
+    /// a captain who had nothing a palm is for.</param>
+    public static Read TheGuardReads(string bodyId, string plate, Satchel.Item? shown)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(plate);
 
         string card = ChallengeCard(plate);
 
-        if (BadgeHeld(bodyId, carried))
+        switch (WalletChoice.WhatHappens(bodyId, shown))
         {
-            return new(true, SatisfiedLine, ChallengeLabel, card);
-        }
+            case WalletChoice.Outcome.Worked:
+                return new(true, SatisfiedLine, ChallengeLabel, card);
 
-        // Somebody else's building. Named, because a refusal that sorts the wallet is worth carrying
-        // (#679) — and because a captain who has worked two sites should learn that the second pass is
-        // still worth keeping.
-        foreach (Satchel.Item held in Satchel.OfKind(carried, Satchel.Kind.Badge))
-        {
-            if (SiteOfBadge(held.Id) is { Length: > 0 } site)
-            {
+            // Somebody else's building. Named, because a refusal that reads the site code out loud is worth
+            // carrying (#679) — and because a captain who has worked two sites should learn that the second
+            // pass is still worth keeping.
+            case WalletChoice.Outcome.WrongSite when shown is { } wrong
+                                                     && SiteOfBadge(wrong.Id) is { Length: > 0 } site:
                 return new(false, WrongSiteLine(site), ChallengeLabel, card, EscortLine);
-            }
-        }
 
-        // The cage chit. It is a real paper and it is real cover — for the cage. He says so the way you
-        // would say a platform number, which is the most bureaucratic refusal available.
-        if (CanteenTable.Cover.Held(carried))
-        {
-            return new(false, WrongPaperLine, ChallengeLabel, card, EscortLine);
-        }
+            // The cage chit. It is a real paper and it is real cover — for the cage. He says so the way you
+            // would say a platform number, which is the most bureaucratic refusal available.
+            case WalletChoice.Outcome.WrongPaper:
+                return new(false, WrongPaperLine, ChallengeLabel, card, EscortLine);
 
-        return new(false, NothingLine, ChallengeLabel, card, EscortLine);
+            default:
+                return new(false, NothingLine, ChallengeLabel, card, EscortLine);
+        }
     }
 
     /// <summary>The pass works. He is not pleased and he is not suspicious; the paperwork balances and he
