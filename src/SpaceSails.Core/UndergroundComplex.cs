@@ -1972,6 +1972,25 @@ public static class UndergroundComplex
         "RECEPTION · APPOINTMENTS HELD",
     ];
 
+    /// <summary>
+    /// #821 · THE ONE ROOM ON THE BLOCK THAT IS NOT AN OFFICE.
+    ///
+    /// <para>Owner, standing in the park on the evening of 2026-08-11: <i>"let's add toilets there.. we
+    /// might want to hide from guards in one toilet cubicle we lock from inside :-D"</i>. The park is the
+    /// building's one public ground and it had nowhere to wash your hands.</para>
+    ///
+    /// <para>It is a NEAR-band room re-plated — the premium band, which is where the hall is and therefore
+    /// where the public already are — and it is exactly one per block, chosen off the ground rather than
+    /// rolled (see <c>WashroomFrontageOn</c>). In practice that lands it on the band's NARROW end block: a
+    /// building does not give its garden aspect to the WCs, which is #775's amenity gradient arriving one
+    /// more time as plumbing, and it is the reason the plate below claims no view.</para>
+    ///
+    /// <para>§13.8 holds. It says what the room is and nothing about what the facility is for, and NO PASS
+    /// REQUIRED is the canteen's own clause (<see cref="AmenitySigns"/>) — a fact about band 0 the building
+    /// has been advertising since #590 and still never explains.</para>
+    /// </summary>
+    public const string ParkWashroomPlate = "🚻 PUBLIC WASHROOMS · NO PASS REQUIRED";
+
     /// <summary>#813 · Which side of the park a ring room faces it from. Near is the spine's side.</summary>
     public enum RingSide
     {
@@ -2027,14 +2046,27 @@ public static class UndergroundComplex
     /// <param name="Fittings">#817 · What is standing on the floor of it. See <see cref="RingOffice"/>.</param>
     /// <param name="Chairs">#817 · Every seat in it, in the room's own order. Chairs face the GLASS, because
     /// the view is what the room rents for and the furniture should agree.</param>
+    /// <param name="Cells">#821 · Every WC cubicle in it, each paired with its OWN published leaf — the
+    /// staff pair in a big suite's service strip and the row in the block's public washroom, off one list
+    /// because they are one kind of door. See <see cref="RingOffice.Stall"/>: the lock is a fact about one
+    /// door of one cell, and nothing outside the placer that laid both can say which is which.</param>
+    /// <param name="Taps">#821 · The basins along a public washroom's run.</param>
     public readonly record struct RingRoom(
         int Number, double X0, double Y0, double X1, double Y1, RingSide Side,
         SurfaceLayout.Doorway Door, SurfaceLayout.Wall? View, SurfaceLayout.Doorway? Gate,
         string Plate,
         IReadOnlyList<SurfaceLayout.Doorway>? Ways = null,
         IReadOnlyList<RingOffice.Fixture>? Fittings = null,
-        IReadOnlyList<RingOffice.Chair>? Chairs = null)
+        IReadOnlyList<RingOffice.Chair>? Chairs = null,
+        IReadOnlyList<RingOffice.Stall>? Cells = null,
+        IReadOnlyList<RingOffice.Basin>? Taps = null)
     {
+        /// <summary>#821 · The cubicles, never null.</summary>
+        public IReadOnlyList<RingOffice.Stall> Cubicles => Cells ?? [];
+
+        /// <summary>#821 · The basins, never null.</summary>
+        public IReadOnlyList<RingOffice.Basin> Basins => Taps ?? [];
+
         /// <summary>#817 · EVERY STREET DOOR. Owner: <i>"bigger spaces must have much more doors."</i>
         /// Published for the reason <see cref="Hall.Openings"/> is: a law about how a room is entered cannot
         /// be written against a list nobody keeps.</summary>
@@ -4317,6 +4349,18 @@ public static class UndergroundComplex
             spineMouths.Add((sx - CorridorHalf, sx + CorridorHalf));
         }
 
+        // ── #821 · WHICH OF THE NEAR SUITES IS THE BLOCK'S PUBLIC WASHROOM.
+        //
+        // Decided BEFORE anything is laid, because the plate is what the furnishing reads (RingOffice.
+        // DressingFor) and a room cannot be re-plated after it has been furnished as an office.
+        //
+        // Off the ground and never off a die: the one nearest the middle of the block, of those wide enough
+        // to hold a terrace and a basin run. That is a REASON — the middle of the near band is the busiest
+        // frontage in the building, with the hall on one side of it and a gate onto the green on the other,
+        // which is where a public washroom goes — and it makes the room a fact a captain can learn rather
+        // than a shift's roll.
+        double washroomAt = WashroomFrontageOn(block, in hall);
+
         // ── (1) THE NEAR BAND · the premium suites, doors on the spine, glass on the green.
         foreach ((double lo, double hi) in RingNearSegments(block))
         {
@@ -4330,6 +4374,8 @@ public static class UndergroundComplex
             for (int k = 0; k < n; k++)
             {
                 double rx0 = lo + ((hi - lo) * k / n), rx1 = lo + ((hi - lo) * (k + 1) / n);
+                bool washroom = !double.IsNaN(washroomAt)
+                    && rx0 <= washroomAt + 0.001 && rx1 >= washroomAt - 0.001;
 
                 // #817 · AND A DOOR ONTO THE GREEN. Owner's ruling, live in one of these: a premium office
                 // that sold on the aspect gets a way OUT into the garden, not only a window at it. The far
@@ -4342,7 +4388,8 @@ public static class UndergroundComplex
                 // front of the room to cut it into, so the block's corner offices still have none.
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
-                    ring.Count + 1, RingSide.Near, rx0, block.Y1, rx1, sf, block, gate: true));
+                    ring.Count + 1, RingSide.Near, rx0, block.Y1, rx1, sf, block, gate: true,
+                    plateOverride: washroom ? ParkWashroomPlate : null));
             }
         }
 
@@ -4423,6 +4470,56 @@ public static class UndergroundComplex
         return ring;
     }
 
+    /// <summary>
+    /// #821 · WHERE ON THE NEAR FRONTAGE THE PUBLIC WASHROOM STANDS, or NaN when this block cannot hold one.
+    ///
+    /// <para>The x of the room's own middle, so the laying loop can claim it with one comparison rather than
+    /// counting rooms in the same nested order twice — a count taken in two places is two answers waiting to
+    /// disagree, which is this file's own fourth named bug class.</para>
+    ///
+    /// <para>It walks the same segments, skips the same hall and splits with the same
+    /// <see cref="RingRoomsIn"/> the laying loop does, and takes <b>the NARROWEST near suite that can still
+    /// hold a terrace and a basin run</b> (<see cref="RingOffice.WashroomMinFrontageDu"/>). That is #775's
+    /// amenity gradient one more time: a building does not give its best frontage to the WCs, and the widest
+    /// suites on the block are the premium offices with the service tier in them. Ties go to the one nearest
+    /// the middle of the block, and then to the LOWER x — so the answer never depends on the order a list
+    /// happened to be built in.</para>
+    /// </summary>
+    private static double WashroomFrontageOn(in ParkBlock block, in Hall hall)
+    {
+        double middle = (block.X0 + block.X1) / 2.0;
+        double best = double.NaN, bestWide = double.MaxValue, bestGap = double.MaxValue;
+
+        foreach ((double lo, double hi) in RingNearSegments(block))
+        {
+            if (hall.X1 > lo + 0.001 && hall.X0 < hi - 0.001)
+            {
+                continue;
+            }
+            int n = RingRoomsIn(hi - lo);
+            for (int k = 0; k < n; k++)
+            {
+                double rx0 = lo + ((hi - lo) * k / n), rx1 = lo + ((hi - lo) * (k + 1) / n);
+                double wide = rx1 - rx0;
+                if (wide < RingOffice.WashroomMinFrontageDu)
+                {
+                    continue;
+                }
+
+                double at = (rx0 + rx1) / 2.0, gap = Math.Abs(at - middle);
+                bool better = wide < bestWide - 0.001
+                    || (wide < bestWide + 0.001
+                        && (gap < bestGap - 0.001 || (gap < bestGap + 0.001 && at < best)));
+                if (better)
+                {
+                    (best, bestWide, bestGap) = (at, Math.Min(wide, bestWide), gap);
+                }
+            }
+        }
+
+        return best;
+    }
+
     /// <summary>#813 · One ring room: four walls, a door on the street, and — where it has any park in front
     /// of it — the glass that makes it one of these rather than a chamber.
     ///
@@ -4436,7 +4533,8 @@ public static class UndergroundComplex
         List<(double X0, double Y0, double X1, double Y1)> claimed,
         List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
         string bodyId, int level, bool found, int number, RingSide side,
-        double fromX, double fromY, double toX, double toY, in ParkBlock block, bool gate)
+        double fromX, double fromY, double toX, double toY, in ParkBlock block, bool gate,
+        string? plateOverride = null)
     {
         bool horizontal = side is RingSide.Near or RingSide.Far;
         double x0 = Math.Min(fromX, toX), x1 = Math.Max(fromX, toX);
@@ -4510,6 +4608,15 @@ public static class UndergroundComplex
                 : ParkBackPlates[
                     (number + (int)(Frac(bodyId, $"hive:{level}:park-back") * ParkBackPlates.Count))
                         % ParkBackPlates.Count];
+        }
+
+        // #821 · …and the one room the block gives to everybody. Applied LAST, over whichever plate the
+        // register would have dealt it, and never on a found floor — a gallery has no plates at all (#677),
+        // and a room past the seam with a stencil on it would be this file telling on the band the building
+        // denies having.
+        if (plateOverride is { Length: > 0 } given && !found)
+        {
+            plate = given;
         }
 
         // ── WHERE THE PLATE READS FROM · BESIDE the door and never over it.
@@ -4641,7 +4748,10 @@ public static class UndergroundComplex
             }
         }
 
-        return furnished with { Fittings = fit.Fixtures, Chairs = fit.Chairs };
+        return furnished with
+        {
+            Fittings = fit.Fixtures, Chairs = fit.Chairs, Cells = fit.Cells, Taps = fit.Taps,
+        };
     }
 
     /// <summary>#813 · One gate through the ring — a corridor's width of spur, and the park's own wall

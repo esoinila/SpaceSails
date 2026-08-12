@@ -186,7 +186,14 @@ public sealed class TheDeskServesItsWholeLengthTests
                 if (c.IsRun)
                 {
                     runs++;
-                    Assert.Equal(DeckPlan.ConsoleKind.HiveAmenity, c.Kind);
+
+                    // #821 · A SECOND FIXTURE THAT IS A LENGTH RATHER THAN A DOT. The public washroom's
+                    // basin run borrows this very primitive for the bar desk's own reason: four taps in a
+                    // row all opening one beat would be three pieces of furniture pretending to be a choice.
+                    // The list is the whole point of the assertion — a run is a deliberate, named thing and
+                    // never something a console grows by accident.
+                    Assert.Contains(c.Kind,
+                        new[] { DeckPlan.ConsoleKind.HiveAmenity, DeckPlan.ConsoleKind.HiveBasin });
                     continue;
                 }
 

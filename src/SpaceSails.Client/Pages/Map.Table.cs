@@ -471,6 +471,17 @@ public partial class Map
         public (double X, double Y)? StepOff { get; init; }
 
         /// <summary>
+        /// #821 · WHICH WC CUBICLE THIS SEAT IS IN, by <c>HiveInterior.CubicleKey</c>, or null anywhere else.
+        ///
+        /// <para>An office chair and a cubicle's pan are the same POSTURE and the same panel — the seam
+        /// <see cref="Office"/> already opened — and what the cubicle adds is one question the ladder has to
+        /// be able to ask: <b>is the catch over right now?</b> The key is carried rather than the answer,
+        /// because the answer changes while you are sitting on it: a captain can sit down in an open cubicle,
+        /// reach back, turn the catch, and the spread has to become allowed on that very frame.</para>
+        /// </summary>
+        public string? CubicleKey { get; init; }
+
+        /// <summary>
         /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
         ///
         /// <para>Deliberately NOT <see cref="Solo"/>, and the distinction is the whole of the bench rung.
@@ -1121,7 +1132,12 @@ public partial class Map
             TableAnswered(ex, t, SittingAlone.Wait,
                 new CanteenTable.Answer(WithTheBodysFootnote(
                     WithTheBodysFootnote(
-                        t.Office
+                        // #821 · …and a CUBICLE is not an office either. A chair creaking down the row and
+                        // lamps over a garden, read from inside a locked WC, would be the room's answer
+                        // describing a room the captain is not in — #740's fault with a partition round it.
+                        t.CubicleKey is { Length: > 0 }
+                            ? CubicleLock.NothingHappens(beat)
+                            : t.Office
                             ? RingOffice.NobodyCame(beat)
                             : t.Bench
                                 ? ParkBenches.NobodyCame(beat)

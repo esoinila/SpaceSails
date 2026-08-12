@@ -209,6 +209,13 @@ public class TheSeatedStripIsAnInstrumentTests
     [Fact]
     public void PRIVACY_AdmitsTheQualifiedSeatAndRefusesTheBarDesk()
     {
+        // #821 · THE LOCKED CUBICLE: yes, unconditionally, and it is the TOP of the ladder now. Owner, in
+        // the park: "the cubicle is the one place the spread ([I]) is ALWAYS allowed — smaller than a bench,
+        // more private than an office. Half a bench is not a desk; a locked cubicle absolutely is :-D"
+        Assert.True(SeatedSpread.CanSpreadTheCase(SeatedHud.Seat.LockedCubicle, alone: true));
+        Assert.True(SeatedSpread.CanSpreadTheCase(SeatedHud.Seat.LockedCubicle, alone: false));
+        Assert.Null(SeatedSpread.RefusalAt(SeatedHud.Seat.LockedCubicle, alone: false));
+
         // THE CABINET: yes, unconditionally, in both states. It is the owner's ruling in one assertion.
         Assert.True(SeatedSpread.CanSpreadTheCase(SeatedHud.Seat.Cabinet, alone: true));
         Assert.True(SeatedSpread.CanSpreadTheCase(SeatedHud.Seat.Cabinet, alone: false));
@@ -245,8 +252,11 @@ public class TheSeatedStripIsAnInstrumentTests
         }
 
         // …and the ladder is ORDERED private-end-first, which is the owner's own ranking and the thing the
-        // 15× law will hang numbers on.
-        Assert.Equal(SeatedHud.Seat.Cabinet, SeatedSpread.Ladder[0]);
+        // 15× law will hang numbers on. #821 · The private end moved up one: a locked cubicle is more
+        // private than a room you rented, because the cabinet's privacy is a door somebody else keeps and
+        // this one is a catch in your own hand.
+        Assert.Equal(SeatedHud.Seat.LockedCubicle, SeatedSpread.Ladder[0]);
+        Assert.Equal(SeatedHud.Seat.Cabinet, SeatedSpread.Ladder[1]);
         Assert.Equal(SeatedHud.Seat.BarStool, SeatedSpread.Ladder[^1]);
     }
 

@@ -147,6 +147,30 @@ public sealed partial class Map
         /// the run starts, per #324's reason: a side that changed frame to frame is a body that never gets
         /// anywhere.</summary>
         public int WallSide = 1;
+
+        /// <summary>
+        /// #821 · WAS HE LOOKING AT YOU WHEN THE CATCH WENT OVER?
+        ///
+        /// <para>THE one bit the whole hide turns on. It is written by the press
+        /// (<c>Map.Cubicle.ShutTheCubicle</c>) off <see cref="PatrolBeat.Notices"/> — the same predicate the
+        /// challenge is gated on, over the same sight blockers, on the frame the catch turned — and never
+        /// re-derived here, because a partition goes across the opening on the very next rebuild and every
+        /// answer after that would be "no".</para>
+        ///
+        /// <para>False is the ordinary case and the one the feature is FOR: a man who came round the corner
+        /// afterwards is looking at a door with OCCUPIED on it, which is what a washroom door says all
+        /// day.</para>
+        /// </summary>
+        public bool SawYouShutIt;
+
+        /// <summary>#821 · Whether he is standing outside a shut cubicle waiting for it to open. The round is
+        /// suspended while it is true and resumes from wherever he ends up — a wait is a detour, exactly as a
+        /// walk-up is, and never a new state machine.</summary>
+        public bool Knocking;
+
+        /// <summary>#821 · Whether the two knuckles have already landed. Once per wait: a man who knocked
+        /// twice would be a loop, and the whole of the line is that he does not knock again.</summary>
+        public bool Knocked;
     }
 
     private readonly List<Guard> _guards = [];
@@ -280,6 +304,17 @@ public sealed partial class Map
         _kickOutDue = false;
         _kickOutRideDue = false;
 
+        // #821 · …and so does the hide. A floor change is a new set of doors and a new set of men, and a
+        // "he walked past" line kept from the floor above would be a beat about a room nobody is in.
+        //
+        // The CATCHES go with it, and the reason is in the field's own doc: a catch is a thing a hand is
+        // holding shut, and the hand has just ridden the lift. Today it cannot happen — the only way out of
+        // a shut cubicle is to turn the catch back — but a door left OCCUPIED on a floor nobody is standing
+        // on would be a room the building had sealed against itself, forever, with nothing to say why. The
+        // set is the excursion's rather than the vault's for the same reason (see SurfaceExcursion).
+        _walkedPastSaid = false;
+        ex.CubiclesShut.Clear();
+
         string bodyId = ex.Stop.Body.Id;
         int level = ex.Floor;
 
@@ -382,6 +417,18 @@ public sealed partial class Map
         // rebuilt the day something on this floor is actually following somebody.
         bool sitting = SeatedOnABenchInTheOpen;
 
+        // ── #821 · IS THE CAPTAIN SHUT INTO A CUBICLE? ─────────────────────────────────────────────────
+        //
+        // Asked ONCE a frame and handed to everything below, so the door that is drawn shut, the door the
+        // round cannot see through and the door the exposure ladder calls private are one door.
+        //
+        // THE SENTRY'S OWN LAW LIVES IN THE TWO BRANCHES IT OPENS, and in nothing else: a guard who watched
+        // the catch go over stands outside it (WaitAtTheDoor); a guard who did not walks his beat past an
+        // OCCUPIED plate without breaking stride. IT BUYS TIME, NOT SAFETY — there is no branch here in
+        // which a locked door ends a challenge, and CubicleLock.OpensALockedCubicle is a constant false
+        // rather than a rule, so no future edit can quietly make one.
+        (RingOffice.Stall Cell, string Key)? hide = TheCubicleTheCaptainIsShutIn(ex);
+
         bool anythingHeard = false;
         for (int i = 0; i < _guards.Count; i++)
         {
@@ -398,14 +445,44 @@ public sealed partial class Map
                 g.Held = false;
                 WalkTheEscort(g, dt, walls);
             }
+            else if (hide is { } shut && CubicleLock.WaitsAtTheDoor(g.SawYouShutIt))
+            {
+                // #821 · He watched the catch go over. He does not open it — nothing in this game does
+                // (CubicleLock.OpensALockedCubicle) — he walks over, knocks once, and waits.
+                //
+                // ABOVE #835's RUN, and that is the whole of what the door is worth. A man coming at a run
+                // cannot run through a partition: he arrives, and then he is a man standing outside a door.
+                // What he is NOT is finished — he keeps AfterYou and he keeps his reason, so opening the
+                // door gives the captain back the exact rung of the ladder they ducked out of rather than a
+                // softer one. IT BUYS TIME, NOT SAFETY, and this branch is where that sentence is spent.
+                g.Held = false;
+                WaitOutsideTheCubicle(g, dt, walls, in shut.Cell);
+            }
             else if (g.AfterYou)
             {
                 // #835 · The other man who is not walking a round. He is held off the bench law for the
                 // escort's own reason and one of his own: #793's hold is a law about a TAIL — something
                 // following you covertly, which has to stop when you stop or the trick is up. A man who has
                 // said your floor and your direction into a radio is not being covert about anything.
+                //
+                // #821 · A run that did NOT see the catch turn carries on to where you were, which is what
+                // losing somebody looks like, and #835's own cap ends it. A locked door is not a smoke bomb.
                 g.Held = false;
                 RunAfterTheCaptain(ex, g, dt, walls);
+            }
+            else if (hide is not null && g.WalkingUp)
+            {
+                // …and a man who was crossing the floor to somebody who is now behind a door has lost them.
+                //
+                // #835 · NOT BOOKED AS WALKING OFF, and the distinction is exact rather than generous. This
+                // branch is only ever reached by a guard who did NOT see the catch turn — the man who did is
+                // two branches up, knocking — so what happened is that somebody came round a corner into an
+                // empty washroom. That is the GROUND ending it, and #835's own rule is that a refusal by the
+                // ground may never be booked against the man standing in front of it. The captain who ducks
+                // in where he can see them does not get this branch at all; they get the knock, which is the
+                // whole of what the door was ever worth.
+                GiveUpTheHail(g, i, walkedAway: false);
+                g.Held = false;
             }
             else if (g.Held)
             {
@@ -441,7 +518,140 @@ public sealed partial class Map
             LogAutopilotEvent(PatrolBeat.HeardLine);
         }
 
-        StopTheRoundIfAnybodySeesYou(sight);
+        // #821 · A SHUT DOOR IS NOT A DISGUISE, IT IS A WALL. Nobody new registers the captain while it is
+        // over — not because the door hides them, but because there is a partition between the two of them
+        // and PatrolBeat.Notices is a sightline question. Asked here, once, rather than inside the loop: a
+        // hail raised on the frame the catch turned would be a man challenging a door.
+        if (hide is null)
+        {
+            StopTheRoundIfAnybodySeesYou(sight);
+        }
+        else
+        {
+            TheRoundWalkedPast();
+        }
+    }
+
+    // ── #821 · THE HIDE ───────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#821 · Which cubicle the captain is shut into, or null. One question, off the one set of
+    /// shut cells the deck itself is rebuilt from — a second opinion about which doors are over is a second
+    /// answer to whether the captain is hidden at all.</summary>
+    private (RingOffice.Stall Cell, string Key)? TheCubicleTheCaptainIsShutIn(SurfaceExcursion ex) =>
+        CubicleAround(ex) is { Cell: { } cell, Key: { } key } && ex.CubiclesShut.Contains(key)
+            ? (cell, key)
+            : null;
+
+    /// <summary>#821 · Whether the round has already been heard going past this hide. One line per shut
+    /// door: it is the reward for having got in unseen, and a sentence repeated every time a man crosses the
+    /// room would be a narrator rather than a beat.</summary>
+    private bool _walkedPastSaid;
+
+    /// <summary>
+    /// #821 · A ROUND THAT NEVER SAW YOU, HEARD THROUGH A PARTITION.
+    ///
+    /// <para>Said once, and only for somebody who has actually come into the room — inside
+    /// <see cref="PatrolBeat.NoticeDu"/>, which is the reach at which he WOULD have registered you had the
+    /// door been open. That is the whole point of the sentence: it is the moment the lock paid, and a captain
+    /// who never hears it has not learned that the plate did nothing for them.</para>
+    /// </summary>
+    private void TheRoundWalkedPast()
+    {
+        if (_walkedPastSaid)
+        {
+            return;
+        }
+
+        foreach (Guard g in _guards)
+        {
+            if (g.SawYouShutIt)
+            {
+                continue;
+            }
+
+            double dx = g.X - _avatarX, dy = g.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) > PatrolBeat.NoticeDu * PatrolBeat.NoticeDu)
+            {
+                continue;
+            }
+
+            _walkedPastSaid = true;
+            ShowPulseMessage(CubicleLock.WalkedPastLine);
+            LogAutopilotEvent(CubicleLock.WalkedPastLine);
+            return;
+        }
+    }
+
+    /// <summary>
+    /// #821 · HE WALKS OVER, KNOCKS ONCE, AND WAITS.
+    ///
+    /// <para>Owner's law, word for word: <i>"A guard who SAW you duck in knocks, then waits, then the escort
+    /// line is waiting when you open the door."</i> So this method has no branch that opens anything, no
+    /// timer that gives up, and no road to a card — the challenge is raised by the door being OPENED
+    /// (<c>Map.Cubicle.OpenTheCubicle</c>), through #833's own walk-up, face to face at arm's length.</para>
+    ///
+    /// <para>He walks to Core's published STEP square (<see cref="RingOffice.Stall.StepX"/>), which is a
+    /// door's clearance outside the leaf — a coordinate the placer chose, never one measured here — on the
+    /// same A* and the same gait his round uses, because it is the same man doing the same walk.</para>
+    /// </summary>
+    private void WaitOutsideTheCubicle(
+        Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, in RingOffice.Stall cell)
+    {
+        g.WalkingUp = false;
+        g.RePlanIn -= dt;
+
+        double dx = cell.StepX - g.X, dy = cell.StepY - g.Y;
+        if ((dx * dx) + (dy * dy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu)
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            g.Route = null;
+            g.Facing = System.Math.Atan2(cell.DoorY - g.Y, cell.DoorX - g.X);
+
+            if (!g.Knocking)
+            {
+                g.Knocking = true;
+                g.Standing = 0;
+            }
+            if (!g.Knocked)
+            {
+                g.Knocked = true;
+                ShowPulseMessage(CubicleLock.KnockLine, PulseRank.Beat);
+                LogAutopilotEvent(CubicleLock.KnockLine);
+                ShowPulseMessage(CubicleLock.BoughtTimeLine);
+                RendererInterop.PlayCue("blip");
+            }
+            return;
+        }
+
+        if (g.Route is not { Active: true } || g.RePlanIn <= 0)
+        {
+            g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+            AutoWalk.Attempt planned = AutoWalk.Plan(
+                true, new DeckReachability.Point(g.X, g.Y),
+                new DeckReachability.Point(cell.StepX, cell.StepY),
+                walls, DeckPlan.AvatarRadius,
+                PatrolBeat.LatticeFor(
+                    new PatrolBeat.Stop(g.X, g.Y, "here"),
+                    new PatrolBeat.Stop(cell.StepX, cell.StepY, "the cubicle door"),
+                    MoonSurface.ExpeditionField()));
+
+            if (planned.Route is null)
+            {
+                // The ground will not give him a route to a door he watched shut. He is not left crossing a
+                // washroom forever: he forgets he saw anything and goes back on the round, which is the
+                // mildest honest outcome and the only one this file has ever had.
+                g.SawYouShutIt = false;
+                g.Knocking = false;
+                g.Knocked = false;
+                g.Route = null;
+                return;
+            }
+            g.Route = planned.Route;
+        }
+
+        g.Knocking = false;
+        SpendTheStride(g, dt, walls);
     }
 
     /// <summary>
