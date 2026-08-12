@@ -749,6 +749,23 @@ ruling:
   derivation never looked at a card at all, and so had the head office — whose gate is deliberately absent —
   narrating a countersignature nobody was carrying.
 
+**And the second car does not sell depth** (#801 — written into the code against this section before this
+section said it, which is the drift #826 closed). Since #801 a band has two cars, and the law above is a law
+about the *building*, not about a particular hole in it — so the goods car's panel carries the band's own
+four floors and **nothing else**: no SURFACE row, because the only hole with a hut on top of it is the
+cage's (#606), and **no gate row**, because a second car may not become a way to buy depth without the
+paper. The wrong-shaft "refusal stage" is therefore deliberately not a refusal at all — the ambitious press
+never exists, because the row was never offered. What the captain gets instead is told ONCE, standing, in
+the inspectorate voice: the plate says the scope (`🛗 GOODS CAR 2 · THIS BAND ONLY`) and the panel names the
+way out rather than rejecting the ask — *"The goods car. It runs these floors and it does not climb out: for
+the surface, and for anything below this band, the cage is at the other end of the corridor."* Within a band
+the two cars are interchangeable; the moment you want to *leave* the band, you want the cage — which is what
+makes the pair worth walking between rather than redundant. On the cage's panel the SURFACE row is always
+present and asks the same law as every other row (#802, `HoldsPressure` decides the sentence): that row once
+typed `Pressurised: true` as a literal and lied for six PRs, and it is the reason no row on the panel may
+ever type its own answer again. *(Enforced: `TheOtherCarTests`, `TheLiftPanelTests`; the two panels are one
+method with one clause, so "which floors does this band have" cannot drift into two answers.)*
+
 A card is a **possession**, so it rides in the vault (`AuthoritiesSection`), not on the excursion: found
 eleven floors under a moon, still in the pocket a month and a world later. The save carries the id and
 nothing else — the title is a seeded property of the world, rebuilt at read time, so a file can never go
