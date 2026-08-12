@@ -412,6 +412,30 @@ is deterministic, so a racing double-build is pure waste and never a wrong answe
 8.4 **Perf must not be measured from an MCP-driven tab.** Such a tab is `document.hidden`: rAF is throttled
 and timers are clamped, so any number taken from one is worthless.
 
+8.5 **The eye gets the index too** (#858, out of Lab 45). 8.1's "when the caller hands them one" was the whole
+bug: everything that *walked* was handed `DeckPlan.CollisionField`, and everything that *looked* was handed a
+plain `List<Segment>` that `SightBlockers()` refilled every frame. Lab 45 measured the sweep at a strict
+**O(walls), ~18–25 ns a segment** — 63% of a guard's per-frame cost on the 465-segment floor, and **29× the
+indexed answer at 436 segments**, where the indexed one is flat. `SightBlockers()` now files its list into a
+`WallIndex` and **keeps** it, rebuilt only when the stone changes (a fresh plan, or a #371 append — both hand
+`CollisionSegments` a new array) or when a door's shut-state actually flips.
+
+**Rule: a second view of one fact is a caller waiting to be handed the wrong one.** The index is built *from*
+the list, so what the eye sweeps and what a hand sweep would sweep are the same segments by construction.
+
+8.6 **Work a body is going to need is done while it is standing still** (#858). `AutoWalk.Plan` over a guard's
+leg cost a median 1.6–2.2 ms and a worst **6.4 ms — 38.6% of a 60 fps frame** — spent whole on the one frame he
+leaves a stop, about twice a minute per guard, *natively*, in a game that ships to WASM. He stands at that stop
+for `PatrolBeat.StandSeconds` = 5 s either way, so `DeckReachability.Search` (the same A\*, with a handle on
+it) walks `PatrolBeat.PlanCellsAFrame` = 128 lattice cells a frame through the stand instead.
+
+Three things keep it honest: `Path` **is** that class run to the end, so a sliced search and a whole one cannot
+return different routes; `AutoWalk.Planner` carries the two points it was planned between, so a man whose
+errand changed while he stood is never handed somebody else's route; and `Finish()` completes whatever is left
+on the frame it is asked, so there is no state in which the answer is *"not yet"* and a body waits forever.
+The budget is a **cell** count and not a millisecond one on purpose — it means the same thing in WASM, where
+the clock this was measured on does not.
+
 ## Auditing the other places
 
 `EverySiteMeetsTheSpecTests` walks **every landing site on every body** — the real
