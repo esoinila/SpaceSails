@@ -3908,8 +3908,13 @@ public static class UndergroundComplex
         // clearance is measured against them) and every piece of furniture that was laid in it, and a
         // placer that ran earlier would be measuring a room that did not exist yet. It appends walls of its
         // own, which is why nothing below it may read `walls` again.
+        // #828 · …and the RING goes in with it now, because the third rung of the disposal ladder is a
+        // fixture a premium suite already stands (RingOffice.SecureDisposal): the bin is READ OFF the box
+        // the furnishing published rather than placed a second time, which is the only way the plate on the
+        // plan and the bucket the verb feeds can be one rectangle.
         List<RipAndBin.Bin> bins = CarveBins(
-            bodyId, level, walls, doorways, centres, amenities, refuges, ribList, park, shaftX, shaftY);
+            bodyId, level, walls, doorways, centres, amenities, refuges, ribList, park, ring,
+            shaftX, shaftY);
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
@@ -5978,6 +5983,10 @@ public static class UndergroundComplex
     /// the copier-corner bin of #775's amenity rule and the reason the offices band has one at all. It is
     /// also the WORST rung, and it is the one that is everywhere: the convenient answer and the wrong one,
     /// which is the whole shape of this feature's joke.</item>
+    /// <item>#828 · <b>The premium suites</b> — a <see cref="RipAndBin.Tier.SecureDisposal"/> at the machine
+    /// <see cref="RingOffice"/> stands at the end of a big suite's service strip. The BEST rung, and the one
+    /// that is nowhere except behind the rank that pays for a kitchenette and two staff WCs: the ladder is
+    /// priced like every other privacy instrument in this building.</item>
     /// </list>
     ///
     /// <h3>The one discipline</h3>
@@ -6000,6 +6009,7 @@ public static class UndergroundComplex
         List<Refuge> refuges,
         List<Rib> ribs,
         Park? park,
+        List<RingRoom> ring,
         double shaftX, double shaftY)
     {
         var bins = new List<RipAndBin.Bin>();
@@ -6062,6 +6072,62 @@ public static class UndergroundComplex
             furniture.AddRange(green.Walk);
             furniture.AddRange(green.Benches);
             furniture.AddRange(green.Masts);
+        }
+
+        // ── #828 · THE GOOD OFFICES · the secure disposal, read off the fixture the suite already stands ─
+        //
+        // Owner: "One thing the good offices would also have is a safe paper disposal trashes… a more secure
+        // disposal than restaurant trash."
+        //
+        // FIRST, because it is the only rung on this ladder whose position is not this method's to choose:
+        // RingOffice put the machine at the end of a premium suite's service strip, and a bin placed
+        // anywhere else would be a second answer to where it stands. Nothing is stood up here — no box, no
+        // clearance search — because the box is already in `walls` and was already checked by the furnishing
+        // law (#818's no-fitting-in-a-doorway sweep). What is decided here is the one fact only this method
+        // has: WHERE A CAPTAIN STANDS to use it, which is out of the machine's own face toward the room.
+        foreach (RingRoom suite in ring)
+        {
+            foreach (RingOffice.Fixture kit in suite.Furniture)
+            {
+                if (kit.Kind != RingOffice.Fitting.SecureDisposal)
+                {
+                    continue;
+                }
+
+                double toX = (suite.X0 + suite.X1) / 2.0, toY = (suite.Y0 + suite.Y1) / 2.0;
+                double dx = toX - kit.X, dy = toY - kit.Y;
+                double len = Math.Sqrt((dx * dx) + (dy * dy));
+                if (len < 0.001)
+                {
+                    continue;   // a machine in the exact centre of its own suite has no "out of it"
+                }
+
+                // Out of the box along that bearing, then a standoff — the same StandOffDu every other bin
+                // publishes, measured from the FACE rather than from the centre, because this box is six du
+                // across and 2.2 du from its middle is still inside it.
+                double ux = dx / len, uy = dy / len;
+                double hx = (kit.X1 - kit.X0) / 2.0, hy = (kit.Y1 - kit.Y0) / 2.0;
+                double outOfIt = double.MaxValue;
+                if (Math.Abs(ux) > 1e-6)
+                {
+                    outOfIt = Math.Min(outOfIt, hx / Math.Abs(ux));
+                }
+                if (Math.Abs(uy) > 1e-6)
+                {
+                    outOfIt = Math.Min(outOfIt, hy / Math.Abs(uy));
+                }
+
+                double sx = kit.X + (ux * (outOfIt + RipAndBin.StandOffDu));
+                double sy = kit.Y + (uy * (outOfIt + RipAndBin.StandOffDu));
+                if (SurfaceCollision.Blocked(sx, sy, RipAndBin.StandClearDu, segs))
+                {
+                    continue;   // no floor to stand on: the suite says so by having no bin, per §13.15
+                }
+
+                bins.Add(new RipAndBin.Bin(
+                    RipAndBin.Tier.SecureDisposal, kit.X, kit.Y, sx, sy, kit.Plate));
+                furniture.Add((sx, sy));
+            }
         }
 
         // ── THE HALL · the slop bin at the tray end of the counter, the chute at the service end ─────────

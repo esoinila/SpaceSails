@@ -297,7 +297,10 @@ public sealed class DeckPlan
             SpaceSails.Core.RingOffice.Fitting.Shelving
                 or SpaceSails.Core.RingOffice.Fitting.Racking
                 or SpaceSails.Core.RingOffice.Fitting.FilingCabinet
-                or SpaceSails.Core.RingOffice.Fitting.Kitchenette => 1,
+                or SpaceSails.Core.RingOffice.Fitting.Kitchenette
+                // #828 · The secure disposal is a MACHINE you stand at rather than a surface you work on,
+                // so it takes the kitchenette's ink and nobody reads it as a spare desk.
+                or SpaceSails.Core.RingOffice.Fitting.SecureDisposal => 1,
             SpaceSails.Core.RingOffice.Fitting.Bench => 2,
             _ => 0,
         };

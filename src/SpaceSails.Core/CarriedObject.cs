@@ -58,8 +58,38 @@ public static class CarriedObject
 
             Satchel.Kind.Relic => RelicReveal(item.Id),
 
+            // ── #828 · THE GLANCE: A SHEET HAS A FACE, AND LOOKING AT IT IS FREE ─────────────────────────
+            //
+            // Owner, naming the semantic the loop already leaned on: "the read from inventory and dig at
+            // it… I guess read is like quick glance and dig at it is carefully reading and comparing the
+            // document against other sources and notes."
+            //
+            // Two tiers, and they must never blur. This is the top one: what anybody holding the sheet
+            // would see, standing, anywhere, for nothing, as many times as they like — and it files
+            // NOTHING. It is #603's own ruling ("looking is free and always available, and the decision is
+            // a second, deliberate press") finally wired for the one kind #603 was written about: until
+            // this arm, the only way to read a paper's page was the twenty-second press that works it
+            // against the tracker and banks a lead, so the game's cheapest act and one of its most
+            // expensive ones were the same button.
+            //
+            // Nothing is authored here. It is FieldClue's page, which is the page the tracker press already
+            // raised — one composition, so the sheet cannot read two ways depending on which door you came
+            // through — and the caption-only idiom (#528, the odd book) because a paper is not a portrait.
+            Satchel.Kind.Paper => PaperReveal(item.Id),
+
             _ => null,
         };
+    }
+
+    /// <summary>#828 · The sheet's own face, as a card. Public for the reader's sake and for the tracker
+    /// press, which raises THIS card rather than composing a second one out of the same two functions.</summary>
+    public static Reveal PaperReveal(string paperId)
+    {
+        ArgumentNullException.ThrowIfNull(paperId);
+        return new Reveal(
+            "",
+            $"📋 {FieldClue.Label(FieldClue.CertaintyOf(paperId)).ToUpperInvariant()}",
+            FieldClue.Document(paperId));
     }
 
     /// <summary>#677 · WHICH relic-class card, asked of the find's own id.
