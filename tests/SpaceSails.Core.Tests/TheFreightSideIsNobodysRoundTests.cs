@@ -45,6 +45,13 @@ namespace SpaceSails.Core.Tests;
 /// <para><b>The sweep found no violation.</b> 470 floors carry both a round and a goods car, and the nearest
 /// any leg comes to the band anywhere in the building is <b>23.412 du</b>, on <c>secret-lab-site-unlisted
 /// B17</c>. The hole is real, it is on every floor, and it is now nailed down.</para>
+///
+/// <para>#863 · <b>AND IT GREW A FLOOR WITHOUT BEING TOUCHED.</b> The clause above — "ordinary is
+/// <see cref="PatrolBeat.IsPatrolled"/>'s own answer" — used to exclude the bar floor, and when the owner
+/// put a round on B1 this whole sweep widened onto the densest floor in the game by itself and stayed green.
+/// That is the benefit of a guard that asks the roster its question rather than keeping a list; the cost is
+/// that a sweep which grew silently could shrink silently, and an absence is what a shrunken sweep reports
+/// too. So the bar floors are now COUNTED, and the count is asserted.</para>
 /// </summary>
 public sealed class TheFreightSideIsNobodysRoundTests
 {
@@ -170,7 +177,7 @@ public sealed class TheFreightSideIsNobodysRoundTests
         Band band = BandFor(car);
 
         var walkedIn = new List<string>();
-        int floors = 0, legs = 0;
+        int floors = 0, legs = 0, bars = 0;
 
         foreach (string body in Sweep())
         {
@@ -179,6 +186,15 @@ public sealed class TheFreightSideIsNobodysRoundTests
                 if (!PatrolBeat.IsPatrolled(body, level))
                 {
                     continue;
+                }
+
+                // #863 · Counted so the widening cannot be undone in silence. The bar floor walked into this
+                // sweep the moment IsPatrolled admitted it, which is the whole benefit of asking the roster
+                // its own question — but a sweep that grew by accident can shrink by accident, and this law
+                // is an ABSENCE, which is exactly what a shrunken sweep reports too.
+                if (UndergroundComplex.TopPressurisedFloor(body) == level)
+                {
+                    bars++;
                 }
 
                 UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
@@ -206,6 +222,9 @@ public sealed class TheFreightSideIsNobodysRoundTests
         Assert.True(floors > 100,
             $"only {floors} floor(s) have both a round and a goods car on them — this proved little.");
         Assert.True(legs > floors * 20, $"only {legs} legs walked over {floors} floors — this proved little.");
+        Assert.True(bars > 40,
+            $"only {bars} of the {floors} floors swept is a bar floor — #863 put a round on the densest floor "
+            + "in the building, and the freight side's blind spot has to stay proven THERE most of all.");
         Assert.True(walkedIn.Count == 0,
             $"{walkedIn.Count} round(s) walk into the freight side that nobody watches:\n"
             + string.Join("\n", walkedIn.Take(20)));

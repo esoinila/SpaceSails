@@ -65,6 +65,10 @@ Console.WriteLine();
 //  --scan prints the whole building, and the first thing it says is the finding that reframes this issue:
 //  the ~465-segment floor is B1, and B1 is the ONE floor of every site that PatrolBeat.IsPatrolled says NO
 //  to. The furniture and the round have never yet been on the same floor.
+//
+//  #863 closed that: the owner read this row and put a round on B1 ("the guard looks kind of silly just
+//  standing in the middle of an aisle"), so --scan now prints "yes" in the last column of the heavy floor
+//  and the heavy-world rows below are what the game pays rather than a what-if.
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────
 if (Array.IndexOf(args, "--scan") >= 0)
 {

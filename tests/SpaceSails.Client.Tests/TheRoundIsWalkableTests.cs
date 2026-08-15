@@ -51,12 +51,21 @@ public sealed class TheRoundIsWalkableTests
     /// <para><b>Proven RED</b> by pointing <c>PatrolBeat.Circuit</c>'s room stop at the room's own centre
     /// plus twenty deck units in y — a spot that is inside a wall on most floors — which produces the
     /// stranded-leg table this audit exists to print.</para>
+    ///
+    /// <para>#863 · <b>AND IT SWEEPS THE BAR FLOOR NOW.</b> The floor list is
+    /// <see cref="PatrolBeat.IsPatrolled"/>'s own answer, so B1 — the park, the canteen, the offices, the
+    /// washrooms and #862's full furnishing, four hundred and sixty-odd wall segments of it — walked into
+    /// this flood the moment the owner's ruling flipped the clause, and it is GREEN: not one waypoint on the
+    /// densest floor in the game stands in furniture, and every leg of it connects on the real collision
+    /// field. That is the honest finding and it is worth saying, because it was the thing this lane most
+    /// expected to catch. The count is pinned below so a future exclusion cannot quietly take the hardest
+    /// floor back out of the audit.</para>
     /// </summary>
     [Fact]
     public void EveryStopOnEveryRoundIsWalkableFromTheCarAndFromTheStopBeforeIt()
     {
         var bad = new List<string>();
-        int floors = 0, legs = 0;
+        int floors = 0, legs = 0, bars = 0;
 
         foreach (string body in Bodies)
         {
@@ -73,6 +82,10 @@ public sealed class TheRoundIsWalkableTests
                 var spawn = new DeckReachability.Point(sx, sy);
                 var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
                 floors++;
+                if (UndergroundComplex.TopPressurisedFloor(body) == level)
+                {
+                    bars++;
+                }
 
                 // Three watches, because the ROTATION reorders the stops and a leg that is fine walked one
                 // way is a leg walked the other way — and because the stop list itself must not change with
@@ -143,6 +156,9 @@ public sealed class TheRoundIsWalkableTests
         // A flood over nothing is a green test that asserts nothing. Pin the size of the sweep.
         Assert.True(floors > 40, $"only {floors} restricted floors were walked.");
         Assert.True(legs > 500, $"only {legs} legs were walked.");
+        Assert.True(bars >= Bodies.Length - 1,
+            $"only {bars} of the {Bodies.Length} sites had their bar floor walked — B1 is the heaviest floor "
+            + "this audit has, and a flood that skips it is a flood over the easy half of the building.");
     }
 
     /// <summary>

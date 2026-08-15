@@ -70,6 +70,12 @@ below the bar, and the bar is B1. *The furniture and the guards have never yet s
 floor.* Every "heavy world" guard row below is therefore a **what-if** — what a round would cost if
 it were ever rostered onto the furnished floor — and it is labelled as one.
 
+> **Closed by #863 (2026-08-13).** The owner read this finding and ruled the other way: *"let's try
+> to have round because the guard looks kind of silly just standing in the middle of an aisle."*
+> `IsPatrolled` admits B1 now, so the what-if rows below are what the game actually pays — and the
+> post-#858 plan-during-the-stand is why that turned out to be affordable. The lab's numbers are
+> left exactly as they were measured; only their status changed.
+
 (There is no honest way to build a "same floor, furniture switched off" world, because Core lays the
 furniture into the same wall list as the walls. So the comparison is two real floors, and
 **Section B** is the clean causal test that varies the wall count and nothing else.)
@@ -330,9 +336,11 @@ goes away — after it, wall count does not appear anywhere in the sim's cost mo
 1. **Already above:** the tiered-JIT and early-exit traps are both sprung and documented. Re-enable
    `<TieredCompilation>` in `Lab45.csproj` and watch Section B's first row go to ~76 ns/segment while
    its last stays at ~21 — a perfectly stable, perfectly reproducible, perfectly wrong table.
-2. **On your own:** roster a round onto B1. `PatrolBeat.IsPatrolled` refuses it today, so the
-   heavy-world guard rows are a what-if; force `--frames` up and put a real beat on the furnished
-   floor to see whether the office frontage does anything to the *legs* as well as the eye.
+2. **Done by #863:** rostering a round onto B1 was this lab's own suggested exercise, and the owner
+   took it. `IsPatrolled` admits the bar floor now, so the heavy-world rows are no longer a what-if.
+   What is still open on your own: force `--frames` up and measure whether the office frontage does
+   anything to the *legs* as well as the eye, now that there is a real beat on the furnished floor
+   to measure.
 3. **On your own:** this lab measures native Release. The game ships WASM. Run the same
    `AutoWalk.Plan` bench in a real foreground browser session (never an MCP-driven tab — the timings
    are invalid) and find the multiplier that turns 6.4 ms into a dropped frame.

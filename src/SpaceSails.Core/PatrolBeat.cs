@@ -45,11 +45,18 @@ namespace SpaceSails.Core;
 ///
 /// <h3>Where they are, and where they are deliberately not</h3>
 ///
-/// <para><b>Below the bar, and no deeper than the building admits to.</b> #709 put people on B1 only and
-/// said why: the population falling to zero is what makes the descent a gradient. This does not spend that.
-/// It fills the gap between the floor where an outsider plausibly belongs (<see cref="CanteenRegulars"/>'s
-/// own B1 ruling) and the last floor the directory owns up to (<c>DepthOf</c>) — the facility's WORKING
-/// floors, which are exactly the floors that have a payroll to put somebody on.</para>
+/// <para><b>From the floor that breathes down to the last one the building admits to.</b> #709 put people on
+/// B1 only and said why: the population falling to zero is what makes the descent a gradient. This does not
+/// spend that. It walks the facility's WORKING floors — everything from the top pressurised floor
+/// (<see cref="UndergroundComplex.TopPressurisedFloor"/>) to the last one the directory owns up to
+/// (<c>DepthOf</c>) — which are exactly the floors that have a payroll to put somebody on.</para>
+///
+/// <para>#863 · <b>THE BAR FLOOR IS ONE OF THEM NOW.</b> It used to be the exception — the one working floor
+/// nobody walked, on the grounds that a round would ask a room of contractors for passes under a plate
+/// reading <c>NO PASS REQUIRED</c>. Owner, 2026-08-13: <i>"let's try to have round because the guard looks
+/// kind of silly just standing in the middle of an aisle."</i> The plate is untouched and so is the descent:
+/// what B1 gains is a man on a rota walking past people who are eating, which is the most ordinary thing in
+/// the building and therefore the best possible floor to learn a round on.</para>
 ///
 /// <para>Nobody patrols the unlisted band or the found halls. That is not an omission: the unlisted band is
 /// the thing the clandestine operation was hiding <i>from its own staff</i> (§13.7), and a guard walking a
@@ -77,15 +84,34 @@ public static class PatrolBeat
     /// number typed here:</para>
     ///
     /// <list type="bullet">
-    /// <item><b>Below the bar.</b> <see cref="CanteenRegulars.PeopleSitHere"/> is the floor an outsider
-    /// plausibly belongs on; a round on it would ask a room of contractors for their passes, and that room's
-    /// own plate says <c>NO PASS REQUIRED</c>.</item>
+    /// <item><b>Underground, and no shallower than the building breathes.</b>
+    /// <see cref="UndergroundComplex.TopPressurisedFloor"/> is where the facility starts; the regolith over
+    /// it is nobody's rota.</item>
     /// <item><b>Not deeper than the directory admits.</b> <c>DepthOf</c> is the building's account of
     /// itself, and a payroll stops where the account does.</item>
     /// <item><b>Never the head office.</b> #411's building has no gate, no shafts to card and a different
     /// fiction entirely; putting a contract guard in the wintering hall would be this file deciding
     /// something about a place it does not own.</item>
     /// </list>
+    ///
+    /// <h3>#863 · THE ONE CLAUSE THAT WAS REVERSED: B1 IS WALKED NOW</h3>
+    ///
+    /// <para>This used to read <c>level &gt;= bar</c> and the bullet above it used to say <i>below the
+    /// bar</i>: the top pressurised floor — the one with the park, the canteen, the offices and the
+    /// washrooms on it — was the one working floor in the building nobody walked, on the grounds that a
+    /// round would ask a room of contractors for passes under a plate reading <c>NO PASS REQUIRED</c>.</para>
+    ///
+    /// <para><b>Owner ruling, 2026-08-13,</b> watching a man stand in a furnished aisle with nothing to do:
+    /// <i>"let's try to have round because the guard looks kind of silly just standing in the middle of an
+    /// aisle."</i> The plate is untouched and so is the argument behind it — a captain with no paper is
+    /// still walked out and never harmed — but a guard with no beat is a statue, and a statue is worse
+    /// storytelling than a man who wants to see your pass.</para>
+    ///
+    /// <para>And the cost that had been assumed was measured and is not there. Lab 45 (§C) flagged the
+    /// irony first: the FURNITURE and the ROUNDS had never once stood on the same floor, so every
+    /// heavy-floor sightline number in that lab was a what-if. Post-#860 — the WallIndex eye and the plan
+    /// walked during the stand — the frame cost of a round on the densest floor in the game is
+    /// near-nothing, so the reason to withhold it went and the reason to have it is on the screen.</para>
     /// </summary>
     /// <param name="bodyId">The site.</param>
     /// <param name="level">The floor (negative; −1 is B1).</param>
@@ -98,7 +124,10 @@ public static class PatrolBeat
             return false;
         }
 
-        if (UndergroundComplex.TopPressurisedFloor(bodyId) is not { } bar || level >= bar)
+        // #863 · …and the top pressurised floor is INSIDE this now (`> bar`, not `>= bar`). The clause still
+        // does its own work — a site whose upper floors do not breathe has no rota on them either — it just
+        // no longer spends the floor the owner watched a guard stand still on.
+        if (UndergroundComplex.TopPressurisedFloor(bodyId) is not { } bar || level > bar)
         {
             return false;
         }
