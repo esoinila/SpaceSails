@@ -538,7 +538,20 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // A stopped mover drops off the motion fan honestly, the same clause a stand at a stop keeps — or
         // the tracker would report travel that is not happening.
-        Assert.Contains("g.Vx = 0;", loop[asked..walked], StringComparison.Ordinal);
+        //
+        // #831 · IT IS ONE CALL FURTHER DOWN NOW, and it is the same law. A made tail no longer freezes BARE
+        // — owner: "A MADE tail performs a COVER ACT instead of freezing bare: turns to the nearest wall
+        // fixture, checks a plate, reads a docket — same hold, same honest Vx=0, but the picture says 'man
+        // with business' not 'statue'." So the held branch calls TheCoverAct and the zeroing this guard was
+        // written to protect lives inside it, on every path out of it. FOLLOWED rather than relaxed: the
+        // clause is asserted where it now is, and the stepper is still pinned to the branch that reaches it.
+        Assert.Contains("TheCoverAct(g, dt, walls, sight);", loop[asked..walked], StringComparison.Ordinal);
+
+        int act = patrol.IndexOf("private void TheCoverAct(", StringComparison.Ordinal);
+        Assert.True(act >= 0, "TheCoverAct has moved — this guard can no longer see the hold it guards.");
+        string cover = patrol[act..patrol.IndexOf("\n    // ──", act, StringComparison.Ordinal)];
+        Assert.Contains("g.Vx = 0;", cover, StringComparison.Ordinal);
+        Assert.Contains("g.Vy = 0;", cover, StringComparison.Ordinal);
 
         // …and the seated fact is the bench's, asked once for the frame.
         Assert.Contains("bool sitting = SeatedOnABenchInTheOpen;", loop, StringComparison.Ordinal);

@@ -210,8 +210,21 @@ public class TheRoundsOnTheRestrictedFloorsTests
 
                 (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(Field);
                 Assert.True(circuit.Count > 0, $"{site} B{-level}: a floor with no round to walk at all.");
-                Assert.Equal(shaftX, circuit[0].X, 6);
                 Assert.Equal("the car", circuit[0].What);
+
+                // #831 · THE LAW MOVED, BY THE OWNER'S OWN RULING, AND IT MOVED BY A PACE AND A HALF.
+                //
+                // Owner: "they actually in real life like have these check points they electronically sign
+                // on rounds to prove they did their round." Every stop now SNAPS to the square its watchclock
+                // station is signed from, so the car stop is no longer the shaft's own x to six decimal
+                // places — it is the plate beside the car, with a man looking at it. What this guard is about
+                // is untouched and is asserted untouched: the round STARTS at the car and works along the
+                // spine in order.
+                Assert.NotNull(circuit[0].Point);
+                Assert.True(
+                    System.Math.Abs(circuit[0].X - shaftX) <= PatrolBeat.CheckpointReachDu,
+                    $"{site} B{-level}: the first stop is "
+                    + $"{System.Math.Abs(circuit[0].X - shaftX):F1} du off the shaft in x — not the car.");
 
                 // The mouths, in the order the round meets them. Room stops sit between mouths and are not
                 // on the spine, so the ordering law is asked of the mouths alone.
@@ -222,7 +235,13 @@ public class TheRoundsOnTheRestrictedFloorsTests
                     {
                         continue;
                     }
-                    Assert.Equal(shaftY, stop.Y, 6);
+                    // #831 · …and a mouth stop is the station beside that mouth, so it stands off the spine's
+                    // centre line by the pace and a half a man signs a plate from. It is still IN the spine
+                    // corridor, which is what "on the spine" ever meant.
+                    Assert.True(
+                        System.Math.Abs(stop.Y - shaftY) <= UndergroundComplex.CorridorHalf,
+                        $"{site} B{-level}: a mouth stop stands {System.Math.Abs(stop.Y - shaftY):F1} du off "
+                        + "the spine — that is not in the corridor any more.");
                     if (stop.X < lastMouth)
                     {
                         complaints.Add(
