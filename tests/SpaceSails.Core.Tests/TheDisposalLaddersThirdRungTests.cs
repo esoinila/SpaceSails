@@ -102,7 +102,7 @@ public sealed class TheDisposalLaddersThirdRungTests
     /// big suite and in no plain room, no washroom, no store and no corridor. A machine by every lift would
     /// hand the best rung of a graded ladder to everybody for nothing.</para>
     ///
-    /// <para><b>Proven RED</b> by script-adding a second <c>lay.SolidBox</c> call to <c>Banks</c>, which
+    /// <para><b>Proven RED</b> by script-adding a second <c>lay.Box</c> call to <c>Banks</c>, which
     /// every desk-dressed room on the ring runs through — premium or not:</para>
     /// <code>
     /// 215 secure disposal(s) are standing outside the tier that pays for one:
