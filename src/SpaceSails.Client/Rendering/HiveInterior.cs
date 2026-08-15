@@ -253,6 +253,11 @@ public static class HiveInterior
         // answer to the pen.
         var benchSeats = new List<DeckPlan.BenchSpot>();
 
+        // #868 · …and the FURNITURE, as the filled rectangles Core published. Same rule a fourth time: this
+        // file asks and decides nothing — the box is RingOffice.Fixture's own, and the pen is told what a
+        // piece IS (DeckPlan.FurnitureSpot.ToneOf) rather than what colour to make it.
+        var furniture = new List<DeckPlan.FurnitureSpot>();
+
         // ── #756 · THE FLOOR WEARS ITS ART ─────────────────────────────────────────────────────────────
         //
         // Owner, walking the biggest social room in the game and finding bare grid: "let's put todo to have
@@ -581,6 +586,18 @@ public static class HiveInterior
                     {
                         labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
                     }
+
+                    // #868 · …AND THE BOX ITSELF, FILLED. Owner, sitting in one of these on the back street:
+                    // "The graphics kind of does not show there being a table" / "The bench is a line" —
+                    // and, three paces away, "The Shelving is clear as furniture goes."
+                    //
+                    // The sentence above ("what is left for a renderer is the STENCIL and the VERB") was
+                    // true of a floor whose only fixtures were rectangles: four wall segments round a dark
+                    // gap DO read as a cupboard. It was never true of the back of house, whose bench was one
+                    // degenerate box and therefore one stroke, and it was never true of anything at all,
+                    // because an outline reads as a space you could stand in. So the deck is handed the
+                    // published BOX and fills it — Core's own rectangle, never one measured here (§13.15).
+                    Furnish(furniture, in fitting);
                 }
 
                 // The chairs take the SIT verb, on the seam the stools and the park benches already use:
@@ -694,6 +711,13 @@ public static class HiveInterior
                 {
                     labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
                 }
+
+                // #868 · The same fill the ring's furniture takes. A chamber's kit is laid as SEGMENTS on
+                // purpose (ChamberFitting's class summary: Lab 45 says the sightline is O(walls), and four
+                // rectangles per room in fifteen hundred rooms is a frame budget spent drawing cupboards),
+                // so most of these are degenerate and the pen skips them — the call is made anyway, so the
+                // day a chamber's bench grows a depth it is drawn without anybody remembering this line.
+                Furnish(furniture, in fitting);
             }
 
             // The stools take the SIT verb on the seam the office chairs, the stools at the bar and the park
@@ -873,10 +897,36 @@ public static class HiveInterior
             tables: [.. tables],
             stools: [.. stools],
             benchSeats: [.. benchSeats],
+            furniture: [.. furniture],
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.
             hullInk: UndergroundComplex.LiveryFor(bodyId, level));
+    }
+
+    /// <summary>
+    /// #868 · ONE PUBLISHED FITTING, HANDED TO THE PEN AS THE RECTANGLE IT IS.
+    ///
+    /// <para>The one seam between a piece of furniture Core stood in a room and a filled shape on the deck,
+    /// written once so the ring's rooms and the building's chambers cannot each answer it their own way. It
+    /// makes exactly two decisions and both are asked of the KIND: whether a fitting is furniture at all
+    /// (a cubicle is a little ROOM you step inside — filling one would draw the building's only hiding place
+    /// as a solid block) and what it IS (see <see cref="DeckPlan.FurnitureSpot.ToneOf"/>). A DEGENERATE box
+    /// is dropped here rather than in the renderer, because a zero-area rectangle is not a picture of
+    /// anything and a screen between two workstations honestly IS a line.</para>
+    /// </summary>
+    private static void Furnish(List<DeckPlan.FurnitureSpot> into, in RingOffice.Fixture fitting)
+    {
+        if (!DeckPlan.FurnitureSpot.IsFurniture(fitting.Kind)
+            || Math.Abs(fitting.X1 - fitting.X0) < 0.001
+            || Math.Abs(fitting.Y1 - fitting.Y0) < 0.001)
+        {
+            return;
+        }
+
+        into.Add(new(
+            (float)fitting.X0, (float)fitting.Y0, (float)fitting.X1, (float)fitting.Y1,
+            DeckPlan.FurnitureSpot.ToneOf(fitting.Kind)));
     }
 
     /// <summary>One key per room per floor, so a searched room on B2 is not a searched room on B3.</summary>

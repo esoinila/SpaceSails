@@ -262,6 +262,56 @@ public sealed class DeckPlan
     /// </summary>
     public readonly record struct Structure(float X0, float Y0, float X1, float Y1);
 
+    /// <summary>
+    /// #868 · ONE PIECE OF FURNITURE, AS THE RECTANGLE IT STANDS ON — filled, so a captain can see it.
+    ///
+    /// <para>Owner, reading a back-of-house room off the plan on 2026-08-13: <i>"The graphics kind of does
+    /// not show there being a table"</i> · <i>"The bench is a line"</i> · and, as the positive control three
+    /// paces away, <i>"The Shelving is clear as furniture goes."</i> His own fix, quoted: <i>"could the table
+    /// just be a different color rectangle in front of the chair, so arms (and papers) could rest on
+    /// it?"</i>, sealed with <i>"I think table should be similar just say table."</i></para>
+    ///
+    /// <para><b>Why the deck needed a new primitive at all.</b> Until this record, every fixture down here
+    /// reached the screen as its own SOLIDS — the wall segments Core lays a box out of — so a rectangle drew
+    /// as four strokes and a bench, which is one degenerate box, drew as one. That is honest about the
+    /// collision field and useless as furniture: an outline reads as a space you could stand in, which is
+    /// exactly the complaint #537 answered for structure with a fill. This is the same answer for the things
+    /// standing IN a room rather than the things a room is made of, and it is drawn from the box Core
+    /// published rather than measured off the wall list, so the picture and the plan cannot drift.</para>
+    /// </summary>
+    /// <param name="X0">Left edge, in deck units.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="Tone">What the piece IS, never a colour — <see cref="BigLabels"/>'s own rule, because
+    /// the plan is Core-shaped data and the ink lives in the renderer. 0 = a surface you work at (a desk
+    /// bank, a table, a counter, a worktop), 1 = something you keep things in (shelving, a kitchenette),
+    /// 2 = something you sit on (a bench).</param>
+    public readonly record struct FurnitureSpot(float X0, float Y0, float X1, float Y1, int Tone)
+    {
+        /// <summary>#868 · Which tone a published fitting draws in. Asked of the KIND and never of the
+        /// plate's wording, so a fixture renamed tomorrow keeps its ink — and asked here, once, so the pen
+        /// and any guard about the pen read one answer.</summary>
+        public static int ToneOf(SpaceSails.Core.RingOffice.Fitting kind) => kind switch
+        {
+            SpaceSails.Core.RingOffice.Fitting.Shelving
+                or SpaceSails.Core.RingOffice.Fitting.Racking
+                or SpaceSails.Core.RingOffice.Fitting.FilingCabinet
+                or SpaceSails.Core.RingOffice.Fitting.Kitchenette => 1,
+            SpaceSails.Core.RingOffice.Fitting.Bench => 2,
+            _ => 0,
+        };
+
+        /// <summary>#868 · Is this the kind of fitting that gets FILLED at all? A cubicle and a booth are
+        /// little ROOMS — a captain steps inside one and shuts the door — so filling them would draw the one
+        /// hiding place in the building as a solid block. A partition is a screen, which IS a line and is
+        /// honestly drawn as one.</summary>
+        public static bool IsFurniture(SpaceSails.Core.RingOffice.Fitting kind) =>
+            kind is not (SpaceSails.Core.RingOffice.Fitting.Cubicle
+                or SpaceSails.Core.RingOffice.Fitting.Booth
+                or SpaceSails.Core.RingOffice.Fitting.Partition);
+    }
+
     public const double InteractRadius = 3.0;
     public const double AvatarRadius = 0.7;
 
@@ -356,6 +406,11 @@ public sealed class DeckPlan
     /// <summary>Filled structure — see <see cref="Structure"/>. Drawn under everything else, because it is what
     /// the ship is made of rather than something in her.</summary>
     public Structure[] Structures { get; private set; }
+
+    /// <summary>#868 · The FURNITURE, as filled rectangles — see <see cref="FurnitureSpot"/>. Drawn over the
+    /// floor and under the walls, because it is what is standing IN a room rather than what the room is made
+    /// of. Empty everywhere Core furnishes nothing, which is every deck in the game but the Hive's.</summary>
+    public FurnitureSpot[] Furniture { get; private set; }
     public Door[] Doors { get; }
 
     /// <summary>#563 · TERRAIN — drawn, never collided. Kept in its own array rather than as a flag on
@@ -513,9 +568,11 @@ public sealed class DeckPlan
         SpaceSails.Core.BodyPalette.Ink? hullInk = null,
         Structure[]? structures = null,
         StoolSpot[]? stools = null,
-        BenchSpot[]? benchSeats = null)
+        BenchSpot[]? benchSeats = null,
+        FurnitureSpot[]? furniture = null)
     {
         Structures = structures ?? [];
+        Furniture = furniture ?? [];
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
         for (int i = 0; i < walls.Length; i++)

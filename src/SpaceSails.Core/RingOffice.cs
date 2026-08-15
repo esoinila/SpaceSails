@@ -90,6 +90,12 @@ public static class RingOffice
     /// difference between a cubicle and a table.</summary>
     public const double CubicleReachDu = 4.0;
 
+    /// <summary>#868 · The least floor a seat keeps between itself and the solid it is a seat AT, where the
+    /// room is too tight for the whole <see cref="ChairSetbackDu"/>. A body's radius and a hand — the setback
+    /// is what a chair at a desk WANTS; this is what a seat must have before it stops being a seat and starts
+    /// being a coordinate inside a bench, which is the trap #820's snap would put the captain in.</summary>
+    public const double SeatClearDu = 1.2;
+
     /// <summary>
     /// #817 · HOW MUCH MORE WORKTOP A DESK GIVES ONE PERSON THAN A CANTEEN TOP DOES.
     ///
@@ -150,6 +156,36 @@ public static class RingOffice
 
     /// <summary>How long a plain room's bench is.</summary>
     public const double BenchDu = 6.0;
+
+    /// <summary>
+    /// #868 · HOW DEEP A BENCH IS — and the whole of why this number had to exist.
+    ///
+    /// <para>Owner, standing in a cold room on the far band, 2026-08-13: <i>"The bench is a line."</i> It
+    /// was, literally: <see cref="Plain"/> laid it as a DEGENERATE box, which <see cref="Lay.Box"/> honestly
+    /// turns into one segment, and one segment is one stroke on a plan. Beside it the SHELVING — a real
+    /// rectangle — read as furniture at a glance, and the owner said so in the same breath:
+    /// <i>"The Shelving is clear as furniture goes."</i> One room, the positive control and the negative
+    /// control, three paces apart.</para>
+    ///
+    /// <para>So a bench is as thick as a run of shelving is (<see cref="CounterHalfDepthDu"/>, doubled), for
+    /// the reason the two are one object at this scale: a length of solid you put things on or sit on. There
+    /// is no second opinion about how deep a plan fixture is drawn.</para>
+    /// </summary>
+    public static double BenchDepthDu => 2 * CounterHalfDepthDu;
+
+    /// <summary>
+    /// #868/#869 · HOW DEEP A WORKTOP IS, at the size a person actually is.
+    ///
+    /// <para>Owner's own fix for the desk that was narrated and never drawn: <i>"could the table just be a
+    /// different color rectangle in front of the chair, so arms (and papers) could rest on it?"</i> — and
+    /// #869's sizing, which is the human-true desk this building has never had: 2.3 du of frontage per
+    /// person, 1.3 du deep. A desk is the one fixture down here whose size is a fact about a BODY rather
+    /// than about the module, so it is the one fixture measured in bodies.</para>
+    /// </summary>
+    public const double WorktopDepthDu = 1.3;
+
+    /// <summary>#869 · …and how much of it one person gets. See <see cref="WorktopDepthDu"/>.</summary>
+    public const double WorktopRunDu = 2.3;
 
     // ── THE SIZE GATES ────────────────────────────────────────────────────────────────────────────────
 
@@ -639,6 +675,16 @@ public static class RingOffice
             return (Math.Min(ax, bx), Math.Min(ay, by), Math.Max(ax, bx), Math.Max(ay, by));
         }
 
+        /// <summary>#868 · Which way the room's FRONTAGE runs, as a unit vector — the +u axis of the grid
+        /// everything in this file is laid in, in the surface's own coordinates.
+        ///
+        /// <para>Published for the same reason <see cref="TowardTheGlass"/> is: a layout that wants to face
+        /// somebody ACROSS the room rather than at the window would otherwise write its own pair of numbers
+        /// per side, and four hand-written pairs is four chances to get a sign wrong on one of the ring's
+        /// four bands. The back-of-house set (<see cref="Plain"/>) is laid entirely along this axis, because
+        /// that band is one chamber module deep and has no other axis to be laid along.</para></summary>
+        internal (double X, double Y) AlongTheFrontage => Horizontal ? (1.0, 0.0) : (0.0, 1.0);
+
         /// <summary>Which way the glass is, as a unit vector — what a chair at a desk is looking at.</summary>
         internal (double X, double Y) TowardTheGlass => _side switch
         {
@@ -958,17 +1004,24 @@ public static class RingOffice
             return;
         }
 
-        (double gx, double gy) = lay.Frame.TowardTheGlass;
         int seats = Math.Max(1, (int)((vB - vA) / TableSeatPitchDu));
+
+        // Across the table from each other, which is what a negotiation is. They face ALONG the room's own
+        // frontage rather than at the glass, off the axis the grid is laid in
+        // (<see cref="Frame.AlongTheFrontage"/>).
+        //
+        // #868 · IT WAS A ROTATION OF THE GLASS NORMAL AND IT WAS WRONG ON ONE BAND IN FOUR. The rotation
+        // `(-gy, gx)` gives +u on the near, far and west sides and −u on the EAST, because that side's grid
+        // is the one whose depth axis runs backwards (<c>Frame.At</c>: <c>_x1 - v</c>). So every negotiation
+        // room on the east band seated four people facing away from their own table, and nothing said so
+        // until #868's facing guard asked the question — 48 seats across the sweep, on a floor plan where
+        // both chairs and table are drawn and neither is drawn with a front.
+        (double ax, double ay) = lay.Frame.AlongTheFrontage;
         for (int s = 0; s < seats; s++)
         {
             double v = vA + ((vB - vA) * (s + 0.5) / seats);
-
-            // Across the table from each other, which is what a negotiation is. They face ALONG the room's
-            // own width rather than at the glass — the perpendicular of the glass normal, which is a
-            // rotation of one published vector and never a fifth hand-written pair of numbers.
-            lay.Chair(in room, uT - reach, v, (-gy, gx));
-            lay.Chair(in room, uT + reach, v, (gy, -gx));
+            lay.Chair(in room, uT - reach, v, (ax, ay));
+            lay.Chair(in room, uT + reach, v, (-ax, -ay));
         }
     }
 
@@ -1016,40 +1069,106 @@ public static class RingOffice
     }
 
     /// <summary>
-    /// THE PLAIN VERSION — shelving and a bench, and that is the whole of it.
+    /// THE PLAIN VERSION — shelving, a bench, and the worktop the bench is a bench AT.
     ///
     /// <para>What a corner office with no view and the back of house (#801) get. Owner's law is that no floor
     /// is bare, not that every floor is furnished the same: a potting shed with cubicles in it would be the
     /// plate and the room disagreeing. The bench still SEATS you, because people sit down in these rooms
     /// too.</para>
+    ///
+    /// <h3>#868 · What the owner found in one of these, and the three things wrong with it</h3>
+    ///
+    /// <para>He sat down at a chair in <c>❄ COLD ROOM · TO CANTEEN 1</c> on the back street of B1 and read
+    /// the room off the plan: <i>"The graphics kind of does not show there being a table"</i> ·
+    /// <i>"The bench is a line"</i> · <i>"and too far to use as a bench"</i> · and, as the positive control,
+    /// <i>"The Shelving is clear as furniture goes."</i></para>
+    ///
+    /// <para>Every one of those was TRUE, and all three were this method's:</para>
+    ///
+    /// <list type="number">
+    /// <item><b>There was no table.</b> Not undrawn — ABSENT. A plain room published two chairs and not one
+    /// worktop, while the sit line told the captain the worktop in front of them was clear. The renderer had
+    /// nothing to draw because Core had stood nothing there.</item>
+    /// <item><b>The bench was a degenerate box</b>, so it was one solid segment, so it was one stroke. See
+    /// <see cref="BenchDepthDu"/>.</item>
+    /// <item><b>The chairs faced the glass with the bench BEHIND them</b> and nothing in front, a pace out
+    /// into the middle of the floor. A seat with its back to the only fixture in reach is the "too far to use
+    /// as a bench" the owner was looking at.</item>
+    /// </list>
+    ///
+    /// <para>The fix is his own, quoted: <i>"could the table just be a different color rectangle in front of
+    /// the chair, so arms (and papers) could rest on it?"</i> — a SET, laid so the three pieces explain each
+    /// other. The bench stands against the far pier, a body's setback out from it is the seat, and a setback
+    /// past that is the worktop, so the dot at the chair has the bench behind it and the slab in front of it
+    /// and neither is a stroke.</para>
+    ///
+    /// <h3>Why it is all laid across the FRONTAGE</h3>
+    ///
+    /// <para>Measured, not preferred. The back-of-house band is one chamber module deep
+    /// (<see cref="UndergroundComplex.RoomHeightDu"/> = 12 du) and gives <see cref="StreetClearDu"/> to the
+    /// street aisle and <see cref="GlassClearDu"/> to the walkway at the glass, which leaves TWO du of depth
+    /// to furnish. A set stacked across the depth does not fit in the very room the owner was sitting in —
+    /// the frontage is where the sixteen to forty du are, so the set is laid along it and grows into it.</para>
     /// </summary>
     private static void Plain(
         Lay lay, in UndergroundComplex.RingRoom room, double uA, double uB, double vA, double vB)
     {
-        lay.Box(Fitting.Shelving, uA, vA, uA + (2 * CounterHalfDepthDu), vB, StorePlate);
+        double shelfHi = uA + (2 * CounterHalfDepthDu);
+        lay.Box(Fitting.Shelving, uA, vA, shelfHi, vB, StorePlate);
 
-        // The bench goes against the OTHER pier, which is the half of the room the shelving is not in and —
-        // in a 20 x 12 back-of-house box — the half the room's own centre is not in either.
-        double benchHi = uB;
-        double benchLo = Math.Max(uA + (2 * CounterHalfDepthDu) + GangwayDu, uB - BenchDu);
-        if (benchHi - benchLo < 2.0 || vB < vA)
+        if (vB - vA < 0.001)
         {
             return;
         }
 
-        if (!lay.Box(Fitting.Bench, benchLo, vA, benchHi, vA, BenchPlate, Seating.OneSide))
+        // How LONG the set is. A bench's own published length, or the whole band where the band is shallower
+        // than that — which is the far ring, where it is two du. It is anchored at the street aisle so that a
+        // deep corner office gets a bench somebody could walk in and sit on rather than a forty-du plank.
+        double setV1 = Math.Min(vB, vA + BenchDu);
+
+        // ── THE SET, measured back from the far pier: bench, a body, worktop.
+        double benchLo = uB - BenchDepthDu;
+        double seatU = benchLo - ChairSetbackDu;
+        double workHi = seatU - ChairSetbackDu;
+        double workLo = workHi - WorktopDepthDu;
+
+        // Where the set may start at all: past the shelving and the gangway a body walks between two
+        // fittings, and clear of the square the ring's A* audit stands on. Both are published numbers of this
+        // file's own, and neither is a coordinate.
+        double floorAt = Math.Max(shelfHi + GangwayDu, lay.UCentre + RoomCentreClearDu);
+        bool bench = workLo >= floorAt;
+
+        if (!bench)
+        {
+            // A frontage too short to hold the bench as well. The WORKTOP is the piece that stays, because a
+            // chair without one is the very lie this issue was opened about: the set loses its bench rather
+            // than its reason to have a chair at all.
+            workLo = floorAt;
+            workHi = workLo + WorktopDepthDu;
+            seatU = workHi + ChairSetbackDu;
+        }
+
+        if (seatU > uB + 0.001)
+        {
+            return;   // nowhere in this room to sit that is not a pier. The shelving, and honest bare floor.
+        }
+
+        if (!lay.Box(Fitting.Counter, workLo, vA, workHi, setV1, WorktopPlate, Seating.OneSide))
         {
             return;
         }
 
-        // Two places to sit, a pace off the plank on the room's side of it — clear of the bench's own
-        // segment, which is solid exactly as the park's planks are.
-        (double gx, double gy) = lay.Frame.TowardTheGlass;
-        for (int e = 0; e < 2; e++)
+        if (bench)
         {
-            double u = benchLo + ((benchHi - benchLo) * (e + 0.5) / 2.0);
-            lay.Chair(in room, u, Math.Min(vA + ChairSetbackDu, vB), (gx, gy));
+            lay.Box(Fitting.Bench, benchLo, vA, uB, setV1, BenchPlate, Seating.OneSide);
         }
+
+        // …and the seat, FACING THE WORKTOP — back down the frontage, off the one published axis
+        // (<see cref="Frame.AlongTheFrontage"/>) rather than a fifth hand-written pair of numbers. It is the
+        // whole of the third finding: a chair in a back room looks at the thing it works at, and a chair
+        // that looked at a window it does not have is what put the garden in a cold store's narration.
+        (double ax, double ay) = lay.Frame.AlongTheFrontage;
+        lay.Chair(in room, seatU, (vA + setV1) / 2.0, (-ax, -ay));
     }
 
     /// <summary>
@@ -1247,23 +1366,39 @@ public static class RingOffice
         //    first half of it. Two places on it, because the ring's furnishing law is that a captain can sit
         //    down in more than one place in a room, and a public washroom with nowhere to wait is a corridor
         //    with taps in it.
+        //
+        //    #868 · …and it is a BOX and no longer a line, for the reason the plain room's is
+        //    (BenchDepthDu): the owner read one of these off a plan and said "the bench is a line", and it
+        //    was — one degenerate box, one segment, one stroke. A bench is as deep as a run of shelving is.
         double benchV0 = runV1 + GangwayDu, benchV1 = Math.Min(vB, benchV0 + BenchDu);
-        if (benchV1 - benchV0 < 2.0)
+
+        // How far this pier's band reaches before the terrace's own gangway starts — the same line the basin
+        // run stops at, asked once. The bench is as deep as that band can spare after a seat has taken its
+        // clearance out of it, so the narrowest washroom on the ring gets a thin slab rather than a stroke.
+        double column = uStripLo - GangwayDu;
+        double benchHi = Math.Min(uA + BenchDepthDu, column - SeatClearDu);
+        if (benchV1 - benchV0 < 2.0 || benchHi - uA < CounterHalfDepthDu / 2.0)
         {
             return;
         }
-        if (!lay.Box(Fitting.Bench, uA, benchV0, uA, benchV1, BenchPlate, Seating.OneSide))
+        if (!lay.Box(Fitting.Bench, uA, benchV0, benchHi, benchV1, BenchPlate, Seating.OneSide))
         {
             return;
         }
 
         // A pace off the plank on the room's side of it — away from the pier, which is the direction the
         // basin run's own taps face, taken off ONE published vector rather than a second pair of numbers.
-        double seatU = Math.Min(runHi, uA + ChairSetbackDu);
-        (double gx, double gy) = lay.Frame.TowardTheGlass;
+        // Measured off the bench's own FAR face now that it has one, and never past the porcelain's line.
+        //
+        // #868 · …and it faces ALONG THE FRONTAGE, off the published axis rather than a rotation of the
+        // glass normal — the same one-line sign fault the negotiation table had, in the same shape, on the
+        // same band: `(-gy, gx)` is +u on three sides of the ring and −u on the east, so a washroom on that
+        // band sat people facing into the pier their own bench is bolted to.
+        double seatU = Math.Min(benchHi + ChairSetbackDu, column);
+        (double ax, double ay) = lay.Frame.AlongTheFrontage;
         for (int e = 0; e < 2; e++)
         {
-            lay.Chair(in room, seatU, benchV0 + ((benchV1 - benchV0) * (e + 0.5) / 2.0), (-gy, gx));
+            lay.Chair(in room, seatU, benchV0 + ((benchV1 - benchV0) * (e + 0.5) / 2.0), (ax, ay));
         }
     }
 
@@ -1298,6 +1433,20 @@ public static class RingOffice
     /// <summary>…and its bench.</summary>
     public const string BenchPlate = "🪑 A BENCH";
 
+    /// <summary>
+    /// #868 · …and the surface the bench is a bench AT.
+    ///
+    /// <para>Owner, sealing the fix: <i>"I think table should be similar just say table."</i> — one idiom for
+    /// all plan furniture, the shelving's own recipe (a filled rectangle with a plate on it), and the
+    /// plainest possible noun on the plate.</para>
+    ///
+    /// <para>It was written WORKTOP for one round, off a parenthetical in the issue's draft text
+    /// (<i>"or the kit's honest noun — WORKTOP where the narration says worktop"</i>) — which was the crew
+    /// reading a DRAFT over a RULING. The seal is the last word. Nothing is left disagreeing: the sit line
+    /// keeps <i>the worktop is clear</i>, because a table's top is its worktop.</para>
+    /// </summary>
+    public const string WorktopPlate = "🪑 TABLE";
+
     /// <summary>The counter a reception is.</summary>
     public const string ReceptionPlate = "📇 THE COUNTER · APPOINTMENTS HELD";
 
@@ -1326,12 +1475,132 @@ public static class RingOffice
     /// itself — the plate beside the door is the only thing that tells one poured box from another, and a
     /// captain who has walked in off a corridor deserves to be told which one they are sitting in.</summary>
     /// <param name="plate">The room's own stencil.</param>
-    public static string TookAChairLine(string plate) =>
+    /// <param name="garden">#868 · Is this a room that LOOKS AT THE GREEN — see
+    /// <see cref="LooksAtTheGarden"/>. The clause about the wall of glass is reachable through this
+    /// parameter and nowhere else, which is the whole of the third finding on this issue.</param>
+    /// <param name="desk">#868 · Is there actually a worktop in front of this seat — see
+    /// <see cref="WorksAtASurface"/>. Every sentence that says <i>the worktop is clear</i> is reachable
+    /// through this parameter and nowhere else, so a bench outside a row of cubicles cannot be narrated as
+    /// somebody's desk.</param>
+    public static string TookAChairLine(string plate, bool garden, bool desk)
+    {
+        if (!desk)
+        {
+            return WaitingSeatLine(plate);
+        }
+        if (string.IsNullOrEmpty(plate))
+        {
+            return "You pull out a chair and sit down. Nothing on this floor is signed, and nobody has "
+                + "been at this desk in a very long time.";
+        }
+        if (garden)
+        {
+            return $"You pull out a chair and sit down at somebody's desk in {plate}. The worktop is "
+                + "clear, the screen is dark, and the whole wall in front of you is the garden.";
+        }
+        return IsColdStore(plate) ? ColdStoreChairLine : BackRoomChairLine(plate);
+    }
+
+    /// <summary>
+    /// #868 · SITTING DOWN IN THE COLD ROOM — the owner's own sentence, kept verbatim.
+    ///
+    /// <para>He wrote it standing in <c>❄ COLD ROOM · TO CANTEEN 1</c>, having just been told by the game
+    /// that the whole wall in front of him was the garden: <i>"You pull out a chair and sit down at
+    /// somebody's desk in the cold store. The worktop is clear, the air bites, and the door is the only
+    /// view."</i> Not a word of it is the crew's, and it is a const rather than a branch inside the general
+    /// line so that it cannot be reworded by somebody tidying a format string.</para>
+    /// </summary>
+    public const string ColdStoreChairLine =
+        "You pull out a chair and sit down at somebody's desk in the cold store. The worktop is clear, the "
+        + "air bites, and the door is the only view.";
+
+    /// <summary>#868 · Is this room the one the owner sat in? Off the PLATE, which is the only thing that
+    /// says what a room is — the same one question <see cref="IsWashroom"/> asks, published so the sit line
+    /// and any guard about it read one sentence.</summary>
+    public static bool IsColdStore(string plate) =>
+        plate.Contains("COLD ROOM", StringComparison.Ordinal)
+        || plate.Contains("COLD STORE", StringComparison.Ordinal);
+
+    /// <summary>
+    /// #868 · …and sitting down in every OTHER room with no garden in front of it — the rest of the back of
+    /// house, the corner offices, the block's own washroom.
+    ///
+    /// <para><b>NEW PROSE, and flagged as such for the owner to bless.</b> The ruling asked for <i>"one
+    /// neutral non-view line for other windowless rooms — in the same voice"</i>: the cold room's own line
+    /// is his and this one is the crew's, written to the same three-clause shape and naming no garden. It
+    /// keeps <i>the worktop is clear</i>, because that clause is now TRUE — there is a worktop in front of
+    /// the chair (see <see cref="Plain"/>), which there was not when this issue was opened.</para>
+    /// </summary>
+    /// <param name="plate">The room's own stencil.</param>
+    public static string BackRoomChairLine(string plate) =>
+        $"You pull out a chair and sit down at somebody's desk in {plate}. The worktop is clear, the room "
+        + "is quiet, and there is nothing in front of you but the wall it was poured against.";
+
+    /// <summary>
+    /// #868 · DOES A CHAIR IN THIS ROOM LOOK AT THE GARDEN?
+    ///
+    /// <para>Owner, on being told it did while sitting in a cold store: the view-suite line was firing in the
+    /// back of house. The clause is a fact about a DRESSING and not about a wall — the far band's park face
+    /// is glass with the gravel gate cut through it, so a test on the geometry alone would keep saying yes in
+    /// the very room the complaint came from. What is actually being asked is <i>is this a room somebody
+    /// rented for the aspect</i>, and <see cref="DressingFor"/> is the one place in the building that
+    /// answers it: everything it dresses PLAIN is a corner office or a back room, and the washroom is not a
+    /// room anybody sits in to look out of.</para>
+    /// </summary>
+    public static bool LooksAtTheGarden(in UndergroundComplex.RingRoom room) =>
+        DressingFor(in room) is not (Dressing.Plain or Dressing.Washroom);
+
+    /// <summary>
+    /// #868 · …AND SITTING SOMEWHERE THAT IS NOT A DESK AT ALL — the bench outside the block's cubicles, the
+    /// seat inside a privacy booth.
+    ///
+    /// <para><b>NEW PROSE, flagged for the owner to bless.</b> It exists because fixing the garden clause
+    /// exposed the same fault one room along: the ring publishes seats that are places to WAIT rather than
+    /// places to work, and every one of them was being told <i>the worktop is clear</i> in a room with no
+    /// worktop in it. The clause is now reachable only where a surface is actually within reach of the seat
+    /// (<see cref="WorksAtASurface"/>), so this is what is left to say — and what is left to say about
+    /// waiting in somebody else's building is #603's own note: being uninteresting is the cover.</para>
+    /// </summary>
+    /// <param name="plate">The room's own stencil.</param>
+    public static string WaitingSeatLine(string plate) =>
         string.IsNullOrEmpty(plate)
-            ? "You pull out a chair and sit down. Nothing on this floor is signed, and nobody has been at "
-                + "this desk in a very long time."
-            : $"You pull out a chair and sit down at somebody's desk in {plate}. The worktop is clear, the "
-                + "screen is dark, and the whole wall in front of you is the garden.";
+            ? "You sit down and wait. Nobody has been through here in a long time, and nobody comes through "
+                + "now."
+            : $"You sit down in {plate} with nothing in front of you, and wait. Nobody looks twice at "
+                + "somebody who is only waiting, which is most of what this seat is for.";
+
+    /// <summary>#868 · Is this the kind of fitting somebody WORKS AT — the thing a chair is a lie without?
+    /// Asked of the published KIND and never of a plate's wording, so a fixture renamed tomorrow keeps its
+    /// answer.</summary>
+    public static bool IsWorkSurface(Fitting kind) =>
+        kind is Fitting.DeskBank or Fitting.Table or Fitting.Counter or Fitting.LabBench;
+
+    /// <summary>
+    /// #868 · HAS THIS SEAT GOT A WORKTOP IN FRONT OF IT?
+    ///
+    /// <para>Measured off the published boxes, because that is the only honest way to ask it. The owner sat
+    /// in a chair that told him the worktop in front of him was clear, in a room that published no worktop at
+    /// all — the sentence was reading the PLATE and the plate says nothing about what is standing on a floor.
+    /// A seat is at a desk when a desk is within the setback a chair is laid at
+    /// (<see cref="ChairSetbackDu"/>), which is the same number the placer used to lay it there.</para>
+    /// </summary>
+    public static bool WorksAtASurface(in UndergroundComplex.RingRoom room, in Chair chair)
+    {
+        foreach (Fixture f in room.Furniture)
+        {
+            if (!IsWorkSurface(f.Kind))
+            {
+                continue;
+            }
+            double dx = Math.Max(Math.Max(f.X0 - chair.X, chair.X - f.X1), 0.0);
+            double dy = Math.Max(Math.Max(f.Y0 - chair.Y, chair.Y - f.Y1), 0.0);
+            if (Math.Sqrt((dx * dx) + (dy * dy)) <= ChairSetbackDu + 0.01)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /// <summary>Standing up off it.</summary>
     public const string StoodUpLine = "You push the chair back and stand up.";
@@ -1377,11 +1646,13 @@ public static class RingOffice
     /// a guard both key on the id). Only the labels and the words are the office's.</para>
     /// </summary>
     /// <param name="plate">The room's own stencil, which the opening line names.</param>
-    public static Encounter.Scene TheChair(string plate) => new(
+    /// <param name="garden">#868 · See <see cref="LooksAtTheGarden"/>.</param>
+    /// <param name="desk">#868 · See <see cref="WorksAtASurface"/>.</param>
+    public static Encounter.Scene TheChair(string plate, bool garden, bool desk) => new(
         "ring:chair",
         SeatPlate,
         Setting,
-        TookAChairLine(plate),
+        TookAChairLine(plate, garden, desk),
         [
             new(SittingAlone.Wait, WaitLabel),
             new(SittingAlone.Stand, StandLabel, Says: StoodUpLine),
@@ -1418,7 +1689,13 @@ public static class RingOffice
         yield return PublicWcPlate(1);
         yield return BasinRunPlate;
         yield return Setting;
-        yield return TookAChairLine("");
+        yield return WorktopPlate;
+        yield return TookAChairLine("", true, true);
+        yield return TookAChairLine("A BACK ROOM", true, true);
+        yield return ColdStoreChairLine;
+        yield return BackRoomChairLine("A BACK ROOM");
+        yield return WaitingSeatLine("");
+        yield return WaitingSeatLine("A BACK ROOM");
         yield return StoodUpLine;
         yield return WaitLabel;
         yield return StandLabel;
