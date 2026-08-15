@@ -164,24 +164,32 @@ public sealed class TheDeskRisesToMeetYouTests
     }
 
     /// <summary>
-    /// #869 · …AND THE DEPTH DID NOT MOVE ONE WALL.
+    /// #869 · …AND THE DEPTH DID NOT MOVE ONE WALL — <b>#883 · WHICH IS EXACTLY WHAT WAS WRONG WITH IT.</b>
     ///
-    /// <para>The depth is a PICTURE (<c>ChamberFitting.FittingDepthDu</c>): it grows into the room off the
-    /// wall-clear line the segment always stood on, and the SOLID handed to the floor is still that one
-    /// segment. This is the clause that says so — every published solid of a furnished chamber is degenerate
-    /// — because the day somebody lays four sides of a rectangle in fifteen hundred rooms, the sightline
-    /// (Lab 45: O(walls)) pays for it on every frame and no guard about furniture would notice.</para>
+    /// <para>What stood here was the opposite law, and it was written down honestly: <i>"the depth is a
+    /// PICTURE and the SOLID handed to the floor is still that one segment … the day somebody lays four
+    /// sides of a rectangle in fifteen hundred rooms, the sightline (Lab 45: O(walls)) pays for it on every
+    /// frame."</i> The frame argument was real. The law it bought was not: a filled box backed by ONE rail
+    /// is a drawn solid whose front 0.6 du strip is ordinary walkable floor, and #883 measured 19,957
+    /// standable squares under 1,109 lab benches with an A* from the room's own centre reaching every one of
+    /// them. A captain could stand inside the furniture on 410 floors.</para>
     ///
-    /// <para><b>RED</b> by adding the box's other two long edges to the solids, which is what "just lay the
-    /// rectangle" looks like in a diff:</para>
+    /// <para>So the clause is inverted and the frame budget is kept by ARITHMETIC instead of by a hollow:
+    /// a fitting is FOUR SEGMENTS, its own rails, and NO HATCH — because at
+    /// <c>ChamberFitting.FittingDepthDu</c> (1.3 du) nothing about the box can hold a captain 1.3 du across,
+    /// which is <c>SurfaceLayout.AddSolidMass</c>'s own early-out. Three extra segments per fitting, once,
+    /// at build time; the alternative was a drawn box that lied.</para>
+    ///
+    /// <para><b>RED</b> by script-reverting <c>ChamberFitting.cs</c> to 2bc28af — the single segment back:</para>
     /// <code>
-    /// 1212 fitting(s) are solid rectangles rather than the segment #818 lays:
-    ///   luna B1 — MORTUARY: a DeskBank put a SECOND wall on the floor — the depth is a picture and never a wall.
-    ///   luna B2 — RECOVERY 2: a LabBench put a SECOND wall on the floor — the depth is a picture and never a wall.
+    /// 1212 fitting(s) are drawn as a box and are not one:
+    ///   luna B1 — MORTUARY: a DeskBank is drawn 1.3 du deep and its FRONT is not solid — the box is a
+    ///     picture with walkable floor inside it (#883).
+    ///   luna B2 — RECOVERY 2: a LabBench is drawn 1.3 du deep and its FRONT is not solid — …
     /// </code>
     /// </summary>
     [Fact]
-    public void TheDepthIsAPictureAndNeverAWall()
+    public void TheDepthIsTheWallAndItCostFourSegments()
     {
         var wrong = new List<string>();
         int measured = 0;
@@ -205,9 +213,8 @@ public sealed class TheDeskRisesToMeetYouTests
                     measured++;
 
                     // The two long edges of the box. The BACK is the one against the wall — further from
-                    // the room's own centre — and it is the only one the floor's wall list may carry. A
-                    // FRONT edge in that list is a second wall per fitting, which is four in fifteen
-                    // hundred rooms and a frame budget spent drawing cupboards.
+                    // the room's own centre — and #883 says BOTH of them must be in the floor's wall list,
+                    // because a drawn box with a walkable front is the sim and the picture disagreeing.
                     bool alongX = w >= h;
                     double back, front;
                     if (alongX)
@@ -246,11 +253,33 @@ public sealed class TheDeskRisesToMeetYouTests
                         wrong.Add(Say(body, level,
                             $"{room.Plate}: a {fit.Kind} is drawn and nothing there is solid."));
                     }
-                    if (hasFront)
+                    if (!hasFront)
                     {
                         wrong.Add(Say(body, level,
-                            $"{room.Plate}: a {fit.Kind} put a SECOND wall on the floor — the depth is a "
-                            + "picture and never a wall."));
+                            $"{room.Plate}: a {fit.Kind} is drawn {Math.Min(w, h):F1} du deep and its FRONT "
+                            + "is not solid — the box is a picture with walkable floor inside it (#883)."));
+                    }
+
+                    // ── #883 · AND IT COST FOUR SEGMENTS. The frame argument the old law was built on is
+                    //    kept here instead of being paid for with a hollow: a fitting owns its four rails
+                    //    and NOT ONE hatch stroke, because 1.3 du of depth cannot hold a 1.4 du captain
+                    //    between two rails and AddSolidMass knows it. A fifth segment inside this box is the
+                    //    day somebody hatched fifteen hundred cupboards, and the eye is O(walls).
+                    int own = 0;
+                    foreach (SurfaceLayout.Wall solid in floor.Walls)
+                    {
+                        if (In(solid.X1, fit.X0, fit.X1) && In(solid.X2, fit.X0, fit.X1)
+                            && In(solid.Y1, fit.Y0, fit.Y1) && In(solid.Y2, fit.Y0, fit.Y1))
+                        {
+                            own++;
+                        }
+                    }
+                    if (own != 4)
+                    {
+                        wrong.Add(Say(body, level,
+                            $"{room.Plate}: a {fit.Kind} is laid out of {own} segment(s) — a box this thin "
+                            + "is four rails and no hatch, and every stroke over that is a frame the patrol "
+                            + "eye spends on a cupboard (Lab 45)."));
                     }
                 }
             }
@@ -258,8 +287,10 @@ public sealed class TheDeskRisesToMeetYouTests
 
         Assert.True(measured > 1000, $"only {measured} fitting(s) were measured — this proved little.");
         Assert.True(wrong.Count == 0,
-            $"{wrong.Count} fitting(s) are solid rectangles rather than the segment #818 lays:"
+            $"{wrong.Count} fitting(s) are drawn as a box and are not one:"
             + $"{Environment.NewLine}{string.Join(Environment.NewLine, wrong.Take(12))}");
+
+        static bool In(double v, double lo, double hi) => v >= lo - 0.001 && v <= hi + 0.001;
     }
 
     // ── (e) WHAT EACH TRADE SEATS YOU ON ──────────────────────────────────────────────────────────────
