@@ -157,7 +157,18 @@ public partial class Map
     }
 
     /// <summary>Get down. Free, always — and it leaves you STANDING at the counter rather than shutting the
-    /// card, because getting off a stool is not leaving a bar.</summary>
+    /// card, because getting off a stool is not leaving a bar.
+    ///
+    /// <para>#847 · THE STOOL'S STAND-UP PATH, and there is only this one. A movement key or a clicked route
+    /// at the counter routes through here (<c>Map.Seated.StandUpBeforeWalking</c>) rather than carrying a
+    /// copy of it, so the day getting off a stool costs a beat, a line or a watch, it costs it to the button
+    /// and to WASD in the same breath.</para>
+    ///
+    /// <para>The step-off square is the stool's own: the row is bolted a standoff off the counter on floor a
+    /// captain could have walked to anyway (see <see cref="TakeAStool"/>), and
+    /// <c>EverySeatIsSomewhereYouCanSitTests</c> asserts that of every stool on every floor the generator
+    /// lays. So getting down leaves you exactly where the stool is, which is what getting down off a bar
+    /// stool does — no placement, and nothing for a nudge to rescue.</para></summary>
     private void GetDownFromStool()
     {
         _stool = null;

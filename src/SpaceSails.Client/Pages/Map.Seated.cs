@@ -16,8 +16,13 @@ namespace SpaceSails.Client.Pages;
 /// etc."</i> → <see cref="CaptainIsSeated"/> rides to <see cref="Rendering.DeckView.State"/> and the deck
 /// draws a different figure. A glance says sitting, with no panel text involved.</item>
 /// <item><i>"before moving I have to stand up… so if I try to move when sitting down it should ask with a
-/// pop-up whether I want to stand up again."</i> → <see cref="_standUpAsk"/>, raised by WASD and by nothing
-/// else.</item>
+/// pop-up whether I want to stand up again."</i> → <see cref="_standUpAsk"/>.
+/// <para><b>#847 SUPERSEDES THE FIRST HALF OF THAT.</b> Owner, 2026-08-13: <i>"Must stand up before walking
+/// … the keys simply cost you the stand first, which is how chairs work."</i> A movement input no longer
+/// ASKS — it pays, through <see cref="StandUpBeforeWalking"/>, at every seat kind including the counter
+/// stool that was never in the table flag at all. The confirm itself stays exactly where the second ruling
+/// put it: Esc on a DOCKED strip (Map.Sim's cancel chain), where "cancel" has no card to take and would
+/// otherwise silently spend the watch you sat for.</para></item>
 /// <item><i>"Sitting down relaxes and heals"</i> / <i>"it is like short rest in TTRPG."</i> →
 /// <see cref="RestOneSeatedBeat"/>, which is <see cref="ShortRest"/>'s arithmetic spent through the nerve
 /// and condition systems that already exist.</item>
@@ -51,6 +56,11 @@ public partial class Map
     /// that way (the seat is the spot you walked to; nothing teleports anybody onto furniture) and this does
     /// not invent a parallel flag beside it, because a second answer to "are you sitting down" would be this
     /// repo's first named bug class aimed at a posture.
+    ///
+    /// <para>#847 · IT IS THE ONE ANSWER ABOUT A TABLE, and the reader has to know that much: it is what the
+    /// DRAWN posture and the stand-up confirm are wired to, and a counter stool has never been in it. The
+    /// question <i>am I on a seat of any kind</i> — which is the one every MOVEMENT path now asks — is
+    /// <see cref="CaptainIsSeatedAnywhere"/> one screen down.</para>
     /// </summary>
     public bool CaptainIsSeated => _table is not null;
 
@@ -159,12 +169,16 @@ public partial class Map
     /// it.</summary>
     private bool _standUpAsk;
 
-    /// <summary>#784 · WASD in a chair. The keys are CONSUMED — nothing walks, nothing is queued, and the
-    /// held-key set never learns the press happened — and the question goes up instead.
+    /// <summary>#784 · THE STAND-UP CONFIRM — <i>are you sure you want to give the seat up?</i>
     ///
-    /// <para>The whole point is the investment underneath: a stray key must not throw away the watch you
-    /// spent being findable (#757) or the breath you have got back sitting there (#784). So the answer to
-    /// "the captain pressed W while seated" is a sentence, not a step.</para></summary>
+    /// <para>The whole point is the investment underneath: a stray press must not throw away the watch you
+    /// spent being findable (#757) or the breath you have got back sitting there (#784).</para>
+    ///
+    /// <para>#847 · ITS ONE RAISER IS NOW ESC ON A DOCKED STRIP. It was WASD as well until the owner ruled
+    /// that a movement key is not a stray press at all — a captain pressing W has said where they are going,
+    /// and the answer to that is a stand, not a question (<see cref="StandUpBeforeWalking"/>). What is left
+    /// here is the press that says nothing about what the captain wants NEXT: cancel, on a frame with no card
+    /// to take, where a silent teardown would spend the sitting for nothing.</para></summary>
     private void AskWhetherToStandUp()
     {
         if (!_standUpAsk)
@@ -185,7 +199,13 @@ public partial class Map
 
     /// <summary>The one press that stands you up. Through <see cref="CloseTable"/>, which is #757's own
     /// single way out of a table — a hand-written copy of standing up is this repo's first named bug class,
-    /// and the day leaving a table costs something, it must cost it here too.</summary>
+    /// and the day leaving a table costs something, it must cost it here too.
+    ///
+    /// <para>#847 · …and this is the path a MOVEMENT INPUT takes as well, for every seat that is a table:
+    /// the confirm's Stand up button, W at a park bench and a clicked route from a cubicle are one act with
+    /// one teardown under them (<see cref="StandUpBeforeWalking"/>). The one line it says —
+    /// <see cref="SeatedPosture.StoodUpToWalkLine"/>, "off you go" — was written for exactly the press that
+    /// now reaches it most often.</para></summary>
     private void StandUpFromTable()
     {
         _standUpAsk = false;
@@ -196,6 +216,50 @@ public partial class Map
         CloseTable();
         ShowPulseMessage(SeatedPosture.StoodUpToWalkLine);
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// #847 · MUST STAND UP BEFORE WALKING — the one act a movement input owes, whatever the captain is
+    /// sitting on.
+    ///
+    /// <para>Owner's ruling, 2026-08-13, with the receipt: <i>"Must stand up before walking (not standing up
+    /// before doing that was my Pyramid climbing exercise in Giza last January … legs were sore :-D)"</i> —
+    /// and the shape of it: <i>"WASD (and click-to-walk) while seated at ANY seat first routes through the
+    /// seat's own stand-up path (the #846 step-off, scene teardown and all), THEN walks. No refusal line
+    /// needed — the keys simply cost you the stand first, which is how chairs work."</i></para>
+    ///
+    /// <para><b>It ROUTES and it decides nothing.</b> There is no teardown written here: a stool is got down
+    /// from the way the counter's own verb gets down from one, and every seat that is a <see cref="_table"/>
+    /// — a canteen top, a cabinet, a park bench, a ring-office chair, a laboratory stool, a cubicle — stands
+    /// up the way the Stand up button stands up, through <see cref="StandUpFromTable"/> and so through
+    /// <c>CloseTable</c>: the abandoned write-up, the step-off square, the nudge, the line. A second author on
+    /// one teardown is this repo's first named bug class, and the day standing up costs something it must
+    /// cost it once.</para>
+    ///
+    /// <para>Both seats are asked, and neither is an <c>else</c>. One of you can only be on one thing at a
+    /// time and the game is built that way — but a movement key whose job is "leave every seat you are in"
+    /// must not be the place that assumes it, or the first seat that ever survives another would ride the
+    /// walk out of the room.</para>
+    /// </summary>
+    /// <returns>Whether the captain had to get up at all — false when they were already on their feet, which
+    /// is the ordinary case and costs nothing.</returns>
+    private bool StandUpBeforeWalking()
+    {
+        bool stood = false;
+
+        if (_stool is not null)
+        {
+            GetDownFromStool();
+            stood = true;
+        }
+
+        if (_table is not null)
+        {
+            StandUpFromTable();
+            stood = true;
+        }
+
+        return stood;
     }
 
     /// <summary>Whether the confirm should say what standing up COSTS. Only when there is something left to
@@ -328,14 +392,21 @@ public partial class Map
     /// #784 · IS THE CAPTAIN IN A SEAT OF ANY KIND — a table, a cabinet, a stool at the counter.
     ///
     /// <para>Deliberately NOT <see cref="CaptainIsSeated"/>, which is #788's TABLE flag and is wired to the
-    /// things a table decides: the drawn posture, the stand-up confirm, the movement stop. A stool is a
-    /// posture of the COUNTER card (#789's one-E-per-fixture rule) and has never been in that flag; widening
-    /// it here would silently change what WASD and the deck renderer do at the bar, which is a bigger claim
-    /// than this issue is making.</para>
+    /// things a table decides: the drawn posture and the stand-up confirm. A stool is a posture of the
+    /// COUNTER card (#789's one-E-per-fixture rule) and has never been in that flag.</para>
     ///
     /// <para>What the spread needs is the other question — <i>am I in a seat, and which one</i> — and the
     /// answer to it is <see cref="SeatedIn"/> being non-null. This member exists so that reading is named
     /// rather than spelled out at each use.</para>
+    ///
+    /// <para>#847 · AND IT IS THE MOVEMENT LAW'S FLAG NOW. This docblock used to say that widening the seated
+    /// answer to the bar "would silently change what WASD does at the counter, which is a bigger claim than
+    /// this issue is making" — and it was right to leave the claim to somebody with the authority to make it.
+    /// The owner made it: a stool is a seat, and you get off a seat before you walk. So the frame-level stop
+    /// in <c>MoveAvatar</c> asks THIS question rather than the table's, which is what closed the gap the
+    /// #820 snap made visible — the dot walking along the counter out of a scene that still had it seated.
+    /// The DRAWN posture is still the table's flag, because that is a question about a picture and nobody has
+    /// ruled on the bar's.</para>
     /// </summary>
     private bool CaptainIsSeatedAnywhere => SeatedIn is not null;
 

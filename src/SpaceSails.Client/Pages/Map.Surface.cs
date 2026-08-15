@@ -5185,9 +5185,10 @@ public partial class Map
     /// sit through it would therefore undo the very snap the owner asked for, one frame after it happened,
     /// and print a rescue line about it. A seat is not a spawn: it is a place the captain is being PUT ON,
     /// and the thing that keeps a solid one from ever trapping the dot is the other half of this law —
-    /// nothing walks while seated (<c>MoveAvatar</c> refuses on <see cref="CaptainIsSeated"/>) and every
-    /// standing up goes back out through <c>StandCaptainAt</c>, nudge and all, at the seat's own published
-    /// step-off square (<c>TableTalk.StepOff</c>).</para>
+    /// nothing walks while seated (<c>MoveAvatar</c> refuses on <see cref="CaptainIsSeatedAnywhere"/>, which
+    /// is #847's widening of that stop to every seat kind) and every standing up goes back out through
+    /// <c>StandCaptainAt</c>, nudge and all, at the seat's own published step-off square
+    /// (<c>TableTalk.StepOff</c>).</para>
     ///
     /// <para>The coordinate is always Core's — a bench end, a stool in the counter's published row, a chair
     /// off a top's ring, a ring-office chair — and never one this file measured (§13.15).</para>

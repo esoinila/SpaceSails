@@ -201,6 +201,17 @@ public partial class Map
         (double gx, double gy) = place.ToDeck(clickPx, clickPy);
         (gx, gy) = SnapWalkTargetToFixture(gx, gy);
 
+        // #847 · A CLICK IS A MOVEMENT INPUT, so it costs the stand too — the owner's ruling names both grips
+        // ("WASD and click-to-walk"), and a law the keyboard obeys and the mouse walks around is half a law.
+        //
+        // HERE, and not a line earlier: the pixel is turned into a place on the floor FIRST, through the
+        // projection that was on the glass when the captain pointed at it. The view is centred on the
+        // captain, so standing up moves the camera — resolving the click afterwards would send them walking
+        // at a spot a pace from the one they aimed at, which is the drawn room and the pressed room
+        // disagreeing about a finger. The ROUTE is planned after, off the step-off square and off the deck
+        // standing up rebuilt.
+        StandUpBeforeWalking();
+
         var from = new DeckReachability.Point(_avatarX, _avatarY);
         var to = new DeckReachability.Point(gx, gy);
         AutoWalk.Attempt attempt = AutoWalk.Plan(
@@ -264,23 +275,14 @@ public partial class Map
             case "a" or "A" or "ArrowLeft":
             case "s" or "S" or "ArrowDown":
             case "d" or "D" or "ArrowRight":
-                // #784 · …UNLESS THE CAPTAIN IS SITTING DOWN. Owner, live: "before moving I have to stand
-                // up… so if I try to move when sitting down it should ask with a pop-up whether I want to
-                // stand up again." So the press is CONSUMED and the chair does not slide across the hall:
-                // the question goes up instead, and the held-key set never learns the key was touched.
-                //
-                // It has to be first, above the #729 line below, for that rule's own reason one posture
-                // over: a cancel that happened after the keys were taken would have already thrown away the
-                // watch and the rest the seat is holding.
-                if (CaptainIsSeated)
-                {
-                    AskWhetherToStandUp();
-                    return true;
-                }
-                // #833 · …NOR WHILE SOMEBODY IS WALKING YOU OFF HIS FLOOR. The escort is the one stretch of
+                // #833 · NOT WHILE SOMEBODY IS WALKING YOU OFF HIS FLOOR. The escort is the one stretch of
                 // this game where the captain's legs are not his own, and it is a few seconds long. The press
-                // is CONSUMED and answered in the guard's own words, for the seat's reason above: a key that
-                // did nothing and said nothing reads as a broken key.
+                // is CONSUMED and answered in the guard's own words: a key that did nothing and said nothing
+                // reads as a broken key.
+                //
+                // First, and above the seat below, because this press is REFUSED rather than charged for —
+                // a captain the guard is holding must not pay for a stand he is not going to be allowed to
+                // walk off.
                 if (CaptainIsUnderEscort)
                 {
                     ShowPulseMessage(Core.PatrolBeat.EscortHeldLine);
@@ -292,6 +294,17 @@ public partial class Map
                 // half a second after I grabbed the controls" is exactly the feel this must never have.
                 CancelAutoWalk(true);
                 _deckKeys.Add(Canonical(key));
+                // #847 · …AND IF THE CAPTAIN IS SITTING ON SOMETHING, THAT IS WHAT THE PRESS COSTS. Owner:
+                // "the keys simply cost you the stand first, which is how chairs work." #784 raised a
+                // pop-up here and consumed the press; the ruling replaced the question with the act, for
+                // every seat kind at once — the stool included, which is the gap #847 was filed on.
+                //
+                // Nothing has walked yet: the step is spent in MoveAvatar on the NEXT frame, which refuses
+                // outright while any seat is still open, so the stand always lands first and the walk sets
+                // off from the seat's own step-off square. Recorded above rather than below only so that the
+                // stand's own line is the last thing said — a route-cancel notice raised afterwards would
+                // print over "off you go".
+                StandUpBeforeWalking();
                 return true;
             case "f" or "F":
                 ToggleFirstPerson();
@@ -356,14 +369,20 @@ public partial class Map
 
     private void MoveAvatar(double dtRealSeconds)
     {
-        // ── #784 · A CAPTAIN IN A CHAIR DOES NOT WALK ──
+        // ── #784/#847 · A CAPTAIN IN A SEAT DOES NOT WALK ──
         //
-        // The key handler above raises the confirm instead of taking the press, and this is the second half
-        // of the same law rather than a duplicate of it: a key HELD BEFORE the captain sat down is still in
-        // the held set, and every route the auto-walk is mid-way through is still a route. Refusing at the
-        // key alone would let a captain sit down mid-stride and keep going, chair and all — which is exactly
-        // the "the sim did one thing while the picture said another" this project has paid for three times.
-        if (CaptainIsSeated)
+        // The key handler above pays for the stand on the press itself, and this is the second half of the
+        // same law rather than a duplicate of it: a key HELD BEFORE the captain sat down is still in the held
+        // set, and every route the auto-walk is mid-way through is still a route. Refusing at the key alone
+        // would let a captain sit down mid-stride and keep going, chair and all — which is exactly the "the
+        // sim did one thing while the picture said another" this project has paid for three times.
+        //
+        // #847 · AND IT IS THE ANY-SEAT QUESTION, not the table's. CaptainIsSeated is #788's TABLE flag and a
+        // stool has never been in it, so until the owner's ruling this frame walked a captain along the
+        // counter while the counter card still had them sitting on a stool — invisible until #820 put the dot
+        // ON the seat, and then unmistakable. One flag, every seat kind, and the ONLY way a body leaves a
+        // seat is StandUpBeforeWalking and the seat's own teardown under it.
+        if (CaptainIsSeatedAnywhere)
         {
             return;
         }

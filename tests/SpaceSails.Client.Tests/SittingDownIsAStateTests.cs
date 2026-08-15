@@ -205,38 +205,50 @@ public sealed class SittingDownIsAStateTests
     // ── (b) WASD IN A CHAIR ───────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #784 · WASD WHILE SEATED RAISES THE CONFIRM AND MOVES NOBODY.
+    /// #784 · WASD WHILE SEATED MOVES NOBODY — and #847 · IT PAYS FOR THE STAND INSTEAD OF ASKING ABOUT IT.
     ///
-    /// <para>Owner: <i>"if I try to move when sitting down it should ask with a pop-up whether I want to
-    /// stand up again."</i> RED on the shipped build, which is #778's behaviour exactly: the movement case
-    /// dropped the key straight into the held set and the captain walked out of a table they were still
+    /// <para>Owner, 2026-08-08: <i>"if I try to move when sitting down it should ask with a pop-up whether I
+    /// want to stand up again."</i> RED on the shipped build, which is #778's behaviour exactly: the movement
+    /// case dropped the key straight into the held set and the captain walked out of a table they were still
     /// sitting at, panel and all.</para>
     ///
-    /// <para>Read as an ORDERING, the way <c>TheAutoWalkIsWiredToTheRealLegs</c> reads its own: the seated
-    /// check has to happen BEFORE the key is taken, because a refusal that arrived afterwards would already
-    /// have thrown away the watch and the rest the chair is holding.</para>
+    /// <para><b>And then the owner changed his mind about the pop-up, 2026-08-13:</b> <i>"Must stand up
+    /// before walking … the keys simply cost you the stand first, which is how chairs work."</i> So the
+    /// confirm is no longer what a movement key raises; <c>StandUpBeforeWalking</c> is what a movement key
+    /// COSTS. What survives from #784 unchanged is the half this method was really guarding — that no press
+    /// and no frame walks a body out of a seat — and the fact of the stand is driven end to end next door in
+    /// <c>MustStandUpBeforeWalkingTests</c>, on a real floor with a real seat under a real captain.</para>
+    ///
+    /// <para>Read as an ORDERING, the way <c>TheAutoWalkIsWiredToTheRealLegs</c> reads its own. The stand is
+    /// charged AFTER the key is taken, and that order is deliberate: the stand says the last word
+    /// (<i>off you go</i>), and a route-cancel notice raised after it would print over the top of it.</para>
     /// </summary>
     [Fact]
-    public void WASD_InAChairAsksBeforeItWalks()
+    public void WASD_InAChairStandsYouUpBeforeItWalks()
     {
         string deck = Source("Pages", "Map.Deck.cs");
 
         int movementCase = deck.IndexOf("case \"d\" or \"D\" or \"ArrowRight\":", StringComparison.Ordinal);
         Assert.True(movementCase > 0, "the movement case has moved — this guard is reading the wrong file.");
 
-        int asks = deck.IndexOf("AskWhetherToStandUp();", movementCase, StringComparison.Ordinal);
+        int stands = deck.IndexOf("StandUpBeforeWalking();", movementCase, StringComparison.Ordinal);
         int takes = deck.IndexOf("_deckKeys.Add(Canonical(key));", movementCase, StringComparison.Ordinal);
-        Assert.True(asks > 0, "a movement key in a chair does not raise the stand-up confirm at all.");
+        Assert.True(stands > 0, "a movement key in a chair does not stand the captain up at all.");
         Assert.True(takes > 0, "the movement case no longer takes the key.");
-        Assert.True(asks < takes,
-            "the seated refusal happens AFTER the key is taken — the captain walks first and is asked " +
-            "afterwards, which is the bug wearing a confirm.");
+        Assert.True(takes < stands,
+            "the stand is charged BEFORE the key is taken — so the cancelled-route line lands after " +
+            "\"off you go\" and prints over the one sentence the stand is allowed to say.");
+
+        // …and #847 replaced the question outright rather than keeping both. A movement key that still
+        // raised the confirm would be the owner's two rulings shipping at once.
+        Assert.DoesNotContain("AskWhetherToStandUp", deck, StringComparison.Ordinal);
 
         // …and the second half of the same law: a key HELD before sitting down, and a route the auto-walk
         // is mid-way through, are both still live. Refusing at the keyboard alone lets a captain sit down
-        // mid-stride and keep going, chair and all.
+        // mid-stride and keep going, chair and all. #847 · asked of the ANY-SEAT flag, because the table's
+        // own flag has never had a counter stool in it.
         int move = deck.IndexOf("private void MoveAvatar(", StringComparison.Ordinal);
-        int guard = deck.IndexOf("if (CaptainIsSeated)", move, StringComparison.Ordinal);
+        int guard = deck.IndexOf("if (CaptainIsSeatedAnywhere)", move, StringComparison.Ordinal);
         int firstStep = deck.IndexOf("_deckPlan.Move(", move, StringComparison.Ordinal);
         Assert.True(guard > move && guard < firstStep,
             "MoveAvatar can still walk a seated captain — a held key or a live route walks them out of " +
