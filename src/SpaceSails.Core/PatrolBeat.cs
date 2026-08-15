@@ -216,7 +216,519 @@ public static class PatrolBeat
     /// <param name="X">Deck units, in the surface's own coordinates.</param>
     /// <param name="Y">Deck units.</param>
     /// <param name="What">The thing at this stop: the car, a corridor mouth, a room.</param>
-    public readonly record struct Stop(double X, double Y, string What);
+    /// <param name="Point">#831 · The watchclock station this stop SNAPPED to, or null when the floor had no
+    /// wall to offer within <see cref="CheckpointReachDu"/>. Carried on the stop rather than kept in a list
+    /// beside it because <see cref="BeatFor"/> reverses and rotates the round: a parallel list would be one
+    /// shift away from a guard facing somebody else's plate.</param>
+    public readonly record struct Stop(double X, double Y, string What, Checkpoint? Point = null);
+
+    // ── #831 · THE CHECKPOINTS, AND WHY A STAND FINALLY HAS A BODY ────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11, watching a man motionless in a corridor: "why would it just stand
+    // there if there is no inspection point etc" — and then, completing it himself with the real-world
+    // anchor: "they actually in real life like have these check points they electronically sign on rounds to
+    // prove they did their round."
+    //
+    // Guard-tour watchclock stations. That one sentence turns the five seconds of StandSeconds from a timing
+    // constant into a THING THE MAN IS DOING: he walks up to a plate on a wall, faces it, signs in, walks on.
+    // "Why is he standing there" is answered forever, and it is answered by the building rather than by a
+    // caption.
+    //
+    // THE FIXTURE IS PUBLISHED, and the stop SNAPS TO IT. A checkpoint is a point on a wall the generator
+    // already built, clear of every opening the generator already cut, with the square a body signs it from
+    // published beside it — the #862 measured-wall idiom, one scale down. The renderer bolts a plate on it
+    // and measures nothing. Nothing here computes a wall of its own (§13.15).
+    //
+    // WHAT IS DELIBERATELY NOT HERE. The round LOG — the clipboard at the station, the ledger behind the
+    // desk, the paper a gumshoe steals to read the beat's timing off it — is the #828 satchel economy's
+    // work and is filed as the release after. So is the forged log: a guard who skips a leg has a lever on
+    // him, and levers are not this file's business.
+
+    /// <summary>#831 · What a checkpoint wears. A small round contact plate, which is what a watchclock
+    /// station has looked like since somebody first had to prove they walked a building.</summary>
+    public const string CheckpointGlyph = "🔘";
+
+    /// <summary>#831 · What is stencilled on one. §13.8's register exactly: it names the FIXTURE and says
+    /// nothing whatever about what the facility is for. The number is the station's own, fixed to the place
+    /// rather than to the order a shift happens to walk them in — a plate that renumbered itself every watch
+    /// would be a building that cannot count its own doors.</summary>
+    public static string CheckpointPlate(int number) => $"{CheckpointGlyph} ROUND POINT {number}";
+
+    /// <summary>#831 · Is this plate one of ours? The renderer's and the audit's one answer, so a fourth kind
+    /// of stencil cannot be told apart by a string literal typed twice.</summary>
+    public static bool IsCheckpointPlate(string? plate) =>
+        plate is not null && plate.StartsWith(CheckpointGlyph, StringComparison.Ordinal);
+
+    /// <summary>
+    /// #831 · HOW FAR OFF A WALL A ROUND WALKS AND STANDS — the ONE number the lane and the sign-in share.
+    ///
+    /// <para>Owner, in the same breath as the checkpoints: <i>"they should respect right side traffic, and
+    /// not walk in the middle of the corridor."</i> A man trained in a facility walks a du or two off the
+    /// wall on his own side, and the man signing a plate stands at exactly that distance from it — because
+    /// it is the same distance, and two numbers for it would be a lane that does not end at the station it
+    /// is walking to.</para>
+    ///
+    /// <para>Comfortably outside a body's own width (<see cref="SignInClearDu"/>) and comfortably inside the
+    /// corridor's half-width, so the lane is a lane rather than a scrape along the shotcrete. FLAGGED for
+    /// the owner's tuning.</para>
+    /// </summary>
+    public const double LaneFromWallDu = 1.5;
+
+    /// <summary>#831 · How far off the CENTRE LINE of a corridor the lane runs — the corridor's own half
+    /// width less the distance from the wall, read off <see cref="UndergroundComplex.CorridorHalf"/> rather
+    /// than typed, so a generator that widens its passages widens this with them. Two guards on opposite
+    /// legs are twice this apart, which is the whole of "they pass on opposite sides".</summary>
+    public static double LaneOffsetDu => UndergroundComplex.CorridorHalf - LaneFromWallDu;
+
+    /// <summary>#831 · How straight a stretch has to be before the lane is worth keeping on it, as the cosine
+    /// between the step into a waypoint and the step out of it. The lane is a PREFERENCE and never a wall:
+    /// at a corner, a doorway or a rib mouth the offset is simply dropped and the round takes the middle,
+    /// which is what a person does and what keeps a laned route walking through a 6.4 du leaf.</summary>
+    public const double LaneStraightEnough = 0.995;
+
+    /// <summary>#831 · How far from its stop a checkpoint may be bolted. A room's own width, so a stop in the
+    /// open middle of a chamber still finds a wall — and short enough that a "checkpoint" is never a plate in
+    /// the next corridor with a guard standing at it for no visible reason.</summary>
+    public const double CheckpointReachDu = UndergroundComplex.RoomWidthDu;
+
+    /// <summary>#831 · How much clear floor the square a man signs from needs. A body's own width and no
+    /// more — <see cref="RipAndBin.StandClearDu"/>'s own reasoning about a bin, said again about a plate:
+    /// somebody stands at one, they do not park a vehicle at one.</summary>
+    public const double SignInClearDu = RipAndBin.StandClearDu;
+
+    /// <summary>#831 · How far a checkpoint keeps from a published opening. <see cref="RingOffice.DoorClearDu"/>
+    /// — the building's own answer to "how much of a wall does a doorway claim", read rather than re-derived,
+    /// so a station can never end up on the jamb of a door somebody has to walk through.</summary>
+    public static double ClearOfOpeningDu => RingOffice.DoorClearDu;
+
+    /// <summary>
+    /// #831 · ONE WATCHCLOCK STATION: the plate on the wall, and the square it is signed from.
+    /// </summary>
+    /// <param name="Number">Which station this is on the floor, 1-based and fixed to the PLACE. It is what is
+    /// stencilled on it and it does not turn over with the shift.</param>
+    /// <param name="X">Where the plate is bolted, on a wall the generator built.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="StandX">Where a body stands to sign it — <see cref="LaneFromWallDu"/> off the wall, on
+    /// the side the stop was on. THIS is what the beat stop snaps to.</param>
+    /// <param name="StandY">The same.</param>
+    /// <param name="What">The stop it belongs to, for a red audit's printout. Never shown to a player.</param>
+    public readonly record struct Checkpoint(
+        int Number, double X, double Y, double StandX, double StandY, string What)
+    {
+        /// <summary>What is stencilled on it.</summary>
+        public string Plate => CheckpointPlate(Number);
+
+        /// <summary>Which way a man signing it is looking: AT THE FIXTURE. The whole of the owner's law in
+        /// one expression — a guard standing at a stop is looking at the thing he is standing at.</summary>
+        public double Facing => Math.Atan2(Y - StandY, X - StandX);
+
+        /// <summary>Is a body at this station? The same <see cref="AtTheStopDu"/> tolerance the round's own
+        /// arrival uses, because arriving at the stop and arriving at the plate are the same arrival.</summary>
+        public bool Signing(double x, double y)
+        {
+            double dx = x - StandX, dy = y - StandY;
+            return (dx * dx) + (dy * dy) <= AtTheStopDu * AtTheStopDu;
+        }
+
+        /// <summary>How far a body is from the square this is signed from.</summary>
+        public double GapFrom(double x, double y) =>
+            Math.Sqrt(((x - StandX) * (x - StandX)) + ((y - StandY) * (y - StandY)));
+    }
+
+    /// <summary>#831 · Every station on this floor, in the circuit's own order. The renderer's one call — it
+    /// bolts a plate on each and measures nothing.</summary>
+    public static IReadOnlyList<Checkpoint> CheckpointsOn(
+        in UndergroundComplex.FloorPlan floor, in SurfaceLayout.Field field)
+    {
+        var found = new List<Checkpoint>();
+        foreach (Stop stop in Circuit(floor, field))
+        {
+            if (stop.Point is { } at)
+            {
+                found.Add(at);
+            }
+        }
+        return found;
+    }
+
+    /// <summary>#831 · Everything on this floor a body collides with, as the client will build it — the
+    /// walls, the glazing (#759 keeps it out of <c>Walls</c> so nothing paints it as concrete, and it stops a
+    /// body all the same) and the doors that never open. A station whose standing square were measured
+    /// against a shorter list than the one the game collides with would be the drawn-versus-simulated split
+    /// this house has a name for.</summary>
+    private static List<SurfaceCollision.Segment> Blockers(in UndergroundComplex.FloorPlan floor)
+    {
+        var segs = new List<SurfaceCollision.Segment>();
+        foreach (SurfaceLayout.Wall w in floor.Walls ?? [])
+        {
+            segs.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
+        }
+        foreach (SurfaceLayout.Wall w in floor.Windows ?? [])
+        {
+            segs.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
+        }
+        foreach (UndergroundComplex.LockedDoor l in floor.Locked ?? [])
+        {
+            segs.Add(new SurfaceCollision.Segment(l.X1, l.Y1, l.X2, l.Y2));
+        }
+        return segs;
+    }
+
+    /// <summary>
+    /// #831 · WHERE THIS STOP'S STATION IS BOLTED — the nearest wall the building offers, measured.
+    ///
+    /// <para>Three tests and a station has to pass all three, which is <see cref="RipAndBin"/>'s own idiom
+    /// one fixture along: the plate is ON a published wall, it is <see cref="ClearOfOpeningDu"/> from every
+    /// published hole a body walks through, and there is somewhere to STAND at it that a body fits on. A
+    /// candidate that fails any of them is skipped and the next wall round is tried.</para>
+    ///
+    /// <para>It is the NEAREST passing wall and not a chosen one, and that is deliberate: a facility bolts a
+    /// watchclock station to whatever is at hand where the round has to stop — a corridor face, a room's own
+    /// wall, the end of a bench somebody installed in 40-something. What it never does is put one across a
+    /// doorway.</para>
+    /// </summary>
+    private static Checkpoint? PointFor(
+        in Stop stop, int number,
+        in UndergroundComplex.FloorPlan floor,
+        List<SurfaceCollision.Segment> blockers)
+    {
+        Checkpoint? best = null;
+        double bestGap = double.MaxValue;
+
+        foreach (SurfaceLayout.Wall w in floor.Walls ?? [])
+        {
+            (double px, double py) = NearestOnSegment(stop.X, stop.Y, w.X1, w.Y1, w.X2, w.Y2);
+            double dx = stop.X - px, dy = stop.Y - py;
+            double gap = Math.Sqrt((dx * dx) + (dy * dy));
+
+            // Cheap tests first, and the incumbent's gap is one of them: the expensive two below then run
+            // only for a wall that would actually win, which is what keeps this off the frame budget.
+            if (gap < 1e-6 || gap > CheckpointReachDu || gap >= bestGap)
+            {
+                continue;
+            }
+            if (!ClearOfEveryOpening(px, py, in floor))
+            {
+                continue;
+            }
+
+            double sx = px + (dx / gap * LaneFromWallDu);
+            double sy = py + (dy / gap * LaneFromWallDu);
+            if (SurfaceCollision.Blocked(sx, sy, SignInClearDu, blockers))
+            {
+                continue;
+            }
+
+            bestGap = gap;
+            best = new Checkpoint(number, px, py, sx, sy, stop.What);
+        }
+
+        return best;
+    }
+
+    /// <summary>#831 · Is this spot on the wall far enough from every hole in it? Doorways and the doors that
+    /// never open alike — a locked leaf already carries a sign, and two stencils on one door is a wall
+    /// nobody can read.</summary>
+    private static bool ClearOfEveryOpening(
+        double px, double py, in UndergroundComplex.FloorPlan floor)
+    {
+        foreach (SurfaceLayout.Doorway d in floor.Doorways ?? [])
+        {
+            if (SurfaceCollision.DistanceToSegment(px, py, d.X1, d.Y1, d.X2, d.Y2) < ClearOfOpeningDu)
+            {
+                return false;
+            }
+        }
+        foreach (UndergroundComplex.LockedDoor l in floor.Locked ?? [])
+        {
+            if (SurfaceCollision.DistanceToSegment(px, py, l.X1, l.Y1, l.X2, l.Y2) < ClearOfOpeningDu)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>The point on a segment nearest a spot. The one bit of arithmetic a placer is allowed to do,
+    /// because it is about a line somebody else drew.</summary>
+    private static (double X, double Y) NearestOnSegment(
+        double px, double py, double x1, double y1, double x2, double y2)
+    {
+        double vx = x2 - x1, vy = y2 - y1;
+        double len2 = (vx * vx) + (vy * vy);
+        if (len2 < 1e-12)
+        {
+            return (x1, y1);
+        }
+        double t = Math.Clamp((((px - x1) * vx) + ((py - y1) * vy)) / len2, 0.0, 1.0);
+        return (x1 + (t * vx), y1 + (t * vy));
+    }
+
+    // ── #831 · THE COVER ACT: WHAT A MADE TAIL DOES INSTEAD OF FREEZING BARE ──────────────────────────
+    //
+    // Owner's law, generalised from the same sighting: "A MADE tail performs a COVER ACT instead of freezing
+    // bare: turns to the nearest wall fixture, checks a plate, reads a docket — same hold, same honest Vx=0,
+    // but the picture says 'man with business' not 'statue'."
+    //
+    // FootTail.MustHold is untouched and stays untouched: a made tail still stops dead where the law says he
+    // stops, and he still drops off the motion fan honestly while he does it. What changes is the PICTURE —
+    // he turns to the nearest station and reads it, and if there is nothing near he takes the few du to one
+    // first. Nothing is said, no card goes up, and the tell is a thing the player watches rather than a thing
+    // the game announces: a man signing a plate he signed ninety seconds ago is the gumshoe's confirmation,
+    // and it costs this file no prose at all.
+
+    /// <summary>#831 · SOMETHING ON A WALL A MAN CAN PLAUSIBLY BE READING. A watchclock station, the
+    /// department painted on a door that never opens, a framed poster nobody has taken down since
+    /// 1970-something. Published as one flat list so the cover act asks ONE question of the floor rather than
+    /// growing an opinion per fixture kind.</summary>
+    /// <param name="X">Where the thing is, on the wall it is bolted to.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Point">The checkpoint's own number when it is one, and 0 when it is not — which is what
+    /// makes the DOUBLE SIGN-IN readable at all.</param>
+    public readonly record struct WallThing(double X, double Y, int Point);
+
+    /// <summary>#831 · How close he gets to the thing he has decided to read. Arm's length and a step, the
+    /// same distance <see cref="CardReachDu"/> says two people talk at.</summary>
+    public const double CoverStandDu = 2.0;
+
+    /// <summary>#831 · …and how far he will DRIFT to find one. Owner: <i>"Mid-corridor with nothing near: he
+    /// does not hold there — he drifts the few du to the nearest fixture first, then holds."</i> A few du and
+    /// no more: a man who walked half a corridor to find a plate would be walking on past you, which is the
+    /// one thing the hold exists to stop.</summary>
+    public static double CoverDriftDu => MarkerSightDu / 2.0;
+
+    /// <summary>#831 · The longest he will spend getting to it — exactly the time the drift's own distance
+    /// takes to walk, so the bound is the same fact as the reach rather than a second number that could drift
+    /// from it. Past it he reads whatever he chose from where he has got to, which is what a person does when
+    /// a bench or a rail turns out to be in the way: he does not keep shuffling at it forever, and a body
+    /// still shuffling is a body the motion fan would honestly call a mover.</summary>
+    public static double CoverDriftSeconds => CoverDriftDu / WalkSpeed;
+
+    /// <summary>#831 · Everything on this floor's walls a held man could be reading — the stations, the shut
+    /// doors' own signs, the posters, the plated fittings in every room and the bins somebody has to empty.
+    /// One call, in the renderer's own idiom: it is a fact about the floor rather than a search a stepper
+    /// does per frame.
+    ///
+    /// <para>It is deliberately WIDE. The owner's clause is <i>"turns to the nearest wall fixture, checks a
+    /// plate, reads a docket"</i> — the point is that a facility is covered in things a man with a clipboard
+    /// has business with, and a list that only knew about the round's own stations would leave a held tail
+    /// standing bare halfway down every leg, which is the exact picture this issue exists to end.</para></summary>
+    public static IReadOnlyList<WallThing> ReadablesOn(
+        in UndergroundComplex.FloorPlan floor, in SurfaceLayout.Field field)
+    {
+        var things = new List<WallThing>();
+        foreach (Checkpoint p in CheckpointsOn(in floor, in field))
+        {
+            things.Add(new WallThing(p.X, p.Y, p.Number));
+        }
+        foreach (UndergroundComplex.LockedDoor l in floor.Locked ?? [])
+        {
+            things.Add(new WallThing((l.X1 + l.X2) / 2.0, (l.Y1 + l.Y2) / 2.0, 0));
+        }
+        foreach (LabPosters.Poster poster in floor.TheWalls)
+        {
+            things.Add(new WallThing(poster.X, poster.Y, 0));
+        }
+        foreach (SurfaceLayout.Doorway d in floor.Doorways ?? [])
+        {
+            things.Add(new WallThing((d.X1 + d.X2) / 2.0, (d.Y1 + d.Y2) / 2.0, 0));
+        }
+        foreach (SurfaceLayout.Landmark m in floor.Labels ?? [])
+        {
+            things.Add(new WallThing(m.X, m.Y, 0));
+        }
+        foreach (RipAndBin.Bin bin in floor.TheBins)
+        {
+            things.Add(new WallThing(bin.X, bin.Y, 0));
+        }
+        foreach (UndergroundComplex.Room room in floor.TheRooms)
+        {
+            foreach (RingOffice.Fixture fitting in room.Furniture)
+            {
+                if (fitting.Plate.Length > 0)
+                {
+                    things.Add(new WallThing(fitting.X, fitting.Y, 0));
+                }
+            }
+        }
+        return things;
+    }
+
+    /// <summary>#831 · Which of them a held man makes his business, or null when there is nothing he can both
+    /// see and reach within <see cref="CoverDriftDu"/> — in which case the hold stays honestly bare and the
+    /// audit counts it.
+    ///
+    /// <para><b>He has to be able to SEE it.</b> A plate through a wall is not a thing a man was about to
+    /// read, and a cover act that set off toward one would be a body sliding along shotcrete for ten seconds.
+    /// The look is <see cref="SurfaceCollision.HasLineOfSight"/> — the game's one wall law — taken to the
+    /// square he would end up standing on rather than to the plate itself, because the plate is bolted to a
+    /// wall and a sightline that ends inside one answers nothing.</para></summary>
+    public static WallThing? CoverFor(
+        double x, double y,
+        IReadOnlyList<WallThing>? things,
+        IReadOnlyList<SurfaceCollision.Segment>? sight)
+    {
+        if (things is null)
+        {
+            return null;
+        }
+
+        WallThing? best = null;
+        double bestGap = CoverDriftDu;
+        foreach (WallThing t in things)
+        {
+            double dx = t.X - x, dy = t.Y - y;
+            double gap = Math.Sqrt((dx * dx) + (dy * dy));
+            if (gap >= bestGap || gap < 1e-9)
+            {
+                continue;
+            }
+
+            double reach = Math.Max(0, gap - CoverStandDu);
+            if (!SurfaceCollision.HasLineOfSight(
+                    x, y, x + (dx / gap * reach), y + (dy / gap * reach), sight))
+            {
+                continue;
+            }
+
+            bestGap = gap;
+            best = t;
+        }
+        return best;
+    }
+
+    /// <summary>#831 · Is he there yet, or is he still taking the few du to it?</summary>
+    public static bool AtTheCover(double x, double y, in WallThing thing)
+    {
+        double dx = thing.X - x, dy = thing.Y - y;
+        return (dx * dx) + (dy * dy) <= CoverStandDu * CoverStandDu;
+    }
+
+    /// <summary>#831 · THE TELL. Is this man signing a station he already signed on this round? The gumshoe's
+    /// confirmation that the tail is made, stated once here so the sim and any audit of it read one sentence
+    /// — and deliberately not said out loud anywhere: the double sign-in is watched, never narrated.</summary>
+    public static bool DoubleSignIn(int signingNow, int alreadySigned) =>
+        signingNow > 0 && signingNow == alreadySigned;
+
+    // ── #831 · THE LANE ───────────────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "they should respect right side traffic, and not walk in the middle of the corridor."
+    //
+    // Three things it buys, and the owner named all three: it reads as PROCEDURE, in the same register as
+    // the checkpoints; two guards passing each other pass cleanly on opposite sides instead of meeting in
+    // the middle; and a walker who holds the centre of a corridor is — visibly, learnably — somebody who does
+    // not know the house rules. (The captain's own lane-keeping as a badge tell is design headroom and is
+    // deliberately not built here.)
+    //
+    // IT OFFSETS THE WAYPOINT LINE AND NEVER THE COLLISION. The A* is the same A* over the same field; what
+    // changes is where along the width of a corridor the walked line runs. At a corner, a doorway or a rib
+    // mouth the offset is simply given up and the round takes the middle — a lane is a preference, and a
+    // preference that could wedge a man against a jamb would be a wall.
+
+    /// <summary>#831 · Over how many waypoints the lane is EASED IN and out. A route is a lattice path at
+    /// half a deck unit a cell, and an offset that appeared all at once would move a body two du sideways in
+    /// one step — a diagonal lunge across a corridor that the slide refuses at every jamb it meets, which is
+    /// a snag cycle wearing a feature's clothes. Four cells taper the two du into steps no longer than the
+    /// walk's own, so a man drifts onto his side of the corridor the way a person does.</summary>
+    public const int LaneEaseCells = 4;
+
+    /// <summary>
+    /// #831 · THE ROUND, PUT ON ITS OWN SIDE OF THE CORRIDOR.
+    ///
+    /// <para>Every waypoint in the middle of a STRAIGHT run is shifted to the right hand of travel by
+    /// <see cref="LaneOffsetDu"/>; every waypoint at a turn keeps the centre line, and so do both ends. The
+    /// shift is EASED in over <see cref="LaneEaseCells"/> — see that constant — and a shift a body would not
+    /// fit on is stepped back down until it does, so the offset is never allowed to put a man inside
+    /// anything and never asks him to lunge.</para>
+    ///
+    /// <para><b>Right of travel, in this game's own frame.</b> +y is up on the deck (the renderer flips it
+    /// for the screen), so the right hand of a heading (ax, ay) is (ay, −ax): a man walking EAST walks on the
+    /// SOUTH side of the corridor, and the man coming back walks on the north side. That is the sentence a
+    /// test asserts, rather than this formula copied into it.</para>
+    ///
+    /// <para>Plan-time and not per-frame: it runs once on the route the leg was planned with, over a list
+    /// that is already in hand. Lab 45's frame budget is untouched.</para>
+    /// </summary>
+    public static IReadOnlyList<DeckReachability.Point> KeepRight(
+        IReadOnlyList<DeckReachability.Point>? route,
+        IReadOnlyList<SurfaceCollision.Segment>? walls,
+        double radius)
+    {
+        int n = route?.Count ?? 0;
+        if (route is null || n < 3)
+        {
+            return route ?? [];
+        }
+
+        // ── WHICH WAYPOINTS ARE ON A STRAIGHT RUN AT ALL, and which way is right there.
+        var rightX = new double[n];
+        var rightY = new double[n];
+        var straight = new bool[n];
+        for (int i = 1; i < n - 1; i++)
+        {
+            double bx = route[i].X - route[i - 1].X, by = route[i].Y - route[i - 1].Y;
+            double ax = route[i + 1].X - route[i].X, ay = route[i + 1].Y - route[i].Y;
+            double bl = Math.Sqrt((bx * bx) + (by * by)), al = Math.Sqrt((ax * ax) + (ay * ay));
+            if (bl < 1e-9 || al < 1e-9)
+            {
+                continue;
+            }
+            bx /= bl; by /= bl; ax /= al; ay /= al;
+
+            // A CORNER GIVES THE LANE UP. This is the doorway clause and the mouth clause both — the route
+            // turns at exactly those places — and it is what keeps the offset from ever being asked to hold
+            // through a 6.4 du leaf.
+            if ((bx * ax) + (by * ay) < LaneStraightEnough)
+            {
+                continue;
+            }
+            straight[i] = true;
+            rightX[i] = ay;
+            rightY[i] = -ax;
+        }
+
+        // ── HOW FAR EACH ONE IS FROM THE NEAREST TURN, in cells, so the shift can be eased.
+        var ease = new int[n];
+        int run = 0;
+        for (int i = 0; i < n; i++)
+        {
+            run = straight[i] ? run + 1 : 0;
+            ease[i] = run;
+        }
+        run = 0;
+        for (int i = n - 1; i >= 0; i--)
+        {
+            run = straight[i] ? run + 1 : 0;
+            ease[i] = Math.Min(ease[i], run);
+        }
+
+        var laned = new List<DeckReachability.Point>(n) { route[0] };
+        for (int i = 1; i < n - 1; i++)
+        {
+            double scale = straight[i] ? Math.Min(1.0, ease[i] / (double)LaneEaseCells) : 0.0;
+
+            // …and the GROUND may refuse any of it. Stepped back down rather than dropped, so a waypoint
+            // beside something bulky rejoins its neighbours instead of jumping to the middle and back.
+            while (scale > 0)
+            {
+                double tx = route[i].X + (rightX[i] * LaneOffsetDu * scale);
+                double ty = route[i].Y + (rightY[i] * LaneOffsetDu * scale);
+                if (!SurfaceCollision.Blocked(tx, ty, radius, walls))
+                {
+                    break;
+                }
+                scale -= 1.0 / LaneEaseCells;
+            }
+
+            laned.Add(scale > 0
+                ? new DeckReachability.Point(
+                    route[i].X + (rightX[i] * LaneOffsetDu * scale),
+                    route[i].Y + (rightY[i] * LaneOffsetDu * scale))
+                : route[i]);
+        }
+        laned.Add(route[^1]);
+        return laned;
+    }
 
     /// <summary>
     /// THE CIRCUIT, TAKEN OFF THE FLOOR PLAN AND NEVER OFF A CONSTANT.
@@ -238,10 +750,41 @@ public static class PatrolBeat
     /// is reachable from the car on every floor of every site. A beat built out of them is walkable by
     /// construction rather than by hope — and there is a guard that walks it anyway.</item>
     /// </list>
+    ///
+    /// <h3>#831 · AND EVERY STOP SNAPS TO ITS CHECKPOINT</h3>
+    ///
+    /// <para>Owner: <i>"why would it just stand there if there is no inspection point etc"</i> → <i>"they
+    /// actually in real life like have these check points they electronically sign on rounds to prove they
+    /// did their round."</i> So the coordinates above are where the round WANTS to be, and the coordinates it
+    /// walks to are the square the nearest watchclock station is signed from (<see cref="PointFor"/>) — a
+    /// pace and a half off a wall, facing a plate. A stop that finds no wall within
+    /// <see cref="CheckpointReachDu"/> keeps its own place and says so by carrying a null
+    /// <see cref="Stop.Point"/>; the audit counts those, because a stop nobody can explain is the thing this
+    /// whole issue is about.</para>
     /// </summary>
     /// <param name="floor">The floor, as Core built it.</param>
     /// <param name="field">The site's envelope — the shaft's position comes from it.</param>
     public static IReadOnlyList<Stop> Circuit(
+        in UndergroundComplex.FloorPlan floor, in SurfaceLayout.Field field)
+    {
+        IReadOnlyList<Stop> wanted = WantedCircuit(floor, field);
+        List<SurfaceCollision.Segment> blockers = Blockers(in floor);
+
+        var snapped = new List<Stop>(wanted.Count);
+        for (int i = 0; i < wanted.Count; i++)
+        {
+            Stop stop = wanted[i];
+            snapped.Add(PointFor(in stop, i + 1, in floor, blockers) is { } at
+                ? stop with { X = at.StandX, Y = at.StandY, Point = at }
+                : stop);
+        }
+        return snapped;
+    }
+
+    /// <summary>#831 · The circuit as the floor plan alone decides it, BEFORE the stations move it. Split out
+    /// so the numbering of the stations is a fact about the PLACE — station 3 is station 3 on every watch —
+    /// and so the snap has exactly one caller.</summary>
+    private static IReadOnlyList<Stop> WantedCircuit(
         in UndergroundComplex.FloorPlan floor, in SurfaceLayout.Field field)
     {
         var stops = new List<Stop>();

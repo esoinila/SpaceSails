@@ -752,6 +752,23 @@ public static class HiveInterior
                 poster.Plate, poster.ArtUrl, poster.Card));
         }
 
+        // ── #831 · AND THE WATCHCLOCK STATIONS, ON THE FLOORS THAT HAVE A ROUND ────────────────────────
+        //
+        // Owner: "they actually in real life like have these check points they electronically sign on rounds
+        // to prove they did their round." A small plate on a wall, and nothing else — no console, no verb, no
+        // card. It answers a question the player asks with their eyes ("why is he standing there") and asking
+        // it of a plate with [E] would turn an answer into an errand.
+        //
+        // Core says where every one of them is (PatrolBeat.CheckpointsOn) and what is stencilled on it; this
+        // measures nothing.
+        if (PatrolBeat.IsPatrolled(bodyId, level))
+        {
+            foreach (PatrolBeat.Checkpoint point in PatrolBeat.CheckpointsOn(floor, field))
+            {
+                labels.Add(((float)point.X, (float)point.Y, point.Plate));
+            }
+        }
+
         // The cars, on every floor, in the same places. #801 · Both of them, off one list, each with the
         // sign Core paints on it — a renderer choosing which console kind goes on which car would be a
         // second opinion about a machine it does not own.

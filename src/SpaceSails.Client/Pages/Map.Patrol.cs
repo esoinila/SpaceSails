@@ -181,9 +181,35 @@ public sealed partial class Map
         /// <summary>#821 · Whether the two knuckles have already landed. Once per wait: a man who knocked
         /// twice would be a loop, and the whole of the line is that he does not knock again.</summary>
         public bool Knocked;
+
+        /// <summary>#831 · Which watchclock station he last signed on his round, or 0 before the first one.
+        /// It is what makes the DOUBLE SIGN-IN readable: a made tail's cover act at the station he signed a
+        /// minute ago is the gumshoe's confirmation, and nothing anywhere says so out loud
+        /// (<see cref="PatrolBeat.DoubleSignIn"/>).</summary>
+        public int SignedPoint;
+
+        /// <summary>#831 · Which station he is signing RIGHT NOW as a cover act, or 0 when he is not
+        /// performing one. Written by the hold, read by the audit — one answer per frame, so the man who has
+        /// stopped and the man DRAWN as having stopped for something are one man.</summary>
+        public int CoverPoint;
+
+        /// <summary>#831 · WHAT HE DECIDED TO READ, held for as long as the hold lasts. A man who re-chose
+        /// the nearest fixture every frame walks toward one, gets nearer a second, turns round, and shuffles
+        /// between the two forever — which is a statue with extra steps. He picks once.</summary>
+        public PatrolBeat.WallThing? CoverAt;
+
+        /// <summary>#831 · How long he has been getting to it. Bounded by
+        /// <see cref="PatrolBeat.CoverDriftSeconds"/>: past that he reads it from where he stands.</summary>
+        public double CoverFor;
     }
 
     private readonly List<Guard> _guards = [];
+
+    /// <summary>#831 · Everything on this floor's walls a held man could plausibly be reading — the
+    /// watchclock stations first, then the shut doors' signs and the posters (<see cref="PatrolBeat.ReadablesOn"/>).
+    /// Built once with the round, for the round's own reason: it is a fact about the floor, and a stepper
+    /// that searched the floor plan every frame would be Lab 45's bill paid sixty times a second.</summary>
+    private readonly List<PatrolBeat.WallThing> _patrolReadables = [];
 
     /// <summary>The beat: the stops, in the order this watch walks them. Built once when the floor is
     /// entered so every guard on it shares ONE route and a captain can learn it — the sweep team's rule,
@@ -322,6 +348,7 @@ public sealed partial class Map
     {
         _guards.Clear();
         _patrolBeat.Clear();
+        _patrolReadables.Clear();
         _patrolFloorSeconds = 0;
         _patrolHeardAgo = HeardAgainSeconds;
 
@@ -388,6 +415,10 @@ public sealed partial class Map
             return;
         }
 
+        // #831 · …and everything on this floor's walls a held man could be reading. Off Core, once, with the
+        // round it belongs to.
+        _patrolReadables.AddRange(PatrolBeat.ReadablesOn(floor, field));
+
         int heads = _patrolCheat is { } forced
             ? System.Math.Clamp(forced, 0, PatrolBeat.MostOnAFloor)
             : PatrolBeat.GuardsOn(bodyId, level, ex.CanteenWatch);
@@ -404,6 +435,11 @@ public sealed partial class Map
                 Y = at.Y,
                 Leg = (leg + 1) % _patrolBeat.Count,
                 Standing = PatrolBeat.StandSeconds,
+
+                // #831 · A man is put on the floor already signing the station he is standing at, looking at
+                // it. The first thing a captain stepping off the car sees is somebody doing something.
+                Facing = at.Point is { } start ? start.Facing : 0,
+                SignedPoint = at.Point is { } signed ? signed.Number : 0,
             });
         }
     }
@@ -477,8 +513,19 @@ public sealed partial class Map
             Guard g = _guards[i];
             g.SinceStop += dt;
 
+            // #831 · One answer per frame about whether he is performing a cover act, written below by the
+            // hold and by nothing else — a man on his round is not covering for anything.
+            g.CoverPoint = 0;
+
             FootTail.Mover afoot = PatrolBeat.OnTheRound(i, g.X, g.Y);
             g.Held = FootTail.MustHold(sitting, _avatarX, _avatarY, in afoot, sight);
+            if (!g.Held)
+            {
+                // #831 · The hold is over, so whatever he had decided to read is over with it. Cleared HERE,
+                // off the law's own answer, rather than in each of the branches below that walk him away.
+                g.CoverAt = null;
+                g.CoverFor = 0;
+            }
             if (ReferenceEquals(g, _escort))
             {
                 // #833 · The one guard who is not walking a round at all. He is ahead of everything else in
@@ -530,8 +577,9 @@ public sealed partial class Map
             {
                 // A tail that has been made cannot walk on past you. It stops where it stopped, and it drops
                 // off the motion fan honestly while it does — the same clause the stand at a stop keeps.
-                g.Vx = 0;
-                g.Vy = 0;
+                //
+                // #831 · …and it stops AT SOMETHING. The rule is untouched; the picture is not a statue.
+                TheCoverAct(g, dt, walls, sight);
             }
             else if (g.WalkingUp)
             {
@@ -700,6 +748,17 @@ public sealed partial class Map
     /// One leg of the round. The route is planned with A* between two published stops and spent through the
     /// captain's own collision at a person's gait, so a guard finds doorways and slides off walls exactly as
     /// a person does. Arriving starts the STAND — the gap the whole feature is about.
+    ///
+    /// <para>#831 · <b>AND THE STAND IS NOW A SIGN-IN.</b> Owner: <i>"they actually in real life like have
+    /// these check points they electronically sign on rounds to prove they did their round."</i> The stop he
+    /// arrives at IS the square a watchclock station is signed from (Core snapped it there), so arriving
+    /// turns him to face the plate and the five seconds are the act. Nothing about the timing moved.</para>
+    ///
+    /// <para>#831 · <b>AND THE LEG KEEPS RIGHT.</b> Owner: <i>"they should respect right side traffic, and
+    /// not walk in the middle of the corridor."</i> The A* is untouched — the same search over the same
+    /// field — and its WAYPOINT LINE is put on the walker's own side of the corridor
+    /// (<see cref="PatrolBeat.KeepRight"/>) before he spends a stride of it. Once per leg, at plan time: Lab
+    /// 45's frame budget never sees it.</para>
     /// </summary>
     private void WalkTheRound(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
@@ -738,7 +797,13 @@ public sealed partial class Map
                 g.Leg = (g.Leg + 1) % _patrolBeat.Count;
                 return;
             }
-            g.Route = planned.Route;
+
+            // #831 · THE LANE, laid on the line he is about to walk. The route the A* proved is the route he
+            // takes; what this decides is where along the width of the corridor it runs — and it hands the
+            // offset back at every corner, doorway and rib mouth, because a lane is a preference and a
+            // preference that could wedge a man against a jamb would be a wall.
+            g.Route = AutoWalk.Along(
+                PatrolBeat.KeepRight(planned.Route.Route, walls, DeckPlan.AvatarRadius));
         }
 
         SpendTheStride(g, dt, walls);
@@ -750,6 +815,18 @@ public sealed partial class Map
             g.Route = null;
             g.Retries = 0;
             g.Standing = PatrolBeat.StandSeconds;   // THE GAP the whole feature is about
+
+            // #831 · …and the gap has a body now. He turns to the plate on the wall and signs it. The
+            // facing comes off Core's own fixture rather than being worked out here, so the man and the
+            // thing he is looking at can never be two different answers.
+            if (target.Point is { } station)
+            {
+                // From where he ACTUALLY ended up, not from the square Core measured the fixture off:
+                // AtTheStopDu is a tolerance and a man a stride short of the plate is still looking at it.
+                g.Facing = System.Math.Atan2(station.Y - g.Y, station.X - g.X);
+                g.SignedPoint = station.Number;
+            }
+
             g.Leg = (g.Leg + 1) % _patrolBeat.Count;
             return;
         }
@@ -884,6 +961,106 @@ public sealed partial class Map
             return true;
         }
         return false;
+    }
+
+    // ── #831 · THE COVER ACT ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #831 · A MADE TAIL DOES NOT FREEZE BARE — he finds something on a wall and reads it.
+    ///
+    /// <para>Owner, on the man he watched stand in the middle of a corridor: <i>"why would it just stand
+    /// there if there is no inspection point etc"</i> — and the rule that generalises it: <i>"A MADE tail
+    /// performs a COVER ACT instead of freezing bare: turns to the nearest wall fixture, checks a plate,
+    /// reads a docket — same hold, same honest Vx=0, but the picture says 'man with business' not
+    /// 'statue'."</i></para>
+    ///
+    /// <para><b><see cref="FootTail.MustHold"/> is untouched and stays untouched.</b> He still stops exactly
+    /// where the law says he stops, and he still drops off the motion fan honestly when he is standing —
+    /// #830's blob is what a standing man returns and this changes none of it. What changed is what a player
+    /// SEES: a station, a shut door's sign, a poster, and a man doing the most ordinary thing in a facility
+    /// in front of it.</para>
+    ///
+    /// <para><b>The drift.</b> Owner: <i>"Mid-corridor with nothing near: he does not hold there — he drifts
+    /// the few du to the nearest fixture first, then holds."</i> A few du and no more
+    /// (<see cref="PatrolBeat.CoverDriftDu"/>) and on a straight slide rather than an A*: a man crossing a
+    /// corridor to a plate does not plan a route, and a plan per held frame is Lab 45's bill for nothing.
+    /// With nothing at all within reach the hold is bare and HONEST — the audit counts those, because a
+    /// floor that could not offer a man anything to look at is a finding rather than a fudge.</para>
+    ///
+    /// <para><b>The tell rides for free.</b> The nearest thing to a man who has just left a stop is the
+    /// station he just signed, so a made tail signs it again — the same act at the same plate twice in one
+    /// round, which is the gumshoe's confirmation. Nothing says so: no card, no line, no marker. It is
+    /// watched (<see cref="PatrolBeat.DoubleSignIn"/> is the one place the sim names it, for the audit).</para>
+    /// </summary>
+    private void TheCoverAct(
+        Guard g, double dt,
+        IReadOnlyList<SurfaceCollision.Segment> walls,
+        IReadOnlyList<SurfaceCollision.Segment> sight)
+    {
+        g.Route = null;
+        g.CoverFor += dt;
+
+        // HE PICKS ONCE, on the frame the hold starts, and then it is what he is doing.
+        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight);
+
+        if (g.CoverAt is not { } thing)
+        {
+            // Nothing on this floor within a few du of where the law stopped him. He holds where he is, and
+            // the picture is the one the owner complained about — which is why it is counted rather than
+            // papered over.
+            g.Vx = 0;
+            g.Vy = 0;
+            return;
+        }
+
+        // HE IS LOOKING AT IT the whole time, walking to it or standing at it. A man crossing two du to a
+        // plate has already decided which plate.
+        g.Facing = System.Math.Atan2(thing.Y - g.Y, thing.X - g.X);
+        g.CoverPoint = thing.Point;
+
+        if (PatrolBeat.AtTheCover(g.X, g.Y, in thing) || g.CoverFor > PatrolBeat.CoverDriftSeconds)
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            return;
+        }
+
+        // THE DRIFT, on the captain's own collision at the round's own gait — and honestly on the fan while
+        // it lasts, because he is moving and a motion tracker hears movers.
+        double dx = thing.X - g.X, dy = thing.Y - g.Y;
+        double gap = System.Math.Sqrt((dx * dx) + (dy * dy));
+        double take = System.Math.Min(PatrolBeat.WalkSpeed * dt, System.Math.Max(0, gap - PatrolBeat.CoverStandDu));
+
+        // #832's epsilon, one stepper along: a budget is never spent to exactly zero in binary, and a slide
+        // of 1e-17 du is a man who has arrived being reported to the fan as a man who is moving.
+        if (take < 1e-9)
+        {
+            g.Vx = 0;
+            g.Vy = 0;
+            return;
+        }
+
+        double startX = g.X, startY = g.Y;
+
+        (double nx, double ny) = SurfaceCollision.Slide(
+            g.X, g.Y, dx / gap * take, dy / gap * take,
+            DeckPlan.AvatarRadius, walls, SurfaceCollision.Gait.Person);
+
+        double mx = nx - g.X, my = ny - g.Y;
+        if ((mx * mx) + (my * my) < 1e-8)
+        {
+            // The ground will not let him any nearer — a rail, a bench, the corner of a pier. He reads it
+            // from where he is, which is what a person does, and he is STILL: a man scraping along a wall by
+            // a millionth of a deck unit is a body the motion fan would honestly call a mover.
+            g.Vx = 0;
+            g.Vy = 0;
+            return;
+        }
+
+        g.X = nx;
+        g.Y = ny;
+        g.Vx = dt > 0 ? mx / dt : 0;
+        g.Vy = dt > 0 ? my / dt : 0;
     }
 
     // ── #833 · THE APPROACH ───────────────────────────────────────────────────────────────────────────
