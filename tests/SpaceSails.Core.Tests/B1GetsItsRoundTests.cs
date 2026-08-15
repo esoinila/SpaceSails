@@ -226,8 +226,17 @@ public sealed class B1GetsItsRoundTests
 
                 gates++;
                 double gx = (gate.X1 + gate.X2) / 2;
-                bool stoodAtTheHead = PatrolBeat.Circuit(floor, Field)
-                    .Any(s => Math.Abs(s.X - gx) < Eps && Math.Abs(s.Y - spineY) < Eps);
+
+                // #831 · A MOUTH STOP IS THE WATCHCLOCK STATION BESIDE THAT MOUTH NOW. Owner: "they actually
+                // in real life like have these check points they electronically sign on rounds to prove they
+                // did their round" — so the stop no longer sits on the spine's centre line to six decimals,
+                // it stands a pace and a half off the wall the plate is bolted to. What this guard is about
+                // is untouched: the round turns away from the green AT THE HEAD OF THIS STREET. Asked of the
+                // stop's own name (which the snap carries) and of the distance, rather than of a coordinate.
+                bool stoodAtTheHead = PatrolBeat.Circuit(floor, Field).Any(s =>
+                    s.What == $"the mouth at x{gx:F0}"
+                    && Math.Sqrt(((s.X - gx) * (s.X - gx)) + ((s.Y - spineY) * (s.Y - spineY)))
+                       <= PatrolBeat.CheckpointReachDu);
                 if (!stoodAtTheHead)
                 {
                     trespass.Add(

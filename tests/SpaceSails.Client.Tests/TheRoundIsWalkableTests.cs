@@ -197,11 +197,26 @@ public sealed class TheRoundIsWalkableTests
             [.. stops.Select(s => (Math.Round(s.X, 3), Math.Round(s.Y, 3)))];
     }
 
-    /// <summary>Nobody is placed on top of a fixture the [E] key answers for — a guard standing ON the
-    /// SEARCH THE ROOM console would make the room unpressable while they stood there.</summary>
+    /// <summary>
+    /// Nobody is placed on top of a fixture the [E] key answers for — a guard standing ON the SEARCH THE
+    /// ROOM console would make the room unpressable while they stood there.
+    ///
+    /// <para>#831 · <b>AND THE LAW UNDER IT MOVED, by the owner's own ruling.</b> Owner, watching a man stand
+    /// in a corridor with nothing to do: <i>"why would it just stand there if there is no inspection point
+    /// etc"</i> → <i>"they actually in real life like have these check points they electronically sign on
+    /// rounds to prove they did their round."</i> This used to assert the car stop was the captain's own
+    /// arrival square to six decimal places. It is now the square the watchclock station beside the car is
+    /// SIGNED from — a pace and a half off the wall the plate is bolted to — because a stand at a stop is a
+    /// man signing a plate and a stop with no plate at it is the thing the whole issue is about.</para>
+    ///
+    /// <para>Everything the guard was FOR is asserted unchanged and one clause stronger: the round still
+    /// checks the lift, it still stands within a few strides of the one square everybody has to pass through,
+    /// and it is still off every console the [E] key answers for.</para>
+    /// </summary>
     [Fact]
-    public void TheCarStopIsOffTheLiftConsole()
+    public void TheCarStopIsAtItsOwnCheckpointBesideTheLiftAndOffTheConsole()
     {
+        int floors = 0;
         foreach (string body in Bodies)
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
@@ -214,14 +229,31 @@ public sealed class TheRoundIsWalkableTests
                 UndergroundComplex.FloorPlan plan = UndergroundComplex.Build(body, level, Field);
                 PatrolBeat.Stop car = PatrolBeat.Circuit(plan, Field)[0];
                 (double sx, double sy) = HiveInterior.SpawnOn(Field);
+                floors++;
 
-                // The car stop IS the square the captain arrives on, deliberately: it is the one place on
-                // the floor everybody has to pass through, and a round that never checked the lift would be
-                // a round nobody could time from safety.
-                Assert.Equal(sx, car.X, 6);
-                Assert.Equal(sy, car.Y, 6);
+                Assert.Equal("the car", car.What);
+                Assert.NotNull(car.Point);
+
+                // The car stop is a STATION BESIDE THE CAR: within a few strides of the square the captain
+                // arrives on, which is the one place on the floor everybody has to pass through.
+                double toTheCar = Math.Sqrt(((car.X - sx) * (car.X - sx)) + ((car.Y - sy) * (car.Y - sy)));
+                Assert.True(toTheCar <= PatrolBeat.CheckpointReachDu,
+                    $"{body} B{-level}: the car stop is {toTheCar:F1} du from the arrival square — that is " +
+                    "not a round that checks the lift.");
+
+                // …and off every console on this floor, which is what this guard has always been about.
+                DeckPlan deck = DeckFor(body, level);
+                foreach (DeckPlan.ConsoleSpot spot in deck.Consoles)
+                {
+                    double gap = Math.Sqrt(
+                        ((car.X - spot.X) * (car.X - spot.X)) + ((car.Y - spot.Y) * (car.Y - spot.Y)));
+                    Assert.True(gap > DeckPlan.AvatarRadius,
+                        $"{body} B{-level}: the car stop stands {gap:F2} du from the console '{spot.Label}' " +
+                        "— a man on the round would sit on top of the [E] key.");
+                }
             }
         }
+        Assert.True(floors > 40, $"only {floors} patrolled floors were measured.");
     }
 
     // ── THE WIRING ────────────────────────────────────────────────────────────────────────────────────

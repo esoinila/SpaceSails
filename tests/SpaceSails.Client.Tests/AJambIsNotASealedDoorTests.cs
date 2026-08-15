@@ -316,12 +316,19 @@ public sealed class AJambIsNotASealedDoorTests
         // fast he is going) and never with the machinery. ReeverChase.cs itself is unchanged and is still
         // checked, line by line, above — it defaults to the stagger, so nothing an Old One steps through was
         // helped by any of this.
-        Assert.Equal(4, claims.Count);
+        //
+        // #831 · AND THE FIFTH IS THE SAME MAN STOPPING. A made tail performs a cover act instead of freezing
+        // bare — owner: "turns to the nearest wall fixture, checks a plate, reads a docket" — and the few du
+        // he takes to get to one are a slide, not a plan. It is the SAME body that already holds three of
+        // these claims, walking two paces at the same gait for the same reason, and it is the third and last
+        // of them in Map.Patrol.cs. Nothing an Old One steps through was touched.
+        Assert.Equal(5, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
 
-        // Twice, and both times it is a contract guard: the round's own stride, and #835's run.
-        Assert.Equal(2, claims.FindAll(c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal)).Count);
+        // Three times, and every one of them a contract guard: the round's own stride, #835's run, and #831's
+        // two paces to the wall he has decided to read.
+        Assert.Equal(3, claims.FindAll(c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal)).Count);
     }
 
     private static string RepoRoot

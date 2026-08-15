@@ -268,6 +268,17 @@ public sealed class AutoWalk
         }
     }
 
+    /// <summary>#831 · A ROUTE SOMEBODY HAS ALREADY WORKED OUT, handed back as a walk. The one seam a caller
+    /// has for spending a line of waypoints it did not get from <see cref="Plan"/> — today that is
+    /// <see cref="PatrolBeat.KeepRight"/>, which takes a planned leg and puts it on its own side of the
+    /// corridor. It is deliberately NOT a second planner: whoever calls this owns the claim that consecutive
+    /// points are walkable, exactly as the A* owns it for its own.</summary>
+    public static AutoWalk Along(IReadOnlyList<DeckReachability.Point> route)
+    {
+        ArgumentNullException.ThrowIfNull(route);
+        return new AutoWalk(route);
+    }
+
     /// <summary>A lattice box big enough to hold the deck's stone and both ends of the walk, with a margin
     /// so a route may bulge around the outside of an obstacle that sits on the rim. Derived from the wall
     /// list the caller is about to path over rather than from any scene's own numbers, so it is right on a
