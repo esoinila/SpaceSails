@@ -119,8 +119,12 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("tab.ArtUrl", conversation, StringComparison.Ordinal);
 
         // And the fork is the state machine's, in one place, rather than a condition written into markup.
+        // #865 · …and it forks on WHO CHOSE THIS SEAT and not on the chair opposite being empty. It read
+        // `_table is { Solo: true }` until the owner ruled that joining a stranger's top keeps the room
+        // visible: Solo is OCCUPANCY (the fact the privacy ladder reads) and the frame is a different
+        // question with a different answer at exactly one table — the one you asked to sit at.
         string seated = Source("Pages", "Map.Seated.cs");
-        Assert.Contains("private bool SeatedIsDocked => _table is { Solo: true };", seated,
+        Assert.Contains("private bool SeatedIsDocked => _table is { TheyCameToYou: false };", seated,
             StringComparison.Ordinal);
     }
 

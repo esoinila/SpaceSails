@@ -65,9 +65,18 @@ public sealed partial class Map
 
         // A card that may wait, raised while something is trying to kill the captain, waits. It is held rather
         // than dropped because these are the moments most worth reading — just not now.
+        //
+        // #865 · …AND A CARD RAISED WHILE THE CAPTAIN IS TAKING A CHAIR WAITS TOO, whatever it is about.
+        // Owner, sitting down at a canteen top: "I sat down the table but the pop ups blocked my view of my
+        // avatar sitting down." The snap onto the seat is the tiny animation #820 and #846 exist for and the
+        // player is meant to WATCH it; a card over it un-ships both. This arm asks NOTHING about
+        // deferrability, and that is deliberate: the danger hold is a judgement about whether a beat is
+        // urgent enough to interrupt a fight, and this is a beat and a half of screen owed to a press the
+        // player has just made. Nothing is dropped — the cadence is unspent until it actually speaks, and the
+        // queue below serves it the moment the chair is taken.
         if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Card
-            && StoryBeats.DeferrableWhileInDanger(beat)
-            && CaptainIsInDanger())
+            && (TheSitBeatIsSettling
+                || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger())))
         {
             _deferredBeat ??= (beat, subject);
             return;
@@ -165,7 +174,11 @@ public sealed partial class Map
         }
 
         // A held card goes up the moment the scene is calm and nothing else is on the screen.
-        if (_deferredBeat is { } waiting && !CaptainIsInDanger() && _storyCard is null && _busted is null)
+        // #865 · …and once the chair has actually been taken. "The strip is open with the scene by the time
+        // any deferred card raises" is the second half of the sit-beat rule, and it is kept here rather than
+        // by hoping the beat has run out on its own.
+        if (_deferredBeat is { } waiting && !CaptainIsInDanger() && !TheSitBeatIsSettling
+            && _storyCard is null && _busted is null)
         {
             _deferredBeat = null;
             ShowStoryBeat(waiting.Beat, waiting.Subject);

@@ -1784,7 +1784,20 @@
 
        Nothing about the CARD changed. That matters: the haulier ladder, its odds, its one-per-watch law and
        every line in it ship exactly as they were, and when #731's walker crosses the hall for real she will
-       flip Solo from outside and this card will come up over a room the player was already watching. *@
+       arrive from outside the strip and this card will come up over a room the player was already watching.
+
+       #865 · …AND THE FORK MOVED OFF SOLO. Owner, live at a weighbridge clerk's table with the whole hall
+       dimmed to black behind one small card: "what if I just sit and eat here... now I am kind of blinded of
+       the surrounding here because somebody else sits in the same table" — then, naming the target: "It
+       should somehow UI wise be same style as the sitting alone case", and sealing it: "Just the social
+       functions as additional options."
+
+       So CO-SEATING IS A STRIP STATE. Joining an occupied top is a posture change like any other seat and it
+       docks; only somebody who CAME OVER TO YOU raises the card (SeatedIsDocked now reads TheyCameToYou).
+       And it is the SAME COMPONENT WITH COMPANY, not a second one styled alike — the neighbour's plate and
+       bark are lines on this strip and their moves are buttons in this row, which is what keeps the rest
+       pips, the spread gating and #829's case-door label working identically whether the chair opposite is
+       empty or not. *@
     @if (_table is { } tab)
     {
     @if (SeatedIsDocked)
@@ -1796,6 +1809,23 @@
             @if (SeatedCustomerLine() is { Length: > 0 } customer)
             {
                 <div class="seated-dock-line">@customer</div>
+            }
+
+            @* #865 · WHO IS SHARING THE TOP, in the instrument row's own clothes — the plate the deck draws
+               over them, the room's setting, and the chairs. Same separator, same register, one line lower:
+               the strip is the same strip and this is what has changed about the seat. *@
+            @if (SeatedCompanyLine() is { Length: > 0 } company)
+            {
+                <div class="seated-dock-line seated-dock-company">@company</div>
+            }
+
+            @* …and their one breath, OVERHEARD rather than extracted. #751 deals a background patron exactly
+               one line per watch, and it used to take a press inside a card that had eaten the room to hear
+               it. It stands down the moment anything is actually said at this table, because the strip has
+               one outcome slot and a bark left under its own answer would print the sentence twice. *@
+            @if (SeatedOverheardLine() is { Length: > 0 } overheard)
+            {
+                <div class="seated-dock-said seated-dock-bark">@overheard</div>
             }
 
             @* The latest thing that happened at this table — #757's silence lines, the body's footnote, the
@@ -1830,7 +1860,24 @@
             }
 
             <div class="seated-dock-actions">
-                @foreach (SpaceSails.Core.Encounter.Move move in TableMovesOnTheTable())
+                @* #865/#746 · ASKING FOR THE CHAIR IS STILL ITS OWN BEAT, and it is a strip button now.
+                   Until it is pressed, the only two things you may do at somebody else's top are ask and
+                   walk away — the same two the card offered, in the same order, without the room going
+                   dark to offer them. *@
+                @if (!tab.Joined)
+                {
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Ask for the empty chair"
+                            @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Join)">@SpaceSails.Core.CanteenTable.AskToJoin</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Think better of it. It costs nothing."
+                            @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Leave)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
+                }
+                @* THE MOVE ROW. At a top you took alone this is SIT A WHILE and the goodbye; at one you
+                   joined it is the neighbour's own three — Small talk, Buy the round, Take your leave —
+                   because it is the SAME call over whatever scene this sitting is holding. Owner: "just the
+                   social functions as additional options." *@
+                @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? TableMovesOnTheTable() : [])
                 {
                     SpaceSails.Core.Encounter.Move m = move;
                     bool open = TableMoveOnOffer(m);
@@ -1852,6 +1899,29 @@
                     @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
                 </button>
             </div>
+
+            @* #865/#746 · …and PUT SOMETHING ON THE TABLE fans the pocket open right here, exactly as it
+               does on the card: a second press and never a mode, for #614's reason — a captain deciding WHAT
+               to put down must not be one mis-click from having put something down. It is inside the strip's
+               own subtree, so the room is still behind it. *@
+            @if (tab.Joined && tab.Showing)
+            {
+                <div class="table-showables seated-dock-showables">
+                    @if (_satchel.Count == 0)
+                    {
+                        <div class="satchel-empty">Nothing in your pockets to put down.</div>
+                    }
+                    @foreach (SpaceSails.Core.Satchel.Item carried in TableShowables())
+                    {
+                        SpaceSails.Core.Satchel.Item show = carried;
+                        <button type="button" class="satchel-item table-showable"
+                                title="Put it on the table where everyone can see it"
+                                @onclick="() => TableShow(show)">
+                            <span class="satchel-item-name">@SatchelLabel(show)</span>
+                        </button>
+                    }
+                </div>
+            }
         </div>
     }
     else

@@ -5208,6 +5208,31 @@
     gap: 0.4rem;
 }
 
+/* #865 · THE COMPANY LINE. The customer line's own clothes with one thing changed — it is about a PERSON,
+   so it is not in the instrument's cold blue. Owner: "It should somehow UI wise be same style as the sitting
+   alone case", so this is the same row, one lower, and not a second panel. It carries no rule of its own
+   because the line above it already drew one and two hairlines in a row read as a table. */
+.seated-dock-company {
+    color: #d3c9b4;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0.45rem;
+}
+
+/* …and their one breath, overheard. The outcome slot's skin in a quieter ink and in italics, because it is
+   not an answer to anything the captain did — it is a thing being said at the table you sat down at. */
+.seated-dock-bark {
+    font-style: italic;
+    color: #bfc7d4;
+    background: rgba(160, 200, 220, 0.06);
+    border-left-color: rgba(160, 200, 220, 0.45);
+}
+
+/* The pocket, fanned open under "put something on the table" — inside the strip rather than inside a card. */
+.seated-dock-showables {
+    margin-top: 0.5rem;
+}
+
 /* #784 · A paper lying on the table. The satchel row's skin with the spread's own pen-coloured hint, so a
    dig reads apart from a TRY at a glance. */
 .spread-item .satchel-item-try {

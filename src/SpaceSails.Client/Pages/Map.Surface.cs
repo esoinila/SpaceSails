@@ -5197,6 +5197,15 @@ public partial class Map
     {
         (_avatarX, _avatarY) = (x, y);
         RebuildSurfaceDeck();
+
+        // #865 · …AND THE PLAYER IS OWED THE SIGHT OF IT. Owner, at a canteen top: "I sat down the table but
+        // the pop ups blocked my view of my avatar sitting down", and on the clean retry, "Oh now it picked
+        // the chair and it worked." The snap two lines up is the animation #820 and #846 both exist for, and
+        // the tick after it was exactly when a first-entry card raised — because THIS METHOD IS WHY: the
+        // coordinates it writes are the ones the room's polls read, so sitting down was itself what walked
+        // the captain into the card. Armed here rather than in five separate seat verbs, on the same
+        // discipline the snap already keeps: one placement, one law, every seat kind.
+        _sitBeatOwedSeconds = Core.SeatedPosture.SitBeatSeconds;
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
@@ -6474,6 +6483,13 @@ public partial class Map
         // #562 · The tube-rearm card holds it too. The tube is the safest square on the moon, so this is
         // belt-and-braces rather than a rescue — but a modal that leaves the world running is a bug waiting
         // for the one player who opens it with something already in the tube mouth.
+        // #865 · THE SIT BEAT IS SPENT FIRST, and above the card hold rather than below it. It is a debt in
+        // real seconds owed to the player for having pressed [E] (Map.Seated.cs), and a debt that could only
+        // be paid on ticks where nothing was covering the screen would never be paid on the one tick that
+        // matters. Spending it here also means it can never be left standing across an excursion: the surface
+        // clock is the only clock a seated captain has.
+        SpendTheSitBeat(dtRealSeconds);
+
         if (_groundLessonOpen || _groundGrewOpen || _tubeRearmOpen || _airCardOpen)
         {
             _surface.LandedAtMs += dtRealSeconds * 1000.0;
@@ -6495,10 +6511,27 @@ public partial class Map
         AdvanceNests(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));        // #488: the nest is a source
         AdvanceFire(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #524: and the fire eats
         AdvanceVacuumExposure(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: vacuum is ground
-        CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
-        CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
-        CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
-        CheckTheParkUnderfoot();      // #759: …and the park behind its glass, which records attendance
+        // #865 · THE FOUR ROOM POLLS, AND NOTHING MODAL COVERS THE SIT BEAT.
+        //
+        // Every one of these asks WHERE THE CAPTAIN'S COORDINATES ARE and raises a centred card the first
+        // time the answer is a room that still owes one. #820's snap writes those coordinates: pressing [E]
+        // at a top puts the dot on the chair, and the chair is inside the hall's box and inside a cabinet's.
+        // So the tick after a sit is exactly when a full-screen card used to come up over the half-second the
+        // snap exists to be watched — and because each latch is one-shot per excursion, it covered the FIRST
+        // sit of a session and never the second. That is the whole of what the owner read as "that was
+        // different than last time".
+        //
+        // GATED IN ONE PLACE, not in four. Each poll is a law about a room; the beat is one law about
+        // PRESENTATION, and four copies of it in four methods is this repo's first named bug class. Nothing
+        // is lost either way: every one of these is latched and re-polled every tick, so the card lands a beat
+        // later, on a frame where the strip is up and the captain is visibly in the chair.
+        if (!TheSitBeatIsSettling)
+        {
+            CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
+            CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
+            CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
+            CheckTheParkUnderfoot();      // #759: …and the park behind its glass, which records attendance
+        }
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
