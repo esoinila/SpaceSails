@@ -281,29 +281,83 @@ public partial class Map
     //
     // THE STATE MACHINE, in one place so nothing else has to derive it:
     //
-    //   seated-idle   (_table is { Solo: true })   → the DOCKED STRIP. No backdrop element at all.
-    //   conversation  (_table is { Solo: false })  → the full card, backdrop and art unchanged (#778/#787).
-    //   standing      (_table is null)             → neither.
+    //   seated-idle   (_table is { TheyCameToYou: false }) → the DOCKED STRIP. No backdrop element at all.
+    //   conversation  (_table is { TheyCameToYou: true })  → the full card, backdrop and art (#778/#787).
+    //   standing      (_table is null)                     → neither.
     //
-    // SOLO is the right flag and not a new one: #757 already flips it the moment somebody takes the chair
-    // opposite (SomebodyTakesTheChair) and back when they go (BackToYourOwnTable). A second "is this a
-    // conversation" flag beside it would be this repo's first named bug class aimed at a frame — and the
-    // approach beat that is coming (#731's walker crossing the hall for real) needs exactly this seam: a
-    // conversation begins from OUTSIDE the strip, by flipping Solo, and the card comes up over the room it
-    // was already showing.
+    // #865 · THE FORK MOVED OFF SOLO, and it moved because the owner drew the line somewhere else. It USED
+    // to read Solo — the chair opposite being empty — and that was the same fact answering two questions.
+    // Solo is OCCUPANCY: it is what the privacy ladder reads, and a top you are sharing is not a top you lay
+    // a case out on, whoever chose to sit there. The FRAME is a different question, and the owner answered it
+    // live at a weighbridge clerk's table with the whole hall dimmed to black behind one small card:
+    //
+    //   "what if I just sit and eat here... now I am kind of blinded of the surrounding here because
+    //    somebody else sits in the same table"
+    //   "It should somehow UI wise be same style as the sitting alone case."
+    //   "Just the social functions as additional options."
+    //
+    // So: POSTURE CHANGES ARE A STRIP, PEOPLE WHO COME TO YOU ARE A CARD. Every seat the captain CHOSE — an
+    // empty top, a bench, an office chair, a cubicle, and now the clerk's own top joined through [E] — is a
+    // posture change and docks. Somebody crossing the hall and taking the chair opposite (#757's approach,
+    // and #731's walker when she walks it for real) is an ENCOUNTER: her face is the point, and a card is
+    // what a face is for. TableTalk.TheyCameToYou carries that and nothing else does.
     //
     // The COUNTER is already docked and stays that way: #780/#789 took the bar card out from under the scrim,
     // so a stool has never dimmed the room. There is nothing to change there and the guard says so in the
     // affirmative rather than this file growing a second frame for it.
 
-    /// <summary>#784 · Is the seated frame in its DOCKED state right now — the HUD strip, with the hall lit
-    /// and running behind it? The one question the razor asks, so the frame law lives here and not in
+    /// <summary>#784/#865 · Is the seated frame in its DOCKED state right now — the HUD strip, with the hall
+    /// lit and running behind it? The one question the razor asks, so the frame law lives here and not in
     /// markup.</summary>
-    private bool SeatedIsDocked => _table is { Solo: true };
+    private bool SeatedIsDocked => _table is { TheyCameToYou: false };
 
-    /// <summary>#784 · …and the other half, named for the reader rather than derived at each use: a table with
-    /// somebody in the chair opposite is a CONVERSATION and gets the card it has always had.</summary>
-    private bool SeatedIsAConversation => _table is { Solo: false };
+    /// <summary>#784/#865 · …and the other half, named for the reader rather than derived at each use: a
+    /// table somebody CAME OVER TO is a conversation and gets the card it has always had.</summary>
+    private bool SeatedIsAConversation => _table is { TheyCameToYou: true };
+
+    /// <summary>#865 · Is the captain sharing this top with somebody — the fact the strip's company lines and
+    /// the customer line's own seat clause hang off. It is <c>Solo</c> read the plain way round, named here
+    /// so the razor asks a question instead of negating a flag.</summary>
+    private bool SeatedWithCompany => _table is { Solo: false };
+
+    // ── #865 · NOTHING MODAL COVERS THE SIT BEAT ──────────────────────────────────────────────────────
+    //
+    // Owner, 2026-08-13, at a canteen table on B1: "I sat down the table but the pop ups blocked my view of
+    // my avatar sitting down" — and on the retry, when nothing covered it: "Oh now it picked the chair and
+    // it worked." Then, of the two attempts together: "That was different than last time."
+    //
+    // WHAT RACED. The first-entry cards down here are POSITION POLLS — CheckCantinaHallUnderfoot and its
+    // siblings run every surface tick and raise a centred _viewObject the moment the captain's coordinates
+    // fall inside a room that still owes its card. #820's snap MOVES THOSE COORDINATES: sitting down puts
+    // the dot on the chair, and the chair is inside the hall's box and inside a cabinet's box. So the tick
+    // after [E] raised a full-screen card over the exact half-second the snap exists to be watched. And
+    // because every one of those latches is one-shot per excursion, it could only ever happen ONCE — the
+    // first sit of a session wore a card, the second wore the strip, and the owner read the difference as
+    // nondeterminism because from the chair that is precisely what it is.
+    //
+    // THE BEAT IS OWED, NOT SPENT. Nothing is dropped: the polls are latched and the story seam has a queue,
+    // so holding them for SeatedPosture.SitBeatSeconds delays a card and never swallows one. That is what
+    // makes the rule safe to apply without asking which card it is.
+
+    /// <summary>#865 · How much of the sit beat is still owed, in real seconds. Armed by the ONE placement
+    /// that sits a captain down (<c>SitCaptainOn</c>) and spent by the surface tick, so every seat kind in
+    /// the game gets it without a single verb having to remember to ask.</summary>
+    private double _sitBeatOwedSeconds;
+
+    /// <summary>#865 · Is the captain still in the middle of taking the chair? Asked by the first-entry polls
+    /// and by the story-card seam, and by nothing that decides what a room CONTAINS — this holds a
+    /// PRESENTATION back for a beat and never changes what the world did.</summary>
+    private bool TheSitBeatIsSettling => _sitBeatOwedSeconds > 0.0;
+
+    /// <summary>#865 · Spend the beat. Called once from the surface tick with the frame's own dt, which is
+    /// the same clock everything else down here is paid out of.</summary>
+    private void SpendTheSitBeat(double dtRealSeconds)
+    {
+        if (_sitBeatOwedSeconds > 0.0)
+        {
+            _sitBeatOwedSeconds = Math.Max(0.0, _sitBeatOwedSeconds - Math.Max(0.0, dtRealSeconds));
+        }
+    }
 
     /// <summary>
     /// #784/#793 · WHICH RUNG OF THE EXPOSURE LADDER THE CAPTAIN IS SITTING ON, or null on their feet.
@@ -378,8 +432,37 @@ public partial class Map
         ex.RestPipsEased.TryGetValue(ex.CanteenWatch, out int pips);
         return SeatedHud.CustomerLine(
             seat, PourSecondsLeft, pips, ShortRest.NervePipCapPerWatch,
-            SittingAlone.Fill(ex.CanteenWatch));
+            SittingAlone.Fill(ex.CanteenWatch),
+            // #865 · …and one clause knows about the company. "YOUR OWN TABLE" printed while the weighbridge
+            // clerk eats opposite would be the strip and the room disagreeing about whose top this is.
+            SeatedWithCompany);
     }
+
+    /// <summary>
+    /// #865 · WHO IS SHARING THE TOP — the strip's company line, or null at a seat you have to yourself.
+    ///
+    /// <para>Owner: <i>"It should somehow UI wise be same style as the sitting alone case."</i> So this is
+    /// not a second panel and not a second component: it is one more line on the strip the captain already
+    /// had, built by <see cref="SeatedHud.CompanyLine"/> out of the plate the deck draws over them and the
+    /// room's own chair arithmetic — every figure of it the same figure the card was printing.</para>
+    /// </summary>
+    private string? SeatedCompanyLine() =>
+        _table is { Solo: false } t
+            ? SeatedHud.CompanyLine(t.Plate, t.Scene.Setting, t.Seats, t.Free)
+            : null;
+
+    /// <summary>
+    /// #865 · THEIR ONE BREATH, OVERHEARD — the neighbour's bark on the strip's own line, or null.
+    ///
+    /// <para>Shown only until something has actually been SAID at this table: the strip has one outcome slot
+    /// (#680's law travelled onto the surface with it) and a bark left standing under the answer it becomes
+    /// when Small talk is pressed would print the same sentence twice. Before that press it is the whole of
+    /// what sitting down at somebody else's top gets you, which is #751's own design read out loud.</para>
+    /// </summary>
+    private string? SeatedOverheardLine() =>
+        _table is { Solo: false, Bark: { Length: > 0 } bark, Outcome: null or "" }
+            ? SeatedHud.OverheardLine(bark)
+            : null;
 
     // ── PRIVACY GATES THE SPREAD ──────────────────────────────────────────────────────────────────────
 

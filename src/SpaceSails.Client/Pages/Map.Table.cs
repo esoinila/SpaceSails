@@ -378,8 +378,35 @@ public partial class Map
         public required Encounter.Scene Scene { get; set; }
 
         /// <summary>#757 · Whether this is a table you took ALONE — nobody opposite, and WAIT is the whole
-        /// of the verb. It is the one fact the panel needs that is not on the scene.</summary>
+        /// of the verb. It is the one fact the panel needs that is not on the scene.
+        ///
+        /// <para>#865 · IT IS STILL THE OCCUPANCY FACT AND IT IS NO LONGER THE FRAME FACT. It is what
+        /// <c>SeatedAlone</c> reads for the privacy ladder — a top with the weighbridge clerk's tray on it is
+        /// not a seat you lay evidence out on, whoever chose to sit there — but which FRAME the sitting wears
+        /// is <see cref="TheyCameToYou"/> now, because the owner ruled that co-seating is a strip state.</para></summary>
         public bool Solo { get; set; }
+
+        /// <summary>
+        /// #865 · DID THIS PERSON COME TO YOU? — the one fact the seated FRAME forks on.
+        ///
+        /// <para>Owner's ruling, live at a weighbridge clerk's table: <i>"what if I just sit and eat here…
+        /// now I am kind of blinded of the surrounding here because somebody else sits in the same
+        /// table"</i>, then <i>"It should somehow UI wise be same style as the sitting alone case"</i>, and
+        /// sealing it: <i>"Just the social functions as additional options."</i></para>
+        ///
+        /// <para><b>Posture changes are a strip; people who come to you are a card.</b> A seat you CHOSE —
+        /// an empty top, a bench, an office chair, a cubicle, and now the clerk's own top joined through
+        /// [E] — is a posture change, and it presents in the docked strip with the room still lit behind it.
+        /// Somebody crossing the hall and taking the chair opposite (#757's approach, #731's walker when she
+        /// arrives) is an ENCOUNTER: her face is the point, and the card is what a face is for.</para>
+        ///
+        /// <para>This is deliberately NOT <see cref="Solo"/>, which is what it used to be. Solo asks <i>is
+        /// the chair opposite empty</i>, and the two questions came apart the moment the owner ruled that
+        /// joining a stranger keeps the room visible: at a top you joined, Solo is false and the frame is
+        /// still the strip. A frame law read off an occupancy flag is one fact answering two questions, which
+        /// is how the hall came to go black behind one small card.</para>
+        /// </summary>
+        public bool TheyCameToYou { get; set; }
 
         /// <summary>#783 · Whether this sitting READS AS RELAXED — boots up on the spare chair, which is a
         /// different sentence, a different goodbye and a different picture.
@@ -635,6 +662,14 @@ public partial class Map
                     Free = top.Free,
                     Bark = top.Line,
                     Quiet = top.Quiet,
+                    // #865 · SOLO IS FALSE AND THE FRAME IS STILL THE STRIP, and the two lines that are not
+                    // here are the whole of the ruling. Solo stays false because somebody IS in the chair
+                    // opposite — that is the occupancy the privacy ladder reads, and a top you are sharing is
+                    // not a top you spread a case out on. TheyCameToYou stays false because NOBODY CAME:
+                    // the captain crossed the room and asked for the chair, which is a posture change and
+                    // presents in the docked strip with the hall lit behind it. Owner, at the clerk's table:
+                    // "what if I just sit and eat here… now I am kind of blinded of the surrounding here
+                    // because somebody else sits in the same table."
                 };
                 RendererInterop.PlayCue("reveal");
                 StateHasChanged();
@@ -1185,6 +1220,13 @@ public partial class Map
         }
 
         t.Solo = false;
+
+        // #865 · …AND THIS IS THE ONE SITTING THAT BECOMES A CARD. She walked across the hall to you; her
+        // face is the point, which is the owner's own line between the two frames — posture changes are a
+        // strip, people who come to you are a card. It is set HERE and nowhere else, so the only way into
+        // the modal frame is somebody arriving at a captain who was already sitting down.
+        t.TheyCameToYou = true;
+
         t.Plate = SittingAlone.VisitorPlate;
         t.Scene = SittingAlone.TheVisitor();
         t.Said.Clear();     // #749 · a new conversation: nothing has been said to HER yet.
@@ -1210,6 +1252,9 @@ public partial class Map
     private void BackToYourOwnTable(SurfaceExcursion ex, TableTalk t)
     {
         t.Solo = true;
+        // #865 · …and the card goes with her. The frame comes back down to the strip the captain was sitting
+        // in before she arrived, which is the same one occupation of one table it always was.
+        t.TheyCameToYou = false;
         t.DrinkInHand = APourInFrontOfYou;
         t.Relaxed = SittingAlone.SitReadsAsRelaxed(t.DrinkInHand, ex.CanteenWatch);
         t.Plate = SittingAlone.OwnTablePlate;
