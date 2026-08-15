@@ -173,19 +173,20 @@ public sealed class TheDeskHumsAndRisesTests
     /// #869 · [E] AT THE DESK EDGE RAISES IT, AND [E] AGAIN PUTS IT BACK — in that order, verbatim, and
     /// nothing else moves.
     ///
-    /// <para><b>RED</b> by deleting the <c>HiveDeskEdge</c> arm from <c>InteractAtConsole</c>'s switch, which
-    /// is the world of the base commit:</para>
+    /// <para><b>RED</b> by gutting the <c>HiveDeskEdge</c> arm of <c>InteractAtConsole</c>'s switch, which is
+    /// the world of the base commit:</para>
     /// <code>
-    /// Assert.Equal() Failure: Values differ
-    /// Expected: 🔼 The desk hums and rises to meet you. Somebody specified these once, line-item by line-item, …
-    /// Actual:   (null)
+    /// Assert.Equal() Failure: Strings differ
+    /// Expected: "🔼 The desk hums and rises to meet you. S"···
+    /// Actual:   null
     /// </code>
     /// <para>…and <b>RED a second way</b> by making the press say <c>RaisedLine</c> every time (dropping the
     /// toggle), which is the honest mistake this beat invites:</para>
     /// <code>
-    /// Assert.Equal() Failure: Values differ
-    /// Expected: 🔽 It sinks back to chair height without complaint. The motor has outlived the schedule, …
-    /// Actual:   🔼 The desk hums and rises to meet you. …
+    /// Assert.Equal() Failure: Strings differ
+    ///            ↓ (pos 1)
+    /// Expected: "🔽 It sinks back to chair height without "···
+    /// Actual:   "🔼 The desk hums and rises to meet you. S"···
     /// </code>
     /// </summary>
     [Fact]
@@ -222,7 +223,13 @@ public sealed class TheDeskHumsAndRisesTests
     ///
     /// <para><b>RED</b> by keying the state on the floor alone (dropping the room and fitting from
     /// <c>DeskKey</c>) — the fourth named bug class in this house, one source consumed as if it were
-    /// several: <c>Expected: 🔼 … Actual: 🔽 …</c> on the second desk.</para>
+    /// several:</para>
+    /// <code>
+    /// Assert.Equal() Failure: Strings differ
+    ///            ↓ (pos 1)
+    /// Expected: "🔼 The desk hums and rises to meet you. S"···
+    /// Actual:   "🔽 It sinks back to chair height without "···
+    /// </code>
     /// </summary>
     [Fact]
     public void TheDeskNextDoorIsADifferentDesk()
@@ -255,9 +262,12 @@ public sealed class TheDeskHumsAndRisesTests
     /// picture of a preset button); the prank is a line you walk away from. Both fire from the same console
     /// and the same key, and the order is the gumshoe's: look, then meddle.</para>
     ///
-    /// <para><b>RED</b> by deleting the <c>HiveDeskPresets</c> arm from the switch — <c>the desk's presets
-    /// were pressed and no card came up</c> — and <b>RED a second way</b> by having the press always show the
-    /// prank, which loses the evidence half entirely.</para>
+    /// <para><b>RED</b> two ways, and both land on the same sentence because both lose the same half.
+    /// Gutting the <c>HiveDeskPresets</c> arm of the switch, and separately making every press the prank:</para>
+    /// <code>
+    /// System.InvalidOperationException : the desk's presets were pressed and no card came up — the read is
+    /// the gumshoe half and it is the half that is missing.
+    /// </code>
     /// </summary>
     [Fact]
     public void ThePresetsAreReadFirstAndLeanedOnAfterAndFileNothing()
@@ -300,11 +310,18 @@ public sealed class TheDeskHumsAndRisesTests
     /// <summary>
     /// #864 · THE BOARD IS ON THE FLOOR, IT SAYS WHAT IT SAYS, AND [E] GIVES THE FINE PRINT.
     ///
-    /// <para><b>RED</b> by dropping the board's console out of <c>HiveInterior</c> — <c>the floor that Core
-    /// says carries an incident board draws no console for it</c> — and <b>RED a second way</b> by handing
-    /// the card the TITLE instead of the fine print, which is the mistake a plate-and-card pair invites:
-    /// <c>Expected: The zero is not printed. … Actual: 🗓 THIS LABORATORY HAS OPERATED 0 DAYS WITHOUT
-    /// SARCASM</c>.</para>
+    /// <para><b>RED</b> by dropping the board's console out of <c>HiveInterior</c>:</para>
+    /// <code>
+    /// the floor that Core says carries an incident board draws no console for it.
+    /// </code>
+    /// <para>…and <b>RED a second way</b> by handing the card the TITLE instead of the fine print, which is
+    /// the mistake a plate-and-card pair invites:</para>
+    /// <code>
+    /// Assert.Equal() Failure: Strings differ
+    ///           ↓ (pos 0)
+    /// Expected: "The zero is not printed. It is a card in "···
+    /// Actual:   "🗓 THIS LABORATORY HAS OPERATED 0 DAYS WI"···
+    /// </code>
     /// </summary>
     [Fact]
     public void TheBoardHangsOnTheDeckAndItsPressIsTheFinePrint()
@@ -349,8 +366,12 @@ public sealed class TheDeskHumsAndRisesTests
     ///
     /// <para>Core answers which (<c>ChamberFitting.SeatPlateFor</c>); this is the clause that says the
     /// renderer ASKED. <b>RED</b> by putting <c>ChamberFitting.StoolPlate</c> back on every chamber seat,
-    /// which is the base commit: <c>1046 seat(s) are labelled wrong: luna B2 (LABORATORIES) — a seat says
-    /// "🪑 A STOOL AT THE BENCH — SIT DOWN" on a laboratories floor.</c></para>
+    /// which is the base commit:</para>
+    /// <code>
+    /// 177 seat(s) are labelled wrong:
+    ///   luna B1 (ADMINISTRATION) — a seat says "🪑 A STOOL AT THE BENCH — SIT DOWN" in an administration chamber.
+    ///   luna B2 (LABORATORIES) — a seat says "🪑 A STOOL AT THE BENCH — SIT DOWN" on a laboratories floor.
+    /// </code>
     /// </summary>
     [Fact]
     public void TheLabSeatsSaySaddleAndTheOfficesSayChair()

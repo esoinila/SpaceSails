@@ -42,14 +42,20 @@ namespace SpaceSails.Core;
 /// the A* audit walks to <c>room.X, room.Y</c>, so a fitting laid across that square does not report as
 /// furniture, it reports as <i>"something was built through this room"</i> on every floor in the game.</para>
 ///
-/// <h3>Everything is a SEGMENT, and that is deliberate</h3>
+/// <h3>Every SOLID is a segment, and that is deliberate</h3>
 ///
-/// <para>Each fitting is laid as a single degenerate box — one wall segment, drawn and collided with exactly
-/// as the en-suite's pan and the ring's bench are. That is the fixture look the owner named as the one
-/// interior in the building that reads right (<c>#707</c>: the whole pan is one 2.2 du segment), and it is
-/// also what keeps this feature affordable: a facility floor carries a few hundred segments and Lab 45 says
-/// the sightline is O(walls). Four rectangles per room in fifteen hundred rooms would be a frame budget spent
-/// on drawing cupboards.</para>
+/// <para>Each fitting puts exactly ONE wall segment on the floor, laid on the wall-clear line, collided with
+/// exactly as the en-suite's pan and the ring's bench are. That is what keeps this feature affordable: a
+/// facility floor carries a few hundred segments and Lab 45 says the sightline is O(walls). Four segments per
+/// fitting in fifteen hundred rooms would be a frame budget spent on drawing cupboards.</para>
+///
+/// <para>#869 · <b>What is DRAWN is a box.</b> The desks and the benches grew a depth
+/// (<see cref="FittingDepthDu"/>) because #868 found out the hard way what a fixture without one looks like:
+/// the owner stood in a room whose bench was a single stroke and said <i>"the bench is a line"</i>, three
+/// paces from a run of shelving he called clear as furniture goes. So a fitting's box reaches into the room
+/// for the pen and its solid stays on the line for the body, and the two are published separately for that
+/// reason. Nothing about the collision field, the walkability audits or the sightline cost changed when the
+/// desks got their 90 cm.</para>
 ///
 /// <para>Pure, in the shape <see cref="RingOffice.Fit"/> is pure: handed a room the generator carved and the
 /// holes it cut, it answers what is in it. It has no clock and no opinion about where a room goes.</para>

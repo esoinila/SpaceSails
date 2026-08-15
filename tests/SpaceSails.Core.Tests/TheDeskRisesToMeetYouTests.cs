@@ -72,13 +72,16 @@ public sealed class TheDeskRisesToMeetYouTests
     /// <para><b>RED on the base commit</b> for two different reverts, because the old desk was wrong in two
     /// different ways at once. Restoring the office kit's run to <c>BenchRunDu</c>:</para>
     /// <code>
-    /// 2688 desk(s) are not the size a person is:
-    ///   luna B4 — CLERKS · REGISTER: a DeskBank runs 10.00 du (a desk is 2.30) and is 1.30 deep.
+    /// 688 desk(s) are not the size a person is:
+    ///   luna B1 — MORTUARY: a DeskBank runs 9.50 du (a desk is 2.30) and is 1.30 deep.
+    ///   luna B1 — RECOVERY 2: a DeskBank runs 9.50 du (a desk is 2.30) and is 1.30 deep.
+    ///   luna B9 — CONSENT FILES: a DeskBank runs 7.00 du (a desk is 2.30) and is 1.30 deep.
     /// </code>
-    /// <para>…and dropping the depth back to a segment (<c>DepthDu: 0</c>):</para>
+    /// <para>…and dropping the depth back to a segment (both kit rows' <c>FittingDepthDu</c> removed):</para>
     /// <code>
-    /// 0 desk(s) are not the size a person is
-    /// …but only 0 of 2688 desk(s) were laid at the full human-true depth — this proved nothing.
+    /// 1212 desk(s) are not the size a person is:
+    ///   luna B1 — MORTUARY (Chamber): a DeskBank is 0.00 du deep — a desk is 1.30.
+    ///   luna B2 — RECOVERY 2 (Chamber): a LabBench is 0.00 du deep — a desk is 1.30.
     /// </code>
     /// <para>Both clauses are needed and both are here: a run that is right about a picture nobody draws is
     /// #868's whole finding said backwards.</para>
@@ -169,8 +172,13 @@ public sealed class TheDeskRisesToMeetYouTests
     /// — because the day somebody lays four sides of a rectangle in fifteen hundred rooms, the sightline
     /// (Lab 45: O(walls)) pays for it on every frame and no guard about furniture would notice.</para>
     ///
-    /// <para><b>RED</b> by laying the fixture box as the solid: <c>84 fitting(s) are solid rectangles rather
-    /// than the segment #818 lays</c> on the first floor swept.</para>
+    /// <para><b>RED</b> by adding the box's other two long edges to the solids, which is what "just lay the
+    /// rectangle" looks like in a diff:</para>
+    /// <code>
+    /// 1212 fitting(s) are solid rectangles rather than the segment #818 lays:
+    ///   luna B1 — MORTUARY: a DeskBank put a SECOND wall on the floor — the depth is a picture and never a wall.
+    ///   luna B2 — RECOVERY 2: a LabBench put a SECOND wall on the floor — the depth is a picture and never a wall.
+    /// </code>
     /// </summary>
     [Fact]
     public void TheDepthIsAPictureAndNeverAWall()
@@ -189,28 +197,61 @@ public sealed class TheDeskRisesToMeetYouTests
 
                 foreach (RingOffice.Fixture fit in room.Furniture)
                 {
-                    measured++;
-                    // The fixture's own box is allowed a depth. What is NOT allowed is a second wall: the
-                    // floor's wall list must still carry exactly one degenerate segment for this fitting,
-                    // lying on one of the box's two long edges.
                     double w = fit.X1 - fit.X0, h = fit.Y1 - fit.Y0;
-                    if (Math.Min(w, h) > ChamberFitting.FittingDepthDu + 0.001)
+                    if (Math.Min(w, h) < 0.001)
+                    {
+                        continue;   // a shelving unit or a fume hood: still the segment it always was
+                    }
+                    measured++;
+
+                    // The two long edges of the box. The BACK is the one against the wall — further from
+                    // the room's own centre — and it is the only one the floor's wall list may carry. A
+                    // FRONT edge in that list is a second wall per fitting, which is four in fifteen
+                    // hundred rooms and a frame budget spent drawing cupboards.
+                    bool alongX = w >= h;
+                    double back, front;
+                    if (alongX)
+                    {
+                        (back, front) = Math.Abs(fit.Y0 - room.Y) > Math.Abs(fit.Y1 - room.Y)
+                            ? (fit.Y0, fit.Y1) : (fit.Y1, fit.Y0);
+                    }
+                    else
+                    {
+                        (back, front) = Math.Abs(fit.X0 - room.X) > Math.Abs(fit.X1 - room.X)
+                            ? (fit.X0, fit.X1) : (fit.X1, fit.X0);
+                    }
+
+                    bool hasBack = false, hasFront = false;
+                    foreach (SurfaceLayout.Wall solid in floor.Walls)
+                    {
+                        double at = alongX ? solid.Y1 : solid.X1;
+                        double other = alongX ? solid.Y2 : solid.X2;
+                        if (Math.Abs(at - other) > 0.001)
+                        {
+                            continue;   // runs across this fitting's axis, not along it
+                        }
+                        double lo = Math.Min(alongX ? solid.X1 : solid.Y1, alongX ? solid.X2 : solid.Y2);
+                        double hi = Math.Max(alongX ? solid.X1 : solid.Y1, alongX ? solid.X2 : solid.Y2);
+                        double fLo = alongX ? fit.X0 : fit.Y0, fHi = alongX ? fit.X1 : fit.Y1;
+                        if (Math.Abs(lo - fLo) > 0.001 || Math.Abs(hi - fHi) > 0.001)
+                        {
+                            continue;   // not this fitting's own run
+                        }
+                        hasBack |= Math.Abs(at - back) < 0.001;
+                        hasFront |= Math.Abs(at - front) < 0.001;
+                    }
+
+                    if (!hasBack)
                     {
                         wrong.Add(Say(body, level,
-                            $"{room.Plate}: a {fit.Kind} box is {Math.Min(w, h):F2} du thick."));
+                            $"{room.Plate}: a {fit.Kind} is drawn and nothing there is solid."));
                     }
-                }
-            }
-
-            // …and the floor's own wall list carries no rectangle where a chamber fitting stands. Counted as
-            // "walls that are not degenerate in either axis AND sit inside a furnished chamber".
-            foreach (SurfaceLayout.Wall solid in floor.Walls)
-            {
-                if (Math.Abs(solid.X1 - solid.X2) > 0.001 && Math.Abs(solid.Y1 - solid.Y2) > 0.001)
-                {
-                    wrong.Add(Say(body, level,
-                        $"a wall segment runs diagonally at ({solid.X1:F1},{solid.Y1:F1}) — nothing in this "
-                        + "building is laid off-axis."));
+                    if (hasFront)
+                    {
+                        wrong.Add(Say(body, level,
+                            $"{room.Plate}: a {fit.Kind} put a SECOND wall on the floor — the depth is a "
+                            + "picture and never a wall."));
+                    }
                 }
             }
         }
@@ -229,8 +270,13 @@ public sealed class TheDeskRisesToMeetYouTests
     /// <para>Owner's own furniture, canonised: <i>"office chair, Salli standing (lab) chair"</i>. One plate,
     /// one word of difference, #783's verb kept on both.</para>
     ///
-    /// <para><b>RED</b> by returning <c>StoolPlate</c> for every kit, which is the world of the base commit:
-    /// <c>Kit.Laboratory seats "🪑 A STOOL AT THE BENCH — SIT DOWN", which says nothing about a saddle</c>.</para>
+    /// <para><b>RED</b> by returning <c>StoolPlate</c> for every kit, which is the world of the base
+    /// commit:</para>
+    /// <code>
+    /// Assert.Contains() Failure: Sub-string not found
+    /// String:    "🪑 A STOOL AT THE BENCH — SIT DOWN"
+    /// Not found: "SADDLE"
+    /// </code>
     /// </summary>
     [Fact]
     public void TheLabSeatsASaddleAndTheOfficeSeatsAChair()
@@ -264,20 +310,23 @@ public sealed class TheDeskRisesToMeetYouTests
     /// and no other floor in the game has one at all.
     ///
     /// <para><b>RED</b> three ways, each a different half of the law. Hanging it on the room's own doorway
-    /// (<c>free[spare].Middle</c> replaced by the leaf's midpoint):</para>
+    /// (the wall spot replaced by the leaf's own midpoint, <c>Clear</c> bypassed):</para>
     /// <code>
-    /// 268 board(s) are hung wrong:
-    ///   luna B2 — the board at (-118.5,-7.0) is 0.00 du off a doorway; the clearance is 4.0 du.
+    /// 82 board(s) are hung wrong:
+    ///   luna B2 — the board at (-1.5,-133.8) is 0.00 du off a doorway; the clearance is 4.0 du.
+    ///   luna B10 — the board at (89.9,-173.2) is 0.00 du off a doorway; the clearance is 4.0 du.
     /// </code>
-    /// <para>Dropping it (<c>IncidentBoard.On</c> returning null):</para>
+    /// <para>Dropping it (<c>IncidentBoard.On</c> returning null where it would return a board):</para>
     /// <code>
-    /// 268 board(s) are hung wrong:
-    ///   luna B2 — LABORATORIES · this floor has no incident board on it at all.
+    /// 82 board(s) are hung wrong:
+    ///   luna B2 — B2 · LABORATORIES · this floor has no incident board on it at all.
+    ///   phobos B2 — B2 · LABORATORIES · this floor has no incident board on it at all.
     /// </code>
-    /// <para>Hanging it on every floor (the <c>LabsOn</c> gate removed):</para>
+    /// <para>Hanging it on every floor (the <c>LabsOn</c> gate always answering yes):</para>
     /// <code>
-    /// 2070 board(s) are hung wrong:
-    ///   luna B1 — SUPPLY · a floor that is not a laboratory is telling somebody how long it has operated.
+    /// 415 board(s) are hung wrong:
+    ///   luna B1 — B1 · ADMINISTRATION · a floor that is not a laboratory is telling somebody how long it has operated.
+    ///   luna B3 — B3 · LONG STORAGE · a floor that is not a laboratory is telling somebody how long it has operated.
     /// </code>
     /// </summary>
     [Fact]
@@ -363,10 +412,10 @@ public sealed class TheDeskRisesToMeetYouTests
 
         Assert.True(labFloors > 20, $"only {labFloors} laboratories floor(s) — this proved little.");
         Assert.True(otherFloors > 200, $"only {otherFloors} other floor(s) — this proved little.");
-        Assert.True(hung > 20, $"only {hung} board(s) hang in the whole game — this proved little.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} board(s) are hung wrong:{Environment.NewLine}"
             + string.Join(Environment.NewLine, wrong.Take(12)));
+        Assert.True(hung > 20, $"only {hung} board(s) hang in the whole game — this proved little.");
     }
 
     /// <summary>#864 · A floor is the same floor every visit, board included — determinism is law down here
@@ -470,8 +519,12 @@ public sealed class TheDeskRisesToMeetYouTests
     /// without the other being nearer, or [E] answers the wrong verb. Swept over every seat in the game that
     /// has a motorised surface in front of it.</para>
     ///
-    /// <para><b>RED</b> by returning the same end for both (<c>first: true</c> in <c>TheButtons</c>):
-    /// <c>1344 desk(s) put both controls on one square</c>.</para>
+    /// <para><b>RED</b> by returning the same end for both (<c>first: true</c> in <c>TheButtons</c>):</para>
+    /// <code>
+    /// 1212 desk(s) put both controls on one square:
+    ///   luna B1 — MORTUARY: the edge and the buttons are 0.00 du apart on a DeskBank — one press cannot be told from the other.
+    ///   luna B2 — RECOVERY 2: the edge and the buttons are 0.00 du apart on a LabBench — one press cannot be told from the other.
+    /// </code>
     /// </summary>
     [Fact]
     public void TheTwoControlsAreTwoPlacesOnTheFaceTheChairIsOn()
