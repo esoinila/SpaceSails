@@ -42,14 +42,20 @@ namespace SpaceSails.Core;
 /// the A* audit walks to <c>room.X, room.Y</c>, so a fitting laid across that square does not report as
 /// furniture, it reports as <i>"something was built through this room"</i> on every floor in the game.</para>
 ///
-/// <h3>Everything is a SEGMENT, and that is deliberate</h3>
+/// <h3>Every SOLID is a segment, and that is deliberate</h3>
 ///
-/// <para>Each fitting is laid as a single degenerate box — one wall segment, drawn and collided with exactly
-/// as the en-suite's pan and the ring's bench are. That is the fixture look the owner named as the one
-/// interior in the building that reads right (<c>#707</c>: the whole pan is one 2.2 du segment), and it is
-/// also what keeps this feature affordable: a facility floor carries a few hundred segments and Lab 45 says
-/// the sightline is O(walls). Four rectangles per room in fifteen hundred rooms would be a frame budget spent
-/// on drawing cupboards.</para>
+/// <para>Each fitting puts exactly ONE wall segment on the floor, laid on the wall-clear line, collided with
+/// exactly as the en-suite's pan and the ring's bench are. That is what keeps this feature affordable: a
+/// facility floor carries a few hundred segments and Lab 45 says the sightline is O(walls). Four segments per
+/// fitting in fifteen hundred rooms would be a frame budget spent on drawing cupboards.</para>
+///
+/// <para>#869 · <b>What is DRAWN is a box.</b> The desks and the benches grew a depth
+/// (<see cref="FittingDepthDu"/>) because #868 found out the hard way what a fixture without one looks like:
+/// the owner stood in a room whose bench was a single stroke and said <i>"the bench is a line"</i>, three
+/// paces from a run of shelving he called clear as furniture goes. So a fitting's box reaches into the room
+/// for the pen and its solid stays on the line for the body, and the two are published separately for that
+/// reason. Nothing about the collision field, the walkability audits or the sightline cost changed when the
+/// desks got their 90 cm.</para>
 ///
 /// <para>Pure, in the shape <see cref="RingOffice.Fit"/> is pure: handed a room the generator carved and the
 /// holes it cut, it answers what is in it. It has no clock and no opinion about where a room goes.</para>
@@ -82,7 +88,30 @@ public static class ChamberFitting
     /// — one number for every chair in the building.</summary>
     public const double SeatSetbackDu = RingOffice.ChairSetbackDu;
 
+    /// <summary>
+    /// #869 · HOW DEEP A DESK IS DOWN HERE — and why the depth grows INWARD and nothing else moves.
+    ///
+    /// <para>Owner, 2026-08-13, from his own electric desk: <i>"my table (electric) is about 160 cm wide,
+    /// about 90 cm deep"</i>. Ninety centimetres is <see cref="RingOffice.WorktopDepthDu"/>, the number #868
+    /// gave the ring's own worktop, and it is the same number here because a desk is a fact about a BODY
+    /// rather than about a module.</para>
+    ///
+    /// <para>The box is grown from the wall-clear line <b>into the room</b>, so the fitting's BACK stays
+    /// exactly where the segment always stood. That is not tidiness, it is the whole safety of this change:
+    /// every clearance in this file was measured to that line, and a depth grown the other way would push a
+    /// bench 0.65 du nearer the very doorway it was laid clear of. The SOLID stays one segment on that same
+    /// line, so not one wall in the building moves and the collision field, the sightline cost and every
+    /// walkability audit are untouched. The depth is a PICTURE (<c>DeckPlan.FurnitureSpot</c>), and #868's
+    /// finding was that a picture is the thing furniture down here never had.</para>
+    /// </summary>
+    public const double FittingDepthDu = RingOffice.WorktopDepthDu;
+
     // ── THE LENGTHS ───────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#869 · How much frontage ONE PERSON'S DESK gets — <see cref="RingOffice.WorktopRunDu"/>, the
+    /// owner's own 160 cm. The one length in this file not derived from the room module, because a desk is
+    /// not a fact about the room it is standing in.</summary>
+    public static double DeskRunDu => RingOffice.WorktopRunDu;
 
     /// <summary>How long a laboratory bench runs, at most. The room module's own width
     /// (<see cref="UndergroundComplex.RoomWidthDu"/>) less the two clearances it stands between, so a bench
@@ -337,6 +366,35 @@ public static class ChamberFitting
     /// wording is a fact about an office; this is a stool at a worktop.</summary>
     public const string StoolPlate = RingOffice.Glyph + " A STOOL AT THE BENCH — SIT DOWN";
 
+    /// <summary>
+    /// #869 · WHAT A LABORATORY SEATS INSTEAD — the Salli of the future.
+    ///
+    /// <para>Owner, 2026-08-13, listing what his own desk is set up to be worked at from: <i>"to work either
+    /// with office chair, Salli standing (lab) chair or by standing while using the table."</i> A lab does
+    /// not seat you the way an office does, and the difference is one word on one plate: a bench is worked
+    /// at from a saddle, perched rather than sat, which is why the plate keeps #783's verb and changes the
+    /// NOUN and nothing else.</para>
+    ///
+    /// <para>Nobody in-world remarks on it, here as everywhere in this issue. It is simply what the room has.</para>
+    /// </summary>
+    public const string SaddleStoolPlate = RingOffice.Glyph + " A SADDLE STOOL AT THE BENCH — SIT DOWN";
+
+    /// <summary>
+    /// #869 · WHICH SEAT THIS ROOM'S TRADE SITS YOU ON — one sentence, so the renderer, the press and the
+    /// guard cannot each answer it their own way.
+    ///
+    /// <para>A laboratory gets the saddle (<see cref="SaddleStoolPlate"/>); an administration chamber gets
+    /// the OFFICE CHAIR the ring has been publishing since #817 (<see cref="RingOffice.FreeChairPlate"/>) and
+    /// not a second wording of it, because a chair at a desk is a chair at a desk whichever building it is
+    /// in; everything else keeps the stool it has had since #818.</para>
+    /// </summary>
+    public static string SeatPlateFor(Kit kit) => kit switch
+    {
+        Kit.Laboratory => SaddleStoolPlate,
+        Kit.Office => RingOffice.FreeChairPlate,
+        _ => StoolPlate,
+    };
+
     /// <summary>Where you are, when you are sitting on one.</summary>
     public const string Setting = "A stool at a worktop, somewhere in the building";
 
@@ -395,6 +453,7 @@ public static class ChamberFitting
         yield return ExaminationPlate;
         yield return WorktopPlate;
         yield return StoolPlate;
+        yield return SaddleStoolPlate;
         yield return SeatPlate;
         yield return Setting;
         yield return TookAStoolLine("");
@@ -403,8 +462,143 @@ public static class ChamberFitting
     // ── THE LAYOUT ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>One piece of the kit, before it has been given a wall to stand against.</summary>
+    /// <param name="DepthDu">#869 · How far it reaches INTO the room from the wall-clear line, for the pen.
+    /// Zero is the segment this file has laid since #818 — see <see cref="FittingDepthDu"/> for why a depth
+    /// is a picture and never a wall.</param>
     private readonly record struct Piece(
-        RingOffice.Fitting Kind, double RunDu, string Plate, bool Seats);
+        RingOffice.Fitting Kind, double RunDu, string Plate, bool Seats, double DepthDu = 0.0);
+
+    /// <summary>
+    /// #864 · ONE FREE STRETCH OF ONE WALL, in the room's own reading — what is left of an inset line once
+    /// every published opening and the audit's own square have taken their clearance out of it.
+    ///
+    /// <para>Published (rather than kept private to <see cref="Fit"/>) because the incident board
+    /// (<see cref="IncidentBoard"/>) has to hang on a chamber wall under exactly the law the furniture is
+    /// laid under, and a second author for "where is there wall left" is the shape of bug this house has
+    /// paid for repeatedly: two placers that agree today and a doorway that moves tomorrow.</para>
+    /// </summary>
+    /// <param name="Edge">0 the bottom wall, 1 the top, 2 the left, 3 the right.</param>
+    /// <param name="Lo">Where the free stretch starts, on the wall's own axis.</param>
+    /// <param name="Hi">…and where it ends.</param>
+    /// <param name="Fixed">The inset line's across-coordinate — <see cref="WallClearDu"/> inside the wall.</param>
+    /// <param name="Inward">+1 or −1: which way is into the room from that line.</param>
+    public readonly record struct WallRun(int Edge, double Lo, double Hi, double Fixed, double Inward)
+    {
+        /// <summary>Does this wall run along X? True of the bottom and top walls.</summary>
+        public bool Horizontal => Edge < 2;
+
+        /// <summary>How much wall there is.</summary>
+        public double Length => Hi - Lo;
+
+        /// <summary>One point on the line, in the surface's own coordinates.</summary>
+        public (double X, double Y) At(double along) =>
+            Horizontal ? (along, Fixed) : (Fixed, along);
+
+        /// <summary>The middle of it — the furthest point of this stretch from whatever took the ends.</summary>
+        public (double X, double Y) Middle => At((Lo + Hi) / 2.0);
+    }
+
+    /// <summary>
+    /// #818/#864 · EVERY STRETCH OF THIS ROOM'S OWN WALLS LONG ENOUGH TO STAND SOMETHING AGAINST, longest
+    /// first.
+    ///
+    /// <para>The measured-wall law of the class summary, as one function: every fitting stands
+    /// <see cref="WallClearDu"/> inside a wall, and the free stretches of that inset line are what is left
+    /// after every published opening has claimed <see cref="OpeningClearDu"/> either side of itself and the
+    /// audit's own square (<see cref="CentreClearDu"/>) has claimed its. A wall whose openings eat all of it
+    /// simply carries nothing, which is why nothing in this file has to know which side a chamber's door is
+    /// on.</para>
+    /// </summary>
+    /// <param name="room">The room as published.</param>
+    /// <param name="openings">Every hole a body can pass, including the ones that are not ways out. A caller
+    /// that hands over more than this room's own loses nothing: an opening in somebody else's wall is too far
+    /// away to claim any of this line.</param>
+    /// <param name="depthDu">#869 · How far whatever stands here will reach INTO the room. Zero for a thing
+    /// bolted flat to the wall (the incident board); <see cref="FittingDepthDu"/> for the furniture.
+    ///
+    /// <para>It is a parameter and not an assumption because it changes the answer, and getting that wrong
+    /// is the one way this issue could have moved a bench into a doorway: the clearance to an opening in
+    /// THIS wall is unaffected (the box grows away from it), and the clearance to an opening in a
+    /// NEIGHBOURING wall shrinks by exactly the depth. Measured box-to-opening rather than line-to-opening,
+    /// so the number the guard asks for and the number the placer honoured are the same number.</para></param>
+    public static IReadOnlyList<WallRun> FreeWallRuns(
+        in UndergroundComplex.Room room, IReadOnlyList<SurfaceLayout.Doorway> openings,
+        double depthDu = 0.0)
+    {
+        ArgumentNullException.ThrowIfNull(openings);
+
+        double x0 = room.X0 + WallClearDu, x1 = room.X1 - WallClearDu;
+        double y0 = room.Y0 + WallClearDu, y1 = room.Y1 - WallClearDu;
+        if (x1 - x0 < MinFittingDu || y1 - y0 < MinFittingDu)
+        {
+            return [];
+        }
+
+        // Edge 0 is the bottom wall's line and points INTO the room (+y); 1 the top (−y); 2 the left (+x);
+        // 3 the right (−x). Everything is written on (along, fixed, inward) so no layout in this file ever
+        // asks which wall it is standing against — the same trick RingOffice.Frame plays, at the one scale
+        // where a chamber has no privileged side to play it about.
+        var free = new List<WallRun>();
+        for (int edge = 0; edge < 4; edge++)
+        {
+            bool horizontal = edge < 2;
+            double fixedAt = edge switch { 0 => y0, 1 => y1, 2 => x0, _ => x1 };
+            double inward = edge is 0 or 2 ? +1.0 : -1.0;
+            double lo = horizontal ? x0 : y0, hi = horizontal ? x1 : y1;
+
+            // #869 · The ACROSS-RANGE of whatever will stand here: the line itself where the thing is flat
+            // against the wall, and the line plus its depth INTO the room where it is furniture.
+            double frontAt = fixedAt + (inward * depthDu);
+            double boxLo = Math.Min(fixedAt, frontAt), boxHi = Math.Max(fixedAt, frontAt);
+
+            var blocked = new List<(double Lo, double Hi)>();
+            foreach (SurfaceLayout.Doorway hole in openings)
+            {
+                double hx0 = Math.Min(hole.X1, hole.X2), hx1 = Math.Max(hole.X1, hole.X2);
+                double hy0 = Math.Min(hole.Y1, hole.Y2), hy1 = Math.Max(hole.Y1, hole.Y2);
+
+                // How far the DEEPEST part of that box is from the opening, ACROSS the line, and how much of
+                // the line that leaves inside the clearance circle. Exact for an axis-aligned opening against
+                // an axis-aligned box, which is every opening and every fitting in this building.
+                double across = horizontal
+                    ? Math.Max(Math.Max(hy0 - boxHi, boxLo - hy1), 0.0)
+                    : Math.Max(Math.Max(hx0 - boxHi, boxLo - hx1), 0.0);
+                if (across >= OpeningClearDu)
+                {
+                    continue;
+                }
+                double reach = Math.Sqrt((OpeningClearDu * OpeningClearDu) - (across * across));
+                blocked.Add(horizontal ? (hx0 - reach, hx1 + reach) : (hy0 - reach, hy1 + reach));
+            }
+
+            // …and the square the audit stands on, which is an obstacle of exactly the same shape.
+            double centre = horizontal ? room.Y : room.X;
+            double centreAcross = Math.Max(Math.Max(centre - boxHi, boxLo - centre), 0.0);
+            if (centreAcross < CentreClearDu)
+            {
+                double reach = Math.Sqrt((CentreClearDu * CentreClearDu) - (centreAcross * centreAcross));
+                double at = horizontal ? room.X : room.Y;
+                blocked.Add((at - reach, at + reach));
+            }
+
+            foreach ((double Lo, double Hi) span in Remaining(lo, hi, blocked))
+            {
+                if (span.Hi - span.Lo >= MinFittingDu)
+                {
+                    free.Add(new WallRun(edge, span.Lo, span.Hi, fixedAt, inward));
+                }
+            }
+        }
+
+        // The longest stretch first, so the piece that wants a wall gets the best one there is. Ties break on
+        // the edge's own ordinal, which is deterministic and therefore reproducible on every visit.
+        free.Sort((a, b) =>
+        {
+            int byLength = b.Length.CompareTo(a.Length);
+            return byLength != 0 ? byLength : a.Edge.CompareTo(b.Edge);
+        });
+        return free;
+    }
 
     /// <summary>
     /// #818 · FURNISH ONE ROOM. Handed the box the generator carved and every hole it cut in it, it answers
@@ -434,83 +628,21 @@ public static class ChamberFitting
             return RingOffice.Furnishing.Empty;
         }
 
-        double x0 = room.X0 + WallClearDu, x1 = room.X1 - WallClearDu;
-        double y0 = room.Y0 + WallClearDu, y1 = room.Y1 - WallClearDu;
-        if (x1 - x0 < MinFittingDu || y1 - y0 < MinFittingDu)
-        {
-            // A box with nothing left in it after the clearances. An empty answer rather than a half-built
-            // one, for the reason RingOffice.Fit gives: a placer that squeezes furniture into a space it does
-            // not fit is a placer that builds a bench through a wall.
-            return RingOffice.Furnishing.Empty;
-        }
-
         // ── THE FOUR INSET LINES, AND WHAT IS LEFT OF THEM ────────────────────────────────────────────
         //
-        // Edge 0 is the bottom wall's line and points INTO the room (+y); 1 the top (−y); 2 the left (+x);
-        // 3 the right (−x). Everything below is written on (along, fixed, inward) so no layout in this file
-        // ever asks which wall it is standing against — the same trick RingOffice.Frame plays, at the one
-        // scale where a chamber has no privileged side to play it about.
-        var free = new List<(int Edge, double Lo, double Hi, double Fixed, double Inward)>();
-        for (int edge = 0; edge < 4; edge++)
-        {
-            bool horizontal = edge < 2;
-            double fixedAt = edge switch { 0 => y0, 1 => y1, 2 => x0, _ => x1 };
-            double inward = edge is 0 or 2 ? +1.0 : -1.0;
-            double lo = horizontal ? x0 : y0, hi = horizontal ? x1 : y1;
-
-            var blocked = new List<(double Lo, double Hi)>();
-            foreach (SurfaceLayout.Doorway hole in openings)
-            {
-                double hx0 = Math.Min(hole.X1, hole.X2), hx1 = Math.Max(hole.X1, hole.X2);
-                double hy0 = Math.Min(hole.Y1, hole.Y2), hy1 = Math.Max(hole.Y1, hole.Y2);
-
-                // How far this inset line is from the opening, ACROSS the line, and how much of the line
-                // that leaves inside the clearance circle. Exact for an axis-aligned opening against an
-                // axis-aligned line, which is every opening and every wall in this building.
-                double across = horizontal
-                    ? Math.Max(Math.Max(hy0 - fixedAt, fixedAt - hy1), 0.0)
-                    : Math.Max(Math.Max(hx0 - fixedAt, fixedAt - hx1), 0.0);
-                if (across >= OpeningClearDu)
-                {
-                    continue;
-                }
-                double reach = Math.Sqrt((OpeningClearDu * OpeningClearDu) - (across * across));
-                blocked.Add(horizontal ? (hx0 - reach, hx1 + reach) : (hy0 - reach, hy1 + reach));
-            }
-
-            // …and the square the audit stands on, which is an obstacle of exactly the same shape.
-            double centreAcross = horizontal
-                ? Math.Abs(fixedAt - room.Y) : Math.Abs(fixedAt - room.X);
-            if (centreAcross < CentreClearDu)
-            {
-                double reach = Math.Sqrt((CentreClearDu * CentreClearDu) - (centreAcross * centreAcross));
-                double at = horizontal ? room.X : room.Y;
-                blocked.Add((at - reach, at + reach));
-            }
-
-            foreach ((double Lo, double Hi) span in Remaining(lo, hi, blocked))
-            {
-                if (span.Hi - span.Lo >= MinFittingDu)
-                {
-                    free.Add((edge, span.Lo, span.Hi, fixedAt, inward));
-                }
-            }
-        }
-
+        // One function since #864 published it (so the incident board hangs under the very law the furniture
+        // is laid under), longest stretch first, so the piece that wants a wall gets the best one there is.
+        // An empty answer is a box with nothing left in it after the clearances, or a room whose every wall
+        // is a doorway's clearance — reported by the sweep as the violation it is, rather than quietly
+        // wedging a bench into a doorway.
+        // …and measured for the DEEPEST piece any kit holds, so one span list serves every piece in it. A
+        // shallow fitting laid on a span cut for a deep one loses a few du of wall it could have had; a deep
+        // one laid on a span cut for a line would be standing in a doorway.
+        IReadOnlyList<WallRun> free = FreeWallRuns(in room, openings, FittingDepthDu);
         if (free.Count == 0)
         {
-            // A room whose every wall is a doorway's clearance. It gets nothing, and the sweep reports it as
-            // the violation it is rather than this file quietly wedging a bench into a doorway.
             return RingOffice.Furnishing.Empty;
         }
-
-        // The longest stretch first, so the piece that wants a wall gets the best one there is. Ties break on
-        // the edge's own ordinal, which is deterministic and therefore reproducible on every visit.
-        free.Sort((a, b) =>
-        {
-            int byLength = (b.Hi - b.Lo).CompareTo(a.Hi - a.Lo);
-            return byLength != 0 ? byLength : a.Edge.CompareTo(b.Edge);
-        });
 
         var fixtures = new List<RingOffice.Fixture>();
         var chairs = new List<RingOffice.Chair>();
@@ -521,24 +653,40 @@ public static class ChamberFitting
         for (int p = 0; p < pieces.Count && slot < free.Count && fixtures.Count < MaxFittingsPerRoom; p++)
         {
             Piece piece = pieces[p];
-            (int edge, double spanLo, double spanHi, double fixedAt, double inward) = free[slot++];
+            WallRun wall = free[slot++];
+            (double spanLo, double spanHi, double fixedAt, double inward) =
+                (wall.Lo, wall.Hi, wall.Fixed, wall.Inward);
 
             double run = Math.Min(piece.RunDu, spanHi - spanLo);
             double mid = (spanLo + spanHi) / 2.0;
             double a = mid - (run / 2.0), b = mid + (run / 2.0);
-            bool horizontal = edge < 2;
+            bool horizontal = wall.Horizontal;
 
-            // One SEGMENT and never a rectangle. See the class summary: this is the en-suite pan's own
-            // idiom, it is the look the owner named as the one that reads right, and four segments where one
-            // belongs is three more things for the collision field to sweep in fifteen hundred rooms.
+            // ── #869 · THE BOX IS A PICTURE; THE SOLID IS STILL ONE SEGMENT ───────────────────────────
+            //
+            // A fitting with a DEPTH is drawn as the rectangle it is — #868's finding, said one building
+            // along: an outline round a dark gap reads as somewhere you could stand, and only a filled box
+            // reads as furniture. The depth grows INTO the room off the wall-clear line, so the fitting's
+            // back stays exactly where the segment always stood and not one clearance this file already
+            // measured moves (see FittingDepthDu), and it is dropped outright where the deeper box would
+            // reach a doorway or the audit's own square.
+            //
+            // The SOLID stays the single segment #818 has laid since this feature shipped — the en-suite
+            // pan's own idiom, and the reason the feature is affordable: four segments per fitting in
+            // fifteen hundred rooms is a frame budget spent drawing cupboards (Lab 45: sightline is O(walls)).
+            double frontAt = fixedAt + (inward * piece.DepthDu);
+            double acrossLo = Math.Min(fixedAt, frontAt), acrossHi = Math.Max(fixedAt, frontAt);
+
             (double fx0, double fy0, double fx1, double fy1) = horizontal
-                ? (a, fixedAt, b, fixedAt)
-                : (fixedAt, a, fixedAt, b);
+                ? (a, acrossLo, b, acrossHi)
+                : (acrossLo, a, acrossHi, b);
 
             fixtures.Add(new RingOffice.Fixture(
                 piece.Kind, fx0, fy0, fx1, fy1, piece.Plate,
                 piece.Seats ? RingOffice.Seating.OneSide : RingOffice.Seating.None));
-            solids.Add(new SurfaceLayout.Wall(fx0, fy0, fx1, fy1, true));
+            solids.Add(horizontal
+                ? new SurfaceLayout.Wall(a, fixedAt, b, fixedAt, true)
+                : new SurfaceLayout.Wall(fixedAt, a, fixedAt, b, true));
 
             if (!piece.Seats || chairs.Count > 0)
             {
@@ -573,6 +721,15 @@ public static class ChamberFitting
         }
 
         return new RingOffice.Furnishing(fixtures, chairs, solids, []);
+    }
+
+    /// <summary>How far a box is from a point. Shared with <see cref="IncidentBoard"/>, which has to keep a
+    /// board off the very furniture this file stood against the wall.</summary>
+    internal static double BoxToPoint(double x0, double y0, double x1, double y1, double px, double py)
+    {
+        double dx = Math.Max(Math.Max(x0 - px, px - x1), 0.0);
+        double dy = Math.Max(Math.Max(y0 - py, py - y1), 0.0);
+        return Math.Sqrt((dx * dx) + (dy * dy));
     }
 
     /// <summary>Is this point inside a keep-out square's radius of that one?</summary>
@@ -628,7 +785,10 @@ public static class ChamberFitting
                 int start = ((ordinal % specialists.Length) + specialists.Length) % specialists.Length;
                 return
                 [
-                    new(RingOffice.Fitting.LabBench, BenchRunDu, BenchPlate, true),
+                    // #869 · A bench is 90 cm deep because a person is. It keeps its RUN — a bench runs the
+                    // wall, and that is what makes it a bench rather than a desk — and takes the human-true
+                    // depth, so what the pen fills is the surface somebody actually stands at.
+                    new(RingOffice.Fitting.LabBench, BenchRunDu, BenchPlate, true, FittingDepthDu),
                     specialists[start],
                     specialists[(start + 1) % specialists.Length],
                 ];
@@ -653,7 +813,11 @@ public static class ChamberFitting
             case Kit.Office:
                 return
                 [
-                    new(RingOffice.Fitting.DeskBank, BenchRunDu, "", true),
+                    // #869 · ONE PERSON'S DESK, at the size the owner measured his own with a tape:
+                    // 160 x 90 cm, which is DeskRunDu x FittingDepthDu. It ran the whole wall until this
+                    // issue — ten du of worktop for one clerk — and a desk sized like a bench is exactly the
+                    // half of "reads like furniture" that a plate cannot fix.
+                    new(RingOffice.Fitting.DeskBank, DeskRunDu, "", true, FittingDepthDu),
                     new(RingOffice.Fitting.FilingCabinet, UnitRunDu, FilingPlate, false),
                     new(RingOffice.Fitting.Shelving, UnitRunDu, "", false),
                 ];
