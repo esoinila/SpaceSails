@@ -97,14 +97,15 @@ So testing it needs *time to pass*, not a page refresh:
 ## 1a · ADDED (#746) — sitting down at a table, and the job that goes downstairs
 
 ```
-/map?tablescene=1                      the whole route, booted — B1, in the canteen, autowalk on
+/map?tablescene=1                      the whole route, booted — B1, standing in the canteen
 /map?tablescene=1&roll=lo              …and every rolled ask refused, so the scene MOVES on demand
 /map?tablescene=1&roll=hi              …and every rolled ask lands
 ```
 
-`?tablescene=1` implies `?secretlab=deep&land=1&floor=1`, sets the captain down **inside** the upper canteen
-rather than at the lift head, and turns `?autowalk=1` on — the last leg of this scene is a walk across a room,
-and clicking where you want to be is how this repo tests one.
+`?tablescene=1` implies `?secretlab=deep&land=1&floor=1` and sets the captain down **inside** the upper
+canteen rather than at the lift head. The last leg of this scene is a walk across a room, and clicking where
+you want to be is how this repo tests one — since **#875** that click is simply on, here and everywhere the
+arrow keys walk, so this boot no longer has to turn anything on.
 
 **What to look for.** The round tops now carry **SEAT COUNTS** — 2, 4 or 6, seeded off the building and never
 off the shift, so a table does not re-furnish itself between watches. Walk to a top with somebody at it and
@@ -673,7 +674,8 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 /map?patrol=1                    …the one-guard watch, which is the floor you can actually cross
 /map?badge=1                     …the same round with this site's own SITE PASS already in the wallet
 /map?patrol=2&watch=5            the same floor on a different shift — the same stops, a different round
-/map?patrol=1&autowalk=1         cross the floor by clicking it, which is how to time a round without WASD
+/map?patrol=1                    …and cross the floor by CLICKING it — #875: the click walks you on every
+                                 walked view, so timing a round needs no WASD and no flag
 ```
 
 **Which floors have one, and it is worth knowing before you go looking.** Everything **below the bar** and

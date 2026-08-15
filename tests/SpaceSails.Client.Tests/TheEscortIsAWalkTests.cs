@@ -607,13 +607,27 @@ public sealed class TheEscortIsAWalkTests
     }
 
     /// <summary>#833 · The controls are held for the escort and for nothing else — and they are held in the
-    /// two places #784's chair already taught this codebase to hold them: the press, and the held key.</summary>
+    /// two places #784's chair already taught this codebase to hold them: the press, and the held key.
+    ///
+    /// <para>#875 · The press half is asked through ONE predicate that BOTH grips consult now, so the shape
+    /// this counts changed while the law did not: <c>CaptainIsUnderEscort</c> is read in exactly three places
+    /// — the predicate, the sentence it prints, and the frame's own legs — and the two grips ask the
+    /// predicate rather than the field. An inline re-check in either handler is a second author on one law,
+    /// which is precisely what #875 was filed on, and it puts the counts below out.</para></summary>
     [Fact]
     public void TheControlsAreHeldOnlyWhileSomebodyIsWalkingYouOut()
     {
         string deck = Pages("Map.Deck.cs");
-        Assert.Contains("if (CaptainIsUnderEscort)", deck, StringComparison.Ordinal);
-        Assert.Equal(3, Count(deck, "CaptainIsUnderEscort"));   // the key, the legs, the clicked route
+
+        // The one predicate, the one sentence, and the frame's own refusal of a held key / a live route.
+        Assert.Contains("TheCaptainsLegsAreTheirOwn => _deckMode && !CaptainIsUnderEscort", deck,
+            StringComparison.Ordinal);
+        Assert.Contains("TheHoldOnTheLegs => CaptainIsUnderEscort ? Core.PatrolBeat.EscortHeldLine : null",
+            deck, StringComparison.Ordinal);
+        Assert.Equal(1, Count(deck, "if (CaptainIsUnderEscort)"));   // MoveAvatar's own, and nowhere else
+
+        // …and BOTH grips are refused by that predicate: the key press, and the clicked route.
+        Assert.Equal(2, Count(deck, "if (!TheCaptainsLegsAreTheirOwn)"));
         Assert.Contains("Core.PatrolBeat.EscortHeldLine", deck, StringComparison.Ordinal);
 
         // …and the approach is NOT one of them. The captain may always walk away from a hail.

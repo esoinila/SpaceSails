@@ -94,9 +94,10 @@ public sealed class MustStandUpBeforeWalkingTests
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
         Set(map, "_fpMode", false);
-        // #729's own flag. Click-to-walk does not exist off it, so a guard about a clicked route has to
-        // stand where the feature stands.
-        Set(map, "_autoWalkCheat", true);
+        // #875 · NOTHING LEFT TO SWITCH ON. This bench used to set #729's ?autowalk=1 flag right here,
+        // because click-to-walk did not exist off it. The owner ruled the click always-on ("the two should
+        // be linked as alternative UI methods for walking"), the flag retired to a no-op alias, and a bench
+        // that has to enable a control before it can test it is testing a build nobody boots.
 
         Invoke(map, "RebuildSurfaceDeck");
         return map;

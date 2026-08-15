@@ -189,7 +189,8 @@ public sealed class TheStallSaysSoTests
     /// fictional banner was the only sentence on screen the afternoon this was filed, and the obvious "fix"
     /// somebody reaches for next time is to make the fiction own the controls it appeared to be holding.</para>
     ///
-    /// <para><b>Proven able to fail</b> by writing exactly that fix — <c>AutoWalkAvailable</c> given
+    /// <para><b>Proven able to fail</b> by writing exactly that fix — the click gate (then
+    /// <c>AutoWalkAvailable</c>, since #875 <c>TheCaptainsLegsAreTheirOwn</c>) given
     /// <c>&amp;&amp; _surface is { CommsPhase: CommsLink.Phase.Nominal }</c>:</para>
     /// <code>
     /// Failed …TheStallSaysSoTests.ACommsBlackoutDoesNotStopYourLegs [195 ms]
@@ -379,7 +380,9 @@ public sealed class TheStallSaysSoTests
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
         Set(map, "_fpMode", false);
-        Set(map, "_autoWalkCheat", true);   // #729's own flag: click-to-walk does not exist off it
+        // #875 · #729's ?autowalk=1 was set here once, because click-to-walk did not exist off it. The owner
+        // ruled the click always-on; the flag is a retired no-op alias, and this bench boots the shipping
+        // control rather than a switched-on one.
 
         Invoke(map, "RebuildSurfaceDeck");
         return map;

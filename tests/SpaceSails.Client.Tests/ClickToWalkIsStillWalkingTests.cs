@@ -229,15 +229,20 @@ public sealed class ClickToWalkIsStillWalkingTests
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════
-    //  GUARD 3 · without the flag, a click changes nothing.
+    //  GUARD 3 · a caller's own "not now" plans nothing at all — and #875: the URL is not one of those
+    //  callers any more.
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void WithoutTheCheatFlagAClickIsWhollyInert()
+    public void WhenTheCallerSaysNotNowThePlanIsWhollyInert()
     {
         // The pair is the point. The SAME click, on the same real floor, to a place the audit proves is
-        // reachable: with the flag it is a route, without it there is not even a message. Asserting only
-        // the inert half would pass on a world where nothing is reachable at all.
+        // reachable: told yes it is a route, told no there is not even a message. Asserting only the inert
+        // half would pass on a world where nothing is reachable at all.
+        //
+        // #875 · The shipping click passes a plain true and asks Map.Deck's one predicate first. This
+        // parameter is what a LAB or a bench says when it wants the planner to stand down, and it still has
+        // to mean nothing happened rather than a silent refusal somebody might print.
         DeckPlan deck = FloorOf("miranda", -1);
         (double sx, double sy) = Spawn;
         var from = new DeckReachability.Point(sx, sy);
@@ -249,14 +254,17 @@ public sealed class ClickToWalkIsStillWalkingTests
 
         AutoWalk.Attempt off = AutoWalk.Plan(false, from, target, deck.CollisionField, DeckPlan.AvatarRadius, bounds);
         Assert.Null(off.Route);
-        Assert.Null(off.Refusal);   // not even a refusal: the cheat is off, so the click never happened
+        Assert.Null(off.Refusal);   // not even a refusal: told no, the click never happened at all
     }
 
     [Fact]
     public void TheFlagIsReadOffTheUrlAndOnlyOffTheUrl()
     {
-        // The gate's other half: the parse. Real query strings the testing guide documents, including ones
-        // that carry other cheats, so "any query at all turns it on" cannot pass here.
+        // The parse, which is all that is left of #729's flag: #875 retired ?autowalk=1 to a NO-OP ALIAS
+        // when the owner ruled the click always-on, and Map.Sim still runs this over every boot URL and
+        // throws the answer away — so an old dev link, a line of the testing guide or a UiGate canary
+        // carrying it still resolves to a world. Real query strings, including ones that carry other
+        // cheats, so "any query at all turns it on" cannot pass here either.
         Assert.True(AutoWalk.EnabledIn("?autowalk=1"));
         Assert.True(AutoWalk.EnabledIn("?secretlab=deep&autowalk=1&nerve=3"));
         Assert.True(AutoWalk.EnabledIn("?AUTOWALK=1"));
