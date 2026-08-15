@@ -56,6 +56,20 @@ public sealed class RipItAndBinItIsAVerbTests
         return src[at..end];
     }
 
+    /// <summary>
+    /// #828 · THE WHOLE DESTROY PATH — the methods a sheet passes through on its way out of the game, read
+    /// as one body.
+    ///
+    /// <para>It used to be a single method. The secure rung put a WATCHED BEAT in front of the act (the
+    /// press opens <c>Processing.Work.Shred</c>; the far end of the hold calls the act), so the gates and
+    /// the act are separate methods now — and the law below is about the PATH, not about whichever half a
+    /// future edit happens to leave the old name on.</para>
+    /// </summary>
+    private static string TheDestroyPath() =>
+        MethodBody("private void RipItUp(")
+        + "\n" + MethodBody("private void TheDestructionWasWatched(")
+        + "\n" + MethodBody("private void TheSheetIsGone(");
+
     /// <summary>The same body with every comment taken out. The law is about what the code DOES: a comment
     /// naming the three lists this act may not touch is the file explaining itself, and a guard that could
     /// not tell that from a hand on one of them would be unwritable — this one shipped red on its own
@@ -95,7 +109,7 @@ public sealed class RipItAndBinItIsAVerbTests
     [Fact]
     public void THE_BOOK_NEVER_UNLEARNS_WhenTheOriginalGoes()
     {
-        string act = MethodBody("private void RipItUp(");
+        string act = TheDestroyPath();
 
         // The sleeve loses the row — through the one funnel every item in the game goes through.
         Assert.Contains("Core.Satchel.Remove(_satchel", act, StringComparison.Ordinal);
@@ -132,7 +146,7 @@ public sealed class RipItAndBinItIsAVerbTests
     [Fact]
     public void THE_VERB_IsGatedOnABinAndRefusesOutLoud()
     {
-        string act = MethodBody("private void RipItUp(");
+        string act = TheDestroyPath();
 
         Assert.Contains("RipAndBin.IsEvidence(item.Kind)", act, StringComparison.Ordinal);
         Assert.Contains("RipAndBin.NotEvidenceLine", act, StringComparison.Ordinal);
@@ -155,7 +169,7 @@ public sealed class RipItAndBinItIsAVerbTests
     [Fact]
     public void THE_SEEN_FACT_IsFiledOnlyWhenSomebodyWasLooking()
     {
-        string act = MethodBody("private void RipItUp(");
+        string act = TheDestroyPath();
 
         int guard = act.IndexOf("if (WhoIsWatchingYouRip() is { } who)", StringComparison.Ordinal);
         Assert.True(guard > 0, "the witness line is not behind a witness.");

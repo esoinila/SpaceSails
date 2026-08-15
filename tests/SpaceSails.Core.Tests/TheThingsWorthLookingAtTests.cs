@@ -20,10 +20,22 @@ public class TheThingsWorthLookingAtTests
     [Fact]
     public void MostOfWhatYouCarryIsOrdinary_AndGetsNoCard()
     {
-        // A game where every object earns a full-screen card has no objects that matter. Paper has its own
-        // reader (#603) and a file on somebody is leverage, not a display piece.
-        Assert.Null(CarriedObject.Card(new Satchel.Item(Satchel.Kind.Paper, "hive:luna:-3:2"), Here));
+        // A game where every object earns a full-screen card has no objects that matter. A file on somebody
+        // is leverage, not a display piece — it has no face the game has ever drawn.
         Assert.Null(CarriedObject.Card(new Satchel.Item(Satchel.Kind.Dirt, "hive:luna:-3:2"), Here));
+
+        // ── #828 · …AND A SHEET OF PAPER HAS A FACE NOW, WHICH IS THE OWNER'S TWO-TIER READING LAW ───────
+        //
+        // Owner: "read is like quick glance and dig at it is carefully reading and comparing the document
+        // against other sources and notes." The GLANCE is what anybody holding the sheet would see — free,
+        // standing, anywhere, as often as they like — and it is #603's own page, which the paper already had
+        // and which the satchel could previously reach only through a twenty-second press that also spent
+        // the clue. What a glance may never do is FILE anything, and that half is guarded where a glance can
+        // actually be driven: the client's TheGlanceIsFreeAndTheDigIsTheOnlyOneThatKeeps.
+        CarriedObject.Reveal? glance =
+            CarriedObject.Card(new Satchel.Item(Satchel.Kind.Paper, "hive:luna:-3:2"), Here);
+        Assert.NotNull(glance);
+        Assert.Equal(FieldClue.Document("hive:luna:-3:2"), glance!.Value.Story);
 
         // Issue ball is the round you always have. It is not plot.
         Assert.Null(CarriedObject.Card(new Satchel.Item(Satchel.Kind.Rounds, Ammunition.Issue.Id, 6), Here));

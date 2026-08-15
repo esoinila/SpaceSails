@@ -859,6 +859,30 @@ public static class RingOffice
             return true;
         }
 
+        /// <summary>
+        /// #828 · Lay one fitting whose inside is not a place — the same box as <see cref="Box"/>, filled.
+        ///
+        /// <para><see cref="SurfaceLayout.AddSolidMass"/> is this codebase's one word for SOLID (#586's
+        /// monolith, #874's growing beds, #798's own bins), and a fitting that is also a
+        /// <see cref="RipAndBin.Bin"/> is held to the bin law: the box the eye sees is the box the boots
+        /// meet, and there is no sealed square in the middle of it. Returns false, having laid nothing, on
+        /// the room's own centre — <see cref="Box"/>'s rule, unchanged, because a fitting that bricked up
+        /// the square the A* audit stands on would be worse for being solid.</para>
+        /// </summary>
+        internal bool SolidBox(
+            Fitting kind, double uLo, double vLo, double uHi, double vHi, string plate)
+        {
+            if (CoversTheCentre(uLo, vLo, uHi, vHi))
+            {
+                return false;
+            }
+
+            (double x0, double y0, double x1, double y1) = _frame.Box(uLo, vLo, uHi, vHi);
+            fixtures.Add(new Fixture(kind, x0, y0, x1, y1, plate));
+            SurfaceLayout.AddSolidMass(solids, x0, y0, x1, y1, true);
+            return true;
+        }
+
         /// <summary>Lay one solid segment with no fitting of its own — the sides of a cell, which are three
         /// walls of one box rather than three pieces of furniture.</summary>
         internal void Wall(double uLo, double vLo, double uHi, double vHi)
@@ -1263,10 +1287,17 @@ public static class RingOffice
         // fixture back off the finished room (§13.15's rule — the placer that needs to see the whole floor
         // runs last), so the box a body collides with, the plate a captain reads and the bucket the verb
         // feeds are one rectangle.
+        //
+        // …and SOLID, which is the one way this box differs from every other fitting in the file. #798's own
+        // law for a bin is that the drawn box is the walked box and the inside of it is not a place (#874,
+        // #586): four rails round a six-by-three machine leave a standable pocket with no way into it, and
+        // the ONE fixture on this ring that is also a published RipAndBin.Bin is the one whose guard says so
+        // out loud. The rest of the ring's fittings are still four rails apiece, which is a real fault and a
+        // whole-ring one — it belongs to an issue of its own, not to a lane that is fitting one machine.
         double disposalTo = v + SecureDisposalDu;
         if (disposalTo <= vB)
         {
-            lay.Box(Fitting.SecureDisposal, uLo, v, uHi, disposalTo, SecureDisposalPlate);
+            lay.SolidBox(Fitting.SecureDisposal, uLo, v, uHi, disposalTo, SecureDisposalPlate);
         }
     }
 

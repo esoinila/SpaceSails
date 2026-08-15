@@ -75,19 +75,25 @@ public sealed class RipItAndBinItTests
         in UndergroundComplex.FloorPlan floor, in RipAndBin.Bin skip)
     {
         var segs = new List<SurfaceCollision.Segment>();
-        double h = RipAndBin.HalfDu;
         foreach (SurfaceLayout.Wall w in floor.Walls)
         {
-            // Everything except the bin's OWN four sides — a box is allowed to touch itself.
-            bool mine = Math.Abs(w.X1 - skip.X) <= h + 0.001 && Math.Abs(w.X2 - skip.X) <= h + 0.001
-                && Math.Abs(w.Y1 - skip.Y) <= h + 0.001 && Math.Abs(w.Y2 - skip.Y) <= h + 0.001;
-            if (!mine)
+            // Everything except the bin's OWN box — a box is allowed to touch itself. Measured off the
+            // bin's PUBLISHED half-extents (#828), because the ladder's top rung is a six-du machine and a
+            // 0.9 typed in here would have called four of its own sides somebody else's walls.
+            if (!Mine(w, in skip))
             {
                 segs.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
             }
         }
         return segs;
     }
+
+    /// <summary>#828 · Is this wall one of the bin's own — a segment lying wholly inside the box the bin
+    /// publishes? The one place the "which walls are mine" question is answered, so the two audits below
+    /// cannot come to two views of a rectangle.</summary>
+    private static bool Mine(in SurfaceLayout.Wall w, in RipAndBin.Bin bin) =>
+        Math.Abs(w.X1 - bin.X) <= bin.HalfX + 0.001 && Math.Abs(w.X2 - bin.X) <= bin.HalfX + 0.001
+        && Math.Abs(w.Y1 - bin.Y) <= bin.HalfY + 0.001 && Math.Abs(w.Y2 - bin.Y) <= bin.HalfY + 0.001;
 
     // ── (a) THE FIXTURES ARE THERE, AND THEY ARE THERE FOR A STATED REASON ────────────────────────────
 
@@ -225,16 +231,17 @@ public sealed class RipItAndBinItTests
 
         AuditEveryFloor((_, _, floor) =>
         {
-            double h = RipAndBin.HalfDu;
             foreach (RipAndBin.Bin bin in floor.TheBins)
             {
-                int rails = 0;
+                // #828 · The four EDGES, as a set rather than as a count. The secure rung stands in a
+                // terrace of abutting cells, so the booth in front of it lays a wall exactly along the
+                // machine's own near face and a tally would read five sides where a captain meets four. A
+                // set answers the question the count was always asking: is every edge of this box a wall.
+                var rails = new HashSet<string>(StringComparer.Ordinal);
                 var own = new List<SurfaceCollision.Segment>();
                 foreach (SurfaceLayout.Wall w in floor.Walls)
                 {
-                    bool mine = Math.Abs(w.X1 - bin.X) <= h + 0.001 && Math.Abs(w.X2 - bin.X) <= h + 0.001
-                        && Math.Abs(w.Y1 - bin.Y) <= h + 0.001 && Math.Abs(w.Y2 - bin.Y) <= h + 0.001;
-                    if (!mine)
+                    if (!Mine(w, in bin))
                     {
                         continue;
                     }
@@ -243,18 +250,21 @@ public sealed class RipItAndBinItTests
                     // A SIDE: a segment that RUNS ALONG one of the box's four edges — flat on one axis, and
                     // that axis pinned at the edge. A stroke through the middle of the mass is not a side,
                     // which is the distinction the old count could not make.
-                    bool onEdge =
-                        (Math.Abs(w.Y1 - w.Y2) < 0.001 && Math.Abs(Math.Abs(w.Y1 - bin.Y) - h) < 0.001)
-                        || (Math.Abs(w.X1 - w.X2) < 0.001 && Math.Abs(Math.Abs(w.X1 - bin.X) - h) < 0.001);
-                    if (onEdge)
+                    if (Math.Abs(w.Y1 - w.Y2) < 0.001
+                        && Math.Abs(Math.Abs(w.Y1 - bin.Y) - bin.HalfY) < 0.001)
                     {
-                        rails++;
+                        rails.Add(w.Y1 > bin.Y ? "N" : "S");
+                    }
+                    else if (Math.Abs(w.X1 - w.X2) < 0.001
+                        && Math.Abs(Math.Abs(w.X1 - bin.X) - bin.HalfX) < 0.001)
+                    {
+                        rails.Add(w.X1 > bin.X ? "E" : "W");
                     }
                 }
-                if (rails != 4)
+                if (rails.Count != 4)
                 {
-                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) has {rails} collidable side(s) — "
-                        + "it is drawn as a thing and is not one.";
+                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) has {rails.Count} collidable "
+                        + "side(s) — it is drawn as a thing and is not one.";
                 }
                 if (!SurfaceCollision.Blocked(bin.X, bin.Y, captain, own))
                 {
@@ -368,7 +378,8 @@ public sealed class RipItAndBinItTests
         Assert.Null(RipAndBin.NearestWithinReach(0, 0, null));
         Assert.Null(RipAndBin.NearestWithinReach(0, 0, []));
         Assert.Null(RipAndBin.NearestWithinReach(0, 0, [far]));
-        Assert.Null(RipAndBin.NearestWithinReach(RipAndBin.ReachDu + 0.5, 0, [paper]));
+        // #828 · Out of reach is measured from the BOX, so "out" is the reach plus the half a bucket is.
+        Assert.Null(RipAndBin.NearestWithinReach(RipAndBin.ReachDu + RipAndBin.HalfDu + 0.5, 0, [paper]));
 
         Assert.Equal(RipAndBin.Tier.PaperBin,
             RipAndBin.NearestWithinReach(RipAndBin.ReachDu - 0.1, 0, [paper])!.Value.Tier);
@@ -392,11 +403,19 @@ public sealed class RipItAndBinItTests
     [Fact]
     public void THE_LADDER_IsOrderedWorstBetFirst()
     {
+        // #828 · …and the third rung of the ladder is APPENDED to it, at the good end: the office secure
+        // disposal is the only rung that is not a bet, so it belongs after the chute in a list that runs
+        // worst first.
         Assert.Equal(
-            new[] { RipAndBin.Tier.PaperBin, RipAndBin.Tier.SlopBin, RipAndBin.Tier.Chute },
+            new[]
+            {
+                RipAndBin.Tier.PaperBin, RipAndBin.Tier.SlopBin, RipAndBin.Tier.Chute,
+                RipAndBin.Tier.SecureDisposal,
+            },
             RipAndBin.Ladder.ToArray());
         Assert.True(RipAndBin.Tier.PaperBin < RipAndBin.Tier.SlopBin);
         Assert.True(RipAndBin.Tier.SlopBin < RipAndBin.Tier.Chute);
+        Assert.True(RipAndBin.Tier.Chute < RipAndBin.Tier.SecureDisposal);
     }
 
     // ── (d) THE WORDS ─────────────────────────────────────────────────────────────────────────────────

@@ -100,13 +100,29 @@ public static class RipAndBin
     /// down inside a wall twice by letting somebody else guess at them.</param>
     /// <param name="StandY">…and the other half of it.</param>
     /// <param name="Plate">What is stencilled on it, at signage size.</param>
+    /// <param name="HalfX">#828 · Half the box's width. Three of the four rungs are a bucket
+    /// (<see cref="HalfDu"/> on a side, which is why that is the default and why no existing caller passes
+    /// this); the secure disposal is a MACHINE the size of the fitting it is, six deck units across the
+    /// service strip. A ladder whose top rung is a different SIZE has to publish the size, or every guard
+    /// and every reach measures a rectangle it made up.</param>
+    /// <param name="HalfY">…and half its depth.</param>
     public readonly record struct Bin(
-        Tier Tier, double X, double Y, double StandX, double StandY, string Plate)
+        Tier Tier, double X, double Y, double StandX, double StandY, string Plate,
+        double HalfX = HalfDu, double HalfY = HalfDu)
     {
-        /// <summary>How far this bin is from a spot on the floor.</summary>
+        /// <summary>
+        /// How far this bin is from a spot on the floor — measured to the BOX, not to its middle.
+        ///
+        /// <para>#828 · It used to be centre-to-point, which is the same answer for a bucket 1.8 du on a
+        /// side and a wrong one for a machine six du across: a captain standing at arm's length of the
+        /// secure disposal's face is 5.2 du from its centre, and a reach of 4 would have refused a captain
+        /// standing exactly where the carve told them to stand. You reach for the THING, not for the
+        /// arithmetic mean of it.</para>
+        /// </summary>
         public double DistanceTo(double x, double y)
         {
-            double dx = x - X, dy = y - Y;
+            double dx = Math.Max(Math.Abs(x - X) - HalfX, 0.0);
+            double dy = Math.Max(Math.Abs(y - Y) - HalfY, 0.0);
             return Math.Sqrt((dx * dx) + (dy * dy));
         }
     }
@@ -436,19 +452,6 @@ public static class RipAndBin
     /// </summary>
     public static bool LeavesSomethingToFind(Tier tier) => tier != Tier.SecureDisposal;
 
-    /// <summary>#828 · What the machine says while it is eating — the short beat the captain stands through.
-    /// It names the seconds nowhere: <see cref="Processing"/> owns the clock, and a sentence that quoted one
-    /// would be the second copy of a number this project has paid for four times.</summary>
-    public const string WatchingItGoLine =
-        "🗑 The rollers take the corner of it and pull. You stay where you are and watch the sheet go in.";
-
-    /// <summary>#828 · …and what a captain is told when they walk away from a machine mid-sheet. The paper is
-    /// still theirs and still whole: the top rung's promise is that you SAW it, so a disposal nobody watched
-    /// has not happened.</summary>
-    public const string WalkedOffMidShredLine =
-        "🗑 You step away and the rollers stop with the sheet half in. You pull it back out — creased, "
-        + "readable, and still in your sleeve. This one only counts if you stand there.";
-
     /// <summary>Who was looking. The client decides which of these is true — what "watched" means at a
     /// counter, at a table and on a corridor are three questions about rooms, and this file does not have
     /// one.</summary>
@@ -536,8 +539,6 @@ public static class RipAndBin
         yield return NotYetWorkedFlag;
         yield return NotYetWorkedWarning;
         yield return AlreadyInTheBookFlag;
-        yield return WatchingItGoLine;
-        yield return WalkedOffMidShredLine;
         foreach (Tier tier in Ladder)
         {
             yield return TheBin(tier);

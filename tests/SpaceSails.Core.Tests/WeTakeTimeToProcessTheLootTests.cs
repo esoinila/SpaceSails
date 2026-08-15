@@ -150,10 +150,20 @@ public sealed class WeTakeTimeToProcessTheLootTests
             // reason to hold position. At a table the teeth are the CHAIR: the price of the twenty seconds
             // is that you are in it, findable, with your papers out, and the line says THAT rather than
             // telling a seated captain to watch a fan they are not looking at.
+            //
+            // #828 · …and at the secure disposal the teeth are the MACHINE. The top rung of the bin ladder
+            // buys exactly what the captain WATCHED, so the line names the thing their hands are in and what
+            // walking off it costs. A shredder telling a captain to watch a fan would be the third bug class
+            // standing in a premium office.
             if (work == Processing.Work.Write)
             {
                 Assert.Contains("chair", said, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("stand up", said, StringComparison.OrdinalIgnoreCase);
+            }
+            else if (work == Processing.Work.Shred)
+            {
+                Assert.Contains("machine", said, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("step away", said, StringComparison.OrdinalIgnoreCase);
             }
             else
             {

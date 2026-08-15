@@ -277,13 +277,36 @@ public static class Processing
             };
         }
 
-        // #828 · The secure rung's ONE promise, whatever ended it: a disposal nobody watched has not
-        // happened, so the sheet comes back out creased and still yours. One sentence and not four, because
-        // there is only one thing to say about a machine that stopped — RipAndBin owns the words, as it owns
-        // every other word about a bin.
+        // ── #828 · THE SECURE RUNG'S PROMISE, AND IT IS THE SAME ONE FOUR TIMES OVER ────────────────────
+        //
+        // A disposal nobody watched HAS NOT HAPPENED, so however the beat ended the sheet comes back out
+        // creased and still in the sleeve and nothing has been fed to anything. What changes is the opening
+        // clause, because it changes in every other register here for the reason #696 wrote them: the thing
+        // that took the paper out of your hands is the only part of an abandoned hold worth remembering.
+        //
+        // The words live in THIS file and not in RipAndBin, which owns every other sentence about a bin,
+        // because these are not sentences about a bin: they are the four endings this hold can meet
+        // (see <see cref="EndingsOf"/>), and the register that owns the clock owns the register's endings.
+        // The GLYPH is still the bin's, so the sentence and the bar cannot come to two views of what the
+        // captain's hands are on.
         if (work == Work.Shred)
         {
-            return RipAndBin.WalkedOffMidShredLine;
+            string back = $" You take {what} back out — creased, readable, still in your sleeve, and "
+                + "nothing of it has been fed to anything.";
+            return why switch
+            {
+                Interruption.Alarm =>
+                    $"{RipAndBin.Glyph} The alarm goes off in your ear and your hand comes off the feed."
+                    + back,
+                Interruption.Reached =>
+                    $"{RipAndBin.Glyph} Something gets a hand on you at the machine and the rollers stop."
+                    + back,
+                Interruption.LiftedOff =>
+                    $"{RipAndBin.Glyph} The shuttle lifts with the machine half through it." + back,
+                _ =>
+                    $"{RipAndBin.Glyph} You step away and the rollers stop with the sheet half in." + back
+                    + " This one only counts if you stand there.",
+            };
         }
 
         string it = work == Work.Read ? "the reading" : "the exposure";

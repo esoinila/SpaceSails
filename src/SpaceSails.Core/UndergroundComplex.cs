@@ -6143,8 +6143,12 @@ public static class UndergroundComplex
                     continue;   // no floor to stand on: the suite says so by having no bin, per §13.15
                 }
 
+                // …and the BOX is published with it, because this rung is not a bucket. Everything that
+                // measures a bin — the reach, the guards, anything that later asks what a captain is
+                // standing at — reads the rectangle the suite actually stands rather than the 1.8 du
+                // square the other three rungs are.
                 bins.Add(new RipAndBin.Bin(
-                    RipAndBin.Tier.SecureDisposal, kit.X, kit.Y, sx, sy, kit.Plate));
+                    RipAndBin.Tier.SecureDisposal, kit.X, kit.Y, sx, sy, kit.Plate, hx, hy));
                 furniture.Add((sx, sy));
             }
         }

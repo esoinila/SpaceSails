@@ -241,7 +241,7 @@ public sealed partial class Map
             return;
         }
 
-        TheSheetIsGone(atTheBin, item, bin);
+        TheSheetIsGone(item, bin);
     }
 
     /// <summary>
@@ -250,17 +250,19 @@ public sealed partial class Map
     /// <para>Called only from <c>CompleteProcessing</c>, which clears the hold first, so this runs in a
     /// world with no clock in it. The bucket is re-asked rather than carried on the hold, for the reason the
     /// picker re-asks it every draw: a stored bin would be the sim doing one thing while the page said
-    /// another, three du down the corridor. The tolerance on the hold is smaller than the reach, so a
-    /// captain who held still is still standing at the machine they fed.</para>
+    /// another, three du down the corridor. The hold's own tolerance
+    /// (<see cref="Core.Processing.StandingToleranceDu"/>, 1.5 du) is smaller than the reach
+    /// (<see cref="RipAndBin.ReachDu"/>, 4 du), so a captain who held still is still standing at the machine
+    /// they fed — and one who is somehow not gets the refusal and keeps their paper.</para>
     /// </summary>
-    private void TheDestructionWasWatched(SurfaceExcursion ex, Core.Satchel.Item item)
+    private void TheDestructionWasWatched(Core.Satchel.Item item)
     {
         if (BinWithinReach() is not { } bin)
         {
             SayItWhereTheyAreLooking(RipAndBin.NoBinLine);
             return;
         }
-        TheSheetIsGone(ex, item, bin);
+        TheSheetIsGone(item, bin);
     }
 
     /// <summary>
@@ -272,10 +274,8 @@ public sealed partial class Map
     /// is no second copy of it anywhere — which is what makes "one verb, three rungs, two doors" structural
     /// rather than a promise.</para>
     /// </summary>
-    private void TheSheetIsGone(SurfaceExcursion ex, Core.Satchel.Item item, RipAndBin.Bin bin)
+    private void TheSheetIsGone(Core.Satchel.Item item, RipAndBin.Bin bin)
     {
-        _ = ex;
-
         // The label is read BEFORE the sleeve loses the row, because SatchelLabel rebuilds the prose from
         // the world and the item, and a sentence about a thing you are no longer carrying is a sentence
         // about nothing.
