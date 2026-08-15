@@ -85,23 +85,28 @@ public sealed class TheAutoWalkIsWiredToTheRealLegsTests
     }
 
     [Fact]
-    public void ThePointerOnlyBecomesAWalkOrderBehindTheFlag()
+    public void BothPointerJoinsAskTheViewQuestionAndTheViewQuestionOnly()
     {
-        // Both pointer joins are gated on the SAME property, and that property is the only thing standing
-        // between "the deck click walks you" and "the deck click is what it always was". A pointer path that
-        // changed without the flag would break the issue's own inertness law in the shipping build while the
-        // Core-level guard stayed green.
+        // #875 · Both pointer joins go through the same VIEW question, and it is about the canvas and
+        // nothing else. This used to read AutoWalkAvailable, which mixed four facts into one property — a
+        // dev flag, the view, the surface and the escort. The flag retired with the owner's always-on
+        // ruling; the rest split in two, and the split is the point: a pointer handler that asked the WALK
+        // question would swallow a held click in a branch that has no way to say why.
         string src = MapSim();
         foreach (string handler in new[] { "OnPointerDown", "OnPointerUp" })
         {
             int at = src.IndexOf($"private void {handler}(PointerEventArgs e)", StringComparison.Ordinal);
             Assert.True(at > 0, $"{handler} has moved — this guard cannot see what it guards.");
-            int gate = src.IndexOf("AutoWalkAvailable", at, StringComparison.Ordinal);
+            int gate = src.IndexOf("ADeckClickIsAPlaceOnTheFloor", at, StringComparison.Ordinal);
             Assert.True(gate > at && gate - at < 2000,
-                $"{handler} no longer routes the deck click through the AutoWalkAvailable gate.");
+                $"{handler} no longer routes the deck click through the ADeckClickIsAPlaceOnTheFloor gate.");
         }
 
-        // And the gate itself still asks the flag.
-        Assert.Matches(new Regex(@"AutoWalkAvailable\s*=>\s*_autoWalkCheat\s*&&"), MapDeck());
+        // And the two questions are still two questions, each asking exactly what it is named for.
+        Assert.Matches(
+            new Regex(@"ADeckClickIsAPlaceOnTheFloor\s*=>\s*_deckMode\s*&&\s*!_fpMode\s*;"), MapDeck());
+        Assert.Matches(
+            new Regex(@"TheCaptainsLegsAreTheirOwn\s*=>\s*_deckMode\s*&&\s*!CaptainIsUnderEscort\s*;"),
+            MapDeck());
     }
 }

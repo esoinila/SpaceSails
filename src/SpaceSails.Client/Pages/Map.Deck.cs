@@ -143,20 +143,47 @@ public partial class Map
     /// walking the captain along corridors that no longer exist.</summary>
     private DeckPlan? _autoWalkDeck;
 
-    /// <summary>#729 · <c>?autowalk=1</c>. A dev cheat until the owner rules on always-on — and the gate is
-    /// deliberately ONE bool passed into Core's planner, because that is the seam a touch UI adopts
-    /// unmodified: the day tap-to-move ships, the only thing that changes is what is passed here.</summary>
-    private bool _autoWalkCheat;
+    // ═══════════════════════════════════════════════════════════════════════════════════════════════════
+    //  #875 · TWO GRIPS, ONE WALK. Owner's ruling, 2026-08-15: "click to walk should always be on when the
+    //  arrows for walking are active also. The two should be linked as alternative UI methods for walking."
+    //
+    //  So click-to-walk is not a mode, and there is nothing left to switch on. #729 built it behind
+    //  ?autowalk=1 "until the owner rules on always-on"; this is that ruling, and the flag retires to a
+    //  no-op alias (Map.Sim still reads it off the query and throws the answer away, so every old dev URL,
+    //  the docs table and the UiGate boot exactly as they did).
+    //
+    //  ONE PREDICATE, because two authors on one law is this repo's FIRST named bug class and it had
+    //  already happened right here: the key handler asked CaptainIsUnderEscort inline while the click asked
+    //  a property that spelled the same law a second time with a flag and a view term mixed into it — which
+    //  is how ?designate=1 came to be a floor you could cross with the arrows and not with a finger.
+    // ═══════════════════════════════════════════════════════════════════════════════════════════════════
 
-    /// <summary>Is a click on the glass a walk order right now? Only on the WALKED views — a surface
-    /// excursion or a Hive floor, top-down, with the cheat on. Off the cheat this is false everywhere, so
-    /// every pointer path in the game behaves exactly as it did before this feature existed.
+    /// <summary>#875 · <b>THE ONE PREDICATE</b> — are the captain's legs their own right now? Asked by the
+    /// WASD/arrow case in <see cref="HandleDeckKey"/> and by <see cref="ClickToWalkAt"/>, and by nothing
+    /// else: a grip that answered this question for itself would be free to disagree with the other one,
+    /// and that disagreement is the whole of #875.
     ///
-    /// <para>#833 · …and not while somebody is walking you off his floor. The keys are consumed by the escort
-    /// in the handler above; a clicked route is the same hand on the same controls and is refused in the same
-    /// breath, or the captain would simply walk out from under the man escorting him.</para></summary>
-    private bool AutoWalkAvailable =>
-        _autoWalkCheat && _deckMode && !_fpMode && _surface is not null && !CaptainIsUnderEscort;
+    /// <para>It is deliberately NOT a question about the VIEW. First person has legs too (tank controls),
+    /// the ship's own deck has legs, and a seat is a COST rather than a refusal — #847's press buys the
+    /// stand and then walks, by either grip. The only thing in this game that takes the legs away is
+    /// somebody else walking you off his floor (#833's escort), and the only precondition is that there is
+    /// a deck under them at all.</para></summary>
+    private bool TheCaptainsLegsAreTheirOwn => _deckMode && !CaptainIsUnderEscort;
+
+    /// <summary>#875 · …and when they are not the captain's own, the words that say so — from ONE place, so
+    /// that the key which is consumed and the click which is refused say the same sentence. They are refused
+    /// by the same fact; they had better be refused in the same breath.</summary>
+    private string? TheHoldOnTheLegs => CaptainIsUnderEscort ? Core.PatrolBeat.EscortHeldLine : null;
+
+    /// <summary>#875 · Is the canvas under this pointer a FLOOR? The click grip's one extra question, and it
+    /// is about the VIEW rather than about the walk: on the map that canvas is the ecliptic (hit-testing a
+    /// deck click against planets that are not on screen would open a body menu over a moon floor), and in
+    /// first person there is no floor drawn to point at at all — the keys are tank controls there and a
+    /// finger has nothing to aim at. It is the ONLY term that separates the two grips, and it can never
+    /// refuse a walk: whether those legs are the captain's is <see cref="TheCaptainsLegsAreTheirOwn"/>,
+    /// asked inside <see cref="ClickToWalkAt"/> so a held click can SAY so instead of being swallowed by a
+    /// pointer branch.</summary>
+    private bool ADeckClickIsAPlaceOnTheFloor => _deckMode && !_fpMode;
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════
     //  #825 · THE STALL SAYS SO. Owner, 2026-08-11, on B1 near the goods car with a build eating the CPU:
@@ -271,8 +298,17 @@ public partial class Map
     /// </summary>
     private void ClickToWalkAt(double clickPx, double clickPy)
     {
-        if (!AutoWalkAvailable)
+        // #875 · THE ONE PREDICATE, asked by the second grip. The pointer branch that got here knows only
+        // that the canvas is a floor; whether those legs are the captain's is the WALK's question, and it is
+        // asked HERE — of the same property the arrow keys ask, printing the same held line from the same
+        // place — so that a click cannot walk the captain out from under a man the keys are refusing to walk
+        // him out from under, and so that being held is said rather than swallowed.
+        if (!TheCaptainsLegsAreTheirOwn)
         {
+            if (TheHoldOnTheLegs is { } held)
+            {
+                ShowPulseMessage(held);
+            }
             return;
         }
 
@@ -300,8 +336,12 @@ public partial class Map
         // #866 · A FINGER, NOT A BEAT. The reach is what tells Core this goal was POINTED at: the park's
         // photograph draws gravel where the deck has a raised bed, and asked for the exact square under the
         // cursor the search could only answer "no route" — after flooding the whole floor to say it.
+        //
+        // #875 · <c>enabled:</c> is TRUE by the time this line runs, and the seam stays in Core on purpose:
+        // the gate the parameter was built for is asked above, by the one predicate, and a caller that is
+        // not this one (a test, a touch UI, a lab) still needs somewhere to say "not now".
         AutoWalk.Attempt attempt = AutoWalk.Plan(
-            _autoWalkCheat, from, to, _deckPlan.CollisionField, DeckPlan.AvatarRadius,
+            enabled: true, from, to, _deckPlan.CollisionField, DeckPlan.AvatarRadius,
             AutoWalk.BoundsFor(_deckPlan.CollisionSegments, from, to),
             DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
 
@@ -384,9 +424,17 @@ public partial class Map
                 // First, and above the seat below, because this press is REFUSED rather than charged for —
                 // a captain the guard is holding must not pay for a stand he is not going to be allowed to
                 // walk off.
-                if (CaptainIsUnderEscort)
+                //
+                // #875 · …and asked through THE ONE PREDICATE that ClickToWalkAt asks, printing the line
+                // from the one place that owns it. This used to be an inline CaptainIsUnderEscort here and
+                // a differently-spelled property over there — two authors on one law, which is this repo's
+                // first named bug class and the reason a floor could be crossed by arrow and not by finger.
+                if (!TheCaptainsLegsAreTheirOwn)
                 {
-                    ShowPulseMessage(Core.PatrolBeat.EscortHeldLine);
+                    if (TheHoldOnTheLegs is { } held)
+                    {
+                        ShowPulseMessage(held);
+                    }
                     return true;
                 }
                 // #729 · THE KEYS ALWAYS WIN, and they win HERE — on the press itself, before the frame
