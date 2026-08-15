@@ -6820,7 +6820,12 @@ public partial class Map
             // THE DWELL. The one sustained pressure that is not a regolith pressure: a derelict's interior
             // reads as "aboard" to every other rule in NervePips, so standing beside the archive node would
             // otherwise be scored SAFE and hand pips BACK while the ledger said it was taking them.
-            InArchiveField: InArchiveField);
+            InArchiveField: InArchiveField,
+            // #867 · WHAT KIND OF SAFE. The ease beat is unchanged; the SENTENCE it prints asks the ground.
+            // A pressurised floor of the Hive has been "safe" to this model since #585 and there is no
+            // airlock anywhere in it — which is why the owner's ledger, on a park lawn under grow-lights,
+            // kept saying "the airlock closes behind you +1".
+            SafeGroundHoldsPressure: StandingOnGroundThatHoldsPressure);
 
         NervePips.Step step = NervePips.Advance(_nerve, _monolithSeen, _nerveBeats, in frame);
         bool monolithFired = !_monolithSeen && step.MonolithSeen;

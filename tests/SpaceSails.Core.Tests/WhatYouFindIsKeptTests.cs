@@ -344,15 +344,15 @@ public sealed class TheGroundHasItsOwnVoiceTests
     {
         // The other half must survive: a lab or a wreck DOES have a hull, a room and people in it.
         Assert.Equal(HullShudder.Setting.DeepSite,
-            HullShudder.SettingOutside(onRegolith: false, deepSite: true, haven: false));
+            HullShudder.SettingOutside(groundHoldsPressure: false, onRegolith: false, deepSite: true, haven: false));
         Assert.Equal(HullShudder.Setting.Regolith,
-            HullShudder.SettingOutside(onRegolith: true, deepSite: true, haven: false));
+            HullShudder.SettingOutside(groundHoldsPressure: false, onRegolith: true, deepSite: true, haven: false));
 
         // And nothing about the ship or the bar changed.
         Assert.Equal(HullShudder.Setting.Ship,
-            HullShudder.SettingOutside(onRegolith: false, deepSite: false, haven: false));
+            HullShudder.SettingOutside(groundHoldsPressure: false, onRegolith: false, deepSite: false, haven: false));
         Assert.Equal(HullShudder.Setting.Haven,
-            HullShudder.SettingOutside(onRegolith: false, deepSite: false, haven: true));
+            HullShudder.SettingOutside(groundHoldsPressure: false, onRegolith: false, deepSite: false, haven: true));
     }
 }
 

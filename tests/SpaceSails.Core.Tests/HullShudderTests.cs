@@ -82,7 +82,7 @@ public class HullShudderTests
     [Fact]
     public void ChillPool_IsNonBlank_AndUnique()
     {
-        IReadOnlyList<string> pool = HullShudder.ChillLines_;
+        IReadOnlyList<string> pool = HullShudder.ChillLinesFor(groundHoldsPressure: false);
         Assert.NotEmpty(pool);
         Assert.All(pool, line => Assert.False(string.IsNullOrWhiteSpace(line)));
         Assert.Equal(pool.Count, pool.Distinct().Count());
@@ -95,7 +95,7 @@ public class HullShudderTests
         var all = HullShudder.LinesFor(HullShudder.Setting.Haven)
             .Concat(HullShudder.LinesFor(HullShudder.Setting.Ship))
             .Concat(HullShudder.LinesFor(HullShudder.Setting.DeepSite))
-            .Concat(HullShudder.ChillLines_);
+            .Concat(HullShudder.ChillLinesFor(groundHoldsPressure: false));
         foreach (string line in all)
         {
             bool unison = line.Contains("as one", System.StringComparison.OrdinalIgnoreCase)
@@ -153,9 +153,9 @@ public class HullShudderTests
     {
         for (int i = 0; i < 40; i++)
         {
-            string line = HullShudder.ChillLine(Seed, i);
-            Assert.Equal(line, HullShudder.ChillLine(Seed, i));
-            Assert.Contains(line, HullShudder.ChillLines_);
+            string line = HullShudder.ChillLine(groundHoldsPressure: false, Seed, i);
+            Assert.Equal(line, HullShudder.ChillLine(groundHoldsPressure: false, Seed, i));
+            Assert.Contains(line, HullShudder.ChillLinesFor(groundHoldsPressure: false));
         }
     }
 

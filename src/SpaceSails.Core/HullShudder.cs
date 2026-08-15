@@ -39,6 +39,14 @@ public static class HullShudder
         /// <summary>#590 · Out on open regolith in a suit. No hull, no room, and nobody to decide it was
         /// nothing with — the unison beat has nobody to be in unison with, which is the better version.</summary>
         Regolith = 3,
+
+        /// <summary>#867 · GROUND THAT HOLDS ITS OWN AIR. A floor of the Hive that
+        /// <see cref="UndergroundComplex.HoldsPressure"/> says yes about — warm, lit, fans running, a park
+        /// under grow-lights. It is not the surface (there is air, and air carries a sound) and it is not a
+        /// sealed deep site with a crew in it (the room may be empty). The unison here belongs to the ROOM —
+        /// the lights on their wires, the water in a basin, the ventilator's note — because that is the
+        /// crowd this floor can honestly promise.</summary>
+        Pressurised = 4,
     }
 
     // ── Onset cadence (rare-ish): how long the calm holds between shudders. ───────────────────────────
@@ -145,11 +153,43 @@ public static class HullShudder
         "A shiver runs out through the dust from somewhere ahead of you, and every loose stone within your lamp shifts a hand's width. You look for a witness out of pure reflex — the flat black horizon, your own long shadow — and there is nobody, and you keep walking.",
     ];
 
+    // #867 · GROUND THAT HOLDS ITS OWN AIR. Owner, 2026-08-13, strolling the B1 park: "Our mood texts still
+    // assume the vacuum of the surface btw :-D ... talk of nothing carrying the sound here as we are
+    // literally taking a walk in a park :-D".
+    //
+    // He was right, and the reason is the same one #590 found: the FLAG was fine and the WORDS were not. A
+    // floor of the Hive is laid inside the surface's own coordinate envelope, so `onRegolith` — which asks
+    // only whether the captain is below the regolith's top rim and away from their own tube — is TRUE two
+    // hundred deck units down inside a lit, pressurised, planted gallery. The whole Regolith pool therefore
+    // spoke on a lawn: "there is nothing out here to carry a sound", "in vacuum it is entirely silent".
+    //
+    // The tell of every line here is the opposite of that pool's: the sound ARRIVES. It is written to be
+    // heard, not to explain the physics of hearing it. And the unison belongs to the room's own fixtures,
+    // never to a crowd — most of these floors are empty, and a line that promises company is the same class
+    // of lie in the other direction.
+    private static readonly string[] PressurisedLines =
+    [
+        "The shudder arrives through the floor, and this time the room hears it with you.",
+        "A low boom comes up through the deck and the whole floor answers it at once — the grow-lights swinging on their wires, the water in the basins ringing, the fan note dipping and coming back. Then it is warm and lit and ordinary again, and you decide it was nothing.",
+        "The ground moves, and you HEAR it: a long groan somewhere under the slab, carried up through good air to your ears the way a sound is supposed to arrive. Dust comes off the ceiling in a fine curtain and hangs there, taking its time to fall.",
+        "Something shifts far below and the air shifts with it. Every loose thing on this floor stirs at once — a door on its stop, the leaves on the beds, the ventilator's long note. The floor holds. It goes on holding while you stand there listening to it hold.",
+    ];
+
     private static readonly string[] ChillLines =
     [
         "The deck flexes with a groan that goes on a half-second too long. Heads come up as one — and this time nobody quite lets the breath back out. It didn't sound like settling. Nobody says so.",
         "A shudder rolls through the floor and every head lifts at once — but the together-decide never comes. You all just… listen. Whatever that was, it wasn't a wave.",
         "The hull moans low and long, and the room freezes as one. The held breath stretches, and stretches — and this time no one decides it was nothing.",
+    ];
+
+    // #867 · The chill, on ground that breathes. The escalation is unchanged — the together-decide never
+    // quite lands — but the furniture it fails against is this floor's: air that works, lights that stay on,
+    // a ventilator that keeps its note. Being surrounded by everything being fine is the register down here.
+    private static readonly string[] PressurisedChillLines =
+    [
+        "The floor groans, and the groan goes on a half-second longer than the floor is long. The fans do not falter and the lights do not flicker, which somehow makes it worse. Nothing here decides it was nothing.",
+        "A shudder comes up through good air and every loose thing on the floor moves at once — and then everything is still, and the stillness holds, and the ventilator note is the only thing in the world that is willing to speak.",
+        "You hear it arrive and you hear it leave, and between those two there is a sound that this building does not make. The air is warm. The lights are on. You stand in the middle of all that being fine and you do not move.",
     ];
 
     /// <summary>The house-voice line pool for a <paramref name="setting"/> — exposed so a test can pin that
@@ -160,12 +200,18 @@ public static class HullShudder
         Setting.Haven => HavenLines,
         Setting.Ship => ShipLines,
         Setting.Regolith => RegolithLines,
+        Setting.Pressurised => PressurisedLines,
         _ => DeepSiteLines,
     };
 
-    /// <summary>The chill-line pool (the bounded deep-site escalation) — exposed for the same non-blank /
-    /// unique pinning as the ordinary pools.</summary>
-    public static System.Collections.Generic.IReadOnlyList<string> ChillLines_ => ChillLines;
+    /// <summary>#867 · The chill-line pool — exposed for the same non-blank / unique pinning as the ordinary
+    /// pools, and it takes the ground's own fact rather than offering a default, so no caller can decline to
+    /// ask it. <paramref name="groundHoldsPressure"/> is
+    /// <see cref="UndergroundComplex.HoldsPressure"/> of the floor underfoot: on ground that breathes the
+    /// chill has air to arrive through, and naming a hull there is the bug this parameter exists to make
+    /// impossible.</summary>
+    public static System.Collections.Generic.IReadOnlyList<string> ChillLinesFor(bool groundHoldsPressure) =>
+        groundHoldsPressure ? PressurisedChillLines : ChillLines;
 
     // ── The cadence. ──────────────────────────────────────────────────────────────────────────────────
 
@@ -204,8 +250,29 @@ public static class HullShudder
     /// look up with you</b>. The unison beat, which is the whole shape of this mechanic, has no one to be in
     /// unison with. That is not a reason to drop the beat out here; it is the best thing that could happen
     /// to it.</para></summary>
-    public static Setting SettingOutside(bool onRegolith, bool deepSite, bool haven) =>
-        onRegolith ? Setting.Regolith : SettingFor(deepSite, haven);
+    /// <summary>#867 · …AND THE GROUND ANSWERS FIRST, which exists because the four-way one was quietly
+    /// wrong in exactly the way the three-way one had been.
+    ///
+    /// <para>Owner, 2026-08-13, strolling the B1 park: <i>"Our mood texts still assume the vacuum of the
+    /// surface btw :-D ... talk of nothing carrying the sound here as we are literally taking a walk in a
+    /// park :-D"</i></para>
+    ///
+    /// <para>A floor of the Hive is laid inside the SURFACE'S OWN coordinate envelope, so
+    /// <c>onRegolith</c> — "below the regolith's top rim and away from your own tube" — is TRUE two hundred
+    /// deck units down in a lit, planted, pressurised gallery. Every line of the Regolith pool was therefore
+    /// reachable on a lawn under grow-lights, and the pool's whole tell is that there is no air out there to
+    /// carry a sound.</para>
+    ///
+    /// <para><b>The law (the #802 row law, extended to mood).</b> A mood sentence is a claim about the room,
+    /// so it asks the same fact the lift panel's rows ask — <see cref="UndergroundComplex.HoldsPressure"/> —
+    /// and speaks the register the ground earns. <paramref name="groundHoldsPressure"/> WINS OUTRIGHT over
+    /// every other flag here: whatever else is true of a landing, a floor that holds its own air is not a
+    /// place where nothing carries the sound. Vacuum ground keeps every existing line, byte for byte.</para>
+    /// </summary>
+    public static Setting SettingOutside(bool groundHoldsPressure, bool onRegolith, bool deepSite, bool haven) =>
+        groundHoldsPressure ? Setting.Pressurised
+        : onRegolith ? Setting.Regolith
+        : SettingFor(deepSite, haven);
 
     // ── Line selection. ───────────────────────────────────────────────────────────────────────────────
 
@@ -220,9 +287,33 @@ public static class HullShudder
 
     /// <summary>The CHILL line for an escalated deep-site shudder — the one that doesn't land as "just a
     /// wave". Deterministically drawn from the chill pool per (seed, index), salted apart from the ordinary
-    /// line stream so the two never lock together.</summary>
-    public static string ChillLine(ulong seed, int shudderIndex) =>
-        ChillLines[Index(seed, $"shudder-chill-line:{shudderIndex}", ChillLines.Length)];
+    /// line stream so the two never lock together.
+    ///
+    /// <para>#867 · …and from the pool the GROUND earns. Both pools are drawn with the same salt, so a
+    /// captain who rides the lift up mid-arc gets the same ordinal of a different register rather than a
+    /// second stream that has to be kept in step.</para></summary>
+    public static string ChillLine(bool groundHoldsPressure, ulong seed, int shudderIndex)
+    {
+        System.Collections.Generic.IReadOnlyList<string> pool = ChillLinesFor(groundHoldsPressure);
+        return pool[Index(seed, $"shudder-chill-line:{shudderIndex}", pool.Count)];
+    }
+
+    /// <summary>#867 · THE WORDS THE NERVE LEDGER KEEPS FOR A CHILL, which is where the owner actually met
+    /// this bug: a ledger on a park lawn saying <i>"a cold breath through the hull −1"</i>. The client used
+    /// to type this string itself, one call site away from the pool that is chosen here — the same
+    /// arrangement this project keeps paying for, two places that must agree and only one getting changed.
+    /// The sentence lives beside the pool it belongs to, and the client passes the fact.</summary>
+    public static string ChillNerveLabel(bool groundHoldsPressure) =>
+        groundHoldsPressure ? PressurisedChillNerveLabel : VacuumChillNerveLabel;
+
+    /// <summary>The chill's ledger line out in vacuum — a hull, and cold on the other side of it. Unchanged
+    /// since #480 and pinned byte for byte: #867 forked the sentence, it did not edit this one.</summary>
+    public const string VacuumChillNerveLabel = "a cold breath through the hull";
+
+    /// <summary>The chill's ledger line on ground that holds its own air (owner-authored on #867). There is
+    /// no hull down here and nothing on the far side of one — the cold that reaches you is the building's
+    /// own, out of a corner of it that the plant was never asked to warm.</summary>
+    public const string PressurisedChillNerveLabel = "a cold draught from somewhere the fans do not reach";
 
     // ── The escalation gate. ──────────────────────────────────────────────────────────────────────────
 

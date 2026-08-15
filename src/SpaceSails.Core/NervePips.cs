@@ -203,8 +203,31 @@ public static class NervePips
     /// a derelict's whole deck satisfied the moon's "you are safely aboard" rule, so nothing inside a hull
     /// ever cost a pip and nothing inside a hull ever printed one of these lines. Fixing that made every
     /// label here reachable on a steel deck in vacuum, where there is no regolith, no tube and no sky. A
-    /// label may only name a fixture BOTH places have.</para></summary>
-    public static string Name(Cause c) => c switch
+    /// label may only name a fixture BOTH places have.</para>
+    ///
+    /// <para><b>#867 · AND IN A THIRD, WHICH HAS AIR IN IT.</b> This overload is the vacuum reading, kept so
+    /// every existing caller and every existing sentence is untouched byte for byte. Where the ground's own
+    /// pressure is known, ask <see cref="Name(Cause, bool)"/> instead — see its remarks for why the airlock
+    /// stopped closing behind a captain standing in a park.</para></summary>
+    public static string Name(Cause c) => Name(c, groundHoldsPressure: false);
+
+    /// <summary>#867 · THE SAME PIP, IN THE REGISTER THE GROUND EARNS.
+    ///
+    /// <para>Owner, 2026-08-13, strolling the B1 park: <i>"Our mood texts still assume the vacuum of the
+    /// surface btw :-D"</i> — his ledger, on a lawn under grow-lights, repeating <i>"the airlock closes
+    /// behind you +1"</i> with no airlock anywhere in the building.</para>
+    ///
+    /// <para>Nothing about the MECHANICS was wrong. <see cref="Cause.Airlock"/> is "you are somewhere safe
+    /// and the safety is giving pips back", and a pressurised floor of the Hive has been exactly that since
+    /// #585 — warm, lit, and with doors nothing outside can work. It is the SENTENCE that assumed the only
+    /// way to be safe was to have cycled through a lock. Same mechanics, different sentence: the law the
+    /// lift panel's rows learned in #802, which is that a line is a claim about the room and has to ask the
+    /// room (<see cref="UndergroundComplex.HoldsPressure"/>) before it makes one.</para>
+    ///
+    /// <para><paramref name="groundHoldsPressure"/> is true only when the safety underfoot IS the floor's
+    /// own air. Coming back up a tube, or in through a shelter's door, is still an airlock closing behind
+    /// you, and still says so.</para></summary>
+    public static string Name(Cause c, bool groundHoldsPressure) => c switch
     {
         Cause.Close => "it is right there",
         // Was "cornered — no lane to the tube". A wreck has no tube: the way home is the shuttle's own
@@ -215,11 +238,21 @@ public static class NervePips
         Cause.Touch => "it laid hands on you",
         Cause.Monolith => "you have seen the monolith",
         Cause.Archive => "you have stood too long beside the thing in the hold",
-        Cause.Airlock => "the airlock closes behind you",
+        Cause.Airlock => groundHoldsPressure ? PressurisedEaseName : AirlockEaseName,
         Cause.Relief => "the hands remember how to be still",
         Cause.Shock => "something you will not be able to unsee",
         _ => "",
     };
+
+    /// <summary>The ease's words when the safety is a DOOR you came through — her tube, a wreck's lock, a
+    /// shelter's cycle. Unchanged since #480 and pinned byte for byte: #867 forked the sentence, it did not
+    /// edit this one.</summary>
+    public const string AirlockEaseName = "the airlock closes behind you";
+
+    /// <summary>#867 · The ease's words when the safety is the FLOOR — a pressurised gallery of the Hive,
+    /// which has been "safe" to this model since #585 and had no airlock in it the whole time.
+    /// Owner-authored on the issue, per lore discipline.</summary>
+    public const string PressurisedEaseName = "warm air and standing lights - the floor is holding";
 
     /// <summary>One pip moving, with the reason attached. <paramref name="Delta"/> is signed: negative
     /// spends pips, positive gives them back. <paramref name="Label"/> is the words the player reads —
@@ -348,6 +381,12 @@ public static class NervePips
     /// cancel. The gauge would sit still while the ledger printed "you have stood too long beside the thing
     /// in the hold" — the sentence saying one thing and the sim doing another, which is the most expensive
     /// bug class this project has.</para></param>
+    /// <param name="SafeGroundHoldsPressure">#867 · WHAT KIND OF SAFE. The gauge does not change — a safe
+    /// captain gets pips back on the <see cref="Cause.Airlock"/> beat whichever way they got safe — but the
+    /// LINE does: this is true only when the safety underfoot is a floor that holds its own air
+    /// (<see cref="UndergroundComplex.HoldsPressure"/>), and false for every door-shaped safety in the game.
+    /// Defaults to false, so a caller that has not been taught about the Hive keeps the airlock's own
+    /// sentence exactly as it has always read. See <see cref="Name(Cause, bool)"/>.</param>
     public readonly record struct Frame(
         bool OnExcursion,
         bool OnRegolith,
@@ -357,7 +396,8 @@ public static class NervePips
         bool Touched,
         double DtSeconds,
         int HealthPipsLeft = int.MaxValue,
-        bool InArchiveField = false);
+        bool InArchiveField = false,
+        bool SafeGroundHoldsPressure = false);
 
     /// <summary>The result of one frame: the new (still pip-aligned) nerve, the latched monolith flag, the
     /// advanced beat clock, every named event that fired THIS frame — in the order they happened, for the
@@ -473,7 +513,9 @@ public static class NervePips
         {
             for (int i = 0; i < airBeats; i++)
             {
-                Fire(Cause.Airlock, -BeatPips); // gives one back, and says so
+                // …and says so IN THE REGISTER THE GROUND EARNS (#867). The beat, the pip and the cause are
+                // identical on both grounds; only the sentence asks where the captain is standing.
+                Fire(Cause.Airlock, -BeatPips, Name(Cause.Airlock, f.SafeGroundHoldsPressure));
             }
         }
 
