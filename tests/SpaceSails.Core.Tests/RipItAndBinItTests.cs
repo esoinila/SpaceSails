@@ -204,6 +204,17 @@ public sealed class RipItAndBinItTests
     /// lying along an edge of the box, which is what "drawn as a thing" always meant), and the second half
     /// asks what counting sides could not: standing in the middle of a waste bin must be blocked BY THE
     /// BIN.</para>
+    ///
+    /// <para><b>The new half proven RED</b> by script-reverting <c>UndergroundComplex.cs</c> to 11356fe —
+    /// <c>CarveBins.AddBox</c> back to its four <c>walls.Add</c> calls:</para>
+    /// <code>
+    /// 321 of 1154 floor(s) break the law: spec — the box the eye sees is the box the boots meet, off one
+    /// list, and it is filled in
+    ///   luna B1: the Chute at (1.9, -200.5) is a box the captain can STAND IN — four rails round a sealed
+    ///     square, drawn solid and simulated hollow (#874).
+    ///   luna B5: the PaperBin at (40.5, -155.0) is a box the captain can STAND IN — …
+    ///   luna B13: the Chute at (-11.9, -93.5) is a box the captain can STAND IN — …
+    /// </code>
     /// </summary>
     [Fact]
     public void THE_DRAWN_BOX_IsTheCollidedBox()
