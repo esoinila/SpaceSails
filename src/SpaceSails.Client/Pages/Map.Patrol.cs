@@ -1001,13 +1001,13 @@ public sealed partial class Map
         g.CoverFor += dt;
 
         // HE PICKS ONCE, on the frame the hold starts, and then it is what he is doing.
-        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight);
+        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight, walls);
 
         if (g.CoverAt is not { } thing)
         {
-            // Nothing on this floor within a few du of where the law stopped him. He holds where he is, and
-            // the picture is the one the owner complained about — which is why it is counted rather than
-            // papered over.
+            // Not so much as a WALL within a few du of where the law stopped him — which on these floors is
+            // nowhere, and is left standing rather than papered over precisely so a floor plan that grew such
+            // a place would show up as a finding instead of as a statue.
             g.Vx = 0;
             g.Vy = 0;
             return;
@@ -1039,8 +1039,6 @@ public sealed partial class Map
             g.Vy = 0;
             return;
         }
-
-        double startX = g.X, startY = g.Y;
 
         (double nx, double ny) = SurfaceCollision.Slide(
             g.X, g.Y, dx / gap * take, dy / gap * take,

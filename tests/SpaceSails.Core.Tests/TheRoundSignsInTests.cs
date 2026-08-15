@@ -182,14 +182,46 @@ public sealed class TheRoundSignsInTests
         Assert.True(floors > 40, $"only {floors} floors were measured.");
     }
 
-    /// <summary>The plate is in the building's own stencil register (§13.8): it names the FIXTURE and says
-    /// nothing at all about what the facility is for.</summary>
+    /// <summary>
+    /// THE PLATE IS IN THE BUILDING'S OWN STENCIL REGISTER (§13.8): it names the FIXTURE and says nothing at
+    /// all about what the facility is for.
+    ///
+    /// <para>The sixteen forbidden words are <c>TheHiveAmenitiesTests.NoAmenityEXPLAINSWhatThisPlaceWasFor</c>'s
+    /// own list, run again here rather than trusted: that sweep walks the AMENITY signs, and a new kind of
+    /// stencil that nothing swept would be a way into this building's one canon rule with nobody watching it.
+    /// A watchclock station is the most tempting plate in the place to over-explain — it exists to prove
+    /// somebody walked past, and "prove it to whom, about what" is the question §13.8 forbids answering.</para>
+    /// </summary>
     [Fact]
     public void ThePlateNamesTheFixtureAndNothingElse()
     {
         Assert.Equal("🔘 ROUND POINT 3", PatrolBeat.CheckpointPlate(3));
         Assert.True(PatrolBeat.IsCheckpointPlate(PatrolBeat.CheckpointPlate(1)));
         Assert.False(PatrolBeat.IsCheckpointPlate("🖼 HYDROGEN: FUEL OF THE COMING CENTURY"));
+
+        string[] forbidden =
+        [
+            "old one", "old ones", "reever", "restore", "backup", "revive", "resurrect", "clone",
+            "slave", "brain", "kaamos", "minister", "ancient", "alien", "experiment", "specimen",
+        ];
+
+        // …and it is a NOUN on a wall, never an instruction to the man reading it. A plate that told a guard
+        // to sign it would be this building giving orders — a voice it does not have — and it would read to a
+        // player as a verb they were being denied.
+        string[] orders = ["sign", "press", "scan", "swipe", "report", "you"];
+
+        for (int n = 1; n <= 40; n++)
+        {
+            string plate = PatrolBeat.CheckpointPlate(n);
+            foreach (string bad in forbidden)
+            {
+                Assert.DoesNotContain(bad, plate, StringComparison.OrdinalIgnoreCase);
+            }
+            foreach (string order in orders)
+            {
+                Assert.DoesNotContain(order, plate, StringComparison.OrdinalIgnoreCase);
+            }
+        }
     }
 
     // ── THE LANE ──────────────────────────────────────────────────────────────────────────────────────

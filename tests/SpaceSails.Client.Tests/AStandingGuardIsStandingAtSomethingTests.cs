@@ -172,10 +172,16 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     /// nothing near: he does not hold there — he drifts the few du to the nearest fixture first, then
     /// holds."</i></para>
     ///
-    /// <para>The hold is taken at every stop on the round and at the midpoint of every leg — the two places a
-    /// figure that had been following you would actually be when you sat down — and in every one of them the
-    /// man must end up within <see cref="PatrolBeat.CoverStandDu"/> of something on a wall and looking
-    /// straight at it, with the fan told the truth (Vx = Vy = 0) once he is there.</para>
+    /// <para>The hold is taken at every square the round genuinely walks over (<see cref="HoldSpots"/>) and in
+    /// every one of them the man must end up within <see cref="PatrolBeat.CoverStandDu"/> of something on a
+    /// wall and looking straight at it, with the fan told the truth (Vx = Vy = 0) once he is there.</para>
+    ///
+    /// <para><b>And it is pinned at ALL of them.</b> This guard was first written pinning bare holds at a
+    /// tenth and it came up RED at a fifth: measured over every leg of every round on all four sites, the
+    /// nearest thing anybody has BOLTED to a wall is a median 19 du off and as much as 31, because the spine
+    /// between two rib mouths is long and blank. That measurement is what put
+    /// <see cref="PatrolBeat.TheNearestFace"/> under the fixtures — a man with nothing to read steps out of
+    /// the middle to a pace off the stone and turns to it — and it is why the pin below is 0 and not 10%.</para>
     ///
     /// <para><b>Proven RED</b> by putting the bare <c>g.Vx = 0; g.Vy = 0;</c> hold back in place of
     /// <c>TheCoverAct</c> — see the PR body.</para>
@@ -184,7 +190,7 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     public void AHeldTailReadsAFixtureInsteadOfFreezingBare()
     {
         var bad = new List<string>();
-        int floors = 0, holds = 0, drifted = 0, bare = 0, covered = 0;
+        int floors = 0, holds = 0, drifted = 0, bare = 0, covered = 0, onStone = 0;
 
         foreach (string body in Bodies)
         {
@@ -220,14 +226,19 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
 
                     if (g.CoverAt is not { } thing)
                     {
-                        // THE HONEST LAST RESORT, counted rather than papered over: this spot on this floor
-                        // has nothing on a wall a man could be reading within a few du of him, so the hold is
-                        // bare. It is the owner's own picture, and the pin below is what stops it spreading.
+                        // NOT SO MUCH AS A WALL within a few du. Counted rather than papered over, and pinned
+                        // at zero below: on these floors there is nowhere a man can stand that has no stone
+                        // within <see cref="PatrolBeat.CoverDriftDu"/>, and a floor plan that grew one would
+                        // be a finding rather than a statue.
                         bare++;
                         continue;
                     }
 
                     covered++;
+                    if (thing.Point == PatrolBeat.TheStoneItself)
+                    {
+                        onStone++;
+                    }
 
                     // He is STOPPED — the hold law is dressed, never broken.
                     if (Math.Abs(g.Vx) > 1e-6 || Math.Abs(g.Vy) > 1e-6)
@@ -284,12 +295,24 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
             $"only {drifted} of {holds} holds involved a DRIFT — a run in which nobody ever had to walk the " +
             "few du to a fixture has not tested the clause the owner asked for.");
 
-        // AND THE COVERAGE IS PINNED. A bare hold is honest and is allowed; a floor plan that started
-        // offering a man nothing to look at would be #831 coming back, and this is what would say so.
-        Assert.True(bare * 10 <= holds,
-            $"{bare} of {holds} holds had nothing on a wall within {PatrolBeat.CoverDriftDu:F0} du — more " +
-            "than a tenth of this building gives a made tail nothing to do but stand there.");
+        // AND THE COVERAGE IS PINNED AT ALL OF IT. Not a tenth, not a fifth: EVERY hold on every round on
+        // every patrolled floor of all four sites ends with a man standing at something and looking at it.
+        // That is only true because the last resort is the wall itself — the published fixtures alone leave a
+        // fifth of this building's rounds with nothing within a few du, which is #831's own picture and is
+        // exactly what would be shipped if this line read "a tenth".
+        Assert.Equal(0, bare);
         Assert.True(covered > 100, $"only {covered} holds were actually covered.");
+
+        // …and the split is worth stating, because it is the measurement that decided the design: the bare
+        // spine between two rib mouths is a real and large part of a round, and a fallback that never fired
+        // would be a fallback nothing had tested.
+        Assert.True(onStone > 100,
+            $"only {onStone} of {covered} covered holds fell back to a bare face of wall — the fixtures alone " +
+            "were measured to leave a fifth of these rounds with nothing in reach, so a run this small means " +
+            "the last resort is not being exercised and this guard is asserting less than it claims.");
+        Assert.True(onStone * 2 < covered,
+            $"{onStone} of {covered} covered holds are a man reading blank shotcrete — over half, which is a " +
+            "building that has stopped bolting things to its walls rather than a fallback.");
     }
 
     /// <summary>#831 · THE TELL, stated where a test can see it: a man signing the station he signed a minute
@@ -650,7 +673,7 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         g.Route = null;
         g.CoverPoint = 0;
         g.CoverFor += Dt;
-        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, readables, walls);
+        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, readables, walls, walls);
 
         if (g.CoverAt is not { } thing)
         {
@@ -765,7 +788,8 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         Assert.Contains("g.SignedPoint = station.Number", walk, StringComparison.Ordinal);
 
         // The cover act, and the honest hold inside it.
-        Assert.Contains("PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight)", walk, StringComparison.Ordinal);
+        Assert.Contains(
+            "PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight, walls)", walk, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.AtTheCover(", walk, StringComparison.Ordinal);
 
         // …and it is what the HELD branch of the step actually calls.

@@ -483,9 +483,15 @@ public static class PatrolBeat
     /// growing an opinion per fixture kind.</summary>
     /// <param name="X">Where the thing is, on the wall it is bolted to.</param>
     /// <param name="Y">The same.</param>
-    /// <param name="Point">The checkpoint's own number when it is one, and 0 when it is not — which is what
-    /// makes the DOUBLE SIGN-IN readable at all.</param>
+    /// <param name="Point">The checkpoint's own number when it is one, 0 for anything else somebody bolted
+    /// there, and <see cref="TheStoneItself"/> for a bare face of wall — which is what makes the DOUBLE
+    /// SIGN-IN readable at all, and what lets an audit count how much of a round runs past nothing.</param>
     public readonly record struct WallThing(double X, double Y, int Point);
+
+    /// <summary>#831 · What <see cref="WallThing.Point"/> carries when the thing is not a thing at all but a
+    /// bare face of wall (<see cref="TheNearestFace"/>). Negative on purpose: every test that asks "is this a
+    /// station" asks <c>&gt; 0</c>, so the last resort can never be counted as a sign-in.</summary>
+    public const int TheStoneItself = -1;
 
     /// <summary>#831 · How close he gets to the thing he has decided to read. Arm's length and a step, the
     /// same distance <see cref="CardReachDu"/> says two people talk at.</summary>
@@ -554,16 +560,32 @@ public static class PatrolBeat
         return things;
     }
 
-    /// <summary>#831 · Which of them a held man makes his business, or null when there is nothing he can both
-    /// see and reach within <see cref="CoverDriftDu"/> — in which case the hold stays honestly bare and the
-    /// audit counts it.
+    /// <summary>#831 · Which of them a held man makes his business — and, when the building has nothing
+    /// published within <see cref="CoverDriftDu"/> of him, THE WALL ITSELF (<see cref="TheNearestFace"/>).
+    /// Null only where there is no stone within reach either, which on these floors is nowhere.
     ///
     /// <para><b>He has to be able to SEE it.</b> A plate through a wall is not a thing a man was about to
     /// read, and a cover act that set off toward one would be a body sliding along shotcrete for ten seconds.
     /// The look is <see cref="SurfaceCollision.HasLineOfSight"/> — the game's one wall law — taken to the
     /// square he would end up standing on rather than to the plate itself, because the plate is bolted to a
-    /// wall and a sightline that ends inside one answers nothing.</para></summary>
+    /// wall and a sightline that ends inside one answers nothing.</para>
+    ///
+    /// <para><b>The published list is tried FIRST and the wall is the floor under it</b>, never the other way
+    /// round: a man with a plate in reach reads the plate, and it is only the bare stretch of spine between
+    /// two rib mouths — a fifth of this round, measured — that gets the wall. Cheap in the order that
+    /// matters: the fallback is only ever computed for a man the fixtures could not answer.</para></summary>
     public static WallThing? CoverFor(
+        double x, double y,
+        IReadOnlyList<WallThing>? things,
+        IReadOnlyList<SurfaceCollision.Segment>? sight,
+        IReadOnlyList<SurfaceCollision.Segment>? stone)
+    {
+        WallThing? found = TheNearestFixture(x, y, things, sight);
+        return found ?? TheNearestFace(x, y, stone, sight);
+    }
+
+    /// <summary>#831 · The nearest thing somebody BOLTED to a wall that he can see and reach.</summary>
+    private static WallThing? TheNearestFixture(
         double x, double y,
         IReadOnlyList<WallThing>? things,
         IReadOnlyList<SurfaceCollision.Segment>? sight)
@@ -593,6 +615,64 @@ public static class PatrolBeat
 
             bestGap = gap;
             best = t;
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// #831 · …AND WHEN THERE IS NOTHING ON THE WALL, THE WALL.
+    ///
+    /// <para><b>This is the owner's actual complaint, answered where it happens.</b> He watched a man
+    /// <i>"in the middle of the corridor"</i> and asked <i>"why would it just stand there"</i>. Measured over
+    /// every leg of every round on every patrolled floor of all four sites, a FIFTH of the distance walked is
+    /// bare spine: the nearest thing anybody has bolted to a wall is a median 19 du off and as much as 31,
+    /// and the drift is a few du by design. Leaving those holds bare would have left the exact picture this
+    /// issue was filed about standing in a fifth of the building.</para>
+    ///
+    /// <para>So the last resort is the stone. He steps out of the middle to a pace off the nearest face and
+    /// turns to it — which is the two owner sentences of this issue meeting: <i>"they should respect right
+    /// side traffic, and not walk in the middle of the corridor"</i> is what a person does when they stop in
+    /// a passage, and a man a pace off a wall with his back to you reads as a man looking at something rather
+    /// than a man looking at YOU. It carries <c>Point = 0</c>, so it is never a sign-in and can never be
+    /// mistaken for one by <see cref="DoubleSignIn"/>.</para>
+    ///
+    /// <para>Measured against the field a body COLLIDES with rather than the drawn wall list, because the
+    /// thing he ends up standing a pace off has to be the thing that stopped him.</para>
+    /// </summary>
+    public static WallThing? TheNearestFace(
+        double x, double y,
+        IReadOnlyList<SurfaceCollision.Segment>? stone,
+        IReadOnlyList<SurfaceCollision.Segment>? sight)
+    {
+        if (stone is null)
+        {
+            return null;
+        }
+
+        WallThing? best = null;
+        double bestGap = CoverDriftDu;
+        foreach (SurfaceCollision.Segment s in stone)
+        {
+            (double px, double py) = NearestOnSegment(x, y, s.X1, s.Y1, s.X2, s.Y2);
+            double dx = px - x, dy = py - y;
+            double gap = Math.Sqrt((dx * dx) + (dy * dy));
+
+            // A face he is already inside is not a face he can turn to: the heading would be undefined and
+            // the picture would be a man with his nose in the shotcrete.
+            if (gap >= bestGap || gap < SignInClearDu)
+            {
+                continue;
+            }
+
+            double reach = Math.Max(0, gap - CoverStandDu);
+            if (!SurfaceCollision.HasLineOfSight(
+                    x, y, x + (dx / gap * reach), y + (dy / gap * reach), sight))
+            {
+                continue;
+            }
+
+            bestGap = gap;
+            best = new WallThing(px, py, TheStoneItself);
         }
         return best;
     }
