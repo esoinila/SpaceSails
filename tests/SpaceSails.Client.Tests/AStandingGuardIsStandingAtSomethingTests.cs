@@ -368,9 +368,14 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     /// collision field, planned and walked over the same walled world the game would hand him. He has to be
     /// standing at a DIFFERENT stop inside <see cref="PinnedSeconds"/>.</para>
     ///
-    /// <para><b>Proven RED</b> by making the two escapes in <c>WalkTheRound</c> return instead of advancing
-    /// the leg (the <c>planned.Route is null</c> arm and the <c>Retries &gt; RePlansPerLeg</c> arm): the man
-    /// grinds against the box for the whole minute and never stands anywhere. See the PR body.</para>
+    /// <para><b>Proven RED, and it caught a live one.</b> Disabling the probe loop in
+    /// <c>PatrolBeat.HopIsWalkable</c> — the lane back to checking its waypoints and never the ground between
+    /// two of them — pins a walled round on europa B4 for the whole ninety seconds. It is a real finding and
+    /// not a staged one: that is how the clause got written. See the PR body.</para>
+    ///
+    /// <para><b>And the guard itself was RED-proofed into existence.</b> Its first cut counted a stand at the
+    /// stop the man was already standing on, so a stepper that answered a failed plan by simply STANDING —
+    /// the third suspect, precisely — went green. See the <c>left</c> clause below.</para>
     /// </summary>
     [Fact]
     public void ASnaggedRoundReachesADifferentStop()
