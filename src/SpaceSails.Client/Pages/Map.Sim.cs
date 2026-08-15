@@ -437,11 +437,15 @@ public partial class Map
         bool tableSceneCheat = false; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
         var uri = new Uri(Navigation.Uri);
 
-        // #729 · /map?autowalk=1 — click the deck on a surface excursion or a Hive floor and the captain
-        // WALKS there, at walking speed, through the ordinary collision. Read through Core's own parser
-        // rather than another branch in the loop below, so the flag the testing guide documents, the flag
-        // the gate reads and the flag the tests assert on are one fact instead of three spellings of it.
-        _autoWalkCheat = AutoWalk.EnabledIn(uri.Query);
+        // #875 · /map?autowalk=1 IS RETIRED — still parsed, deliberately ignored. #729 built click-to-walk
+        // behind this flag "until the owner rules on always-on"; the ruling landed on 2026-08-15 ("click to
+        // walk should always be on when the arrows for walking are active also. The two should be linked as
+        // alternative UI methods for walking"), so a deck click is a CONTROL of the game now and there is
+        // nothing left for a URL to switch on. The parse survives as a NO-OP ALIAS so that every old dev
+        // URL, every line of the testing guide and the UiGate's own boot still resolve to a world — and the
+        // answer goes nowhere, because the only gate left is Map.Deck's TheCaptainsLegsAreTheirOwn, which
+        // no query string can reach.
+        _ = AutoWalk.EnabledIn(uri.Query);
 
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
@@ -941,7 +945,8 @@ public partial class Map
                 // more doors than anything else we have shipped: find a rock with a lab, land on it, find the
                 // shed, ride the lift, walk to the canteen, find a table with one of THREE regulars at it. So
                 // it implies the whole route (?secretlab=deep&land=1&floor=1) rather than adding a fourth
-                // spelling of it, and it turns ?autowalk=1 on because the last leg is a walk across a room.
+                // spelling of it. (#875: it used to turn ?autowalk=1 on too, because the last leg is a walk
+                // across a room. Every boot has the click now, so there is nothing left to turn on.)
                 //
                 // It does NOT force who is at the tables. The rota is seeded off the site and the watch like
                 // any other shift (#709) — a cheat that seated the Hand for you would be testing a room that
@@ -1692,11 +1697,10 @@ public partial class Map
         }
         if (tableSceneCheat)
         {
-            // #746 · The last leg of ?tablescene=1 is a walk across a canteen, and clicking where you want
-            // to be is how this repo tests a room. Turned on HERE rather than in the parser branch, because
-            // ?autowalk= is read off the query before the loop runs (Core's own parser) and a flag set in
-            // two places is a flag that will disagree with itself.
-            _autoWalkCheat = true;
+            // #875 · This is where ?tablescene=1 used to turn ?autowalk=1 on, because the last leg of the
+            // scene is a walk across a canteen and clicking where you want to be is how this repo tests a
+            // room. It no longer has to: the click is a control on every walked view now, so this boot —
+            // and every other boot in DevStarts — arrives with both grips on the same walk.
             _tableSceneCheat = true;
         }
 
@@ -3589,9 +3593,13 @@ public partial class Map
     {
         // #729 · ON THE WALKED DECK, A CLICK IS A PLACE ON THE FLOOR. The canvas underneath is the same
         // element the ecliptic uses, so without this the picker below would hit-test the click against
-        // planets and contacts that are not on screen at all and open a body menu over a moon floor. Gated
-        // on the cheat, so with ?autowalk=1 off every pointer path in the game is byte-for-byte what it was.
-        if (AutoWalkAvailable)
+        // planets and contacts that are not on screen at all and open a body menu over a moon floor.
+        //
+        // #875 · The question here is only WHICH SURFACE THE POINTER IS OVER, never whether the captain may
+        // walk — a click that lands on a floor belongs to the floor even when the legs are held, or the
+        // escort would be answered by a planet menu opening over a corridor. What that click then does is
+        // ClickToWalkAt's, through the one predicate the arrow keys ask.
+        if (ADeckClickIsAPlaceOnTheFloor)
         {
             _suppressClickMenu = false; // no map menu can be open over a moon floor — never eat the first click
             _dragging = true;
@@ -3696,9 +3704,10 @@ public partial class Map
         bool click = _dragging && !_dragMoved && !_suppressClickMenu;
         _dragging = false;
 
-        // #729 · …and a genuine click on that floor is a walk order. A DRAG is still a pan of the deck plan
-        // (OnPointerMove), so the captain can shove the view around without setting off across the room.
-        if (click && AutoWalkAvailable)
+        // #729 · …and a genuine click on that floor is a walk order — #875: on every walked view, always,
+        // exactly where the arrow keys are. A DRAG is still a pan of the deck plan (OnPointerMove), so the
+        // captain can shove the view around without setting off across the room.
+        if (click && ADeckClickIsAPlaceOnTheFloor)
         {
             ClickToWalkAt(e.OffsetX, e.OffsetY);
             return;

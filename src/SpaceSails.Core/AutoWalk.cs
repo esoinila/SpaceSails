@@ -30,8 +30,11 @@ namespace SpaceSails.Core;
 /// </summary>
 public sealed class AutoWalk
 {
-    /// <summary>The dev-cheat flag that turns clicking the floor into a walk order, until the owner rules
-    /// on always-on. Named once here so the URL parse, the docs table and the tests cannot drift.</summary>
+    /// <summary>#729's dev-cheat flag, <b>RETIRED by #875</b> and kept only as a no-op alias. The owner
+    /// ruled on always-on (2026-08-15: <i>"click to walk should always be on when the arrows for walking are
+    /// active also. The two should be linked as alternative UI methods for walking"</i>), so clicking the
+    /// floor is a control of the game and nothing switches it on. Named once here so the URL parse, the docs
+    /// table and the tests still cannot drift about what the dead flag is spelled.</summary>
     public const string QueryFlag = "autowalk";
 
     /// <summary>What the captain is told when the click lands somewhere no corridor connects to. It is the
@@ -144,11 +147,12 @@ public sealed class AutoWalk
     /// <summary>
     /// Point at (<paramref name="to"/>) from (<paramref name="from"/>) and see whether the floor connects.
     ///
-    /// <para><paramref name="enabled"/> is the whole of the gate. When it is false this returns a wholly
-    /// empty <see cref="Attempt"/> — no route, no line, no sound — so a build without the cheat behaves
-    /// exactly as it did before the feature existed. It is a parameter rather than a check inside the
-    /// caller because that is the seam a touch UI adopts unmodified: the day tap-to-move ships, the only
-    /// thing that changes is what is passed here.</para>
+    /// <para><paramref name="enabled"/> is a caller's own "not now". When it is false this returns a wholly
+    /// empty <see cref="Attempt"/> — no route, no line, no sound. #875 · The shipping click passes a plain
+    /// <c>true</c> and asks its own one predicate first (<c>Map.Deck.TheCaptainsLegsAreTheirOwn</c>, the
+    /// same property the arrow keys ask), because the day tap-to-move ships came on 2026-08-15 and a gate
+    /// that lives in two places is a gate that will disagree with itself. The parameter stays for the
+    /// callers who are not that one — a lab, a bench, a UI that has a reason to hold a finger.</para>
     ///
     /// <para>The goal need not be standable. A* counts the goal reached once the walk is within
     /// <paramref name="goalReachDu"/> of it (or, at zero, within one lattice step), so pointing at a
@@ -350,9 +354,12 @@ public sealed class AutoWalk
         return false;
     }
 
-    /// <summary>#729 · Does this query string carry the cheat? Parsed here, once, in the same shape the
-    /// client's other dev flags are parsed, so the URL the testing guide documents and the flag the gate
-    /// reads are the same fact rather than two spellings of it.</summary>
+    /// <summary>#729 · Does this query string carry the flag? #875 · <b>It no longer buys anything.</b> The
+    /// client still runs this parse at boot and throws the answer away — a NO-OP ALIAS — so that an old dev
+    /// URL, a line of the testing guide or a UiGate canary carrying <c>?autowalk=1</c> still resolves to a
+    /// world instead of a 404's worth of confusion. Kept as a function rather than deleted because a URL
+    /// somebody typed in January is a contract, and because a test that proves the flag changes nothing has
+    /// to have something to ask.</summary>
     public static bool EnabledIn(string? query)
     {
         if (string.IsNullOrEmpty(query))
