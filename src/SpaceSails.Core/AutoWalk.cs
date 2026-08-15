@@ -79,11 +79,27 @@ public sealed class AutoWalk
     /// #866 · …AND HOW FAR "AS NEAR AS THE FLOOR ALLOWS" GOES, when the first look found nothing.
     ///
     /// <para><see cref="PointingReachDu"/> answers a finger that landed ON the rail of a thing. It does not
-    /// answer a finger that landed IN one — and this game has nine of those per park: a raised bed is drawn
-    /// as a solid box and simulated as a FENCE, four rails round a 12.6 × 5.6 du pocket that is perfectly
-    /// standable and that nobody on this floor can ever get into. Point at the middle of one and the nearest
-    /// gravel is 4.2 du away, which is further than any reach that also has to keep arrival inside the [E]
+    /// answer a finger that landed IN one — and this game plants nine of those per park: a raised bed
+    /// fourteen deck units by seven, drawn as a filled box since #759 and SIMULATED as one since #874. Point
+    /// at the middle of it and the nearest gravel is 4.2 du away (half its depth, plus the clearance a body
+    /// needs off the rail), which is further than any reach that also has to keep arrival inside the [E]
     /// ring.</para>
+    ///
+    /// <para>#874 · <b>AND THE NUMBER WAS RE-MEASURED WHEN THE BEDS WERE FILLED IN.</b> A bed used to be
+    /// four rails round a 12.6 × 5.6 du pocket of standable-but-sealed floor, and #866 wrote that pocket
+    /// into this paragraph as if it were part of the case for the second look. It never was, and the
+    /// measurement says so: making the beds solid deleted 2,520 sealed squares from every park in the game
+    /// and moved the worst click NOT ONE CENTIMETRE, because an island the walk can never reach was never
+    /// ground the walk could settle for either. So this stays at 5.0, and the claim is a run rather than an
+    /// argument — at <b>4.5 du, with the beds solid, 65 of 5,473 clicks in a park plan nothing</b>, every
+    /// one of them a finger in the middle of a bed:</para>
+    /// <code>
+    /// luna B1: from (-5.0, -212.5), a click on the middle of bed 2 at (-74.6, -217.0) planned nothing.
+    /// luna B1: from (-5.0, -212.5), a click on the middle of bed 3 at (44.7, -217.0) planned nothing.
+    /// luna B1: from (-5.0, -212.5), a click on the middle of bed 6 at (-54.7, -245.0) planned nothing.
+    /// </code>
+    /// <para>What would shrink it is a SHALLOWER BED, and nothing else — which is exactly why the number is
+    /// measured against the beds the building publishes rather than trusted to the arithmetic below.</para>
     ///
     /// <para>So a click that finds nothing gets ONE second look, wider: 3.5 du (half the deepest thing this
     /// building plants on a floor) + 0.7 (the clearance a body needs off its rail) + 0.5 (one lattice step,

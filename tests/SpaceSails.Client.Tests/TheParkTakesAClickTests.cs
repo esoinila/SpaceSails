@@ -201,12 +201,14 @@ public sealed class TheParkTakesAClickTests
     /// stays 5.0 and the park stops taking a click again, silently, with every test green. So the worst case
     /// is MEASURED here and the constant has to cover it.</para>
     ///
-    /// <para><b>OUTSIDE the bed is the whole of the measurement.</b> A raised bed is drawn as a solid box
-    /// and simulated as a FENCE — four rails round a pocket that a body would fit in perfectly well and that
-    /// nobody on this floor can ever get into — so "the nearest standable square" to a bed's middle is the
-    /// bed's own middle, and a guard that asked that question would measure 0.2 du and prove nothing. What a
-    /// click needs is the nearest square OUT OF the thing, which is the only ground the walk can actually
-    /// settle on.</para>
+    /// <para><b>OUTSIDE the bed is the whole of the measurement</b>, and it was the whole of it before the
+    /// bed was solid too. When this was written a bed was four rails round a pocket a body fits in perfectly
+    /// well and nobody on the floor can get into, so "the nearest standable square" to a bed's middle was
+    /// the bed's own middle and a guard that asked THAT question would have measured 0.2 du and proved
+    /// nothing. #874 filled the pocket in, and the answer this file wants did not move by a millimetre —
+    /// because what a click needs has always been the nearest square OUT OF the thing, which is the only
+    /// ground the walk can actually settle on. See <see cref="AutoWalk.PointingFallbackDu"/> for the run
+    /// that measured that.</para>
     /// </summary>
     [Fact]
     public void TheSecondLookCoversTheDeepestThingThisBuildingPlants()
