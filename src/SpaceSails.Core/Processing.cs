@@ -302,7 +302,7 @@ public static class Processing
                     $"{RipAndBin.Glyph} Something gets a hand on you at the machine and the rollers stop."
                     + back,
                 Interruption.LiftedOff =>
-                    $"{RipAndBin.Glyph} The shuttle lifts with the machine half through it." + back,
+                    $"{RipAndBin.Glyph} The shuttle lifts with the sheet half through the machine." + back,
                 _ =>
                     $"{RipAndBin.Glyph} You step away and the rollers stop with the sheet half in." + back
                     + " This one only counts if you stand there.",
