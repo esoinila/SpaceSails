@@ -443,10 +443,15 @@ whole feature would look like a control that did not fire.
    they are walking. After: **no spoke** (you are going nowhere), a smaller body (folded into a chair), a bar
    behind the shoulders (the chair back) and a short bar in front (arms on the table). Nothing in the panel
    has to say "you are sitting" — the deck already did.
-2. **W does not walk you out of your own table.** Press any movement key: the captain does not move a
-   centimetre and a small confirm goes up — *"Stand up? You will lose the table."* — with the cost said
-   underneath while there is still a rest to lose. `Esc`, the backdrop and **Stay where you are** all keep
-   your seat; **Stand up** (or `Enter`) stands you up and the table is gone.
+2. **W does not walk you out of your own table — it stands you up first.** Owner's later ruling (#847,
+   2026-08-13): *"Must stand up before walking… the keys simply cost you the stand first, which is how chairs
+   work."* Press any movement key, or click the floor: nothing slides across the hall wearing a chair. The
+   captain **stands up** — the scene shuts, the table is gone, *"You stand, and the chair goes back under the
+   table. Off you go."* — and lands on the seat's own step-off square, and only THEN do the legs answer. The
+   same press costs the same stand at a park bench, an office chair, a cubicle and **a stool at the
+   counter**, which had never been in the seated flag at all. `Esc` on a docked strip still ASKS — *"Stand
+   up? You will lose the table."* — because cancel says nothing about where you are going; `Esc`, the
+   backdrop and **Stay where you are** all keep your seat, **Stand up** (or `Enter`) takes it.
 3. **WAIT is a short rest.** Each press eases a whole nerve pip — watch the corner gauge and the **nerve
    ledger**, which names it — and the panel adds one clause after the room's own silence line. On the third
    beat one of the five blows knits: the condition marker under the gauge goes *badly cut* → *bleeding*.

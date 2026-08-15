@@ -3081,12 +3081,17 @@ public partial class Map
         // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
         // always available, and a keyboard cancel that could not reach the one panel whose design law is
         // "you may always stand up" would be the game contradicting itself with a keystroke.
-        // #784 phase two · AND ESC MEANS THE SAME THING AS W IN THE DOCKED STATE. Once the frame stopped
-        // dimming the room, "cancel" stopped being a way OUT of a card — there is no card — and became a
-        // press that silently spends the watch you sat for and the breath you got back. So a docked seat
-        // routes the cancel key into the same question WASD raises, and standing up stays one decision taken
-        // once (#788). A CONVERSATION keeps the old behaviour exactly: leaving is free and always available,
-        // and a card you cannot Esc out of would be the game contradicting its own law.
+        // #784 phase two · AND ESC ASKS BEFORE IT TAKES THE SEAT. Once the frame stopped dimming the room,
+        // "cancel" stopped being a way OUT of a card — there is no card — and became a press that silently
+        // spends the watch you sat for and the breath you got back. So a docked seat routes the cancel key
+        // into the confirm, and standing up stays one decision taken once (#788). A CONVERSATION keeps the
+        // old behaviour exactly: leaving is free and always available, and a card you cannot Esc out of would
+        // be the game contradicting its own law.
+        //
+        // #847 · This is the confirm's LAST raiser, and it is the right one. WASD used to arrive here too;
+        // the owner ruled that a movement key is a decision already taken ("must stand up before walking"),
+        // so the keys pay for the stand instead of asking about it. Esc says nothing about where the captain
+        // is going, which is exactly why it is still worth a question.
         if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
         if (_table is not null) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
@@ -3177,11 +3182,12 @@ public partial class Map
 
         // #784 · THE ONE QUESTION THIS KEY IS ALLOWED TO ANSWER, and the exception is worth stating rather
         // than smuggling. Every other card in this method asks nothing; the stand-up confirm asks something.
-        // It is here because of WHERE IT CAME FROM: it was raised by the captain pressing a movement key, so
-        // their hands are already on the keyboard, and a confirm reachable only by mouse would strand
-        // somebody who had just tried to walk. The doing-nothing default is still SEATED — Esc and every
-        // other key leave the chair where it is — so Enter confirms the thing the captain just asked for
-        // rather than deciding something for them. FLAGGED for the owner: this is a judgement call.
+        // It is here because of WHERE IT CAME FROM: it is raised by a KEY (#847 left Esc on the docked strip
+        // as its one raiser), so the captain's hands are already on the keyboard, and a confirm reachable
+        // only by mouse would strand somebody who had just pressed cancel. The doing-nothing default is still
+        // SEATED — Esc and every other key leave the chair where it is — so Enter confirms the thing the
+        // captain just asked for rather than deciding something for them. FLAGGED for the owner: this is a
+        // judgement call.
         if (_standUpAsk) { StandUpFromTable(); return true; }
         // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
         // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
