@@ -2172,9 +2172,13 @@ excursion at one room in eight, times two one-in-three rolls, is why it needed a
 and whose whole point is that probing them probes back."* This is that cast, and the owner's three sentences
 are the whole of its design.
 
-**Where a round is walked, and where it deliberately is not.** Below the bar, and no deeper than the building
-admits to — `PatrolBeat.IsPatrolled` is `CanteenRegulars`'s own B1 ruling on one side and `DepthOf` on the
-other, so the floors that carry a payroll are exactly the floors the directory owns up to. **Nobody walks the
+**Where a round is walked, and where it deliberately is not.** From the floor that breathes down to the last
+one the building admits to — `PatrolBeat.IsPatrolled` is `TopPressurisedFloor` on one side and `DepthOf` on
+the other, so the floors that carry a payroll are exactly the floors the directory owns up to. (**#863**: the
+bar floor used to be the exception, excluded by a single `>=`. Owner, 2026-08-13, watching a guard stand in a
+furnished aisle: *"let's try to have round because the guard looks kind of silly just standing in the middle
+of an aisle."* B1 is walked now — the spine, the two north rooms, and every door in the canteen's front wall
+every lap — and the park is still nobody's round but the bench figure's.) **Nobody walks the
 unlisted band or the found halls**, and that is a fact rather than an omission: the unlisted band is what the
 clandestine operation was hiding *from its own staff* (§13.7), and a security rota down there would be the
 building telling on itself. The head office has none either (#411 has no gate, no shafts and a fiction of its
@@ -2420,8 +2424,9 @@ working rather than a hole in the roster — the owner's complaint was precisely
 building — but it IS a design question the guards lane owns, and this PR does not answer it: whether a round
 should take in both cars (and pay for it in length), whether a second guard walks the other end, or whether
 the goods car being unwatched is the price the building pays for having one. Nothing here guesses. The back
-of house does not enter the question at all: `IsPatrolled` excludes the bar floor, and the park is only ever
-on the bar floor.
+of house does not enter the question at all: the park is only ever on the bar floor, and — since **#863** put
+a round there — the round stops at the head of each of the two streets that run down to the park's gates and
+turns away, so the gravel and everything behind it stay the bench figure's.
 
 **Two things this deliberately does NOT do, so nobody has to guess later.**
 

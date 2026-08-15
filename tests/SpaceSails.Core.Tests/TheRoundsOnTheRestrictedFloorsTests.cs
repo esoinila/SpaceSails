@@ -31,14 +31,24 @@ public class TheRoundsOnTheRestrictedFloorsTests
     // ── WHERE THEY ARE, AND WHERE THEY DELIBERATELY ARE NOT ───────────────────────────────────────────
 
     /// <summary>
-    /// The B1 ruling, the directory's own bottom, and the two bands the building denies having.
+    /// The directory's own bottom, and the two bands the building denies having.
     ///
     /// <para><b>Proven RED</b> by dropping the <c>level >= DepthOf</c> clause from
     /// <see cref="PatrolBeat.IsPatrolled"/>: the unlisted lobby and every floor past the seam start
     /// rostering guards, and this names them.</para>
+    ///
+    /// <h3>#863 · THE ONE CLAUSE THAT WAS REVERSED</h3>
+    ///
+    /// <para>This test was called <c>NobodyWalksTheBar…</c> and its first complaint read <i>a round on the
+    /// floor the bar is on — the plate on that room says NO PASS REQUIRED</i>. Owner, 2026-08-13, watching a
+    /// man stand in a furnished aisle with nothing to do: <i>"let's try to have round because the guard looks
+    /// kind of silly just standing in the middle of an aisle."</i> So the bar floor is walked, the complaint
+    /// is inverted, and the plate is untouched — a captain with no paper is still walked out and never
+    /// harmed. The positive half of that law lives in <c>B1GetsItsRoundTests</c>; what stays here is that
+    /// every OTHER exclusion survived the reversal untouched.</para>
     /// </summary>
     [Fact]
-    public void NobodyWalksTheBarAndNobodyWalksThePartsTheBuildingDeniesHaving()
+    public void EveryWorkingFloorIsWalkedAndNobodyWalksThePartsTheBuildingDeniesHaving()
     {
         var complaints = new List<string>();
         int patrolled = 0, sitesWithARound = 0;
@@ -57,10 +67,13 @@ public class TheRoundsOnTheRestrictedFloorsTests
                     any = true;
                 }
 
-                if (walked && UndergroundComplex.TopPressurisedFloor(site) == level)
+                // #863 · …and the bar floor is now the other way round: it is a WORKING floor, it is the
+                // densest one in the building, and a guard standing still on it is what the owner watched.
+                if (!walked && UndergroundComplex.TopPressurisedFloor(site) == level
+                    && !UndergroundComplex.IsHeadOffice(site))
                 {
-                    complaints.Add($"{site} B{-level}: a round on the floor the bar is on — the plate on that " +
-                                   "room says NO PASS REQUIRED.");
+                    complaints.Add($"{site} B{-level}: nobody walks the floor with the park, the canteen and " +
+                                   "the offices on it — the guard is standing in the middle of an aisle.");
                 }
                 if (walked && UndergroundComplex.IsUnlisted(site, level))
                 {
@@ -77,16 +90,17 @@ public class TheRoundsOnTheRestrictedFloorsTests
             }
 
             // The positive half, stated as the building's own arithmetic rather than as a count somebody
-            // typed: a site whose DIRECTORY reaches below the bar has floors with a payroll on them, and
-            // every one of them must be walked. A site that stops at the bar has nothing to walk and is not
-            // a failure — it is a two-floor hole in the ground.
+            // typed: a site whose DIRECTORY reaches the bar floor or below has floors with a payroll on
+            // them, and every one of them must be walked. (#863 · <c>&lt;=</c>, not <c>&lt;</c>: the bar
+            // floor is inside the rota now, so a site whose directory stops exactly there still has one
+            // floor to walk rather than none.)
             //
             // …and never the head office, which is in this list on purpose: ENCELADUS is #411's building,
             // and a sweep that quietly skipped it would prove the exclusion nowhere.
             bool hasWorkingFloors =
                 !UndergroundComplex.IsHeadOffice(site)
                 && UndergroundComplex.TopPressurisedFloor(site) is { } top
-                && UndergroundComplex.DepthOf(site) < top;
+                && UndergroundComplex.DepthOf(site) <= top;
             Assert.True(
                 hasWorkingFloors == any,
                 $"{site}: the directory reaches to B{-UndergroundComplex.DepthOf(site)} under a bar on " +
