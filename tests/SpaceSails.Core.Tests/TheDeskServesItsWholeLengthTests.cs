@@ -530,8 +530,13 @@ public sealed class TheDeskServesItsWholeLengthTests
     [Fact]
     public void ONESOURCE_NobodyOutsideTheCarveMeasuresTheDesk()
     {
-        string core = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Core", "UndergroundComplex.cs"));
+        // #870 · The module is one partial class spread over UndergroundComplex*.cs. Same needles, same
+        // code, new paths — the source read here is the concatenation of every part.
+        string core = string.Concat(System.IO.Directory
+            .EnumerateFiles(System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Core"),
+                "UndergroundComplex*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(System.IO.File.ReadAllText));
 
         // One place computes where the serving desk starts, and the picture, the row and the run all read
         // it. Three spellings of "after the hoist" is how two of them come to disagree.
