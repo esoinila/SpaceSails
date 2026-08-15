@@ -3133,11 +3133,17 @@ public static class UndergroundComplex
         // is swept over this and nothing else. Appended, for the reason above.
         IReadOnlyList<Room>? Rooms = null,
         // #853 · The conference posters on a laboratories floor's corridor walls. Appended, same reason.
-        IReadOnlyList<LabPosters.Poster>? Posters = null)
+        IReadOnlyList<LabPosters.Poster>? Posters = null,
+        // #864 · THE INCIDENT BOARD, on the one lab chamber wall that carries one. Appended, same reason.
+        IncidentBoard.Board? Board = null)
     {
         /// <summary>#853 · The framed posters on this floor, never null. Empty on every floor that is not a
         /// laboratories floor, which is a true statement about them rather than a missing one.</summary>
         public IReadOnlyList<LabPosters.Poster> TheWalls => Posters ?? [];
+
+        /// <summary>#864 · The incident board, where this floor has one. At most ONE per laboratories floor
+        /// and null on every other floor in the game — see <see cref="IncidentBoard.On"/>.</summary>
+        public IncidentBoard.Board? TheBoard => Board;
 
         /// <summary>#798 · Somewhere to put a paper on this floor, never null — a caller asking "is there a
         /// bin here" must not have to tell an empty list from a missing one.</summary>
@@ -3897,6 +3903,19 @@ public static class UndergroundComplex
         IReadOnlyList<LabPosters.Poster> posters =
             LabPosters.On(bodyId, level, published, shaftX, shaftY);
 
+        // #864 · …and the incident board, on ONE lab chamber's own wall. A poster is signage for somebody
+        // walking past a door; a safety board hangs INSIDE the room it is about, so it is placed by the
+        // furnishing law (ChamberFitting's measured walls) rather than the signage one — handed every hole
+        // on the floor, because an opening in somebody else's wall is too far away to claim any of the line
+        // and the conservative list cannot mis-pair.
+        var everyHole = new List<SurfaceLayout.Doorway>(cellLeaves);
+        foreach (Room carved in published)
+        {
+            everyHole.AddRange(carved.Ways);
+        }
+        IncidentBoard.Board? board =
+            IncidentBoard.On(bodyId, level, published, everyHole, shaftX, shaftY);
+
         var centres = new List<(double X, double Y)>(rooms.Count);
         foreach (Room pooled in rooms)
         {
@@ -3918,7 +3937,7 @@ public static class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins, published, posters);
+            glass, park, bins, published, posters, board);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,

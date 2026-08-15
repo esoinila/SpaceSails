@@ -359,6 +359,12 @@ public sealed class TheHiveTests
         // which is exactly the line this grep exists to hold.
         text.AddRange(ChamberFitting.AllProse());
         text.AddRange(LabPosters.AllProse());
+        // #869/#864 · …and the two newest voices after those. A piece of furniture that DEPOSES A WITNESS
+        // about somebody who is not here is the most tempting seam this rule has ever had — evidence is
+        // exactly where an author reaches for the thing nobody is allowed to say — and a joke on a wall is
+        // the second. Both stop at a height and a stationery order.
+        text.AddRange(SitStandDesk.AllProse());
+        text.AddRange(IncidentBoard.AllProse());
 
         for (int i = 0; i < 40; i++)
         {

@@ -891,6 +891,19 @@ public partial class Map
                 // chair rather than beside it.
                 TryTakeOfficeChair();
                 break;
+            case DeckPlan.ConsoleKind.HiveDeskEdge:
+                // #869 · RAISE THE DESK. Owner, from his own electric one: "it got up- and down buttons to
+                // move the table to work either with office chair, Salli standing (lab) chair or by standing
+                // while using the table." A distinct press from sitting — the chair is the sit, and this is
+                // the paddle you reach for on your feet.
+                PressTheDeskEdge();
+                break;
+            case DeckPlan.ConsoleKind.HiveDeskPresets:
+                // #869 · THE MEMORY BUTTONS — read what this desk remembers about somebody who is not here,
+                // and lean on them after that. Owner: "love the gag of messing with somebodys desks memorized
+                // height options :-D" Nothing files and nothing scores, either way.
+                PressTheMemoryButtons();
+                break;
             case DeckPlan.ConsoleKind.HiveCubicle:
                 // #821 · TURN THE CATCH. Owner, standing in the park: "we might want to hide from guards in
                 // one toilet cubicle we lock from inside :-D" — from the inside only, and from the outside
