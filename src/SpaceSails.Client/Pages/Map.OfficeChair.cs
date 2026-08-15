@@ -262,7 +262,16 @@ public partial class Map
             StepOff = chair.StandAt,
             Who = CanteenTable.Who.None,
             Plate = RingOffice.SeatPlate,
-            Scene = RingOffice.TheChair(room.Plate),
+            // #868 · …and the scene ASKS THE ROOM IT IS IN, and then the SEAT. The garden clause is
+            // reachable only where the room is dressed as a suite that faces the green
+            // (RingOffice.LooksAtTheGarden) — the owner sat down in a cold room on the back street and was
+            // told the whole wall in front of him was the garden — and the worktop clause only where a
+            // worktop is actually within reach of this chair (RingOffice.WorksAtASurface), which the bench
+            // outside the block's cubicles and the seat inside a privacy booth are not. Core owns both
+            // questions; nothing here decides what a room looks at or what is standing in front of a seat.
+            Scene = RingOffice.TheChair(
+                room.Plate, RingOffice.LooksAtTheGarden(in room),
+                RingOffice.WorksAtASurface(in room, in chair)),
             Seats = Math.Max(1, room.Seats.Count),
             Free = Math.Max(0, room.Seats.Count - 1),
             // A room with a door and nobody in it. Quiet is the cabinet's own flag and it is the true one
@@ -276,7 +285,9 @@ public partial class Map
             DrinkInHand = APourInFrontOfYou,
             // Nobody to ask. The chair is simply taken, and the taking is the scene's opening line.
             Joined = true,
-            Outcome = RingOffice.TookAChairLine(room.Plate),
+            Outcome = RingOffice.TookAChairLine(
+                room.Plate, RingOffice.LooksAtTheGarden(in room),
+                RingOffice.WorksAtASurface(in room, in chair)),
         };
 
         RendererInterop.PlayCue("reveal");

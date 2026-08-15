@@ -306,6 +306,22 @@ public sealed class DeckView
     // it is nothing. Opaque, so no console glow, no plate and no hull line can bleed through it.
     private static readonly RgbaColor Pitch = new(0, 0, 0, 255);
 
+    // ── #868 · THE FURNITURE INKS ────────────────────────────────────────────────────────────────────────
+    //
+    // Owner, reading a back-of-house room off the plan: "could the table just be a DIFFERENT COLOR RECTANGLE
+    // in front of the chair, so arms (and papers) could rest on it?" — so the whole requirement is that a
+    // fixture is not the colour of the floor and not the colour of a wall. Three tones and no more, because
+    // the plan is crude on purpose (the TTRPG aesthetic is canon) and a legend nobody was given is not
+    // information: a SURFACE you work at, a run of things KEPT, and something you SIT on.
+    //
+    // Warm against a cold deck. Everything down here is grey-blue stone and cyan glass, so furniture reads as
+    // the one warm family on the floor without a single one of them competing with the amber avatar or the
+    // yellow stencils, both of which are far brighter.
+    private static readonly RgbaColor SurfaceFill = new(96, 78, 58, 235);   // a worktop, a desk, a counter
+    private static readonly RgbaColor StorageFill = new(64, 72, 90, 235);   // shelving, racking, a kitchenette
+    private static readonly RgbaColor SeatingFill = new(88, 66, 74, 235);   // a bench
+    private static readonly RgbaColor FurnitureEdge = new(196, 176, 148, 200);
+
     private static readonly RgbaColor VoidFill = new(4, 7, 12, 214);
     private static readonly RgbaColor VoidHatch = new(34, 46, 62, 90);
     private static readonly RgbaColor VoidText = new(90, 110, 135, 150);
@@ -574,6 +590,52 @@ public sealed class DeckView
                     DrawSeg((td, td - c), (tEnd, tEnd - c), FoamHatch, 1f);
                 }
             }
+        }
+
+        // ── #868 · THE FURNITURE, FILLED. Owner, reading a cold room off the plan: "The graphics kind of does
+        //    not show there being a table" · "The bench is a line" · "The Shelving is clear as furniture
+        //    goes" — one room, the negative control and the positive control three paces apart. His fix, in
+        //    his own words: "could the table just be a different color rectangle in front of the chair, so
+        //    arms (and papers) could rest on it?", sealed with "I think table should be similar just say
+        //    table."
+        //
+        //    It is #537's argument said about the things IN a room rather than the things a room is made of.
+        //    A rectangle drawn as four lines round a dark gap reads as SOMEWHERE YOU COULD STAND; the eye
+        //    only calls it furniture once it is filled. Drawn HERE — over the floor, under the walls — so a
+        //    wall segment that happens to be a fixture's own edge still draws on top of its fill and nothing
+        //    a captain can walk into is painted over.
+        //
+        //    Every rectangle is Core's published box (RingOffice.Fixture) handed down whole. The pen measures
+        //    nothing: a renderer that worked out where a desk was would be the second author of one desk,
+        //    which is this house's own named way of ending up with a drawn shape that disagrees with the sim.
+        foreach (DeckPlan.FurnitureSpot f in plan.Furniture)
+        {
+            (float gx0, float gy0) = P(Math.Min(f.X0, f.X1), Math.Max(f.Y0, f.Y1));
+            (float gx1, float gy1) = P(Math.Max(f.X0, f.X1), Math.Min(f.Y0, f.Y1));
+            float gw = gx1 - gx0, gh = gy1 - gy0;
+            if (gw <= 0 || gh <= 0)
+            {
+                continue;   // a degenerate box is a SEGMENT (a screen, a chamber's own bench) and draws as one
+            }
+            if (DarkState((f.X0 + f.X1) / 2.0, (f.Y0 + f.Y1) / 2.0) == 0)
+            {
+                continue;   // #371 · in a room nobody has looked into yet, there is no furniture to see
+            }
+
+            RgbaColor ink = f.Tone switch
+            {
+                1 => StorageFill,
+                2 => SeatingFill,
+                _ => SurfaceFill,
+            };
+            FillRect(gx0, gy0, gw, gh, ink);
+
+            // …and a keyline round it, which is what makes a 2 du slab read at plate scale rather than
+            // becoming a smudge the moment the camera pulls back.
+            DrawSeg((gx0, gy0), (gx1, gy0), FurnitureEdge, 1f);
+            DrawSeg((gx1, gy0), (gx1, gy1), FurnitureEdge, 1f);
+            DrawSeg((gx1, gy1), (gx0, gy1), FurnitureEdge, 1f);
+            DrawSeg((gx0, gy1), (gx0, gy0), FurnitureEdge, 1f);
         }
 
         foreach (DeckPlan.Wall w in plan.Walls)
