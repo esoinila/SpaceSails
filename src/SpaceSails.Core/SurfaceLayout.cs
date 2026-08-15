@@ -340,8 +340,13 @@ public static class SurfaceLayout
         // that hatch; this one must read as ONE FACE, which is what its own card says it is ("No seam") and
         // what the owner's "not having been built by us" looks like on a crude grid. The picture is the
         // filled mass MoonSurface lays over it.
+        // courses: Upright — #883 made the hatch take the SHORT side by default, which on a 54 × 14 du slab
+        // would swap forty-nine upright strokes for twelve flat ones. Cheaper, and not this sweep's to
+        // spend: the courses are authored (TheMassStillCollidesThroughEvenThoughNoneOfItIsPainted counts
+        // them, and counts them upright), and a furniture sweep does not re-cut the one object on the moon.
         AddClampedSolidMass(walls, f, ax - Monolith.HalfWidth, ay - Monolith.HalfHeight,
-            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true, hatchDrawn: false);
+            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true, hatchDrawn: false,
+            courses: Hatch.Upright);
 
         // The four stubs at the compass points, just inside the swept apron: the remains of an approach.
         // Small, solid, and unmistakably PLACED — the difference between a rock and a ruin. They are the
@@ -791,19 +796,79 @@ public static class SurfaceLayout
     /// <see cref="Wall"/>: on a small fixture those strokes are what makes it read as mass rather than as a
     /// suspiciously thick little room, and a raised bed full of soil is exactly that object. It is false for
     /// one thing only, the monolith, whose card says <i>no seam</i>.</param>
+    /// <param name="courses">#883 · Which way the strokes run. See <see cref="Hatch"/> — the default is the
+    /// FEWEST that can seal the box, and the one caller that overrides it is the one object whose masonry is
+    /// authored.</param>
     public static void AddSolidMass(System.Collections.Generic.List<Wall> walls,
-        double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true)
+        double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true,
+        Hatch courses = Hatch.Fewest)
     {
         System.ArgumentNullException.ThrowIfNull(walls);
         AddBox(walls, x1, y1, x2, y2, hull);
 
+        // ── #883 · A BOX THINNER THAN A BODY NEEDS NO HATCH AT ALL, and this building is full of them.
+        //
+        // The hatch exists for ONE reason, stated on the next line: no gap it leaves may hold a captain. A
+        // box whose short side is already narrower than a captain's 1.4 du cannot hold one between its own
+        // two rails either — the furthest into it a body can get from both is half the depth, which is less
+        // than the body's own radius — so on a thin fixture the outline IS the whole of the solid and every
+        // stroke through it is one more segment the patrol eye sweeps for nothing (Lab 45: O(walls)).
+        //
+        // Not a micro-optimisation: it is what makes the law affordable exactly where the law is needed
+        // most. A laboratory bench and an office desk are 1.3 du deep (RingOffice.WorktopDepthDu, the
+        // owner's own 90 cm), there are some 3,200 of them standing on 1,154 floors, and hatching every one
+        // would have bought four strokes apiece to seal a pocket the four rails had already sealed.
+        if (System.Math.Min(System.Math.Abs(x2 - x1), System.Math.Abs(y2 - y1))
+            < SurfaceScale.CaptainWidthDu)
+        {
+            return;
+        }
+
         // Closer than the captain's 1.4 du diameter, so no gap between hatches can ever hold a body.
         const double hatch = 1.1;
-        double lo = System.Math.Min(x1, x2), hi = System.Math.Max(x1, x2);
-        for (double x = lo + hatch; x < hi - 1e-9; x += hatch)
+        double xLo = System.Math.Min(x1, x2), xHi = System.Math.Max(x1, x2);
+        double yLo = System.Math.Min(y1, y2), yHi = System.Math.Max(y1, y2);
+
+        // ── #883 · ACROSS THE SHORT SIDE, which is the same solid for a fraction of the segments.
+        //
+        // An upright stroke cuts the box into bands 1.1 du WIDE; a flat one cuts it into bands 1.1 du TALL.
+        // Either seals it — a band narrower than a captain cannot hold one, whichever way round it lies — so
+        // the choice is free and the count is not. A ring desk bank is 28.8 × 2.0 du: upright courses cost
+        // TWENTY-FIVE strokes to say what one flat stroke says. Over the ring suites of a hundred sites that
+        // is the difference between +9.9% segments building-wide and +2.4%, and between a worst floor at 853
+        // and one at 638 — measured both ways before this line was written, because the patrol eye is
+        // O(walls) (Lab 45) and a solid nobody can see is the last place to spend a frame.
+        if (courses == Hatch.Fewest && (yHi - yLo) < (xHi - xLo))
+        {
+            for (double y = yLo + hatch; y < yHi - 1e-9; y += hatch)
+            {
+                walls.Add(new(x1, y, x2, y, hull, Unseen: !hatchDrawn));
+            }
+            return;
+        }
+
+        for (double x = xLo + hatch; x < xHi - 1e-9; x += hatch)
         {
             walls.Add(new(x, y1, x, y2, hull, Unseen: !hatchDrawn));
         }
+    }
+
+    /// <summary>#883 · Which way a solid's internal hatch runs. The strokes are what stop a body being held
+    /// inside a mass (<see cref="AddSolidMass"/>), and either direction does that equally well — a band
+    /// narrower than a captain cannot hold one whichever way round it lies — so this is a question about
+    /// COST and about PICTURE, never about the law.</summary>
+    public enum Hatch
+    {
+        /// <summary>Across whichever side is shorter: the fewest strokes that can seal the box. Right for
+        /// every fixture in the building, and the reason the honest box is affordable in fifteen hundred
+        /// rooms.</summary>
+        Fewest,
+
+        /// <summary>Stacked upright, whatever it costs. One caller: the monolith, whose masonry is authored
+        /// — <c>TheMonolithShowsItsSizeTests</c> counts forty-nine parallel strokes across the one object in
+        /// the game whose own card says <i>no seam</i>, and a 121 metre signature is not something a
+        /// furniture sweep re-cuts on its way past.</summary>
+        Upright,
     }
 
     private static void AddBox(System.Collections.Generic.List<Wall> walls,
@@ -1118,11 +1183,12 @@ public static class SurfaceLayout
     /// The two properties are independent and the object needs both, so there is a helper that has both
     /// rather than a caller that remembers to.</para></summary>
     private static void AddClampedSolidMass(System.Collections.Generic.List<Wall> walls, in Field f,
-        double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true)
+        double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true,
+        Hatch courses = Hatch.Fewest)
     {
         x1 = System.Math.Max(f.LeftX + EdgeMargin, x1);
         x2 = System.Math.Min(f.RightX - EdgeMargin, x2);
-        AddSolidMass(walls, x1, y1, x2, y2, hull, hatchDrawn);
+        AddSolidMass(walls, x1, y1, x2, y2, hull, hatchDrawn, courses);
     }
 
     // ── Seeded sampling: pure and deterministic per (bodyId, tag) off the shared dice engine. ──
