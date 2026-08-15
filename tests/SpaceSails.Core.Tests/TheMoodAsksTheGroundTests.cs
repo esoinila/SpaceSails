@@ -129,6 +129,63 @@ public sealed class TheMoodAsksTheGroundTests
     /// family at once.</para></summary>
     private static bool IsAllowedDespiteTheWord(MoodLine _) => false;
 
+    /// <summary>PARK-ONLY FURNITURE — the same bug one scale down, and the one this pass was sent back for.
+    ///
+    /// <para><see cref="HullShudder.Setting.Pressurised"/> is not the park's voice. It is the voice of EVERY
+    /// floor that holds its own air: the lab, the office run, the cold store, the corridor, the canteen. Two
+    /// of the lines first written for it rang the water in a planting basin and stirred the leaves on a
+    /// growing bed — true on the lawn the owner was walking, and a claim about a room that is a lie in the
+    /// machine shop one floor down.</para>
+    ///
+    /// <para>So the sweep has a second vocabulary. The first list catches a sentence that thinks it is
+    /// outdoors; this one catches a sentence that thinks every indoors is a garden. The furniture these
+    /// pools may name is the furniture PRESSURE ITSELF implies — air, fans, lights, a door on its stop, dust
+    /// — and anything a particular room merely happens to contain belongs to that room's own prose, not to
+    /// an ambient pool that plays on all of them.</para></summary>
+    private static readonly (string Pattern, string Furniture)[] ParkOnlyFurniture =
+    [
+        (@"\bgrow[- ]?lights?\b", "grow-lights"),
+        (@"\bbasins?\b", "a basin"),
+        (@"\bbeds?\b", "a growing bed"),
+        (@"\bleaves\b", "leaves"),
+        (@"\bgravel\b", "gravel"),
+        (@"\blawns?\b", "a lawn"),
+    ];
+
+    /// <summary>Nothing in the pools that play on EVERY breathing floor may name a fixture only one kind of
+    /// floor has. Swept over the ambient pools rather than the whole reachable set, because a nerve-ledger
+    /// line fired BY a park bench is entitled to mention one — the law is about ambience that plays
+    /// everywhere, not about prose that belongs to a place.</summary>
+    [Fact]
+    public void NoAmbientLineOnBreathingGroundNamesFurnitureOnlyOneKindOfFloorHas()
+    {
+        var offenders = new List<string>();
+        IEnumerable<MoodLine> ambient =
+            HullShudder.LinesFor(HullShudder.Setting.Pressurised)
+                .Select(l => new MoodLine("hull-shudder · Pressurised", l))
+                .Concat(HullShudder.ChillLinesFor(groundHoldsPressure: InThePark)
+                    .Select(l => new MoodLine("hull-shudder · chill", l)));
+
+        foreach (MoodLine mood in ambient)
+        {
+            IReadOnlyList<string> found = ParkOnlyFurniture
+                .Where(f => Regex.IsMatch(mood.Line, f.Pattern,
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+                .Select(f => f.Furniture)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            if (found.Count > 0)
+            {
+                offenders.Add($"  {mood.Family} names {string.Join(", ", found)} — which the lab, the cold "
+                    + $"store and the corridor do not have: \"{mood.Line}\"");
+            }
+        }
+
+        Assert.True(offenders.Count == 0,
+            $"{offenders.Count} ambient lines on pressurised ground name park-only furniture"
+            + Environment.NewLine + string.Join(Environment.NewLine, offenders));
+    }
+
     private static IReadOnlyList<string> FurnitureIn(string line) =>
         VacuumFurniture
             .Where(f => Regex.IsMatch(line, f.Pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))

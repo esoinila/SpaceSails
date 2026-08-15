@@ -41,11 +41,19 @@ public static class HullShudder
         Regolith = 3,
 
         /// <summary>#867 · GROUND THAT HOLDS ITS OWN AIR. A floor of the Hive that
-        /// <see cref="UndergroundComplex.HoldsPressure"/> says yes about — warm, lit, fans running, a park
-        /// under grow-lights. It is not the surface (there is air, and air carries a sound) and it is not a
-        /// sealed deep site with a crew in it (the room may be empty). The unison here belongs to the ROOM —
-        /// the lights on their wires, the water in a basin, the ventilator's note — because that is the
-        /// crowd this floor can honestly promise.</summary>
+        /// <see cref="UndergroundComplex.HoldsPressure"/> says yes about — warm, lit, fans running. It is not
+        /// the surface (there is air, and air carries a sound) and it is not a sealed deep site with a crew
+        /// in it (the room may be empty). The unison here belongs to the ROOM — the lights on their chains,
+        /// something loose on a shelf, the ventilator's note — because that is the crowd this floor can
+        /// honestly promise.
+        ///
+        /// <para><b>THIS ONE SETTING SERVES EVERY FLOOR THAT BREATHES</b> — the park the owner was walking
+        /// when he filed #867, and equally a lab, an office run, a cold store, a corridor, a canteen. So no
+        /// line in these pools may name a fixture only one KIND of floor has. A shudder line that rings the
+        /// water in a planting basin is a claim about the room in exactly the way "a cold breath through the
+        /// hull" was, one scale down: right in the park, a lie in the machine shop next to it. The furniture
+        /// these lines are allowed is the furniture pressure itself implies — air, fans, lights, a door on
+        /// its stop, dust — and a guard sweeps for the rest.</para></summary>
         Pressurised = 4,
     }
 
@@ -167,12 +175,17 @@ public static class HullShudder
     // heard, not to explain the physics of hearing it. And the unison belongs to the room's own fixtures,
     // never to a crowd — most of these floors are empty, and a line that promises company is the same class
     // of lie in the other direction.
+    //
+    // AND THE FIXTURES ARE THE ONES PRESSURE ITSELF IMPLIES, never a park's. This pool speaks on every floor
+    // that breathes — the lab, the office run, the cold store, the corridor — so grow-lights, planting
+    // basins and leaves are the same bug one scale down: a sentence claiming furniture the room may not
+    // have. Air, fans, lights, a door on its stop, dust on a ledge. A guard sweeps for the rest.
     private static readonly string[] PressurisedLines =
     [
         "The shudder arrives through the floor, and this time the room hears it with you.",
-        "A low boom comes up through the deck and the whole floor answers it at once — the grow-lights swinging on their wires, the water in the basins ringing, the fan note dipping and coming back. Then it is warm and lit and ordinary again, and you decide it was nothing.",
+        "A low boom comes up through the deck and the whole floor answers it at once — the strip-lights swinging on their chains, something loose on a shelf ringing, the fan note dipping and coming back. Then it is warm and lit and ordinary again, and you decide it was nothing.",
         "The ground moves, and you HEAR it: a long groan somewhere under the slab, carried up through good air to your ears the way a sound is supposed to arrive. Dust comes off the ceiling in a fine curtain and hangs there, taking its time to fall.",
-        "Something shifts far below and the air shifts with it. Every loose thing on this floor stirs at once — a door on its stop, the leaves on the beds, the ventilator's long note. The floor holds. It goes on holding while you stand there listening to it hold.",
+        "Something shifts far below and the air shifts with it. Every loose thing on this floor stirs at once — a door on its stop, the dust on the ledges, the ventilator's long note. The floor holds. It goes on holding while you stand there listening to it hold.",
     ];
 
     private static readonly string[] ChillLines =
