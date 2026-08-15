@@ -1436,14 +1436,16 @@ public static class RingOffice
     /// <summary>
     /// #868 · …and the surface the bench is a bench AT.
     ///
-    /// <para>Owner, sealing the fix: <i>"I think table should be similar just say table"</i> — one idiom for
-    /// all plan furniture, the shelving's own recipe, a filled rectangle with a plate on it. The noun is the
-    /// parenthetical of that same ruling (<i>"or the kit's honest noun — WORKTOP where the narration says
-    /// worktop"</i>) and it is WORKTOP here because the sentence a captain reads on sitting down at this very
-    /// fixture says <i>the worktop is clear</i>. A plate and a sentence about one object should use one
-    /// word.</para>
+    /// <para>Owner, sealing the fix: <i>"I think table should be similar just say table."</i> — one idiom for
+    /// all plan furniture, the shelving's own recipe (a filled rectangle with a plate on it), and the
+    /// plainest possible noun on the plate.</para>
+    ///
+    /// <para>It was written WORKTOP for one round, off a parenthetical in the issue's draft text
+    /// (<i>"or the kit's honest noun — WORKTOP where the narration says worktop"</i>) — which was the crew
+    /// reading a DRAFT over a RULING. The seal is the last word. Nothing is left disagreeing: the sit line
+    /// keeps <i>the worktop is clear</i>, because a table's top is its worktop.</para>
     /// </summary>
-    public const string WorktopPlate = "🪑 WORKTOP";
+    public const string WorktopPlate = "🪑 TABLE";
 
     /// <summary>The counter a reception is.</summary>
     public const string ReceptionPlate = "📇 THE COUNTER · APPOINTMENTS HELD";
