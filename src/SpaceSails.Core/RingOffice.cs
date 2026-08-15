@@ -879,7 +879,12 @@ public static class RingOffice
 
             (double x0, double y0, double x1, double y1) = _frame.Box(uLo, vLo, uHi, vHi);
             fixtures.Add(new Fixture(kind, x0, y0, x1, y1, plate));
-            SurfaceLayout.AddSolidMass(solids, x0, y0, x1, y1, true);
+
+            // hatchDrawn: false — the strokes through the middle are COLLISION and nothing else here. #868
+            // hands the deck this fitting's published box and FILLS it (HiveInterior.Furnish), so a mass
+            // drawn as masonry as well would be one machine wearing two textures. "Same collision, no
+            // joins" — SurfaceLayout's own words for exactly this case.
+            SurfaceLayout.AddSolidMass(solids, x0, y0, x1, y1, true, hatchDrawn: false);
             return true;
         }
 
