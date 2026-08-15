@@ -214,18 +214,26 @@ public partial class Map
 
         var from = new DeckReachability.Point(_avatarX, _avatarY);
         var to = new DeckReachability.Point(gx, gy);
+        // #866 · A FINGER, NOT A BEAT. The reach is what tells Core this goal was POINTED at: the park's
+        // photograph draws gravel where the deck has a raised bed, and asked for the exact square under the
+        // cursor the search could only answer "no route" — after flooding the whole floor to say it.
         AutoWalk.Attempt attempt = AutoWalk.Plan(
             _autoWalkCheat, from, to, _deckPlan.CollisionField, DeckPlan.AvatarRadius,
-            AutoWalk.BoundsFor(_deckPlan.CollisionSegments, from, to));
+            AutoWalk.BoundsFor(_deckPlan.CollisionSegments, from, to),
+            DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
 
         if (attempt.Route is null)
         {
-            // The refusal IS the assertion the reachability audits make, said out loud to a person. Silence
-            // here would read as a broken button, which is the one thing a new input must never do.
-            if (attempt.Refusal is { } line)
-            {
-                ShowPulseMessage(line);
-            }
+            // ── #866 · A CLICK THAT PLANS NOTHING SAYS SO. ALWAYS. ──
+            //
+            // The refusal IS the assertion the reachability audits make, said out loud to a person. It used
+            // to be spoken only if Core had filled one in, which reads as defensive and is in fact the
+            // #603/#825 class waiting to happen a fourth time: the day any path through the planner comes
+            // back empty-handed without prose, this branch goes silent and a silent control is
+            // indistinguishable from a broken one. So the line is unconditional and Core's own canonical
+            // sentence is the floor under it — there is no arrangement of the world in which the captain
+            // clicks the deck, does not walk, and is told nothing.
+            ShowPulseMessage(attempt.Refusal ?? AutoWalk.RefusalLine);
             return;
         }
 
