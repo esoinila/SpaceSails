@@ -75,16 +75,14 @@ public sealed class TwoGripsOneWalkTests
     /// at a fixture the Hive itself invites you to, and walk there.
     ///
     /// <para><b>Proven RED</b> by script-reverting the flag back into the click gate — <c>_autoWalkCheat</c>
-    /// restored as a field and <c>&amp;&amp; _autoWalkCheat</c> put back into the click's own question, which
-    /// is exactly what shipped before this issue:</para>
+    /// restored as a field, the boot parse writing to it again, and <c>|| !_autoWalkCheat</c> put back into
+    /// the click's own question, which is exactly what shipped before this issue:</para>
     /// <code>
-    /// Failed SpaceSails.Client.Tests.TwoGripsOneWalkTests.AClickWalksWithNoFlagInTheUrlAtAll [50 ms]
+    /// Failed SpaceSails.Client.Tests.TwoGripsOneWalkTests.AClickWalksWithNoFlagInTheUrlAtAll [224 ms]
     ///   Error Message:
     ///    a click on the deck planned no route at all, on a floor with nothing held and no flag in the URL.
     ///    The owner's ruling is that the click is a control of the game: "click to walk should always be on
     ///    when the arrows for walking are active also."
-    ///   Expected: True
-    ///   Actual:   False
     /// </code>
     /// </summary>
     [Fact]
@@ -147,18 +145,27 @@ public sealed class TwoGripsOneWalkTests
     /// arrows and refuse the finger, silently, because the click's gate asked for a surface the walk never
     /// needed.</para>
     ///
-    /// <para><b>Proven RED</b> by reintroducing exactly the second author this issue is about — the click
-    /// gate given its own extra opinion, <c>&amp;&amp; _surface is not null</c>, while the arrow keys keep
-    /// theirs:</para>
+    /// <para><b>Proven RED twice</b>, by reintroducing exactly the second author this issue is about.
+    /// First with the click gate given its own extra opinion — <c>|| _surface is null</c> — while the arrow
+    /// keys keep theirs:</para>
     /// <code>
-    /// Failed SpaceSails.Client.Tests.TwoGripsOneWalkTests.BothGripsAnswerTheSameOnEveryHold [1 s]
+    /// Failed SpaceSails.Client.Tests.TwoGripsOneWalkTests.BothGripsAnswerTheSameOnEveryHold [306 ms]
     ///   Error Message:
     ///    the two grips disagree about the captain's legs. With no excursion at all — a deck plan and no
     ///    surface record: the ARROW KEYS walked (said: nothing), the CLICK did not (said: nothing). The
     ///    owner's ruling is that they are one walk with two grips: "The two should be linked as alternative
     ///    UI methods for walking."
-    ///   Expected: True
-    ///   Actual:   False
+    /// </code>
+    /// <para>…and again with the click asking a WEAKER question than the keys (<c>if (!_deckMode) return;</c>,
+    /// the escort dropped from the click path alone), which is the same disagreement running the other way —
+    /// and note it is caught by the SENTENCE rather than by the legs:</para>
+    /// <code>
+    /// Failed SpaceSails.Client.Tests.TwoGripsOneWalkTests.BothGripsAnswerTheSameOnEveryHold [243 ms]
+    ///   Error Message:
+    ///    the two grips say different things about one law. With #833 · a guard walking the captain off his
+    ///    floor: the arrow keys said "👮 "This way." He is walking you out, and he is walking you out." and
+    ///    the click said nothing. A refusal a player meets through one control and not the other is the same
+    ///    control being broken half the time.
     /// </code>
     /// </summary>
     [Fact]
@@ -192,6 +199,17 @@ public sealed class TwoGripsOneWalkTests
     /// pointer is not a walk order there — a fact about the VIEW. The walk law itself must not mention it:
     /// a first-person term inside <c>TheCaptainsLegsAreTheirOwn</c> would take the keys away from the very
     /// mode that steers with them.</para>
+    ///
+    /// <para><b>Proven RED</b> by moving the view term into the walk law — <c>TheCaptainsLegsAreTheirOwn</c>
+    /// given <c>&amp;&amp; !_fpMode</c>, which is what the old <c>AutoWalkAvailable</c> mixed in and what
+    /// anybody "unifying" the two grips by copying that old property reaches for first:</para>
+    /// <code>
+    /// Failed …TwoGripsOneWalkTests.FirstPersonIsTheOnlyThingThatSeparatesTheGrips [207 ms]
+    ///   Error Message:
+    ///    first person has taken the captain's legs. It is a camera, not a hold: W and S walk along the view
+    ///    direction there and A and D turn — a walk law that refuses in first person refuses the only grip
+    ///    that mode has.
+    /// </code>
     /// </summary>
     [Fact]
     public void FirstPersonIsTheOnlyThingThatSeparatesTheGrips()
@@ -236,15 +254,21 @@ public sealed class TwoGripsOneWalkTests
     /// old flag missed, which is what #875 was filed on.</para>
     ///
     /// <para><b>Proven RED</b> by script-reverting the flag into the click gate (the field restored, the
-    /// boot parse writing to it, and <c>&amp;&amp; _autoWalkCheat</c> back in the click's question):</para>
+    /// boot parse writing to it, and <c>|| !_autoWalkCheat</c> back in the click's question). Not 46 of 51,
+    /// as the issue guessed off the URL table — <b>51 of 51</b>, because the two boots that "carried"
+    /// autowalk never carried it in a URL at all: <c>?tablescene=</c> set the flag in a branch of the boot
+    /// code, which is the second spelling this whole issue is about:</para>
     /// <code>
-    /// Failed SpaceSails.Client.Tests.TwoGripsOneWalkTests.NoDevStartsBootIsWalkableByKeyButNotByClick [1 s]
+    /// Failed …TwoGripsOneWalkTests.NoDevStartsBootIsWalkableByKeyButNotByClick [14 ms]
     ///   Error Message:
-    ///    46 of the 50 dev boots walk under the arrow keys and refuse the click:
-    ///      · 🏙🚧 B1 — the designated site (/map?designate=1)
-    ///      · 🌳🚶 B1 — the park, walked (/map?parkwalk=1)
-    ///      · 👮🚶 B2 — somebody is walking the floor (/map?patrol=2)
-    ///      … a URL that is walkable by one grip and not the other is a dev boot that lies about the game.
+    ///    51 of the 51 dev boots walk under the arrow keys and refuse the click:
+    ///   · Phobos — THE MONOLITH (/map?dock=the-space-bar&amp;body=phobos&amp;site=0&amp;land=1)
+    ///   · Phobos — something is paying attention (/map?dock=the-space-bar&amp;body=phobos&amp;site=0&amp;land=1&amp;watchers=1)
+    ///   · Miranda — the false-slab maze (/map?dock=the-tilt&amp;site=0)
+    ///   · Miranda — the Shadowed Rille (/map?dock=the-tilt&amp;site=1)
+    ///   · Miranda — land me straight on the ground (/map?dock=the-tilt&amp;site=0&amp;land=1)
+    ///   · Miranda — jumped the moment you land (/map?dock=the-tilt&amp;site=0&amp;land=1&amp;reevers=4)
+    /// … a URL that is walkable by one grip and not the other is a dev boot that lies about the game.
     /// </code>
     /// </summary>
     [Fact]
@@ -312,6 +336,16 @@ public sealed class TwoGripsOneWalkTests
     ///
     /// <para>Three halves of one fact: Core still parses the spelling, the client still runs that parse over
     /// the boot query and discards it, and no gate anywhere in the client reads a flag any more.</para>
+    ///
+    /// <para><b>Proven RED</b> by the same script-revert that reds guards (a) and (c) — the field restored
+    /// and the boot parse writing to it instead of discarding it:</para>
+    /// <code>
+    /// Failed …TwoGripsOneWalkTests.TheRetiredAutoWalkFlagStillParsesAndChangesNothing [4 ms]
+    ///   Error Message:
+    ///    Assert.Contains() Failure: Sub-string not found
+    /// String:    "using System.Globalization;\nusing System."···
+    /// Not found: "_ = AutoWalk.EnabledIn(uri.Query);"
+    /// </code>
     /// </summary>
     [Fact]
     public void TheRetiredAutoWalkFlagStillParsesAndChangesNothing()

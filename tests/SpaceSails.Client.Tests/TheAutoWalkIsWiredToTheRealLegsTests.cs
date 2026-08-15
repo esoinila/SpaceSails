@@ -8,8 +8,8 @@ namespace SpaceSails.Client.Tests;
 /// #729 · THE OTHER HALF OF THE GUARD — the wiring.
 ///
 /// <para><see cref="ClickToWalkIsStillWalkingTests"/> proves the ROUTE is honest: it never asks for a move
-/// the collision refuses, it costs the same air, it dies on a cancel and it does nothing at all without the
-/// flag. Every one of those laws is worth nothing if the client walks the captain some OTHER way — a
+/// the collision refuses, it costs the same air, it dies on a cancel and it plans nothing at all when a
+/// caller says not now. Every one of those laws is worth nothing if the client walks the captain some OTHER way — a
 /// position assignment, a second stepper, a cancel that happens a frame late. That is this project's third
 /// named bug class in one sentence: <b>the sim doing one thing while a sentence or a drawn shape reports
 /// another</b>, and the whole feature is one <c>_avatarX = …</c> away from it.</para>
