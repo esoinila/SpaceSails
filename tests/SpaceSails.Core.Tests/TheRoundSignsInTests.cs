@@ -326,6 +326,55 @@ public sealed class TheRoundSignsInTests
         }
     }
 
+    /// <summary>
+    /// AND THE GROUND <b>BETWEEN</b> TWO WAYPOINTS IS GROUND A BODY WALKS ON.
+    ///
+    /// <para>The clause the first cut of this lane did not have. An offset moves a man sideways between two
+    /// points the A* proved, and checking only the waypoints let a laned line clip a corner the search had
+    /// cleared — with the body then standing somewhere the planner could not plan FROM, which pinned a round
+    /// for good. <see cref="AutoWalk.Along"/> says out loud that whoever hands it a line owns the claim that
+    /// consecutive points are walkable; this is that claim asked for.</para>
+    ///
+    /// <para>The field is a corridor with a row of piers down the middle of the eastbound lane — an offset
+    /// that only ever asked about its own waypoints would thread between them and drag the walked line
+    /// straight through one. <b>Proven RED</b> by disabling the probe loop in <c>HopIsWalkable</c>; see the
+    /// PR body.</para>
+    /// </summary>
+    [Fact]
+    public void TheLaneNeverWalksAManThroughGroundItDidNotAskAbout()
+    {
+        double half = UndergroundComplex.CorridorHalf;
+        var walls = new List<SurfaceCollision.Segment>
+        {
+            new(-40, -half, 40, -half),
+            new(-40, +half, 40, +half),
+        };
+
+        // Piers on the eastbound lane's own line, spaced so a waypoint can sit between two of them.
+        double lane = -PatrolBeat.LaneOffsetDu;
+        for (double x = -20; x <= 20; x += 3.1)
+        {
+            walls.Add(new SurfaceCollision.Segment(x, lane - 0.4, x, lane + 0.4));
+        }
+
+        IReadOnlyList<DeckReachability.Point> laned =
+            PatrolBeat.KeepRight(Straight(-30, 0, 30, 0), walls, 0.7);
+
+        for (int i = 1; i < laned.Count; i++)
+        {
+            double dx = laned[i].X - laned[i - 1].X, dy = laned[i].Y - laned[i - 1].Y;
+            int probes = (int)Math.Ceiling(Math.Sqrt((dx * dx) + (dy * dy)) / 0.05);
+            for (int k = 0; k <= probes; k++)
+            {
+                double t = k / (double)probes;
+                double px = laned[i - 1].X + (dx * t), py = laned[i - 1].Y + (dy * t);
+                Assert.False(SurfaceCollision.Blocked(px, py, 0.7, walls),
+                    $"the walked line passes through ({px:F2}, {py:F2}), which is inside a pier — the lane " +
+                    "moved a man across ground nobody asked about.");
+            }
+        }
+    }
+
     /// <summary>A dense straight line of waypoints, the shape the lattice A* hands back.</summary>
     private static IReadOnlyList<DeckReachability.Point> Straight(
         double x0, double y0, double x1, double y1)

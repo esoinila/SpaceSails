@@ -782,32 +782,109 @@ public static class PatrolBeat
             ease[i] = Math.Min(ease[i], run);
         }
 
-        var laned = new List<DeckReachability.Point>(n) { route[0] };
+        // ── HOW FAR THE OFFSET IS TAKEN AT EACH ONE, before the ground has been asked at all.
+        var scale = new double[n];
         for (int i = 1; i < n - 1; i++)
         {
-            double scale = straight[i] ? Math.Min(1.0, ease[i] / (double)LaneEaseCells) : 0.0;
-
-            // …and the GROUND may refuse any of it. Stepped back down rather than dropped, so a waypoint
-            // beside something bulky rejoins its neighbours instead of jumping to the middle and back.
-            while (scale > 0)
-            {
-                double tx = route[i].X + (rightX[i] * LaneOffsetDu * scale);
-                double ty = route[i].Y + (rightY[i] * LaneOffsetDu * scale);
-                if (!SurfaceCollision.Blocked(tx, ty, radius, walls))
-                {
-                    break;
-                }
-                scale -= 1.0 / LaneEaseCells;
-            }
-
-            laned.Add(scale > 0
-                ? new DeckReachability.Point(
-                    route[i].X + (rightX[i] * LaneOffsetDu * scale),
-                    route[i].Y + (rightY[i] * LaneOffsetDu * scale))
-                : route[i]);
+            scale[i] = straight[i] ? Math.Min(1.0, ease[i] / (double)LaneEaseCells) : 0.0;
         }
-        laned.Add(route[^1]);
+
+        // ── …AND THE GROUND MAY REFUSE ANY OF IT, ASKED OF THE WHOLE HOP AND NOT ONLY OF THE WAYPOINT.
+        //
+        // This is the clause the first cut of this lane did not have, and three of this generator's
+        // twenty-five patrolled floors said so: an offset moves a man sideways BETWEEN two points the A*
+        // proved, and it is the ground between them that a wedged guard ends up standing in. Checking the
+        // waypoints alone let a laned line clip a corner the search had cleared, and a man who arrives there
+        // is somewhere the planner cannot plan FROM — every subsequent A*, to every stop on that floor, came
+        // back null and the round never went anywhere again. <see cref="AutoWalk.Along"/> says out loud that
+        // whoever hands it a line owns the claim that consecutive points are walkable; this is that claim
+        // being earned rather than assumed.
+        //
+        // Stepped back down a notch at a time rather than dropped, so a waypoint beside something bulky
+        // rejoins its neighbours instead of jumping to the middle and back. The point BEFORE gives way when
+        // the later one has nothing left to give, and the fuel bounds the whole thing: every turn of the
+        // inner loop spends a notch off a sum that starts below n, and at zero the line is the A*'s own.
+        int fuel = n * (LaneEaseCells + 1);
+        for (bool again = true; again && fuel > 0;)
+        {
+            again = false;
+            for (int i = 1; i < n; i++)
+            {
+                while (fuel > 0)
+                {
+                    (double ax, double ay) = At(route, rightX, rightY, scale, i - 1);
+                    (double bx, double by) = At(route, rightX, rightY, scale, i);
+                    if (!SurfaceCollision.Blocked(bx, by, radius, walls)
+                        && HopIsWalkable(ax, ay, bx, by, radius, walls))
+                    {
+                        break;
+                    }
+
+                    if (scale[i] > 0)
+                    {
+                        scale[i] = Math.Max(0, scale[i] - (1.0 / LaneEaseCells));
+                    }
+                    else if (scale[i - 1] > 0)
+                    {
+                        scale[i - 1] = Math.Max(0, scale[i - 1] - (1.0 / LaneEaseCells));
+                    }
+                    else
+                    {
+                        // Both ends are back on the centre line and it is STILL refused: this is the A*'s
+                        // own segment, and a lane is not the thing that gets to have an opinion about it.
+                        break;
+                    }
+                    fuel--;
+                    again = true;
+                }
+            }
+        }
+
+        var laned = new List<DeckReachability.Point>(n);
+        for (int i = 0; i < n; i++)
+        {
+            (double x, double y) = At(route, rightX, rightY, scale, i);
+            laned.Add(new DeckReachability.Point(x, y));
+        }
         return laned;
+    }
+
+    /// <summary>#831 · Where waypoint <paramref name="i"/> sits once the lane has had its say.</summary>
+    private static (double X, double Y) At(
+        IReadOnlyList<DeckReachability.Point> route,
+        double[] rightX, double[] rightY, double[] scale, int i) =>
+        (route[i].X + (rightX[i] * LaneOffsetDu * scale[i]),
+         route[i].Y + (rightY[i] * LaneOffsetDu * scale[i]));
+
+    /// <summary>
+    /// #831 · Is the GROUND BETWEEN two laned waypoints ground a body walks on?
+    ///
+    /// <para>Probed at half a body's own width, and each probe asks about a body <b>fattened by half the
+    /// spacing it was probed at</b> — which is what turns a sample into a proof rather than a hope. Every
+    /// point on the hop is within half a spacing of some probe, so if the fat disc at every probe is clear
+    /// then the real disc everywhere between them is clear too. A sampled test without the fattening would
+    /// answer "no wall at these few spots", which is the kind of green that says nothing.</para>
+    ///
+    /// <para>A hop is about a lattice cell long, so this is a handful of indexed queries per waypoint, once
+    /// per leg, on a frame the man is standing still on anyway (§ Lab 45).</para>
+    /// </summary>
+    private static bool HopIsWalkable(
+        double ax, double ay, double bx, double by, double radius,
+        IReadOnlyList<SurfaceCollision.Segment>? walls)
+    {
+        double dx = bx - ax, dy = by - ay;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        int probes = Math.Max(1, (int)Math.Ceiling(len / Math.Max(1e-6, radius / 2.0)));
+        double fat = radius + (len / probes / 2.0);
+        for (int k = 0; k <= probes; k++)
+        {
+            double t = k / (double)probes;
+            if (SurfaceCollision.Blocked(ax + (dx * t), ay + (dy * t), fat, walls))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>

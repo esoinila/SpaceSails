@@ -431,11 +431,24 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
 
                 var g = new Walker { X = beat[from].X, Y = beat[from].Y, Leg = seal, Standing = 0 };
                 int reached = -1;
+
+                // HE HAS TO HAVE LEFT FIRST, and this clause was put here by script-reverting this very
+                // guard. Without it the test passes on the world it exists to condemn: a stepper that
+                // answered a failed plan by simply STANDING — the issue's third suspect, precisely — sets
+                // the stand on the very first frame, while the man is still on the square he started on, and
+                // the sweep below then reads "he stood at a stop" off the stop he has never walked away
+                // from. The assertion was right and the world could not tell pass from fail.
+                bool left = false;
+
                 for (int i = 0; i < (int)(PinnedSeconds * 60) && reached < 0; i++)
                 {
                     bool walking = g.Standing <= 0;
                     Step(g, walls, beat);
-                    if (!walking || g.Standing <= 0)
+
+                    double ax = g.X - beat[from].X, ay = g.Y - beat[from].Y;
+                    left |= (ax * ax) + (ay * ay) > PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
+
+                    if (!walking || g.Standing <= 0 || !left)
                     {
                         continue;
                     }
@@ -606,8 +619,9 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
                 g.Leg = (g.Leg + 1) % beat.Count;
                 return;
             }
-            g.Route = AutoWalk.Along(
-                PatrolBeat.KeepRight(planned.Route.Route, walls, DeckPlan.AvatarRadius));
+            g.Route = AutoWalk.Along(g.Retries == 0
+                ? PatrolBeat.KeepRight(planned.Route.Route, walls, DeckPlan.AvatarRadius)
+                : planned.Route.Route);
         }
 
         double budget = PatrolBeat.WalkSpeed * Dt;
@@ -783,7 +797,8 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         string walk = Between(Pages("Map.Patrol.cs"), "private void WalkTheRound(", "── #833 · THE APPROACH");
 
         Assert.Contains("PatrolBeat.KeepRight(planned.Route.Route", walk, StringComparison.Ordinal);
-        Assert.Contains("AutoWalk.Along(", walk, StringComparison.Ordinal);
+        Assert.Contains("AutoWalk.Along(g.Retries == 0", walk, StringComparison.Ordinal);
+        Assert.Contains(": planned.Route.Route)", walk, StringComparison.Ordinal);
         Assert.Contains("System.Math.Atan2(station.Y - g.Y, station.X - g.X)", walk, StringComparison.Ordinal);
         Assert.Contains("g.SignedPoint = station.Number", walk, StringComparison.Ordinal);
 

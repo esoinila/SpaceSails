@@ -802,8 +802,16 @@ public sealed partial class Map
             // takes; what this decides is where along the width of the corridor it runs — and it hands the
             // offset back at every corner, doorway and rib mouth, because a lane is a preference and a
             // preference that could wedge a man against a jamb would be a wall.
-            g.Route = AutoWalk.Along(
-                PatrolBeat.KeepRight(planned.Route.Route, walls, DeckPlan.AvatarRadius));
+            //
+            // …AND ON A RE-PLAN HE TAKES THE MIDDLE. `Retries` is above zero only because the last line he
+            // was handed did not walk, and the first thing a preference does when it stops working is stop
+            // being applied. KeepRight now proves the ground under every hop before it offsets one, so this
+            // is the belt under the braces rather than the fix — but it is the clause that means no future
+            // lane can ever be the reason a man stops getting anywhere, which is the difference between a
+            // preference and a wall.
+            g.Route = AutoWalk.Along(g.Retries == 0
+                ? PatrolBeat.KeepRight(planned.Route.Route, walls, DeckPlan.AvatarRadius)
+                : planned.Route.Route);
         }
 
         SpendTheStride(g, dt, walls);
