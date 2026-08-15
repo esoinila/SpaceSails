@@ -41,7 +41,16 @@ public sealed class DeckView
         // no panel text involved. Handed down as the sim's own answer (the table panel IS the chair, #757),
         // never re-derived here — a renderer working out for itself what the sim already knows is how two
         // instruments come to disagree (#591).
-        bool Seated = false);
+        bool Seated = false,
+        // #825 · THE REAL STALL, said out loud. Empty while the machine is keeping up. This is the MACHINE's
+        // banner and not the mothership's: CommsLink's "SIGNAL BREAKING UP" (SurfaceHud.OrbitComms, painted
+        // on the line above) is a scripted fiction about a downlink and has never had anything to do with
+        // whether the game is handing out frames. Two different facts, two different sentences — and on the
+        // one afternoon they were both on the glass, the only one the player could read was the wrong one.
+        // Handed down whole from the sim's own clock (FrameGap over Map.Deck's SimStalenessSeconds), which
+        // is the same clock the INPUT path is gated on: a HUD that says the world is live while a click is
+        // being held would be this repo's sentence-vs-sim bug class aimed at the HUD itself.
+        string? StallBanner = null);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -1437,6 +1446,19 @@ public sealed class DeckView
                 color = new RgbaColor(170, 180, 190, (byte)(255 * Math.Clamp(f, 0.0, 1.0)));
             }
             _renderer.DrawText(widthPx / 2f, 20, orbitLine, color, "13px monospace", TextAlign.Center);
+        }
+
+        // #825 · THE MACHINE'S OWN BANNER, on its own line, under the ship's. The owner had "SIGNAL BREAKING
+        // UP" across the top while the thing that was actually broken was the frame rate — and a sentence
+        // about a downlink is a worse answer than no sentence at all when the question is "why will my legs
+        // not move". So it is drawn SEPARATELY (never appended to the orbit line), in the amber of a
+        // machine-level warning rather than the comms grey, and it steps down a line when the ship is
+        // already talking so neither fact ever paints over the other.
+        if (state.StallBanner is { Length: > 0 } stall)
+        {
+            float y = surface is { OrbitComms: { Length: > 0 } } ? 38 : 20;
+            _renderer.DrawText(widthPx / 2f, y, stall,
+                new RgbaColor(255, 190, 100, 235), "13px monospace", TextAlign.Center);
         }
 
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or

@@ -190,7 +190,10 @@ public sealed class SittingDownIsAStateTests
     public void AndThePostureIsHandedDownRatherThanWorkedOut()
     {
         string deckView = Source("Rendering", "DeckView.cs");
-        Assert.Contains("bool Seated = false)", deckView, StringComparison.Ordinal);
+        // #825 · the closing paren used to be part of this needle, back when Seated was the last thing
+        // State carried. It is not any more (the stall banner sits after it), and "is this parameter the
+        // LAST one" was never the law — the law is that State carries the flag and the renderer reads it.
+        Assert.Contains("bool Seated = false", deckView, StringComparison.Ordinal);
         Assert.Contains("if (state.Seated)", deckView, StringComparison.Ordinal);
         // The renderer must not know what a table is.
         Assert.DoesNotContain("_table", deckView, StringComparison.Ordinal);
