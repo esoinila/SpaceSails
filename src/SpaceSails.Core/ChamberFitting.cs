@@ -662,7 +662,7 @@ public static class ChamberFitting
             double a = mid - (run / 2.0), b = mid + (run / 2.0);
             bool horizontal = wall.Horizontal;
 
-            // ── #869 · THE BOX IS A PICTURE; THE SOLID IS STILL ONE SEGMENT ───────────────────────────
+            // ── #869 · THE BOX IS A PICTURE ───────────────────────────────────────────────────────────
             //
             // A fitting with a DEPTH is drawn as the rectangle it is — #868's finding, said one building
             // along: an outline round a dark gap reads as somewhere you could stand, and only a filled box
@@ -671,9 +671,20 @@ public static class ChamberFitting
             // measured moves (see FittingDepthDu), and it is dropped outright where the deeper box would
             // reach a doorway or the audit's own square.
             //
-            // The SOLID stays the single segment #818 has laid since this feature shipped — the en-suite
-            // pan's own idiom, and the reason the feature is affordable: four segments per fitting in
-            // fifteen hundred rooms is a frame budget spent drawing cupboards (Lab 45: sightline is O(walls)).
+            // ── #883 · …AND THE SOLID IS THAT PICTURE, NOT THE LINE UNDER IT ──────────────────────────
+            //
+            // "The SOLID stays the single segment #818 has laid since this feature shipped" is what stood
+            // here, with the frame budget as its reason (Lab 45: the sightline is O(walls)). It bought that
+            // budget with the oldest fault in this building. A drawn box backed by one rail is not a fence
+            // round a hollow like the ring's — it is WORSE, because the hollow is wide open: the front
+            // 0.6 du strip of every lab bench and every chamber desk in the game is ordinary walkable floor
+            // that the pen fills in as mass, and a captain who walks there is standing inside the furniture.
+            // Measured before it was touched: 19,957 standable squares under 1,109 lab benches and a further
+            // 30 under one floor's desks, and an A* from the room's own centre reached EVERY ONE of them.
+            //
+            // The four rails cost three segments apiece and no hatch, because a fitting is FittingDepthDu
+            // (1.3 du) deep and nothing 1.3 du deep can hold a captain 1.4 du across — that is #883's own
+            // early-out in AddSolidMass, and it is why the honest box is affordable in fifteen hundred rooms.
             double frontAt = fixedAt + (inward * piece.DepthDu);
             double acrossLo = Math.Min(fixedAt, frontAt), acrossHi = Math.Max(fixedAt, frontAt);
 
@@ -684,9 +695,20 @@ public static class ChamberFitting
             fixtures.Add(new RingOffice.Fixture(
                 piece.Kind, fx0, fy0, fx1, fy1, piece.Plate,
                 piece.Seats ? RingOffice.Seating.OneSide : RingOffice.Seating.None));
-            solids.Add(horizontal
-                ? new SurfaceLayout.Wall(a, fixedAt, b, fixedAt, true)
-                : new SurfaceLayout.Wall(fixedAt, a, fixedAt, b, true));
+
+            // A piece with no depth IS a line — a run of racking, a furnace, a filing bank — and the pen
+            // never fills one, so it keeps the single segment #818 gave it. Only the pieces the renderer
+            // draws as a rectangle are laid as the rectangle they are drawn as.
+            if (piece.DepthDu < 0.001)
+            {
+                solids.Add(horizontal
+                    ? new SurfaceLayout.Wall(a, fixedAt, b, fixedAt, true)
+                    : new SurfaceLayout.Wall(fixedAt, a, fixedAt, b, true));
+            }
+            else
+            {
+                SurfaceLayout.AddSolidMass(solids, fx0, fy0, fx1, fy1, hull: true);
+            }
 
             if (!piece.Seats || chairs.Count > 0)
             {

@@ -852,10 +852,19 @@ public static class RingOffice
                 return true;
             }
 
-            solids.Add(new(x0, y0, x1, y0, true));
-            solids.Add(new(x0, y1, x1, y1, true));
-            solids.Add(new(x0, y0, x0, y1, true));
-            solids.Add(new(x1, y0, x1, y1, true));
+            // ── #883 · AND IT IS SOLID, not four rails round a hollow ─────────────────────────────────
+            //
+            // This laid the four sides and stopped, which is the #874 fault said one building along: a desk
+            // bank is 28.8 × 2.0 du and a kitchenette is 6 × 6, and the inside of one is standable floor no
+            // route on the floor can ever end in. Measured before it was touched — every square inside every
+            // ring fitting in the game, and the flood from the suite's own centre reached NOT ONE of them:
+            // 748 sealed squares on a single luna B1, in six kinds of furniture, on every ring in the game.
+            //
+            // AddSolidMass is #586's own answer to exactly this and has been the furniture's answer since
+            // #874 made it public. The OUTLINE IS UNCHANGED — same four segments, same order, same IsHull —
+            // so nothing on any plan moves and the sightline keeps exactly what it stopped before; the
+            // inside simply stops being a place.
+            SurfaceLayout.AddSolidMass(solids, x0, y0, x1, y1, hull: true);
             return true;
         }
 
