@@ -776,10 +776,25 @@ public static class SurfaceLayout
     /// <para>So a solid is hatched through, at closer than a captain's own width — the same trick
     /// <see cref="SurfaceStructure"/> already uses to make metres of piled regolith read as mass rather than
     /// as a suspiciously thick room. Nothing about the outline changes; the inside simply stops being a
-    /// place.</para></summary>
-    private static void AddSolidMass(System.Collections.Generic.List<Wall> walls,
+    /// place.</para>
+    ///
+    /// <para>#874 · <b>PUBLIC, because a solid is a solid wherever it stands.</b> The monolith was not the
+    /// only box in this game the art fills in and the sim leaves hollow. A growing bed in the Hive's park
+    /// was four rails round a 12.6 × 5.6 du pocket — nine per park, eleven parks, 2,520 squares of standable
+    /// floor per room that nobody could ever get into — and a waste bin is a 1.8 du box with exactly one
+    /// sealed square in the middle of it. Every one of them is this method's own paragraph said again at
+    /// furniture scale, so the furniture calls this rather than each placer laying four walls and hoping.
+    /// One definition of SOLID, and a caller who gets the outline from it cannot forget the inside.</para>
+    /// </summary>
+    /// <param name="hatchDrawn">Whether the internal strokes are DRAWN as well as collided. True by default,
+    /// and on anything of ordinary furniture size that is the right answer — see the class summary on
+    /// <see cref="Wall"/>: on a small fixture those strokes are what makes it read as mass rather than as a
+    /// suspiciously thick little room, and a raised bed full of soil is exactly that object. It is false for
+    /// one thing only, the monolith, whose card says <i>no seam</i>.</param>
+    public static void AddSolidMass(System.Collections.Generic.List<Wall> walls,
         double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true)
     {
+        System.ArgumentNullException.ThrowIfNull(walls);
         AddBox(walls, x1, y1, x2, y2, hull);
 
         // Closer than the captain's 1.4 du diameter, so no gap between hatches can ever hold a body.

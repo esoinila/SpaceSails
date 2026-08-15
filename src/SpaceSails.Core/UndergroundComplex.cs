@@ -5596,14 +5596,21 @@ public static class UndergroundComplex
                     continue;
                 }
 
-                walls.Add(new(bu - ParkBedHalfWDu, by - ParkBedHalfHDu,
-                    bu + ParkBedHalfWDu, by - ParkBedHalfHDu, true));
-                walls.Add(new(bu - ParkBedHalfWDu, by + ParkBedHalfHDu,
-                    bu + ParkBedHalfWDu, by + ParkBedHalfHDu, true));
-                walls.Add(new(bu - ParkBedHalfWDu, by - ParkBedHalfHDu,
-                    bu - ParkBedHalfWDu, by + ParkBedHalfHDu, true));
-                walls.Add(new(bu + ParkBedHalfWDu, by - ParkBedHalfHDu,
-                    bu + ParkBedHalfWDu, by + ParkBedHalfHDu, true));
+                // ── #874 · AND IT IS SOLID, WHICH IS WHAT THE ART HAS ALWAYS SAID IT WAS.
+                //
+                //    It was four rails. Four rails round a box fourteen deck units by seven leave a
+                //    12.6 × 5.6 du pocket of perfectly standable floor with no way in — 275 lattice squares
+                //    a body fits on and no route on this floor can end in, nine times over, in every park
+                //    in the game. Nobody could ever SEE that: the bed is DRAWN as a filled box and the
+                //    owner's own complaint about it (#866) was that his finger would not take him there.
+                //
+                //    So it is laid with the one thing in this codebase that means SOLID —
+                //    SurfaceLayout.AddSolidMass, #586's own answer to exactly this on the monolith, where a
+                //    sealed cavity in a slab of stone read as 99 cells of ground nobody could reach. Same
+                //    outline, to the coordinate; the inside simply stops being a place.
+                SurfaceLayout.AddSolidMass(walls,
+                    bu - ParkBedHalfWDu, by - ParkBedHalfHDu,
+                    bu + ParkBedHalfWDu, by + ParkBedHalfHDu, true);
 
                 beds.Add(new GrowingBed(
                     beds.Count + 1, bu, by, ParkBedHalfWDu, ParkBedHalfHDu,
@@ -6188,17 +6195,19 @@ public static class UndergroundComplex
             }
         }
 
+        // #874 · SOLID, not a box with a hole in it. A bin is 1.8 du on a side and the captain is 1.4 du
+        // across, so four rails leave exactly ONE lattice square in the middle of it that a body fits on and
+        // nothing on the floor can walk to. One square is not a room and it is the identical fault as the
+        // park's beds and #586's monolith — a drawn solid the sim left hollow — so it is laid by the same
+        // method, and the collision list this placer is still reading grows with it.
         void AddBox(double cx, double cy, double h)
         {
-            (double, double, double, double)[] sides =
-            [
-                (cx - h, cy - h, cx + h, cy - h), (cx - h, cy + h, cx + h, cy + h),
-                (cx - h, cy - h, cx - h, cy + h), (cx + h, cy - h, cx + h, cy + h),
-            ];
-            foreach ((double x1, double y1, double x2, double y2) in sides)
+            int before = walls.Count;
+            SurfaceLayout.AddSolidMass(walls, cx - h, cy - h, cx + h, cy + h, true);
+            for (int i = before; i < walls.Count; i++)
             {
-                walls.Add(new SurfaceLayout.Wall(x1, y1, x2, y2, true));
-                segs.Add(new SurfaceCollision.Segment(x1, y1, x2, y2));
+                SurfaceLayout.Wall w = walls[i];
+                segs.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
             }
         }
 

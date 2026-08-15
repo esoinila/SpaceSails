@@ -196,33 +196,74 @@ public sealed class RipItAndBinItTests
     /// geometry about a room it does not own. A bin's box goes into <c>FloorPlan.Walls</c>, which is the ONE
     /// list that is both drawn and collided with, so this guard asserts the four sides are actually there —
     /// if they ever stop being, the bin becomes a plate the captain walks straight through.</para>
+    ///
+    /// <para>#874 · <b>AND THE INSIDE OF IT IS NOT A PLACE.</b> Four sides was the whole of the law here, and
+    /// four sides round 1.8 du leave exactly one lattice square in the middle that a 1.4 du captain fits on
+    /// and nothing on the floor can walk to — a sealed island, in every bin in the building, invisible to
+    /// every picture the game draws. So the count is now of the RAILS specifically (a side is a segment
+    /// lying along an edge of the box, which is what "drawn as a thing" always meant), and the second half
+    /// asks what counting sides could not: standing in the middle of a waste bin must be blocked BY THE
+    /// BIN.</para>
+    ///
+    /// <para><b>The new half proven RED</b> by script-reverting <c>UndergroundComplex.cs</c> to 11356fe —
+    /// <c>CarveBins.AddBox</c> back to its four <c>walls.Add</c> calls:</para>
+    /// <code>
+    /// 321 of 1154 floor(s) break the law: spec — the box the eye sees is the box the boots meet, off one
+    /// list, and it is filled in
+    ///   luna B1: the Chute at (1.9, -200.5) is a box the captain can STAND IN — four rails round a sealed
+    ///     square, drawn solid and simulated hollow (#874).
+    ///   luna B5: the PaperBin at (40.5, -155.0) is a box the captain can STAND IN — …
+    ///   luna B13: the Chute at (-11.9, -93.5) is a box the captain can STAND IN — …
+    /// </code>
     /// </summary>
     [Fact]
     public void THE_DRAWN_BOX_IsTheCollidedBox()
     {
+        // The captain's own half-width. Core carries no client constant, so it is named here and it is what
+        // DeckPlan.AvatarRadius holds — a body this wide is what makes a 1.8 du box a place to stand.
+        const double captain = 0.7;
+
         AuditEveryFloor((_, _, floor) =>
         {
             double h = RipAndBin.HalfDu;
             foreach (RipAndBin.Bin bin in floor.TheBins)
             {
-                int sides = 0;
+                int rails = 0;
+                var own = new List<SurfaceCollision.Segment>();
                 foreach (SurfaceLayout.Wall w in floor.Walls)
                 {
                     bool mine = Math.Abs(w.X1 - bin.X) <= h + 0.001 && Math.Abs(w.X2 - bin.X) <= h + 0.001
                         && Math.Abs(w.Y1 - bin.Y) <= h + 0.001 && Math.Abs(w.Y2 - bin.Y) <= h + 0.001;
-                    if (mine)
+                    if (!mine)
                     {
-                        sides++;
+                        continue;
+                    }
+                    own.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
+
+                    // A SIDE: a segment that RUNS ALONG one of the box's four edges — flat on one axis, and
+                    // that axis pinned at the edge. A stroke through the middle of the mass is not a side,
+                    // which is the distinction the old count could not make.
+                    bool onEdge =
+                        (Math.Abs(w.Y1 - w.Y2) < 0.001 && Math.Abs(Math.Abs(w.Y1 - bin.Y) - h) < 0.001)
+                        || (Math.Abs(w.X1 - w.X2) < 0.001 && Math.Abs(Math.Abs(w.X1 - bin.X) - h) < 0.001);
+                    if (onEdge)
+                    {
+                        rails++;
                     }
                 }
-                if (sides != 4)
+                if (rails != 4)
                 {
-                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) has {sides} collidable side(s) — "
+                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) has {rails} collidable side(s) — "
                         + "it is drawn as a thing and is not one.";
+                }
+                if (!SurfaceCollision.Blocked(bin.X, bin.Y, captain, own))
+                {
+                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) is a box the captain can STAND IN — "
+                        + "four rails round a sealed square, drawn solid and simulated hollow (#874).";
                 }
             }
             return null;
-        }, "spec — the box the eye sees is the box the boots meet, off one list");
+        }, "spec — the box the eye sees is the box the boots meet, off one list, and it is filled in");
     }
 
     /// <summary>
