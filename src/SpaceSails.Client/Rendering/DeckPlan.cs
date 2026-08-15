@@ -90,7 +90,13 @@ public sealed class DeckPlan
         // #821 · THE PUBLIC WASHROOM ON THE PARK BLOCK: a WC cubicle's own leaf (press it from inside and
         // the catch goes over), and the basin run, which is a fixture with a SPAN on it the way the bar desk
         // is — one console down the whole length of the porcelain rather than a tap you have to find.
-        HiveCubicle, HiveBasin }
+        HiveCubicle, HiveBasin,
+        // #869 · THE SIT-STAND DESK, as its two controls. Two kinds and not one, because they are two
+        // different decisions on one piece of furniture: the UP/DOWN paddle at one end of the desk's own
+        // front face (press it and the motor runs), and the PRESET buttons at the other (read what they
+        // remember, or lean on them). Neither is a seat — the chair is the sit, and this is a press you make
+        // standing up — and one kind for both would file the pettiest verb in the game under "raise the desk".
+        HiveDeskEdge, HiveDeskPresets }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

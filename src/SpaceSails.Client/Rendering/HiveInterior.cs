@@ -697,6 +697,12 @@ public static class HiveInterior
         // signature fitting and hands the rest over blank, because a plate over every bay of racking in a
         // long store is a floor nobody can read. The `if` below is the ring's own (#817) and is what makes
         // that decision visible from this end.
+        // #869 · …and WHICH SEAT this floor's trade sits you on. Core answers it (ChamberFitting.SeatPlateFor
+        // off the room's own kit): a laboratory perches you on a saddle stool, an administration chamber
+        // seats you in an office chair, and everything else keeps the stool it has had since #818. Asked once
+        // per floor rather than once per room, because a floor's department does not change room to room.
+        string? department = ChamberFitting.DepartmentOn(bodyId, level);
+
         for (int r = 0; r < floor.TheRooms.Count; r++)
         {
             UndergroundComplex.Room room = floor.TheRooms[r];
@@ -717,18 +723,71 @@ public static class HiveInterior
                 // rectangles per room in fifteen hundred rooms is a frame budget spent drawing cupboards),
                 // so most of these are degenerate and the pen skips them — the call is made anyway, so the
                 // day a chamber's bench grows a depth it is drawn without anybody remembering this line.
+                // #869 · …which is exactly the day that arrived: the desks and the benches have one now.
                 Furnish(furniture, in fitting);
             }
 
             // The stools take the SIT verb on the seam the office chairs, the stools at the bar and the park
             // benches already use: Core says where a seat is and this hangs a console on it. The plate
             // carries the VERB (#783: "why not use words like SIT DOWN here if it means sitting down?").
+            string seatPlate = ChamberFitting.SeatPlateFor(
+                ChamberFitting.KitFor(room.Plate, department, kind));
             foreach (RingOffice.Chair seat in room.Seats)
             {
                 consoles.Add(new(
                     DeckPlan.ConsoleKind.HiveOfficeChair,
-                    (float)seat.X, (float)seat.Y, ChamberFitting.StoolPlate));
+                    (float)seat.X, (float)seat.Y, seatPlate));
             }
+
+            // ── #869 · AND THE DESK'S OWN TWO CONTROLS ────────────────────────────────────────────────
+            //
+            // Owner, from his own electric desk: "it got up- and down buttons to move the table to work
+            // either with office chair, Salli standing (lab) chair or by standing while using the table."
+            //
+            // ONE PAIR PER DESK and never one per seat: a long bench with two stools at it is one desk with
+            // one motor, and a second paddle at the same end would be two consoles fighting over one press.
+            // Which desk a seat belongs to is Core's answer (SitStandDesk.DeskFor, measured off the setback
+            // the placer laid the chair at), and so are the two coordinates — this file hangs a console on
+            // them and measures nothing (§13.15).
+            for (int f = 0; f < room.Furniture.Count; f++)
+            {
+                RingOffice.Fixture desk = room.Furniture[f];
+                if (!SitStandDesk.HasAMotor(desk.Kind))
+                {
+                    continue;
+                }
+                foreach (RingOffice.Chair seat in room.Seats)
+                {
+                    if (SitStandDesk.DeskFor(room.Furniture, in seat) != f)
+                    {
+                        continue;
+                    }
+
+                    (double ex, double ey) = SitStandDesk.TheEdge(in desk, in seat);
+                    (double bx, double by) = SitStandDesk.TheButtons(in desk, in seat);
+                    consoles.Add(new(DeckPlan.ConsoleKind.HiveDeskEdge,
+                        (float)ex, (float)ey, SitStandDesk.EdgePlate));
+                    consoles.Add(new(DeckPlan.ConsoleKind.HiveDeskPresets,
+                        (float)bx, (float)by, SitStandDesk.ButtonsPlate));
+                    break;
+                }
+            }
+        }
+
+        // ── #864 · THE INCIDENT BOARD, ON THE ONE LAB CHAMBER WALL THAT CARRIES ONE ────────────────────
+        //
+        // Owner, from a room he ran an AFM and a transmission electron microscope in: "This lab has survived
+        // X days without sarcasm on the wall. That kind gags are such lab humor. :-D"
+        //
+        // A ViewObject, exactly as the posters below are, and for the same reason: it is not a new verb —
+        // stop at a thing on a wall, look at it, and read the card. It carries NO art slot, because it is a
+        // text board and the plate idiom carries it whole; there is nothing here to degrade.
+        if (floor.TheBoard is { } sarcasmBoard)
+        {
+            consoles.Add(new(
+                DeckPlan.ConsoleKind.ViewObject,
+                (float)sarcasmBoard.X, (float)sarcasmBoard.Y,
+                sarcasmBoard.Plate, null, sarcasmBoard.Card));
         }
 
         // ── #853 · AND THE CONFERENCE POSTERS, ON THE ONE DEPARTMENT THEY ARE ABOUT ────────────────────

@@ -158,6 +158,89 @@ public partial class Map
     private bool AutoWalkAvailable =>
         _autoWalkCheat && _deckMode && !_fpMode && _surface is not null && !CaptainIsUnderEscort;
 
+    // ═══════════════════════════════════════════════════════════════════════════════════════════════════
+    //  #825 · THE STALL SAYS SO. Owner, 2026-08-11, on B1 near the goods car with a build eating the CPU:
+    //  "why does the click to walk no longer work?"
+    //
+    //  It did work. The click was taken, the route was planned, and then the frame that should have walked
+    //  it bought FrameGap.SpentPerFrameSeconds of legs on sixteen seconds of wall clock — 0.9 deck units
+    //  out of the hundred and forty-four the captain asked for — and said nothing. The clamp is right (see
+    //  FrameGap: a sixteen-second step would put a body through a bulkhead while the air, the nerve, the
+    //  tracker and the Old Ones all missed it). The SILENCE was the bug.
+    //
+    //  ONE CLOCK. The banner across the top of the deck and the acknowledgement a control gets are the same
+    //  fact asked twice, so they ask the same field through the same threshold. This is deliberately NOT
+    //  the comms fiction: CommsLink's "SIGNAL BREAKING UP" is the mothership's scripted downlink episode on
+    //  the excursion's own on-site clock, it has never gated a walk, and it answers a question nobody with
+    //  a dead-feeling control was asking.
+    // ═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+    /// <summary>#825 · How long the last SERVICED frame actually spanned, in real seconds — unclamped, off
+    /// the browser's own high-resolution stamp. This is the machine's honesty, not the sim's clock.</summary>
+    private double _frameGapSeconds;
+
+    /// <summary>#825 · Wall-clock milliseconds at that frame. The frame gap alone is not enough: in a
+    /// starved tab the pointer event and the animation callback are two queued jobs and the browser decides
+    /// their order, so a click that lands BEFORE the catching-up frame would otherwise read a stale, healthy
+    /// gap and be waved through silently — the very bug, one event earlier.</summary>
+    private long _frameServicedAtMs;
+
+    /// <summary>#825 · Has the hold already been said for this stall? A stall is one event, not one per
+    /// press, and a captain hammering a dead-feeling control does not need the same sentence eight times.
+    /// Cleared by the first frame that arrives on time.</summary>
+    private bool _heldControlsSaid;
+
+    /// <summary>#825 · THE ONE STALENESS CLOCK: how far behind the wall the sim is, right now, in real
+    /// seconds. The larger of the last frame's own span and the time since it — the first names a gap that
+    /// has already happened, the second names one that is still happening, and a control asked in the middle
+    /// of a freeze has to be answered by the second.</summary>
+    private double SimStalenessSeconds
+    {
+        get
+        {
+            double sinceServiced = _frameServicedAtMs <= 0
+                ? 0.0
+                : Math.Max(0.0, (Environment.TickCount64 - _frameServicedAtMs) / 1000.0);
+            return Math.Max(_frameGapSeconds, sinceServiced);
+        }
+    }
+
+    /// <summary>#825 · Are the controls being held by a machine that cannot hand out frames? Read by the HUD
+    /// banner and by every input path that would otherwise be quietly swallowed — one question, one
+    /// threshold (<see cref="FrameGap.StallSeconds"/>), so the picture and the verb cannot disagree about
+    /// whether the world is live.</summary>
+    private bool ControlsAreHeld => FrameGap.IsStalling(SimStalenessSeconds);
+
+    /// <summary>#825 · The frame loop's one line into this: a frame was serviced, and it spanned this long.
+    /// A frame that arrives on time also clears the hold notice, so the next stall is announced afresh.</summary>
+    private void MarkFrameServiced(double dtRealSeconds)
+    {
+        _frameGapSeconds = Math.Max(0.0, dtRealSeconds);
+        _frameServicedAtMs = Environment.TickCount64;
+        if (!FrameGap.IsStalling(_frameGapSeconds))
+        {
+            _heldControlsSaid = false;
+        }
+    }
+
+    /// <summary>#825 · The stall banner the deck paints, or empty. Off ONE clock, through ONE threshold —
+    /// this method exists so the HUD and <see cref="AcknowledgeHeldControls"/> cannot come to hold two
+    /// different opinions about whether the world is live.</summary>
+    private string TheStallBanner() => FrameGap.StallBanner(SimStalenessSeconds);
+
+    /// <summary>#825 · A control used inside the gap. The order is NOT dropped — a clicked route is a queued
+    /// target that outlives the stall and is walked the moment frames return — so this is a receipt rather
+    /// than a refusal, and it is said exactly once per stall.</summary>
+    private void AcknowledgeHeldControls()
+    {
+        if (!ControlsAreHeld || _heldControlsSaid)
+        {
+            return;
+        }
+        _heldControlsSaid = true;
+        ShowPulseMessage(FrameGap.HeldLine);
+    }
+
     /// <summary>Drop the route. <paramref name="tellThem"/> only when the captain did it on purpose — a
     /// route dropped because the floor changed under it needs no receipt.</summary>
     private void CancelAutoWalk(bool tellThem)
@@ -239,6 +322,16 @@ public partial class Map
 
         _autoWalk = attempt.Route;
         _autoWalkDeck = _deckPlan;
+
+        // ── #825 · THE ORDER LANDED; THE LEGS ARE HELD. ──
+        //
+        // Deliberately HERE, in the branch where a route exists, and not at the top of the method: the
+        // refusal branch above says exactly one thing (#866's guard counts them), and "no way through" is
+        // the truer sentence about a click that planned nothing whatever the machine is doing. What this
+        // branch has is a queued target the sim will consume the moment a frame arrives — which is the
+        // issue's own second option, already true by construction, and worth nothing at all until somebody
+        // is told it. Sixteen seconds of a motionless dot is the report that filed this issue.
+        AcknowledgeHeldControls();
     }
 
     /// <summary>#729 · What the captain actually pointed at. A console within arm's reach of the click wins
@@ -313,6 +406,12 @@ public partial class Map
                 // stand's own line is the last thing said — a route-cancel notice raised afterwards would
                 // print over "off you go".
                 StandUpBeforeWalking();
+                // #825 · …AND IF THE MACHINE IS NOT HANDING OUT FRAMES, SAY THAT LAST. A held key is walked
+                // by the same clamped frame the clicked route is, so it buys the same 0.1 s of legs however
+                // long the gap was, and a captain leaning on W watching a motionless dot has been told the
+                // key is broken. Same clock, same threshold, same sentence as the click — one stall, one
+                // line, whichever grip the hand is on.
+                AcknowledgeHeldControls();
                 return true;
             case "f" or "F":
                 ToggleFirstPerson();
@@ -406,7 +505,14 @@ public partial class Map
             return;
         }
 
-        double dt = Math.Min(dtRealSeconds, 0.1);
+        // #825 · THE HONEST CLAMP, and now a NAMED one. A frame that spanned sixteen real seconds buys this
+        // much walking and no more — spending the whole gap would resolve a hundred and forty deck units of
+        // movement in one axis-separated probe, i.e. through a bulkhead, with the air bill, the nerve, the
+        // tracker and the Old Ones all skipped over it. What was wrong was never the clamp; it was that the
+        // dropped time was thrown away in silence. The number lives in Core beside the stall threshold that
+        // is derived from it (FrameGap), so the banner that reports the gap and the frame that eats it are
+        // one fact rather than two literals that happen to agree today.
+        double dt = Math.Min(dtRealSeconds, FrameGap.SpentPerFrameSeconds);
 
         // Three tots of rum and the deck tilts (M21): the heading sways for a while. Purely
         // cosmetic mischief — collision and interaction are unaffected.
@@ -784,6 +890,19 @@ public partial class Map
                 // panel, same wait beat as a canteen top — and #820's snap, so the body ends up IN the
                 // chair rather than beside it.
                 TryTakeOfficeChair();
+                break;
+            case DeckPlan.ConsoleKind.HiveDeskEdge:
+                // #869 · RAISE THE DESK. Owner, from his own electric one: "it got up- and down buttons to
+                // move the table to work either with office chair, Salli standing (lab) chair or by standing
+                // while using the table." A distinct press from sitting — the chair is the sit, and this is
+                // the paddle you reach for on your feet.
+                PressTheDeskEdge();
+                break;
+            case DeckPlan.ConsoleKind.HiveDeskPresets:
+                // #869 · THE MEMORY BUTTONS — read what this desk remembers about somebody who is not here,
+                // and lean on them after that. Owner: "love the gag of messing with somebodys desks memorized
+                // height options :-D" Nothing files and nothing scores, either way.
+                PressTheMemoryButtons();
                 break;
             case DeckPlan.ConsoleKind.HiveCubicle:
                 // #821 · TURN THE CATCH. Owner, standing in the park: "we might want to hide from guards in
