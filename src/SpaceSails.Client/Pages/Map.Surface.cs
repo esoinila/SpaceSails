@@ -3608,6 +3608,17 @@ public partial class Map
             return;
         }
 
+        // #828 · THE SECURE RUNG'S FAR END. Same hold, same bar, same seconds — and an ending that consumes
+        // the sheet, because the whole of what the top rung sells is that the captain STOOD THERE while it
+        // went. It returns without SetItDown for the same reason the seated register does: nothing is being
+        // put on the ground here. Nothing about the destruction is re-implemented at this end either — the
+        // one act (Map.Bin.cs → TheSheetIsGone) is called, exactly as the three unwatched rungs call it.
+        if (hold.Work == Core.Processing.Work.Shred)
+        {
+            TheDestructionWasWatched(hold.Item);
+            return;
+        }
+
         if (hold.Work == Core.Processing.Work.Read && hold.At is { } at)
         {
             // #603/#697 · Exactly the ending a press has always had, with exactly the arguments the press

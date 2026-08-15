@@ -357,9 +357,19 @@ public sealed class TheBinTakesTheKeyTests
 
     // ── THE FLOORS ────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The first published bin this build carves, on a floor with air in it. Chosen by walking the
-    /// generator rather than typed in, so nothing here can go stale against a re-carve.</summary>
-    private static (string Body, int Level, RipAndBin.Bin Bin) ABinSomewhere() => ManyBins().First();
+    /// <summary>
+    /// The first published bin this build carves that DESTROYS ON THE PRESS, on a floor with air in it.
+    /// Chosen by walking the generator rather than typed in, so nothing here can go stale against a
+    /// re-carve.
+    ///
+    /// <para>#828 · The secure disposal is stepped over on purpose and is driven by its own file: the top
+    /// rung opens a watched beat in front of the act (<c>Processing.Work.Shred</c>), so a test that pressed
+    /// it and then looked at the sleeve would be asserting the middle of an interaction rather than the end
+    /// of one. Every law in THIS file is about the two doors ending in one act, and it is stated on the
+    /// rungs where the press IS the act.</para>
+    /// </summary>
+    private static (string Body, int Level, RipAndBin.Bin Bin) ABinSomewhere() =>
+        ManyBins().First(b => b.Bin.Tier != RipAndBin.Tier.SecureDisposal);
 
     /// <summary>Bins off several real sites — the same net the Core audit casts, cut to a size a client test
     /// can afford to build a deck for.</summary>

@@ -678,6 +678,14 @@ public static class HiveInterior
         // be #757's complaint restated in a corridor.
         foreach (RipAndBin.Bin bin in floor.TheBins)
         {
+            // #828 · …except the secure rung, whose box is a SUITE'S OWN FURNISHING
+            // (RingOffice.SecureDisposal) and is plated by the pass that stood it. A stencil here as well
+            // would draw one machine as two — the same plate twice, a couple of du apart.
+            if (bin.Tier == RipAndBin.Tier.SecureDisposal)
+            {
+                continue;
+            }
+
             labels.Add((
                 (float)bin.X, (float)(bin.Y - RipAndBin.HalfDu - 1.4), bin.Plate));
         }

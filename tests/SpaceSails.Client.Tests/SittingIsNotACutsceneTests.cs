@@ -306,8 +306,15 @@ public sealed class SittingIsNotACutsceneTests
 
         // THE PRODUCT: the seated ending files the gist and RETURNS — the sheet is not set down, which is
         // the whole difference between a table and a photograph.
+        // #828 · Cut at the member that FOLLOWS it, exactly as the landing below is cut, and no longer at a
+        // character count: a third register (the secure disposal's watched beat) pushed the fall-through
+        // past 1600 characters and the guard went red on a method it had no complaint about. A window a
+        // comment can push an assertion out of is a guard about formatting.
         int complete = surface.IndexOf("private void CompleteProcessing(", StringComparison.Ordinal);
-        string completeBody = surface[complete..(complete + 1600)];
+        int afterComplete = surface.IndexOf(
+            "private void AbandonProcessing(", complete, StringComparison.Ordinal);
+        Assert.True(afterComplete > complete, "the far end has no end this guard can find.");
+        string completeBody = surface[complete..afterComplete];
         int write = completeBody.IndexOf("hold.Work == Core.Processing.Work.Write", StringComparison.Ordinal);
         int setDown = completeBody.IndexOf("SetItDown(ex, hold.Item", StringComparison.Ordinal);
         Assert.True(write > 0, "the far end has no arm for the seated register at all.");

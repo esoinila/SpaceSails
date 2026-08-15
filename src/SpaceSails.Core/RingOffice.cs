@@ -337,6 +337,17 @@ public static class RingOffice
 
         /// <summary>A bank of filing in an administration chamber.</summary>
         FilingCabinet,
+
+        /// <summary>#828 · THE SECURE DISPOSAL — the shredder-class machine at the far end of a premium
+        /// suite's service strip. Owner: <i>"One thing the good offices would also have is a safe paper
+        /// disposal trashes… that visually destroy the notes as we watch… a more secure disposal than
+        /// restaurant trash."</i>
+        ///
+        /// <para>A FITTING here and a <see cref="RipAndBin.Tier.SecureDisposal"/> to the verb: one box on
+        /// the plan, plated once, and the third rung of a ladder that already existed. It is the tier the
+        /// service strip is — the kitchenette, the staff WCs, the privacy booths — which is why it stands
+        /// here and not by every lift.</para></summary>
+        SecureDisposal,
     }
 
     /// <summary>
@@ -1246,6 +1257,34 @@ public static class RingOffice
             lay.Chair(in room, (uLo + uHi) / 2.0, (v + to) / 2.0, (-gx, -gy));
             v = to;
         }
+
+        // ── #828 · AND THE SECURE DISPOSAL, at the end of the strip ──────────────────────────────────────
+        //
+        // Owner: "One thing the good offices would also have is a safe paper disposal trashes… that visually
+        // destroy the notes as we watch… a more secure disposal than restaurant trash."
+        //
+        // LAST, and that is the whole of the placement rule: the strip is laid in the order the tier was
+        // asked for, and a fitting added to the head of it would silently push a WC or a booth off the end
+        // of a room that has fitted both since #817. It takes the depth that was already spare, against the
+        // same pier, in the same terrace — so a captain stepping out of the last booth is standing at it.
+        //
+        // No door, no seat: it is a machine you stand over. What makes it a BIN is CarveBins reading this
+        // fixture back off the finished room (§13.15's rule — the placer that needs to see the whole floor
+        // runs last), so the box a body collides with, the plate a captain reads and the bucket the verb
+        // feeds are one rectangle.
+        //
+        // …and it is laid with lay.Box like every other fitting in the file, which is now the whole of what
+        // needs saying: #883 taught THAT method to fill its box (SurfaceLayout.AddSolidMass, hatched across
+        // the short side), so the law this fixture needed most — #798's, that a bin's drawn box is the
+        // walked box and the inside of it is not a place — is the law every desk and kitchenette on the ring
+        // already keeps. This lane briefly carried its own solid-box helper for the one fitting that is also
+        // a published RipAndBin.Bin; two idioms for one law is this repo's first named bug class, so the
+        // helper went and the machine takes the building's own.
+        double disposalTo = v + SecureDisposalDu;
+        if (disposalTo <= vB)
+        {
+            lay.Box(Fitting.SecureDisposal, uLo, v, uHi, disposalTo, SecureDisposalPlate);
+        }
     }
 
     /// <summary>One cell of the service strip: three solid sides, and the fourth split either side of the
@@ -1468,6 +1507,16 @@ public static class RingOffice
 
     /// <summary>One of the privacy booths.</summary>
     public static string BoothPlate(int n) => $"🕻 PRIVACY BOOTH {n}";
+
+    /// <summary>#828 · How deep the secure disposal stands down the service strip. A machine and not a room:
+    /// deliberately shallower than a cell (<see cref="CellDu"/>), so it fits in the depth every big suite on
+    /// every site already had spare after the kitchenette, the two WCs and both booths.</summary>
+    public const double SecureDisposalDu = 3.0;
+
+    /// <summary>#828 · What is stencilled on it — <see cref="RipAndBin.PlateFor"/>'s own word for the rung,
+    /// never a second one. The plan's plate and the verb's plate are the same string because they are the
+    /// same object seen from two ends of the building.</summary>
+    public static string SecureDisposalPlate => RipAndBin.PlateFor(RipAndBin.Tier.SecureDisposal);
 
     /// <summary>#821 · One of the public washroom's cubicles, with the verb on it (#783) — a door you can
     /// shut is the whole of what this room offers and the plate should say so.</summary>

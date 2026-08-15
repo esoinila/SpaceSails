@@ -94,12 +94,34 @@ public static class Processing
         /// register himself: <i>"we are digging for info and understanding"</i> — the dig bar is not borrowed
         /// UI here, it is the game saying the captain digs wherever they are.</para></summary>
         Write,
+
+        /// <summary>
+        /// #828 · WATCHING A SHEET DESTROYED — the office secure disposal's beat
+        /// (<see cref="RipAndBin.Tier.SecureDisposal"/>).
+        ///
+        /// <para>Owner: <i>"a safe paper disposal … that visually destroy the notes as we watch."</i> The
+        /// watching is not decoration; it is what the top rung of the ladder SELLS. Every bin below it is a
+        /// bet about hands you never see, and the only thing that can turn a bet into a fact is the captain
+        /// standing there until there is nothing left — so the destruction rides the one hold this surface
+        /// has, on the one bar it draws, and stepping away takes the sheet back out of the rollers.</para>
+        ///
+        /// <para>It is a doorway in FRONT of the act and never a second copy of it: the far end calls the
+        /// same destruction every other rung calls, and files the same fact.</para>
+        /// </summary>
+        Shred,
     }
 
     /// <summary>#784 · What the bar wears for each kind of work. A pen for the seated write-up and the camera
     /// for the two standing ones — <see cref="SeatedPosture.WriteGlyph"/> is the one place the pen is named,
     /// so the control, the bar and the book entry cannot come to three different views of the same act.</summary>
-    public static string GlyphFor(Work work) => work == Work.Write ? SeatedPosture.WriteGlyph : Glyph;
+    /// <para>#828 · …and the bin's own glyph for the secure rung, for the same reason: a camera over a pair
+    /// of hands feeding a shredder is the sim doing one thing while a picture reports another.</para>
+    public static string GlyphFor(Work work) => work switch
+    {
+        Work.Write => SeatedPosture.WriteGlyph,
+        Work.Shred => RipAndBin.Glyph,
+        _ => Glyph,
+    };
 
     /// <summary>Has the captain moved off the spot they started on?</summary>
     public static bool Wandered(double anchorX, double anchorY, double x, double y)
@@ -180,8 +202,25 @@ public static class Processing
             // boots because that is what this hold is spent in, and it names the seconds for the same reason
             // the standing ones do — a cost nobody was told is a cost nobody chose.
             string sat = seconds <= 0 ? "" : $" {seconds:F0} seconds of it —";
-            return $"{SeatedPosture.WriteGlyph} You lay {what} out on the table and start digging into it " +
-                $"for whatever it actually says —{sat} stay in the chair. Stand up and the page stays blank.";
+
+            // #828 · THE DIG'S FICTION IS COMPARISON, and the bar says so. Owner, thinking it through out
+            // loud: "dig at it is carefully reading and COMPARING the document against other sources and
+            // notes." That is why the act happens seated at a spread — the notes are physically out — and
+            // why its output is a mention connected to the case rather than a copy of the sheet. A bar that
+            // only said "digging" was describing attention; this says what the hands are doing.
+            return $"{SeatedPosture.WriteGlyph} You lay {what} out beside the book and start digging — " +
+                $"comparing it against the notes in your own hand —{sat} stay in the chair. Stand up and " +
+                "the page stays blank.";
+        }
+
+        // #828 · The secure rung's beat. It names the seconds like every other hold, because a cost nobody
+        // was told is a cost nobody chose — and it says the one thing that makes this rung worth walking to:
+        // you have to be standing there when it finishes.
+        if (work == Work.Shred)
+        {
+            string fed = seconds <= 0 ? "" : $" {seconds:F0} seconds of it —";
+            return $"{RipAndBin.Glyph} You feed {what} into the machine and it takes hold —{fed} stay where " +
+                "you are. Step away and it stops with the sheet half in.";
         }
 
         string clock = seconds <= 0 ? "" : $" {seconds:F0} seconds of standing still —";
@@ -200,8 +239,15 @@ public static class Processing
         ArgumentNullException.ThrowIfNull(what);
         if (work == Work.Write)
         {
-            return $"{SeatedPosture.WriteGlyph} Digging through {what} — {secondsLeft:F0} s left, and you " +
-                "have to stay in the chair.";
+            // #828 · …and the running bar says COMPARING too, for the reason StartLine says it: the dig is
+            // cross-referencing against the book, not staring harder at a page.
+            return $"{SeatedPosture.WriteGlyph} Comparing {what} against the notes in your own hand — " +
+                $"{secondsLeft:F0} s left, and you have to stay in the chair.";
+        }
+        if (work == Work.Shred)
+        {
+            return $"{RipAndBin.Glyph} Watching {what} go — {secondsLeft:F0} s left, and you have to stay " +
+                "where you are.";
         }
         string verb = work == Work.Read ? "Working" : "Photographing";
         return $"{Glyph} {verb} {what} — {secondsLeft:F0} s left, and your boots have to stay where they are.";
@@ -228,6 +274,38 @@ public static class Processing
                 _ =>
                     $"{SeatedPosture.WriteGlyph} The dig stops where it stopped — {what} back in the sleeve, " +
                     "nothing written. Whatever it says, it still says it.",
+            };
+        }
+
+        // ── #828 · THE SECURE RUNG'S PROMISE, AND IT IS THE SAME ONE FOUR TIMES OVER ────────────────────
+        //
+        // A disposal nobody watched HAS NOT HAPPENED, so however the beat ended the sheet comes back out
+        // creased and still in the sleeve and nothing has been fed to anything. What changes is the opening
+        // clause, because it changes in every other register here for the reason #696 wrote them: the thing
+        // that took the paper out of your hands is the only part of an abandoned hold worth remembering.
+        //
+        // The words live in THIS file and not in RipAndBin, which owns every other sentence about a bin,
+        // because these are not sentences about a bin: they are the four endings this hold can meet
+        // (see <see cref="EndingsOf"/>), and the register that owns the clock owns the register's endings.
+        // The GLYPH is still the bin's, so the sentence and the bar cannot come to two views of what the
+        // captain's hands are on.
+        if (work == Work.Shred)
+        {
+            string back = $" You take {what} back out — creased, readable, still in your sleeve, and "
+                + "nothing of it has been fed to anything.";
+            return why switch
+            {
+                Interruption.Alarm =>
+                    $"{RipAndBin.Glyph} The alarm goes off in your ear and your hand comes off the feed."
+                    + back,
+                Interruption.Reached =>
+                    $"{RipAndBin.Glyph} Something gets a hand on you at the machine and the rollers stop."
+                    + back,
+                Interruption.LiftedOff =>
+                    $"{RipAndBin.Glyph} The shuttle lifts with the sheet half through the machine." + back,
+                _ =>
+                    $"{RipAndBin.Glyph} You step away and the rollers stop with the sheet half in." + back
+                    + " This one only counts if you stand there.",
             };
         }
 
@@ -262,6 +340,10 @@ public static class Processing
             // another — and "walk away" is not even available to somebody in a chair.
             return $"{SeatedPosture.WriteGlyph} Both hands are on {what} — you are digging through it. " +
                 "Finish it, or get up.";
+        }
+        if (work == Work.Shred)
+        {
+            return $"{RipAndBin.Glyph} The machine already has {what} in it. Let it finish.";
         }
         string doing = work == Work.Read ? "reading" : "photographing";
         return $"{Glyph} Both hands are on {what} — you are {doing} it. Finish, or walk away from it.";

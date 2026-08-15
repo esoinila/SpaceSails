@@ -274,7 +274,16 @@ public sealed class TheFilledBoxIsFullTests
     /// upright whatever the box's shape, a 28.8 × 2.0 du desk bank cost twenty-five strokes to say what one
     /// flat stroke says, and the building came out at 260,130 segments with a worst floor of 853. Both
     /// numbers were run before the allowance was chosen. Raising this constant to fit a future regression is
-    /// the whole thing it exists to stop.</para></summary>
+    /// the whole thing it exists to stop.</para>
+    ///
+    /// <para>#828 · <b>What has been spent since, and by whom.</b> The disposal ladder's third rung stands a
+    /// secure disposal in every premium suite — 198 machines, 6.0 × 3.0 du, four rails and two flat hatch
+    /// strokes apiece, through the same <c>Lay.Box</c> as every other fitting. That is <b>1,188 segments</b>,
+    /// taking the building from 242,367 to <b>243,555</b> (worst floor 638 → <b>650</b>): <b>+2.87%</b> of a
+    /// 3% allowance, and +2.20% on the worst floor. It fits, and it is recorded here rather than left for
+    /// somebody to rediscover — the next lane that stands furniture in the ring has about three hundred
+    /// segments of room, and should re-measure this baseline rather than widen the number below it.</para>
+    /// </summary>
     private const double Allowance = 0.03;
 
     /// <summary>

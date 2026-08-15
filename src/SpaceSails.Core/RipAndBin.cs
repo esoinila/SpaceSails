@@ -68,6 +68,20 @@ public static class RipAndBin
         /// room waiting for a professional. A better bet, and still not certainty: the stream goes
         /// SOMEWHERE.</summary>
         Chute,
+
+        /// <summary>
+        /// #828 · THE OFFICE SECURE DISPOSAL — the top of the ladder, and the only rung that is not a bet.
+        ///
+        /// <para>Owner: <i>"One thing the good offices would also have is a safe paper disposal trashes…
+        /// that visually destroy the notes as we watch… a more secure disposal than restaurant trash."</i>
+        /// You feed it a sheet and you WATCH it go, and what you watched go cannot be dived for. Every rung
+        /// below this one is a wager about somebody else's hands; this one closes the wager instead of
+        /// placing it, which is why it stands in a premium suite and nowhere else.</para>
+        ///
+        /// <para>Appended, never inserted: the ordinal IS the ranking (see the enum's own note), and the
+        /// best rung belongs at the end of a list that runs worst-first.</para>
+        /// </summary>
+        SecureDisposal,
     }
 
     /// <summary>Every tier, worst first — for guards that must sweep the whole ladder rather than sample a
@@ -86,13 +100,29 @@ public static class RipAndBin
     /// down inside a wall twice by letting somebody else guess at them.</param>
     /// <param name="StandY">…and the other half of it.</param>
     /// <param name="Plate">What is stencilled on it, at signage size.</param>
+    /// <param name="HalfX">#828 · Half the box's width. Three of the four rungs are a bucket
+    /// (<see cref="HalfDu"/> on a side, which is why that is the default and why no existing caller passes
+    /// this); the secure disposal is a MACHINE the size of the fitting it is, six deck units across the
+    /// service strip. A ladder whose top rung is a different SIZE has to publish the size, or every guard
+    /// and every reach measures a rectangle it made up.</param>
+    /// <param name="HalfY">…and half its depth.</param>
     public readonly record struct Bin(
-        Tier Tier, double X, double Y, double StandX, double StandY, string Plate)
+        Tier Tier, double X, double Y, double StandX, double StandY, string Plate,
+        double HalfX = HalfDu, double HalfY = HalfDu)
     {
-        /// <summary>How far this bin is from a spot on the floor.</summary>
+        /// <summary>
+        /// How far this bin is from a spot on the floor — measured to the BOX, not to its middle.
+        ///
+        /// <para>#828 · It used to be centre-to-point, which is the same answer for a bucket 1.8 du on a
+        /// side and a wrong one for a machine six du across: a captain standing at arm's length of the
+        /// secure disposal's face is 5.2 du from its centre, and a reach of 4 would have refused a captain
+        /// standing exactly where the carve told them to stand. You reach for the THING, not for the
+        /// arithmetic mean of it.</para>
+        /// </summary>
         public double DistanceTo(double x, double y)
         {
-            double dx = x - X, dy = y - Y;
+            double dx = Math.Max(Math.Abs(x - X) - HalfX, 0.0);
+            double dy = Math.Max(Math.Abs(y - Y) - HalfY, 0.0);
             return Math.Sqrt((dx * dx) + (dy * dy));
         }
     }
@@ -194,7 +224,8 @@ public static class RipAndBin
     {
         Tier.PaperBin => "the paper bin",
         Tier.SlopBin => "the slop bin",
-        _ => "the waste chute",
+        Tier.Chute => "the waste chute",
+        _ => "the secure disposal",
     };
 
     /// <summary>What is stencilled on each kind, at signage size. The building's own flat voice — a bin does
@@ -203,7 +234,11 @@ public static class RipAndBin
     {
         Tier.PaperBin => "🗄 PAPER · FLATTEN AND STACK · EMPTIED DAILY",
         Tier.SlopBin => "🪣 SLOP · FOOD WASTE ONLY · NO TRAYS",
-        _ => "🕳 WASTE CHUTE · NO GLASS · NO PRESSURE VESSELS",
+        Tier.Chute => "🕳 WASTE CHUTE · NO GLASS · NO PRESSURE VESSELS",
+        // #828 · The building's flat voice again, and the one plate on the floor that admits what the
+        // machine under it is FOR. It stands in a premium suite (RingOffice's furnishing tier), which is
+        // the whole of what it says about who gets one.
+        _ => "🗑 SECURE DISPOSAL · PAPER ONLY · WATCH IT GO",
     };
 
     /// <summary>
@@ -222,16 +257,23 @@ public static class RipAndBin
         Tier.PaperBin => "A clean paper bin, emptied on a schedule by somebody whose job it is. Every piece "
             + "in it stays readable.",
         Tier.SlopBin => "The slop bin. Soup does what no amount of tearing can.",
-        _ => "A chute. Whatever goes down it is somewhere else within the minute — and somewhere is still a "
-            + "place.",
+        Tier.Chute => "A chute. Whatever goes down it is somewhere else within the minute — and somewhere is "
+            + "still a place.",
+        // #828 · The one rung whose sentence is allowed to promise, because it is the one the captain can
+        // CHECK. Everything else on this ladder is a bet about hands you will never see; this is a machine
+        // you stand over until there is nothing left, and the promise is worth exactly what you watched.
+        _ => "The office's own disposal. You feed it and you stand there until it has finished, and what "
+            + "comes out the other side is not paper any more.",
     };
 
     /// <summary>The hint on the control while it will work, naming the bucket and the price. It names what
     /// SURVIVES, because that is the fact the whole decision turns on: the book keeps its gist and the sheet
     /// stops existing.</summary>
     public static string Hint(Tier tier) =>
-        $"Tear it up and put it in {TheBin(tier)}. Whatever you had already dug out of it stays in the book "
-        + "— the sheet does not come back.";
+        (tier == Tier.SecureDisposal
+            ? $"Feed it to {TheBin(tier)} and stand there while it goes. "
+            : $"Tear it up and put it in {TheBin(tier)}. ")
+        + "Whatever you had already dug out of it stays in the book — the sheet does not come back.";
 
     /// <summary>…and the refusal when there is nothing to put it in. It names WHAT WOULD FIX IT, because a
     /// refusal a player cannot act on is a wall with a sign on it (#603).</summary>
@@ -355,9 +397,16 @@ public static class RipAndBin
             Tier.SlopBin =>
                 $"{Glyph} You tear it up and push the pieces down under the soup — {what}, out of the "
                 + $"sleeve.{kept}",
-            _ =>
+            Tier.Chute =>
                 $"{Glyph} You tear it up, pull the hatch and let it go — {what}, out of the sleeve, and "
                 + $"something takes it a long way down.{kept}",
+            // #828 · THE ONE SENTENCE IN THIS FILE THAT IS ALLOWED TO SAY THE PAPER IS GONE. It says it
+            // because the captain SAW it, which is the whole of what the top rung buys — and it is written
+            // in the past tense of a thing watched rather than of a thing done, because standing there is
+            // the act.
+            _ =>
+                $"{Glyph} You feed it in and watch it taken — {what}, drawn out of your fingers a "
+                + $"centimetre at a time, and what falls into the drawer underneath is chaff.{kept}",
         };
     }
 
@@ -380,8 +429,28 @@ public static class RipAndBin
         // read back is the one saying where the pieces went — and a label with its own em-dash clause in it
         // ("maintenance log, two hands — a mention") made "Tore up {what} and put it in…" unreadable on the
         // page. Both faults were on the screen at once, which is where they were found.
-        return $"Torn up and put in {TheBin(tier)}: {what}. Nothing of it was left on the table.";
+        // #828 · The SHAPE is the same for every rung — bucket first, document after, one flat clause about
+        // what was left behind — because a later arc reads these back and a note that changed shape at the
+        // top of the ladder would be a second format to parse. What differs is the last clause, and it has
+        // to: three of these rungs left a thing in a room, and the fourth left nothing anywhere.
+        return tier == Tier.SecureDisposal
+            ? $"Fed to {TheBin(tier)}: {what}. Watched it go; there is nothing left of it to find."
+            : $"Torn up and put in {TheBin(tier)}: {what}. Nothing of it was left on the table.";
     }
+
+    /// <summary>
+    /// #828 · DOES THIS RUNG LEAVE ANYTHING FOR ANYBODY TO FIND? The ladder's whole point, as a predicate.
+    ///
+    /// <para>Three of the four are HANDOVERS (#775: professionals empty every bin in this building) and the
+    /// game never says which was enough — that is the bet, and the captain finds out only if it comes back.
+    /// The secure rung is the one that answers no, and it answers no for a reason the player watched happen
+    /// rather than for a reason a sentence claimed.</para>
+    ///
+    /// <para>It lives here, over the enum, so the act, the words and any later arc that decides whether
+    /// something comes back all read ONE answer. A caller that decided this for itself would be the fifth
+    /// bug class with a bin in its hand.</para>
+    /// </summary>
+    public static bool LeavesSomethingToFind(Tier tier) => tier != Tier.SecureDisposal;
 
     /// <summary>Who was looking. The client decides which of these is true — what "watched" means at a
     /// counter, at a table and on a corridor are three questions about rooms, and this file does not have
