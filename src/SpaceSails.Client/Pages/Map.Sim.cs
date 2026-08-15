@@ -2345,6 +2345,7 @@ public partial class Map
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
         _lastTimestampMs = highResTimestampMs;
         _frameNowMs = highResTimestampMs;
+        MarkFrameServiced(dtRealSeconds);   // #825: the REAL stall clock — the one both the banner and the controls read
 
         // #255: a long haul is crossing — the world is frozen mid-jump (the re-seed owns the clock, and
         // the void is never integrated). The overlay paints via Blazor; the canvas holds its last frame.
@@ -2879,7 +2880,9 @@ public partial class Map
                 Dark: DarkHere(),
                 // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
                 // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
-                Seated: CaptainIsSeated),
+                Seated: CaptainIsSeated,
+                // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
+                StallBanner: TheStallBanner()),
                 _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }
