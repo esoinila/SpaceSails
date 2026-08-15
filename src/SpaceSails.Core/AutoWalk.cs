@@ -49,6 +49,59 @@ public sealed class AutoWalk
     /// <summary>Said when a walk is cut short by the captain's own hand. Not an error; a receipt.</summary>
     public const string CancelledLine = "🦶 Walk cancelled — you have the helm.";
 
+    /// <summary>
+    /// #866 · HOW NEAR A POINTED-AT PLACE COUNTS AS THAT PLACE, in deck units.
+    ///
+    /// <para>Owner, standing on the B1 park gravel: <i>"Now the click to walk does not work here in park?"</i>
+    /// He was pointing at what the park's own photograph draws as open gravel, and what the deck has there
+    /// is a raised bed — fourteen deck units by seven, fenced on all four sides. The click was honest; the
+    /// arrival test was not. A* counted the goal reached only within ONE LATTICE STEP of it (half a deck
+    /// unit), so a finger that lands anywhere on a thing wider than half a metre asks for a square that is
+    /// solid, or sealed inside the thing's own fence, and the only answer the search can give is <i>no route
+    /// at all</i> — after flooding every walkable square on the floor to prove it (456 ms, natively, on a
+    /// desk machine, for one refused click).</para>
+    ///
+    /// <para><b>Two deck units, and the number is argued rather than tuned.</b> Downward it has to clear the
+    /// thickest thing this game asks a captain to point AT: the widest gap between a solid square inside the
+    /// park and gravel it could stand on is 1.5 du, which is a body's own <c>AvatarRadius</c> clearance
+    /// either side of a bed's rail. Upward it has to stay comfortably inside the interact ring (3.0 du),
+    /// because the whole promise of pointing at a fixture is that <c>[E]</c> is live when the walk stops —
+    /// a reach equal to the ring would put arrival exactly on the boundary where "in reach" is decided by
+    /// the last bit of a double.</para>
+    ///
+    /// <para>It is spent by the CLICK and by nothing else. A guard walking his beat and #488's reachability
+    /// audit both keep the old zero, because "he stood on his stop" and "that room can be reached" are
+    /// claims about a place and not about a finger.</para>
+    /// </summary>
+    public const double PointingReachDu = 2.0;
+
+    /// <summary>
+    /// #866 · …AND HOW FAR "AS NEAR AS THE FLOOR ALLOWS" GOES, when the first look found nothing.
+    ///
+    /// <para><see cref="PointingReachDu"/> answers a finger that landed ON the rail of a thing. It does not
+    /// answer a finger that landed IN one — and this game has nine of those per park: a raised bed is drawn
+    /// as a solid box and simulated as a FENCE, four rails round a 12.6 × 5.6 du pocket that is perfectly
+    /// standable and that nobody on this floor can ever get into. Point at the middle of one and the nearest
+    /// gravel is 4.2 du away, which is further than any reach that also has to keep arrival inside the [E]
+    /// ring.</para>
+    ///
+    /// <para>So a click that finds nothing gets ONE second look, wider: 3.5 du (half the deepest thing this
+    /// building plants on a floor) + 0.7 (the clearance a body needs off its rail) + 0.5 (one lattice step,
+    /// because what the walk settles for is a SQUARE of the grid and not a point — leave that out and the
+    /// four beds whose middles happen to fall between two rows of it go on refusing), rounded up.
+    /// <c>TheParkTakesAClickTests</c> measures that claim against the park's own published beds rather than
+    /// trusting the arithmetic in this paragraph. It is spent ONLY after the first search has already come
+    /// back empty — the walk that was going to be refused anyway — so no click that works today pays for
+    /// it, and the one that does was already the slow path (#858's sliced <see cref="Planner"/> is the
+    /// answer if it ever has to be paid over frames rather than in one).</para>
+    ///
+    /// <para>It is deliberately SHORT. "Get me as close as you can" with no bound at all is a walk order
+    /// that can never be refused, and the refusal is load-bearing: it is the reachability audit's own
+    /// verdict said out loud to a person, and a captain who clicks a sealed room across the base must be
+    /// told there is no way through rather than marched to the nearest wall.</para>
+    /// </summary>
+    public const double PointingFallbackDu = 5.0;
+
     /// <summary>The largest single move this hands out, in deck units. It exists because the avatar's
     /// stepper resolves a diagonal axis-separately (X first, then Y from the X-resolved spot), so a long
     /// diagonal probes a CORNER that is not on the route at all. Kept well under the lattice spacing, that
@@ -81,9 +134,14 @@ public sealed class AutoWalk
     /// caller because that is the seam a touch UI adopts unmodified: the day tap-to-move ships, the only
     /// thing that changes is what is passed here.</para>
     ///
-    /// <para>The goal need not be standable. A* counts the goal reached once the walk is within one
-    /// lattice step of it, so pointing at a console, a door or the wall behind them walks you up to the
-    /// thing and stops adjacent — which is exactly what makes [E] live on arrival.</para>
+    /// <para>The goal need not be standable. A* counts the goal reached once the walk is within
+    /// <paramref name="goalReachDu"/> of it (or, at zero, within one lattice step), so pointing at a
+    /// console, a door or the wall behind them walks you up to the thing and stops adjacent — which is
+    /// exactly what makes [E] live on arrival. #866 · <b>A finger gets <see cref="PointingReachDu"/>; a body
+    /// walking a beat gets the zero.</b> That sentence used to be written as though the one-step rule
+    /// covered both, and it does not: half a deck unit is narrower than nearly every fixture this game draws
+    /// on a floor, so a click that landed ON a thing could only ever be refused. The caller says which of
+    /// the two it is, because only the caller knows.</para>
     /// </summary>
     public static Attempt Plan(
         bool enabled,
@@ -92,14 +150,24 @@ public sealed class AutoWalk
         IReadOnlyList<SurfaceCollision.Segment> walls,
         double radius,
         (double MinX, double MinY, double MaxX, double MaxY) bounds,
-        double step = DeckReachability.DefaultStep)
+        double step = DeckReachability.DefaultStep,
+        double goalReachDu = 0)
     {
         if (!enabled)
         {
             return default;
         }
 
-        return Planner.Begin(from, to, walls, radius, bounds, step).Finish();
+        Attempt pointed = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu).Finish();
+        if (pointed.Route is not null || goalReachDu is <= 0 or >= PointingFallbackDu)
+        {
+            return pointed;
+        }
+
+        // #866 · THE SECOND LOOK. Only a finger gets one (a beat passes zero and stops at the line above),
+        // and only after the first came back with nothing — see PointingFallbackDu for what it is for, why
+        // it is short, and why it costs no click that already worked.
+        return Planner.Begin(from, to, walls, radius, bounds, step, PointingFallbackDu).Finish();
     }
 
     /// <summary>
@@ -136,15 +204,18 @@ public sealed class AutoWalk
             To = to;
         }
 
-        /// <summary>Open the plan without walking any of it.</summary>
+        /// <summary>Open the plan without walking any of it. <paramref name="goalReachDu"/> is
+        /// <see cref="Plan"/>'s own — zero for a body walking to a place, <see cref="PointingReachDu"/> for
+        /// a finger pointing at one.</summary>
         public static Planner Begin(
             DeckReachability.Point from,
             DeckReachability.Point to,
             IReadOnlyList<SurfaceCollision.Segment> walls,
             double radius,
             (double MinX, double MinY, double MaxX, double MaxY) bounds,
-            double step = DeckReachability.DefaultStep) =>
-            new(DeckReachability.Search.Begin(from, to, walls, radius, bounds, step), from, to);
+            double step = DeckReachability.DefaultStep,
+            double goalReachDu = 0) =>
+            new(DeckReachability.Search.Begin(from, to, walls, radius, bounds, step, goalReachDu), from, to);
 
         /// <summary>Where the route this is planning starts.</summary>
         public DeckReachability.Point From { get; }

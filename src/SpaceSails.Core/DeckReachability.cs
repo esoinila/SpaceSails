@@ -212,17 +212,21 @@ public static class DeckReachability
     {
         private readonly Lattice _grid;
         private readonly (int Cx, int Cy) _goal;
+        private readonly Point _at;
+        private readonly double _reachDu;
         private readonly PriorityQueue<(int Cx, int Cy), double> _open = new();
         private readonly Dictionary<(int, int), (int, int)> _cameFrom = [];
         private readonly Dictionary<(int, int), double> _best = [];
 
         private Search(
             Point from, Point to, IReadOnlyList<SurfaceCollision.Segment> walls, double radius,
-            (double MinX, double MinY, double MaxX, double MaxY) bounds, double step)
+            (double MinX, double MinY, double MaxX, double MaxY) bounds, double step, double reachDu)
         {
             _grid = new Lattice(walls, radius, bounds, step);
             (int Cx, int Cy) start = _grid.Cell(from);
             _goal = _grid.Cell(to);
+            _at = to;
+            _reachDu = reachDu;
 
             // A start the captain could not stand on is a caller error worth surfacing loudly rather than
             // reporting as "unreachable" — an unwalkable SPAWN is its own, worse bug.
@@ -235,22 +239,38 @@ public static class DeckReachability
             _open.Enqueue(start, H(start));
         }
 
-        /// <summary>Open a search without walking any of it. Validates exactly what <see cref="Path"/>
-        /// validated, in the same place, so a bad call fails the same way whichever door it came in.</summary>
+        /// <summary>
+        /// Open a search without walking any of it. Validates exactly what <see cref="Path"/>
+        /// validated, in the same place, so a bad call fails the same way whichever door it came in.
+        ///
+        /// <para>#866 · <paramref name="goalReachDu"/> is HOW NEAR COUNTS AS THERE, and it defaults to
+        /// zero — which is to say, to the one-lattice-step arrival every audit in this repo has always used,
+        /// byte for byte. It exists because a POINTED-AT place is not the same question as a walked-to one:
+        /// a finger lands on a thing, and the thing may be a raised bed fourteen deck units across whose
+        /// every square is either solid or sealed inside its own fence. Asked to reach the middle of that,
+        /// the one-step rule can only answer "no route" — and it spends the whole floor's lattice finding
+        /// that out. Given a reach, the same search stops at the first square it can stand on within that
+        /// far of where the finger went, which is the answer the finger meant.</para>
+        ///
+        /// <para>It is a parameter and not a new default because the audits must not move. A guard walking
+        /// a beat stands ON his stop; #488's reachability audit asks whether a console can be REACHED, not
+        /// whether the captain can get within a couple of paces of it. Both keep the zero.</para>
+        /// </summary>
         public static Search Begin(
             Point from,
             Point to,
             IReadOnlyList<SurfaceCollision.Segment> walls,
             double radius,
             (double MinX, double MinY, double MaxX, double MaxY) bounds,
-            double step = DefaultStep)
+            double step = DefaultStep,
+            double goalReachDu = 0)
         {
             ArgumentNullException.ThrowIfNull(walls);
             if (step <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(step));
             }
-            return new Search(from, to, walls, radius, bounds, step);
+            return new Search(from, to, walls, radius, bounds, step, goalReachDu);
         }
 
         /// <summary>Whether the walk has settled — a route found, or the whole reachable lattice exhausted
@@ -287,10 +307,28 @@ public static class DeckReachability
             return Result;
         }
 
+        /// <summary>Is standing here standing THERE? Within one lattice step of the goal always is — see the
+        /// note above about consoles — and, when the caller asked for a reach, so is any square it can stand
+        /// on within that far of the point itself. Measured off the POINT rather than off the goal's cell,
+        /// because the reach is a statement about where a finger landed and the cell is a rounding of it.</summary>
+        private bool Arrived((int Cx, int Cy) c)
+        {
+            if (Math.Abs(c.Cx - _goal.Cx) <= 1 && Math.Abs(c.Cy - _goal.Cy) <= 1)
+            {
+                return true;
+            }
+            if (_reachDu <= 0)
+            {
+                return false;
+            }
+            Point p = _grid.World(c);
+            double dx = p.X - _at.X, dy = p.Y - _at.Y;
+            return (dx * dx) + (dy * dy) <= _reachDu * _reachDu;
+        }
+
         private void Expand((int Cx, int Cy) current)
         {
-            // Within one step of the goal is arrived — see the note above about consoles.
-            if (Math.Abs(current.Cx - _goal.Cx) <= 1 && Math.Abs(current.Cy - _goal.Cy) <= 1)
+            if (Arrived(current))
             {
                 var path = new List<Point>();
                 (int, int) walk = current;
