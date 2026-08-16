@@ -471,8 +471,12 @@ public sealed class TheStallSaysSoTests
 
     private static DeckPlan ThePlan(Pages.Map map) => (DeckPlan)Get(map, "_deckPlan")!;
 
+    /// <summary>#870 lane 6b - The five seat fields live on the page's <c>_seating</c> object now, so this
+    /// follows them there (<see cref="SeatState"/>); every assertion below still asks for the state by the
+    /// name it was written with.</summary>
     private static object? Get(object o, string member) =>
-        o.GetType().GetField(member, Hidden) is { } f
+        SeatState.TryFollow(o, member, out object? seated) ? seated
+        : o.GetType().GetField(member, Hidden) is { } f
             ? f.GetValue(o)
             : (o.GetType().GetProperty(member, Hidden)
                ?? throw new InvalidOperationException($"the component has no `{member}`.")).GetValue(o);

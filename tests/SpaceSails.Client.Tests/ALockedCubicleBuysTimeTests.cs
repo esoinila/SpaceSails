@@ -413,7 +413,7 @@ public sealed class ALockedCubicleBuysTimeTests
     {
         string src = Code("Map.Cubicle.cs");
 
-        int cached = src.IndexOf("_cubicleFloorKey, key", StringComparison.Ordinal);
+        int cached = src.IndexOf("_seating.CubicleFloorKey, key", StringComparison.Ordinal);
         int carved = src.IndexOf("UndergroundComplex.Build", StringComparison.Ordinal);
 
         Assert.True(cached > 0, "nothing caches the floor's cubicles — the round carves a floor every frame.");

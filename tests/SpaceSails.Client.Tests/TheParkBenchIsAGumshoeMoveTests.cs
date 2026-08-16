@@ -406,7 +406,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // dev row and a key press cannot open two different benches. A second `_table = new TableTalk` in
         // this file would be the first named bug class with a plank under it.
         Assert.Equal(1, bench.Split("private void SitOnThisBench(").Length - 1);
-        Assert.Equal(1, bench.Split("_table = new TableTalk").Length - 1);
+        Assert.Equal(1, bench.Split("_seating.Table = new TableTalk").Length - 1);
         Assert.True(bench.Split("SitOnThisBench(").Length - 1 >= 3,
             "the bench sitting is no longer reached from both the [E] press and the dev row.");
     }
@@ -612,9 +612,11 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // …and the seated fact is the bench's, asked once for the frame.
         Assert.Contains("bool sitting = SeatedOnABenchInTheOpen;", loop, StringComparison.Ordinal);
+        // #870 lane 6b - re-PATHED: the predicate is a pure function of the seat's own state, so it moved
+        // onto Seating with the other fourteen. Same one line, same claim, asserted where it now is.
         Assert.Contains(
-            "private bool SeatedOnABenchInTheOpen => _table is { Bench: true };",
-            Source("Pages", "Map.Bench.cs"), StringComparison.Ordinal);
+            "public bool SeatedOnABenchInTheOpen => Table is { Bench: true };",
+            Source("Pages", "Seating", "Seating.cs"), StringComparison.Ordinal);
     }
 
     /// <summary>#793 · Core carries the law and says out loud that no shipped mover can be a tail, so a

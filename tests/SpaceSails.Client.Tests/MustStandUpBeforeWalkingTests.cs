@@ -392,8 +392,13 @@ public sealed class MustStandUpBeforeWalkingTests
 
     private static DeckPlan ThePlan(Pages.Map map) => (DeckPlan)Get(map, "_deckPlan")!;
 
+    /// <summary>#870 lane 6b - The five seat fields live on the page's <c>_seating</c> object now, so this
+    /// follows them there (<see cref="SeatState"/>); every assertion below still asks for the state by the
+    /// name it was written with.</summary>
     private static object? Get(object o, string field) =>
-        o.GetType().GetField(field, Hidden)!.GetValue(o);
+        SeatState.TryFollow(o, field, out object? seated)
+            ? seated
+            : o.GetType().GetField(field, Hidden)!.GetValue(o);
 
     private static void Set(object o, string field, object? value) =>
         o.GetType().GetField(field, Hidden)!.SetValue(o, value);
