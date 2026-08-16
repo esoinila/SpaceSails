@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -42,6 +42,14 @@ public sealed class ProcessingTheLootTakesTimeTests
 
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard counts
     /// over is all of them — exactly the text it read out of one file before the split.</summary>
@@ -373,7 +381,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // "a scene nobody can reach on demand is a scene that ships broken" — the house rule written beside
         // these cheats — with its converse: a clock designed to be FELT is a clock no story test should have
         // to sit through, and a test that waits one out is a test that gets deleted the first time it flakes.
-        string sim = Pages("Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("pair.StartsWith(\"process=\"", sim, StringComparison.Ordinal);
         Assert.Contains("_processCheatSeconds = Math.Max(0, hold);", sim, StringComparison.Ordinal);
 

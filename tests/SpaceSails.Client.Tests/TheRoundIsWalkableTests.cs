@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -384,7 +384,7 @@ public sealed class TheRoundIsWalkableTests
         Assert.Contains("badge=1", hive, StringComparison.Ordinal);
 
         // And the cheat the docs promise is a cheat the parser actually reads.
-        string boot = Between(Pages("Map.Sim.cs"), "private async Task BootTheWorldAsync(", "\n    }");
+        string boot = Between(Pages("Map.Sim.World.cs"), "private async Task BootTheWorldAsync(", "\n    }");
         Assert.Contains("\"patrol=\"", boot, StringComparison.Ordinal);
         Assert.Contains("\"badge=\"", boot, StringComparison.Ordinal);
     }
