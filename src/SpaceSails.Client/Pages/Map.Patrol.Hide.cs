@@ -21,6 +21,63 @@ public sealed partial class Map
     /// room would be a narrator rather than a beat.</summary>
     private bool _walkedPastSaid;
 
+    /// <summary>#870 lane 6′a · THE NEXT HIDE GETS ITS OWN LINE. Told by the door coming off the catch
+    /// (<c>Map.Cubicle.cs</c>'s <c>OpenTheCubicle</c>), which is the one moment a hide is over: one shut
+    /// door is one sentence, and a captain who goes back in has earned hearing it again.
+    ///
+    /// <para>A verb rather than a setter the caller could spell the other way round. ARMING it — saying the
+    /// line has already been said, for a hide that has not started — would quietly cost a player the one
+    /// beat that tells them the plate did nothing for them, and nothing would report it.</para></summary>
+    private void TheNextHideGetsItsOwnLine() => _walkedPastSaid = false;
+
+    /// <summary>
+    /// #870 lane 6′a · WHO WAS LOOKING WHEN THE CATCH WENT OVER — the one line of #821 that decides how the
+    /// whole feature plays, asked for by <c>Map.Cubicle.cs</c>'s <c>ShutTheCubicle</c> and answered here
+    /// because the bit it writes is a guard's.
+    ///
+    /// <para>It is <see cref="PatrolBeat.Notices"/>, the same predicate the challenge itself is gated on,
+    /// over the caller's own sight blockers, on the caller's own frame. The caller asks BEFORE it rebuilds
+    /// the deck, because the rebuild is what puts the partition across the opening — asking afterwards would
+    /// have every guard in the building answer "no" through the door they just watched you shut.</para>
+    /// </summary>
+    private void RememberWhoWatchedTheCatchGoOver(IReadOnlyList<SurfaceCollision.Segment> sight)
+    {
+        foreach (Guard g in _guards)
+        {
+            if (PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight))
+            {
+                g.SawYouShutIt = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// #870 lane 6′a · …AND EVERYBODY FORGETS IT AGAIN, which is the other half of the same ruling and
+    /// belongs beside it. Asked for by <c>Map.Cubicle.cs</c>'s <c>OpenTheCubicle</c>; hands back the FIRST
+    /// man who was standing there knocking, or null.
+    ///
+    /// <para>Both halves matter and both are why this is one member rather than two. The forgetting is swept
+    /// over the whole list rather than stopped at the man who knocked, because a second guard who also
+    /// watched the catch go over would otherwise keep the bit and be standing outside the NEXT cubicle the
+    /// captain shut, having seen nothing at all — a hide that stopped working for reasons the player cannot
+    /// read. And only ONE of them is handed back, because two men doing one job is #777's stacked card.</para>
+    ///
+    /// <para>What the caller does with him is the caller's: the door is what raises the challenge, and there
+    /// is no road to a card in this file.</para>
+    /// </summary>
+    private Guard? EverybodyForgetsTheCatch()
+    {
+        Guard? waiting = null;
+        foreach (Guard g in _guards)
+        {
+            waiting ??= g.Knocking ? g : null;
+            g.Knocking = false;
+            g.Knocked = false;
+            g.SawYouShutIt = false;
+        }
+        return waiting;
+    }
+
     /// <summary>
     /// #821 · A ROUND THAT NEVER SAW YOU, HEARD THROUGH A PARTITION.
     ///

@@ -274,6 +274,49 @@ public sealed partial class Map
             ? chosen
             : WalletChoice.DefaultFor(bodyId, _satchel, _shownBook);
 
+    // ── #870 lane 6′a · WHAT THE MARKUP AND THE VAULT MAY ASK THE WALLET ──────────────────────────────
+    //
+    // The hand and the book are the challenge's own state (Map.Patrol.cs), and the guard says so. Two files
+    // outside this family have a real question about them — the fan dialog in Map.razor draws a row per
+    // paper, and Map.Vault.cs carries the book across excursions — and both ask it here rather than reading
+    // the fields.
+
+    /// <summary>#870 lane 6′a · IS THIS THE PAPER ALREADY IN YOUR HAND? One row of the fan, asked by the
+    /// dialog that draws it (<c>Map.razor</c>) to mark the picked row and to say so on its face.
+    ///
+    /// <para>Compared by KIND AND ID, never by reference: the fan is rebuilt from the satchel every time it
+    /// is asked (<see cref="TheWalletFan"/>), so the row's item and the held item are equal papers and not
+    /// the same object.</para></summary>
+    private bool ThePaperInYourHandIs(Satchel.Item paper) =>
+        _paperInHand is { } held && held.Kind == paper.Kind && held.Id == paper.Id;
+
+    /// <summary>#870 lane 6′a · WHAT THE BOOK SAYS ABOUT HANDING THIS PAPER OVER HERE — <i>worked here,
+    /// twice</i> — for the hint under a fan row (<c>Map.razor</c>). The sentence is Core's
+    /// (<see cref="WalletChoice.HistoryLine"/>); what this adds is that the book it is read out of is the
+    /// captain's own and nobody else has to hold it to ask.</summary>
+    private string TheBookOn(Satchel.Item paper, string bodyId) =>
+        WalletChoice.HistoryLine(paper, bodyId, _shownBook);
+
+    /// <summary>#870 lane 6′a · THE CAPTAIN'S OWN PAPER TRAIL, read-only — for the vault
+    /// (<c>Map.Vault.cs</c>), which writes every row's opaque <c>Stored</c> string into the save. A view of
+    /// the one book and never a copy.</summary>
+    private IReadOnlyList<WalletChoice.Shown> YourPaperTrail => _shownBook;
+
+    /// <summary>#870 lane 6′a · …and emptying it before a load pours the saved rows back in
+    /// (<c>Map.Vault.cs</c>). The book is <c>readonly</c> and outlives every excursion, so a load REFILLS it
+    /// rather than replacing it; without this a captain would carry the last game's paperwork into the
+    /// next.</summary>
+    private void ForgetThePaperTrail() => _shownBook.Clear();
+
+    /// <summary>#870 lane 6′a · …and one row back in, exactly as it was filed (<c>Map.Vault.cs</c>).
+    ///
+    /// <para>Deliberately NOT <see cref="FileTheNameYouGave"/>, and not <see cref="WalletChoice.Remember"/>
+    /// either: filing is what happens when a guard READS a paper — it composes an outcome, folds the row
+    /// into the book under Core's own rules and writes a line in the field book. A load is not a read. It
+    /// puts back rows that were already filed, in the order the save has them, and a captain who reloads
+    /// must not find a fresh note about a challenge that happened last week.</para></summary>
+    private void RestoreAPaperTrailRow(WalletChoice.Shown row) => _shownBook.Add(row);
+
     /// <summary>
     /// He stops, reads what is in your wallet, and tells you the answer. The judgement is Core's and only
     /// Core's; this raises the card, spends the nerve and — when it comes to that — walks you back.
