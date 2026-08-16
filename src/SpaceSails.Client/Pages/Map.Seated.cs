@@ -133,12 +133,6 @@ public partial class Map
         return ShortRest.Line(in eased, drink);
     }
 
-    /// <summary>#784 · The room's answer, with the body's footnote after it when the beat gave something
-    /// back. One sentence and then one clause: the silence at your table is the EVENT (#757) and it keeps
-    /// the lead, because a rest that pushed in front of the room's own answer would be the mechanic talking
-    /// over the scene.</summary>
-    private static string WithTheBodysFootnote(string saidByTheRoom, string? saidByTheBody) =>
-        saidByTheBody is { Length: > 0 } ? $"{saidByTheRoom} {saidByTheBody}" : saidByTheRoom;
 
     // ── STANDING UP IS A DECISION ─────────────────────────────────────────────────────────────────────
 
