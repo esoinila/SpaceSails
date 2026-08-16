@@ -233,7 +233,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheKeypadSaysTheBuzzOnThePadAndTheGreenLightOnTheHud()
     {
-        string body = Method("Map.Deck.cs", "private void SubmitPin(");
+        string body = Method("Map.Deck.Fixtures.cs", "private void SubmitPin(");
 
         Assert.True(body.Contains("SayItWhereTheyAreLooking(\"The panel buzzes red", StringComparison.Ordinal),
             "the wrong-code buzz is not said on the pad — the pad stays up, so a pulsed buzz is under its " +

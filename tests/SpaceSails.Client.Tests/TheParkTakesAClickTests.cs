@@ -336,8 +336,7 @@ public sealed class TheParkTakesAClickTests
     [Fact]
     public void TheClickHandlerSaysWhyOnceWhenItPlansNothingAndNothingWhenItWalks()
     {
-        string source = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Deck.cs"));
+        string source = Deck();
 
         int at = source.IndexOf("private void ClickToWalkAt(", StringComparison.Ordinal);
         Assert.True(at > 0, "Map.Deck.cs no longer has a ClickToWalkAt — this guard is reading nothing.");
@@ -373,6 +372,16 @@ public sealed class TheParkTakesAClickTests
         // pixels the owner reads are the same string.
         Assert.DoesNotContain("No way through from here", source, StringComparison.Ordinal);
     }
+
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" this guard reads
+    /// over is all of them — exactly the text it read out of one file before the split. Concatenated
+    /// rather than narrowed to one part on purpose: the last claim below is a <c>DoesNotContain</c>
+    /// over the WHOLE page, and pointing it at a single partial would be a silent weakening.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string RepoRoot()
     {

@@ -56,6 +56,14 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string CoreSource(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", name));
 
@@ -355,7 +363,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_SIT_VERB_IsWiredToTheBenchAndAsksCoreWhichOne()
     {
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
         int at = deck.IndexOf("case DeckPlan.ConsoleKind.HiveBench:", StringComparison.Ordinal);
         Assert.True(at >= 0, "[E] no longer answers at a park bench.");
         Assert.Contains("TryTakeBench();", deck[at..(at + 700)], StringComparison.Ordinal);

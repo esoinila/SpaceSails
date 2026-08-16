@@ -92,7 +92,6 @@ public sealed class NoSourceFileIsTooLongTests
             // Not in any lane yet — inherited debt, listed so it cannot grow.
             ["src/SpaceSails.Core/PatrolBeat.cs"] = 1991,
             ["src/SpaceSails.Core/RingOffice.cs"] = 1762,
-            ["src/SpaceSails.Client/Pages/Map.Deck.cs"] = 1687,
         };
 
     /// <summary>
