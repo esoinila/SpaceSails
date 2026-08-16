@@ -366,7 +366,11 @@ public sealed partial class Map
             // seat: a bar top is in full view of the keep — who is security (#781) — and of everyone
             // waiting to be served. You cannot even spread the case here; tearing something up is louder.
             atTheCounter: SeatedIn == SeatedHud.Seat.BarStool,
-            companyAtTheTable: _table is not null && !SeatedAlone,
+            // #870 lane 6a · CaptainIsSeated is the seat family's own name for "there is a table under the
+            // captain" — asked here rather than read out of its state. NOT SeatedWithCompany, which is the
+            // chair opposite alone: this wants the privacy ladder's fuller answer, where somebody on the far
+            // end of a shared bench counts as company too.
+            companyAtTheTable: CaptainIsSeated && !SeatedAlone,
             overlooked);
     }
 }
