@@ -46,6 +46,16 @@ public sealed class SittingDownIsAStateTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claim below is a <c>DoesNotContain</c> over the WHOLE pen, and
+    /// pointing it at a single partial would be a silent weakening.</summary>
+    private static string DeckViewSource() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
@@ -197,7 +207,7 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void AndThePostureIsHandedDownRatherThanWorkedOut()
     {
-        string deckView = Source("Rendering", "DeckView.cs");
+        string deckView = DeckViewSource();
         // #825 · the closing paren used to be part of this needle, back when Seated was the last thing
         // State carried. It is not any more (the stall banner sits after it), and "is this parameter the
         // LAST one" was never the law — the law is that State carries the flag and the renderer reads it.

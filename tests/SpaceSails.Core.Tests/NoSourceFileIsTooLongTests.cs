@@ -88,7 +88,8 @@ public sealed class NoSourceFileIsTooLongTests
             ["src/SpaceSails.Client/Pages/Map.Quests.cs"] = 2503,
 
             // #870 lane 5 — queued behind lane 4.
-            ["src/SpaceSails.Client/Rendering/DeckView.cs"] = 2459,
+            // DeckView.cs's row is GONE (lane 5a): the file is 333 lines now, and the largest of the six
+            // partials it became is 1,152 — under the line without an exception of its own.
             ["src/SpaceSails.Client/Pages/Map.Patrol.cs"] = 2074,
             ["src/SpaceSails.Client/Pages/Map.Venting.cs"] = 1842,
 

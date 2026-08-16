@@ -59,6 +59,16 @@ public sealed class SeatsAreDrawnTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claims below are <c>DoesNotContain</c> over the WHOLE pen, and
+    /// pointing them at a single partial would be a silent weakening.</summary>
+    private static string DeckViewSource() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
 
@@ -488,7 +498,7 @@ public sealed class SeatsAreDrawnTests
     [Fact]
     public void THE_PEN_IsHandedTheOccupancyAndNeverWorksItOut()
     {
-        string deckView = Source("Rendering", "DeckView.cs");
+        string deckView = DeckViewSource();
 
         // The pen must not know what a stool, a top, a shift — or, since #793, a park bench or a FOOT-TAIL —
         // IS. The last two are the same lesson pointed at somebody else's feet: whether a figure has stopped
