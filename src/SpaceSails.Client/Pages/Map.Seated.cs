@@ -386,6 +386,7 @@ public partial class Map
     /// ruled on the bar's.</para>
     /// </summary>
     private bool CaptainIsSeatedAnywhere => SeatedIn is not null;
+
     /// <summary>#784 · Why not, said out loud — the posture refusal on your feet, the privacy refusal in the
     /// wrong seat, null when the papers may come out. One ladder, asked top-down: standing beats seating,
     /// because a captain who is not in a seat at all has not yet reached the question about WHICH seat.</summary>
