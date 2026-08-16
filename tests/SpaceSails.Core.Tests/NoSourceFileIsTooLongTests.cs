@@ -91,8 +91,10 @@ public sealed class NoSourceFileIsTooLongTests
 
             // Not in any lane yet — inherited debt, listed so it cannot grow.
             ["src/SpaceSails.Core/PatrolBeat.cs"] = 1991,
-            ["src/SpaceSails.Core/RingOffice.cs"] = 1762,
             ["src/SpaceSails.Client/Pages/Map.Deck.cs"] = 1687,
+
+            // RingOffice.cs's row is GONE (lane 5e): the file is 270 lines now, and the largest of the five
+            // partials it became is 763 — under the line without an exception of its own.
         };
 
     /// <summary>
