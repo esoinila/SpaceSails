@@ -41,8 +41,10 @@ namespace SpaceSails.Client.Tests;
 /// why, knocking, signed point, cover), the page's own patrol state (the escort, the escort due, the kick-out
 /// and its ride, the watch's two counters, the floor clock, the ear's cooldown, the wallet fan, the hide's
 /// one line), the card that is up, the pulse slot and every autopilot log line raised. At the end of a case,
-/// EVERY scalar field on the whole page is written down as well — a census, so a side effect that lands
-/// somewhere this file never thought about still moves the hash.</para>
+/// the whole scalar surface of the page is compared against what it was before the case started, and every
+/// field that MOVED is written down with both values — so a side effect landing somewhere this file never
+/// thought about still moves the hash, while a field the round has never heard of contributes nothing
+/// whether some other lane invents it, renames it or retires it.</para>
 ///
 /// <h3>Determinism</h3>
 ///
@@ -366,20 +368,21 @@ public sealed class EveryRoundFingerprintsTheSameTests
     /// or a change to the floor the round is walked on; both are things a human should have to look at.</summary>
     private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
     {
-        ["an empty floor still fades the plate"] = "ba67861625beee1449678b241309f7c3291b5389074490c026ec4f8667d9120b",
-        ["up on the surface there is no round at all"] = "5f972b3bb0ac56cca08fc9c6dd1ca2a54eb9dacf1a4b0e0f965a37a6356fb24c",
-        ["two men walk the round and nobody is watching"] = "a899ac754eea550bd2787530d730463547128899db72bedbe56a46404b9aa775",
-        ["one man walks the round, all the way round it"] = "5e67933ed6eeda09d4ba32602119a4c3ef4646e4f869bf3110afd6e7b2b3876a",
-        ["he hails you and you walk away from it"] = "2ce759d07acc7795c500a3502b47454eafc069a75cd1335edbcad344f9d5ff3e",
-        ["he crosses the floor, reads your papers, and walks you to the car"] = "5d8b5d68255c228e09f9e4222d4ef5797d87ce4d3217c3b31e8f972a3d466922",
-        ["…and this time he does not press the button for your floor"] = "923b5e568f63fc1b2e6f8f8ee37747101dcd6ebb5cd79a9752bc6291e6bbc719",
-        ["he calls it in, comes at a run, and he has you"] = "664a5ea736b5732d667af63ca0cda7ac7be9dc1b5eb0809cb046d9d91d545575",
-        ["he calls it in, and by the time he moves you are gone"] = "a2884452d3a026abc803fb92518f860400048334a32c0b9b41db567b53b1318a",
-        ["you duck into a cubicle and he watched the catch turn"] = "36ebf01fec50e67c0ec5b4527cba376227058d1c44f863a2b0b643a1cbcca8c8",
-        ["you duck into a cubicle and nobody saw a thing"] = "04b3faa6f4c9afd3f7a43e4c26868f7bb5d1254e7814f67aed653c831be37b5e",
-        ["he called it in, and then you shut a door in his face"] = "a9c912c09cdb876dac9c83ee59307eac2dffc185bba23d2d5568b2696c60b2a9",
-        ["you duck in while he is already walking over"] = "437221d749b07097b9d74c6414d7d5b286f2bf344e3e9b0f39b8ec8bd1184fce",
+        ["an empty floor still fades the plate"] = "148ff6f3378feede544d018d3771364edfe52e86ecdf3b316d39696757114ab3",
+        ["up on the surface there is no round at all"] = "343943d96209111af869ab6dbe8a2fb427427d89b9ca1eb09e9de0fa1934d8ae",
+        ["two men walk the round and nobody is watching"] = "07cd8ad1a5538d1e77e4c603c96aeadb8d5c25f4b180d9cb7f4c2de9ffafc34d",
+        ["one man walks the round, all the way round it"] = "11c4a45bcf8bc5264099ba24343ce57433152cba227fd2714cd37ce05af3dc43",
+        ["he hails you and you walk away from it"] = "11047c537b2e1ecba26719c794e327c7d3ad52e311cf78d257c894777b0ae9e4",
+        ["he crosses the floor, reads your papers, and walks you to the car"] = "e28da120432d3a69b47871db86e9e6b90769ea195a72ad04b7f4ef3bfa186708",
+        ["…and this time he does not press the button for your floor"] = "a5e4b2a86ccc31b32346959aedd538af55b9b05a38cf2afbf20bf2448a8d4140",
+        ["he calls it in, comes at a run, and he has you"] = "6b5da25dd0810d31fb57a276925f43b3292795059265c08f33456636a64f583d",
+        ["he calls it in, and by the time he moves you are gone"] = "23bd65d4552be534fcbfc6b59b8ecdc2a4d3209a700982b2ba0869f217aa01e1",
+        ["you duck into a cubicle and he watched the catch turn"] = "79fa953a17e87de5e336ddb9fd76e1fa4e6618ba8c5520bc9a220dde16ec9fc1",
+        ["you duck into a cubicle and nobody saw a thing"] = "4599ddbf4a51a9bf29c26029e818d4ca861f46c3bc933f92da882459b82dbe8e",
+        ["he called it in, and then you shut a door in his face"] = "23cb583bbfd91ae873af33f5eef7fef73a71a3615086d87d791a5d4ff6ca5890",
+        ["you duck in while he is already walking over"] = "653e6acf180cdf9cebe314f4cd9da594faccac2c588998fb93518b60836a9ab0",
     };
+
 
 
     // ── THE FACTS ─────────────────────────────────────────────────────────────────────────────────────
@@ -481,6 +484,8 @@ public sealed class EveryRoundFingerprintsTheSameTests
         MethodInfo step = typeof(Pages.Map).GetMethod("AdvancePatrol", Hidden)
             ?? throw new InvalidOperationException("the page has no AdvancePatrol — this guard is dead.");
 
+        Dictionary<string, string> before = EveryScalarOnThePage(map);
+
         for (int frame = 0; frame < c.Frames; frame++)
         {
             c.EachFrame?.Invoke(map, ex, frame);
@@ -493,7 +498,8 @@ public sealed class EveryRoundFingerprintsTheSameTests
             sb.Append(TheFloorAfterThatFrame(map, ex));
         }
 
-        sb.Append("── the page, scalar by scalar ──\n").Append(TheWholePage(map));
+        sb.Append("── what this case moved on the page ──\n")
+          .Append(WhatMoved(before, EveryScalarOnThePage(map)));
         return (Normalize(sb.ToString()), c.Frames, arms);
     }
 
@@ -587,27 +593,52 @@ public sealed class EveryRoundFingerprintsTheSameTests
         return sb.ToString();
     }
 
-    /// <summary>Every scalar on the whole page, at the end of a case. The clause that catches a side effect
-    /// landing somewhere this file never thought to look.</summary>
-    private static string TheWholePage(Pages.Map map)
+    /// <summary>Every scalar on the whole page, by name — read once before a case and once after.</summary>
+    private static Dictionary<string, string> EveryScalarOnThePage(Pages.Map map)
     {
-        var sb = new StringBuilder();
+        var seen = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (FieldInfo f in typeof(Pages.Map)
-            .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
-            .OrderBy(f => f.Name, StringComparer.Ordinal))
+            .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
         {
             object? v = f.GetValue(map);
             if (v is null)
             {
-                sb.Append("  ").Append(f.Name).Append("=-\n");
+                seen[f.Name] = "-";
             }
             else if (v is bool or int or long or double or float or string or Enum or decimal)
             {
-                sb.Append("  ").Append(f.Name).Append('=').Append(R(v)).Append('\n');
+                seen[f.Name] = R(v);
             }
             else if (v is ICollection col)
             {
-                sb.Append("  ").Append(f.Name).Append(".Count=").Append(col.Count).Append('\n');
+                seen[f.Name + ".Count"] = col.Count.ToString(Inv);
+            }
+        }
+        return seen;
+    }
+
+    /// <summary>
+    /// WHAT THIS CASE MOVED ON THE PAGE — the whole scalar surface of <see cref="Pages.Map"/>, before against
+    /// after, with only the differences written down.
+    ///
+    /// <para>The DIFFERENCE rather than the census is the point. A census of every field would catch the same
+    /// side effects, and it would also change every hash in this file the day a lane somewhere else on the
+    /// page adds, renames or retires a field the round has never heard of — which is what happened the first
+    /// time this guard met CI, on the morning #870's seat lane landed. A field this method never writes
+    /// contributes nothing here whether it exists or not; a field it DOES write is named, with both values,
+    /// and moves the hash.</para>
+    /// </summary>
+    private static string WhatMoved(
+        IReadOnlyDictionary<string, string> before, IReadOnlyDictionary<string, string> after)
+    {
+        var sb = new StringBuilder();
+        foreach (string name in before.Keys.Concat(after.Keys).Distinct().OrderBy(n => n, StringComparer.Ordinal))
+        {
+            string was = before.GetValueOrDefault(name, "(not there)");
+            string now = after.GetValueOrDefault(name, "(not there)");
+            if (!string.Equals(was, now, StringComparison.Ordinal))
+            {
+                sb.Append("  ").Append(name).Append(": ").Append(was).Append(" → ").Append(now).Append('\n');
             }
         }
         return sb.ToString();
