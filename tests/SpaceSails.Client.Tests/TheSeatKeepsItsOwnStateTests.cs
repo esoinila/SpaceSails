@@ -259,6 +259,255 @@ public sealed class TheSeatKeepsItsOwnStateTests
             "what relaxes — deliberately, in that lane, with the callers updated in the same commit.");
     }
 
+    // ── (4) #870 lane 6c · AND THE SEAT REACHES THE PAGE THROUGH ONE DOOR ─────────────────────────────
+    //
+    // 6c moved the VERBS onto the same object — sitting down on six kinds of furniture, getting off them,
+    // the wait beat, the moves at a top and at a counter — and the whole claim of the lane is that what they
+    // still need from the page is ISeatHost and NOTHING else. These three facts are that claim, asked of the
+    // source rather than of a reviewer.
+
+    /// <summary>The one file that writes the coupling down.</summary>
+    private const string TheHostFile = "Pages/Seating/ISeatHost.cs";
+
+    /// <summary>The seat's own source: everything under <c>Pages/Seating/</c> whose name begins
+    /// <c>Seating</c>. The interface itself and the page's implementation of it are deliberately NOT in here
+    /// — they are the door, and a door is allowed to name both rooms.</summary>
+    private static IEnumerable<string> SeatSources() =>
+        ClientSources().Where(p =>
+            Relative(p).StartsWith("Pages/Seating/Seating", StringComparison.Ordinal)
+            && p.EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Two of the host's members share a spelling with a TYPE this family names constantly —
+    /// <c>DeckPlan.ConsoleKind</c>, <c>Core.Satchel.Item</c> — so a bare occurrence of either is ordinarily a
+    /// type reference and not a reach at the page. They are left out of the <i>say <c>_host.</c> it</i> half
+    /// and out of that half only: the FIELD half still holds the line, because <c>_deckPlan</c> and
+    /// <c>_satchel</c> are page fields and may not be named at all.</summary>
+    private static readonly HashSet<string> CollidesWithATypeName =
+        new(StringComparer.Ordinal) { "DeckPlan", "Satchel" };
+
+    /// <summary>
+    /// HOW MANY THINGS A CHAIR NEEDS FROM THE PAGE — <b>and it may only ever go down</b>.
+    ///
+    /// <para>A ratchet, exactly like #870's own size gate. The seat family used to be seven partials of
+    /// <see cref="Pages.Map"/>, which meant it could reach anything the page had: every field, every private
+    /// verb, every dev cheat, with nothing written down and nothing to argue with. The number below is what
+    /// that came to when somebody finally counted.</para>
+    ///
+    /// <para>Taking a member off is a good day — lower the number in the same commit and say in the PR body
+    /// which one went. RAISING it is a lane of its own, because it is the chair asking the page for something
+    /// new, and that is a design decision rather than a build error.</para>
+    /// </summary>
+    [Fact]
+    public void TheSeatNeedsExactlyThisManyThingsFromThePage()
+    {
+        const int TheRatchet = 28;
+
+        List<string> members = HostMembers();
+
+        Assert.True(
+            members.Count == TheRatchet,
+            $"#870 lane 6c · THE SEAT NEEDS {members.Count} THINGS FROM THE PAGE, and the ratchet says " +
+            $"{TheRatchet}.\n\n" +
+            (members.Count < TheRatchet
+                ? "FEWER is a good day — the chair stopped needing something. Lower the number here, in the " +
+                  "same commit, and say in the PR body which member went and why."
+                : "MORE means the chair asked the page for something new. That does not go in with a passing " +
+                  "build; it goes in with a PR body that argues for it. If you are reading this in the middle " +
+                  "of a refactor, the answer is almost always that the verb you just moved should have asked " +
+                  "for an ANSWER rather than for the machinery under it.") +
+            "\n\nWhat is on it today:\n  " + string.Join("\n  ", members));
+    }
+
+    /// <summary>
+    /// AND NOTHING IN THE SEAT REACHES THE PAGE ANY OTHER WAY.
+    ///
+    /// <para>Two sweeps over the seat's own source, and between them they are the whole of the claim. No file
+    /// of the seat may NAME a field of the page — not <c>_surface</c>, not <c>_avatarX</c>, not a dev cheat —
+    /// and every one of the page's verbs it does use must be spelled <c>_host.</c> something, which is the
+    /// only door there is.</para>
+    ///
+    /// <para><b>It reads CODE, not prose.</b> Doc comments and whole-line comments are skipped on purpose:
+    /// the moved docblocks travelled byte-identical, which is this lane's own discipline, and several of them
+    /// name a page member in a sentence ABOUT the coupling. The coupling is the interface; what this guard is
+    /// about is what the code reaches for.</para>
+    ///
+    /// <para><b>Proven RED</b> by calling one page member directly out of a moved verb — verbatim in #870
+    /// lane 6c's PR body.</para>
+    /// </summary>
+    [Fact]
+    public void TheSeatReachesThePageThroughTheHostAndNoOtherWay()
+    {
+        var trespass = new List<string>();
+        List<string> fields = PageFields();
+        List<string> host = HostMembers()
+            .Select(m => m.Split(' ')[0])
+            .Where(n => !CollidesWithATypeName.Contains(n))
+            .ToList();
+
+        foreach (string path in SeatSources())
+        {
+            string[] lines = File.ReadAllLines(path);
+
+            // Where the seat itself begins. Above it is the file's own `public partial class Map { … }`
+            // scaffolding and, in the state file, the page's one seat field and its constructor — that is
+            // the PAGE talking about the seat, which is allowed and is the only place it happens.
+            int body = Array.FindIndex(lines, l => l.Contains("class Seating", StringComparison.Ordinal));
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                if (line.TrimStart().StartsWith("//", StringComparison.Ordinal))
+                {
+                    continue;   // prose about the coupling is not the coupling
+                }
+
+                // AND THE PAGE'S OWN TYPE IS NOT NAMED IN HERE AT ALL. This is the clause that shuts the
+                // door rather than merely papering it: every way round the two sweeps below — a second field
+                // typed as the page, a cast of the host back to it, a parameter, a local — has to write the
+                // word `Map` somewhere, and after that the seat can reach anything again through a receiver
+                // no sweep has heard of. FOUND BY TRYING IT: a planted `_page.ShowPulseMessage(…)` walked
+                // straight past the host sweep, because that name IS qualified — just not by a door.
+                if (body >= 0 && i > body && Regex.IsMatch(line, @"(?<![\w.])Map\b"))
+                {
+                    trespass.Add(
+                        $"  {Relative(path)}:{i + 1} names the PAGE'S OWN TYPE inside the seat — {line.Trim()}");
+                }
+
+                foreach (string field in fields)
+                {
+                    if (Needle(field).IsMatch(line))
+                    {
+                        trespass.Add(
+                            $"  {Relative(path)}:{i + 1} names the page's own {field} — {line.Trim()}");
+                    }
+                }
+
+                foreach (string name in host)
+                {
+                    foreach (Match m in Regex.Matches(line, @"(?<!\w)" + Regex.Escape(name) + @"\b"))
+                    {
+                        string before = line[..m.Index];
+                        if (before.EndsWith("_host.", StringComparison.Ordinal)
+                            || before.EndsWith(".", StringComparison.Ordinal))
+                        {
+                            continue;   // through the one door, or a member of something else entirely
+                        }
+                        trespass.Add(
+                            $"  {Relative(path)}:{i + 1} says {name} bare — say _host.{name} — {line.Trim()}");
+                    }
+                }
+            }
+        }
+
+        Assert.True(
+            trespass.Count == 0,
+            "#870 lane 6c · THE SEAT REACHES THE PAGE THROUGH ONE DOOR, and these lines go round it:\n" +
+            string.Join("\n", trespass) +
+            $"\n\nThe door is `_host`, and what is behind it is written down in {TheHostFile}. If the thing " +
+            "you need is not on it, do not reach past it: ask the page for the ANSWER rather than for the " +
+            "machinery — that is why APourInFrontOfYou, RestOneSeatedBeat, TheTailReading and CubicleIsShut " +
+            "are one member each instead of the eight fields and three sweeps they are made of. If it really " +
+            "does belong on the interface, add it AND raise the ratchet in " +
+            "TheSeatNeedsExactlyThisManyThingsFromThePage, in a PR body that argues for it.");
+    }
+
+    /// <summary>The anti-vacuous half of the sweep above, and it is the same shape as this file's other one:
+    /// a rule about ABSENCE passes gloriously on a tree where the thing was simply deleted. So the door has
+    /// to be really there — the field, typed as the interface — the verbs have to really be in the files the
+    /// sweep reads, and the door has to be really USED.</summary>
+    [Fact]
+    public void TheDoorIsReallyThereAndReallyUsed()
+    {
+        Assert.True(
+            File.Exists(Path.Combine(ClientRoot, TheHostFile.Replace('/', Path.DirectorySeparatorChar))),
+            $"#870 lane 6c · this guard names one file by path and it does not exist: {TheHostFile}. A path " +
+            "that matches nothing exempts nothing and proves nothing. Re-PATH it; never delete the row.");
+
+        List<string> seat = SeatSources().Select(Relative).ToList();
+        Assert.True(
+            seat.Count >= 6,
+            $"#870 lane 6c · the seat is supposed to be its state plus five partials of verbs, and the sweep " +
+            $"can only see {seat.Count} file(s). It is reading almost nothing, which means it is proving " +
+            "almost nothing.\n  " + string.Join("\n  ", seat));
+
+        Assert.Contains(
+            "private readonly ISeatHost _host;",
+            File.ReadAllText(Path.Combine(ClientRoot, TheOneFile.Replace('/', Path.DirectorySeparatorChar))),
+            StringComparison.Ordinal);
+
+        int through = SeatSources().Sum(p => Regex.Matches(File.ReadAllText(p), @"\b_host\.").Count);
+        Assert.True(
+            through >= 60,
+            $"#870 lane 6c · the seat goes through its host {through} times, and it landed at well over that. " +
+            "Either a whole verb group has left the object, or somebody found another way to the page — and " +
+            "the sweep above cannot tell those two apart, which is why this row exists to notice.");
+    }
+
+    /// <summary>Every member declared on the host interface, as <c>Name (kind)</c>. Read off the SOURCE
+    /// rather than off the running type, so the number in the ratchet is a count of what somebody wrote down
+    /// and had to look at.</summary>
+    private static List<string> HostMembers()
+    {
+        var found = new List<string>();
+        string path = Path.Combine(ClientRoot, TheHostFile.Replace('/', Path.DirectorySeparatorChar));
+        foreach (string raw in File.ReadAllLines(path))
+        {
+            string line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("//", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            Match verb = Regex.Match(line, @"^[\w?<>,.\[\]]+(?:\s+[\w?<>,.\[\]]+)*\s+(\w+)\(.*\);$");
+            if (verb.Success)
+            {
+                found.Add(verb.Groups[1].Value + " (verb)");
+                continue;
+            }
+
+            Match read = Regex.Match(line, @"^[\w?<>,.\[\]]+(?:\s+[\w?<>,.\[\]]+)*\s+(\w+)\s*\{[^}]*\}$");
+            if (read.Success)
+            {
+                found.Add(read.Groups[1].Value + " (read)");
+            }
+        }
+        return found;
+    }
+
+    /// <summary>Every field the PAGE keeps, by name, read off every client partial that is not the seat's
+    /// own. This is the set the seat may not name: a chair that can reach a page field is a chair with no
+    /// surface at all, which is the state 6a, 6b and 6c were written to leave behind.</summary>
+    private static List<string> PageFields()
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string path in ClientSources())
+        {
+            string rel = Relative(path);
+            if (rel.StartsWith("Pages/Seating/Seating", StringComparison.Ordinal)
+                || !rel.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            foreach (string line in File.ReadAllLines(path))
+            {
+                // A FIELD and never a member: declared at the class's own indent, ends its statement on its
+                // own line, and is not an expression-bodied anything. One line can declare several.
+                if (!Regex.IsMatch(line, @"^ {4}(?:private|internal|protected|public)\b")
+                    || !line.Contains(';', StringComparison.Ordinal)
+                    || line.Contains("=>", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                foreach (Match m in Regex.Matches(line, @"\b(_\w+)\b"))
+                {
+                    names.Add(m.Groups[1].Value);
+                }
+            }
+        }
+        return names.OrderBy(n => n, StringComparer.Ordinal).ToList();
+    }
+
     // ── WHERE THE SOURCE IS ───────────────────────────────────────────────────────────────────────────
 
     [Fact]
