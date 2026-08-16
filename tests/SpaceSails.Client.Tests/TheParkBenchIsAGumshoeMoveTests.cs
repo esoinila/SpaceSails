@@ -390,8 +390,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // figure drawn as stopped are one figure.
         string patrol = Patrol();
         Assert.Contains("g.Held = FootTail.MustHold(", patrol, StringComparison.Ordinal);
-        Assert.Contains("_patrol.Guards[i].DeckName, _patrol.Guards[i].Held", patrol,
-            StringComparison.Ordinal);
+        Assert.Contains("_patrol.Guards[i].DeckName, _patrol.Guards[i].Held", patrol, StringComparison.Ordinal);
     }
 
     // ── (c) THE SIT VERB IS WIRED, AND IT IS WIRED TO CORE'S OWN BENCH ───────────────────────────────
