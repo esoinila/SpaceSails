@@ -670,13 +670,13 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["patrol=".Length..]).ToLowerInvariant();
                 if (candidate is "1" or "true" or "yes")
                 {
-                    _patrolCheat = 1;
+                    ForceTheRoundsTo(1);
                 }
                 else if (candidate == "2")
                 {
-                    _patrolCheat = 2;
+                    ForceTheRoundsTo(2);
                 }
-                if (_patrolCheat is not null)
+                if (TheQueryHasForcedARound)
                 {
                     secretlabCheat = true;
                     secretlabDeep = true;
@@ -696,8 +696,8 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["badge=".Length..]).ToLowerInvariant();
                 if (candidate is "1" or "true" or "yes")
                 {
-                    _badgeCheat = true;
-                    _patrolCheat ??= 1;
+                    MintTheSitePassAtTheLanding();
+                    ForceARoundIfNoneAsked();
                     secretlabCheat = true;
                     secretlabDeep = true;
                     _landCheat = true;

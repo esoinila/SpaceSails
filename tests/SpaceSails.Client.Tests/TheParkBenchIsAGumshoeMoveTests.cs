@@ -523,14 +523,19 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// Assert.Contains() Failure: Sub-string not found
     /// Not found: "afoot.Add(PatrolBeat.OnTheRound(i, _guards[i]"···
     /// </code>
+    ///
+    /// <para>That RED is kept verbatim because it is what was read that day. #870 lane 6′a has since
+    /// renamed the receiver: the bench asks the patrol family for <c>TheRoundOnFoot</c> rather than reading
+    /// its <c>_guards</c>, so the needle below spells it that way. The claim is the same one.</para>
     /// </summary>
     [Fact]
     public void THE_TAIL_QUESTION_IsAskedOnTheBeatAndOfCore()
     {
         string bench = Bench();
         Assert.Contains(
-            "afoot.Add(PatrolBeat.OnTheRound(i, _guards[i].X, _guards[i].Y));", bench,
+            "afoot.Add(PatrolBeat.OnTheRound(i, round[i].X, round[i].Y));", bench,
             StringComparison.Ordinal);
+        Assert.Contains("IReadOnlyList<Guard> round = TheRoundOnFoot;", bench, StringComparison.Ordinal);
         Assert.Contains(
             "FootTail.AnythingTailing(_avatarX, _avatarY, MoversAfoot(), SightBlockers())", bench,
             StringComparison.Ordinal);

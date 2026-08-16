@@ -57,10 +57,13 @@ public partial class Map
     /// </summary>
     private IReadOnlyList<FootTail.Mover> MoversAfoot()
     {
-        var afoot = new List<FootTail.Mover>(_guards.Count);
-        for (int i = 0; i < _guards.Count; i++)
+        // #870 lane 6′a · TheRoundOnFoot is the patrol family's own name for the men walking this floor —
+        // a read-only view of the one list, asked for here rather than reached into.
+        IReadOnlyList<Guard> round = TheRoundOnFoot;
+        var afoot = new List<FootTail.Mover>(round.Count);
+        for (int i = 0; i < round.Count; i++)
         {
-            afoot.Add(PatrolBeat.OnTheRound(i, _guards[i].X, _guards[i].Y));
+            afoot.Add(PatrolBeat.OnTheRound(i, round[i].X, round[i].Y));
         }
         return afoot;
     }

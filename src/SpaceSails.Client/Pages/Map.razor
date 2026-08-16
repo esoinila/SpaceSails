@@ -2688,8 +2688,7 @@
                 <div class="wallet-fan-rows">
                     @foreach (SpaceSails.Core.Satchel.Item paper in fanPapers)
                     {
-                        bool inHand = _paperInHand is { } held
-                                      && held.Kind == paper.Kind && held.Id == paper.Id;
+                        bool inHand = ThePaperInYourHandIs(paper);
                         <button type="button"
                                 class="@(inHand ? "wallet-paper picked" : "wallet-paper")"
                                 @onclick="() => ChooseThePaper(paper)">
@@ -2702,7 +2701,7 @@
                                 }
                             </span>
                             <span class="wallet-paper-claims">@SpaceSails.Core.WalletChoice.Claims(paper)</span>
-                            <span class="wallet-paper-book">@SpaceSails.Core.WalletChoice.HistoryLine(paper, fanEx.Stop.Body.Id, _shownBook)</span>
+                            <span class="wallet-paper-book">@TheBookOn(paper, fanEx.Stop.Body.Id)</span>
                         </button>
                     }
                 </div>

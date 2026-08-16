@@ -159,14 +159,22 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     {
         string block = FanBlock();
 
+        // #870 lane 6′a · RE-NEEDLED, never re-asserted. The book line is asked of the challenge family by
+        // name now (TheBookOn) rather than composed in the markup off the raw book, so the row's own needle
+        // is that name — and the sentence it hands back is still Core's, asserted one line down where the
+        // member lives. Both halves, or the claim would have thinned to "the row says something".
         foreach (string must in new[]
                  {
                      "WalletChoice.GlyphOf(", "WalletChoice.NameOn(", "WalletChoice.Claims(",
-                     "WalletChoice.HistoryLine(", "WalletChoice.ChooserLabel", "WalletChoice.ChooserHint",
+                     "TheBookOn(", "WalletChoice.ChooserLabel", "WalletChoice.ChooserHint",
                  })
         {
             Assert.Contains(must, block, StringComparison.Ordinal);
         }
+
+        Assert.Contains(
+            "WalletChoice.HistoryLine(", Method("Map.Patrol.Challenge.cs", "private string TheBookOn("),
+            StringComparison.Ordinal);
 
         foreach (string oracle in new[] { "TheGuardReads", "WhatHappens", "Satisfied", "%" })
         {

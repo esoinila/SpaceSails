@@ -330,6 +330,74 @@ public sealed partial class Map
     /// of the challenge is reachable without working the whole cage-crew lane first.</summary>
     private bool _badgeCheat;
 
+    // ── #870 lane 6′a · WHAT THE REST OF THE PAGE MAY ASK THE ROUND ───────────────────────────────────
+    //
+    // Everything above this banner is the patrol's own, and ThePatrolKeepsItsOwnStateTests holds that line:
+    // no file outside these six partials names one of those fields. What the rest of the client actually
+    // wanted was never a field anyway — a bench wants to know who is walking the floor, a bin whether the
+    // rota has eyes on the captain, a boot-time query parser to force a round onto a floor that rolled none.
+    // Those are questions, and this is where the round answers them. Each one names the site that asked for
+    // it, so the day a member has no asker left it can be deleted rather than inherited.
+
+    /// <summary>#870 lane 6′a · EVERYBODY WALKING THIS FLOOR ON A ROUND — for the two instruments that must
+    /// see them and are not part of this family: the park bench's tail-check (<c>Map.Bench.cs</c>, which
+    /// stamps each of them a mover on a PUBLISHED round and therefore never a tail) and the motion fan's
+    /// contact list (<c>Map.SweepTeam.cs</c>, which owes the captain a blip for a man who walks).
+    ///
+    /// <para>A read-only view of the one list and never a copy: both callers read positions and velocities
+    /// that change every frame, and a cached copy of where everybody was is exactly the disagreement between
+    /// the panel and the sim this codebase does not allow.</para></summary>
+    private IReadOnlyList<Guard> TheRoundOnFoot => _guards;
+
+    /// <summary>#870 lane 6′a · IS ANYBODY ON THE ROTA WATCHING THE CAPTAIN RIGHT NOW? Asked by
+    /// <c>Map.Bin.cs</c>, which needs the top rung of <see cref="RipAndBin.WhoSaw"/>'s ladder: tearing
+    /// something up in front of a round is not the same as tearing it up alone.
+    ///
+    /// <para>It is the challenge's own predicate (<see cref="PatrolBeat.Notices"/>), over the caller's own
+    /// sight blockers, INCLUDING the grace off the car (<see cref="PatrolBeat.CanBeNoticed"/>) — a guard who
+    /// has not registered you yet has not seen you do anything. Both halves live here so that a second
+    /// caller cannot take one of them and miss the other.</para></summary>
+    private bool TheRoundHasEyesOnYou(IReadOnlyList<SurfaceCollision.Segment> sight)
+    {
+        bool seen = false;
+        if (PatrolBeat.CanBeNoticed(_patrolFloorSeconds))
+        {
+            foreach (Guard g in _guards)
+            {
+                seen |= PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight);
+            }
+        }
+        return seen;
+    }
+
+    /// <summary>#870 lane 6′a · <c>?patrol=N</c> asked for N rounds on the floor it boots onto. Written by
+    /// the one pass that reads the query (<c>Map.Sim.World.cs</c>) and spent by
+    /// <see cref="SpawnPatrolFor"/>.</summary>
+    private void ForceTheRoundsTo(int rounds) => _patrolCheat = rounds;
+
+    /// <summary>#870 lane 6′a · Has the query already forced a round? Asked twice in the same boot pass
+    /// (<c>Map.Sim.World.cs</c>): once by <c>?patrol=</c> to decide whether to imply the whole route, and
+    /// once by <c>?badge=</c>, which needs a round to show its pass to and must not overwrite the count a
+    /// <c>?patrol=2</c> on the same URL has already asked for.</summary>
+    private bool TheQueryHasForcedARound => _patrolCheat is not null;
+
+    /// <summary>#870 lane 6′a · …and a round to show a pass to, unless one has already been asked for.
+    /// <c>?badge=1</c> implies <c>?patrol=1</c> — a pass with nobody to show it to is not a thing anybody
+    /// can test — but a <c>?patrol=2</c> on the same URL wins, because overwriting it would quietly hand a
+    /// tester the easier scene they did not ask for.</summary>
+    private void ForceARoundIfNoneAsked() => _patrolCheat ??= 1;
+
+    /// <summary>#870 lane 6′a · <c>?badge=1</c> — mint this site's own pass into the wallet at the landing.
+    /// Written by the boot pass (<c>Map.Sim.World.cs</c>); the minting itself happens on the surface, where
+    /// the site is known.</summary>
+    private void MintTheSitePassAtTheLanding() => _badgeCheat = true;
+
+    /// <summary>#870 lane 6′a · …and whether it was asked for, read by the landing that does the minting
+    /// (<c>Map.Surface.Cheats.cs</c>). Deliberately NOT "does the captain hold a pass" — that is
+    /// <see cref="PatrolBeat.BadgeHeld"/>, and a captain who earned one holds it with no query at
+    /// all.</summary>
+    private bool TheSitePassIsMintedAtTheLanding => _badgeCheat;
+
     /// <summary>How long between mentions of the boots. Long enough that it is an event; short enough that
     /// a captain who has walked away and come back is told again.</summary>
     private const double HeardAgainSeconds = 20.0;
