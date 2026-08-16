@@ -36,9 +36,10 @@ public partial class Map
     /// ONE FRAME, AS A LIST OF ITS PHASES.
     ///
     /// <para>#870 lane 7c: this was 505 lines in a straight line. Nothing about the order below has changed —
-    /// the order IS the frame, and <c>EveryFrameLeavesTheSameFingerprintTests</c> holds twenty snapshots taken
-    /// on the commit before the split to say so. What changed is that each phase now has a name, so the frame
-    /// can be read at the altitude a reader actually needs: what happens, in what order, and where it stops.</para>
+    /// the order IS the frame, and <c>EveryFrameLeavesTheSameFingerprintTests</c> holds twenty-four snapshots
+    /// taken on the commit before the split to say so. What changed is that each phase now has a name, so the
+    /// frame can be read at the altitude a reader actually needs: what happens, in what order, and where it
+    /// stops.</para>
     ///
     /// <para>THREE PLACES IT CAN STOP EARLY, and each one is a different fiction: a long haul is crossing and
     /// the world is frozen; a shuttle run owns the glass; the captain is on their feet somewhere and the map is
