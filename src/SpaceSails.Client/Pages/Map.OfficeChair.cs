@@ -57,7 +57,7 @@ public partial class Map
         }
 
         // Already sitting. The press is CONSUMED — [E] is not how you stand up, "Stand up" is.
-        if (_table is not null)
+        if (_seating.Table is not null)
         {
             return true;
         }
@@ -155,7 +155,7 @@ public partial class Map
         // arriving after it must not reintroduce a fifth placement.
         SitCaptainOn(cell.SeatX, cell.SeatY);
 
-        _table = new TableTalk
+        _seating.Table = new TableTalk
         {
             Key = $"{ex.CanteenWatch}:{ex.Floor}:wc:{room.Number}:{cell.Index}",
             Index = CubicleLock.ApproachOrdinal(room.Number, cell.Index),
@@ -201,7 +201,7 @@ public partial class Map
         // #820's snap, through the ONE helper every seat verb in this game sits the captain with.
         SitCaptainOn(seat.X, seat.Y);
 
-        _table = new TableTalk
+        _seating.Table = new TableTalk
         {
             // Its own prefix, so a stool, a chair, a bench and a canteen top with the same ordinal on the
             // same floor can never share a wait counter — one key for four seats would be one source
@@ -247,7 +247,7 @@ public partial class Map
         // by Core's own guard (NoRingSuiteIsAnEmptyFloorTests) rather than by a rescue at run time.
         SitCaptainOn(chair.X, chair.Y);
 
-        _table = new TableTalk
+        _seating.Table = new TableTalk
         {
             Key = OfficeChairKey(ex, room.Number, chair.Index),
             // The APPROACH ordinal, and deliberately not the chair's own — Core owns the offset

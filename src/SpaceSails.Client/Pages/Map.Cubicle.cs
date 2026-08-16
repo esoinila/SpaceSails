@@ -36,10 +36,6 @@ public partial class Map
     private bool CubicleIsShut(string key) =>
         _surface is { } ex && ex.CubiclesShut.Contains(key);
 
-    /// <summary>#821 · The floor <see cref="_floorCubicles"/> was read off, or null before anything has been
-    /// read. See <see cref="CubiclesOn"/> for why there is a cache here at all.</summary>
-    private string? _cubicleFloorKey;
-
     /// <summary>#821 · This floor's cubicles, in the order Core published them.</summary>
     private readonly List<(UndergroundComplex.RingRoom Room, RingOffice.Stall Cell)> _floorCubicles = [];
 
@@ -59,12 +55,12 @@ public partial class Map
     private List<(UndergroundComplex.RingRoom Room, RingOffice.Stall Cell)> CubiclesOn(SurfaceExcursion ex)
     {
         string key = $"{ex.Stop.Body.Id}|{ex.Floor}";
-        if (string.Equals(_cubicleFloorKey, key, StringComparison.Ordinal))
+        if (string.Equals(_seating.CubicleFloorKey, key, StringComparison.Ordinal))
         {
             return _floorCubicles;
         }
 
-        _cubicleFloorKey = key;
+        _seating.CubicleFloorKey = key;
         _floorCubicles.Clear();
 
         if (ex.Floor >= 0

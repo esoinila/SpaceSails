@@ -30,9 +30,6 @@ namespace SpaceSails.Client.Pages;
 /// </summary>
 public partial class Map
 {
-    /// <summary>The open table, or null. One at a time: you are sitting at it.</summary>
-    private TableTalk? _table;
-
     /// <summary>#746 QA · <c>?roll=hi|lo</c> — force every band this session. It overrides the BAND and
     /// never the roll, so the dice still cast and the on-screen math still reads truthfully; what a tester
     /// watches play out is the scene a captain would get.</summary>
@@ -583,7 +580,7 @@ public partial class Map
         // Already sitting there. The press is CONSUMED and nothing happens — re-opening would wipe the
         // outcome line the captain is in the middle of reading, and E is not how you stand up: "Take your
         // leave" is, because leaving a table right is a thing this scene has an opinion about.
-        if (_table is not null)
+        if (_seating.Table is not null)
         {
             return true;
         }
@@ -644,7 +641,7 @@ public partial class Map
                     SitCaptainOn(sit.X, sit.Y);
                 }
 
-                _table = new TableTalk
+                _seating.Table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
@@ -703,7 +700,7 @@ public partial class Map
         }
 
         // Already sitting. The press is CONSUMED — E is not how you stand up, "take your leave" is.
-        if (_table is not null)
+        if (_seating.Table is not null)
         {
             return true;
         }
@@ -749,7 +746,7 @@ public partial class Map
                     SitCaptainOn(sit.X, sit.Y);
                 }
 
-                _table = new TableTalk
+                _seating.Table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
@@ -807,9 +804,9 @@ public partial class Map
         }
 
         // #820 · Read, then the table goes, then the body moves. See the summary.
-        (double X, double Y)? step = _table?.StepOff;
+        (double X, double Y)? step = _seating.Table?.StepOff;
 
-        _table = null;
+        _seating.Table = null;
 
         if (step is { } spot)
         {
@@ -831,7 +828,7 @@ public partial class Map
     private async Task TableMoveClicked(string moveId)
     {
         TableMove(moveId);
-        if (_table is null)
+        if (_seating.Table is null)
         {
             await RefocusMap();
         }
@@ -894,26 +891,19 @@ public partial class Map
     // Three one-liners so the razor never has to hold a SurfaceExcursion or a TableTalk in a local. Same
     // discipline the rest of this page uses: the markup asks questions, it does not compute answers.
 
-    /// <summary>#749 · The moves that are ON THE TABLE — the ones that exist to be pressed at all. Core's
-    /// own call, so the day a checkpoint renders through this same block it cannot have a different idea of
-    /// when an answer exists. Everything the captain has simply not earned is still HERE and still refused
-    /// out loud (#603); what is missing is only what nobody has said yet.</summary>
-    private IReadOnlyList<Encounter.Move> TableMovesOnTheTable() =>
-        _table is { } t ? Encounter.OnTheTable(t.Scene, t.Said) : [];
-
     /// <summary>Is this move on offer?</summary>
     private bool TableMoveOnOffer(Encounter.Move move) =>
-        _surface is { } ex && _table is { } t && TableMoveAvailable(ex, t, move);
+        _surface is { } ex && _seating.Table is { } t && TableMoveAvailable(ex, t, move);
 
     /// <summary>Why not, said out loud on the disabled control.</summary>
     private string TableMoveRefusal(Encounter.Move move) =>
-        _surface is { } ex && _table is { } t ? TableMoveWhyNot(ex, t, move) : "Not yet.";
+        _surface is { } ex && _seating.Table is { } t ? TableMoveWhyNot(ex, t, move) : "Not yet.";
 
     /// <summary>#746 · Is the game NUDGING you at this move? Exactly one does: the fitter's ask, after the
     /// hand has waved you toward it. That is the NO-AND's "another door opens in the conversation" made
     /// visible — the scene moved, and the panel should look like it moved.</summary>
     private bool TableMoveIsUrged(Encounter.Move move) =>
-        _surface is { } ex && _table is { Who: CanteenTable.Who.Fitter } t
+        _surface is { } ex && _seating.Table is { Who: CanteenTable.Who.Fitter } t
         && ex.TableFitterOpen
         && move.Id == CanteenTable.Work
         && !ex.TableMoves.Contains(MoveKey(t, CanteenTable.Work));
@@ -928,7 +918,7 @@ public partial class Map
     /// </summary>
     private void TableMove(string moveId)
     {
-        if (_surface is not { } ex || _table is not { } t)
+        if (_surface is not { } ex || _seating.Table is not { } t)
         {
             return;
         }
@@ -1271,7 +1261,7 @@ public partial class Map
     /// </summary>
     private void TableShow(Core.Satchel.Item item)
     {
-        if (_surface is not { } ex || _table is not { } t)
+        if (_surface is not { } ex || _seating.Table is not { } t)
         {
             return;
         }

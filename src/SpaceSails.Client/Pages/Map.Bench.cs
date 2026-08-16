@@ -70,7 +70,7 @@ public partial class Map
         }
 
         // Already sitting. The press is CONSUMED — [E] is not how you stand up, "Stand up" is.
-        if (_table is not null)
+        if (_seating.Table is not null)
         {
             return true;
         }
@@ -124,7 +124,7 @@ public partial class Map
         (double offX, double offY) = TowardTheWalk(in green, seatX, seatY);
         SitCaptainOn(seatX, seatY);
 
-        _table = new TableTalk
+        _seating.Table = new TableTalk
         {
             StepOff = (offX, offY),
             Key = BenchKey(ex, bench.Index),
@@ -200,11 +200,6 @@ public partial class Map
     }
 
     // ── THE TAIL-CHECK ────────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>#793 · Is the captain sitting still, outdoors, where the walk runs clear both ways? The one
-    /// question <see cref="FootTail"/> is asked with, named here so the law reads as a sentence at both call
-    /// sites. A bench only exists in the park, so being on one IS being in the open.</summary>
-    private bool SeatedOnABenchInTheOpen => _table is { Bench: true };
 
     /// <summary>
     /// #793 · EVERYBODY ON FOOT, as the bench sees them.
