@@ -31,7 +31,7 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <h3>THE LAW: A FINGERPRINT, CAPTURED ON THE OLD CODE FIRST</h3>
 ///
-/// <para>So the guard is a SNAPSHOT. A real <see cref="Pages.Map"/> is booted on five worlds, each is driven
+/// <para>So the guard is a SNAPSHOT. A real <see cref="Pages.Map"/> is booted on six worlds, each is driven
 /// through <c>OnTick</c> with a FIXED sequence of <c>highResTimestampMs</c> values, and afterwards everything
 /// the frame wrote is serialised into one deterministic text and hashed. The hashes below were taken on the
 /// commit BEFORE the split and committed on their own ("the snapshot, on the old code") so that they could
@@ -39,7 +39,7 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para>The text has three parts, and each one closes a different way of getting this wrong:</para>
 /// <list type="number">
-///   <item><b>THE LEDGER</b> — thirty-odd named readings (avatar, sim clock, accumulator, warp, the pulse
+///   <item><b>THE LEDGER</b> — thirty-eight named readings (avatar, sim clock, accumulator, warp, the pulse
 ///   slot and the words in it, the nerve, the tracker, the guards' positions, the FrameGap clock, the camera,
 ///   the passes, the trail). Committed as readable text under <c>Fingerprints/</c>, so a red run names the
 ///   line that moved instead of printing two hashes that differ.</item>
@@ -77,7 +77,7 @@ namespace SpaceSails.Client.Tests;
 /// process and insertion order would otherwise make the hash a coin toss between two runs on one box. Numbers
 /// are written to thirteen significant digits (see <see cref="Num(double)"/>), which is orders of magnitude
 /// clear of the last-bit disagreement two C runtimes can have about <c>Math.Sin</c> and still far finer than
-/// anything a reordered phase could hide in. That is not a hope: the twenty texts below were captured on
+/// anything a reordered phase could hide in. That is not a hope: the texts below were captured on
 /// Windows and then reproduced BYTE FOR BYTE by the same assembly under
 /// <c>mcr.microsoft.com/dotnet/sdk:10.0</c> on Linux, which is what CI runs.</para>
 ///
@@ -93,10 +93,10 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    // ── THE TWENTY ROWS ───────────────────────────────────────────────────────────────────────────────
+    // ── THE TWENTY-FOUR ROWS ───────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Five worlds × four sequences. Each hash is the sha256 of the fingerprint text committed beside it in
+    /// Six worlds × four sequences. Each hash is the sha256 of the fingerprint text committed beside it in
     /// <c>Fingerprints/&lt;world&gt;.&lt;sequence&gt;.txt</c>, taken on the pre-split commit.
     /// </summary>
     [Theory]
@@ -120,6 +120,10 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     [InlineData(World.TheMapFrameInFlight, Sequence.OneLongGap)]
     [InlineData(World.TheMapFrameInFlight, Sequence.AHeldKey)]
     [InlineData(World.TheMapFrameInFlight, Sequence.APlannedRoute)]
+    [InlineData(World.TheElectricUniverse, Sequence.SteadyFrames)]
+    [InlineData(World.TheElectricUniverse, Sequence.OneLongGap)]
+    [InlineData(World.TheElectricUniverse, Sequence.AHeldKey)]
+    [InlineData(World.TheElectricUniverse, Sequence.APlannedRoute)]
     public void EveryFrameItRunsFingerprintsTheSame(World world, Sequence sequence)
     {
         string produced = DriveAndFingerprint(world, sequence);
@@ -157,10 +161,10 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     }
 
     /// <summary>The snapshot is worth nothing if the bench cannot tell one world from another — a guard handed
-    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Twenty rows,
-    /// twenty different fingerprints.</summary>
+    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Twenty-four
+    /// rows, twenty-four different fingerprints.</summary>
     [Fact]
-    public void TheTwentyRowsAreTwentyDifferentFrames()
+    public void EveryRowIsADifferentFrame()
     {
         var seen = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (string file in Directory.EnumerateFiles(FingerprintDirectory(), "*.txt")
@@ -172,7 +176,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
                 "driving the same frame, so one of them could never fail.");
             seen[hash] = Path.GetFileName(file);
         }
-        Assert.Equal(20, seen.Count);
+        Assert.Equal(24, seen.Count);
     }
 
     // ── THE WORLDS ────────────────────────────────────────────────────────────────────────────────────
@@ -195,6 +199,11 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         /// <summary>The map itself: the flight branch, painted into the real command buffer, up to the flush
         /// that cannot cross into JavaScript on a test runner (see the class note).</summary>
         TheMapFrameInFlight,
+
+        /// <summary>Her own deck again, but under <c>scenarios/sol-eu.json</c> with the contactor running —
+        /// the one scenario in the game with a <see cref="PlasmaEnvironment"/> in it, and therefore the only
+        /// world where the frame's charge lane is not a single early return.</summary>
+        TheElectricUniverse,
     }
 
     public enum Sequence
@@ -290,8 +299,15 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
     /// <summary>The shipping scenario, off the canonical copy at the repo root — the same JSON the client
     /// fetches out of <c>wwwroot/scenarios</c> (the csproj mirrors this file into it).</summary>
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() =>
-        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() => Scenario("sol"));
+
+    /// <summary>…and the Electric Universe cut of it, which is the only scenario in the game that hands the
+    /// page a <see cref="PlasmaEnvironment"/> — so it is the only world where the charge lane of the frame is
+    /// anything but an early return.</summary>
+    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> SolEu = new(() => Scenario("sol-eu"));
+
+    private static SpaceSails.Contracts.ScenarioDefinition Scenario(string name) =>
+        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", $"{name}.json"));
 
     /// <summary>The traffic the shipping boot generates, off the shipping seeds. Cached because the planners
     /// cost seconds and every world wants the same sky.</summary>
@@ -354,9 +370,11 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
                 "has moved, and the frame's verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        PlasmaEnvironment? plasma = PlasmaEnvironment.FromScenario(Sol.Value, ephemeris);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        SpaceSails.Contracts.ScenarioDefinition scenario =
+            world == World.TheElectricUniverse ? SolEu.Value : Sol.Value;
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+        PlasmaEnvironment? plasma = PlasmaEnvironment.FromScenario(scenario, ephemeris);
+        Set(map, "_scenarioName", scenario.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_plasma", plasma);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0, plasma));
@@ -398,6 +416,21 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
                 Set(map, "_deckMode", false);
                 Set(map, "_fpMode", false);
                 Set(map, "Warp", 100);
+                break;
+
+            case World.TheElectricUniverse:
+                Set(map, "_deckMode", true);
+                Set(map, "_fpMode", false);
+                Set(map, "Warp", 1000);
+                // The contactor RUNNING is the whole point of this world. Every other world here is a
+                // Newtonian scenario, where AdvanceChargeSystems is one early return — so without this the
+                // charge lane of the frame could be moved anywhere, or off the end of a branch, and twenty
+                // fingerprints would go on being identical. A guard that cannot see a phase move is not
+                // guarding that phase.
+                Set(map, "_contactorOn", true);
+                Assert.True(Get(map, "_plasma") is not null,
+                    "scenarios/sol-eu.json handed the page no PlasmaEnvironment — this world's charge lane " +
+                    "is the same early return as everybody else's, and it would prove nothing.");
                 break;
         }
 
