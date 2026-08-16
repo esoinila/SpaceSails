@@ -224,6 +224,13 @@ public sealed class ALockedCubicleBuysTimeTests
     private static string Source(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat's verbs moved onto
+    /// <c>Map.Seating</c> behind <c>ISeatHost</c>, so the chair is two files now — the page's half and the
+    /// seat's own — read here concatenated in that order, which is exactly the text this guard read before
+    /// the move.</summary>
+    private static string Seat(string page, string seat) =>
+        Source(page) + Source(Path.Combine("Seating", seat));
+
     /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
     /// split. A part not named here is appended rather than dropped, so nothing can go unread.</summary>
@@ -424,13 +431,13 @@ public sealed class ALockedCubicleBuysTimeTests
     public void THE_LADDER_AsksTheCatchEveryFrame()
     {
         string seated = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Seated.cs"));
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating", "Seating.Seated.cs"));
 
         Assert.Contains("CubicleIsShut(wc) ? SeatedHud.Seat.LockedCubicle", seated, StringComparison.Ordinal);
 
         // …and an UNLOCKED cubicle is not dealt the top rung. It is not the cabinet's flag either — a
         // cabinet's door was paid for and this one is a catch on a partition.
-        string chair = Code("Map.OfficeChair.cs");
+        string chair = CodeOf(Seat("Map.OfficeChair.cs", "Seating.OfficeChair.cs"));
         Assert.Contains("Quiet = false", chair, StringComparison.Ordinal);
         Assert.Contains("CubicleKey = HiveInterior.CubicleKey", chair, StringComparison.Ordinal);
     }
