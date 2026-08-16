@@ -43,6 +43,14 @@ public sealed class ProcessingTheLootTakesTimeTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard counts
+    /// over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Surface() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>One method's body, cut at the next member declaration — the idiom #680's guards introduced
     /// and every satchel guard since has used.</summary>
     private static string Method(string file, string signature)
@@ -199,7 +207,7 @@ public sealed class ProcessingTheLootTakesTimeTests
             "private void AbandonProcessing(",
         })
         {
-            string code = CodeOnly(Method("Map.Surface.cs", signature));
+            string code = CodeOnly(Method("Map.Surface.Darkroom.cs", signature));
             foreach (string forbidden in new[] { "AirSeconds", "SuitAir", "AirSupplyOf", "TankIsDrawing" })
             {
                 Assert.False(code.Contains(forbidden, StringComparison.Ordinal),
@@ -211,7 +219,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // And the hold is stepped from the ordinary surface tick, alongside the suit's own step, with the
         // same dt. That is the entire mechanism by which "out here it burns tank" is true: sim time passes,
         // and the thing that prices sim time carries on doing its job.
-        string step = Pages("Map.Surface.cs");
+        string step = Pages("Map.Surface.Frame.cs");
         int air = step.IndexOf("StepSuitAir(dtRealSeconds);", StringComparison.Ordinal);
         int hold = step.IndexOf("StepProcessing(dtRealSeconds);", StringComparison.Ordinal);
         Assert.True(air >= 0 && hold > air,
@@ -262,7 +270,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // has teeth without any new enemy)." The teeth are only real if something arriving actually costs you
         // the exposure. Placed on the SWING and not on the wound: a captain who turns a blow aside has still
         // had an arm come through the space they were photographing into.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Surface();
         Assert.Contains("Core.Processing.Interruption.Reached", surface, StringComparison.Ordinal);
 
         // And the excursion ending is an interruption like any other — announced, because a captain who
@@ -282,7 +290,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // #562's ruling, one channel later: a shovel drawn over somebody photographing a pay sheet is the sim
         // doing one thing while a picture reports another. The hold rides the ONE progress bar the surface has
         // always had — a second bar would be a second answer to "what is the captain busy with".
-        string hud = Pages("Map.Surface.cs");
+        string hud = Pages("Map.Surface.Hud.cs");
         Assert.Contains("Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)", hud, StringComparison.Ordinal);
 
         string glyph = Method("Map.Surface.Hud.cs", "private static string SurfaceChannelGlyph(");
@@ -335,7 +343,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // The owner's guard, verbatim: "Duration is a Core constant read by both the sim and any UI hint (one
         // source)." The client's ONE reference to it is the ProcessingSeconds property; everything else — the
         // bar, the prompt, the start line, the satchel hint — reads that.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Surface();
         int references = 0;
         for (int at = surface.IndexOf("SecondsPerDocument", StringComparison.Ordinal); at >= 0;
              at = surface.IndexOf("SecondsPerDocument", at + 1, StringComparison.Ordinal))

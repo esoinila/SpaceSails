@@ -204,7 +204,7 @@ public sealed class TheNotebookIsInTheSatchelTests
                      "private void OpenSatchelAtTheDoor()",
                  })
         {
-            string body = Method("Map.Surface.cs", opener);
+            string body = Method("Map.Surface.Satchel.cs", opener);
             Assert.True(body.Contains("TheSatchelOpensOnThePocket()", StringComparison.Ordinal),
                 $"{opener} does not land the dialog on CARRIED — the page a captain left it on last time " +
                 "answers a question they did not ask (#690).");

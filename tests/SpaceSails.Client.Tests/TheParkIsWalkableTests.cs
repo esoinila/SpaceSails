@@ -641,7 +641,7 @@ public sealed class TheParkIsWalkableTests
         string root = RepoRoot();
         string sim = File.ReadAllText(Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Sim.cs"));
         string surface = File.ReadAllText(
-            Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Surface.cs"));
+            Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Surface.Cheats.cs"));
 
         Assert.Contains("pair.StartsWith(\"park=\"", sim, StringComparison.Ordinal);
         Assert.Contains("_parkCheat = true", sim, StringComparison.Ordinal);

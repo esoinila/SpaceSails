@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -410,7 +410,7 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
 
         // …and the placement itself is the one that does NOT nudge, said where somebody changing it will
         // read it: a sit through StandCaptainAt would walk the captain back off the plank.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Frame.cs");
         string sit = Region(surface, "private void SitCaptainOn(");
         Assert.Contains("(_avatarX, _avatarY) = (x, y);", sit, StringComparison.Ordinal);
         Assert.DoesNotContain("SpawnNudge", sit, StringComparison.Ordinal);

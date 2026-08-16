@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -190,7 +190,7 @@ public sealed class TheSatchelFeelPassTests
     {
         // The other half of "leaving never destroys": there has to be a way back. E is the verb that finds
         // things, so E finds what is at your feet before it finds what is in the walls.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Pages("Map.Surface.Satchel.cs");
         Assert.True(surface.Contains("private bool TryPickUpWhatYouLeft(", StringComparison.Ordinal),
             "nothing in the client ever picks a left thing back up — the drop verb is a delete key (#688/#615).");
 

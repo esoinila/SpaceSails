@@ -595,7 +595,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // …and the park's landing calls it before it stands the captain at the gate, so the row lands ON the
         // bench rather than beside it.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Cheats.cs");
         int park = surface.IndexOf("private void StandInTheParkIfAsked(", StringComparison.Ordinal);
         string landing = surface[park..(park + 1600)];
         int sits = landing.IndexOf("SitOnAFreeBenchIfAsked(in green)", StringComparison.Ordinal);
