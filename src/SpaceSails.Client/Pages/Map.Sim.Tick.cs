@@ -1,0 +1,753 @@
+﻿using System.Globalization;
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using Microsoft.JSInterop;
+using SpaceSails.Client;
+using SpaceSails.Client.Layout;
+using SpaceSails.Client.Rendering;
+using SpaceSails.Contracts;
+using SpaceSails.Core;
+using SpaceSails.Core.Interior;
+
+namespace SpaceSails.Client.Pages;
+
+// Subject: part of Map.Sim (#870 split; the header note lives in Map.Sim.cs) — the frame: the rAF tick, the fixed-step accumulator, the walked-view paint and the near-body warp caps.
+public partial class Map
+{
+
+    private void OnCanvasResized(double widthPx, double heightPx)
+    {
+        if (widthPx <= 0 || heightPx <= 0)
+        {
+            return;
+        }
+
+        _viewportWidth = (int)Math.Round(widthPx);
+        _viewportHeight = (int)Math.Round(heightPx);
+    }
+
+    private void OnTick(double highResTimestampMs)
+    {
+        if (_renderer is null || _ephemeris is null || _simulator is null)
+        {
+            return;
+        }
+
+        double dtRealSeconds = _lastTimestampMs is null
+            ? 0
+            : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
+        _lastTimestampMs = highResTimestampMs;
+        _frameNowMs = highResTimestampMs;
+        MarkFrameServiced(dtRealSeconds);   // #825: the REAL stall clock — the one both the banner and the controls read
+
+        // #255: a long haul is crossing — the world is frozen mid-jump (the re-seed owns the clock, and
+        // the void is never integrated). The overlay paints via Blazor; the canvas holds its last frame.
+        if (_jumpInProgress)
+        {
+            return;
+        }
+
+        FlushVaultSaveIfDirty();  // #225: one debounced autosave write per frame when a durable event fired
+
+        StepShudder(dtRealSeconds, highResTimestampMs); // #424 HULL-SHUDDER: the ambient interior-deck tremor
+        StepSignal(dtRealSeconds, highResTimestampMs);  // #424 THE UNEXPLAINED SIGNAL: the shudder's colder sibling
+        StepCaution(highResTimestampMs);                // #424 THE CAUTION ANNOUNCEMENT: the rough-passage PA
+
+        UpdateNearestBody();
+        CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
+        DriveSkip();            // #172: own the warp while skipping — arrive/announce, or yield to the helm
+        UpdateEffectiveWarp();
+
+        if (!Paused)
+        {
+            _simAccumulator += dtRealSeconds * _effectiveWarp;
+            _simAccumulator = Math.Min(_simAccumulator, MaxStepsPerFrame * _simulator.TimeStep); // Clamp accumulator
+        }
+
+        double simTimeBefore = _ship.SimTime;
+        // The pursuit quantum trail (see SteerHuntersByQuantumTrail — the abort switch): remember
+        // where the ship actually IS through this frame's integration, at the hunter-quantum
+        // cadence, so pursuit steering can look up sim-time positions instead of the frame-end
+        // one. Only paid while hunters fly; a berthed ship skips it (HoldAtDock pins the truth
+        // AFTER this loop, so the trail would be staler than _ship).
+        bool recordTrail = SteerHuntersByQuantumTrail && _hunters.Count > 0 && _dockedHavenId is null;
+        _pursuitTrail.Clear();
+        if (recordTrail)
+        {
+            _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
+        }
+
+        int stepsThisFrame = 0;
+        // PR-I: watch the drag load through this frame's steps so a cloud-top dip can hole the sail. Only
+        // paid near an atmosphere-bearing body (where warp auto-drops to 1 s steps, so the peak is caught).
+        _frameMaxDragDecel = 0;
+        bool watchDrag = _dockedHavenId is null && _nearestBody?.Atmosphere is not null;
+        while (_simAccumulator >= _simulator.TimeStep)
+        {
+            if (stepsThisFrame >= MaxStepsPerFrame)
+            {
+                _simAccumulator = 0;
+                break;
+            }
+
+            // M19: at high warp, consume the accumulator in fixed 60 s quanta on the planner's
+            // adaptive clock — one leapfrog step instead of sixty in deep space, auto-refining
+            // to 1 s steps near bodies (where warp auto-drop puts us back on the fixed path
+            // anyway). Fixed quanta keep the trajectory independent of frame timing.
+            bool useAdaptive = _effectiveWarp >= AdaptiveWarpThreshold && _simAccumulator >= AdaptiveWarpQuantum;
+            double quantum = useAdaptive ? AdaptiveWarpQuantum : _simulator.TimeStep;
+
+            // #146 split-advance: if a scheduled transfer burn epoch falls inside this quantum, advance
+            // EXACTLY onto it first (the way Simulator.RunAdaptive lands on a ManeuverPlan node), so the
+            // impulse is applied from the true drifted state — never from a state warped thousands of
+            // sim-seconds past the epoch. A burn already due (epoch reached) fires this iteration with no
+            // advance; otherwise the quantum is shortened to land on the epoch and the impulse follows.
+            bool applyTransferBurnAfterStep = false;
+            Vector2d pendingBurnDeltaV = default;
+            if (_dockedHavenId is null && _armedOrbitBodyId is not null
+                && _armedTransferSchedule is { } advSched && _armedTransferBurnsFired < advSched.Burns.Count)
+            {
+                TransferPlanner.BurnStep nextBurn = advSched.Burns[_armedTransferBurnsFired];
+                double toBurn = nextBurn.SimTime - _ship.SimTime;
+                if (toBurn <= 0)
+                {
+                    // Epoch already reached — apply the impulse now, from the current state, and re-loop
+                    // (no clock advance this pass, so the accumulator is untouched; the next pass advances
+                    // normally now that this burn has fired).
+                    ApplyTransferBurn(nextBurn.DeltaV);
+                    continue;
+                }
+                if (toBurn < quantum)
+                {
+                    quantum = toBurn; // land exactly on the burn epoch this step, then apply the impulse
+                    applyTransferBurnAfterStep = true;
+                    pendingBurnDeltaV = nextBurn.DeltaV;
+                }
+            }
+
+            // #264: remember where this quantum started so a surface crossing can be caught across the
+            // whole advance — the ship AND the body move, and SurfaceImpact interpolates both.
+            Vector2d posBeforeStep = _ship.Position;
+            double timeBeforeStep = _ship.SimTime;
+
+            if (_dockedHavenId is not null)
+            {
+                // Clamped in a dock: don't run the gravity integrator at all — it would fling the
+                // ship off the mass-less station each step, leaving HoldAtDock forever yanking it
+                // back and the berth visibly wandering at warp. Advance the clock only; HoldAtDock
+                // pins the position after the loop so the ship rides the dock, dead-steady.
+                _ship = _ship with { SimTime = _ship.SimTime + quantum };
+            }
+            else if (useAdaptive || quantum < _simulator.TimeStep)
+            {
+                // Adaptive at warp, OR a shortened split step to land on a transfer burn epoch — either
+                // way RunAdaptive lands exactly on the requested duration.
+                _ship = _simulator.RunAdaptive(_ship, quantum, _plan);
+            }
+            else
+            {
+                // #264: StepGuarded, not Step — a deep, fast periapsis substeps so it stays energy-honest
+                // instead of shedding km/s on integration error (the Uranus "flower"). Identical to Step
+                // everywhere the pass isn't close and fast.
+                _ship = _simulator.StepGuarded(_ship, _plan);
+            }
+            _simAccumulator -= quantum;
+            stepsThisFrame++;
+
+            // #264: the say-the-state law's missing consequence. If this integrated step actually reached
+            // a body's surface radius, that is an impact — end the flight at the crossing (never having
+            // flown the interior) through the shared BUSTED freeze-frame → clinic re-birth. Docked ships
+            // took the clock-only branch above and havens carry no BodyRadius, so both are exempt.
+            if (_dockedHavenId is null && _busted is null && _ephemeris is not null
+                && SurfaceImpact.FirstCrossing(posBeforeStep, timeBeforeStep, _ship.Position, _ship.SimTime, _ephemeris)
+                    is { } surfaceHit)
+            {
+                TriggerImpact(surfaceHit);
+                _simAccumulator = 0;
+                break; // the freeze-frame owns the moment; stop consuming the accumulator this frame
+            }
+
+            if (applyTransferBurnAfterStep)
+            {
+                ApplyTransferBurn(pendingBurnDeltaV); // impulse at the exact epoch (may loudly hand back)
+            }
+            if (watchDrag)
+            {
+                double decel = _simulator.DragAcceleration(_ship.Position, _ship.Velocity, _ship.SimTime).Length;
+                if (decel > _frameMaxDragDecel)
+                {
+                    _frameMaxDragDecel = decel;
+                }
+            }
+            if (recordTrail && _ship.SimTime - _pursuitTrail[^1].SimTime >= EncounterRule.HunterStepSeconds - 0.5)
+            {
+                _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
+            }
+        }
+        SimTime = _ship.SimTime;
+        if (recordTrail && _pursuitTrail[^1].SimTime < _ship.SimTime)
+        {
+            _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
+        }
+
+        // Clamped in a dock: the gravity integrator just coasted the ship off on its own arc, but a
+        // berthed ship rides the station instead. Pin it back onto the dock at the new SimTime — this
+        // is what lets you warp the heat away without steering (owner: "no guiding while docked").
+        if (_dockedHavenId is not null)
+        {
+            HoldAtDock();
+        }
+
+        // M29: the fake beacon's ghost flies the abandoned course ballistically, kept in
+        // step with the real clock — one extra body, integrated only while the lie is out.
+        if (_beaconGhost is { } ghost && SimTime > ghost.SimTime)
+        {
+            _beaconGhost = _simulator.RunAdaptive(ghost, SimTime - ghost.SimTime);
+        }
+
+        if (stepsThisFrame > 0)
+        {
+            CheckSailHole(); // PR-I: a too-deep cloud-top dip holes the sail (before burns can fire)
+            TrackAerobrakePass(); // #305: a completed haze pass rolls its 2D6 episode into the dice tray
+            AccountForFiredNodes();
+            if (_dockedHavenId is null)
+            {
+                CheckArmedInsertion(); // a clamped ship isn't flying an approach
+            }
+            CheckLockedFire();
+        }
+
+        StepNpcs();
+        StepOrdnance();
+        CheckPyramids();
+
+        if (_ship.SimTime >= _nextSweepSimTime)
+        {
+            SweepSensors();
+            _nextSweepSimTime = _ship.SimTime + SensorSweepSimSeconds;
+        }
+
+        UpdateDockStatus();
+        UpdateDockAffordance(); // #212/#211/#213: recompute the one-truth ⚓ affordance (runs paused too)
+        UpdateLandableInRange(); // #339-follow: cache which landable grounds the shuttle can reach now (map 🛬 bright state)
+        UpdateOrbitedBody();
+        UpdateCapture(dtRealSeconds);
+        UpdateEncounters();
+        UpdateLocalTrade(dtRealSeconds);
+        // The archive node's two edges (walking into the field, walking to arm's length) BEFORE the nerve
+        // step, so a throw forced by the approach is billed on the same tick the captain crossed the line.
+        StepArchiveNode();
+        StepNerve(dtRealSeconds); // #317: the nerve gauge advances every tick — regolith drains, the ship eases
+
+        UpdatePrediction();
+
+        if (_passDirty && highResTimestampMs - _lastReprojectMs > 300)
+        {
+            _passDirty = false;
+            _closestPass = null;
+            _armablePass = null;
+            _destinationPass = null;
+            _slingablePass = null;
+            _skimmablePass = null;
+            if (_ephemeris is not null)
+            {
+                double bestArmable = double.MaxValue;
+                double bestSling = double.MaxValue;
+                double bestSkim = double.MaxValue;
+                foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(_samples, _ephemeris))
+                {
+                    if (_closestPass is null || pass.Severity < _closestPass.Value.Severity)
+                    {
+                        _closestPass = pass;
+                    }
+
+                    // Armable = tightest pass by a PLANET, even when the sun ranks more severe.
+                    if (PassIsOrbitable(pass) is not null && pass.Severity < bestArmable)
+                    {
+                        (bestArmable, _armablePass) = (pass.Severity, pass);
+                    }
+
+                    // Slingable = tightest planet pass inside the body's Hill sphere (a real flyby the
+                    // crank can bend), even when it's too fast/far to orbit. PR-G's panel handle.
+                    if (PassIsSlingable(pass) && pass.Severity < bestSling)
+                    {
+                        (bestSling, _slingablePass) = (pass.Severity, pass);
+                    }
+
+                    // Skimmable = tightest pass by an atmosphere-bearing body — PR-I's corridor gauge handle.
+                    if (PassIsSkimmable(pass) && pass.Severity < bestSkim)
+                    {
+                        (bestSkim, _skimmablePass) = (pass.Severity, pass);
+                    }
+
+                    if (pass.BodyId == _destinationBodyId)
+                    {
+                        _destinationPass = pass;
+                    }
+                }
+
+                // #246: the destination's OWN planet (the void mode stops at its capture range) and the
+                // solved cheap DEPARTURE the offer quotes — recomputed on the reprojection cadence. The
+                // departure solve (not the current-coast Project) is what the offer keys off, so the button
+                // is reachable from a berth or any coast (#249 fix). The current-coast Project stays too, but
+                // only for the manual-coast PROMISE verdict line ("does NOT reach — closest pass X AU").
+                _longHaulPlanet = LongHaulTargetPlanet(_destinationBodyId); // null unless a real void to cross
+                _longHaulReach = _longHaulPlanet is { } lhPlanet ? LongHaul.Project(_ship, _ephemeris, lhPlanet) : null;
+                _longHaulDeparture = _longHaulPlanet is { } lhp2 ? LongHaul.SolveDeparture(_ship, _ephemeris, lhp2) : null;
+                // #267: price the destination departure's surface-clearance verdict on THIS cadence (once,
+                // not per render) so the chip/card offer gate reads it cheaply — the arc-sampling scan is too
+                // heavy to run every frame.
+                _longHaulClearanceBlock = _longHaulPlanet is { } lhp3 && _longHaulDeparture is { Ok: true } lhDep
+                    ? LongHaulClearanceBlock(lhDep, lhp3)
+                    : null;
+            }
+
+            UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
+            UpdateCourseOpportunities(); // M29: what does this course conveniently brush by?
+        }
+
+        if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
+        {
+            _horizonDirty = false;
+            _lastHorizonReprojectMs = highResTimestampMs;
+            ReprojectTrajectory();
+        }
+
+        if (_ship.SimTime >= _nextProjectionSimTime)
+        {
+            ReprojectTrajectory();
+        }
+
+        _pulse = _pulse.Expire(highResTimestampMs);
+
+        // Thunder on the rising edge of an arc (M10 polish) — once per arcing episode.
+        bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
+        if (arcing && !_wasArcing)
+        {
+            RendererInterop.PlayCue("arc");
+        }
+        _wasArcing = arcing;
+
+        if (FollowShip)
+        {
+            _camera.CenterOn(_ship.Position);
+        }
+
+        if (_shuttleRun is not null)
+        {
+            // Guarded: an exception escaping a frame callback kills renderer.js's rAF chain
+            // and silently freezes the whole game — degrade to aborting the run instead.
+            try
+            {
+                UpdateShuttleRun(dtRealSeconds);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"shuttle update failed: {ex}");
+                EndShuttleRun(boarded: false, $"Shuttle fault: {ex.GetType().Name}");
+            }
+            if (_shuttleRun is not null)
+            {
+                try
+                {
+                    _shuttleView!.Draw(_viewportWidth, _viewportHeight, SimTime, _shuttleRun,
+                        _deckKeys.Contains("w"), _deckKeys.Contains("s"),
+                        _deckKeys.Contains("a"), _deckKeys.Contains("d"),
+                        _captureEngaged ? 1 : 0);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"shuttle draw failed: {ex}");
+                    EndShuttleRun(boarded: false, $"Shuttle fault: {ex.GetType().Name}");
+                }
+
+                if (highResTimestampMs - _lastHudUpdateMs > 200)
+                {
+                    _lastHudUpdateMs = highResTimestampMs;
+                    InvokeAsync(StateHasChanged);
+                }
+                return;
+            }
+        }
+
+        // #523 · HER CHARGE SYSTEMS BELONG TO THE SHIP, NOT TO A VIEW. The contactor holds the hull down and
+        // spends expellant doing it, and the charge soaking into the boards behind the panel keeps climbing,
+        // whether the captain is walking her corridor or sitting at the helm — the stealth tax is paid in
+        // FLIGHT, which is exactly where it was invisible before. (Ticking it only in deck mode was the first
+        // cut of this, and it would have made the whole system a curiosity you could only see while parked.)
+        AdvanceChargeSystems(dtRealSeconds);
+
+        // #538 · a boat that was told to wake keeps waking whether or not the captain is watching her do it.
+        AdvanceBoatSpinUp(dtRealSeconds);
+        AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
+        AdvanceSounding(dtRealSeconds);     // #537: the clock on a knock
+        AdvanceLabAlarm(dtRealSeconds);     // #409+: the mountain counting
+
+        // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
+        // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be
+        // served there.
+        AdvanceStoryCards();
+
+        if (_deckMode)
+        {
+            MoveAvatar(dtRealSeconds);
+            StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
+            AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
+            AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
+            DrawWalkFrame();
+
+            if (_showScope && _scopeView is not null)
+            {
+                _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
+            }
+
+            if (highResTimestampMs - _lastHudUpdateMs > 200)
+            {
+                _lastHudUpdateMs = highResTimestampMs;
+                InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        _camera.SetViewport(_viewportWidth, _viewportHeight);
+        _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
+
+        // #135: re-anchor the co-moving plot frame to the frame body's CURRENT position, once per
+        // frame. If the chosen body vanished (scenario reload), fall back to Sun/inertial.
+        if (_plotFrameBodyId is not null && _ephemeris is not null)
+        {
+            if (_ephemeris.Bodies.Any(b => b.Id == _plotFrameBodyId))
+            {
+                _plotFrameAnchor = _ephemeris.Position(_plotFrameBodyId, SimTime);
+            }
+            else
+            {
+                _plotFrameBodyId = null;
+            }
+        }
+
+        DrawStreams();
+        if (LayerVisible("routes.lanes"))
+        {
+            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes): lanes default ON
+            // for the sensors chief and OFF everywhere else, and every desk can change its mind.
+            DrawTradeCorridors();
+        }
+        DrawShipTrajectory();
+        // #405 Routes → Flight plan & burns: the plotted autopilot path + its burn nodes (DrawNodeMarkers,
+        // below). The ship's own live trajectory ribbon (DrawShipTrajectory, above) stays — that's the
+        // nav essential, not part of the plan overlay.
+        if (LayerVisible("routes.plan")) DrawAutopilotPlanPath();
+        DrawPredictionCone();
+        DrawPassEpochGhost();
+        if (PlotMode)
+        {
+            DrawGhostBodies();
+            DrawClosestPassMarker();
+            DrawDestinationPassMarker();
+        }
+        RetireDeflectionIfDone(); // #394: a resolved gig clears once the crew is home at the saved port
+        BeginFrameLabels();       // #402: reset the frame's de-collided label queue before the producers
+        DrawCelestialBodies();
+        DrawAsteroidThreat(); // #394: the inbound rock's rail + the ⚠ intersect + the threat line (bends on deflection)
+        DrawCargoRunMarkers();
+        if (LayerVisible("routes.plan")) DrawNodeMarkers(); // #405 Routes → Flight plan & burns (the burn nodes)
+        if (PlotMode)
+        {
+            DrawGhostShip();
+        }
+        DrawNpcs();           // #402 follow-up: DEPOT name labels enqueue here, so the flush must follow it
+        FlushNavLabels();     // #402: resolve overlapping body/threat/depot labels — priority wins, depots yield
+        DrawHunters();
+        DrawOrdnance();
+        DrawPyramids();
+        DrawShuttleRange();
+        DrawBeaconGhost();
+        if (_activeDesk == ShipDesk.Sensors)
+        {
+            // #405 Sensors family, split into two leaves: the active scan overlays (the wedge + the
+            // pass flash) ride sensors.scans; the lost-contact search regions ride sensors.corridors.
+            if (LayerVisible("sensors.scans"))
+            {
+                DrawScanWedge();
+                DrawPassFlash();
+            }
+            if (LayerVisible("sensors.corridors"))
+            {
+                DrawLostSearchRegions();
+            }
+        }
+        if (_activeDesk == ShipDesk.WarRoom)
+        {
+            // The orrery view: a cross-system shot's geometry on the live map behind the desk.
+            DrawFirePlan();
+        }
+        if (_dockedHavenId is not null)
+        {
+            DrawDockArm();
+        }
+        DrawShip(_ship.Position);
+
+        _renderer.EndFrame();
+
+        if (_showScope && _scopeView is not null)
+        {
+            _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
+        }
+
+        // #580 · THE SHIP'S VOICE DOES NOT REACH A CAPTAIN WHO IS NOT ABOARD HER. Owner, walking Miranda:
+        // "in miranda here... why does the parrot talk about debt collectors now" / "we do not want any ship
+        // type warnings received here on the surface ... that mechanic should not be active here" / "where
+        // the player is not on empty ship".
+        //
+        // Right — the bird is on a perch on a ship that is docked and empty, and the captain is in a suit on
+        // a moon. Everything below this line is the SHIP's channel: her alarm strip, her parrot, the long-
+        // coast advert, the arrival-brake ask. None of it has a listener during an excursion, and squawking
+        // it anyway does real damage: it drags the space fiction down onto the ground and buries the one
+        // channel that IS live down there (air, tracker, nerve) under noise about somebody else's problem.
+        //
+        // Skipped wholesale rather than filtered, so nothing new added to the ship's side can leak down here
+        // by forgetting to ask. On coming back aboard the detectors re-evaluate against live state, so a
+        // condition that is still true announces itself then — which is when it can be acted on.
+        if (_surface is null)
+        {
+            UpdateParrot(highResTimestampMs);
+            UpdateShipAlerts(highResTimestampMs);
+            EvaluateLongCoastAdvert(highResTimestampMs); // #172: next-event cache + long-coast squawk
+            UpdateArrivalBrakeGate(highResTimestampMs);  // #304: the arrival-brake ask while the window is open
+        }
+
+        // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
+        if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
+            && highResTimestampMs - _lastRevealMs > 250)
+        {
+            _lastRevealMs = highResTimestampMs;
+            _revealedIterations++;
+        }
+
+        if (highResTimestampMs - _lastHudUpdateMs > 200)
+        {
+            _lastHudUpdateMs = highResTimestampMs;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // The one walked-view paint — first person or the top-down deck — for whatever plan is welded on
+    // right now. Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once
+    // under the still-up door (WarmFirstSurfaceFrameAsync): the cold DeckView.Draw of the enlarged
+    // regolith is the last synchronous block that tripped Chrome's page-unresponsive dialog, and paying
+    // it there — off the rAF loop, on its own yield — leaves the live loop warm.
+    private void DrawWalkFrame()
+    {
+        if (_fpMode)
+        {
+            BuildSkyBodies();
+            double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
+            _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
+                _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
+        }
+        else
+        {
+            // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
+            // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
+            // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.
+            (double sdx, double sdy) = ShudderShakeOffset();
+            _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+                _avatarX, _avatarY, _avatarHeading,
+                _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
+                Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
+                // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
+                // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
+                // stays gauge-free by construction.)
+                Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
+                ShowNerve: true, NerveCompact: _surface is null,
+                // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
+                // off an excursion there is nothing to count, so they leave the corner entirely.
+                HitsTaken: _surface?.HitsTaken ?? -1,
+                // #480: the gauge never moves anonymously — the flash names the pip that just went, the
+                // ledger keeps the last few so "what broke me?" has an answer after the fact.
+                NerveFlash: LiveNerveFlash,
+                NerveLedger: NerveLedgerLines,
+                // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
+                // for itself (the #591 one-reach lesson).
+                Dark: DarkHere(),
+                // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
+                // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
+                Seated: CaptainIsSeated,
+                // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
+                StallBanner: TheStallBanner()),
+                _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
+        }
+    }
+
+    private void UpdateNearestBody()
+    {
+        double minDistanceSq = double.MaxValue;
+        foreach (var body in _ephemeris!.Bodies)
+        {
+            if (IsBodyHidden(body.Id)) continue; // a hidden wreck is never "Nearest" until charted (PR-A)
+            var bodyPos = _ephemeris.Position(body.Id, SimTime);
+            double distSq = (_ship.Position - bodyPos).LengthSquared;
+            if (distSq < minDistanceSq)
+            {
+                minDistanceSq = distSq;
+                _nearestBody = body;
+                _nearestBodyPosition = bodyPos;
+            }
+        }
+
+        if (_nearestBody is not null)
+        {
+            // Same numeric derivative as the ship's initial state — can't disagree with the ephemeris.
+            const double h = 1.0;
+            _nearestBodyVelocity = (_ephemeris.Position(_nearestBody.Id, SimTime + h)
+                                  - _ephemeris.Position(_nearestBody.Id, SimTime - h)) / (2 * h);
+        }
+    }
+
+    private void UpdateEffectiveWarp()
+    {
+        // Clamped in a dock: the ship is held fast (HoldAtDock overrides the integrator), so there's
+        // nothing to overshoot or collide with — warp freely. This is what makes lying low to bleed
+        // off heat a quick fast-forward (heat cools ~5 sim-days/level at a haven) instead of an
+        // hours-long crawl under the near-body warp cap.
+        if (_dockedHavenId is not null)
+        {
+            _effectiveWarp = Warp;
+            return;
+        }
+
+        // Bound to a planet (M20)? No encounter to overshoot — let the orbit spin at up to
+        // 1000x instead of crawling on the near-body tiers.
+        if (OrbitInfo() is { } orbitInfo
+            && OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, orbitInfo.Body, orbitInfo.Hill))
+        {
+            _effectiveWarp = Math.Min(Warp, 1000);
+            return;
+        }
+
+        if (_nearestBody == null)
+        {
+            _effectiveWarp = Warp;
+            return;
+        }
+
+        // Absolute tiers with a body-radius floor so the Sun's huge radius still gets a sane
+        // (small) zone while planets use encounter-scale distances. Pure BodyRadius multiples
+        // don't work: ×5000 on the Sun caps warp across ~23 AU, i.e. the whole inner system.
+        double distance = (_ship.Position - _nearestBodyPosition).Length;
+        double encounterRadius = Math.Max(1e9, _nearestBody.BodyRadius * 30);   // ~3 lunar distances at Earth
+        double closeRadius = Math.Max(1e8, _nearestBody.BodyRadius * 6);
+        double grazingRadius = _nearestBody.BodyRadius * 3;
+
+        int cap = int.MaxValue;
+        if (distance < grazingRadius)
+        {
+            cap = 10;
+        }
+        else if (distance < closeRadius)
+        {
+            cap = 100;
+        }
+        else if (distance < encounterRadius)
+        {
+            cap = 1000;
+        }
+
+        _effectiveWarp = Math.Min(Warp, cap);
+
+        // A live capture window is a close encounter by definition: cap warp so the 60 s window
+        // is actually holdable. Selection alone doesn't cap — only an engaged window.
+        NpcState? captureTarget = SelectedCaptureTarget();
+        if (captureTarget is not null && CaptureRule.IsInWindow(_ship, captureTarget.State))
+        {
+            _effectiveWarp = Math.Min(_effectiveWarp, CaptureWarpCap);
+        }
+
+        // #136: a deep-well moon's parking band is only tens of km wide — far thinner than the
+        // grazing-tier step at 10×. When armed for such a moon, cap warp so one tick advances only
+        // a fraction of the distance still to close, easing to 1× right at the band the way the
+        // 60 s unit test threads it. Inert for planets/roomy moons (band far outside the grazing
+        // radius) and when not armed. Keyed off the nearest body, which IS the armed one on final.
+        _effectiveWarp = Math.Min(_effectiveWarp, DeepWellInsertionWarpCap(distance));
+    }
+
+    // The warp ceiling that keeps an armed deep-well insertion holdable (issue #136). Returns
+    // int.MaxValue (no cap) unless the ship is armed for the nearest body and that body is a deep
+    // well whose whole parking band sits inside its grazing radius.
+    private int DeepWellInsertionWarpCap(double distanceToNearest)
+    {
+        if (_armedOrbitBodyId is null || _ephemeris is null || _nearestBody is null
+            || _armedOrbitBodyId != _nearestBody.Id || _nearestBody.ParentId is null)
+        {
+            return int.MaxValue;
+        }
+
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == _nearestBody.ParentId) { parent = candidate; break; }
+        }
+        if (parent is null) return int.MaxValue;
+
+        double hill = OrbitRule.HillRadius(_nearestBody, parent.Mu);
+        double park = OrbitRule.ParkingRadius(_nearestBody, hill);
+        if (park >= _nearestBody.BodyRadius * 3 || distanceToNearest > OrbitRule.CaptureRange(hill))
+        {
+            return int.MaxValue; // roomy moon/planet, or not yet closing — the tiers suffice
+        }
+
+        // Advance at most ~⅓ of the room left to the band per 60 s tick; never below 1×. As the
+        // ship reaches the band the room shrinks to a body radius and the cap eases to 1×.
+        double closing = Math.Max(1.0, Math.Abs(OrbitRule.ClosingSpeed(_ship, _nearestBodyPosition, _nearestBodyVelocity)));
+        double room = Math.Max(distanceToNearest - park, _nearestBody.BodyRadius);
+        return Math.Max(1, (int)(room / (3 * 60 * closing)));
+    }
+
+    // Plasma stream ribbons (M7): one translucent wide segment per stream, between the two
+    // endpoint bodies at the current sim time. Drawn first so everything else layers on top.
+    // No-op outside an Electric Universe scenario.
+    private void DrawStreams()
+    {
+        if (_plasma is null) return;
+
+        // Drawn as flowing filaments, not one flat band — a single thick polyline read as "a
+        // strange rectangle" (owner report). Four narrow ribbons undulate along the axis with
+        // sim-time phase; alpha fades toward the edges.
+        Span<float> pts = stackalloc float[34];
+        foreach ((string fromId, string toId, double halfWidth) in _plasma.Streams)
+        {
+            Vector2d a = _ephemeris!.Position(fromId, SimTime);
+            Vector2d b = _ephemeris.Position(toId, SimTime);
+            Vector2d axis = b - a;
+            double len = axis.Length;
+            if (len <= 0) continue;
+            Vector2d dir = axis / len;
+            Vector2d perp = new(-dir.Y, dir.X);
+
+            for (int ribbon = 0; ribbon < 4; ribbon++)
+            {
+                double lane = (ribbon - 1.5) / 1.5;              // -1 … 1 across the width
+                double phase = SimTime * 4e-7 + ribbon * 1.7;
+                for (int k = 0; k <= 16; k++)
+                {
+                    double t = k / 16.0;
+                    double wobble = Math.Sin(t * 9.0 + phase) * 0.25;
+                    Vector2d world = a + dir * (len * t) + perp * (halfWidth * (lane * 0.8 + wobble));
+                    (float sx, float sy) = _camera.WorldToScreen(world);
+                    pts[k * 2] = sx;
+                    pts[k * 2 + 1] = sy;
+                }
+                byte alpha = (byte)(30 - 12 * Math.Abs(lane));
+                float widthPx = (float)Math.Clamp(halfWidth * 0.5 / _camera.MetersPerPixel, 1, 60);
+                _renderer!.DrawPolyline(pts, new RgbaColor(80, 220, 220, alpha), widthPx);
+            }
+        }
+    }
+}

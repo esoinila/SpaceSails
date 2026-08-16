@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -639,7 +639,12 @@ public sealed class TheParkIsWalkableTests
     public void ThereIsAOneUrlRouteIntoThePark()
     {
         string root = RepoRoot();
-        string sim = File.ReadAllText(Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Sim.cs"));
+        // #870 · the sim page is nine partials by subject now; "the sim" here is all of them.
+        string sim = string.Concat(
+            Directory.EnumerateFiles(
+                    Path.Combine(root, "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                .OrderBy(p => p, StringComparer.Ordinal)
+                .Select(File.ReadAllText));
         string surface = File.ReadAllText(
             Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Surface.Cheats.cs"));
 

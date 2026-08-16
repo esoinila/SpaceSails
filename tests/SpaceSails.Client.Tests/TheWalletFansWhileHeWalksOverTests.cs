@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -188,12 +188,12 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void EscapeShutsTheFanAndEnterDoesNotAnswerIt()
     {
-        string chain = Method("Map.Sim.cs", "private bool TryDismissTopOverlay()");
+        string chain = Method("Map.Sim.Cancel.cs", "private bool TryDismissTopOverlay()");
         Assert.Contains(
             "if (WalletFanIsUp) { CloseTheWalletFan(); return true; }", chain, StringComparison.Ordinal);
 
         // The keyboard YES may not pick a name for the captain.
-        string confirm = Method("Map.Sim.cs", "private bool TryConfirmTopOverlay()");
+        string confirm = Method("Map.Sim.Cancel.cs", "private bool TryConfirmTopOverlay()");
         Assert.DoesNotContain("WalletFan", confirm, StringComparison.Ordinal);
         Assert.DoesNotContain("_paperInHand", confirm, StringComparison.Ordinal);
     }
