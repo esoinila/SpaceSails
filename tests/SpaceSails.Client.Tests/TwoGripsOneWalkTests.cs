@@ -569,16 +569,22 @@ public sealed class TwoGripsOneWalkTests
     /// follows them there (<see cref="SeatState"/>); every assertion below still asks for the state by the
     /// name it was written with.</summary>
     private static object? Get(object o, string member) =>
-        SeatState.TryFollow(o, member, out object? seated) ? seated
+        PatrolState.TryFollow(o, member, out object? onTheRound) ? onTheRound
+        : SeatState.TryFollow(o, member, out object? seated) ? seated
         : o.GetType().GetField(member, Hidden) is { } f
             ? f.GetValue(o)
             : (o.GetType().GetProperty(member, Hidden)
                ?? throw new InvalidOperationException($"the component has no `{member}`.")).GetValue(o);
 
-    private static void Set(object o, string field, object? value) =>
-        (o.GetType().GetField(field, Hidden)
-         ?? throw new InvalidOperationException($"the component has no `{field}` field."))
-        .SetValue(o, value);
+    private static void Set(object o, string field, object? value)
+    {
+        if (!PatrolState.TrySet(o, field, value))
+        {
+            (o.GetType().GetField(field, Hidden)
+             ?? throw new InvalidOperationException($"the component has no `{field}` field."))
+            .SetValue(o, value);
+        }
+    }
 
     private static object? Invoke(object o, string method, params object?[] args) =>
         (o.GetType().GetMethod(method, Hidden)

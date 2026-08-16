@@ -397,10 +397,22 @@ public sealed class TheGuardsCatchYouTests
         ];
         Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
 
-        var parts = new string[order.Length];
+        // #870 lane 6′b · RE-PATHED, never re-asserted. The round's twenty-two fields and the Guard they
+        // are made of moved into Pages/Patrol/, so the page this guard reads is EIGHT files now — the six
+        // verbs first, in the order the one file laid them out, then the state. Both directories are
+        // counted, so a ninth part can never go unread.
+        string own = Path.Combine(dir, "Patrol");
+        string[] state = ["Patrol.cs", "Guard.cs"];
+        Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
+
+        var parts = new string[order.Length + state.Length];
         for (int i = 0; i < order.Length; i++)
         {
             parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        for (int i = 0; i < state.Length; i++)
+        {
+            parts[order.Length + i] = File.ReadAllText(Path.Combine(own, state[i]));
         }
         return string.Concat(parts);
     }
@@ -488,7 +500,7 @@ public sealed class TheGuardsCatchYouTests
         Assert.Contains("TheHail(g);", sighting, StringComparison.Ordinal);
 
         // …and the ONE road out of it into a run is gated on the clipboard, ABOVE the call.
-        int gate = sighting.IndexOf("PatrolBeat.BookedTooOften(_escortsThisWatch)", StringComparison.Ordinal);
+        int gate = sighting.IndexOf("PatrolBeat.BookedTooOften(_patrol.EscortsThisWatch)", StringComparison.Ordinal);
         int call = sighting.IndexOf("TheRadioCall(", StringComparison.Ordinal);
         Assert.True(gate >= 0, "the sighting loop no longer asks how many times you have been booked.");
         Assert.True(call > gate,
@@ -520,7 +532,7 @@ public sealed class TheGuardsCatchYouTests
 
         // …and the first walk-away is still free: the count is taken and TESTED, not merely taken.
         string giveUp = Code(Between(patrol, "private void GiveUpTheHail(", "// ── THE CHALLENGE"));
-        Assert.Contains("PatrolBeat.WalkingOffEarnsIt(++_walkedAwayThisWatch)", giveUp, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.WalkingOffEarnsIt(++_patrol.WalkedAwayThisWatch)", giveUp, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.WalkedAwayLine", giveUp, StringComparison.Ordinal);
     }
 
@@ -546,10 +558,10 @@ public sealed class TheGuardsCatchYouTests
         Assert.Equal(1, NervePips.TouchPips);
 
         // …and the card is the challenge card's own idiom, with the guard's own face on it (#804 / #684).
-        Assert.Contains("PatrolBeat.TheGuardHasYou(g.Plate, why, _escortsThisWatch)", caught,
+        Assert.Contains("PatrolBeat.TheGuardHasYou(g.Plate, why, _patrol.EscortsThisWatch)", caught,
             StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.ChallengeArtUrl", caught, StringComparison.Ordinal);
-        Assert.Contains("_escortDue = g;", caught, StringComparison.Ordinal);
+        Assert.Contains("_patrol.EscortDue = g;", caught, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -575,9 +587,9 @@ public sealed class TheGuardsCatchYouTests
 
         // …and the list of guards is only ever emptied where a FLOOR ends, which is the one honest reason a
         // man stops being on it.
-        Assert.Equal(1, Count(Code(patrol), "_guards.Clear()"));
-        Assert.Equal(0, Count(Code(patrol), "_guards.Remove"));
-        Assert.Contains("_guards.Clear()",
+        Assert.Equal(1, Count(Code(patrol), "_patrol.Guards.Clear()"));
+        Assert.Equal(0, Count(Code(patrol), "_patrol.Guards.Remove"));
+        Assert.Contains("_patrol.Guards.Clear()",
             Code(Between(patrol, "private void SpawnPatrolFor(", "// ── THE LOOP")), StringComparison.Ordinal);
 
         // The controls stay the captain's for a run. They are held for the walk OUT and for nothing else —
@@ -632,7 +644,7 @@ public sealed class TheGuardsCatchYouTests
 
         // …and which floor the walk ends on is decided ONCE, off the same predicate the card was composed
         // from — the sentence-vs-sim law, which this feature has already paid for twice.
-        Assert.Equal(1, Count(Code(patrol), "_kickOutDue = PatrolBeat.BookedTooOften(_escortsThisWatch);"));
+        Assert.Equal(1, Count(Code(patrol), "_patrol.KickOutDue = PatrolBeat.BookedTooOften(_patrol.EscortsThisWatch);"));
     }
 
     /// <summary>#835 · The plate is a MOMENT, not wallpaper: one deck carries it, and one rebuild takes it
@@ -644,7 +656,7 @@ public sealed class TheGuardsCatchYouTests
         string patrol = Patrol();
         string fade = Code(Between(patrol, "private void FadeTheKickedOutPlate(", "// ── DRAWING THEM"));
         Assert.Contains("RebuildSurfaceDeck();", fade, StringComparison.Ordinal);
-        Assert.Contains("_kickedOutPlateFor = 0;", fade, StringComparison.Ordinal);
+        Assert.Contains("_patrol.KickedOutPlateFor = 0;", fade, StringComparison.Ordinal);
 
         // …and it is asked for on the one rebuild that draws the regolith.
         Assert.Contains("bigLabels: TheKickedOutPlate(ex)", Code(Pages("Map.Surface.Frame.cs")), StringComparison.Ordinal);
