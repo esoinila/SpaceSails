@@ -1,0 +1,327 @@
+using System.Globalization;
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using Microsoft.JSInterop;
+using SpaceSails.Client;
+using SpaceSails.Client.Layout;
+using SpaceSails.Client.Rendering;
+using SpaceSails.Contracts;
+using SpaceSails.Core;
+using SpaceSails.Core.Interior;
+
+namespace SpaceSails.Client.Pages;
+
+// Subject: part of Map.Plot (#870 split; the header note lives in Map.Plot.cs) — what the map draws that is not the plan: the celestial bodies and their marks, the cargo run's parcel, the pass flash, the polyline primitive, and the ship glyph with the discharge off her mast.
+public partial class Map
+{
+    private void DrawCelestialBodies()
+    {
+        ICelestialEphemeris ephemeris = _ephemeris!;
+        Span<float> ring = stackalloc float[(OrbitSegments + 1) * 2];
+
+        foreach (CelestialBody body in ephemeris.Bodies)
+        {
+            if (IsBodyHidden(body.Id)) continue; // off the charts until an intel-fed scan finds it (PR-A)
+            // #394: the inbound rock draws its own RED threat rail (DrawAsteroidThreat) that bends on
+            // deflection — suppress the default grey ring so there is only one, and it tells the story.
+            bool deflectionRock = _deflection is { } dgig && body.Id == dgig.RockBodyId;
+            // #405 Routes → Orbit rails / ellipses: the grey Kepler ring. The threat rock's own RED
+            // rail is drawn by DrawAsteroidThreat and is never layer-gated (the pinned safety family).
+            if (!deflectionRock && LayerVisible("routes.rails") && body.OrbitPeriod != 0 && body.OrbitRadius > 0)
+            {
+                Vector2d parentPosition = body.ParentId is null ? Vector2d.Zero : ephemeris.Position(body.ParentId, SimTime);
+                // Kepler rails (PR-B): a circular body's ring is a circle of radius OrbitRadius; an
+                // eccentric body's is its true ellipse, traced by sweeping the eccentric anomaly over a
+                // full turn (even spacing in E, one perifocal point rotated by ω per vertex — no
+                // per-vertex Kepler solve). e == 0 keeps the exact circular sweep.
+                double e = body.Eccentricity;
+                double semiMinor = e == 0.0 ? body.OrbitRadius : body.OrbitRadius * Math.Sqrt(1.0 - e * e);
+                double cosW = Math.Cos(body.ArgPeriapsis);
+                double sinW = Math.Sin(body.ArgPeriapsis);
+                for (int i = 0; i <= OrbitSegments; i++)
+                {
+                    double t = Math.Tau * i / OrbitSegments;
+                    Vector2d world;
+                    if (e == 0.0)
+                    {
+                        world = parentPosition + new Vector2d(body.OrbitRadius * Math.Cos(t), body.OrbitRadius * Math.Sin(t));
+                    }
+                    else
+                    {
+                        double px = body.OrbitRadius * (Math.Cos(t) - e);
+                        double py = semiMinor * Math.Sin(t);
+                        world = parentPosition + new Vector2d(cosW * px - sinW * py, sinW * px + cosW * py);
+                    }
+
+                    (float x, float y) = _camera.WorldToScreen(world);
+                    ring[i * 2] = x;
+                    ring[i * 2 + 1] = y;
+                }
+
+                _renderer!.DrawPolyline(ring, OrbitColor);
+            }
+
+            Vector2d position = ephemeris.Position(body.Id, SimTime);
+            (float sx, float sy) = _camera.WorldToScreen(position);
+            bool isStation = body.Kind == BodyKind.Station;
+            float radiusPx = (float)Math.Max(isStation ? 1.5 : 2.0, body.BodyRadius / _camera.MetersPerPixel);
+            if (isStation)
+            {
+                radiusPx = Math.Min(radiusPx, 3.5f); // a built thing, not a world — stays a small blip
+            }
+
+            RgbaColor color = BodyColor(body);
+
+            _renderer!.DrawCircle(sx, sy, radiusPx, color, color);
+            bool isDestination = body.Id == _destinationBodyId;
+            if (isDestination && !PlotMode)
+            {
+                // The chosen destination reads at any zoom — full gun-camera lock (M25).
+                // In plot mode the GHOST carries the one and only lock (owner: three targets on
+                // screen made the scrub read as frozen — he was watching the live body).
+                DrawTargetLock(sx, sy, radiusPx, DestinationColor, "DEST");
+            }
+            if (isDestination || _camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
+            {
+                RgbaColor labelColor = body.IsHaven ? HavenLabelColor : LabelColor;
+                // A ⚓ flags the mass-less grey-market docks — the havens you can clamp onto to lie
+                // low (moon havens you orbit instead, so they carry the pink wash but no anchor).
+                string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
+                int labelPriority = BodyLabelPriority(body);
+                // #402/#405: two decluttering seams. (1) MANUAL — the 🗺 Layers tree. A MINOR station
+                // name label (the depot clutter) rides the Labels → "Minor / depot labels" leaf; every
+                // other body name rides Labels → "Body names". The docked/destination/armed station the
+                // captain is working outranks LabelPriorityStation, so it counts as a body name, never a
+                // minor label. (2) AUTOMATIC — surviving labels are enqueued and FlushNavLabels de-collides
+                // them by priority, so the Saturn knot reads even with all layers on.
+                bool minorStationLabel = labelPriority == LabelPriorityStation;
+                if (LayerVisible(minorStationLabel ? "labels.minor" : "labels.bodies"))
+                {
+                    EnqueueNavLabel(sx + radiusPx + 4, sy - radiusPx, label, labelColor, labelPriority);
+                }
+
+                // The ⚓'s sibling: a 🛬 under any shuttle-landable ground (a moon, by the same pure
+                // ShuttleExcursion.IsLandableSurface the destination board uses — never a hardcoded body
+                // list, so it lights up correctly whatever the moons' phases). Bright + a size up when
+                // that ground is within the shuttle's reach of the ship right now (the _landableInRange
+                // set, the board's own range truth); dim regolith tan when landable only in principle.
+                if (ShuttleExcursion.IsLandableSurface(body.Kind) && LayerVisible("labels.landable")) // #405 Labels → Landable marks
+                {
+                    bool inReach = _landableInRangeIds.Contains(body.Id);
+                    _renderer.DrawText(sx + radiusPx + 4, sy + radiusPx + 20, "🛬",
+                        inReach ? LandableInRangeColor : LandableBaseColor,
+                        inReach ? "13px sans-serif" : "11px sans-serif", TextAlign.Left);
+                }
+            }
+        }
+    }
+
+    private static readonly RgbaColor CargoMarkerColor = new(235, 190, 120); // parcel amber — reads on the star field
+
+    // #175: while a cargo run is in hand, its destination carries a 📦 so the delivery point isn't
+    // invisible on the map. Modest — a small tag under the body's own label, drawn only for the
+    // Active run's destination (it clears the instant the parcel is delivered).
+    private void DrawCargoRunMarkers()
+    {
+        if (_ephemeris is null) return;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (IsBodyHidden(body.Id) || ActiveCargoRunTo(body.Id) is null) continue;
+            Vector2d position = _ephemeris.Position(body.Id, SimTime);
+            (float sx, float sy) = _camera.WorldToScreen(position);
+            bool isStation = body.Kind == BodyKind.Station;
+            float radiusPx = (float)Math.Max(isStation ? 1.5 : 2.0, body.BodyRadius / _camera.MetersPerPixel);
+            if (isStation) radiusPx = Math.Min(radiusPx, 3.5f);
+            _renderer!.DrawText(sx + radiusPx + 4, sy + radiusPx + 8, $"📦 deliver to {body.Name}", CargoMarkerColor,
+                "11px sans-serif", TextAlign.Left);
+        }
+    }
+    private static readonly RgbaColor PassFlashColor = new(150, 255, 210);
+
+    private double _frameNowMs;
+
+    private void DrawPassFlash()
+    {
+        if (_trackingPost?.LastPassFlash is not { } flash)
+        {
+            return;
+        }
+
+        double ageMs = (DateTime.UtcNow - flash.WallTime).TotalMilliseconds;
+        if (ageMs is < 0 or > 1200 || ContactPosition(flash.ShipId) is not { } position)
+        {
+            return;
+        }
+
+        (float sx, float sy) = _camera.WorldToScreen(position);
+        byte alpha = (byte)(220 * (1 - ageMs / 1200));
+        DrawCornerBrackets(sx, sy, 13f, PassFlashColor with { A = alpha });
+        _renderer!.DrawText(sx + 16, sy - 10, "updating fix", PassFlashColor with { A = alpha },
+            "10px monospace", TextAlign.Left);
+    }
+
+    private void DrawCornerBrackets(float sx, float sy, float r, RgbaColor color)
+    {
+        Span<float> corner = stackalloc float[6];
+        for (int xSign = -1; xSign <= 1; xSign += 2)
+        {
+            for (int ySign = -1; ySign <= 1; ySign += 2)
+            {
+                corner[0] = sx + xSign * r;
+                corner[1] = sy + ySign * (r - 5);
+                corner[2] = sx + xSign * r;
+                corner[3] = sy + ySign * r;
+                corner[4] = sx + xSign * (r - 5);
+                corner[5] = sy + ySign * r;
+                _renderer!.DrawPolyline(corner, color, 1.5f);
+            }
+        }
+    }
+
+    private static string FormatFlightTime(double seconds) =>
+        seconds < 3600 ? $"{seconds / 60:F0} min"
+        : seconds < 86400 ? $"{seconds / 3600:F1} h"
+        : $"{seconds / 86400:F1} d";
+
+    private void DrawWorldPolyline(IReadOnlyList<TrajectorySample> samples, RgbaColor color, float widthPx)
+    {
+        if (samples.Count < 2)
+        {
+            return;
+        }
+
+        int stride = Math.Max(1, samples.Count / 160);
+        int points = (samples.Count + stride - 1) / stride + 1;
+        float[] xy = new float[points * 2];
+        int w = 0;
+        for (int i = 0; i < samples.Count; i += stride)
+        {
+            (xy[w], xy[w + 1]) = _camera.WorldToScreen(samples[i].Position);
+            w += 2;
+        }
+
+        (xy[w], xy[w + 1]) = _camera.WorldToScreen(samples[^1].Position);
+        w += 2;
+        _renderer!.DrawPolyline(xy.AsSpan(0, w), color, widthPx);
+    }
+
+    private void DrawShip(Vector2d shipPosition)
+    {
+        (float sx, float sy) = _camera.WorldToScreen(shipPosition);
+
+        // #528 / LAB 43 · THE DISCHARGE IS A PLUME OFF HER MAST, NEVER A RING AROUND HER.
+        //
+        // This used to draw a hollow halo about the hull — which the lab showed is the one shape it cannot be.
+        // Field strength is potential over radius of curvature, so her antenna whip runs 20,000× the field of
+        // her hull skin (40 MV/m against 0.002) and sits at 4% of field-emission onset while the skin is at
+        // 0.000%. A discharge leaves from the sharpest thing she has, and drawing a sphere was drawing the one
+        // place it can never start. The physics handed us the better picture for free.
+        DrawDischarge(sx, sy);
+
+        // M28: the hull has a facing now — cosmetic on the map, but it SLEWS: toward the
+        // firing bearing through a lock countdown, back to prograde after the round leaves.
+        double heading = ShipHeadingRad();
+        Vector2d barrelTip = shipPosition
+            + new Vector2d(Math.Cos(heading), Math.Sin(heading)) * (12 * _camera.MetersPerPixel);
+        (float bx, float by) = _camera.WorldToScreen(barrelTip);
+        Span<float> barrel = stackalloc float[4];
+        barrel[0] = sx; barrel[1] = sy; barrel[2] = bx; barrel[3] = by;
+        _renderer!.DrawPolyline(barrel, ShipColor with { A = 200 }, 2f);
+
+        _renderer!.DrawCircle(sx, sy, 4f, ShipColor, ShipColor);
+        _renderer!.DrawText(sx + 8, sy - 6, "Ship", ShipColor);
+    }
+
+    /// <summary>
+    /// Her mast, and whatever is coming off it. Two states, both from Lab 43:
+    ///
+    /// <para>ARCING is a slow crawl of short filaments — visible from the map without reading a panel, the same
+    /// principle as the vacuum clocks being readable from the corridor.</para>
+    ///
+    /// <para>A DUMP is one bright frame and an afterglow. The honest event is 2.2 ms through the contactor; the
+    /// screen gets ~0.6 s, which is a stylisation of about 300× and the smallest lie that still reads. What it
+    /// must NOT be is slow-motion lightning: 0.22 J is a static shock off a door handle, so the picture is a
+    /// filament and a snap, never a fireball.</para>
+    /// </summary>
+    private void DrawDischarge(float sx, float sy)
+    {
+        if (_plasma is null)
+        {
+            return;
+        }
+
+        double now = _lastTimestampMs ?? 0;
+        double sinceDump = now - _lastDischargeMs;
+        bool flashing = sinceDump >= 0 && sinceDump < DischargeFlashMs;
+        bool arcing = _ship.Charge >= ArcChargeThreshold;
+        if (!flashing && !arcing)
+        {
+            return;
+        }
+
+        // The whip stands off her beam — read as an antenna rather than as the gun, which already draws along
+        // the heading. Screen space: the glyph is a fixed size on the map, so the mast is too.
+        double heading = ShipHeadingRad();
+        float mastX = sx + (float)(Math.Cos(heading + Math.PI / 2) * MastPx);
+        float mastY = sy + (float)(Math.Sin(heading + Math.PI / 2) * MastPx);
+
+        Span<float> mast = stackalloc float[4];
+        mast[0] = sx; mast[1] = sy; mast[2] = mastX; mast[3] = mastY;
+        _renderer!.DrawPolyline(mast, ArcHaloColor with { A = 140 }, 1f);
+
+        // Intensity: full for the first instant of a dump, decaying away; a low simmer while merely arcing.
+        double intensity = flashing ? 1.0 - (sinceDump / DischargeFlashMs) : 0.35;
+        byte alpha = (byte)Math.Clamp(60 + (intensity * 195), 0, 255);
+        int filaments = flashing ? 5 : 3;
+        float reach = (float)(MastPx * (flashing ? 1.6 : 0.7) * (0.55 + (intensity * 0.45)));
+
+        // Deterministic flicker: quantised time drives a cheap hash, so the filaments dance without a Random
+        // and without dancing differently on every re-render of the same instant.
+        long tick = (long)(now / 70.0);
+
+        // One buffer for every filament: CA2014 is right that a stackalloc inside the loop is a frame-rate
+        // shaped foot-gun, and this runs on every rendered frame while she is arcing.
+        Span<float> bolt = stackalloc float[6];
+
+        for (int i = 0; i < filaments; i++)
+        {
+            uint h = (uint)HashCode.Combine(tick, i);
+            double spread = ((h & 0xFFFF) / 65535.0 - 0.5) * 1.9;          // radians off the mast's line
+            double length = reach * (0.45 + (((h >> 16) & 0xFF) / 255.0) * 0.55);
+            double angle = heading + (Math.PI / 2) + spread;
+
+            // One kink each, so they read as discharge rather than as spokes.
+            float midX = mastX + (float)(Math.Cos(angle) * length * 0.5);
+            float midY = mastY + (float)(Math.Sin(angle) * length * 0.5);
+            double kink = angle + ((((h >> 24) & 0xFF) / 255.0) - 0.5) * 1.2;
+            float tipX = midX + (float)(Math.Cos(kink) * length * 0.5);
+            float tipY = midY + (float)(Math.Sin(kink) * length * 0.5);
+
+            bolt[0] = mastX; bolt[1] = mastY;
+            bolt[2] = midX; bolt[3] = midY;
+            bolt[4] = tipX; bolt[5] = tipY;
+            _renderer!.DrawPolyline(bolt, ArcHaloColor with { A = alpha }, flashing ? 1.6f : 1f);
+        }
+
+        // The core sits ON the tip, because that is where the field is — small, and brightest at the snap.
+        _renderer!.DrawCircle(mastX, mastY, flashing ? 3.4f : 1.8f,
+                              ArcHaloColor with { A = alpha }, ArcHaloColor with { A = alpha });
+    }
+
+    /// <summary>How far her whip stands off the hull on screen, in pixels. Cosmetic: the map glyph is a fixed
+    /// size, so the mast is too.</summary>
+    private const float MastPx = 11f;
+
+    /// <summary>How long a dump stays on screen. The physical event is 2.2 ms (Lab 43 §C); this is the smallest
+    /// stylisation that a player can actually see happen.</summary>
+    private const double DischargeFlashMs = 600.0;
+
+    /// <summary>When she last let go, in renderer-clock milliseconds.</summary>
+    private double _lastDischargeMs = double.NegativeInfinity;
+}
