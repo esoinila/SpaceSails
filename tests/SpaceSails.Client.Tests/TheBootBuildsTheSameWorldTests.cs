@@ -52,12 +52,16 @@ namespace SpaceSails.Client.Tests;
 /// are invisible in the fields above until something after the gate consumes them — is pinned separately
 /// by <see cref="TheBootReadsTheSameQueryTests"/>.</para>
 ///
-/// <para><b>The pins were re-captured</b> each time <see cref="Real"/> changed, on the OLD one-method
-/// boot again (<c>58da0a3</c>'s file checked back over the seven, the sibling guard that names the new
-/// members set aside, the split restored after) — never on the new code. The re-capture kept the sweep
-/// exactly as discriminating as it was: <b>59 of the 75 distinct at every precision from G12 down to
-/// G2</b>, so no rounding ever folded two worlds together. All three REDs below were re-measured under
-/// it and reddened the same URLs in the same numbers.</para>
+/// <para><b>The pins were re-captured</b> each time <see cref="Real"/> changed, and always on the OLD
+/// one-method boot — never on the new code. The recipe, run again after the base moved: the SHIPPING
+/// <c>Map.Sim.World.cs</c> off <c>origin/our-own-ship-has-compartments</c> (1,680 lines, the ladder
+/// entire) written back over this branch's copy, the six split partials DELETED, the dump taken, the
+/// split restored. Nothing had to be set aside to compile it: the two sibling guards that name the new
+/// members name them in a docblock and in a reflected string, neither of which is a compile-time
+/// reference. <b>All 75 hashes came back identical to the pinned list, and 59 of the 75 were distinct
+/// on the old code exactly as they are on the new.</b> The rounding folded no two worlds together at
+/// any precision either — <b>59 of 75 distinct from G12 all the way down to G2</b>. All three REDs
+/// below were re-measured under it and reddened the same URLs in the same numbers.</para>
 ///
 /// <para><b>Red proof, twice, both quoted verbatim in the PR body.</b> Swap two stages in the conductor
 /// and the hashes move. Moving <c>PointTheCameraAtHer</c> above <c>LayTheShipDownWithHerHistory</c> —
@@ -380,7 +384,8 @@ public sealed class TheBootBuildsTheSameWorldTests
     /// </code>
     ///
     /// <para><b>So the tolerance was measured rather than guessed.</b> Every number in all 75 fingerprints
-    /// was compared, Windows against the runner's own logged output: <b>429 of them differ, and the worst
+    /// was compared, Windows against the runner's own logged output — 113,436 numbers, the two texts
+    /// identical token for token once every number is blanked: <b>447 of them differ, and the worst
     /// disagreement is 6.19e-8 relative</b> (<c>/map?scenario=sol-eu</c>, <c>39860689.3333</c> against
     /// <c>39860686.8659</c>) — the two machines agree to about 7.2 significant figures and no further.
     /// Re-quantising both sides of that real pair at each precision:</para>
