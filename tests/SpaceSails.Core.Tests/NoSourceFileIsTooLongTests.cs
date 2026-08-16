@@ -84,7 +84,6 @@ public sealed class NoSourceFileIsTooLongTests
             // the whole Map.Sim family and the line.
             ["src/SpaceSails.Client/Pages/Map.Sim.World.cs"] = 1680,
             ["src/SpaceSails.Client/Pages/Map.Plot.cs"] = 2725,
-            ["src/SpaceSails.Client/Pages/Map.Quests.cs"] = 2503,
 
             // #870 lane 5 — queued behind lane 4.
             // DeckView.cs's row is GONE (lane 5a): the file is 333 lines now, and the largest of the six
