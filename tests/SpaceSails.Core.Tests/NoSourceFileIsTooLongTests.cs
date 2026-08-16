@@ -82,7 +82,7 @@ public sealed class NoSourceFileIsTooLongTests
             // #870 lane 4 — queued for the by-banner split.
             // Map.Sim.cs's row is GONE (lane 4a, #891): the file is 254 lines now, and Map.Sim.World.cs's
             // row is GONE too (lane 7a) — the 1,656-line `BootTheWorldAsync` a pure move could not touch is
-            // its own named stages across seven files now, the largest 413, and every world it builds
+            // its own named stages across seven files now, the largest 414, and every world it builds
             // fingerprints exactly as it did before the cut (TheBootBuildsTheSameWorldTests).
 
             // #870 lane 5 — queued behind lane 4.
