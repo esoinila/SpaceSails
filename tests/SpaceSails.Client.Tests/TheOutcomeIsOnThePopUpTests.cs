@@ -215,8 +215,8 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Theory]
     [InlineData("Map.LabSecurity.cs", "private void WorkTheDoor(")]
     [InlineData("Map.LabSecurity.cs", "private void HackTheAlarm(")]
-    [InlineData("Map.Combat.cs", "private void ToggleWeaponsTight(")]
-    [InlineData("Map.Combat.cs", "private void ToggleBoatPower(")]
+    [InlineData("Map.Combat.FireControl.cs", "private void ToggleWeaponsTight(")]
+    [InlineData("Map.Combat.Remote.cs", "private void ToggleBoatPower(")]
     [InlineData("Map.Sounding.cs", "private void ToggleQuietSearch(")]
     [InlineData("Map.Venting.cs", "private void RescueSurvivor(")]
     public void AnOpenPanelNeverPulsesItsOwnAnswer(string file, string signature)
