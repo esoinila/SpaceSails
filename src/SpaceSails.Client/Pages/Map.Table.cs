@@ -378,8 +378,35 @@ public partial class Map
         public required Encounter.Scene Scene { get; set; }
 
         /// <summary>#757 · Whether this is a table you took ALONE — nobody opposite, and WAIT is the whole
-        /// of the verb. It is the one fact the panel needs that is not on the scene.</summary>
+        /// of the verb. It is the one fact the panel needs that is not on the scene.
+        ///
+        /// <para>#865 · IT IS STILL THE OCCUPANCY FACT AND IT IS NO LONGER THE FRAME FACT. It is what
+        /// <c>SeatedAlone</c> reads for the privacy ladder — a top with the weighbridge clerk's tray on it is
+        /// not a seat you lay evidence out on, whoever chose to sit there — but which FRAME the sitting wears
+        /// is <see cref="TheyCameToYou"/> now, because the owner ruled that co-seating is a strip state.</para></summary>
         public bool Solo { get; set; }
+
+        /// <summary>
+        /// #865 · DID THIS PERSON COME TO YOU? — the one fact the seated FRAME forks on.
+        ///
+        /// <para>Owner's ruling, live at a weighbridge clerk's table: <i>"what if I just sit and eat here…
+        /// now I am kind of blinded of the surrounding here because somebody else sits in the same
+        /// table"</i>, then <i>"It should somehow UI wise be same style as the sitting alone case"</i>, and
+        /// sealing it: <i>"Just the social functions as additional options."</i></para>
+        ///
+        /// <para><b>Posture changes are a strip; people who come to you are a card.</b> A seat you CHOSE —
+        /// an empty top, a bench, an office chair, a cubicle, and now the clerk's own top joined through
+        /// [E] — is a posture change, and it presents in the docked strip with the room still lit behind it.
+        /// Somebody crossing the hall and taking the chair opposite (#757's approach, #731's walker when she
+        /// arrives) is an ENCOUNTER: her face is the point, and the card is what a face is for.</para>
+        ///
+        /// <para>This is deliberately NOT <see cref="Solo"/>, which is what it used to be. Solo asks <i>is
+        /// the chair opposite empty</i>, and the two questions came apart the moment the owner ruled that
+        /// joining a stranger keeps the room visible: at a top you joined, Solo is false and the frame is
+        /// still the strip. A frame law read off an occupancy flag is one fact answering two questions, which
+        /// is how the hall came to go black behind one small card.</para>
+        /// </summary>
+        public bool TheyCameToYou { get; set; }
 
         /// <summary>#783 · Whether this sitting READS AS RELAXED — boots up on the spare chair, which is a
         /// different sentence, a different goodbye and a different picture.
@@ -441,6 +468,45 @@ public partial class Map
         /// seat. <see cref="Index"/> carries the APPROACH ordinal instead, which is deliberately a different
         /// number (see <see cref="ParkBenches.ApproachOrdinal"/>).</summary>
         public int BenchIndex { get; init; }
+
+        /// <summary>
+        /// #817 · Whether this seat is a CHAIR AT A DESK in one of the park-view suites.
+        ///
+        /// <para>The same machinery again, and for the owner's own stated reason — an office table is the
+        /// restaurant's table <i>"just more rectangular"</i> with <i>"the functionality … about the same
+        /// otherwise"</i>. What the flag buys is the two places an office genuinely differs: NOBODY EVER
+        /// COMES OVER (the staff of this building are somewhere else, and the canteen's recruiter walking
+        /// across an empty office would be the scene and the room disagreeing), and the silence is described
+        /// in an office's own words rather than a hall's.</para>
+        /// </summary>
+        public bool Office { get; init; }
+
+        /// <summary>
+        /// #820 · WHERE STANDING UP PUTS THE BODY — the square this seat is stepped off onto.
+        ///
+        /// <para>Worked out from published geometry at the moment the captain sat down and carried here, so
+        /// that standing up does not have to go and look the furniture up a second time (and cannot come to
+        /// a different answer if the watch has turned over in between). It is the seat's own square wherever
+        /// a seat is a place you could have been standing anyway — a ring-office chair
+        /// (<see cref="RingOffice.Chair.StandAt"/>), a chair round a canteen top — and the WALK SIDE of the
+        /// plank at a park bench, which is solid and would otherwise close over the dot the moment the
+        /// sitting ended.</para>
+        ///
+        /// <para>Null at a sitting that never moved the body, which is no sitting that ships today; the
+        /// standing simply leaves the captain where they are rather than inventing a square for them.</para>
+        /// </summary>
+        public (double X, double Y)? StepOff { get; init; }
+
+        /// <summary>
+        /// #821 · WHICH WC CUBICLE THIS SEAT IS IN, by <c>HiveInterior.CubicleKey</c>, or null anywhere else.
+        ///
+        /// <para>An office chair and a cubicle's pan are the same POSTURE and the same panel — the seam
+        /// <see cref="Office"/> already opened — and what the cubicle adds is one question the ladder has to
+        /// be able to ask: <b>is the catch over right now?</b> The key is carried rather than the answer,
+        /// because the answer changes while you are sitting on it: a captain can sit down in an open cubicle,
+        /// reach back, turn the catch, and the spread has to become allowed on that very frame.</para>
+        /// </summary>
+        public string? CubicleKey { get; init; }
 
         /// <summary>
         /// #793 · SOMEBODY IS ON THE OTHER END OF THIS BENCH.
@@ -540,20 +606,53 @@ public partial class Map
                     continue;
                 }
 
+                // #842 · A FULL TOP REFUSES OUT LOUD — and it answers FIRST, before who is at it is even
+                // asked, because "there is nowhere to sit" is true of every table with no chair left whoever
+                // is in them. Core's own arithmetic (#840's honest Heads), never a count taken here.
+                //
+                // THE PRESS IS CONSUMED (true), which is the whole of the fix: falling through returned
+                // false, and Map.Deck's arm then raised the patron's one-breath card — so [E] at a table
+                // you cannot join quietly did a different thing instead of saying no. #603's law is that a
+                // refusal is SAID, and this is the sentence.
+                //
+                // AND NOTHING ELSE HAPPENS, EVER, however many times it is pressed. The card is not behind a
+                // second press: what is being said at a full top is something you overhear by SITTING
+                // NEARBY, which the neighbour machinery already owns, and a press that eventually gave in
+                // would teach that leaning on strangers works.
+                if (top.Free <= 0)
+                {
+                    ShowPulseMessage(CanteenTable.TableIsFullLine);
+                    return true;
+                }
+
                 // #751 · WHICH TIER, off Core's own list. A background patron is a Stranger and gets the
                 // thin scene; one of the ten named regulars is matched by their plate exactly as before.
                 CanteenTable.Who who = top.Stranger
                     ? CanteenTable.Who.Stranger
                     : CanteenTable.WhoIs(top.Plate);
-                if (who == CanteenTable.Who.None || top.Free <= 0 || top.Plate is not { } plate)
+                if (who == CanteenTable.Who.None || top.Plate is not { } plate)
                 {
-                    return false;   // somebody who is not a scene, or a top with nowhere left to sit.
+                    return false;   // somebody who is not a scene: #709's one breath, and nothing else.
+                }
+
+                // #820 · WHICH CHAIR, off Core's own ring, read before the body moves. The nearest one the
+                // party is not already in — a captain waved into a seat that had somebody in it would be
+                // the drawn room and the pressed room disagreeing about a lap (#823's own complaint).
+                (double X, double Y)? chair = top.ChairYouTake(_avatarX, _avatarY);
+                if (chair is { } sit)
+                {
+                    SitCaptainOn(sit.X, sit.Y);
                 }
 
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
+                    // …and standing up leaves the captain on the chair's own square. A canteen top is drawn
+                    // and does not collide, so the seat is floor and nothing has to be stepped off — the
+                    // square is carried all the same, because it is StandCaptainAt that gets the nudge's
+                    // opinion on whether the room agrees.
+                    StepOff = chair,
                     Who = who,
                     Plate = plate,
                     Scene = who == CanteenTable.Who.Stranger
@@ -563,6 +662,14 @@ public partial class Map
                     Free = top.Free,
                     Bark = top.Line,
                     Quiet = top.Quiet,
+                    // #865 · SOLO IS FALSE AND THE FRAME IS STILL THE STRIP, and the two lines that are not
+                    // here are the whole of the ruling. Solo stays false because somebody IS in the chair
+                    // opposite — that is the occupancy the privacy ladder reads, and a top you are sharing is
+                    // not a top you spread a case out on. TheyCameToYou stays false because NOBODY CAME:
+                    // the captain crossed the room and asked for the chair, which is a posture change and
+                    // presents in the docked strip with the hall lit behind it. Owner, at the clerk's table:
+                    // "what if I just sit and eat here… now I am kind of blinded of the surrounding here
+                    // because somebody else sits in the same table."
                 };
                 RendererInterop.PlayCue("reveal");
                 StateHasChanged();
@@ -581,12 +688,12 @@ public partial class Map
     /// so [E] there answered nothing — an absence rather than a refusal, which is the one kind of "no" a
     /// player cannot read.</para>
     ///
-    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. The seat is the spot you walked to in
-    /// order to press the key, exactly as it is at an occupied table — this file has never moved the captain
-    /// to sit down, and a solo table that teleported them onto the furniture would be §13.15's second cause
-    /// in the one room where the tops are drawn but do not collide. Which table it is comes off Core's own
-    /// list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the press
-    /// landed on — the same lookup, and still a lookup rather than a decision.</para>
+    /// <para>SAME POSTURE, SAME GEOMETRY, and deliberately no new ones. Which table it is comes off Core's
+    /// own list (<see cref="CanteenRegulars.Tables"/>), off the frozen watch, matched to the console the
+    /// press landed on — a lookup rather than a decision — and #820's snap puts the captain in one of that
+    /// top's own published chairs, exactly as it does at an occupied table. Not one coordinate below was
+    /// measured here, which is §13.15's whole point: this project has set a captain down inside a wall twice
+    /// by letting a caller do arithmetic about a room it did not carve.</para>
     /// </summary>
     private bool TryTakeTable()
     {
@@ -634,10 +741,19 @@ public partial class Map
                 bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, ex.CanteenWatch);
                 Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink);
 
+                // #820 · …and the same snap as at an occupied top, which is the point of it being one law:
+                // an empty table has every chair free, so this is simply the one the captain walked up to.
+                (double X, double Y)? chair = top.ChairYouTake(_avatarX, _avatarY);
+                if (chair is { } sit)
+                {
+                    SitCaptainOn(sit.X, sit.Y);
+                }
+
                 _table = new TableTalk
                 {
                     Key = TableKey(ex, top.Index),
                     Index = top.Index,
+                    StepOff = chair,
                     Who = CanteenTable.Who.None,
                     Plate = SittingAlone.OwnTablePlate,
                     Scene = sat,
@@ -668,7 +784,17 @@ public partial class Map
     }
 
     /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
-    /// Close button both come through here, so leaving a table is one act however you do it.</summary>
+    /// Close button both come through here, so leaving a table is one act however you do it.
+    ///
+    /// <para>#820 · …and it also STEPS THE CAPTAIN OFF THE SEAT: Core's own published square, carried on the
+    /// sitting (<see cref="TableTalk.StepOff"/>) rather than worked out here, and gone to through
+    /// <c>StandCaptainAt</c> so the nudge has its say. That is the whole reason a solid seat — a park bench
+    /// is a segment in the collision field — cannot close over the dot when the sitting ends.</para>
+    ///
+    /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
+    /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can
+    /// put a line of its own on the screen, so it may not run while the strip is still up. Watched go red as
+    /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para></summary>
     private void CloseTable()
     {
         // #784 · A SPREAD IS A SPREAD ON A TABLE. Standing up with a write-up half dug abandons it, out loud
@@ -679,7 +805,16 @@ public partial class Map
         {
             AbandonProcessing(ex, Core.Processing.Interruption.StoodUp);
         }
+
+        // #820 · Read, then the table goes, then the body moves. See the summary.
+        (double X, double Y)? step = _table?.StepOff;
+
         _table = null;
+
+        if (step is { } spot)
+        {
+            StandCaptainAt(spot.X, spot.Y, "you push the seat back and stand up");
+        }
     }
 
     /// <summary>
@@ -1000,7 +1135,12 @@ public partial class Map
         // #793 · …and a bench with somebody already on the far end has nowhere to put a third person. Core's
         // own arithmetic (two ends, one of them yours), asked rather than assumed — a wait that dealt an
         // arrival onto a full plank would be the panel claiming an occupancy the room does not have.
-        bool comes = (!t.Bench || ParkBenches.TheOtherEndIsFree(t.SharedSeat))
+        //
+        // #817 · …and NOBODY COMES INTO AN OFFICE. The staff of this building are somewhere else on a shift
+        // this facility no longer runs; a stranger crossing a private suite to offer the captain work would
+        // be the canteen's own scene played in a room whose whole tell is that it is empty.
+        bool comes = !t.Office
+            && (!t.Bench || ParkBenches.TheOtherEndIsFree(t.SharedSeat))
             && !ex.TableApproached.Contains(t.Key)
             && (_approachCheat
                 ?? SittingAlone.SomebodyComes(
@@ -1027,9 +1167,16 @@ public partial class Map
             TableAnswered(ex, t, SittingAlone.Wait,
                 new CanteenTable.Answer(WithTheBodysFootnote(
                     WithTheBodysFootnote(
-                        t.Bench
-                            ? ParkBenches.NobodyCame(beat)
-                            : SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet),
+                        // #821 · …and a CUBICLE is not an office either. A chair creaking down the row and
+                        // lamps over a garden, read from inside a locked WC, would be the room's answer
+                        // describing a room the captain is not in — #740's fault with a partition round it.
+                        t.CubicleKey is { Length: > 0 }
+                            ? CubicleLock.NothingHappens(beat)
+                            : t.Office
+                            ? RingOffice.NobodyCame(beat)
+                            : t.Bench
+                                ? ParkBenches.NobodyCame(beat)
+                                : SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet),
                         seen),
                     rested)));
             return;
@@ -1073,6 +1220,13 @@ public partial class Map
         }
 
         t.Solo = false;
+
+        // #865 · …AND THIS IS THE ONE SITTING THAT BECOMES A CARD. She walked across the hall to you; her
+        // face is the point, which is the owner's own line between the two frames — posture changes are a
+        // strip, people who come to you are a card. It is set HERE and nowhere else, so the only way into
+        // the modal frame is somebody arriving at a captain who was already sitting down.
+        t.TheyCameToYou = true;
+
         t.Plate = SittingAlone.VisitorPlate;
         t.Scene = SittingAlone.TheVisitor();
         t.Said.Clear();     // #749 · a new conversation: nothing has been said to HER yet.
@@ -1098,6 +1252,9 @@ public partial class Map
     private void BackToYourOwnTable(SurfaceExcursion ex, TableTalk t)
     {
         t.Solo = true;
+        // #865 · …and the card goes with her. The frame comes back down to the strip the captain was sitting
+        // in before she arrived, which is the same one occupation of one table it always was.
+        t.TheyCameToYou = false;
         t.DrinkInHand = APourInFrontOfYou;
         t.Relaxed = SittingAlone.SitReadsAsRelaxed(t.DrinkInHand, ex.CanteenWatch);
         t.Plate = SittingAlone.OwnTablePlate;

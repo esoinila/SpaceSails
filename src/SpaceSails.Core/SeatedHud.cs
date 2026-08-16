@@ -49,6 +49,16 @@ public static class SeatedHud
     /// (conditional) &gt; hall table &gt; bar desk."</i></summary>
     public enum Seat
     {
+        /// <summary>#821 · A WC cubicle with the catch over. The TOP of the ladder and the reason it grew a
+        /// rung: smaller than a bench, more private than an office, and the one seat in the game whose
+        /// privacy does not depend on anybody else's behaviour — the owner's own reading, <i>"half a bench
+        /// is not a desk; a locked cubicle absolutely is"</i>.
+        ///
+        /// <para>It is FIRST because this enum is ordered private end to public end and says so, and because
+        /// nothing in the game reads a <c>Seat</c> off a stored number: it is derived from the seat the
+        /// captain is in, every frame, by <c>Map.Seated</c>.</para></summary>
+        LockedCubicle,
+
         /// <summary>A table behind a cabinet door. Nobody comes (<see cref="SittingAlone.SomebodyComes"/>
         /// returns false for a quiet top) and nobody sees.</summary>
         Cabinet,
@@ -68,11 +78,64 @@ public static class SeatedHud
     /// because neither has ever had a panel of its own.</summary>
     public static string SeatLabel(Seat seat) => seat switch
     {
+        Seat.LockedCubicle => "A LOCKED CUBICLE",
         Seat.Cabinet => "A CABINET TABLE",
         Seat.ParkBench => "A PARK BENCH",
         Seat.BarStool => "THE BAR DESK",
         _ => "YOUR OWN TABLE",
     };
+
+    /// <summary>#865 · What a top you are SHARING is called. The first clause of the customer line answers
+    /// <i>do I still hold the seat</i>, and at a top with the weighbridge clerk's tray on the other half of
+    /// it the honest answer is not <see cref="SeatLabel(Seat)"/>'s "YOUR OWN TABLE" — a strip that said so
+    /// while somebody ate opposite would be the sentence and the room disagreeing, which is this project's
+    /// third named bug class read at the width of one clause.</summary>
+    public const string SharedTopLabel = "A TOP YOU ARE SHARING";
+
+    /// <summary>#865 · …and the same question asked with the company in it. Only the two TABLE rungs can be
+    /// shared this way — a bench's far end is <c>SharedSeat</c> and #793 already names it, and nobody shares
+    /// a locked cubicle.</summary>
+    public static string SeatLabel(Seat seat, bool shared) =>
+        shared && seat is Seat.HallTable or Seat.Cabinet ? SharedTopLabel : SeatLabel(seat);
+
+    // ── #865 · THE COMPANY, ON THE STRIP'S OWN LINES ──────────────────────────────────────────────────
+    //
+    // Owner, live at a weighbridge clerk's table and blinded by the card that used to come up: "what if I
+    // just sit and eat here… now I am kind of blinded of the surrounding here because somebody else sits in
+    // the same table" — and, sealing the shape of the fix: "It should somehow UI wise be same style as the
+    // sitting alone case." So the company arrives as MORE LINES ON THE STRIP the captain already had, in the
+    // same separator and the same register as every clause on it. Nothing here is a second vocabulary for
+    // facts the card was already saying; the plate is the one the deck draws over them and the chairs are
+    // the room's own numbers.
+
+    /// <summary>#865 · How the strip counts the chairs — the fact that let you sit down here at all
+    /// (#746/#739), said in the strip's own voice rather than the card's.</summary>
+    public static string ChairsClause(int seats, int free)
+    {
+        int chairs = Math.Max(0, seats);
+        int spare = Math.Clamp(free, 0, chairs);
+        return spare == 1
+            ? $"seats {chairs}, one chair free"
+            : $"seats {chairs}, {spare} chairs free";
+    }
+
+    /// <summary>#865 · The mark on the company line. Two figures, because that is what has changed about the
+    /// seat.</summary>
+    public const string CompanyGlyph = "🧑‍🤝‍🧑";
+
+    /// <summary>#865 · WHO IS SHARING THE TOP — the strip's company line, built from the plate the deck
+    /// already draws over them and the room's own arithmetic.</summary>
+    public static string CompanyLine(string? plate, string? setting, int seats, int free) =>
+        string.Join(Join,
+            $"{CompanyGlyph} {(plate ?? "").Trim()}",
+            (setting ?? "").Trim(),
+            ChairsClause(seats, free));
+
+    /// <summary>#865 · Their one breath, quoted on the strip. A background patron has exactly one line dealt
+    /// to them per watch (#751's bark) and it used to be reachable only by pressing Small talk inside a card
+    /// that had eaten the room; on the strip it is simply OVERHEARD, which is what sitting down at somebody
+    /// else's table in a canteen actually gets you.</summary>
+    public static string OverheardLine(string? bark) => $"“{(bark ?? "").Trim()}”";
 
     // ── THE FOUR CLAUSES ──────────────────────────────────────────────────────────────────────────────
 
@@ -118,6 +181,16 @@ public static class SeatedHud
             return "the door is shut — nobody is crossing the room to you";
         }
 
+        // #821 · …AND A LOCKED CUBICLE IS NOT A ROOM YOU CAN BE CROSSED IN EITHER — but for a different
+        // reason, and the strip says the true one. A cabinet's door was PAID for and nobody comes; this door
+        // is a catch on a partition and the floor is still out there, walking. Reporting a crowd figure here
+        // would be #740's fault; reporting the cabinet's line would be worse, because it would say the
+        // captain was safe.
+        if (seat == Seat.LockedCubicle)
+        {
+            return LockedCubicleClause;
+        }
+
         // #793 · …AND A BENCH IS NOT IN THE HALL AT ALL. Same law, the other way out: a strip that reported
         // "the hall is heaving" to a captain sitting on gravel behind a window wall would be quoting a crowd
         // figure for a room they cannot see, which is the exact fault this file was built to be incapable of
@@ -146,6 +219,11 @@ public static class SeatedHud
     public const string OpenWalkClause =
         "the walk runs clear both ways — nobody crosses this gravel out of sight";
 
+    /// <summary>#821 · The room clause a LOCKED CUBICLE gets. The sentry's own law on the instrument row: it
+    /// states what the catch has actually bought, which is a door and a delay and not a hiding place.</summary>
+    public const string LockedCubicleClause =
+        "the catch is over — the door buys time, and the floor is still out there";
+
     // ── THE LINE ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>What the clauses are joined with. One separator, so the line reads as one instrument.</summary>
@@ -162,10 +240,14 @@ public static class SeatedHud
     /// <param name="pipCap"><see cref="ShortRest.NervePipCapPerWatch"/>, passed in so a guard can watch the
     /// line move with the ceiling rather than trusting a constant it also reads.</param>
     /// <param name="watchFill"><see cref="SittingAlone.Fill"/> for the frozen watch.</param>
+    /// <param name="sharedTop">#865 · Is somebody else at this top? Optional, and it changes exactly one
+    /// clause — the seat's own name — because the whole ruling is that co-seating is the SAME strip with
+    /// company in it and not a second instrument.</param>
     public static string CustomerLine(
-        Seat seat, double? pourSecondsLeft, int pipsEasedThisWatch, int pipCap, double watchFill) =>
+        Seat seat, double? pourSecondsLeft, int pipsEasedThisWatch, int pipCap, double watchFill,
+        bool sharedTop = false) =>
         string.Join(Join,
-            $"{Glyph} {SeatLabel(seat)}",
+            $"{Glyph} {SeatLabel(seat, sharedTop)}",
             PourClause(pourSecondsLeft),
             RestClause(pipsEasedThisWatch, pipCap),
             RoomClause(seat, watchFill));
@@ -185,11 +267,15 @@ public static class SeatedHud
         yield return PourClause(240);
         yield return RestClause(0, ShortRest.NervePipCapPerWatch);
         yield return RestClause(ShortRest.NervePipCapPerWatch, ShortRest.NervePipCapPerWatch);
+        yield return RoomClause(Seat.LockedCubicle, 0);
         yield return RoomClause(Seat.Cabinet, 0);
         yield return RoomClause(Seat.ParkBench, 0);
         yield return RoomClause(Seat.HallTable, 1);
         yield return RoomClause(Seat.HallTable, SittingAlone.BusyAt);
         yield return RoomClause(Seat.HallTable, 0);
+        yield return SharedTopLabel;
+        yield return ChairsClause(4, 1);
+        yield return ChairsClause(4, 2);
         foreach (Seat s in Enum.GetValues<Seat>())
         {
             yield return SeatLabel(s);

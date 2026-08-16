@@ -118,7 +118,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void EveryPopUpTheSeamRoutesToRendersItsOwnOutcome()
     {
-        string seam = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        string seam = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
         var slots = new List<string>();
         foreach (Match m in Regex.Matches(seam, @"(_[A-Za-z]\w*) = line;"))
         {
@@ -170,7 +170,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [InlineData("Map.Outpost.cs", "private void OutpostEffectsInteract(", "SurfaceOutpost.EffectsLine(")]
     [InlineData("Map.SecretLab.cs", "private bool TrySecretLabDetectorReveal(", "SEALED DOOR")]
     [InlineData("Map.SecretLab.cs", "private void FireSecretLabReveal(", "It salvages YOU")]
-    [InlineData("Map.Venting.cs", "private void ReleaseWhatWasSealedIn(", "opens BOTH ways")]
+    [InlineData("Map.Venting.Doors.cs", "private void ReleaseWhatWasSealedIn(", "opens BOTH ways")]
     public void TheCardCarriesWhatThePressDid(string file, string signature, string line)
     {
         string body = Method(file, signature);
@@ -215,10 +215,10 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Theory]
     [InlineData("Map.LabSecurity.cs", "private void WorkTheDoor(")]
     [InlineData("Map.LabSecurity.cs", "private void HackTheAlarm(")]
-    [InlineData("Map.Combat.cs", "private void ToggleWeaponsTight(")]
-    [InlineData("Map.Combat.cs", "private void ToggleBoatPower(")]
+    [InlineData("Map.Combat.FireControl.cs", "private void ToggleWeaponsTight(")]
+    [InlineData("Map.Combat.Remote.cs", "private void ToggleBoatPower(")]
     [InlineData("Map.Sounding.cs", "private void ToggleQuietSearch(")]
-    [InlineData("Map.Venting.cs", "private void RescueSurvivor(")]
+    [InlineData("Map.Venting.Doors.cs", "private void RescueSurvivor(")]
     public void AnOpenPanelNeverPulsesItsOwnAnswer(string file, string signature)
     {
         string body = Method(file, signature);
@@ -233,7 +233,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheKeypadSaysTheBuzzOnThePadAndTheGreenLightOnTheHud()
     {
-        string body = Method("Map.Deck.cs", "private void SubmitPin(");
+        string body = Method("Map.Deck.Fixtures.cs", "private void SubmitPin(");
 
         Assert.True(body.Contains("SayItWhereTheyAreLooking(\"The panel buzzes red", StringComparison.Ordinal),
             "the wrong-code buzz is not said on the pad — the pad stays up, so a pulsed buzz is under its " +
@@ -250,7 +250,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheShelfLineIsComposedIntoTheCardItOpens()
     {
-        string body = Method("Map.Surface.cs", "private void HiveHaulInteract(");
+        string body = Method("Map.Surface.Hive.cs", "private void HiveHaulInteract(");
 
         Assert.True(body.Contains("shelf.Line + \"\\n\\n\" + shelf.Card", StringComparison.Ordinal),
             "the odd book's shelf line is not on the card the press opens — and the comment beside it has " +

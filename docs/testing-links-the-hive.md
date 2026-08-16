@@ -97,14 +97,15 @@ So testing it needs *time to pass*, not a page refresh:
 ## 1a · ADDED (#746) — sitting down at a table, and the job that goes downstairs
 
 ```
-/map?tablescene=1                      the whole route, booted — B1, in the canteen, autowalk on
+/map?tablescene=1                      the whole route, booted — B1, standing in the canteen
 /map?tablescene=1&roll=lo              …and every rolled ask refused, so the scene MOVES on demand
 /map?tablescene=1&roll=hi              …and every rolled ask lands
 ```
 
-`?tablescene=1` implies `?secretlab=deep&land=1&floor=1`, sets the captain down **inside** the upper canteen
-rather than at the lift head, and turns `?autowalk=1` on — the last leg of this scene is a walk across a room,
-and clicking where you want to be is how this repo tests one.
+`?tablescene=1` implies `?secretlab=deep&land=1&floor=1` and sets the captain down **inside** the upper
+canteen rather than at the lift head. The last leg of this scene is a walk across a room, and clicking where
+you want to be is how this repo tests one — since **#875** that click is simply on, here and everywhere the
+arrow keys walk, so this boot no longer has to turn anything on.
 
 **What to look for.** The round tops now carry **SEAT COUNTS** — 2, 4 or 6, seeded off the building and never
 off the shift, so a table does not re-furnish itself between watches. Walk to a top with somebody at it and
@@ -443,10 +444,15 @@ whole feature would look like a control that did not fire.
    they are walking. After: **no spoke** (you are going nowhere), a smaller body (folded into a chair), a bar
    behind the shoulders (the chair back) and a short bar in front (arms on the table). Nothing in the panel
    has to say "you are sitting" — the deck already did.
-2. **W does not walk you out of your own table.** Press any movement key: the captain does not move a
-   centimetre and a small confirm goes up — *"Stand up? You will lose the table."* — with the cost said
-   underneath while there is still a rest to lose. `Esc`, the backdrop and **Stay where you are** all keep
-   your seat; **Stand up** (or `Enter`) stands you up and the table is gone.
+2. **W does not walk you out of your own table — it stands you up first.** Owner's later ruling (#847,
+   2026-08-13): *"Must stand up before walking… the keys simply cost you the stand first, which is how chairs
+   work."* Press any movement key, or click the floor: nothing slides across the hall wearing a chair. The
+   captain **stands up** — the scene shuts, the table is gone, *"You stand, and the chair goes back under the
+   table. Off you go."* — and lands on the seat's own step-off square, and only THEN do the legs answer. The
+   same press costs the same stand at a park bench, an office chair, a cubicle and **a stool at the
+   counter**, which had never been in the seated flag at all. `Esc` on a docked strip still ASKS — *"Stand
+   up? You will lose the table."* — because cancel says nothing about where you are going; `Esc`, the
+   backdrop and **Stay where you are** all keep your seat, **Stand up** (or `Enter`) takes it.
 3. **WAIT is a short rest.** Each press eases a whole nerve pip — watch the corner gauge and the **nerve
    ledger**, which names it — and the panel adds one clause after the room's own silence line. On the third
    beat one of the five blows knits: the condition marker under the gauge goes *badly cut* → *bleeding*.
@@ -661,14 +667,15 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 
 ---
 
-## 9 · The rounds on the restricted floors, and the badge (#804, v1 of the guards)
+## 9 · The rounds on the restricted floors, and the badge (#804, #830/#832 instruments, #833 the walk)
 
 ```
 /map?patrol=2                    B2 of the deep site with the TWO-guard watch forced
 /map?patrol=1                    …the one-guard watch, which is the floor you can actually cross
 /map?badge=1                     …the same round with this site's own SITE PASS already in the wallet
 /map?patrol=2&watch=5            the same floor on a different shift — the same stops, a different round
-/map?patrol=1&autowalk=1         cross the floor by clicking it, which is how to time a round without WASD
+/map?patrol=1                    …and cross the floor by CLICKING it — #875: the click walks you on every
+                                 walked view, so timing a round needs no WASD and no flag
 ```
 
 **Which floors have one, and it is worth knowing before you go looking.** Everything **below the bar** and
@@ -685,10 +692,18 @@ there, which is its own kind of beat. When it is not, the order the information 
 2. **👣 *Boots on shotcrete, out of sight and in no hurry…*** — closer, still nothing on the deck;
 3. **a green mark** with `PATROL 1` over it, the instant your own line of sight reaches them, and **gone the
    instant a wall gets between you**;
-4. inside **nine deck units**, with a clear line, **the round stops at you** and a card goes up.
+4. inside **nine deck units**, with a clear line, **he hails you** — *"You there — hold on."* — and starts
+   **walking over**;
+5. and only when he is **at arm's length** does the card go up.
 
 They stand **five seconds at every stop** and walk between them at 3.2 du/s, which is slower than you. Watch
 one work a rib, wait at the mouth, and go past behind it.
+
+**The approach is a beat you can act on (#833).** From the hail to the card is a real walk across a real
+corridor — a couple of seconds at least, on the same A* and gait as his round, and he is on the fan and the
+marker the whole way. **Your controls are never taken during it**, so *walking away is allowed*: out-walk him
+(you do 9 du/s, he does 3.2) and he stops, watches you go, and writes something short on his clipboard. It
+costs the same cooldown as being read, and nothing follows you.
 
 **The four things a wallet can say**, all on the same card, in its amber row:
 
@@ -698,6 +713,15 @@ one work a rib, wait at the mouth, and go past behind it.
 | another site's pass | *"That's not us."* — and it NAMES the other site | walked back to the car |
 | only the cage chit | *"That's for the cage. This isn't the cage."* | walked back to the car |
 | nothing | *"He waits the entire time you are looking"* | walked back to the car |
+
+**And "walked back" means WALKED (#833).** Close the card and the escort starts there and then: he plans his
+own route to the lift, you are walked along at his shoulder — controls held for that stretch, and he says so
+if you try them — and somewhere on the way he mentions that they have had the pumps out on three since
+Tuesday. Both of you are moving contacts on the motion fan for the whole walk, which is the one guaranteed
+long walk beside a guard in the game and the best place to watch #830/#832's instruments work. It ends with
+him standing at the doors with you. From the far room of the far rib that is **the better part of a minute of
+corridor**; from the spine it is a few seconds. If you ever see *"Next thing you know, you are at the lift"*,
+the floor refused him a route and the game is telling you it cut — **report that one**.
 
 Nothing is confiscated, nobody is called, and **there is no chase in this feature.** The cost is one nerve pip
 and a line in the field book.

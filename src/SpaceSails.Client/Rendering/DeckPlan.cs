@@ -66,6 +66,13 @@ public sealed class DeckPlan
         // other end is sitting BESIDE you rather than starting a conversation. Owner: "it is a good gumshoe
         // move to see if anyone is following us by foot" / "if we get the whole bench to ourselves."
         HiveBench,
+        // #817 · A CHAIR AT A DESK IN A PARK-VIEW SUITE. Its own kind and not a HiveTable: a canteen top is
+        // a place in a room full of people, where sitting down is a choice to be FINDABLE and somebody may
+        // come over. An office chair is in a room with a door, in a building whose staff are somewhere else
+        // — the same posture, the same panel, the same wait beat, and nobody ever arrives. Owner, live in
+        // one of these on a bare deck: "in office people sit down … Let's make some cubicles / desks /
+        // chairs we can sit in."
+        HiveOfficeChair,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.
@@ -79,7 +86,17 @@ public sealed class DeckPlan
         // somebody here but there was nothing marked onto the map?" One mark per SPOT — never per item —
         // appended onto whatever deck the excursion is standing on, and the only console in the game whose
         // [E] is answered before the dispatch ever reaches this enum (#691: your feet before the walls).
-        LeftBehind }
+        LeftBehind,
+        // #821 · THE PUBLIC WASHROOM ON THE PARK BLOCK: a WC cubicle's own leaf (press it from inside and
+        // the catch goes over), and the basin run, which is a fixture with a SPAN on it the way the bar desk
+        // is — one console down the whole length of the porcelain rather than a tap you have to find.
+        HiveCubicle, HiveBasin,
+        // #869 · THE SIT-STAND DESK, as its two controls. Two kinds and not one, because they are two
+        // different decisions on one piece of furniture: the UP/DOWN paddle at one end of the desk's own
+        // front face (press it and the motor runs), and the PRESET buttons at the other (read what they
+        // remember, or lean on them). Neither is a seat — the chair is the sit, and this is a press you make
+        // standing up — and one kind for both would file the pettiest verb in the game under "raise the desk".
+        HiveDeskEdge, HiveDeskPresets }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.
@@ -169,57 +186,71 @@ public sealed class DeckPlan
     /// the moon somebody named. It is a REGION and not a slot, which is the whole of #774 — an event with
     /// four things to say in one breath says all four, instead of writing three of them into a backdrop
     /// nobody can read and letting append order pick the survivor (the contract #693 killed).</param>
-    /// <param name="SpanX">#791 · HALF THE FIXTURE'S REACH ALONG ITSELF, as a vector off (X, Y) — so the
-    /// interaction point is the SEGMENT (X−SpanX, Y−SpanY)..(X+SpanX, Y+SpanY) rather than a dot, and
-    /// <see cref="NearestConsoleSpot"/> measures to the nearest point on it.
+    /// <param name="Run">#791 · THE FIXTURE'S REACH ALONG ITSELF, as the SEGMENT it actually is — so the
+    /// interaction point is a line rather than a dot, and <see cref="NearestConsoleSpot"/> measures to the
+    /// nearest point on it.
     ///
     /// <para>Owner, live at the B1 bar: <i>"The Bar desk is really long now, but there is only one spot to
     /// get service on it… we would need an E-bus of the bar desk length instead of one bar keep cashier at a
     /// single spot."</i> The desk is eighty-odd deck units and the press reached six of them.</para>
     ///
-    /// <para><b>Zero everywhere else, which is every console in the game but this one.</b> A helm is a chair
-    /// and a valve is a wheel; they are points and they stay points, by the same arithmetic — a segment of
-    /// zero length is its own endpoint, so the distance below is the distance it always was. Nothing about
-    /// any other deck changes, and no caller has to learn a new idea to keep working.</para>
+    /// <para><b>Null everywhere else, which is every console in the game but this one.</b> A helm is a chair
+    /// and a valve is a wheel; they are points and they stay points — a fixture with no run is its own
+    /// endpoint, so the distance below is the distance it always was. Nothing about any other deck changes,
+    /// and no caller has to learn a new idea to keep working.</para>
     ///
-    /// <para>The span is HANDED DOWN from whoever carved the fixture (for the counter: the hall's own
-    /// <c>Service</c> run). A renderer that worked out how long a bar is would be doing geometry about a
-    /// room it did not carve, which is §13.15 and the reason this project has twice put a captain in a
-    /// wall.</para></param>
-    /// <param name="SpanY">The other half of it.</param>
+    /// <para>#827 · <b>It is the segment and not a half-span off (X, Y), because the two are not concentric
+    /// any more.</b> A counter's PLATE stands in front of the desk, on the square a body can stand on and
+    /// every walkability audit walks to; the desk's own front FACE is a step behind it, and the face is what
+    /// you order over. While the run was a span about the plate, the deck drew a cyan service rail two du
+    /// clear of the bar's own photograph and the owner read the picture as the counter — because the picture
+    /// WAS the counter.</para>
+    ///
+    /// <para>The segment is HANDED DOWN from whoever carved the fixture (for the counter: the hall's own
+    /// <c>Service</c> run, which is its desk's front face). A renderer that worked out how long a bar is
+    /// would be doing geometry about a room it did not carve, which is §13.15 and the reason this project
+    /// has twice put a captain in a wall.</para></param>
     public readonly record struct ConsoleSpot(ConsoleKind Kind, float X, float Y, string Label,
         string? ImageUrl = null, string? Caption = null, string? Outcome = null,
-        float SpanX = 0f, float SpanY = 0f)
+        (float X0, float Y0, float X1, float Y1)? Run = null)
     {
         /// <summary>#791 · Is this fixture a RUN rather than a point? Asked, rather than compared against
         /// zero at four call sites.</summary>
-        public bool IsRun => SpanX != 0f || SpanY != 0f;
+        public bool IsRun => Run.HasValue;
 
         /// <summary>#791 · One end of the run — (X, Y) itself where the fixture is a point.</summary>
-        public (float X, float Y) End0 => (X - SpanX, Y - SpanY);
+        public (float X, float Y) End0 => Run is { } r ? (r.X0, r.Y0) : (X, Y);
 
         /// <summary>#791 · The other end.</summary>
-        public (float X, float Y) End1 => (X + SpanX, Y + SpanY);
+        public (float X, float Y) End1 => Run is { } r ? (r.X1, r.Y1) : (X, Y);
 
         /// <summary>#791 · How far this spot is from the fixture — to the nearest point ON it, which for a
         /// point console is the point itself. <see cref="SurfaceCollision.DistanceToSegment"/>, so the reach
         /// the key uses, the reach the pen draws and the reach a guard measures are one function.</summary>
-        public double DistanceFrom(double x, double y) =>
-            SurfaceCollision.DistanceToSegment(x, y, X - SpanX, Y - SpanY, X + SpanX, Y + SpanY);
+        public double DistanceFrom(double x, double y)
+        {
+            (float ax, float ay) = End0;
+            (float bx, float by) = End1;
+            return SurfaceCollision.DistanceToSegment(x, y, ax, ay, bx, by);
+        }
 
         /// <summary>#791 · The point on the fixture nearest a captain — where the [E] prompt is drawn, so a
         /// captain at the far end of a long desk sees the offer beside THEM rather than forty du away at the
         /// plate. Clamped to the segment, which for a point console is the point.</summary>
         public (float X, float Y) NearestPointTo(double x, double y)
         {
-            if (!IsRun)
+            if (Run is not { } r)
             {
                 return (X, Y);
             }
-            double ex = 2.0 * SpanX, ey = 2.0 * SpanY;
-            double t = (((x - (X - SpanX)) * ex) + ((y - (Y - SpanY)) * ey)) / ((ex * ex) + (ey * ey));
-            t = Math.Clamp(t, 0.0, 1.0);
-            return ((float)(X - SpanX + (t * ex)), (float)(Y - SpanY + (t * ey)));
+            double ex = r.X1 - r.X0, ey = r.Y1 - r.Y0;
+            double len2 = (ex * ex) + (ey * ey);
+            if (len2 <= 0)
+            {
+                return (r.X0, r.Y0);
+            }
+            double t = Math.Clamp((((x - r.X0) * ex) + ((y - r.Y0) * ey)) / len2, 0.0, 1.0);
+            return ((float)(r.X0 + (t * ex)), (float)(r.Y0 + (t * ey)));
         }
     }
 
@@ -236,6 +267,59 @@ public sealed class DeckPlan
     /// knock-on-the-walls search was readable off the map until these were filled.</para>
     /// </summary>
     public readonly record struct Structure(float X0, float Y0, float X1, float Y1);
+
+    /// <summary>
+    /// #868 · ONE PIECE OF FURNITURE, AS THE RECTANGLE IT STANDS ON — filled, so a captain can see it.
+    ///
+    /// <para>Owner, reading a back-of-house room off the plan on 2026-08-13: <i>"The graphics kind of does
+    /// not show there being a table"</i> · <i>"The bench is a line"</i> · and, as the positive control three
+    /// paces away, <i>"The Shelving is clear as furniture goes."</i> His own fix, quoted: <i>"could the table
+    /// just be a different color rectangle in front of the chair, so arms (and papers) could rest on
+    /// it?"</i>, sealed with <i>"I think table should be similar just say table."</i></para>
+    ///
+    /// <para><b>Why the deck needed a new primitive at all.</b> Until this record, every fixture down here
+    /// reached the screen as its own SOLIDS — the wall segments Core lays a box out of — so a rectangle drew
+    /// as four strokes and a bench, which is one degenerate box, drew as one. That is honest about the
+    /// collision field and useless as furniture: an outline reads as a space you could stand in, which is
+    /// exactly the complaint #537 answered for structure with a fill. This is the same answer for the things
+    /// standing IN a room rather than the things a room is made of, and it is drawn from the box Core
+    /// published rather than measured off the wall list, so the picture and the plan cannot drift.</para>
+    /// </summary>
+    /// <param name="X0">Left edge, in deck units.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="Tone">What the piece IS, never a colour — <see cref="BigLabels"/>'s own rule, because
+    /// the plan is Core-shaped data and the ink lives in the renderer. 0 = a surface you work at (a desk
+    /// bank, a table, a counter, a worktop), 1 = something you keep things in (shelving, a kitchenette),
+    /// 2 = something you sit on (a bench).</param>
+    public readonly record struct FurnitureSpot(float X0, float Y0, float X1, float Y1, int Tone)
+    {
+        /// <summary>#868 · Which tone a published fitting draws in. Asked of the KIND and never of the
+        /// plate's wording, so a fixture renamed tomorrow keeps its ink — and asked here, once, so the pen
+        /// and any guard about the pen read one answer.</summary>
+        public static int ToneOf(SpaceSails.Core.RingOffice.Fitting kind) => kind switch
+        {
+            SpaceSails.Core.RingOffice.Fitting.Shelving
+                or SpaceSails.Core.RingOffice.Fitting.Racking
+                or SpaceSails.Core.RingOffice.Fitting.FilingCabinet
+                or SpaceSails.Core.RingOffice.Fitting.Kitchenette
+                // #828 · The secure disposal is a MACHINE you stand at rather than a surface you work on,
+                // so it takes the kitchenette's ink and nobody reads it as a spare desk.
+                or SpaceSails.Core.RingOffice.Fitting.SecureDisposal => 1,
+            SpaceSails.Core.RingOffice.Fitting.Bench => 2,
+            _ => 0,
+        };
+
+        /// <summary>#868 · Is this the kind of fitting that gets FILLED at all? A cubicle and a booth are
+        /// little ROOMS — a captain steps inside one and shuts the door — so filling them would draw the one
+        /// hiding place in the building as a solid block. A partition is a screen, which IS a line and is
+        /// honestly drawn as one.</summary>
+        public static bool IsFurniture(SpaceSails.Core.RingOffice.Fitting kind) =>
+            kind is not (SpaceSails.Core.RingOffice.Fitting.Cubicle
+                or SpaceSails.Core.RingOffice.Fitting.Booth
+                or SpaceSails.Core.RingOffice.Fitting.Partition);
+    }
 
     public const double InteractRadius = 3.0;
     public const double AvatarRadius = 0.7;
@@ -279,9 +363,15 @@ public sealed class DeckPlan
     /// <para>#793 · <paramref name="Held"/> — this one has STOPPED BECAUSE THE CAPTAIN SAT DOWN, which is the
     /// answer a park bench is for (<see cref="SpaceSails.Core.FootTail.MustHold"/>). It is handed down from
     /// the sim per frame like every other field on this record: the pen has never heard of a tail and must
-    /// not work one out, which is #788's one-reach lesson pointed at somebody else's feet.</para></summary>
+    /// not work one out, which is #788's one-reach lesson pointed at somebody else's feet.</para>
+    ///
+    /// <para>#832 · <paramref name="Smeared"/> — this one is at the far end of what the captain's eye can
+    /// do, and is drawn as a DISTANT FIGURE: the silhouette, softened, with no name written over it. The
+    /// tier is the sim's own answer (<see cref="SpaceSails.Core.PatrolBeat.SightingFor"/>), handed down for
+    /// the same reason every other field here is — the alternative is a renderer with an opinion about how
+    /// far a person is visible, which is a second answer to a question Core already owns.</para></summary>
     public readonly record struct Droid(
-        double X, double Y, double FacingRad, string Name, bool Held = false);
+        double X, double Y, double FacingRad, string Name, bool Held = false, bool Smeared = false);
 
     public Wall[] Walls { get; private set; }
 
@@ -325,6 +415,11 @@ public sealed class DeckPlan
     /// <summary>Filled structure — see <see cref="Structure"/>. Drawn under everything else, because it is what
     /// the ship is made of rather than something in her.</summary>
     public Structure[] Structures { get; private set; }
+
+    /// <summary>#868 · The FURNITURE, as filled rectangles — see <see cref="FurnitureSpot"/>. Drawn over the
+    /// floor and under the walls, because it is what is standing IN a room rather than what the room is made
+    /// of. Empty everywhere Core furnishes nothing, which is every deck in the game but the Hive's.</summary>
+    public FurnitureSpot[] Furniture { get; private set; }
     public Door[] Doors { get; }
 
     /// <summary>#563 · TERRAIN — drawn, never collided. Kept in its own array rather than as a flag on
@@ -381,8 +476,37 @@ public sealed class DeckPlan
     /// not the same offer as an empty one.</param>
     /// <param name="Talking">…and the people at it are talking to each other, rather than sitting there on
     /// their own. The third glance, and the affordance a future overhear verb will hang off.</param>
+    /// <param name="Heads">#823 · HOW MANY of them there are, so the picture can seat the party the sim
+    /// seated. Owner, playtest 2026-08-11: <i>"there are two haulers eating at a table that seats four, yet
+    /// there is visual indication of only one seat out of four being taken."</i> The pen drew one body
+    /// because one body was all it had been handed — it was not simplifying, it had nothing to count.</param>
+    /// <param name="Chairs">#820 · WHERE ITS CHAIRS ACTUALLY STAND, and who is in them — one entry per
+    /// seat, in the top's own chair order, handed down exactly as a stool's spot and a bench end are.
+    ///
+    /// <para>The pen used to work these out from a radius and an angle of its own, which was survivable
+    /// while nobody sat in them. #820 seats the CAPTAIN in one — <c>CanteenRegulars.TableSeat.ChairYouTake</c>
+    /// — so the drawn chair and the sat chair had to become one piece of furniture rather than two authors,
+    /// and the way this deck does that is to be told. Empty for plain dressing (the ship's cantina, a haven
+    /// bar), which draws the bare ring it always drew.</para></param>
     public readonly record struct TableTop(
-        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false);
+        float X, float Y, int Seats = 0, bool Occupied = false, bool Talking = false, int Heads = 0,
+        IReadOnlyList<TableChair>? Chairs = null)
+    {
+        /// <summary>Its chairs, never null — a pen drawing a room must not have to tell an empty list from
+        /// a missing one.</summary>
+        public IReadOnlyList<TableChair> Seating => Chairs ?? [];
+    }
+
+    /// <summary>
+    /// #820 · ONE CHAIR ROUND A CANTEEN TOP. The third seat this deck is handed rather than deriving, after
+    /// #792's stool and #793's bench end, and for the same reason all three exist: a seat is a place a body
+    /// can be, and the instrument that draws one must not be the instrument that decides where it is.
+    /// </summary>
+    /// <param name="X">Where the chair stands — Core's own ring.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Taken">One of the party is in it. Core's own walk over the headcount (#823), so the
+    /// bodies drawn here are the bodies the [E] press refuses to seat the captain on top of.</param>
+    public readonly record struct TableChair(float X, float Y, bool Taken = false);
 
     /// <summary>
     /// #792 · ONE TALL SEAT AT A COUNTER. Occupancy comes down from the sim exactly as a top's does — the
@@ -453,9 +577,11 @@ public sealed class DeckPlan
         SpaceSails.Core.BodyPalette.Ink? hullInk = null,
         Structure[]? structures = null,
         StoolSpot[]? stools = null,
-        BenchSpot[]? benchSeats = null)
+        BenchSpot[]? benchSeats = null,
+        FurnitureSpot[]? furniture = null)
     {
         Structures = structures ?? [];
+        Furniture = furniture ?? [];
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
         for (int i = 0; i < walls.Length; i++)

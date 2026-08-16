@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -163,7 +163,7 @@ public sealed class TheShelterFixturesSayWhatTheyDoTests
         // seam EveryStoryBeatHasACallerTests uses to prove a beat has a caller. It asks one question — does
         // the method that composes the on-foot instrument column emit the readout — and it goes red the
         // moment somebody deletes the call, which is the failure it exists for.
-        string page = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.cs");
+        string page = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Hud.cs");
         Assert.True(File.Exists(page), $"the on-foot page has moved: {page}");
 
         string source = File.ReadAllText(page);

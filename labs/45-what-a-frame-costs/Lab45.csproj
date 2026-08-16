@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- #852 · WHAT A FRAME COSTS. Owner, watching a single guard walk a corridor: "the guard seems to move
+       somehow much more heavily than the reevers who we can have so many on the screen without slowdown."
+
+       This one references the CLIENT for the same reason Lab 44 does, and it is the whole point: the floor
+       being timed has to be the floor the game generates — HiveInterior.FloorDeck, with its own
+       DeckPlan.CollisionField and its own DeckPlan.CollisionSegments — because the question on trial is
+       whether the difference between a guard and a Reever is WHICH OF THOSE TWO LISTS each one is handed.
+       A bench built on Core's raw geometry could not have seen it: Core hands out one list and the client
+       decides, per caller, whether to index it. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SpaceSails.Labs.Lab45</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+
+    <!-- #852 · TIERED JIT OFF, AND IT IS A FINDING, NOT A KNOB.
+         The first draft of this lab printed a 100-segment wall list as TEN TIMES dearer per segment than an
+         800-segment one, and a guard's eye at 17x the cost the same sweep bills in the microbenchmark. Both
+         were tier-0 code being timed: .NET promotes a method to optimised code after ~30 calls plus a timer,
+         and a bench whose warm-up is thirty frames times three asks never gets there. Every row would have
+         been a real measurement of code the game does not run.
+         Off, both of them, so a method is jitted at full optimisation the first time it is called and a row
+         means the same thing whether it is the first in the table or the last. -->
+    <TieredCompilation>false</TieredCompilation>
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SpaceSails.Client\SpaceSails.Client.csproj" />
+  </ItemGroup>
+
+</Project>

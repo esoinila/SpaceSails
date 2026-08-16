@@ -1784,7 +1784,20 @@
 
        Nothing about the CARD changed. That matters: the haulier ladder, its odds, its one-per-watch law and
        every line in it ship exactly as they were, and when #731's walker crosses the hall for real she will
-       flip Solo from outside and this card will come up over a room the player was already watching. *@
+       arrive from outside the strip and this card will come up over a room the player was already watching.
+
+       #865 · …AND THE FORK MOVED OFF SOLO. Owner, live at a weighbridge clerk's table with the whole hall
+       dimmed to black behind one small card: "what if I just sit and eat here... now I am kind of blinded of
+       the surrounding here because somebody else sits in the same table" — then, naming the target: "It
+       should somehow UI wise be same style as the sitting alone case", and sealing it: "Just the social
+       functions as additional options."
+
+       So CO-SEATING IS A STRIP STATE. Joining an occupied top is a posture change like any other seat and it
+       docks; only somebody who CAME OVER TO YOU raises the card (SeatedIsDocked now reads TheyCameToYou).
+       And it is the SAME COMPONENT WITH COMPANY, not a second one styled alike — the neighbour's plate and
+       bark are lines on this strip and their moves are buttons in this row, which is what keeps the rest
+       pips, the spread gating and #829's case-door label working identically whether the chair opposite is
+       empty or not. *@
     @if (_table is { } tab)
     {
     @if (SeatedIsDocked)
@@ -1796,6 +1809,23 @@
             @if (SeatedCustomerLine() is { Length: > 0 } customer)
             {
                 <div class="seated-dock-line">@customer</div>
+            }
+
+            @* #865 · WHO IS SHARING THE TOP, in the instrument row's own clothes — the plate the deck draws
+               over them, the room's setting, and the chairs. Same separator, same register, one line lower:
+               the strip is the same strip and this is what has changed about the seat. *@
+            @if (SeatedCompanyLine() is { Length: > 0 } company)
+            {
+                <div class="seated-dock-line seated-dock-company">@company</div>
+            }
+
+            @* …and their one breath, OVERHEARD rather than extracted. #751 deals a background patron exactly
+               one line per watch, and it used to take a press inside a card that had eaten the room to hear
+               it. It stands down the moment anything is actually said at this table, because the strip has
+               one outcome slot and a bark left under its own answer would print the sentence twice. *@
+            @if (SeatedOverheardLine() is { Length: > 0 } overheard)
+            {
+                <div class="seated-dock-said seated-dock-bark">@overheard</div>
             }
 
             @* The latest thing that happened at this table — #757's silence lines, the body's footnote, the
@@ -1830,7 +1860,24 @@
             }
 
             <div class="seated-dock-actions">
-                @foreach (SpaceSails.Core.Encounter.Move move in TableMovesOnTheTable())
+                @* #865/#746 · ASKING FOR THE CHAIR IS STILL ITS OWN BEAT, and it is a strip button now.
+                   Until it is pressed, the only two things you may do at somebody else's top are ask and
+                   walk away — the same two the card offered, in the same order, without the room going
+                   dark to offer them. *@
+                @if (!tab.Joined)
+                {
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Ask for the empty chair"
+                            @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Join)">@SpaceSails.Core.CanteenTable.AskToJoin</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Think better of it. It costs nothing."
+                            @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Leave)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
+                }
+                @* THE MOVE ROW. At a top you took alone this is SIT A WHILE and the goodbye; at one you
+                   joined it is the neighbour's own three — Small talk, Buy the round, Take your leave —
+                   because it is the SAME call over whatever scene this sitting is holding. Owner: "just the
+                   social functions as additional options." *@
+                @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? TableMovesOnTheTable() : [])
                 {
                     SpaceSails.Core.Encounter.Move m = move;
                     bool open = TableMoveOnOffer(m);
@@ -1842,14 +1889,39 @@
                 }
                 @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
                    refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
-                   press, because that is how the gumshoe rule gets learned. *@
+                   press, because that is how the gumshoe rule gets learned. Once a sheet of this sitting
+                   is in the book the door says so (SpreadDoorLabel) — the owner asked the words to carry
+                   the fact that the NEXT press looks at a different sheet. *@
                 <button type="button"
                         class="btn btn-sm @(CanSpreadTheCaseHere ? "btn-outline-light" : "btn-outline-secondary")"
-                        title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                        title="@SpreadDoorHint"
                         @onclick="OpenTheSpread">
-                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpaceSails.Core.SeatedSpread.SpreadLabel
+                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
                 </button>
             </div>
+
+            @* #865/#746 · …and PUT SOMETHING ON THE TABLE fans the pocket open right here, exactly as it
+               does on the card: a second press and never a mode, for #614's reason — a captain deciding WHAT
+               to put down must not be one mis-click from having put something down. It is inside the strip's
+               own subtree, so the room is still behind it. *@
+            @if (tab.Joined && tab.Showing)
+            {
+                <div class="table-showables seated-dock-showables">
+                    @if (_satchel.Count == 0)
+                    {
+                        <div class="satchel-empty">Nothing in your pockets to put down.</div>
+                    }
+                    @foreach (SpaceSails.Core.Satchel.Item carried in TableShowables())
+                    {
+                        SpaceSails.Core.Satchel.Item show = carried;
+                        <button type="button" class="satchel-item table-showable"
+                                title="Put it on the table where everyone can see it"
+                                @onclick="() => TableShow(show)">
+                            <span class="satchel-item-name">@SatchelLabel(show)</span>
+                        </button>
+                    }
+                </div>
+            }
         </div>
     }
     else
@@ -1993,6 +2065,12 @@
                     {
                         SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
                         SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
+                        // #828 · The bucket is NAMED, and it is the one the boots are at — never "a bin".
+                        // Away from one the title falls back to the verb, because a page whose fixture has
+                        // walked off is a page about the verb and nothing else.
+                        SatchelPage.Bin => BinWithinReach() is { } titleBin
+                            ? SpaceSails.Core.RipAndBin.PickerTitle(titleBin.Tier)
+                            : SpaceSails.Core.RipAndBin.Label,
                         _ => "🎒 WHAT YOU ARE CARRYING",
                     })
                 </div>
@@ -2025,9 +2103,23 @@
                     {
                         <button type="button"
                                 class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
-                                title="@(SpreadRefusal ?? SpaceSails.Core.SeatedSpread.SpreadHint)"
+                                title="@SpreadDoorHint"
                                 @onclick="() => _satchelPage = SatchelPage.Spread">
                             🗂 SPREAD
+                        </button>
+                    }
+                    @* #828 · THE BIN, and the tab follows the FIXTURE the way the spread tab follows the
+                       posture: standing at a bucket it is a page, three du away it is not a page you are
+                       being refused. It exists so the captain who opened the pocket by reflex ([I]) can
+                       still find the bin they are standing at, and so the one who came in through [E] can
+                       get back to their pockets and their book without walking away first. *@
+                    @if (BinWithinReach() is { } binTab)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Bin ? "on" : "")"
+                                title="@SpaceSails.Core.RipAndBin.Hint(binTab.Tier)"
+                                @onclick="() => _satchelPage = SatchelPage.Bin">
+                            @SpaceSails.Core.RipAndBin.Glyph THE BIN
                         </button>
                     }
                 </div>
@@ -2044,7 +2136,7 @@
                    SENTENCE you get by pressing, because that is how the gumshoe rule gets learned. *@
                 @if (_satchelPage == SatchelPage.Spread)
                 {
-                    <div class="satchel-sub">@SpaceSails.Core.SeatedSpread.SpreadBlurb</div>
+                    <div class="satchel-sub">@(CaseHasBegun ? SpaceSails.Core.SeatedSpread.SpreadAgainBlurb : SpaceSails.Core.SeatedSpread.SpreadBlurb)</div>
 
                     @if (_satchelOutcome is { Length: > 0 } spreadSaid)
                     {
@@ -2248,6 +2340,60 @@
                         }
                     }
                 }
+                else if (_satchelPage == SatchelPage.Bin)
+                {
+                    @* #828 · THE BIN — the sleeve held open over the bucket the captain is standing at.
+                       Owner: "I think the trash could be an e-use ... where we select from inventory the
+                       processed items we rip and deposit into trash."
+
+                       Nothing on this page is a second shredder. The rows are the sleeve's own papers, the
+                       order is Core's (worked sheets lead), the words on them are Core's, and the press is
+                       RipItUp — the SAME act the spread row fires, which is why the filed fact reads the
+                       same whichever grip the captain took. No control is disabled (#212/#603): a sheet
+                       nothing has been dug out of yet carries a flag and a warning in its hint, and then
+                       does exactly what it is asked, because it is the captain's paper. *@
+
+                    @* The bet is spoken at the bin and nowhere else (RipAndBin.TierBet) — and when the
+                       captain has walked off mid-picker the page says THAT instead, rather than going on
+                       describing a bucket that is now down the corridor. *@
+                    @if (BinWithinReach() is { } overIt)
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.TierBet(overIt.Tier)</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.NoBinLine</div>
+                    }
+
+                    @if (_satchelOutcome is { Length: > 0 } binSaid)
+                    {
+                        <div class="satchel-outcome">@binSaid</div>
+                    }
+
+                    @if (BinnableFinds() is { Count: > 0 } feed)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in feed)
+                            {
+                                SpaceSails.Core.Satchel.Item paper = lying;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@BinRowHint(paper)"
+                                            @onclick="() => RipItUp(paper)">
+                                        <span class="satchel-item-name">@SatchelLabel(paper)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.RipAndBin.Glyph @BinRowFlag(paper)
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.RipAndBin.NothingToBinLine</div>
+                    }
+                }
                 else
                 {
                 <div class="satchel-sub">
@@ -2299,7 +2445,63 @@
                     <div class="satchel-outcome">@busy</div>
                 }
 
-                @if (_satchel.Count == 0)
+                @* ── #837 · THE LOAD CHOOSER ────────────────────────────────────────────────────────────
+                   Owner, satchel open on '12 loose rounds': "I would expect like load it into one or both
+                   guns" / "and like how many each .. by default I guess it would be all into one in most
+                   cases, but we should give flexibility here."
+
+                   One row per gun the captain's hands can reach — the sling first, because a gun on your own
+                   back is the least demanding version of this verb, then whatever is set down within arm's
+                   length. Every figure on it is Core's: the counts are SentryBot.MagazineCell, which is the
+                   same function the MAGAZINES readout is built out of, and the arrow shows what that line
+                   will read AFTER the press, before the press (#696 — the price known beforehand).
+
+                   The page decides nothing. It has no arithmetic, no mutation and no words of its own. *@
+                @if (TheLoadChooser() is { } loading)
+                {
+                    <div class="satchel-sub">@SpaceSails.Core.SentryHandLoad.ChooserBlurb(loading.Pocket, loading.KindName)</div>
+
+                    @if (loading.Picks.Count == 0)
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SentryHandLoad.NothingInReachLine</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.SentryHandLoad.Pick offering in loading.Picks)
+                            {
+                                SpaceSails.Core.SentryHandLoad.Pick gun = offering;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@gun.Note"
+                                            @onclick="() => LoadIntoIt(gun)">
+                                        <span class="satchel-item-name">
+                                            🔫 @gun.Unit @gun.Now @(gun.Worked ? "→ " + gun.After : "") <span class="satchel-where">@gun.Where</span>
+                                        </span>
+                                        <span class="satchel-item-try">@SpaceSails.Core.SentryHandLoad.LoadLabel</span>
+                                    </button>
+                                    @* THE COUNT STEPPER, and it is only drawn where there is a choice to
+                                       make: a row whose ceiling is nought has a refusal to say and no
+                                       interesting difference between one nothing and another. *@
+                                    @if (gun.Ceiling > 0)
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.FewerHint"
+                                                @onclick="() => NudgeShare(gun, -1)">−</button>
+                                        <span class="satchel-share">@gun.Share of @gun.Pocket</span>
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.MoreHint"
+                                                @onclick="() => NudgeShare(gun, 1)">+</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <button type="button" class="satchel-back"
+                            @onclick="CloseTheLoadChooser">@SpaceSails.Core.SentryHandLoad.BackLabel</button>
+                }
+                else if (_satchel.Count == 0)
                 {
                     <div class="satchel-empty">
                         Empty. Rooms down here are worth searching — most are stripped, and the ones that
@@ -2386,6 +2588,21 @@
                                                 title="@RipHint(item)"
                                                 @onclick="() => RipItUp(item)">@SpaceSails.Core.RipAndBin.Glyph</button>
                                     }
+                                    @* #837 · LOAD IT FROM THE ROW — the hand-load's second grip. Owner, with
+                                       the satchel open on twelve loose rounds: "I would expect like load it
+                                       into one or both guns."
+
+                                       Drawn only on ROUNDS, for the shredder's reason one control over: on a
+                                       keycard this is not a refusal, it is a verb that does not apply. Live
+                                       wherever it IS drawn and never disabled — with nothing within arm's
+                                       reach it opens onto the sentence that says what would fix it, which is
+                                       how the reach rule is learned. *@
+                                    @if (LoadIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-load"
+                                                title="@LoadHint(item)"
+                                                @onclick="() => OpenTheLoadChooser(item)">@SpaceSails.Core.SentryHandLoad.LoadLabel</button>
+                                    }
                                  </div>;
                         }
 
@@ -2446,6 +2663,50 @@
                    reading, and I still toggles it (#688) regardless of the page. *@
                 <button type="button" class="view-object-close"
                         @onclick="() => Dismiss(CloseSatchel)">Close</button>
+            </div>
+        </div>
+    }
+
+    @* #836 · THE FLETCH WALLET, FANNED WHILE HE CROSSES THE FLOOR. Owner: "I think I should be able to pick
+       the badge I show the guard... like Fletch ... suppose we have 4 different ID's ... one of them real".
+
+       It opens on the HAIL and it is gone by the time his hand is out — the 2026-08-08 ruling stands, the
+       read is still automatic and still told on a card, and the only thing that moved is when the captain
+       decided. One row per paper, and every row is the captain's own knowledge and nothing else: the glyph,
+       the NAME ON IT, what it CLAIMS (its printed face, verbatim from the file that prints it) and what the
+       book itself filed about that paper at this site. No percentages, no ticks, no oracle — the man has not
+       read it yet, and neither has this dialog. *@
+    @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
+    {
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseTheWalletFan)">
+            <div class="treasure-map-card wallet-fan" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.WalletChoice.ChooserLabel</div>
+                <div class="tm-caption">@SpaceSails.Core.WalletChoice.ChooserHint</div>
+
+                <div class="wallet-fan-rows">
+                    @foreach (SpaceSails.Core.Satchel.Item paper in fanPapers)
+                    {
+                        bool inHand = _paperInHand is { } held
+                                      && held.Kind == paper.Kind && held.Id == paper.Id;
+                        <button type="button"
+                                class="@(inHand ? "wallet-paper picked" : "wallet-paper")"
+                                @onclick="() => ChooseThePaper(paper)">
+                            <span class="wallet-paper-face">
+                                <span class="wallet-paper-glyph">@SpaceSails.Core.WalletChoice.GlyphOf(paper)</span>
+                                <span class="wallet-paper-name">@SpaceSails.Core.WalletChoice.NameOn(paper, NameOnYourOwnPapers)</span>
+                                @if (inHand)
+                                {
+                                    <span class="wallet-paper-held">@SpaceSails.Core.WalletChoice.InYourHandLine</span>
+                                }
+                            </span>
+                            <span class="wallet-paper-claims">@SpaceSails.Core.WalletChoice.Claims(paper)</span>
+                            <span class="wallet-paper-book">@SpaceSails.Core.WalletChoice.HistoryLine(paper, fanEx.Stop.Body.Id, _shownBook)</span>
+                        </button>
+                    }
+                </div>
+
+                <button type="button" class="view-object-close"
+                        @onclick="() => Dismiss(CloseTheWalletFan)">@SpaceSails.Core.WalletChoice.KeepItLine</button>
             </div>
         </div>
     }

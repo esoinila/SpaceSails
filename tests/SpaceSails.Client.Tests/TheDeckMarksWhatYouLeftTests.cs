@@ -190,8 +190,13 @@ public sealed class TheDeckMarksWhatYouLeftTests
         throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 
-    private static string SurfaceSource() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.cs"));
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so the text this guard reads is
+    /// all of them — exactly the source it read out of one file before the split.</summary>
+    private static string SurfaceSource() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     /// <summary>The body of one method in <c>Map.Surface.cs</c>, brace-matched from its signature.</summary>
     private static string BodyOf(string signature)

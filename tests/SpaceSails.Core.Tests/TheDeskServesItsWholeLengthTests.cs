@@ -225,6 +225,11 @@ public sealed class TheDeskServesItsWholeLengthTests
     /// 41 hall(s) read the wrong way round:
     ///   europa B1: the keep stands 2.50 du IN FRONT of the desk, on the captain's side of it.
     /// </code>
+    ///
+    /// <para>#827 · <b>The run has moved ONTO the desk</b>, which is what that issue is about: the rail used
+    /// to be laid two du out in the floor and the deck drew the counter at two heights. So "the desk's band
+    /// is entirely on one side of the run" has become "the run is the desk's near EDGE, and the band is
+    /// behind it" — the same order of the same three things, said about a run that now starts at zero.</para>
     /// </summary>
     [Fact]
     public void THE_KEEPS_SideIsBehindTheDeskAndTheCaptainsIsInFrontOfIt()
@@ -246,17 +251,24 @@ public sealed class TheDeskServesItsWholeLengthTests
             (double _, double keepAcross) = Frame(run, run.KeepX, run.KeepY);
             (double _, double plateAcross) = Frame(run, amenity.X, amenity.Y);
 
-            // The desk's band is entirely on ONE side of the run — that is what "the run is in front of the
-            // desk" means, and it is the first thing that would stop being true if the standoff flipped.
-            if (deskLo * deskHi <= 0)
+            // #827 · The run is the desk's near EDGE, so one of the band's two across-coordinates is zero
+            // and the other is the whole band, behind it. A run laid anywhere else — out in the floor, as
+            // it was, or inside the bar — puts both of them on one side and fails here.
+            double face = Math.Min(Math.Abs(deskLo), Math.Abs(deskHi));   // the desk's near edge
+            double back = Math.Max(Math.Abs(deskLo), Math.Abs(deskHi));   // and the far wall behind it
+            if (face > 0.01)
             {
-                wrong.Add($"  {body} B{-level}: the run lies INSIDE the desk's own band.");
+                wrong.Add($"  {body} B{-level}: the run is {face:F2} du off the desk's own front face — "
+                    + "the rail and the picture are two counters again.");
+                continue;
+            }
+            if (back <= 0.01)
+            {
+                wrong.Add($"  {body} B{-level}: the desk has no depth off its own run.");
                 continue;
             }
 
             double behind = Math.Sign(deskLo + deskHi);   // which way "behind the desk" is, off the run
-            double face = Math.Min(Math.Abs(deskLo), Math.Abs(deskHi));   // the desk's near edge
-            double back = Math.Max(Math.Abs(deskLo), Math.Abs(deskHi));   // and the far wall behind it
 
             if (Math.Sign(keepAcross) != behind || Math.Abs(keepAcross) < face - 0.01)
             {
@@ -274,9 +286,22 @@ public sealed class TheDeskServesItsWholeLengthTests
             }
 
             // The fixture's plate — and the square a tester is set down on — is on the CAPTAIN's side.
-            if (Math.Abs(plateAcross) > 0.01)
+            //
+            // #827 · Which is a real clause now rather than a tautology. The run used to be laid on this
+            // very square, so "the plate is on the run" was one point compared with itself; the run is the
+            // desk's front FACE now, and the plate is the customer's own standing square in front of it —
+            // the one the walkability audits stand a body on. Two different points, and the order between
+            // them is the law.
+            (double _, double standAcross) = Frame(run, run.StandX, run.StandY);
+            if (Math.Abs(plateAcross - standAcross) > 0.01)
             {
-                wrong.Add($"  {body} B{-level}: the fixture's plate is {plateAcross:F2} du off its own run.");
+                wrong.Add($"  {body} B{-level}: the fixture's plate is {plateAcross:F2} du off the run and "
+                    + $"the customer's own square is {standAcross:F2} — the card would never open.");
+            }
+            if (Math.Sign(standAcross) == behind || Math.Abs(standAcross) < 0.01)
+            {
+                wrong.Add($"  {body} B{-level}: the customer's standing square is {standAcross:F2} du off "
+                    + "the run — on the desk, or through it.");
             }
         }
 
@@ -313,12 +338,18 @@ public sealed class TheDeskServesItsWholeLengthTests
 
             // Walked end to end at a metre and a bit, because a wall with a gap in it is exactly the defect
             // this is watching for — the counter is three segments and #775 cut a shutter into one of them.
+            //
+            // #827 · Sampled ON THE CUSTOMER'S SIDE rather than on the run itself. The run is the desk's own
+            // face now, which is the very wall this guard is about, and a line that STARTS on a segment does
+            // not cross it. Where a body actually stands is the honest place to ask the question from, and
+            // the carve publishes it.
+            (double ox, double oy) = OffTheRun(run, run.StandX, run.StandY);
             int steps = Math.Max(8, (int)(run.LengthDu / 1.5));
             for (int i = 0; i <= steps; i++)
             {
                 double t = (double)i / steps;
-                double sx = run.X0 + ((run.X1 - run.X0) * t);
-                double sy = run.Y0 + ((run.Y1 - run.Y0) * t);
+                double sx = run.X0 + ((run.X1 - run.X0) * t) + ox;
+                double sy = run.Y0 + ((run.Y1 - run.Y0) * t) + oy;
 
                 // Straight at the keep, which is the shortest way behind the bar and the one a body would
                 // take. The keep is at the run's middle, so the far ends test the line obliquely too.
@@ -334,6 +365,19 @@ public sealed class TheDeskServesItsWholeLengthTests
             $"{wrong.Count} place(s) where a body could walk behind the bar:\n"
             + string.Join("\n", wrong.Take(12)));
         Assert.True(samples >= 400, $"only {samples} sample(s) — the desk was barely walked.");
+    }
+
+    /// <summary>#827 · How far a point stands OFF the run, as a vector — its perpendicular component and
+    /// nothing else. Handed the customer's own published square, it is "one step out into the hall", which
+    /// is where a body stands at a bar and the only place a question about crossing the bar can honestly be
+    /// asked from now that the run lies on the bar.</summary>
+    private static (double X, double Y) OffTheRun(in UndergroundComplex.ServiceRun run, double x, double y)
+    {
+        double dx = run.X1 - run.X0, dy = run.Y1 - run.Y0;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        double nx = -dy / len, ny = dx / len;
+        (_, double across) = Frame(run, x, y);
+        return (nx * across, ny * across);
     }
 
     /// <summary>Does the segment a..b cross any wall the carve laid? Plain segment intersection: this is a
@@ -397,7 +441,6 @@ public sealed class TheDeskServesItsWholeLengthTests
             Assert.Equal(TheStools.Count, hall.StoolRow.Count);
             (double lo, double hi, double deskLo, double deskHi) = DeskInRunAxes(run, desk);
             double behind = Math.Sign(deskLo + deskHi);
-            double deskFace = Math.Min(Math.Abs(deskLo), Math.Abs(deskHi));
 
             for (int s = 0; s < hall.StoolRow.Count; s++)
             {
@@ -412,12 +455,14 @@ public sealed class TheDeskServesItsWholeLengthTests
                             + "shutter" : "past the end of the desk")}.");
                 }
 
-                // …and it is a SEAT AT the desk: between the standing line and the bar's own face, never
-                // out in the room behind the customers and never through the counter.
-                if (Math.Sign(across) != behind || Math.Abs(across) >= deskFace - 0.01)
+                // …and it is a SEAT AT the desk. #827 · The run IS the desk's face now, so this is no longer
+                // "between the standing line and the bar" but the plainer thing that always meant: the seat
+                // is on the CAPTAIN's side of the counter, and within a body's width of it — a seat further
+                // out than a person is wide is a chair in open floor, which is what the owner walked into.
+                if (Math.Sign(across) == behind || Math.Abs(across) > SurfaceScale.CaptainWidthDu + 0.01)
                 {
                     wrong.Add($"  {body} B{-level} stool {s + 1}: {across:F2} du off the run — a tall seat "
-                        + "belongs between where a customer stands and the desk they lean on.");
+                        + "belongs on the customer's side of the desk, close enough to lean on it.");
                 }
             }
 
@@ -485,8 +530,13 @@ public sealed class TheDeskServesItsWholeLengthTests
     [Fact]
     public void ONESOURCE_NobodyOutsideTheCarveMeasuresTheDesk()
     {
-        string core = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Core", "UndergroundComplex.cs"));
+        // #870 · The module is one partial class spread over UndergroundComplex*.cs. Same needles, same
+        // code, new paths — the source read here is the concatenation of every part.
+        string core = string.Concat(System.IO.Directory
+            .EnumerateFiles(System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Core"),
+                "UndergroundComplex*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(System.IO.File.ReadAllText));
 
         // One place computes where the serving desk starts, and the picture, the row and the run all read
         // it. Three spellings of "after the hoist" is how two of them come to disagree.

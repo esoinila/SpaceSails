@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,6 +45,34 @@ public sealed class SittingDownIsAStateTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claim below is a <c>DoesNotContain</c> over the WHOLE pen, and
+    /// pointing it at a single partial would be a silent weakening.</summary>
+    private static string DeckViewSource() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claims below count and refuse over the WHOLE page, and pointing
+    /// them at a single partial would be a silent weakening.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
@@ -189,14 +217,17 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void AndThePostureIsHandedDownRatherThanWorkedOut()
     {
-        string deckView = Source("Rendering", "DeckView.cs");
-        Assert.Contains("bool Seated = false)", deckView, StringComparison.Ordinal);
+        string deckView = DeckViewSource();
+        // #825 · the closing paren used to be part of this needle, back when Seated was the last thing
+        // State carried. It is not any more (the stall banner sits after it), and "is this parameter the
+        // LAST one" was never the law — the law is that State carries the flag and the renderer reads it.
+        Assert.Contains("bool Seated = false", deckView, StringComparison.Ordinal);
         Assert.Contains("if (state.Seated)", deckView, StringComparison.Ordinal);
         // The renderer must not know what a table is.
         Assert.DoesNotContain("_table", deckView, StringComparison.Ordinal);
 
         // …and the sim hands it over off the one seated answer, which is the open table itself.
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("Seated: CaptainIsSeated", sim, StringComparison.Ordinal);
         string seated = Source("Pages", "Map.Seated.cs");
         Assert.Contains("CaptainIsSeated => _table is not null", seated, StringComparison.Ordinal);
@@ -205,38 +236,50 @@ public sealed class SittingDownIsAStateTests
     // ── (b) WASD IN A CHAIR ───────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #784 · WASD WHILE SEATED RAISES THE CONFIRM AND MOVES NOBODY.
+    /// #784 · WASD WHILE SEATED MOVES NOBODY — and #847 · IT PAYS FOR THE STAND INSTEAD OF ASKING ABOUT IT.
     ///
-    /// <para>Owner: <i>"if I try to move when sitting down it should ask with a pop-up whether I want to
-    /// stand up again."</i> RED on the shipped build, which is #778's behaviour exactly: the movement case
-    /// dropped the key straight into the held set and the captain walked out of a table they were still
+    /// <para>Owner, 2026-08-08: <i>"if I try to move when sitting down it should ask with a pop-up whether I
+    /// want to stand up again."</i> RED on the shipped build, which is #778's behaviour exactly: the movement
+    /// case dropped the key straight into the held set and the captain walked out of a table they were still
     /// sitting at, panel and all.</para>
     ///
-    /// <para>Read as an ORDERING, the way <c>TheAutoWalkIsWiredToTheRealLegs</c> reads its own: the seated
-    /// check has to happen BEFORE the key is taken, because a refusal that arrived afterwards would already
-    /// have thrown away the watch and the rest the chair is holding.</para>
+    /// <para><b>And then the owner changed his mind about the pop-up, 2026-08-13:</b> <i>"Must stand up
+    /// before walking … the keys simply cost you the stand first, which is how chairs work."</i> So the
+    /// confirm is no longer what a movement key raises; <c>StandUpBeforeWalking</c> is what a movement key
+    /// COSTS. What survives from #784 unchanged is the half this method was really guarding — that no press
+    /// and no frame walks a body out of a seat — and the fact of the stand is driven end to end next door in
+    /// <c>MustStandUpBeforeWalkingTests</c>, on a real floor with a real seat under a real captain.</para>
+    ///
+    /// <para>Read as an ORDERING, the way <c>TheAutoWalkIsWiredToTheRealLegs</c> reads its own. The stand is
+    /// charged AFTER the key is taken, and that order is deliberate: the stand says the last word
+    /// (<i>off you go</i>), and a route-cancel notice raised after it would print over the top of it.</para>
     /// </summary>
     [Fact]
-    public void WASD_InAChairAsksBeforeItWalks()
+    public void WASD_InAChairStandsYouUpBeforeItWalks()
     {
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
 
         int movementCase = deck.IndexOf("case \"d\" or \"D\" or \"ArrowRight\":", StringComparison.Ordinal);
         Assert.True(movementCase > 0, "the movement case has moved — this guard is reading the wrong file.");
 
-        int asks = deck.IndexOf("AskWhetherToStandUp();", movementCase, StringComparison.Ordinal);
+        int stands = deck.IndexOf("StandUpBeforeWalking();", movementCase, StringComparison.Ordinal);
         int takes = deck.IndexOf("_deckKeys.Add(Canonical(key));", movementCase, StringComparison.Ordinal);
-        Assert.True(asks > 0, "a movement key in a chair does not raise the stand-up confirm at all.");
+        Assert.True(stands > 0, "a movement key in a chair does not stand the captain up at all.");
         Assert.True(takes > 0, "the movement case no longer takes the key.");
-        Assert.True(asks < takes,
-            "the seated refusal happens AFTER the key is taken — the captain walks first and is asked " +
-            "afterwards, which is the bug wearing a confirm.");
+        Assert.True(takes < stands,
+            "the stand is charged BEFORE the key is taken — so the cancelled-route line lands after " +
+            "\"off you go\" and prints over the one sentence the stand is allowed to say.");
+
+        // …and #847 replaced the question outright rather than keeping both. A movement key that still
+        // raised the confirm would be the owner's two rulings shipping at once.
+        Assert.DoesNotContain("AskWhetherToStandUp", deck, StringComparison.Ordinal);
 
         // …and the second half of the same law: a key HELD before sitting down, and a route the auto-walk
         // is mid-way through, are both still live. Refusing at the keyboard alone lets a captain sit down
-        // mid-stride and keep going, chair and all.
+        // mid-stride and keep going, chair and all. #847 · asked of the ANY-SEAT flag, because the table's
+        // own flag has never had a counter stool in it.
         int move = deck.IndexOf("private void MoveAvatar(", StringComparison.Ordinal);
-        int guard = deck.IndexOf("if (CaptainIsSeated)", move, StringComparison.Ordinal);
+        int guard = deck.IndexOf("if (CaptainIsSeatedAnywhere)", move, StringComparison.Ordinal);
         int firstStep = deck.IndexOf("_deckPlan.Move(", move, StringComparison.Ordinal);
         Assert.True(guard > move && guard < firstStep,
             "MoveAvatar can still walk a seated captain — a held key or a live route walks them out of " +
@@ -249,7 +292,7 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void ESCAPE_KeepsTheSeatRatherThanTakingIt()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Source("Pages", "Map.Sim.Cancel.cs");
         int chain = sim.IndexOf("private bool TryDismissTopOverlay()", StringComparison.Ordinal);
         Assert.True(chain > 0);
 
@@ -419,7 +462,7 @@ public sealed class SittingDownIsAStateTests
         // …and the automatic gist-once jot is UNTOUCHED. The owner's own words name it as the standing
         // register that stays — "a scrawl on a moving knee, #696's idiom" — so #696's leave-and-photograph
         // must still work with both feet on the floor, or this issue has deleted a shipped feature.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Satchel.cs");
         int leave = surface.IndexOf("private void LeaveItem(", StringComparison.Ordinal);
         int setDown = surface.IndexOf("private void SetItDown(", StringComparison.Ordinal);
         Assert.True(leave > 0 && setDown > leave);
@@ -458,7 +501,7 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void THEDEMO_LetsATesterWatchTheRestActuallyWork()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("\"low\" or \"fraying\" => 2,", sim, StringComparison.Ordinal);
         Assert.Contains("pair.StartsWith(\"hurt=\"", sim, StringComparison.Ordinal);
 

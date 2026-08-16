@@ -3759,6 +3759,75 @@
     font-weight: 600;
 }
 
+/* #836 — THE FLETCH WALLET, fanned while a guard crosses the floor. Same card frame as the derelict's
+   decision (an artifact, held up, decided on), and the rows are papers rather than options: the face on
+   top, what the card claims under it, and what your own book says about it here in the smallest type on
+   the dialog. Nothing in here is coloured by whether a paper is GOOD — the whole feature is that you do
+   not know until he reads it. */
+.wallet-fan-rows {
+    margin: 0.6rem 0 0.4rem;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.wallet-paper {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.35rem;
+    padding: 0.42rem 0.55rem;
+    border: 1px solid rgba(150, 170, 190, 0.28);
+    border-radius: 4px;
+    background: rgba(10, 14, 20, 0.55);
+    color: #d8e2ee;
+}
+
+.wallet-paper:hover {
+    border-color: rgba(196, 214, 232, 0.55);
+    background: rgba(18, 24, 32, 0.75);
+}
+
+.wallet-paper.picked {
+    border-color: rgba(224, 178, 90, 0.75);
+}
+
+.wallet-paper-face {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.86rem;
+    letter-spacing: 0.04em;
+}
+
+.wallet-paper-glyph {
+    font-size: 0.95rem;
+}
+
+.wallet-paper-name {
+    font-weight: 600;
+}
+
+.wallet-paper-held {
+    color: #e0b25a;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+}
+
+.wallet-paper-claims {
+    display: block;
+    color: #9fb1c6;
+    font-size: 0.72rem;
+    margin-top: 0.12rem;
+}
+
+.wallet-paper-book {
+    display: block;
+    color: #7f8fa3;
+    font-size: 0.68rem;
+    font-style: italic;
+    margin-top: 0.1rem;
+}
+
 /* #488 — THE VALVE BOARD. A damage-control mimic drawn from the ship own geometry: bow taper, transom,
    spine and every compartment in its real place. You point at the PLACE; the name is written in it. */
 
@@ -4481,6 +4550,68 @@
     white-space: nowrap;
 }
 
+/* #837 · LOAD IT FROM THE ROW. The fourth control on a row of loose rounds, and amber like every other
+   control down here that spends something: looking is free, leaving is cool, and putting twelve rounds into
+   a drum is a decision. It carries a WORD rather than a glyph because that is the whole bug it fixes — the
+   verb was invisible at the one place the player was looking at the ammunition. */
+.satchel-load {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.74rem;
+    line-height: 1;
+    white-space: nowrap;
+    color: #d8b884;
+    background: #1b1c17;
+    border: 1px solid rgba(200, 170, 120, 0.4);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-load:hover {
+    color: #f0e2c4;
+    background: #23241c;
+    border-color: rgba(200, 170, 120, 0.75);
+}
+
+/* The stepper's own reading, between the − and the +. Tabular figures, because a number that jumps sideways
+   as it counts is a number the eye has to re-find on every press. */
+.satchel-share {
+    flex: 0 0 auto;
+    align-self: center;
+    min-width: 4.6rem;
+    text-align: center;
+    font-size: 0.74rem;
+    color: #d8b884;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Where the gun is — the readout's own two words, dimmed, because it is context and not the figure. */
+.satchel-where { color: #8d8977; font-size: 0.74rem; }
+
+/* …and the way back to the pocket. A quiet full-width control under the rows: leaving a chooser must not
+   look like one of the things it is choosing between. */
+.satchel-back {
+    display: block;
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    font: inherit;
+    font-size: 0.78rem;
+    color: #9fb0c6;
+    background: #141821;
+    border: 1px solid rgba(150, 170, 200, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-back:hover {
+    color: #e6dcc8;
+    background: #1b2029;
+    border-color: rgba(150, 170, 200, 0.55);
+}
+
 /* #697 · THE WALLET. One row for every card in the pocket, and the cards one tap under it. It is styled as a
    heading rather than as an object, because it is not one — it is the pocket the objects are in. */
 .satchel-folder {
@@ -5075,6 +5206,31 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
+}
+
+/* #865 · THE COMPANY LINE. The customer line's own clothes with one thing changed — it is about a PERSON,
+   so it is not in the instrument's cold blue. Owner: "It should somehow UI wise be same style as the sitting
+   alone case", so this is the same row, one lower, and not a second panel. It carries no rule of its own
+   because the line above it already drew one and two hairlines in a row read as a table. */
+.seated-dock-company {
+    color: #d3c9b4;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0.45rem;
+}
+
+/* …and their one breath, overheard. The outcome slot's skin in a quieter ink and in italics, because it is
+   not an answer to anything the captain did — it is a thing being said at the table you sat down at. */
+.seated-dock-bark {
+    font-style: italic;
+    color: #bfc7d4;
+    background: rgba(160, 200, 220, 0.06);
+    border-left-color: rgba(160, 200, 220, 0.45);
+}
+
+/* The pocket, fanned open under "put something on the table" — inside the strip rather than inside a card. */
+.seated-dock-showables {
+    margin-top: 0.5rem;
 }
 
 /* #784 · A paper lying on the table. The satchel row's skin with the spread's own pen-coloured hint, so a

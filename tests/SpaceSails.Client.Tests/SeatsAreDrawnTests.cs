@@ -59,6 +59,16 @@ public sealed class SeatsAreDrawnTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claims below are <c>DoesNotContain</c> over the WHOLE pen, and
+    /// pointing them at a single partial would be a silent weakening.</summary>
+    private static string DeckViewSource() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
 
@@ -242,7 +252,8 @@ public sealed class SeatsAreDrawnTests
     /// the whole frame, against the room Core says is there:</para>
     ///
     /// <list type="bullet">
-    /// <item>one BODY per occupied top, and never one at a top nobody is at;</item>
+    /// <item>#823 · one BODY PER HEAD at an occupied top — a party of three draws three — and never one at a
+    /// top nobody is at;</item>
     /// <item>the chairs at an occupied top drawn in the INVITATION ink, one per chair that is left;</item>
     /// <item>the chairs at an empty top drawn in the furniture ink, one per seat the top has.</item>
     /// </list>
@@ -259,7 +270,7 @@ public sealed class SeatsAreDrawnTests
     public void THE_OPEN_SEAT_AtAPartlyFilledTopIsDrawnAsAnInvitation()
     {
         UndergroundComplex.Amenity cantina = Cantina();
-        int metOccupied = 0, metFree = 0, watchesWithBoth = 0;
+        int metOccupied = 0, metFree = 0, watchesWithBoth = 0, metParties = 0;
 
         for (long watch = 0; watch < Watches; watch++)
         {
@@ -272,8 +283,12 @@ public sealed class SeatsAreDrawnTests
                 if (top.Taken)
                 {
                     occupied++;
-                    bodies += top.Seats > 0 ? 1 : 0;
-                    invites += Math.Max(0, top.Seats - 1);
+                    // #823 · ONE BODY PER HEAD, not one body per top. This counted `1` and `Seats - 1`
+                    // while Core could only say "somebody is here" — the arithmetic the owner caught from
+                    // the other side: two hauliers, one beige dot, three chairs reported free.
+                    bodies += top.Seats > 0 ? top.Heads : 0;
+                    invites += top.Free;
+                    metParties += top.Heads > 1 ? 1 : 0;
                 }
                 else
                 {
@@ -339,6 +354,11 @@ public sealed class SeatsAreDrawnTests
         Assert.True(metOccupied > 0, "not one top in the sweep had anybody at it.");
         Assert.True(metFree > 0, "not one top in the sweep was free.");
         Assert.Equal(Watches, watchesWithBoth);
+
+        // #823 · …and a third direction the old bool made unmeasurable: if every party in the sweep were a
+        // party of ONE, every count above would agree with the arithmetic that shipped the bug.
+        Assert.True(metParties > 0,
+            "not one top in the sweep holds more than one person — the headcount is never actually drawn.");
     }
 
     /// <summary>
@@ -352,8 +372,11 @@ public sealed class SeatsAreDrawnTests
     [Fact]
     public void THE_CHAIRS_OfOneTopNeverReachTheNext()
     {
-        // The pen's own ring radius (DeckView.SeatRingDu), transcribed rather than asked for.
-        const double ring = 1.55;
+        // The ring radius, ASKED FOR — it was transcribed here while it was a private constant of the pen,
+        // and #820 published it (the [E] press seats the captain in one of these chairs, so the drawn chair
+        // and the sat chair had to stop being two numbers). A transcribed constant is a second author, and
+        // this test exists precisely to catch a ring that has grown.
+        const double ring = CanteenRegulars.ChairRingDu;
 
         var tops = CanteenRegulars.Tables(Body, Level, Cantina()).ToList();
         Assert.True(tops.Count > 8, $"only {tops.Count} top(s) — this is not the hall.");
@@ -409,7 +432,7 @@ public sealed class SeatsAreDrawnTests
         {
             (List<Mark> marks, _, _) = Frame(watch);
 
-            int occupied = 0, talking = 0, alone = 0;
+            int occupied = 0, talking = 0, alone = 0, heads = 0;
             foreach (CanteenRegulars.TableSeat top in
                      CanteenRegulars.Tables(Body, Level, cantina, watch))
             {
@@ -418,6 +441,7 @@ public sealed class SeatsAreDrawnTests
                     continue;
                 }
                 occupied++;
+                heads += top.Heads;     // #823 · a chair back per SITTER, and a party is more than one.
                 if (top.Talking)
                 {
                     talking++;
@@ -431,9 +455,10 @@ public sealed class SeatsAreDrawnTests
             // One chair back per sitter, plus two ticks over each conversation, and nothing else on this
             // deck is drawn in this ink.
             int warm = marks.Count(m => m.Kind == "polyline" && Is(m.Ink, SeatTaken));
-            Assert.True(warm == occupied + (2 * talking),
-                $"w{watch}: {occupied} top(s) hold somebody and {talking} of them are conversations, so " +
-                $"{occupied + (2 * talking)} warm segments were expected and {warm} were drawn.");
+            Assert.True(warm == heads + (2 * talking),
+                $"w{watch}: {occupied} top(s) hold {heads} person/people and {talking} of them are " +
+                $"conversations, so {heads + (2 * talking)} warm segments were expected and {warm} were " +
+                "drawn.");
 
             metTalking += talking;
             metAlone += alone;
@@ -473,7 +498,7 @@ public sealed class SeatsAreDrawnTests
     [Fact]
     public void THE_PEN_IsHandedTheOccupancyAndNeverWorksItOut()
     {
-        string deckView = Source("Rendering", "DeckView.cs");
+        string deckView = DeckViewSource();
 
         // The pen must not know what a stool, a top, a shift — or, since #793, a park bench or a FOOT-TAIL —
         // IS. The last two are the same lesson pointed at somebody else's feet: whether a figure has stopped
@@ -508,7 +533,7 @@ public sealed class SeatsAreDrawnTests
         string hive = Source("Rendering", "HiveInterior.cs");
         Assert.Contains("TheStools.Taken(bodyId, level, s, canteenWatch)", hive, StringComparison.Ordinal);
         Assert.Contains("CanteenRegulars.Tables(bodyId, level, a, canteenWatch)", hive, StringComparison.Ordinal);
-        Assert.Contains("top.Seats, top.Taken, top.Talking", hive, StringComparison.Ordinal);
+        Assert.Contains("top.Seats, top.Taken, top.Talking, top.Heads", hive, StringComparison.Ordinal);
         Assert.Contains("counter.StoolRow", hive, StringComparison.Ordinal);
 
         // …and Core owns WHERE the seats are, because a renderer measuring a bar it did not carve is how

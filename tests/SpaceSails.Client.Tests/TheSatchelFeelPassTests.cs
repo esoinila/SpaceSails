@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -40,6 +40,14 @@ public sealed class TheSatchelFeelPassTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>The satchel block of Map.razor — from the modal's opening guard to the view-object block that
     /// follows it, so every assertion is about THIS dialog's subtree and not the file at large.</summary>
     private static string SatchelBlock()
@@ -68,7 +76,7 @@ public sealed class TheSatchelFeelPassTests
         // Owner: "If I press I when inventory is open, let's close it then." One line of feel, and the kind
         // that is invisible until you are standing in a corridor with a pack coming and the pocket you opened
         // by reflex will not go away by the same reflex.
-        string key = Pages("Map.Deck.cs");
+        string key = Deck();
         int at = key.IndexOf("case \"i\" or \"I\":", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Deck.cs no longer has the I keybind where this guard can read it.");
         string branch = key[at..key.IndexOf("case \"h\" or \"H\":", at, StringComparison.Ordinal)];
@@ -77,7 +85,7 @@ public sealed class TheSatchelFeelPassTests
             "the I key does not toggle — it can only ever open the satchel, so pressing it again does " +
             "nothing and the captain is left hunting for the close button (#688).");
 
-        string toggle = Method("Map.Surface.cs", "private void ToggleSatchel()");
+        string toggle = Method("Map.Surface.Satchel.cs", "private void ToggleSatchel()");
         Assert.True(toggle.Contains("_showSatchel", StringComparison.Ordinal),
             "ToggleSatchel never looks at whether the satchel is open — it cannot be a toggle.");
         Assert.True(toggle.Contains("CloseSatchel()", StringComparison.Ordinal),
@@ -91,7 +99,7 @@ public sealed class TheSatchelFeelPassTests
         // Core's (SatchelTry.CanOffer, pinned in WhatYouLeaveIsStillThereTests); what this guard forbids is
         // the client routing around it, which is exactly what it did — TargetFor handed back the open-at
         // target for every row in the pocket without asking anybody.
-        string targetFor = Method("Map.Surface.cs",
+        string targetFor = Method("Map.Surface.Darkroom.cs",
             "private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(");
 
         int opened = targetFor.IndexOf("_satchelTarget is { } at", StringComparison.Ordinal);
@@ -140,7 +148,7 @@ public sealed class TheSatchelFeelPassTests
         // SetItDown is the drop the clock ends in — which is also what makes the far end of a hold the
         // effect the game already had rather than a second copy of it. These guards read the drop wherever
         // the drop lives; what they must never do is quietly stop asking.
-        string leave = Method("Map.Surface.cs", "private void SetItDown(");
+        string leave = Method("Map.Surface.Satchel.cs", "private void SetItDown(");
 
         // #680/#686's law applies to this line too, and it is the easiest one in the game to get wrong: a
         // confirmation routed to the pulse HUD while the satchel is open renders under the backdrop's blur —
@@ -154,7 +162,7 @@ public sealed class TheSatchelFeelPassTests
             "the drop pulses its line directly, which is the exact shape #680 was filed on the moment the " +
             "satchel happens to be open over it.");
 
-        string says = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        string says = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
         Assert.True(says.Contains("_satchelOutcome", StringComparison.Ordinal)
             && says.Contains("_showSatchel", StringComparison.Ordinal),
             "the say-it router does not consult the satchel — the line it places cannot be in the right " +
@@ -190,11 +198,11 @@ public sealed class TheSatchelFeelPassTests
     {
         // The other half of "leaving never destroys": there has to be a way back. E is the verb that finds
         // things, so E finds what is at your feet before it finds what is in the walls.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Pages("Map.Surface.Satchel.cs");
         Assert.True(surface.Contains("private bool TryPickUpWhatYouLeft(", StringComparison.Ordinal),
             "nothing in the client ever picks a left thing back up — the drop verb is a delete key (#688/#615).");
 
-        string deck = Pages("Map.Deck.cs");
+        string deck = Deck();
         int interact = deck.IndexOf("private void InteractAtConsole()", StringComparison.Ordinal);
         Assert.True(interact >= 0, "Map.Deck.cs no longer has InteractAtConsole where this guard can read it.");
         int recovers = deck.IndexOf("TryPickUpWhatYouLeft()", interact, StringComparison.Ordinal);

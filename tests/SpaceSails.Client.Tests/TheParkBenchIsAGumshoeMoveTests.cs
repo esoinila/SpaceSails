@@ -56,6 +56,35 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
+
+        var parts = new string[order.Length];
+        for (int i = 0; i < order.Length; i++)
+        {
+            parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        return string.Concat(parts);
+    }
+
     private static string CoreSource(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", name));
 
@@ -330,7 +359,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // …written by the one stepper, read by the one filler, so the figure that has stopped and the
         // figure drawn as stopped are one figure.
-        string patrol = Source("Pages", "Map.Patrol.cs");
+        string patrol = Patrol();
         Assert.Contains("g.Held = FootTail.MustHold(", patrol, StringComparison.Ordinal);
         Assert.Contains("_guards[i].DeckName, _guards[i].Held", patrol, StringComparison.Ordinal);
     }
@@ -355,7 +384,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_SIT_VERB_IsWiredToTheBenchAndAsksCoreWhichOne()
     {
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
         int at = deck.IndexOf("case DeckPlan.ConsoleKind.HiveBench:", StringComparison.Ordinal);
         Assert.True(at >= 0, "[E] no longer answers at a park bench.");
         Assert.Contains("TryTakeBench();", deck[at..(at + 700)], StringComparison.Ordinal);
@@ -364,11 +393,14 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         Assert.Contains("{ Kind: DeckPlan.ConsoleKind.HiveBench } spot", bench, StringComparison.Ordinal);
         Assert.Contains("ParkBenches.At(in green, spot.X, spot.Y)", bench, StringComparison.Ordinal);
 
-        // The press never places anybody. A bench is a solid segment in the collision field and the captain
-        // walked to it; a sit that teleported them onto the plank is §13.15's second cause.
+        // The press itself places nobody: it is a lookup, and the placing is the SITTING's (#820, where the
+        // captain is snapped onto the end they walked up to). Keeping the two apart is what lets the dev row
+        // and the key press open one bench through one method — and StandCaptainAt in particular must never
+        // appear on this path, because that nudge walks a body OUT of collision and a plank is solid.
         int sit = bench.IndexOf("private bool TryTakeBench()", StringComparison.Ordinal);
         string press = bench[sit..bench.IndexOf("\n    /// <summary>", sit, StringComparison.Ordinal)];
         Assert.DoesNotContain("StandCaptainAt", press, StringComparison.Ordinal);
+        Assert.DoesNotContain("SitCaptainOn", press, StringComparison.Ordinal);
 
         // …and the sitting is opened in ONE place — one definition, and every way in goes through it, so a
         // dev row and a key press cannot open two different benches. A second `_table = new TableTalk` in
@@ -522,7 +554,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_HOLD_IsSpentOnTheOneStepperEveryMoverGoesThrough()
     {
-        string patrol = Source("Pages", "Map.Patrol.cs");
+        string patrol = Patrol();
         int at = patrol.IndexOf("private void AdvancePatrol(", StringComparison.Ordinal);
         string loop = patrol[at..patrol.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
 
@@ -535,7 +567,20 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // A stopped mover drops off the motion fan honestly, the same clause a stand at a stop keeps — or
         // the tracker would report travel that is not happening.
-        Assert.Contains("g.Vx = 0;", loop[asked..walked], StringComparison.Ordinal);
+        //
+        // #831 · IT IS ONE CALL FURTHER DOWN NOW, and it is the same law. A made tail no longer freezes BARE
+        // — owner: "A MADE tail performs a COVER ACT instead of freezing bare: turns to the nearest wall
+        // fixture, checks a plate, reads a docket — same hold, same honest Vx=0, but the picture says 'man
+        // with business' not 'statue'." So the held branch calls TheCoverAct and the zeroing this guard was
+        // written to protect lives inside it, on every path out of it. FOLLOWED rather than relaxed: the
+        // clause is asserted where it now is, and the stepper is still pinned to the branch that reaches it.
+        Assert.Contains("TheCoverAct(g, dt, walls, sight);", loop[asked..walked], StringComparison.Ordinal);
+
+        int act = patrol.IndexOf("private void TheCoverAct(", StringComparison.Ordinal);
+        Assert.True(act >= 0, "TheCoverAct has moved — this guard can no longer see the hold it guards.");
+        string cover = patrol[act..patrol.IndexOf("\n    // ──", act, StringComparison.Ordinal)];
+        Assert.Contains("g.Vx = 0;", cover, StringComparison.Ordinal);
+        Assert.Contains("g.Vy = 0;", cover, StringComparison.Ordinal);
 
         // …and the seated fact is the bench's, asked once for the frame.
         Assert.Contains("bool sitting = SeatedOnABenchInTheOpen;", loop, StringComparison.Ordinal);
@@ -549,7 +594,12 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void CORE_SaysOutLoudThatARoundCanNeverBeATail()
     {
-        string patrol = CoreSource("PatrolBeat.cs");
+        // #870 · The module is one partial class spread over PatrolBeat*.cs. Same needle, same code, new
+        // path — the source read here is the concatenation of every part, in ordinal order.
+        string patrol = string.Concat(Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
         Assert.Contains(
             "FootTail.OnARound(DeckName(index), x, y)", patrol, StringComparison.Ordinal);
 
@@ -573,13 +623,13 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         Assert.Contains("ParkBenches.On(in green)", row, StringComparison.Ordinal);
         Assert.Contains("SeedTheSpreadFinds();", row, StringComparison.Ordinal);
-        Assert.Contains("SitOnThisBench(bench);", row, StringComparison.Ordinal);
+        Assert.Contains("SitOnThisBench(in green, bench);", row, StringComparison.Ordinal);
         // It takes a FREE bench: the whole point of the row is the spread being allowed.
         Assert.Contains("if (bench.Taken)", row, StringComparison.Ordinal);
 
         // …and the park's landing calls it before it stands the captain at the gate, so the row lands ON the
         // bench rather than beside it.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Cheats.cs");
         int park = surface.IndexOf("private void StandInTheParkIfAsked(", StringComparison.Ordinal);
         string landing = surface[park..(park + 1600)];
         int sits = landing.IndexOf("SitOnAFreeBenchIfAsked(in green)", StringComparison.Ordinal);
@@ -592,7 +642,10 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // on the OUTSIDE of its bend — some above the walk, some below it — so "a bit under the plank" is a
         // guess, and §13.15's second cause is a caller doing geometry about furniture it did not bolt down.
         Assert.Contains("TowardTheWalk(in green, sx, sy)", row, StringComparison.Ordinal);
-        Assert.Contains("green.Walk", bench, StringComparison.Ordinal);
+        // #820 · …and that arithmetic is CORE'S now, because standing up off a bench spends it too — the
+        // walk side of a plank stopped being a dev row's private measurement the moment it became the
+        // square a captain is stood back up on.
+        Assert.Contains("ParkBenches.TowardTheWalk(in green,", bench, StringComparison.Ordinal);
 
         // The tester is told the row exists, on the page that already opens this room.
         string guide = Doc("testing-guide.md");

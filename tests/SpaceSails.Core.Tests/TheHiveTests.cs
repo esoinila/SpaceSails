@@ -136,20 +136,27 @@ public sealed class TheHiveTests
                 // on. #801 · Both cars, off the one published list — this test seeded its mouth list with a
                 // hard-coded singleton, so a second alcove walled over on the LOWER face (the exact #587
                 // shape, one face down) would never have been looked at.
-                var mouths = new List<(double X, double Y, string What)>();
+                //
+                // #819 · …and a mouth carries its OWN half-width now. It used to carry the corridor's for
+                // everything, which was one number too few: an alcove is cut to ShaftHalf and a rib to
+                // CorridorHalf, so this guard was asking whether the alcove's box wall — standing exactly
+                // where it should — was intruding half a du into a mouth that was never that wide. Which is
+                // the very confusion #819 was about, read from the other end.
+                var mouths = new List<(double X, double Y, double Half, string What)>();
                 foreach (UndergroundComplex.Shaft car in UndergroundComplex.ShaftsOn(Field))
                 {
                     mouths.Add((
                         car.X,
                         car.Y + ((car.Landing.Y > car.Y ? 1 : -1) * half),
+                        UndergroundComplex.ShaftHalf,
                         $"the {car.Kind} car's alcove"));
                 }
                 foreach (UndergroundComplex.Rib r in floor.Ribs)
                 {
-                    mouths.Add((r.X, r.Down ? shaftY - half : shaftY + half, $"the rib at x={r.X:F0}"));
+                    mouths.Add((r.X, r.Down ? shaftY - half : shaftY + half, half, $"the rib at x={r.X:F0}"));
                 }
 
-                foreach ((double mx, double my, string what) in mouths)
+                foreach ((double mx, double my, double mhalf, string what) in mouths)
                 {
                     foreach (SurfaceLayout.Wall w in floor.Walls)
                     {
@@ -163,7 +170,7 @@ public sealed class TheHiveTests
 
                         // A doorway is only a doorway if the captain fits. Anything intruding past the mouth's
                         // own edges is narrowing it, and narrowing is how this failed the first two times.
-                        Assert.False(lo < mx + half - 0.001 && hi > mx - half + 0.001,
+                        Assert.False(lo < mx + mhalf - 0.001 && hi > mx - mhalf + 0.001,
                             $"{body} {floor.Name}: a wall from x={lo:F1} to x={hi:F1} lies across {what} " +
                             $"at x={mx:F0} — the mouth was cut and then walled over again (#587).");
                     }
@@ -344,6 +351,21 @@ public sealed class TheHiveTests
         {
             text.AddRange(UndergroundComplex.SignsFor(kind));
         }
+        // #818/#853 · …and the two newest voices in the building, which are the two most tempting places to
+        // break this rule that have ever existed down here. A fixture plate names an object; a conference
+        // poster is a JOKE, and a joke is where an author reaches for the thing nobody is allowed to say.
+        // The eighth poster comes closest — an eternally-future symposium on the very technology humming in
+        // this basement — and it comes closest by DISAGREEING with the building rather than explaining it,
+        // which is exactly the line this grep exists to hold.
+        text.AddRange(ChamberFitting.AllProse());
+        text.AddRange(LabPosters.AllProse());
+        // #869/#864 · …and the two newest voices after those. A piece of furniture that DEPOSES A WITNESS
+        // about somebody who is not here is the most tempting seam this rule has ever had — evidence is
+        // exactly where an author reaches for the thing nobody is allowed to say — and a joke on a wall is
+        // the second. Both stop at a height and a stationery order.
+        text.AddRange(SitStandDesk.AllProse());
+        text.AddRange(IncidentBoard.AllProse());
+
         for (int i = 0; i < 40; i++)
         {
             foreach (UndergroundComplex.Haul haul in Enum.GetValues<UndergroundComplex.Haul>())

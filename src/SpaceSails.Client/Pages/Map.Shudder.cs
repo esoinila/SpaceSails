@@ -109,7 +109,13 @@ public partial class Map
         // something a caller cannot decline to use. Identical arithmetic off a wreck; unreachable on one.
         bool onRegolith = _surface is not null && !OnWreck
             && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
-        HullShudder.Setting setting = HullShudder.SettingOutside(onRegolith, deepSite, haven);
+        // #867 · …AND `onRegolith` IS TRUE IN A PARK. A floor of the Hive is laid inside the surface's own
+        // coordinate envelope, so a lit, planted, pressurised gallery two hundred deck units down is below
+        // the regolith's top rim and away from the tube, and answered YES to every question above. The
+        // ground's own fact is asked first and wins outright; see HullShudder.SettingOutside.
+        bool groundHoldsPressure = StandingOnGroundThatHoldsPressure;
+        HullShudder.Setting setting =
+            HullShudder.SettingOutside(groundHoldsPressure, onRegolith, deepSite, haven);
 
         // The bounded escalation (owner: "keep bounded — mostly it IS nothing"): only a deep site that is a
         // secret lab, or a captain whose KAAMOS arc has gone deep, can carry the chill — and even then only
@@ -117,13 +123,18 @@ public partial class Map
         bool eligible = deepSite && (AtSecretLab() || ArcGoneDeep());
         bool chill = eligible && HullShudder.CarriesChill(seed, index);
 
-        string line = chill ? HullShudder.ChillLine(seed, index) : HullShudder.Line(setting, seed, index);
+        string line = chill
+            ? HullShudder.ChillLine(groundHoldsPressure, seed, index)
+            : HullShudder.Line(setting, seed, index);
         if (chill)
         {
             // A hair of real dread, far smaller than a hand on you. Mostly it IS nothing; this is the rare
             // time it isn't quite. #480: too small to buy a whole pip, so it BANKS until it owes one —
             // neither inflated into a full beat of terror nor silently rounded out of existence.
-            ApplyNerveShock(HullShudder.ChillNerveTick, "a cold breath through the hull");
+            // #867: the ledger line is Core's, beside the pool it belongs to. It used to be typed here — one
+            // call site away from the pool the words have to agree with, which is how a captain on a lawn
+            // read "a cold breath through the hull −1".
+            ApplyNerveShock(HullShudder.ChillNerveTick, HullShudder.ChillNerveLabel(groundHoldsPressure));
         }
 
         _shudderActive = true;
@@ -148,6 +159,24 @@ public partial class Map
         // OPEN a co-present stranger to you instead (a word, a stood cognac, a new contact). A no-op off a bar.
         TryBond(StrangerBond.Scare.Shudder, chill, nowMs);
     }
+
+    /// <summary>#867 · DOES THE GROUND UNDER THE CAPTAIN'S BOOTS HOLD ITS OWN AIR — asked ONCE, by every
+    /// mood sentence that would otherwise name vacuum furniture.
+    ///
+    /// <para>Owner, 2026-08-13, strolling the B1 park: <i>"Our mood texts still assume the vacuum of the
+    /// surface btw :-D ... talk of nothing carrying the sound here as we are literally taking a walk in a
+    /// park :-D"</i></para>
+    ///
+    /// <para>It is <see cref="UndergroundComplex.HoldsPressure"/> and nothing else — the SAME call the lift
+    /// panel's rows make (#802), the air gauge makes (#677) and the plate by the lift head makes. There is
+    /// deliberately no second fact folded in: a mood line does not get to have its own opinion about whether
+    /// a floor breathes, because the day it does is the day the ledger and the plate disagree in front of
+    /// the player, which is the most expensive bug class this project has.</para>
+    ///
+    /// <para>The surface (floor 0) and a derelict are never this, whatever else is true of them: the
+    /// question is about a FLOOR of the Hive, and above ground the answer is the suit's.</para></summary>
+    private bool StandingOnGroundThatHoldsPressure =>
+        _surface is { Floor: < 0 } ex && UndergroundComplex.HoldsPressure(ex.Stop.Body.Id, ex.Floor);
 
     // A secret lab underfoot: the door's been found/forced this excursion, or this body is a known lab.
     private bool AtSecretLab() =>

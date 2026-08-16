@@ -55,7 +55,7 @@ public sealed class TheCardOpensTheBottomFloorTests
         // PressLiftButton closes the panel and immediately rebuilds the floor. Anything said between those
         // two events is said to a screen that is being replaced.
         string press = Between(
-            Pages("Map.Surface.cs"), "private void PressLiftButton(", "private void CloseLiftPanel(");
+            Pages("Map.Surface.Hive.cs"), "private void PressLiftButton(", "private void CloseLiftPanel(");
 
         Assert.True(!press.Contains("CardAcceptedLine", StringComparison.Ordinal),
             "PressLiftButton says the card-accepted line itself — the frame the panel closes and the floor " +
@@ -66,7 +66,7 @@ public sealed class TheCardOpensTheBottomFloorTests
     public void TheAcceptedLineIsSaidWhenTheDoorsOPENOnTheNewFloor()
     {
         string ride = Between(
-            Pages("Map.Surface.cs"),
+            Pages("Map.Surface.Hive.cs"),
             "private void RideTheLiftTo(",
             "private (double X, double Y) SecretLabHeadSpot(");
 

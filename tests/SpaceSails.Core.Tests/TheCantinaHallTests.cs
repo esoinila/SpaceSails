@@ -726,8 +726,12 @@ public sealed class TheCantinaHallTests
     [Fact]
     public void ONESOURCE_BothHallsAreCarvedByTheOneCarver()
     {
-        string core = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Core", "UndergroundComplex.cs"));
+        // #870 · The module is one partial class spread over UndergroundComplex*.cs. Same needles, same
+        // code, new paths — the source read here is the concatenation of every part.
+        string core = string.Concat(Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "UndergroundComplex*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
         Assert.Equal(1, Occurrences(core, "private static HallSite? CarveHall("));
 

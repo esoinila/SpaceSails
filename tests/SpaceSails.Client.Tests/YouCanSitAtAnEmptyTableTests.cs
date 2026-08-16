@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,6 +46,22 @@ public sealed class YouCanSitAtAnEmptyTableTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static DeckPlan DeckFor(string body, int level, long watch = 0) =>
         HiveInterior.FloorDeck(body, level, MoonSurface.ExpeditionField(), 0, (_, _) => { }, [], watch);
@@ -204,7 +220,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     [Fact]
     public void THE_PRESS_OnAFreeTopTakesTheTable()
     {
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
         int at = deck.IndexOf("case DeckPlan.ConsoleKind.HiveTable:", StringComparison.Ordinal);
         Assert.True(at >= 0, "[E] does not dispatch a free canteen top anywhere — #757's whole defect.");
         Assert.Contains("TryTakeTable()",
@@ -223,9 +239,12 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // #757 disagreeing about the same chair.
         Assert.Contains("top.Taken", body, StringComparison.Ordinal);
 
-        // The seat is the spot you walked to, exactly as it is at an occupied table. No new geometry: this
-        // project has set the captain down inside a wall twice by a caller typing coordinates about a room
-        // it did not own (§13.15).
+        // #820 · The seat is one of the top's OWN chairs — the nearest the party is not in — and the captain
+        // is snapped into it. No new geometry all the same: the coordinate is asked of Core and the body is
+        // moved by the one placement, because this project has set the captain down inside a wall twice by a
+        // caller typing coordinates about a room it did not own (§13.15).
+        Assert.Contains("top.ChairYouTake(_avatarX, _avatarY)", body, StringComparison.Ordinal);
+        Assert.Contains("SitCaptainOn(sit.X, sit.Y)", body, StringComparison.Ordinal);
         Assert.DoesNotContain("StandCaptainAt", body, StringComparison.Ordinal);
         Assert.DoesNotContain("_avatarX =", body, StringComparison.Ordinal);
     }
@@ -330,7 +349,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     [Fact]
     public void BOTH_HALVES_OfTheWaitAreReachableOnDemandAndTheGuideSaysHow()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("approach=", sim, StringComparison.Ordinal);
         Assert.Contains("_approachCheat = candidate switch", sim, StringComparison.Ordinal);
 

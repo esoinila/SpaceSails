@@ -270,8 +270,32 @@ public sealed class LeftBehind
         {
             FieldClue.Certainty certainty = FieldClue.CertaintyOf(item.Id);
             string disposition = kept ? $"read through {where} and copied out" : $"read and left {where}";
-            return $"📋 {FieldClue.Title(item.Id)} — {FieldClue.Label(certainty)}, {disposition}. " +
-                FieldClue.Line(certainty);
+            string entry = $"📋 {FieldClue.Title(item.Id)} — {FieldClue.Label(certainty)}, {disposition}. ";
+
+            // ── #828 · THE COMPLETENESS LAW, AND IT ONLY BINDS THE DIG ──────────────────────────────────
+            //
+            // Owner, settling what a dig is worth: "so after the dig at it we should have all we need from
+            // those papers in pics / notes."
+            //
+            // The entry above is a HEADING and a verdict — the paper's own title, how well it pins a place,
+            // and what the tracker will do with that. It is everything except the thing the captain was
+            // actually reading. So a captain who dug a sheet and then binned it (which is the loop this
+            // whole issue is about: sit, dig, book, BIN) lost the pencilled ticks, the torn fold and the
+            // second hand that stops recording and does not say why — the details that make one movement
+            // order different from the next, and the only things on the sheet a later arc could ever hang a
+            // connection on. Binning cost the captain knowledge, and it is not allowed to.
+            //
+            // The STANDING register is deliberately untouched (#691's photograph-and-leave): what a table
+            // buys is not a better gist, it is the sheet still being in your pocket — and now it is also
+            // the only reading that copies the page out. That is #828's two tiers with a difference you can
+            // read in the book.
+            //
+            // FLATTENED, because a field note is one entry and the notebook splits it into bullets by
+            // SENTENCE (CaseThreads.BulletsOf) — a paragraph break inside one would be a line the strip
+            // prints with a hole in it.
+            return kept
+                ? entry + Flat(FieldClue.Document(item.Id)) + " " + FieldClue.Line(certainty)
+                : entry + FieldClue.Line(certainty);
         }
 
         // A file on somebody has no title of its own — it is a name and a posting and the years around them,
@@ -282,6 +306,13 @@ public sealed class LeftBehind
             : $"🗃 A file on somebody, read through and left {where}. You know what is in it now; the " +
                 "folder is what you put down.";
     }
+
+    /// <summary>#828 · One paragraph out of several — a document's page as a book entry can carry it. The
+    /// field book files one entry per act and reads it back sentence by sentence; a blank line in the middle
+    /// of one is a break the notebook and the docked strip disagree about.</summary>
+    private static string Flat(string page) =>
+        string.Join(" ", page.Split('\n', StringSplitOptions.RemoveEmptyEntries
+            | StringSplitOptions.TrimEntries));
 
     /// <summary>What the ground says when the captain comes back for it. <paramref name="taken"/> and
     /// <paramref name="stillThere"/> are already in the captain's words.</summary>

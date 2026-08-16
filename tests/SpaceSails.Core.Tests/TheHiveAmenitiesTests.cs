@@ -573,14 +573,34 @@ public sealed class TheHiveAmenitiesTests
             // reaches by walking across a garden, which was the whole charm of the feature and was not going
             // to be spent on bookkeeping. So each of them accounts for one doorway more than it is a room.
             //
-            // Asked of Park.Rooms rather than counted off the plan, which is the same correction #775 made
-            // to the hall's line above: Park.Rooms is exactly the far-band rooms that have a gravel door
-            // (the two corner rooms stand past the end of the park's wall and have only the street door), so
-            // this counts the second doors and never a first one.
-            int backOfHouseSecondDoors = floor.Park is { } backed ? backed.Rooms.Count : 0;
+            // #817 · …AND EVERY RING ROOM IS NOW A PLACE WITH SEVERAL DOORS, which is three owner rulings
+            // landing on one arithmetic line. A room's street frontage buys it leaves rather than one leaf
+            // ("bigger spaces must have much more doors", and #822's fire code under that); every room WITH
+            // A VIEW has a gate onto the green, not only the far band's back of house; and a big suite's WC
+            // cubicles are real doors (#821) because the lock-from-inside has to land on something the
+            // building already knows about.
+            //
+            // Counted the way the hall's line above is counted: off the room's own published lists
+            // (RingRoom.Doors, RingRoom.Gate, RingRoom.Furniture) and never off coordinates read from the
+            // plan. Each ring room is ONE place, so the first street door is the one this sum already has;
+            // everything past it is what is added here.
+            int ringExtraDoors = 0;
+            foreach (UndergroundComplex.RingRoom room in
+                floor.Park is { } block ? block.Frontage : [])
+            {
+                ringExtraDoors += room.Doors.Count - 1;
+                ringExtraDoors += room.Gate is null ? 0 : 1;
+                foreach (RingOffice.Fixture fitting in room.Furniture)
+                {
+                    if (fitting.Kind == RingOffice.Fitting.Cubicle)
+                    {
+                        ringExtraDoors++;
+                    }
+                }
+            }
 
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
-                + extraHallDoors + backOfHouseSecondDoors
+                + extraHallDoors + ringExtraDoors
                 + (floor.Park is { } green ? green.Ways.Count : 0);
             if (places != floor.Doorways.Count)
             {

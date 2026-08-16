@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -44,6 +44,14 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Rendering(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering", file));
 
@@ -79,7 +87,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheAssemblyComposesEverySentenceOntoTheCardItRaises()
     {
-        string body = Method("Map.Surface.cs", "private void AssembleSomebody(");
+        string body = Method("Map.Surface.Hive.cs", "private void AssembleSomebody(");
 
         int card = body.IndexOf("_viewObject = new DeckPlan.ConsoleSpot(", StringComparison.Ordinal);
         Assert.True(card >= 0, "AssembleSomebody no longer raises the dossier card — this guard needs re-reading.");
@@ -100,7 +108,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheAssemblyNeverPulsesASentenceUnderItsOwnBackdrop()
     {
-        string body = Method("Map.Surface.cs", "private void AssembleSomebody(");
+        string body = Method("Map.Surface.Hive.cs", "private void AssembleSomebody(");
 
         Assert.DoesNotContain("ShowAndFile(", body, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowPulseMessage(", body, StringComparison.Ordinal);
@@ -113,7 +121,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheBookStillKeepsEverySentenceTheAssemblySays()
     {
-        string body = Method("Map.Surface.cs", "private void AssembleSomebody(");
+        string body = Method("Map.Surface.Hive.cs", "private void AssembleSomebody(");
 
         Assert.True(body.Contains("FileNote(said.Text, said.Glyph)", StringComparison.Ordinal),
             "the assembly no longer files what it says — the dossier's four sentences are readable for as " +
@@ -126,7 +134,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheMoonTheFamilyNamesIsSaidWhereTheCaptainIsLooking()
     {
-        string body = Method("Map.Surface.cs", "private void AnnounceLabLead(");
+        string body = Method("Map.Surface.Hive.cs", "private void AnnounceLabLead(");
 
         Assert.True(body.Contains("SayWhereTheyAreLookingAndFile(", StringComparison.Ordinal),
             "the named moon is announced without asking where the captain is looking — called from the " +
@@ -135,7 +143,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
 
         // The pair is the point: said where it can be read AND kept. Either half alone is a bug this house
         // has already shipped once.
-        string helper = Method("Map.Surface.cs", "private void SayWhereTheyAreLookingAndFile(");
+        string helper = Method("Map.Surface.Satchel.cs", "private void SayWhereTheyAreLookingAndFile(");
         Assert.Contains("SayItWhereTheyAreLooking(text)", helper, StringComparison.Ordinal);
         Assert.Contains("FileNote(text, glyph)", helper, StringComparison.Ordinal);
     }
@@ -165,7 +173,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheSeamAnswersOnTheObjectCardBeforeTheRevealCardBecauseItIsInFront()
     {
-        string seam = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        string seam = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
 
         int viewObject = seam.IndexOf("if (_viewObject is", StringComparison.Ordinal);
         int revealCard = seam.IndexOf("if (_revealCard is", StringComparison.Ordinal);
@@ -199,11 +207,11 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheFourSentenceDossierIsOneUrlAway()
     {
-        Assert.Contains("kit=", Pages("Map.Sim.cs"), StringComparison.Ordinal);
-        Assert.True(Pages("Map.Sim.cs").Contains("_kitCheat = candidate is", StringComparison.Ordinal),
+        Assert.Contains("kit=", Sim(), StringComparison.Ordinal);
+        Assert.True(Sim().Contains("_kitCheat = candidate is", StringComparison.Ordinal),
             "?kit= is not parsed into the cheat the assembly reads (#774).");
 
-        string assembly = Method("Map.Surface.cs", "private void AssembleSomebody(");
+        string assembly = Method("Map.Surface.Hive.cs", "private void AssembleSomebody(");
         Assert.True(assembly.Contains("_kitCheat", StringComparison.Ordinal)
             && assembly.Contains("everySaying: _kitCheat", StringComparison.Ordinal),
             "the cheat does not reach BOTH gates — a dev seat that assembles a two-sentence dossier cannot " +

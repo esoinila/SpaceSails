@@ -109,6 +109,17 @@ public partial class Map
     /// <para>Which seat is free is Core's answer off the frozen watch (<see cref="TheStools.FirstFreeStool"/>),
     /// so the row a captain lands on is the row the room has. A full row is an answer with words on it and
     /// never a control that did nothing.</para>
+    ///
+    /// <para>#820 · AND THE CAPTAIN GOES UP ONTO IT. Owner's law, filed off a park bench and swept across
+    /// every seat: sitting down puts the body on the seat. WHERE that stool is bolted down is the counter's
+    /// own carve (<see cref="UndergroundComplex.FloorPlan.TheStoolRow"/>), read by ordinal — entry
+    /// <c>s</c> is stool <c>s</c>, which is the same ordinal <see cref="TheStools.Taken"/> answers about, so
+    /// the captain lands on the seat the deck drew free rather than in somebody's lap.</para>
+    ///
+    /// <para>There is no step-off to carry. A stool stands on the hall side of the desk on floor a captain
+    /// could have walked to anyway (the row is laid at <c>HallStoolStandoffDu</c> off the counter's
+    /// segments), so getting down leaves you standing exactly where the stool is — which is what getting
+    /// down off a bar stool does.</para>
     /// </summary>
     private void TakeAStool()
     {
@@ -123,6 +134,17 @@ public partial class Map
             return;
         }
 
+        // The bound is a bound and not a decision: a serving counter publishes exactly TheStools.Count
+        // seats (guarded in SittingSnapsYouOntoTheSeatTests), so the only way past this test is a carve
+        // that has stopped agreeing with the row the verb is dealt from — in which case the captain keeps
+        // their feet rather than being placed by arithmetic on a list that is not the room's.
+        IReadOnlyList<(double X, double Y)> row =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).TheStoolRow;
+        if (seat < row.Count)
+        {
+            SitCaptainOn(row[seat].X, row[seat].Y);
+        }
+
         _stool = new StoolSeat
         {
             Index = seat,
@@ -135,7 +157,18 @@ public partial class Map
     }
 
     /// <summary>Get down. Free, always — and it leaves you STANDING at the counter rather than shutting the
-    /// card, because getting off a stool is not leaving a bar.</summary>
+    /// card, because getting off a stool is not leaving a bar.
+    ///
+    /// <para>#847 · THE STOOL'S STAND-UP PATH, and there is only this one. A movement key or a clicked route
+    /// at the counter routes through here (<c>Map.Seated.StandUpBeforeWalking</c>) rather than carrying a
+    /// copy of it, so the day getting off a stool costs a beat, a line or a watch, it costs it to the button
+    /// and to WASD in the same breath.</para>
+    ///
+    /// <para>The step-off square is the stool's own: the row is bolted a standoff off the counter on floor a
+    /// captain could have walked to anyway (see <see cref="TakeAStool"/>), and
+    /// <c>EverySeatIsSomewhereYouCanSitTests</c> asserts that of every stool on every floor the generator
+    /// lays. So getting down leaves you exactly where the stool is, which is what getting down off a bar
+    /// stool does — no placement, and nothing for a nudge to rescue.</para></summary>
     private void GetDownFromStool()
     {
         _stool = null;

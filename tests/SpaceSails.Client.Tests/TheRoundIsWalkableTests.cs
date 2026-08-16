@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -51,12 +51,21 @@ public sealed class TheRoundIsWalkableTests
     /// <para><b>Proven RED</b> by pointing <c>PatrolBeat.Circuit</c>'s room stop at the room's own centre
     /// plus twenty deck units in y — a spot that is inside a wall on most floors — which produces the
     /// stranded-leg table this audit exists to print.</para>
+    ///
+    /// <para>#863 · <b>AND IT SWEEPS THE BAR FLOOR NOW.</b> The floor list is
+    /// <see cref="PatrolBeat.IsPatrolled"/>'s own answer, so B1 — the park, the canteen, the offices, the
+    /// washrooms and #862's full furnishing, four hundred and sixty-odd wall segments of it — walked into
+    /// this flood the moment the owner's ruling flipped the clause, and it is GREEN: not one waypoint on the
+    /// densest floor in the game stands in furniture, and every leg of it connects on the real collision
+    /// field. That is the honest finding and it is worth saying, because it was the thing this lane most
+    /// expected to catch. The count is pinned below so a future exclusion cannot quietly take the hardest
+    /// floor back out of the audit.</para>
     /// </summary>
     [Fact]
     public void EveryStopOnEveryRoundIsWalkableFromTheCarAndFromTheStopBeforeIt()
     {
         var bad = new List<string>();
-        int floors = 0, legs = 0;
+        int floors = 0, legs = 0, bars = 0;
 
         foreach (string body in Bodies)
         {
@@ -73,6 +82,10 @@ public sealed class TheRoundIsWalkableTests
                 var spawn = new DeckReachability.Point(sx, sy);
                 var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
                 floors++;
+                if (UndergroundComplex.TopPressurisedFloor(body) == level)
+                {
+                    bars++;
+                }
 
                 // Three watches, because the ROTATION reorders the stops and a leg that is fine walked one
                 // way is a leg walked the other way — and because the stop list itself must not change with
@@ -143,6 +156,9 @@ public sealed class TheRoundIsWalkableTests
         // A flood over nothing is a green test that asserts nothing. Pin the size of the sweep.
         Assert.True(floors > 40, $"only {floors} restricted floors were walked.");
         Assert.True(legs > 500, $"only {legs} legs were walked.");
+        Assert.True(bars >= Bodies.Length - 1,
+            $"only {bars} of the {Bodies.Length} sites had their bar floor walked — B1 is the heaviest floor "
+            + "this audit has, and a flood that skips it is a flood over the easy half of the building.");
     }
 
     /// <summary>
@@ -181,11 +197,26 @@ public sealed class TheRoundIsWalkableTests
             [.. stops.Select(s => (Math.Round(s.X, 3), Math.Round(s.Y, 3)))];
     }
 
-    /// <summary>Nobody is placed on top of a fixture the [E] key answers for — a guard standing ON the
-    /// SEARCH THE ROOM console would make the room unpressable while they stood there.</summary>
+    /// <summary>
+    /// Nobody is placed on top of a fixture the [E] key answers for — a guard standing ON the SEARCH THE
+    /// ROOM console would make the room unpressable while they stood there.
+    ///
+    /// <para>#831 · <b>AND THE LAW UNDER IT MOVED, by the owner's own ruling.</b> Owner, watching a man stand
+    /// in a corridor with nothing to do: <i>"why would it just stand there if there is no inspection point
+    /// etc"</i> → <i>"they actually in real life like have these check points they electronically sign on
+    /// rounds to prove they did their round."</i> This used to assert the car stop was the captain's own
+    /// arrival square to six decimal places. It is now the square the watchclock station beside the car is
+    /// SIGNED from — a pace and a half off the wall the plate is bolted to — because a stand at a stop is a
+    /// man signing a plate and a stop with no plate at it is the thing the whole issue is about.</para>
+    ///
+    /// <para>Everything the guard was FOR is asserted unchanged and one clause stronger: the round still
+    /// checks the lift, it still stands within a few strides of the one square everybody has to pass through,
+    /// and it is still off every console the [E] key answers for.</para>
+    /// </summary>
     [Fact]
-    public void TheCarStopIsOffTheLiftConsole()
+    public void TheCarStopIsAtItsOwnCheckpointBesideTheLiftAndOffTheConsole()
     {
+        int floors = 0;
         foreach (string body in Bodies)
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
@@ -198,14 +229,31 @@ public sealed class TheRoundIsWalkableTests
                 UndergroundComplex.FloorPlan plan = UndergroundComplex.Build(body, level, Field);
                 PatrolBeat.Stop car = PatrolBeat.Circuit(plan, Field)[0];
                 (double sx, double sy) = HiveInterior.SpawnOn(Field);
+                floors++;
 
-                // The car stop IS the square the captain arrives on, deliberately: it is the one place on
-                // the floor everybody has to pass through, and a round that never checked the lift would be
-                // a round nobody could time from safety.
-                Assert.Equal(sx, car.X, 6);
-                Assert.Equal(sy, car.Y, 6);
+                Assert.Equal("the car", car.What);
+                Assert.NotNull(car.Point);
+
+                // The car stop is a STATION BESIDE THE CAR: within a few strides of the square the captain
+                // arrives on, which is the one place on the floor everybody has to pass through.
+                double toTheCar = Math.Sqrt(((car.X - sx) * (car.X - sx)) + ((car.Y - sy) * (car.Y - sy)));
+                Assert.True(toTheCar <= PatrolBeat.CheckpointReachDu,
+                    $"{body} B{-level}: the car stop is {toTheCar:F1} du from the arrival square — that is " +
+                    "not a round that checks the lift.");
+
+                // …and off every console on this floor, which is what this guard has always been about.
+                DeckPlan deck = DeckFor(body, level);
+                foreach (DeckPlan.ConsoleSpot spot in deck.Consoles)
+                {
+                    double gap = Math.Sqrt(
+                        ((car.X - spot.X) * (car.X - spot.X)) + ((car.Y - spot.Y) * (car.Y - spot.Y)));
+                    Assert.True(gap > DeckPlan.AvatarRadius,
+                        $"{body} B{-level}: the car stop stands {gap:F2} du from the console '{spot.Label}' " +
+                        "— a man on the round would sit on top of the [E] key.");
+                }
             }
         }
+        Assert.True(floors > 40, $"only {floors} patrolled floors were measured.");
     }
 
     // ── THE WIRING ────────────────────────────────────────────────────────────────────────────────────
@@ -231,6 +279,27 @@ public sealed class TheRoundIsWalkableTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
+
+        var parts = new string[order.Length];
+        for (int i = 0; i < order.Length; i++)
+        {
+            parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        return string.Concat(parts);
+    }
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -243,23 +312,29 @@ public sealed class TheRoundIsWalkableTests
     /// <summary>
     /// A GUARD THE CAPTAIN CANNOT SEE IS NOT ON THE DECK. The droid filler asks Core's one predicate and
     /// parks everybody else at the off-map coordinates an empty slot uses (#371's idiom).
+    ///
+    /// <para>#832 · That predicate is now the three-rung <c>SightingFor</c> rather than the bare
+    /// <c>DrawnFor</c> bool — the eye's edge grew a distant-figure tier — but the law this test is about is
+    /// unchanged and is asserted at the bottom rung: <see cref="PatrolBeat.Sighting.None"/> is off the deck
+    /// entirely, and a wall still puts a body there instantly.</para>
     /// </summary>
     [Fact]
     public void TheDroidFillerDrawsOnlyWhatTheCaptainCanSee()
     {
         string filler = Between(
-            Pages("Map.Patrol.cs"), "private void FillPatrolDroids(", "\n}");
+            Patrol(), "private void FillPatrolDroids(", "\n}");
 
-        Assert.Contains("Drawn", filler, StringComparison.Ordinal);
+        Assert.Contains("Seen", filler, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.Sighting.None", filler, StringComparison.Ordinal);
         Assert.Contains("-9999", filler, StringComparison.Ordinal);
 
-        // …and the flag it reads is written from Core's predicate, once a frame, in the step.
-        string step = Between(Pages("Map.Patrol.cs"), "private void AdvancePatrol(", "private void WalkTheRound(");
-        Assert.Contains("PatrolBeat.DrawnFor(", step, StringComparison.Ordinal);
+        // …and the tier it reads is written from Core's predicate, once a frame, in the step.
+        string step = Between(Patrol(), "private void AdvancePatrol(", "private void WalkTheRound(");
+        Assert.Contains("PatrolBeat.SightingFor(", step, StringComparison.Ordinal);
         Assert.Contains("SightBlockers()", step, StringComparison.Ordinal);
 
         // The gate must be the SIGHT set, not the bare collision field: a shut door is a wall to an eye.
-        Assert.DoesNotContain("DrawnFor(_avatarX, _avatarY, g.X, g.Y, walls)", step, StringComparison.Ordinal);
+        Assert.DoesNotContain("SightingFor(_avatarX, _avatarY, g.X, g.Y, walls)", step, StringComparison.Ordinal);
     }
 
     /// <summary>The fan hears them, and it hears them from the ONE accessor — the comment in that method
@@ -282,7 +357,7 @@ public sealed class TheRoundIsWalkableTests
     public void TheHiveDeckHasRoomForARound()
     {
         string rebuild = Between(
-            Pages("Map.Surface.cs"), "private void RebuildSurfaceDeck()", "if (Derelict.TryParseWreckId(");
+            Pages("Map.Surface.Frame.cs"), "private void RebuildSurfaceDeck()", "if (Derelict.TryParseWreckId(");
         Assert.Contains("HiveInterior.FloorDeck(", rebuild, StringComparison.Ordinal);
         Assert.Contains("SurfaceDroidCount, FillSurfaceDroids", rebuild, StringComparison.Ordinal);
         Assert.DoesNotContain(
@@ -300,11 +375,11 @@ public sealed class TheRoundIsWalkableTests
     public void TheRoundIsBuiltWhenTheFloorChangesAndNotWhenTheDeckIsRebuilt()
     {
         string ride = Between(
-            Pages("Map.Surface.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
+            Pages("Map.Surface.Hive.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
         Assert.Contains("SpawnPatrolFor(ex)", ride, StringComparison.Ordinal);
 
         string rebuild = Between(
-            Pages("Map.Surface.cs"), "private void RebuildSurfaceDeck()", "private void ComposeWhatYouLeft(");
+            Pages("Map.Surface.Frame.cs"), "private void RebuildSurfaceDeck()", "private void ComposeWhatYouLeft(");
         Assert.DoesNotContain("SpawnPatrolFor", rebuild, StringComparison.Ordinal);
     }
 
@@ -330,7 +405,7 @@ public sealed class TheRoundIsWalkableTests
         Assert.Contains("badge=1", hive, StringComparison.Ordinal);
 
         // And the cheat the docs promise is a cheat the parser actually reads.
-        string boot = Between(Pages("Map.Sim.cs"), "private async Task BootTheWorldAsync(", "\n    }");
+        string boot = Between(Pages("Map.Sim.World.cs"), "private async Task BootTheWorldAsync(", "\n    }");
         Assert.Contains("\"patrol=\"", boot, StringComparison.Ordinal);
         Assert.Contains("\"badge=\"", boot, StringComparison.Ordinal);
     }
@@ -355,7 +430,7 @@ public sealed class TheRoundIsWalkableTests
     public void TheChallengeCardWearsThePaintingAndThePaintingShipped()
     {
         string stop = Between(
-            Pages("Map.Patrol.cs"), "private void TheRoundStopsAtYou(", "── WHERE THE PASS COMES FROM");
+            Patrol(), "private void TheRoundStopsAtYou(", "── WHERE THE PASS COMES FROM");
 
         // The card the guard raises carries the plate, by its Core name.
         Assert.Contains("PatrolBeat.ChallengeArtUrl", stop, StringComparison.Ordinal);
@@ -383,7 +458,7 @@ public sealed class TheRoundIsWalkableTests
     public void ThePassIsIssuedWhenTheCageTakesYouDown()
     {
         string ride = Between(
-            Pages("Map.Surface.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
+            Pages("Map.Surface.Hive.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
         Assert.Contains("chitGateThisRide = true", ride, StringComparison.Ordinal);
         Assert.Contains("IssueTheSitePass(ex)", ride, StringComparison.Ordinal);
 
@@ -395,7 +470,7 @@ public sealed class TheRoundIsWalkableTests
             "the pass is granted inside the arrival's own composition, where its line loses the slot.");
 
         string issue = Between(
-            Pages("Map.Patrol.cs"), "private void IssueTheSitePass(", "── DRAWING THEM");
+            Patrol(), "private void IssueTheSitePass(", "── DRAWING THEM");
         Assert.Contains("PatrolBeat.BadgeHeld(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.CanTake(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.Add(", issue, StringComparison.Ordinal);

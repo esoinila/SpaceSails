@@ -408,6 +408,13 @@ public partial class Map
             CaseThreads = _caseThreads.Count > 0
                 ? new CaseThreadsSection { Threads = [.. _caseThreads.Select(t => t.Stored)] }
                 : null,
+            // #836 · which name the captain gave, and where. Opaque row strings (WalletChoice.Shown.Stored)
+            // for the satchel's own reason one line down: the file carries the FACT and the sentences on a
+            // chooser row are rebuilt from it. Durable because "worked here, twice" is worth nothing if the
+            // book forgets between excursions.
+            PapersShown = _shownBook.Count > 0
+                ? new PapersShownSection { Shown = [.. _shownBook.Select(r => r.Stored)] }
+                : null,
             // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
             // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
             // the save carries the FACT and never the words.
@@ -904,6 +911,18 @@ public partial class Map
             if (Core.CaseThreads.Thread.TryParse(stored, out Core.CaseThreads.Thread line))
             {
                 _caseThreads = [.. Core.CaseThreads.Draw(_caseThreads, line.A, line.B)];
+            }
+        }
+
+        // #836 · The captain's paper trail — which identity was handed to which man, on which floor. A row
+        // this build cannot parse is dropped rather than thrown over, the same tolerance the satchel gets;
+        // a pre-#836 file simply has none, and every chooser row honestly reads "never shown".
+        _shownBook.Clear();
+        foreach (string stored in vault.PapersShown?.Shown ?? [])
+        {
+            if (WalletChoice.Shown.TryParse(stored, out WalletChoice.Shown row))
+            {
+                _shownBook.Add(row);
             }
         }
 

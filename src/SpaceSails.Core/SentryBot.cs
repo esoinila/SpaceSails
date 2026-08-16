@@ -125,12 +125,27 @@ public static class SentryBot
             // very first screenshot of the shelter it was written for.
             if (!SurfaceArrival.IsDoorSentry(bot.Unit))
             {
-                parts.Add($"{bot.Unit} {Readout(bot.Rounds)}/{MaxMagazine} {(bot.Deployed ? "set down" : "in the sling")}");
+                parts.Add($"{bot.Unit} {MagazineCell(bot.Rounds)} {WhereItIs(bot.Deployed)}");
             }
         }
 
         return parts.Count == 0 ? NoMagazinesLine : $"🔫 MAGAZINES · {string.Join(" · ", parts)}";
     }
+
+    /// <summary>#837 · ONE DRUM, AS EVERY INSTRUMENT PRINTS IT — <c>"12/99"</c>.
+    ///
+    /// <para>The MAGAZINES line above is built out of these, and so is every row of the satchel's load
+    /// chooser. That is the whole content of the issue's <i>no second arithmetic</i> clause: the picker and
+    /// the readout cannot come to two views of one drum, because there is exactly one function in the build
+    /// that turns a magazine into a number a captain reads. A chooser that formatted its own
+    /// <c>rounds + "/" + cap</c> would agree with the instrument until the day one of them was edited, which
+    /// is this repo's third named bug class waiting with a gun in its hand.</para></summary>
+    public static string MagazineCell(int rounds) => $"{Readout(rounds)}/{MaxMagazine}";
+
+    /// <summary>#837 · …and where the thing holding it is, in the readout's own two words. Said rather than
+    /// left to a glyph (#728's ruling), and said in ONE place so the chooser's row and the instrument's line
+    /// describe the same bot the same way.</summary>
+    public static string WhereItIs(bool deployed) => deployed ? "set down" : "in the sling";
 
     /// <summary>#728 · Is there anything of the CAPTAIN'S on this ground with a magazine in it?
     ///

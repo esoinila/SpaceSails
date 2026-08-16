@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -49,6 +49,30 @@ public sealed class TheTableSceneIsOneRoomTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard
+    /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Surface() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static DeckPlan DeckFor(string body, int level, long watch = 0) =>
         HiveInterior.FloorDeck(body, level, MoonSurface.ExpeditionField(), 0, (_, _) => { }, [], watch);
 
@@ -82,10 +106,13 @@ public sealed class TheTableSceneIsOneRoomTests
                             if (t.Plate is { } plate)
                             {
                                 expectedPeople.Add(((float)t.X, (float)t.Y, plate));
-                                // A top somebody is at still has room for the captain — which is the whole
-                                // premise of "ask to join", and it is checked HERE against the drawn room.
-                                Assert.True(t.Free >= 1,
-                                    $"{body} B{-level}: a table with somebody at it has no chair left.");
+                                // #823 · A top somebody is at seats the party it says it seats. This used to
+                                // insist on a free chair everywhere, which was true only while every party
+                                // was a party of one; a whole crew at a four-top is FULL, and "ask to join"
+                                // refusing there is the honest answer rather than the missing one.
+                                Assert.True(t.Heads >= 1 && t.Heads <= t.Seats,
+                                    $"{body} B{-level}: '{plate}' is {t.Heads} people at a {t.Seats}-top.");
+                                Assert.Equal(t.Seats - t.Heads, t.Free);
                             }
                         }
                     }
@@ -301,23 +328,40 @@ public sealed class TheTableSceneIsOneRoomTests
             Assert.Contains("TableAnswered(", method, StringComparison.Ordinal);
         }
 
-        // …and the whole file may pulse in exactly two PLACES: taking your leave (correct — the panel is
-        // gone, see the next guard) and the dev cheat's own boot notice, which #757 gave a second spelling
-        // (?tablescene=free) and which fires before any panel exists at all. A pulse anywhere else is a line
-        // somebody decided to say over the top of an open modal, which is #680 coming back — so this counts
-        // pulses OUTSIDE those two methods and requires it to be zero.
-        foreach (string method in new[] { "private void StandInTheCanteenIfAsked(", "private void TableMove(" })
+        // …and the whole file may pulse in exactly three PLACES, every one of them a moment at which THERE IS
+        // NO PANEL: taking your leave (the panel has just gone, see the next guard), the dev cheat's own boot
+        // notice — which #757 gave a second spelling (?tablescene=free) and which fires before any panel
+        // exists at all — and #842's full-top refusal, which is the press that OPENS no panel and is
+        // whitelisted below on that condition and no other. A pulse anywhere else is a line somebody decided
+        // to say over the top of an open modal, which is #680 coming back — so this counts pulses OUTSIDE
+        // those three methods and requires it to be zero.
+        string[] mayPulse =
+        [
+            "private void StandInTheCanteenIfAsked(",
+            "private void TableMove(",
+            "private bool TryOpenTable()",
+        ];
+        foreach (string method in mayPulse)
         {
             Assert.True(table.Contains(method, StringComparison.Ordinal),
                 $"Map.Table.cs no longer has {method} — this guard needs re-reading.");
         }
 
-        string withoutTheTwo = table
-            .Replace(MethodBodyAround(table, table.IndexOf(
-                "private void StandInTheCanteenIfAsked(", StringComparison.Ordinal)), "", StringComparison.Ordinal);
-        int at2 = withoutTheTwo.IndexOf("private void TableMove(", StringComparison.Ordinal);
-        withoutTheTwo = withoutTheTwo
-            .Replace(MethodBodyAround(withoutTheTwo, at2), "", StringComparison.Ordinal);
+        string withoutTheTwo = table;
+        foreach (string method in mayPulse)
+        {
+            int cut = withoutTheTwo.IndexOf(method, StringComparison.Ordinal);
+            withoutTheTwo = withoutTheTwo
+                .Replace(MethodBodyAround(withoutTheTwo, cut), "", StringComparison.Ordinal);
+        }
+
+        // #842 · …and the one it is allowed says the REFUSAL and nothing else. The whitelist above buys the
+        // press one sentence at a table that cannot take you; a second pulse growing in there would be a line
+        // said at a table the captain is actually sitting at, which is the thing this guard exists for.
+        string open = MethodBodyAround(table, table.IndexOf(
+            "private bool TryOpenTable()", StringComparison.Ordinal));
+        Assert.Equal(1, open.Split("ShowPulseMessage(").Length - 1);
+        Assert.Contains("ShowPulseMessage(CanteenTable.TableIsFullLine)", open, StringComparison.Ordinal);
 
         int strays = withoutTheTwo.Split("ShowPulseMessage(").Length - 1;
         Assert.True(strays == 0,
@@ -349,7 +393,7 @@ public sealed class TheTableSceneIsOneRoomTests
     {
         // "A scene nobody can reach on demand is a scene that ships broken", and this one sits behind more
         // doors than anything we have shipped.
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("tablescene=", sim, StringComparison.Ordinal);
         Assert.Contains("roll=", sim, StringComparison.Ordinal);
 
@@ -382,12 +426,12 @@ public sealed class TheTableSceneIsOneRoomTests
     [Fact]
     public void THE_WATCH_IsPinnableOnDemandAndTheGuideSaysHow()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("watch=", sim, StringComparison.Ordinal);
         Assert.Contains("_watchCheat = pinned", sim, StringComparison.Ordinal);
 
         // Applied where the excursion freezes its watch, and nowhere else.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
         Assert.Contains("ex.CanteenWatch = _watchCheat ?? PatronRota.WatchIndex(SimTime);",
             surface, StringComparison.Ordinal);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(surface, @"ex\.CanteenWatch = "));
@@ -406,7 +450,7 @@ public sealed class TheTableSceneIsOneRoomTests
         // #743's staff mess, entered with cover. The beat is additive — the room's own card still fires
         // first — and it never plays in the same frame as that card, because a pulse under an open card is
         // #680 again.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Canteen.cs");
         int at = surface.IndexOf("private void CheckStaffMessUnderfoot()", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Surface.cs no longer has CheckStaffMessUnderfoot.");
         string body = surface[at..surface.IndexOf("\n    // ──", at, StringComparison.Ordinal)];
@@ -421,5 +465,123 @@ public sealed class TheTableSceneIsOneRoomTests
         // The poll survives the room card, or a captain who got the chit AFTER walking through the mess
         // could never be handed the beat at all.
         Assert.Contains("ex.MessChitBeatShown", body, StringComparison.Ordinal);
+    }
+
+    // ── #842 · A FULL TOP REFUSES OUT LOUD ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #842 · THERE IS A FULL TABLE IN THIS BUILDING, AND [E] AT IT IS A REFUSAL RATHER THAN A CARD.
+    ///
+    /// <para>#840 gave the tops honest heads, and with them the first genuinely FULL top the game has ever
+    /// had. This half of the guard is the one that stops the other half being about nothing: it walks the
+    /// shipped rooms on the shipped watches, counts the tops with no chair left, and insists that every one
+    /// of them still wears the ASK-TO-JOIN console — because a full top that quietly stopped being pressable
+    /// would leave the refusal below guarding a press nobody can make.</para>
+    /// </summary>
+    [Fact]
+    public void A_FULL_TOP_IsSomethingTheBuildingActuallyHas()
+    {
+        int full = 0;
+
+        foreach (string body in Bodies)
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                for (long watch = 0; watch < 4; watch++)
+                {
+                    DeckPlan deck = DeckFor(body, level, watch);
+                    foreach (UndergroundComplex.Amenity a in
+                        UndergroundComplex.Build(body, level, MoonSurface.ExpeditionField()).Amenities)
+                    {
+                        foreach (CanteenRegulars.TableSeat top in
+                            CanteenRegulars.Tables(body, level, a, watch))
+                        {
+                            if (!top.Taken || top.Free > 0)
+                            {
+                                continue;
+                            }
+
+                            full++;
+
+                            // …and the press LANDS on it. A full top is a HiveRegular exactly as a
+                            // half-empty one is (the renderer labels who is there, never who may join), so
+                            // this is the console the refusal has to answer at.
+                            Assert.Contains(
+                                deck.Consoles,
+                                c => c.Kind == DeckPlan.ConsoleKind.HiveRegular
+                                    && Math.Abs(c.X - (float)top.X) < 0.5f
+                                    && Math.Abs(c.Y - (float)top.Y) < 0.5f);
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.True(full > 0,
+            "not one top in the whole building is full on any watch — #842's refusal guards nothing, and "
+            + "#840's honest heads have stopped filling a table.");
+    }
+
+    /// <summary>
+    /// #842 · AND THE PRESS SAYS SO, ONCE, AND OPENS NOTHING.
+    ///
+    /// <para>Owner, filing it: the house law (#603) is that a refusal is SAID, and <i>"a control that
+    /// quietly does something else is how a player learns the wrong lesson."</i> [E] at a full top fell
+    /// through — <c>TryOpenTable</c> returned false on <c>Free &lt;= 0</c> and Map.Deck's arm then raised
+    /// <c>HiveRegularInteract</c>, the patron's one-breath card. Readable, and an answer to a question the
+    /// player did not ask.</para>
+    ///
+    /// <h3>What the three assertions below each hold</h3>
+    ///
+    /// <list type="number">
+    /// <item>The refusal is CORE'S LINE, named — not a sentence this client typed beside the one the canon
+    /// sweep walks.</item>
+    /// <item>It CONSUMES the press (<c>return true</c>), which is the entire fix: Map.Deck raises the card
+    /// only on a false, so a refusal that still returned false would say the line AND open the card.</item>
+    /// <item>It answers BEFORE the who/plate check that returns false — the branch a full top used to leave
+    /// by. A refusal placed after it would still fall through at every full top whose occupant is one of the
+    /// seven regulars this proto has no scene for, which is most of them.</item>
+    /// </list>
+    ///
+    /// <para><b>Proven RED</b> against today's fall-through: with the branch reverted to the shipped
+    /// <c>if (who == CanteenTable.Who.None || top.Free &lt;= 0 || top.Plate is not { } plate)</c>, this
+    /// fails on the first assertion —
+    /// <c>Assert.Contains() Failure: Sub-string not found … Not found: CanteenTable.TableIsFullLine</c>.</para>
+    /// </summary>
+    [Fact]
+    public void A_FULL_TOP_SaysSoAndRaisesNoCard()
+    {
+        string table = Source("Pages", "Map.Table.cs");
+        int at = table.IndexOf("private bool TryOpenTable()", StringComparison.Ordinal);
+        Assert.True(at >= 0, "Map.Table.cs no longer has TryOpenTable.");
+        string body = table[at..table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
+
+        // (1) Core's line, by name.
+        Assert.Contains("CanteenTable.TableIsFullLine", body, StringComparison.Ordinal);
+
+        // (2)+(3) The full-top branch answers, consumes the press, and does both BEFORE the fall-through.
+        int refusal = body.IndexOf("top.Free <= 0", StringComparison.Ordinal);
+        Assert.True(refusal >= 0, "nothing in TryOpenTable asks whether the top has a chair left.");
+
+        string branch = body[refusal..];
+        int said = branch.IndexOf("CanteenTable.TableIsFullLine", StringComparison.Ordinal);
+        int consumed = branch.IndexOf("return true;", StringComparison.Ordinal);
+        Assert.True(said >= 0 && consumed > said,
+            "the full-top branch does not say the line and then consume the press — a refusal that returns "
+            + "false is a refusal Map.Deck answers with the patron's card anyway.");
+
+        int fellThrough = body.IndexOf("return false;", refusal, StringComparison.Ordinal);
+        Assert.True(fellThrough > refusal + consumed,
+            "the full-top refusal comes AFTER a return false — a full top whose occupant is not one of the "
+            + "three wired regulars still falls through to the one-breath card.");
+
+        // …and nothing behind a second press. The card is not a reward for leaning harder: what is said at a
+        // full top is overheard by SITTING NEARBY, which is the neighbour machinery's business.
+        Assert.DoesNotContain("HiveRegularInteract", table, StringComparison.Ordinal);
+
+        // Map.Deck's arm still raises the card on a false and only on a false, which is what makes (2) load-
+        // bearing rather than decorative.
+        string deck = Deck();
+        Assert.Contains("if (!TryOpenTable())", deck, StringComparison.Ordinal);
     }
 }

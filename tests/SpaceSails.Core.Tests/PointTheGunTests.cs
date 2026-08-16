@@ -41,7 +41,7 @@ public sealed class PointTheGunTests
             foreach (int offered in new[] { 1, 6, 12, 22, 40, 99, 140 })
             {
                 SentryHandLoad.Load load = SentryHandLoad.Offer(
-                    "K-77", have, Ammunition.Issue.Id, deployed: true, offered, Ammunition.Issue.Id);
+                    "K-77", have, Ammunition.Issue.Id, inReach: true, offered, Ammunition.Issue.Id);
 
                 Assert.Equal(offered, load.Accepted + load.LeftOver);
                 Assert.True(load.Magazine <= SentryBot.MaxMagazine,
@@ -64,7 +64,7 @@ public sealed class PointTheGunTests
     public void TheMagazinesReadoutSaysWhatTheHandLoadPutThere()
     {
         SentryHandLoad.Load load = SentryHandLoad.Offer(
-            "K-77", 11, Ammunition.Issue.Id, deployed: true, 6, Ammunition.Issue.Id);
+            "K-77", 11, Ammunition.Issue.Id, inReach: true, 6, Ammunition.Issue.Id);
         Assert.True(load.Worked);
         Assert.Equal(17, load.Magazine);
 
@@ -76,20 +76,24 @@ public sealed class PointTheGunTests
 
     /// <summary>EVERY REFUSAL NAMES ITS REASON, AND THEY ARE FOUR DIFFERENT REASONS. A control that does
     /// nothing and says nothing is indistinguishable from a bug; four controls that say the SAME nothing are
-    /// worse, because the captain learns the sentence and stops reading it.</summary>
+    /// worse, because the captain learns the sentence and stops reading it.
+    ///
+    /// <para>#837 · The second of the four changed its MEANING and kept its place. It used to be "it is on
+    /// your back", which the owner overruled from the satchel — a gun riding the sling is the easiest thing
+    /// in the world to hand rounds to. It is OUT OF REACH now, and the fix for it is three paces.</para></summary>
     [Fact]
     public void TheFourRefusalsAreFourDifferentSentences()
     {
         SentryHandLoad.Load nothing = SentryHandLoad.Offer(
-            "K-77", 10, Ammunition.Issue.Id, deployed: true, 0, Ammunition.Issue.Id);
-        SentryHandLoad.Load slung = SentryHandLoad.Offer(
-            "K-77", 10, Ammunition.Issue.Id, deployed: false, 6, Ammunition.Issue.Id);
+            "K-77", 10, Ammunition.Issue.Id, inReach: true, 0, Ammunition.Issue.Id);
+        SentryHandLoad.Load tooFarOff = SentryHandLoad.Offer(
+            "K-77", 10, Ammunition.Issue.Id, inReach: false, 6, Ammunition.Issue.Id);
         SentryHandLoad.Load full = SentryHandLoad.Offer(
-            "K-77", SentryBot.MaxMagazine, Ammunition.Issue.Id, deployed: true, 6, Ammunition.Issue.Id);
+            "K-77", SentryBot.MaxMagazine, Ammunition.Issue.Id, inReach: true, 6, Ammunition.Issue.Id);
         SentryHandLoad.Load mixed = SentryHandLoad.Offer(
-            "K-77", 10, Ammunition.Issue.Id, deployed: true, 6, Ammunition.LabTwoStage.Id);
+            "K-77", 10, Ammunition.Issue.Id, inReach: true, 6, Ammunition.LabTwoStage.Id);
 
-        foreach (SentryHandLoad.Load refused in new[] { nothing, slung, full, mixed })
+        foreach (SentryHandLoad.Load refused in new[] { nothing, tooFarOff, full, mixed })
         {
             Assert.False(refused.Worked);
             Assert.Equal(0, refused.Accepted);
@@ -97,12 +101,12 @@ public sealed class PointTheGunTests
         }
 
         // Nothing was taken out of the pocket by any of them.
-        Assert.Equal(6, slung.LeftOver);
+        Assert.Equal(6, tooFarOff.LeftOver);
         Assert.Equal(6, full.LeftOver);
         Assert.Equal(6, mixed.LeftOver);
 
         var said = new HashSet<string>(
-            new[] { nothing.Line, slung.Line, full.Line, mixed.Line }, StringComparer.Ordinal);
+            new[] { nothing.Line, tooFarOff.Line, full.Line, mixed.Line }, StringComparer.Ordinal);
         Assert.Equal(4, said.Count);
     }
 
@@ -113,16 +117,16 @@ public sealed class PointTheGunTests
     public void ADryDrumTakesTheLabRoundAndThenOnlyMoreOfIt()
     {
         SentryHandLoad.Load first = SentryHandLoad.Offer(
-            "R-3B", 0, Ammunition.Issue.Id, deployed: true, 6, Ammunition.LabTwoStage.Id);
+            "R-3B", 0, Ammunition.Issue.Id, inReach: true, 6, Ammunition.LabTwoStage.Id);
         Assert.True(first.Worked);
         Assert.Equal(Ammunition.LabTwoStage.Id, first.AmmoId);
 
         SentryHandLoad.Load more = SentryHandLoad.Offer(
-            "R-3B", first.Magazine, first.AmmoId, deployed: true, 4, Ammunition.LabTwoStage.Id);
+            "R-3B", first.Magazine, first.AmmoId, inReach: true, 4, Ammunition.LabTwoStage.Id);
         Assert.True(more.Worked);
 
         SentryHandLoad.Load wrong = SentryHandLoad.Offer(
-            "R-3B", first.Magazine, first.AmmoId, deployed: true, 4, Ammunition.Issue.Id);
+            "R-3B", first.Magazine, first.AmmoId, inReach: true, 4, Ammunition.Issue.Id);
         Assert.False(wrong.Worked);
     }
 

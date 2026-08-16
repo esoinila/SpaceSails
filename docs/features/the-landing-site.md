@@ -412,6 +412,30 @@ is deterministic, so a racing double-build is pure waste and never a wrong answe
 8.4 **Perf must not be measured from an MCP-driven tab.** Such a tab is `document.hidden`: rAF is throttled
 and timers are clamped, so any number taken from one is worthless.
 
+8.5 **The eye gets the index too** (#858, out of Lab 45). 8.1's "when the caller hands them one" was the whole
+bug: everything that *walked* was handed `DeckPlan.CollisionField`, and everything that *looked* was handed a
+plain `List<Segment>` that `SightBlockers()` refilled every frame. Lab 45 measured the sweep at a strict
+**O(walls), ~18–25 ns a segment** — 63% of a guard's per-frame cost on the 465-segment floor, and **29× the
+indexed answer at 436 segments**, where the indexed one is flat. `SightBlockers()` now files its list into a
+`WallIndex` and **keeps** it, rebuilt only when the stone changes (a fresh plan, or a #371 append — both hand
+`CollisionSegments` a new array) or when a door's shut-state actually flips.
+
+**Rule: a second view of one fact is a caller waiting to be handed the wrong one.** The index is built *from*
+the list, so what the eye sweeps and what a hand sweep would sweep are the same segments by construction.
+
+8.6 **Work a body is going to need is done while it is standing still** (#858). `AutoWalk.Plan` over a guard's
+leg cost a median 1.6–2.2 ms and a worst **6.4 ms — 38.6% of a 60 fps frame** — spent whole on the one frame he
+leaves a stop, about twice a minute per guard, *natively*, in a game that ships to WASM. He stands at that stop
+for `PatrolBeat.StandSeconds` = 5 s either way, so `DeckReachability.Search` (the same A\*, with a handle on
+it) walks `PatrolBeat.PlanCellsAFrame` = 128 lattice cells a frame through the stand instead.
+
+Three things keep it honest: `Path` **is** that class run to the end, so a sliced search and a whole one cannot
+return different routes; `AutoWalk.Planner` carries the two points it was planned between, so a man whose
+errand changed while he stood is never handed somebody else's route; and `Finish()` completes whatever is left
+on the frame it is asked, so there is no state in which the answer is *"not yet"* and a body waits forever.
+The budget is a **cell** count and not a millisecond one on purpose — it means the same thing in WASM, where
+the clock this was measured on does not.
+
 ## Auditing the other places
 
 `EverySiteMeetsTheSpecTests` walks **every landing site on every body** — the real
@@ -748,6 +772,23 @@ ruling:
   (`GateOpenedByRidingTo` asks the panel rather than doing arithmetic on the captain's own floor). The old
   derivation never looked at a card at all, and so had the head office — whose gate is deliberately absent —
   narrating a countersignature nobody was carrying.
+
+**And the second car does not sell depth** (#801 — written into the code against this section before this
+section said it, which is the drift #826 closed). Since #801 a band has two cars, and the law above is a law
+about the *building*, not about a particular hole in it — so the goods car's panel carries the band's own
+four floors and **nothing else**: no SURFACE row, because the only hole with a hut on top of it is the
+cage's (#606), and **no gate row**, because a second car may not become a way to buy depth without the
+paper. The wrong-shaft "refusal stage" is therefore deliberately not a refusal at all — the ambitious press
+never exists, because the row was never offered. What the captain gets instead is told ONCE, standing, in
+the inspectorate voice: the plate says the scope (`🛗 GOODS CAR 2 · THIS BAND ONLY`) and the panel names the
+way out rather than rejecting the ask — *"The goods car. It runs these floors and it does not climb out: for
+the surface, and for anything below this band, the cage is at the other end of the corridor."* Within a band
+the two cars are interchangeable; the moment you want to *leave* the band, you want the cage — which is what
+makes the pair worth walking between rather than redundant. On the cage's panel the SURFACE row is always
+present and asks the same law as every other row (#802, `HoldsPressure` decides the sentence): that row once
+typed `Pressurised: true` as a literal and lied for six PRs, and it is the reason no row on the panel may
+ever type its own answer again. *(Enforced: `TheOtherCarTests`, `TheLiftPanelTests`; the two panels are one
+method with one clause, so "which floors does this band have" cannot drift into two answers.)*
 
 A card is a **possession**, so it rides in the vault (`AuthoritiesSection`), not on the excursion: found
 eleven floors under a moon, still in the pocket a month and a world later. The save carries the id and
@@ -2131,9 +2172,13 @@ excursion at one room in eight, times two one-in-three rolls, is why it needed a
 and whose whole point is that probing them probes back."* This is that cast, and the owner's three sentences
 are the whole of its design.
 
-**Where a round is walked, and where it deliberately is not.** Below the bar, and no deeper than the building
-admits to — `PatrolBeat.IsPatrolled` is `CanteenRegulars`'s own B1 ruling on one side and `DepthOf` on the
-other, so the floors that carry a payroll are exactly the floors the directory owns up to. **Nobody walks the
+**Where a round is walked, and where it deliberately is not.** From the floor that breathes down to the last
+one the building admits to — `PatrolBeat.IsPatrolled` is `TopPressurisedFloor` on one side and `DepthOf` on
+the other, so the floors that carry a payroll are exactly the floors the directory owns up to. (**#863**: the
+bar floor used to be the exception, excluded by a single `>=`. Owner, 2026-08-13, watching a guard stand in a
+furnished aisle: *"let's try to have round because the guard looks kind of silly just standing in the middle
+of an aisle."* B1 is walked now — the spine, the two north rooms, and every door in the canteen's front wall
+every lap — and the park is still nobody's round but the bench figure's.) **Nobody walks the
 unlisted band or the found halls**, and that is a fact rather than an omission: the unlisted band is what the
 clandestine operation was hiding *from its own staff* (§13.7), and a security rota down there would be the
 building telling on itself. The head office has none either (#411 has no gate, no shafts and a fiction of its
@@ -2379,8 +2424,9 @@ working rather than a hole in the roster — the owner's complaint was precisely
 building — but it IS a design question the guards lane owns, and this PR does not answer it: whether a round
 should take in both cars (and pay for it in length), whether a second guard walks the other end, or whether
 the goods car being unwatched is the price the building pays for having one. Nothing here guesses. The back
-of house does not enter the question at all: `IsPatrolled` excludes the bar floor, and the park is only ever
-on the bar floor.
+of house does not enter the question at all: the park is only ever on the bar floor, and — since **#863** put
+a round there — the round stops at the head of each of the two streets that run down to the park's gates and
+turns away, so the gravel and everything behind it stay the bench figure's.
 
 **Two things this deliberately does NOT do, so nobody has to guess later.**
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 
@@ -43,6 +43,22 @@ public sealed class TheShelfIsReadWhereItStandsTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface wiring" a guard
+    /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Surface() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -54,12 +70,12 @@ public sealed class TheShelfIsReadWhereItStandsTests
 
     /// <summary>The branch itself: everything between the one ask and the haul path it must never reach.</summary>
     private static string BookBranch() =>
-        Between(Pages("Map.Surface.cs"), "if (OddBooks.Search(", "// Everything found down here is FILED");
+        Between(Pages("Map.Surface.Hive.cs"), "if (OddBooks.Search(", "// Everything found down here is FILED");
 
     [Fact]
     public void TheBookIsAskedForBEFORETheRoomIsEverTurnedIntoAHaul()
     {
-        string surface = Pages("Map.Surface.cs");
+        string surface = Pages("Map.Surface.Hive.cs");
         int asks = surface.IndexOf("if (OddBooks.Search(", StringComparison.Ordinal);
         int pocket = surface.IndexOf("UndergroundComplex.WhatGoesInThePocket(", StringComparison.Ordinal);
         int struck = surface.IndexOf("ex.HiveRoomsEmptied.Add(roomKey);", StringComparison.Ordinal);
@@ -138,7 +154,7 @@ public sealed class TheShelfIsReadWhereItStandsTests
     [Fact]
     public void TheCheatIsAnArgumentToTheOneAskAndNeverASecondAnswer()
     {
-        string surface = Pages("Map.Surface.cs");
+        string surface = Surface();
         int uses = surface.Split("_bookCheat").Length - 1;
         Assert.True(uses == 2,
             $"_bookCheat appears {uses} time(s) in the surface wiring — it may appear exactly twice, as a " +
@@ -151,7 +167,7 @@ public sealed class TheShelfIsReadWhereItStandsTests
 
         // Read it back off the raw text so a future `_bookCheat ||` or `_bookCheat ?` cannot slip in
         // anywhere in the client at all.
-        string sim = Pages("Map.Sim.cs");
+        string sim = Sim();
         foreach (string line in (surface + "\n" + sim).Split('\n')
                      .Where(l => l.Contains("_bookCheat", StringComparison.Ordinal)))
         {

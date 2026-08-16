@@ -16,8 +16,13 @@ namespace SpaceSails.Client.Pages;
 /// etc."</i> → <see cref="CaptainIsSeated"/> rides to <see cref="Rendering.DeckView.State"/> and the deck
 /// draws a different figure. A glance says sitting, with no panel text involved.</item>
 /// <item><i>"before moving I have to stand up… so if I try to move when sitting down it should ask with a
-/// pop-up whether I want to stand up again."</i> → <see cref="_standUpAsk"/>, raised by WASD and by nothing
-/// else.</item>
+/// pop-up whether I want to stand up again."</i> → <see cref="_standUpAsk"/>.
+/// <para><b>#847 SUPERSEDES THE FIRST HALF OF THAT.</b> Owner, 2026-08-13: <i>"Must stand up before walking
+/// … the keys simply cost you the stand first, which is how chairs work."</i> A movement input no longer
+/// ASKS — it pays, through <see cref="StandUpBeforeWalking"/>, at every seat kind including the counter
+/// stool that was never in the table flag at all. The confirm itself stays exactly where the second ruling
+/// put it: Esc on a DOCKED strip (Map.Sim's cancel chain), where "cancel" has no card to take and would
+/// otherwise silently spend the watch you sat for.</para></item>
 /// <item><i>"Sitting down relaxes and heals"</i> / <i>"it is like short rest in TTRPG."</i> →
 /// <see cref="RestOneSeatedBeat"/>, which is <see cref="ShortRest"/>'s arithmetic spent through the nerve
 /// and condition systems that already exist.</item>
@@ -51,6 +56,11 @@ public partial class Map
     /// that way (the seat is the spot you walked to; nothing teleports anybody onto furniture) and this does
     /// not invent a parallel flag beside it, because a second answer to "are you sitting down" would be this
     /// repo's first named bug class aimed at a posture.
+    ///
+    /// <para>#847 · IT IS THE ONE ANSWER ABOUT A TABLE, and the reader has to know that much: it is what the
+    /// DRAWN posture and the stand-up confirm are wired to, and a counter stool has never been in it. The
+    /// question <i>am I on a seat of any kind</i> — which is the one every MOVEMENT path now asks — is
+    /// <see cref="CaptainIsSeatedAnywhere"/> one screen down.</para>
     /// </summary>
     public bool CaptainIsSeated => _table is not null;
 
@@ -159,12 +169,16 @@ public partial class Map
     /// it.</summary>
     private bool _standUpAsk;
 
-    /// <summary>#784 · WASD in a chair. The keys are CONSUMED — nothing walks, nothing is queued, and the
-    /// held-key set never learns the press happened — and the question goes up instead.
+    /// <summary>#784 · THE STAND-UP CONFIRM — <i>are you sure you want to give the seat up?</i>
     ///
-    /// <para>The whole point is the investment underneath: a stray key must not throw away the watch you
-    /// spent being findable (#757) or the breath you have got back sitting there (#784). So the answer to
-    /// "the captain pressed W while seated" is a sentence, not a step.</para></summary>
+    /// <para>The whole point is the investment underneath: a stray press must not throw away the watch you
+    /// spent being findable (#757) or the breath you have got back sitting there (#784).</para>
+    ///
+    /// <para>#847 · ITS ONE RAISER IS NOW ESC ON A DOCKED STRIP. It was WASD as well until the owner ruled
+    /// that a movement key is not a stray press at all — a captain pressing W has said where they are going,
+    /// and the answer to that is a stand, not a question (<see cref="StandUpBeforeWalking"/>). What is left
+    /// here is the press that says nothing about what the captain wants NEXT: cancel, on a frame with no card
+    /// to take, where a silent teardown would spend the sitting for nothing.</para></summary>
     private void AskWhetherToStandUp()
     {
         if (!_standUpAsk)
@@ -185,7 +199,13 @@ public partial class Map
 
     /// <summary>The one press that stands you up. Through <see cref="CloseTable"/>, which is #757's own
     /// single way out of a table — a hand-written copy of standing up is this repo's first named bug class,
-    /// and the day leaving a table costs something, it must cost it here too.</summary>
+    /// and the day leaving a table costs something, it must cost it here too.
+    ///
+    /// <para>#847 · …and this is the path a MOVEMENT INPUT takes as well, for every seat that is a table:
+    /// the confirm's Stand up button, W at a park bench and a clicked route from a cubicle are one act with
+    /// one teardown under them (<see cref="StandUpBeforeWalking"/>). The one line it says —
+    /// <see cref="SeatedPosture.StoodUpToWalkLine"/>, "off you go" — was written for exactly the press that
+    /// now reaches it most often.</para></summary>
     private void StandUpFromTable()
     {
         _standUpAsk = false;
@@ -196,6 +216,50 @@ public partial class Map
         CloseTable();
         ShowPulseMessage(SeatedPosture.StoodUpToWalkLine);
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// #847 · MUST STAND UP BEFORE WALKING — the one act a movement input owes, whatever the captain is
+    /// sitting on.
+    ///
+    /// <para>Owner's ruling, 2026-08-13, with the receipt: <i>"Must stand up before walking (not standing up
+    /// before doing that was my Pyramid climbing exercise in Giza last January … legs were sore :-D)"</i> —
+    /// and the shape of it: <i>"WASD (and click-to-walk) while seated at ANY seat first routes through the
+    /// seat's own stand-up path (the #846 step-off, scene teardown and all), THEN walks. No refusal line
+    /// needed — the keys simply cost you the stand first, which is how chairs work."</i></para>
+    ///
+    /// <para><b>It ROUTES and it decides nothing.</b> There is no teardown written here: a stool is got down
+    /// from the way the counter's own verb gets down from one, and every seat that is a <see cref="_table"/>
+    /// — a canteen top, a cabinet, a park bench, a ring-office chair, a laboratory stool, a cubicle — stands
+    /// up the way the Stand up button stands up, through <see cref="StandUpFromTable"/> and so through
+    /// <c>CloseTable</c>: the abandoned write-up, the step-off square, the nudge, the line. A second author on
+    /// one teardown is this repo's first named bug class, and the day standing up costs something it must
+    /// cost it once.</para>
+    ///
+    /// <para>Both seats are asked, and neither is an <c>else</c>. One of you can only be on one thing at a
+    /// time and the game is built that way — but a movement key whose job is "leave every seat you are in"
+    /// must not be the place that assumes it, or the first seat that ever survives another would ride the
+    /// walk out of the room.</para>
+    /// </summary>
+    /// <returns>Whether the captain had to get up at all — false when they were already on their feet, which
+    /// is the ordinary case and costs nothing.</returns>
+    private bool StandUpBeforeWalking()
+    {
+        bool stood = false;
+
+        if (_stool is not null)
+        {
+            GetDownFromStool();
+            stood = true;
+        }
+
+        if (_table is not null)
+        {
+            StandUpFromTable();
+            stood = true;
+        }
+
+        return stood;
     }
 
     /// <summary>Whether the confirm should say what standing up COSTS. Only when there is something left to
@@ -217,29 +281,83 @@ public partial class Map
     //
     // THE STATE MACHINE, in one place so nothing else has to derive it:
     //
-    //   seated-idle   (_table is { Solo: true })   → the DOCKED STRIP. No backdrop element at all.
-    //   conversation  (_table is { Solo: false })  → the full card, backdrop and art unchanged (#778/#787).
-    //   standing      (_table is null)             → neither.
+    //   seated-idle   (_table is { TheyCameToYou: false }) → the DOCKED STRIP. No backdrop element at all.
+    //   conversation  (_table is { TheyCameToYou: true })  → the full card, backdrop and art (#778/#787).
+    //   standing      (_table is null)                     → neither.
     //
-    // SOLO is the right flag and not a new one: #757 already flips it the moment somebody takes the chair
-    // opposite (SomebodyTakesTheChair) and back when they go (BackToYourOwnTable). A second "is this a
-    // conversation" flag beside it would be this repo's first named bug class aimed at a frame — and the
-    // approach beat that is coming (#731's walker crossing the hall for real) needs exactly this seam: a
-    // conversation begins from OUTSIDE the strip, by flipping Solo, and the card comes up over the room it
-    // was already showing.
+    // #865 · THE FORK MOVED OFF SOLO, and it moved because the owner drew the line somewhere else. It USED
+    // to read Solo — the chair opposite being empty — and that was the same fact answering two questions.
+    // Solo is OCCUPANCY: it is what the privacy ladder reads, and a top you are sharing is not a top you lay
+    // a case out on, whoever chose to sit there. The FRAME is a different question, and the owner answered it
+    // live at a weighbridge clerk's table with the whole hall dimmed to black behind one small card:
+    //
+    //   "what if I just sit and eat here... now I am kind of blinded of the surrounding here because
+    //    somebody else sits in the same table"
+    //   "It should somehow UI wise be same style as the sitting alone case."
+    //   "Just the social functions as additional options."
+    //
+    // So: POSTURE CHANGES ARE A STRIP, PEOPLE WHO COME TO YOU ARE A CARD. Every seat the captain CHOSE — an
+    // empty top, a bench, an office chair, a cubicle, and now the clerk's own top joined through [E] — is a
+    // posture change and docks. Somebody crossing the hall and taking the chair opposite (#757's approach,
+    // and #731's walker when she walks it for real) is an ENCOUNTER: her face is the point, and a card is
+    // what a face is for. TableTalk.TheyCameToYou carries that and nothing else does.
     //
     // The COUNTER is already docked and stays that way: #780/#789 took the bar card out from under the scrim,
     // so a stool has never dimmed the room. There is nothing to change there and the guard says so in the
     // affirmative rather than this file growing a second frame for it.
 
-    /// <summary>#784 · Is the seated frame in its DOCKED state right now — the HUD strip, with the hall lit
-    /// and running behind it? The one question the razor asks, so the frame law lives here and not in
+    /// <summary>#784/#865 · Is the seated frame in its DOCKED state right now — the HUD strip, with the hall
+    /// lit and running behind it? The one question the razor asks, so the frame law lives here and not in
     /// markup.</summary>
-    private bool SeatedIsDocked => _table is { Solo: true };
+    private bool SeatedIsDocked => _table is { TheyCameToYou: false };
 
-    /// <summary>#784 · …and the other half, named for the reader rather than derived at each use: a table with
-    /// somebody in the chair opposite is a CONVERSATION and gets the card it has always had.</summary>
-    private bool SeatedIsAConversation => _table is { Solo: false };
+    /// <summary>#784/#865 · …and the other half, named for the reader rather than derived at each use: a
+    /// table somebody CAME OVER TO is a conversation and gets the card it has always had.</summary>
+    private bool SeatedIsAConversation => _table is { TheyCameToYou: true };
+
+    /// <summary>#865 · Is the captain sharing this top with somebody — the fact the strip's company lines and
+    /// the customer line's own seat clause hang off. It is <c>Solo</c> read the plain way round, named here
+    /// so the razor asks a question instead of negating a flag.</summary>
+    private bool SeatedWithCompany => _table is { Solo: false };
+
+    // ── #865 · NOTHING MODAL COVERS THE SIT BEAT ──────────────────────────────────────────────────────
+    //
+    // Owner, 2026-08-13, at a canteen table on B1: "I sat down the table but the pop ups blocked my view of
+    // my avatar sitting down" — and on the retry, when nothing covered it: "Oh now it picked the chair and
+    // it worked." Then, of the two attempts together: "That was different than last time."
+    //
+    // WHAT RACED. The first-entry cards down here are POSITION POLLS — CheckCantinaHallUnderfoot and its
+    // siblings run every surface tick and raise a centred _viewObject the moment the captain's coordinates
+    // fall inside a room that still owes its card. #820's snap MOVES THOSE COORDINATES: sitting down puts
+    // the dot on the chair, and the chair is inside the hall's box and inside a cabinet's box. So the tick
+    // after [E] raised a full-screen card over the exact half-second the snap exists to be watched. And
+    // because every one of those latches is one-shot per excursion, it could only ever happen ONCE — the
+    // first sit of a session wore a card, the second wore the strip, and the owner read the difference as
+    // nondeterminism because from the chair that is precisely what it is.
+    //
+    // THE BEAT IS OWED, NOT SPENT. Nothing is dropped: the polls are latched and the story seam has a queue,
+    // so holding them for SeatedPosture.SitBeatSeconds delays a card and never swallows one. That is what
+    // makes the rule safe to apply without asking which card it is.
+
+    /// <summary>#865 · How much of the sit beat is still owed, in real seconds. Armed by the ONE placement
+    /// that sits a captain down (<c>SitCaptainOn</c>) and spent by the surface tick, so every seat kind in
+    /// the game gets it without a single verb having to remember to ask.</summary>
+    private double _sitBeatOwedSeconds;
+
+    /// <summary>#865 · Is the captain still in the middle of taking the chair? Asked by the first-entry polls
+    /// and by the story-card seam, and by nothing that decides what a room CONTAINS — this holds a
+    /// PRESENTATION back for a beat and never changes what the world did.</summary>
+    private bool TheSitBeatIsSettling => _sitBeatOwedSeconds > 0.0;
+
+    /// <summary>#865 · Spend the beat. Called once from the surface tick with the frame's own dt, which is
+    /// the same clock everything else down here is paid out of.</summary>
+    private void SpendTheSitBeat(double dtRealSeconds)
+    {
+        if (_sitBeatOwedSeconds > 0.0)
+        {
+            _sitBeatOwedSeconds = Math.Max(0.0, _sitBeatOwedSeconds - Math.Max(0.0, dtRealSeconds));
+        }
+    }
 
     /// <summary>
     /// #784/#793 · WHICH RUNG OF THE EXPOSURE LADDER THE CAPTAIN IS SITTING ON, or null on their feet.
@@ -254,9 +372,14 @@ public partial class Map
     /// a second seated state, because a bench and a cabinet are the same POSTURE and a different
     /// EXPOSURE.</para>
     /// </summary>
+    /// <remarks>#821 · AND THE LADDER GAINED A TOP RUNG. A cubicle with the catch over is the one seat whose
+    /// privacy does not depend on anybody else's behaviour, so it is asked FIRST — and it is asked of the one
+    /// set of shut doors the deck is rebuilt from (<c>ex.CubiclesShut</c>), never of a flag captured when the
+    /// captain sat down, because the catch can go over while they are already sitting on it.</remarks>
     private SeatedHud.Seat? SeatedIn =>
         _table is { } t
-            ? t.Bench ? SeatedHud.Seat.ParkBench
+            ? t.CubicleKey is { Length: > 0 } wc && CubicleIsShut(wc) ? SeatedHud.Seat.LockedCubicle
+                : t.Bench ? SeatedHud.Seat.ParkBench
                 : t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable
         : _stool is not null ? SeatedHud.Seat.BarStool
         : null;
@@ -309,8 +432,37 @@ public partial class Map
         ex.RestPipsEased.TryGetValue(ex.CanteenWatch, out int pips);
         return SeatedHud.CustomerLine(
             seat, PourSecondsLeft, pips, ShortRest.NervePipCapPerWatch,
-            SittingAlone.Fill(ex.CanteenWatch));
+            SittingAlone.Fill(ex.CanteenWatch),
+            // #865 · …and one clause knows about the company. "YOUR OWN TABLE" printed while the weighbridge
+            // clerk eats opposite would be the strip and the room disagreeing about whose top this is.
+            SeatedWithCompany);
     }
+
+    /// <summary>
+    /// #865 · WHO IS SHARING THE TOP — the strip's company line, or null at a seat you have to yourself.
+    ///
+    /// <para>Owner: <i>"It should somehow UI wise be same style as the sitting alone case."</i> So this is
+    /// not a second panel and not a second component: it is one more line on the strip the captain already
+    /// had, built by <see cref="SeatedHud.CompanyLine"/> out of the plate the deck draws over them and the
+    /// room's own chair arithmetic — every figure of it the same figure the card was printing.</para>
+    /// </summary>
+    private string? SeatedCompanyLine() =>
+        _table is { Solo: false } t
+            ? SeatedHud.CompanyLine(t.Plate, t.Scene.Setting, t.Seats, t.Free)
+            : null;
+
+    /// <summary>
+    /// #865 · THEIR ONE BREATH, OVERHEARD — the neighbour's bark on the strip's own line, or null.
+    ///
+    /// <para>Shown only until something has actually been SAID at this table: the strip has one outcome slot
+    /// (#680's law travelled onto the surface with it) and a bark left standing under the answer it becomes
+    /// when Small talk is pressed would print the same sentence twice. Before that press it is the whole of
+    /// what sitting down at somebody else's top gets you, which is #751's own design read out loud.</para>
+    /// </summary>
+    private string? SeatedOverheardLine() =>
+        _table is { Solo: false, Bark: { Length: > 0 } bark, Outcome: null or "" }
+            ? SeatedHud.OverheardLine(bark)
+            : null;
 
     // ── PRIVACY GATES THE SPREAD ──────────────────────────────────────────────────────────────────────
 
@@ -323,14 +475,21 @@ public partial class Map
     /// #784 · IS THE CAPTAIN IN A SEAT OF ANY KIND — a table, a cabinet, a stool at the counter.
     ///
     /// <para>Deliberately NOT <see cref="CaptainIsSeated"/>, which is #788's TABLE flag and is wired to the
-    /// things a table decides: the drawn posture, the stand-up confirm, the movement stop. A stool is a
-    /// posture of the COUNTER card (#789's one-E-per-fixture rule) and has never been in that flag; widening
-    /// it here would silently change what WASD and the deck renderer do at the bar, which is a bigger claim
-    /// than this issue is making.</para>
+    /// things a table decides: the drawn posture and the stand-up confirm. A stool is a posture of the
+    /// COUNTER card (#789's one-E-per-fixture rule) and has never been in that flag.</para>
     ///
     /// <para>What the spread needs is the other question — <i>am I in a seat, and which one</i> — and the
     /// answer to it is <see cref="SeatedIn"/> being non-null. This member exists so that reading is named
     /// rather than spelled out at each use.</para>
+    ///
+    /// <para>#847 · AND IT IS THE MOVEMENT LAW'S FLAG NOW. This docblock used to say that widening the seated
+    /// answer to the bar "would silently change what WASD does at the counter, which is a bigger claim than
+    /// this issue is making" — and it was right to leave the claim to somebody with the authority to make it.
+    /// The owner made it: a stool is a seat, and you get off a seat before you walk. So the frame-level stop
+    /// in <c>MoveAvatar</c> asks THIS question rather than the table's, which is what closed the gap the
+    /// #820 snap made visible — the dot walking along the counter out of a scene that still had it seated.
+    /// The DRAWN posture is still the table's flag, because that is a question about a picture and nobody has
+    /// ruled on the bar's.</para>
     /// </summary>
     private bool CaptainIsSeatedAnywhere => SeatedIn is not null;
 
@@ -405,7 +564,7 @@ public partial class Map
             return;
         }
 
-        if (ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}"))
+        if (ex.WrittenUpProperly.Contains(WrittenUpKey(item)))
         {
             SayItWhereTheyAreLooking(SeatedPosture.AlreadyWrittenLine);
             return;
@@ -447,7 +606,7 @@ public partial class Map
         {
             return;
         }
-        if (!ex.WrittenUpProperly.Add($"{item.Kind}:{item.Id}"))
+        if (!ex.WrittenUpProperly.Add(WrittenUpKey(item)))
         {
             return;
         }
@@ -471,13 +630,45 @@ public partial class Map
     private bool CanWriteUp(Core.Satchel.Item item) =>
         _surface is { } ex
         && LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
-        && !ex.WrittenUpProperly.Contains($"{item.Kind}:{item.Id}");
+        && !ex.WrittenUpProperly.Contains(WrittenUpKey(item));
 
     /// <summary>What the pen's tooltip says — the hint when it will work, the refusal when it will not, so
     /// the price of a press is known before the press (#696's own discipline, one control over).</summary>
     private string WriteUpHint(Core.Satchel.Item item) =>
         !CanWriteUp(item) ? SeatedPosture.AlreadyWrittenLine
         : SpreadRefusal ?? SeatedSpread.SpreadHint;
+
+    /// <summary>#784 · HAS THE CASE BEGUN — is any sheet still in the sleeve already in the book? The one
+    /// fact the spread door's own words switch on (owner: the button should say "we change the thing we
+    /// look at" once a sheet is done): begun means <see cref="SeatedSpread.SpreadAgainLabel"/>, untouched
+    /// means <see cref="SeatedSpread.SpreadLabel"/>. Read off <c>WrittenUpProperly</c> against the sleeve
+    /// as it stands — a worked paper that was since binned no longer argues the case is open here.</summary>
+    private bool CaseHasBegun
+    {
+        get
+        {
+            if (_surface is not { } ex)
+            {
+                return false;
+            }
+            foreach (Core.Satchel.Item item in _satchel)
+            {
+                if (ex.WrittenUpProperly.Contains(WrittenUpKey(item)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>The spread door's label for the current state of the case — see <see cref="CaseHasBegun"/>.</summary>
+    private string SpreadDoorLabel =>
+        CaseHasBegun ? SeatedSpread.SpreadAgainLabel : SeatedSpread.SpreadLabel;
+
+    /// <summary>…and its hint, unless a refusal outranks it.</summary>
+    private string SpreadDoorHint =>
+        SpreadRefusal ?? (CaseHasBegun ? SeatedSpread.SpreadAgainHint : SeatedSpread.SpreadHint);
 
     /// <summary>
     /// #784/#798 · THE ROWS THE SPREAD OFFERS — everything in the sleeve this table has business with.
@@ -510,4 +701,20 @@ public partial class Map
     /// still there for the SHREDDER's sake does not go on offering an evening's work that is already done.</summary>
     private string SpreadRowVerb(Core.Satchel.Item item) =>
         CanWriteUp(item) ? "dig it out →" : "already in the book";
+
+    /// <summary>
+    /// #784/#828 · HOW THE REGISTER NAMES ONE SHEET — the key, built once.
+    ///
+    /// <para>A satchel row has a kind and an id and neither alone is a document: two moons can hand out
+    /// paper #3. This project has paid four times for a law transcribed at its call sites, and #828 was
+    /// about to add a fifth copy of this one from the far side of the building, so the format lives here and
+    /// every hand that writes the set or reads it goes through it.</para>
+    /// </summary>
+    private static string WrittenUpKey(Core.Satchel.Item item) => $"{item.Kind}:{item.Id}";
+
+    /// <summary>#828 · Is this sheet already in the book in the captain's own hand? The bin picker's own
+    /// question, asked of the seated register's set rather than of a second one — the dig is the only thing
+    /// that puts a paper in here, and the picker only reads.</summary>
+    private bool AlreadyWrittenUp(Core.Satchel.Item item) =>
+        _surface is { } ex && ex.WrittenUpProperly.Contains(WrittenUpKey(item));
 }

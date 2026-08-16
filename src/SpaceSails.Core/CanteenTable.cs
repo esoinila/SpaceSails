@@ -159,6 +159,24 @@ public static class CanteenTable
         _ => "",
     };
 
+    /// <summary>
+    /// #842 · …and what a top with NO CHAIR LEFT says instead. The counterpart to a wave-in, and it is a
+    /// wave-in's opposite in the one way that matters: it is SAID.
+    ///
+    /// <para>Owner, filing it (#603's house law, one room over): a refusal is spoken, and <i>"a control that
+    /// quietly does something else is how a player learns the wrong lesson."</i> Before #840 gave the tops
+    /// honest heads, a genuinely full table barely existed; the moment it did, [E] at one fell through to the
+    /// patron's one-breath card — readable, but not an answer to the thing the player pressed.</para>
+    ///
+    /// <para>ONE PRESS, ONE SENTENCE, WALK ON. Pressing harder does not open it: what is being said at a full
+    /// top is something you OVERHEAR by sitting nearby, which the neighbour machinery already owns, and
+    /// standing over four strangers pressing E at their food is not a way into a conversation in any room
+    /// anybody has ever been in. The same shape as the counter's full row
+    /// (<see cref="Interior.TheStools.RowIsFullLine"/>), which is the control this game teaches with.</para>
+    /// </summary>
+    public const string TableIsFullLine =
+        "Every chair at this top is spoken for. Whatever is being said there, it is not waiting for you.";
+
     // ── SMALL TALK ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The first line of somebody's day.</summary>

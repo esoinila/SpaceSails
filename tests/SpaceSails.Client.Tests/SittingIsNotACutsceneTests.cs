@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -45,6 +45,30 @@ public sealed class SittingIsNotACutsceneTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard
+    /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Surface() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
@@ -119,8 +143,12 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("tab.ArtUrl", conversation, StringComparison.Ordinal);
 
         // And the fork is the state machine's, in one place, rather than a condition written into markup.
+        // #865 · …and it forks on WHO CHOSE THIS SEAT and not on the chair opposite being empty. It read
+        // `_table is { Solo: true }` until the owner ruled that joining a stranger's top keeps the room
+        // visible: Solo is OCCUPANCY (the fact the privacy ladder reads) and the frame is a different
+        // question with a different answer at exactly one table — the one you asked to sit at.
         string seated = Source("Pages", "Map.Seated.cs");
-        Assert.Contains("private bool SeatedIsDocked => _table is { Solo: true };", seated,
+        Assert.Contains("private bool SeatedIsDocked => _table is { TheyCameToYou: false };", seated,
             StringComparison.Ordinal);
     }
 
@@ -198,12 +226,12 @@ public sealed class SittingIsNotACutsceneTests
     public void THE_I_KEY_OpensTheSpreadSeatedAndThePocketStanding()
     {
         // The key is still one key, and it still reaches the satchel.
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
         Assert.Contains("case \"i\" or \"I\":", deck, StringComparison.Ordinal);
         Assert.Contains("ToggleSatchel();", deck, StringComparison.Ordinal);
 
         // The fork is at the OPEN, and it is posture and nothing else.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
         Assert.Contains(
             "_satchelPage = CaptainIsSeatedAnywhere ? SatchelPage.Spread : SatchelPage.Carried;",
             surface, StringComparison.Ordinal);
@@ -266,7 +294,7 @@ public sealed class SittingIsNotACutsceneTests
     public void THE_DIG_TakesItsTimeAndThenTheBookGainsTheEntry()
     {
         string seated = Source("Pages", "Map.Seated.cs");
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
 
         // ONE CHANNEL: the write starts #696's hold rather than a clock of its own.
         Assert.Contains("BeginProcessing(ex, Core.Processing.Work.Write, item, standing, null);", seated,
@@ -302,8 +330,15 @@ public sealed class SittingIsNotACutsceneTests
 
         // THE PRODUCT: the seated ending files the gist and RETURNS — the sheet is not set down, which is
         // the whole difference between a table and a photograph.
+        // #828 · Cut at the member that FOLLOWS it, exactly as the landing below is cut, and no longer at a
+        // character count: a third register (the secure disposal's watched beat) pushed the fall-through
+        // past 1600 characters and the guard went red on a method it had no complaint about. A window a
+        // comment can push an assertion out of is a guard about formatting.
         int complete = surface.IndexOf("private void CompleteProcessing(", StringComparison.Ordinal);
-        string completeBody = surface[complete..(complete + 1600)];
+        int afterComplete = surface.IndexOf(
+            "private void AbandonProcessing(", complete, StringComparison.Ordinal);
+        Assert.True(afterComplete > complete, "the far end has no end this guard can find.");
+        string completeBody = surface[complete..afterComplete];
         int write = completeBody.IndexOf("hold.Work == Core.Processing.Work.Write", StringComparison.Ordinal);
         int setDown = completeBody.IndexOf("SetItDown(ex, hold.Item", StringComparison.Ordinal);
         Assert.True(write > 0, "the far end has no arm for the seated register at all.");
@@ -397,7 +432,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("style=\"width:@((int)(dockedDug * 100))%\"", whileDigging, StringComparison.Ordinal);
 
         // ── ONE CLOCK. The strip's fraction and the deck rectangle's are the same Core call ──
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
         int frac = surface.IndexOf("private double? ProcessingFraction()", StringComparison.Ordinal);
         Assert.True(frac > 0, "the strip's bar has no fraction of its own to read.");
         string fracBody = surface[frac..(frac + 260)];
@@ -459,7 +494,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void ESC_AsksTheSameQuestionWDoesWhileSeatedAloneAndStillLeavesAConversation()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Source("Pages", "Map.Sim.Cancel.cs");
         int chain = sim.IndexOf("private bool TryDismissTopOverlay()", StringComparison.Ordinal);
         Assert.True(chain > 0);
 
@@ -486,7 +521,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void THE_DEMO_PutsATesterInAPrivateSeatWithSomethingToDig()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("pair.StartsWith(\"spread=\"", sim, StringComparison.Ordinal);
         Assert.Contains("_spreadCheat = true;", sim, StringComparison.Ordinal);
 

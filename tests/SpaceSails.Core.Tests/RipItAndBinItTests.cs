@@ -75,19 +75,25 @@ public sealed class RipItAndBinItTests
         in UndergroundComplex.FloorPlan floor, in RipAndBin.Bin skip)
     {
         var segs = new List<SurfaceCollision.Segment>();
-        double h = RipAndBin.HalfDu;
         foreach (SurfaceLayout.Wall w in floor.Walls)
         {
-            // Everything except the bin's OWN four sides — a box is allowed to touch itself.
-            bool mine = Math.Abs(w.X1 - skip.X) <= h + 0.001 && Math.Abs(w.X2 - skip.X) <= h + 0.001
-                && Math.Abs(w.Y1 - skip.Y) <= h + 0.001 && Math.Abs(w.Y2 - skip.Y) <= h + 0.001;
-            if (!mine)
+            // Everything except the bin's OWN box — a box is allowed to touch itself. Measured off the
+            // bin's PUBLISHED half-extents (#828), because the ladder's top rung is a six-du machine and a
+            // 0.9 typed in here would have called four of its own sides somebody else's walls.
+            if (!Mine(w, in skip))
             {
                 segs.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
             }
         }
         return segs;
     }
+
+    /// <summary>#828 · Is this wall one of the bin's own — a segment lying wholly inside the box the bin
+    /// publishes? The one place the "which walls are mine" question is answered, so the two audits below
+    /// cannot come to two views of a rectangle.</summary>
+    private static bool Mine(in SurfaceLayout.Wall w, in RipAndBin.Bin bin) =>
+        Math.Abs(w.X1 - bin.X) <= bin.HalfX + 0.001 && Math.Abs(w.X2 - bin.X) <= bin.HalfX + 0.001
+        && Math.Abs(w.Y1 - bin.Y) <= bin.HalfY + 0.001 && Math.Abs(w.Y2 - bin.Y) <= bin.HalfY + 0.001;
 
     // ── (a) THE FIXTURES ARE THERE, AND THEY ARE THERE FOR A STATED REASON ────────────────────────────
 
@@ -196,33 +202,78 @@ public sealed class RipItAndBinItTests
     /// geometry about a room it does not own. A bin's box goes into <c>FloorPlan.Walls</c>, which is the ONE
     /// list that is both drawn and collided with, so this guard asserts the four sides are actually there —
     /// if they ever stop being, the bin becomes a plate the captain walks straight through.</para>
+    ///
+    /// <para>#874 · <b>AND THE INSIDE OF IT IS NOT A PLACE.</b> Four sides was the whole of the law here, and
+    /// four sides round 1.8 du leave exactly one lattice square in the middle that a 1.4 du captain fits on
+    /// and nothing on the floor can walk to — a sealed island, in every bin in the building, invisible to
+    /// every picture the game draws. So the count is now of the RAILS specifically (a side is a segment
+    /// lying along an edge of the box, which is what "drawn as a thing" always meant), and the second half
+    /// asks what counting sides could not: standing in the middle of a waste bin must be blocked BY THE
+    /// BIN.</para>
+    ///
+    /// <para><b>The new half proven RED</b> by script-reverting <c>UndergroundComplex.cs</c> to 11356fe —
+    /// <c>CarveBins.AddBox</c> back to its four <c>walls.Add</c> calls:</para>
+    /// <code>
+    /// 321 of 1154 floor(s) break the law: spec — the box the eye sees is the box the boots meet, off one
+    /// list, and it is filled in
+    ///   luna B1: the Chute at (1.9, -200.5) is a box the captain can STAND IN — four rails round a sealed
+    ///     square, drawn solid and simulated hollow (#874).
+    ///   luna B5: the PaperBin at (40.5, -155.0) is a box the captain can STAND IN — …
+    ///   luna B13: the Chute at (-11.9, -93.5) is a box the captain can STAND IN — …
+    /// </code>
     /// </summary>
     [Fact]
     public void THE_DRAWN_BOX_IsTheCollidedBox()
     {
+        // The captain's own half-width. Core carries no client constant, so it is named here and it is what
+        // DeckPlan.AvatarRadius holds — a body this wide is what makes a 1.8 du box a place to stand.
+        const double captain = 0.7;
+
         AuditEveryFloor((_, _, floor) =>
         {
-            double h = RipAndBin.HalfDu;
             foreach (RipAndBin.Bin bin in floor.TheBins)
             {
-                int sides = 0;
+                // #828 · The four EDGES, as a set rather than as a count. The secure rung stands in a
+                // terrace of abutting cells, so the booth in front of it lays a wall exactly along the
+                // machine's own near face and a tally would read five sides where a captain meets four. A
+                // set answers the question the count was always asking: is every edge of this box a wall.
+                var rails = new HashSet<string>(StringComparer.Ordinal);
+                var own = new List<SurfaceCollision.Segment>();
                 foreach (SurfaceLayout.Wall w in floor.Walls)
                 {
-                    bool mine = Math.Abs(w.X1 - bin.X) <= h + 0.001 && Math.Abs(w.X2 - bin.X) <= h + 0.001
-                        && Math.Abs(w.Y1 - bin.Y) <= h + 0.001 && Math.Abs(w.Y2 - bin.Y) <= h + 0.001;
-                    if (mine)
+                    if (!Mine(w, in bin))
                     {
-                        sides++;
+                        continue;
+                    }
+                    own.Add(new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2));
+
+                    // A SIDE: a segment that RUNS ALONG one of the box's four edges — flat on one axis, and
+                    // that axis pinned at the edge. A stroke through the middle of the mass is not a side,
+                    // which is the distinction the old count could not make.
+                    if (Math.Abs(w.Y1 - w.Y2) < 0.001
+                        && Math.Abs(Math.Abs(w.Y1 - bin.Y) - bin.HalfY) < 0.001)
+                    {
+                        rails.Add(w.Y1 > bin.Y ? "N" : "S");
+                    }
+                    else if (Math.Abs(w.X1 - w.X2) < 0.001
+                        && Math.Abs(Math.Abs(w.X1 - bin.X) - bin.HalfX) < 0.001)
+                    {
+                        rails.Add(w.X1 > bin.X ? "E" : "W");
                     }
                 }
-                if (sides != 4)
+                if (rails.Count != 4)
                 {
-                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) has {sides} collidable side(s) — "
-                        + "it is drawn as a thing and is not one.";
+                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) has {rails.Count} collidable "
+                        + "side(s) — it is drawn as a thing and is not one.";
+                }
+                if (!SurfaceCollision.Blocked(bin.X, bin.Y, captain, own))
+                {
+                    return $"the {bin.Tier} at ({bin.X:F1}, {bin.Y:F1}) is a box the captain can STAND IN — "
+                        + "four rails round a sealed square, drawn solid and simulated hollow (#874).";
                 }
             }
             return null;
-        }, "spec — the box the eye sees is the box the boots meet, off one list");
+        }, "spec — the box the eye sees is the box the boots meet, off one list, and it is filled in");
     }
 
     /// <summary>
@@ -327,7 +378,8 @@ public sealed class RipItAndBinItTests
         Assert.Null(RipAndBin.NearestWithinReach(0, 0, null));
         Assert.Null(RipAndBin.NearestWithinReach(0, 0, []));
         Assert.Null(RipAndBin.NearestWithinReach(0, 0, [far]));
-        Assert.Null(RipAndBin.NearestWithinReach(RipAndBin.ReachDu + 0.5, 0, [paper]));
+        // #828 · Out of reach is measured from the BOX, so "out" is the reach plus the half a bucket is.
+        Assert.Null(RipAndBin.NearestWithinReach(RipAndBin.ReachDu + RipAndBin.HalfDu + 0.5, 0, [paper]));
 
         Assert.Equal(RipAndBin.Tier.PaperBin,
             RipAndBin.NearestWithinReach(RipAndBin.ReachDu - 0.1, 0, [paper])!.Value.Tier);
@@ -351,11 +403,19 @@ public sealed class RipItAndBinItTests
     [Fact]
     public void THE_LADDER_IsOrderedWorstBetFirst()
     {
+        // #828 · …and the third rung of the ladder is APPENDED to it, at the good end: the office secure
+        // disposal is the only rung that is not a bet, so it belongs after the chute in a list that runs
+        // worst first.
         Assert.Equal(
-            new[] { RipAndBin.Tier.PaperBin, RipAndBin.Tier.SlopBin, RipAndBin.Tier.Chute },
+            new[]
+            {
+                RipAndBin.Tier.PaperBin, RipAndBin.Tier.SlopBin, RipAndBin.Tier.Chute,
+                RipAndBin.Tier.SecureDisposal,
+            },
             RipAndBin.Ladder.ToArray());
         Assert.True(RipAndBin.Tier.PaperBin < RipAndBin.Tier.SlopBin);
         Assert.True(RipAndBin.Tier.SlopBin < RipAndBin.Tier.Chute);
+        Assert.True(RipAndBin.Tier.Chute < RipAndBin.Tier.SecureDisposal);
     }
 
     // ── (d) THE WORDS ─────────────────────────────────────────────────────────────────────────────────
@@ -533,6 +593,80 @@ public sealed class RipItAndBinItTests
             kept.AppendLine(slashes >= 0 ? line[..slashes] : line);
         }
         return kept.ToString();
+    }
+
+    // ── (f) #828 · THE BIN'S OWN DOOR — THE WORDS AND THE ORDER ───────────────────────────────────────
+
+    /// <summary>
+    /// #828 · WORKED SHEETS LEAD, and nothing is hidden.
+    ///
+    /// <para>Owner's two-tier reading law: only the dig guarantees the book kept what the sheet had, so the
+    /// finished papers are the natural feed and go under the captain's thumb. The rest still come — a picker
+    /// that dropped them would be the game deciding what a captain may do with their own paper.</para>
+    ///
+    /// <para>Swept in BOTH directions and for STABILITY, because a partition is exactly the kind of law that
+    /// passes when handed a list that was already in the right order.</para>
+    /// </summary>
+    [Fact]
+    public void THE_PICKER_LeadsWithWhatIsInTheBookAndDropsNothing()
+    {
+        string[] sleeve = ["glanced-a", "dug-a", "glanced-b", "dug-b", "glanced-c"];
+        bool Dug(string id) => id.StartsWith("dug", StringComparison.Ordinal);
+
+        List<string> order = RipAndBin.WorkedLeading(sleeve, Dug);
+
+        Assert.Equal(["dug-a", "dug-b", "glanced-a", "glanced-b", "glanced-c"], order);
+        Assert.Equal(sleeve.Length, order.Count);      // nothing is dropped…
+        Assert.Equal([.. sleeve.OrderBy(s => s)], [.. order.OrderBy(s => s)]);   // …and nothing is invented.
+
+        // Both ends of the ladder: all worked and none worked are the ordinary cases, and both must come
+        // back in the sleeve's own order rather than reversed by a partition that only got tested mixed.
+        Assert.Equal(sleeve, RipAndBin.WorkedLeading(sleeve, _ => true));
+        Assert.Equal(sleeve, RipAndBin.WorkedLeading(sleeve, _ => false));
+        Assert.Empty(RipAndBin.WorkedLeading<string>([], _ => true));
+    }
+
+    /// <summary>#828 · THE PICKER NAMES THE BUCKET IT IS OVER. A title reading "the bin" would be the one
+    /// thing this whole ladder exists to refuse: which rung you fed is the entire mechanical difference
+    /// between the three, and it is the word a later arc reads back.</summary>
+    [Fact]
+    public void THE_PICKER_TitleNamesTheRungTheCaptainIsStandingAt()
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (RipAndBin.Tier tier in RipAndBin.Ladder)
+        {
+            string title = RipAndBin.PickerTitle(tier);
+            Assert.True(seen.Add(title), $"{tier} shares its picker title with another rung.");
+            Assert.Contains(RipAndBin.TheBin(tier).ToUpperInvariant(), title, StringComparison.Ordinal);
+            Assert.Contains(RipAndBin.Glyph, title, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// #828 · THE POLITE REFUSAL, and the quiet flag that is not one.
+    ///
+    /// <para>The empty-sleeve line is <c>SeatedSpread.NothingToWorkLine</c>'s kin, bin-flavoured and kept to
+    /// ONE sentence at the owner's word — and like every refusal in this feature it names what would fix it
+    /// (#603).</para>
+    ///
+    /// <para>The unworked flag is the opposite thing and must stay the opposite thing: it is a WORD ON A ROW.
+    /// Nothing in this file may turn it into a refusal, so the warning behind it says what it costs and never
+    /// that it is not allowed.</para>
+    /// </summary>
+    [Fact]
+    public void AN_EMPTY_SLEEVE_IsRefusedPolitelyAndAGLANCEDSheetIsNotRefusedAtAll()
+    {
+        Assert.Equal(1, RipAndBin.NothingToBinLine.Count(c => c == '.'));
+        Assert.Contains("paper", RipAndBin.NothingToBinLine, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(SeatedSpread.NothingToWorkLine, RipAndBin.NothingToBinLine);
+
+        // The flag is a word, not a verdict — and the warning behind it is about the BOOK, which is the only
+        // thing a dig ever bought.
+        Assert.DoesNotContain("cannot", RipAndBin.NotYetWorkedFlag, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("cannot", RipAndBin.NotYetWorkedWarning, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("must", RipAndBin.NotYetWorkedWarning, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("book", RipAndBin.NotYetWorkedWarning, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(RipAndBin.NotYetWorkedFlag, RipAndBin.AlreadyInTheBookFlag);
     }
 
     /// <summary>Read one of Core's own source files, for the guards that are about SHAPE rather than

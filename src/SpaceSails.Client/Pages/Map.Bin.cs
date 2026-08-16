@@ -88,6 +88,108 @@ public sealed partial class Map
         : BinWithinReach() is { } bin ? $"{RipAndBin.Hint(bin.Tier)} {RipAndBin.TierBet(bin.Tier)}"
         : RipAndBin.NoBinLine;
 
+    // ── #828 · THE OTHER DOOR: THE BIN TAKES [E] ─────────────────────────────────────────────────────────
+    //
+    // Owner, evening playtest at his own table in the upper canteen (2026-08-11): "I think the trash could
+    // be an e-use ... where we select from inventory the processed items we rip and deposit into trash."
+    //
+    // #798 above is the verb PAPER-FIRST: it lives on a satchel row and the bin is a range check. This is
+    // the mirror, and it is a WAY IN and nothing else. Every method below opens a page, orders a list or
+    // writes a word on a row; the press at the end of it is <see cref="RipItUp"/>, the same act, with the
+    // same reach check, the same filed fact and the same sleeve. Two grips, one verb — the law the issue
+    // states and the guard proves by driving both doors and comparing the books.
+
+    /// <summary>
+    /// #828 · WHICH BIN [E] BELONGS TO where the captain is standing, or null.
+    ///
+    /// <para>A bin is not a console — the carve puts a solid box on the plan and plates it, and deliberately
+    /// adds no console spot (#757: a console that answers nothing is worse than no console). So the press has
+    /// to be claimed here rather than in <c>DeckPlan.ConsoleKind</c>, and the rule for claiming it is the one
+    /// <see cref="Rendering.DeckPlan.NearestConsoleSpot"/> itself had to learn the hard way: <b>the NEAREST
+    /// fixture wins</b>. Walk to a thing and the thing answers. A bin standing near a counter never takes the
+    /// counter's key, and a captain on the bin's own published standing spot — 2.2 du from a box the carve
+    /// keeps 4 du clear of every piece of furniture on the floor — is nearer to it than to anything else.</para>
+    /// </summary>
+    private RipAndBin.Bin? TheBinTakingYourPress()
+    {
+        if (BinWithinReach() is not { } bin)
+        {
+            return null;
+        }
+        double toBin = bin.DistanceTo(_avatarX, _avatarY);
+        return _deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { } spot
+            && spot.DistanceFrom(_avatarX, _avatarY) <= toBin
+                ? null
+                : bin;
+    }
+
+    /// <summary>
+    /// #828 · THE PRESS. Stand at the bin, open the sleeve over it.
+    ///
+    /// <para>Returns true when the bin took the key, so the console dispatch behind it is untouched by a
+    /// press it never saw. It opens the satchel on the bin's own page rather than raising a fourth kind of
+    /// card: the pocket is where the papers are, the rows already know how to say what they are, and the
+    /// refusals already land inside the dialog (#680, and the reason the act says its line into
+    /// <c>_satchelOutcome</c> rather than under the backdrop's blur).</para>
+    ///
+    /// <para>It does NOT freeze which bin this is. Nothing here stops a captain walking off mid-picker — the
+    /// deck keys are live under an open satchel — so the page asks <see cref="BinWithinReach"/> every draw
+    /// and the act asks it again at the press. A stored bin would be the sim doing one thing while the page
+    /// said another, three du down the corridor.</para>
+    /// </summary>
+    private bool TryOpenTheBinOverTheSleeve()
+    {
+        if (TheBinTakingYourPress() is null)
+        {
+            return false;
+        }
+
+        _satchelTarget = null;      // this is not an offer to a lock — nothing here is being TRIED
+        _satchelOutcome = null;
+        _walletOpen = false;
+        _satchelPage = SatchelPage.Bin;
+        _showSatchel = true;
+        return true;
+    }
+
+    /// <summary>
+    /// #828 · WHAT THE PICKER OFFERS, in the order it offers it.
+    ///
+    /// <para>Papers only — <see cref="RipAndBin.IsEvidence"/>, the same question the row control asks, so a
+    /// page of things the verb does not apply to is impossible rather than merely unlikely.</para>
+    ///
+    /// <para>Worked sheets LEAD (<see cref="RipAndBin.WorkedLeading"/>), which is the owner's two-tier
+    /// reading law made into a list: only the dig guarantees the book kept what the sheet had, so the
+    /// finished ones are the natural feed and go under the captain's thumb. The rest are still here, still
+    /// pressable, wearing a flag — a refusal would be the game deciding what a captain may do with their own
+    /// paper.</para>
+    /// </summary>
+    private List<Core.Satchel.Item> BinnableFinds()
+    {
+        var papers = new List<Core.Satchel.Item>();
+        foreach (Core.Satchel.Item item in _satchel)
+        {
+            if (RipAndBin.IsEvidence(item.Kind))
+            {
+                papers.Add(item);
+            }
+        }
+        return RipAndBin.WorkedLeading(papers, AlreadyWrittenUp);
+    }
+
+    /// <summary>#828 · The quiet word on a picker row: what the book already has, or what it never got. Core
+    /// owns both, so the flag on the row and the warning in the hint cannot come to two views of the same
+    /// sheet.</summary>
+    private string BinRowFlag(Core.Satchel.Item item) =>
+        AlreadyWrittenUp(item) ? RipAndBin.AlreadyInTheBookFlag : RipAndBin.NotYetWorkedFlag;
+
+    /// <summary>#828 · …and the hint behind it: the warning FIRST on a sheet nothing has been dug out of,
+    /// then the ordinary price of the press. Warn, then allow — the owner's ruling, and the reason this is
+    /// two sentences rather than a disabled control.</summary>
+    private string BinRowHint(Core.Satchel.Item item) =>
+        AlreadyWrittenUp(item) ? RipHint(item)
+        : $"{RipAndBin.NotYetWorkedWarning} {RipHint(item)}";
+
     /// <summary>
     /// #798 · THE ACT.
     ///
@@ -103,7 +205,7 @@ public sealed partial class Map
     /// </summary>
     private void RipItUp(Core.Satchel.Item item)
     {
-        if (_surface is null)
+        if (_surface is not { } atTheBin)
         {
             return;
         }
@@ -120,6 +222,60 @@ public sealed partial class Map
             return;
         }
 
+        // ── #828 · THE TOP RUNG IS WATCHED, AND THAT IS THE WHOLE OF WHAT IT SELLS ──────────────────────
+        //
+        // Owner: "a safe paper disposal … that visually destroy the notes as we watch." Three rungs of this
+        // ladder are a BET about somebody else's hands and the game never says which was enough; this one is
+        // the only disposal a captain can CHECK, and the checking is a beat they stand through rather than a
+        // sentence they are handed. So the press opens the one hold this surface has
+        // (Processing.Work.Shred) and the destruction happens at the far end of it — which also means
+        // walking off mid-sheet gives the paper back, creased and still yours, because a disposal nobody
+        // watched has not happened.
+        //
+        // It is a DOORWAY in front of the act and never a second copy of one: <see cref="TheSheetIsGone"/>
+        // below is the only place in the game a document is destroyed, and every rung ends in it.
+        if (bin.Tier == RipAndBin.Tier.SecureDisposal)
+        {
+            BeginProcessing(
+                atTheBin, Core.Processing.Work.Shred, item, WhereYouAreStanding(), at: null);
+            return;
+        }
+
+        TheSheetIsGone(item, bin);
+    }
+
+    /// <summary>
+    /// #828 · THE FAR END OF A WATCHED DESTRUCTION — the rollers stop and the sheet is gone.
+    ///
+    /// <para>Called only from <c>CompleteProcessing</c>, which clears the hold first, so this runs in a
+    /// world with no clock in it. The bucket is re-asked rather than carried on the hold, for the reason the
+    /// picker re-asks it every draw: a stored bin would be the sim doing one thing while the page said
+    /// another, three du down the corridor. The hold's own tolerance
+    /// (<see cref="Core.Processing.StandingToleranceDu"/>, 1.5 du) is smaller than the reach
+    /// (<see cref="RipAndBin.ReachDu"/>, 4 du), so a captain who held still is still standing at the machine
+    /// they fed — and one who is somehow not gets the refusal and keeps their paper.</para>
+    /// </summary>
+    private void TheDestructionWasWatched(Core.Satchel.Item item)
+    {
+        if (BinWithinReach() is not { } bin)
+        {
+            SayItWhereTheyAreLooking(RipAndBin.NoBinLine);
+            return;
+        }
+        TheSheetIsGone(item, bin);
+    }
+
+    /// <summary>
+    /// #798/#828 · THE DESTRUCTION ITSELF — the one implementation, whichever rung and whichever door.
+    ///
+    /// <para>Lifted out of <see cref="RipItUp"/> when the secure rung grew a beat in front of it. Nothing
+    /// about it moved: the same one line touching the same one list, the same filed fact with the bucket
+    /// named in it, the same witness ladder. The ONLY way to reach it is through the gates above, and there
+    /// is no second copy of it anywhere — which is what makes "one verb, three rungs, two doors" structural
+    /// rather than a promise.</para>
+    /// </summary>
+    private void TheSheetIsGone(Core.Satchel.Item item, RipAndBin.Bin bin)
+    {
         // The label is read BEFORE the sleeve loses the row, because SatchelLabel rebuilds the prose from
         // the world and the item, and a sentence about a thing you are no longer carrying is a sentence
         // about nothing.

@@ -58,6 +58,15 @@ public sealed class AJambIsNotASealedDoorTests
     /// poured stone, and stone is allowed to stop them — that case is asserted too, below.</summary>
     private static double BandHalf => UndergroundComplex.DoorHalf + DeckPlan.AvatarRadius;
 
+    /// <summary>#817 · How far along a wall the sidestep can see — <c>SurfaceCollision</c>'s own
+    /// <c>GapReachInRadii</c> of two radii, restated here because it is private there. Used only to decide
+    /// whether a stretch of wall is stone for far enough either side to BE an experiment about a wall; it
+    /// never widens or narrows a law.</summary>
+    private static double FunnelReach => 2.0 * DeckPlan.AvatarRadius;
+
+    /// <summary>How finely that reach is sounded when asking whether a stretch of wall is really solid.</summary>
+    private const int FunnelProbes = 8;
+
     /// <summary>How many offsets the band is sounded at. Twenty-one samples over 3.9 du, and — because it
     /// divides exactly — the last of them sits ON the edge of the law rather than safely inside it.</summary>
     private const int BandSamples = 20;
@@ -298,10 +307,31 @@ public sealed class AJambIsNotASealedDoorTests
         // owner's own #804 sentence is the same one — "ideally we could see them move and wait for them to
         // pass". They get the funnel for the sweep team's reason and no other. THE OLD ONES STILL DO NOT,
         // which is the whole law here and is checked file by file above.
-        Assert.Equal(3, claims.Count);
+        //
+        // #835 · AND THE FOURTH CLAIM IS THE SAME MAN RUNNING. Owner, reversing the no-chase law with the
+        // implementation named: "they need to catch us .... like reevers :-D we could use that code :-D" —
+        // so a guard now spends a run through ReeverChase.Step, the Old Ones' own homing step, and hands it
+        // Gait.Person as the ONE thing a uniform changes about it. That is this guard forcing its ruling and
+        // getting one, exactly as #804 did: the gait travels with the MOVER (a person on a rota, however
+        // fast he is going) and never with the machinery. ReeverChase.cs itself is unchanged and is still
+        // checked, line by line, above — it defaults to the stagger, so nothing an Old One steps through was
+        // helped by any of this.
+        //
+        // #831 · AND THE FIFTH IS THE SAME MAN STOPPING. A made tail performs a cover act instead of freezing
+        // bare — owner: "turns to the nearest wall fixture, checks a plate, reads a docket" — and the few du
+        // he takes to get to one are a slide, not a plan. It is the SAME body that already holds three of
+        // these claims, walking two paces at the same gait for the same reason, and it is the third and last
+        // of them in Map.Patrol.cs. Nothing an Old One steps through was touched.
+        Assert.Equal(5, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
-        Assert.Contains(claims, c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal));
+
+        // Three times, and every one of them a contract guard: the round's own stride, #835's run, and #831's
+        // two paces to the wall he has decided to read.
+        //
+        // #870 · The round is six partials by subject now, so the prefix names the FAMILY rather than one
+        // file of it — three claims across all of them, exactly the three it counted when they were one.
+        Assert.Equal(3, claims.FindAll(c => c.StartsWith("Map.Patrol.", StringComparison.Ordinal)).Count);
     }
 
     private static string RepoRoot
@@ -365,6 +395,36 @@ public sealed class AJambIsNotASealedDoorTests
                     {
                         continue;
                     }
+
+                    // #817 · …AND ONE POINT ON THAT LINE IS NOT ENOUGH TO CALL IT A WALL.
+                    //
+                    // The paragraph above is right about WHY and was too weak about HOW. It asks whether
+                    // the body's own centre is on stone. The funnel asks a strictly wider question — is
+                    // there a way through within a sidestep — and it does not care whether that way is
+                    // another office's front door, a rib's mouth or the end of the building. So a captain
+                    // can be squarely on stone AND one stride from something they are entitled to walk
+                    // through, and walking through it proves nothing about walls: it is a captain finding a
+                    // door, which is the OTHER half of this file cheering.
+                    //
+                    // #817 made that case common rather than rare — a room's door count scales with its
+                    // street frontage now, and #822 puts a fire-code floor of two under it, so a 20 du
+                    // office carries two leaves with a 3.6 du pier between them. Watched go red on six
+                    // approaches, every one of them a captain who had correctly found the next way through.
+                    //
+                    // So the line is sounded across the whole reach the sidestep can see, at the same
+                    // radius the body has. If any of it is open, this is not an experiment about a wall.
+                    bool solidAcrossTheReach = true;
+                    for (int probe = -FunnelProbes; probe <= FunnelProbes; probe++)
+                    {
+                        double at = along + (FunnelReach * probe / FunnelProbes);
+                        solidAcrossTheReach &= deck.Collides(
+                            cutRunsAlongX ? at : wallAt, cutRunsAlongX ? wallAt : at);
+                    }
+                    if (!solidAcrossTheReach)
+                    {
+                        continue;
+                    }
+
                     tried++;
                     double dx = cutRunsAlongX ? 0 : PressStep, dy = cutRunsAlongX ? PressStep : 0;
                     for (int i = 0; i < Presses; i++)

@@ -264,6 +264,36 @@ public sealed class SceneInventoryTests
                                            "reaches a park any more than it reaches the hall in front of " +
                                            "it; TheParkBenchIsAGumshoeMoveTests walks every bench of every " +
                                            "park the generator lays",
+        [DeckPlan.ConsoleKind.HiveOfficeChair] = "#817 a chair at a desk in one of the PARK-VIEW SUITES, " +
+                                                 "which #813 carves round the same one park per " +
+                                                 "branch-office site the bench above lives in — the ring " +
+                                                 "is on that floor and nowhere else, so a general scene " +
+                                                 "sweep reaches an office chair exactly as often as it " +
+                                                 "reaches a bench, which is never. " +
+                                                 "NoRingSuiteIsAnEmptyFloorTests walks every seat of every " +
+                                                 "suite of every ring the generator lays, over 53 sites",
+        [DeckPlan.ConsoleKind.HiveCubicle] = "#821 a WC cubicle's own leaf — the row in the block's PUBLIC " +
+                                             "WASHROOM and the staff pair in every big suite's service " +
+                                             "strip, all of them on the one ring per branch-office site " +
+                                             "the office chair above lives on, which no general scene " +
+                                             "sweep reaches. ALockedCubicleBuysTimeTests walks the leaf " +
+                                             "shut and open on a real floor and measures the refusal on " +
+                                             "DeckPlan.Collides; TheCubicleYouLockFromInsideTests walks " +
+                                             "every cell of every ring the generator lays",
+        [DeckPlan.ConsoleKind.HiveBasin] = "#821 the basin run in that same washroom — one console with a " +
+                                           "span down the whole length of the porcelain (#791's E-bus), " +
+                                           "and therefore exactly as reachable by a scene sweep as the " +
+                                           "cubicles it stands opposite, which is never",
+        [DeckPlan.ConsoleKind.HiveDeskEdge] = "#869 the UP/DOWN paddle on a sit-stand desk, in the " +
+                                              "LABORATORIES and ADMINISTRATION chambers of an appended " +
+                                              "underground floor — the same floors the stools and #853's " +
+                                              "posters live on, which no general scene sweep reaches. " +
+                                              "TheDeskHumsAndRisesTests presses it on a real floor and " +
+                                              "TheDeskRisesToMeetYouTests walks every desk of every site",
+        [DeckPlan.ConsoleKind.HiveDeskPresets] = "#869 the MEMORY BUTTONS at the other end of that same " +
+                                                 "desk — read them, and lean on them after that — and " +
+                                                 "therefore exactly as reachable by a scene sweep as the " +
+                                                 "paddle opposite, which is never",
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",

@@ -209,16 +209,28 @@ public static class CanteenRegulars
     /// the QUIET RULE reads: the counter has eyes everywhere except in here.</param>
     /// <param name="Talking">#792 · Are the people at this top IN A CONVERSATION WITH EACH OTHER? See
     /// <see cref="StrangerTalks"/> for why this is authored rather than counted.</param>
+    /// <param name="Heads">#823 · HOW MANY PEOPLE ARE AT IT — 0 for an empty top, 1 for any of the ten named
+    /// regulars, and the crowd's own authored headcount (<see cref="StrangerHeads"/>) for a background
+    /// patron. Owner, playtest 2026-08-11: <i>"The number of people sitting at a table should match the
+    /// amount of seats that are taken."</i></param>
     public readonly record struct TableSeat(
         int Index, double X, double Y, int Seats, string? Plate, string? Line,
-        bool Stranger = false, int Cabinet = 0, bool Talking = false)
+        bool Stranger = false, int Cabinet = 0, bool Talking = false, int Heads = 0)
     {
         /// <summary>Somebody is at this table.</summary>
         public bool Taken => Plate is not null;
 
-        /// <summary>Chairs nobody is in. One person per top today (<see cref="Sitting"/> never doubles
-        /// up), so this is the seat count less at most one — and it is the number "ask to join" reads.</summary>
-        public int Free => Seats - (Taken ? 1 : 0);
+        /// <summary>
+        /// Chairs nobody is in — the seat count less the party's <see cref="Heads"/>, and the number "ask to
+        /// join" reads.
+        ///
+        /// <para>#823 · It was <c>Seats - (Taken ? 1 : 0)</c> until the owner counted the chairs: <i>"it says
+        /// there are two haulers eating at a table that seats four, yet there is visual indication of only one
+        /// seat out of four being taken? Does the other try sit in the others lap?"</i> A bool cannot seat a
+        /// crew, and the plates have held crews since #792. Clamped at zero because a table may be FULL, and
+        /// a full table refusing to offer a chair is the honest answer rather than a negative one.</para>
+        /// </summary>
+        public int Free => Math.Max(0, Seats - Heads);
 
         /// <summary>#751 · Is this a table the counter cannot see? The one source for the quiet rule.</summary>
         public bool Quiet => Cabinet > 0;
@@ -233,7 +245,98 @@ public static class CanteenRegulars
         /// them apart across a room.</para>
         /// </summary>
         public bool Alone => Taken && !Talking;
+
+        /// <summary>Where one of this top's chairs stands. See <see cref="CanteenRegulars.ChairAt"/>, which
+        /// owns the ring; this only hands it the top's own numbers.</summary>
+        public (double X, double Y) Chair(int chair) => ChairAt(X, Y, Seats, chair);
+
+        /// <summary>Is the party in this chair? See <see cref="CanteenRegulars.PartyInChair"/> — the same
+        /// walk the deck draws bodies on, asked with this top's own headcount.</summary>
+        public bool PartyIn(int chair) =>
+            PartyInChair(chair, Seats, Taken ? Math.Clamp(Heads, 1, Math.Max(1, Seats)) : 0);
+
+        /// <summary>
+        /// #820 · THE CHAIR THE CAPTAIN TAKES, given where they were standing when they pressed [E] — null
+        /// at a top with nothing left to sit on.
+        ///
+        /// <para>The NEAREST FREE one, for a park bench's reason one room along (see
+        /// <c>ParkBenches.EndYouTake</c>): a sit that walked the captain round a six-top to the far side
+        /// would be moving them further from the chair they had already chosen with their feet. Which chairs
+        /// are free is not this method's opinion — it is <see cref="PartyIn"/>, which is the same arithmetic
+        /// the deck draws the party's bodies on, so the chair the press hands over is a chair the player can
+        /// see is empty.</para>
+        /// </summary>
+        public (double X, double Y)? ChairYouTake(double fromX, double fromY)
+        {
+            if (Seats <= 0)
+            {
+                return null;
+            }
+
+            (double X, double Y)? best = null;
+            double bestD = double.MaxValue;
+            for (int c = 0; c < Seats; c++)
+            {
+                if (PartyIn(c))
+                {
+                    continue;
+                }
+                (double cx, double cy) = Chair(c);
+                double d = ((cx - fromX) * (cx - fromX)) + ((cy - fromY) * (cy - fromY));
+                if (d < bestD)
+                {
+                    (bestD, best) = (d, (cx, cy));
+                }
+            }
+            return best;
+        }
     }
+
+    // ── #820 · WHERE THE CHAIRS ROUND A TOP ACTUALLY ARE ──────────────────────────────────────────────
+    //
+    // Owner, evening playtest 2026-08-11: "I would move the avatar on top of the bench when I sit... just
+    // snap it into the correct position." A seat you can be snapped onto is a seat with a COORDINATE, and a
+    // canteen top's chairs had none: the deck drew them out of a radius and an angle it kept to itself, and
+    // the [E] press knew only where the TABLE was. Two authors for one piece of furniture is this repo's
+    // most expensive bug class, and the half that could not be checked was the half a body sits on.
+    //
+    // So the ring lives here, both callers ask it, and the chair a captain lands in is by construction the
+    // chair the room drew empty.
+
+    /// <summary>How far out from a top's centre its chairs stand. The deck has drawn them at this radius
+    /// since #792 (it was <c>DeckView.SeatRingDu</c>, and that constant now reads this one) — far enough
+    /// out to be clear of the top's own plate and close enough to read as belonging to it.</summary>
+    public const double ChairRingDu = 1.55;
+
+    /// <summary>
+    /// Where chair <paramref name="chair"/> of a <paramref name="seats"/>-seat top centred on
+    /// (<paramref name="topX"/>, <paramref name="topY"/>) stands, in the surface's own coordinates.
+    ///
+    /// <para>Evenly round the ring from due east, anticlockwise, which is the order the deck has drawn them
+    /// in since #792 — the ordinal is the drawing's and the sim's at once, so "the party is in chairs 0 and
+    /// 3" is one sentence about one room.</para>
+    /// </summary>
+    public static (double X, double Y) ChairAt(double topX, double topY, int seats, int chair)
+    {
+        if (seats <= 0)
+        {
+            return (topX, topY);
+        }
+        double ang = chair * 2 * Math.PI / seats;
+        return (topX + (Math.Cos(ang) * ChairRingDu), topY + (Math.Sin(ang) * ChairRingDu));
+    }
+
+    /// <summary>
+    /// #823 · Is the party sitting in this chair? A party sits SPREAD ROUND a top rather than stacked in
+    /// chair one — three on the same contract at a six-top leave a gap between each of them — and the even
+    /// walk below lands on exactly <paramref name="heads"/> chairs for any seat count the building has.
+    ///
+    /// <para>It was the deck's own loop until #820 needed the same answer for the [E] press: a captain
+    /// snapped into a chair the room had already drawn somebody in would be the drawn room and the pressed
+    /// room disagreeing about a lap.</para>
+    /// </summary>
+    public static bool PartyInChair(int chair, int seats, int heads) =>
+        seats > 0 && heads > 0 && (chair * heads) % seats < heads;
 
     /// <summary>
     /// #746/#751 · HOW MANY EACH ROUND TOP IN THIS ROOM SEATS — the one place the question is answered.
@@ -305,7 +408,7 @@ public static class CanteenRegulars
         }
 
         IReadOnlyList<int> bill = SeatBill(bodyId, amenity);
-        Dictionary<int, int> crowd = Crowd(bodyId, level, amenity, watch, who.Keys);
+        Dictionary<int, int> crowd = Crowd(bodyId, level, amenity, watch, who.Keys, bill);
 
         var tops = new List<TableSeat>(amenity.Tables.Count + CabinetRoom(amenity));
         for (int i = 0; i < amenity.Tables.Count; i++)
@@ -318,7 +421,8 @@ public static class CanteenRegulars
                 // #792 · A named regular is ONE PERSON at a top, every one of the ten, which is the whole
                 // premise of #757's ask-to-join: there is a chair, and somebody to ask. So they are never
                 // Talking, and the deck may draw them as the approachable thing they are.
-                tops.Add(new TableSeat(i, tx, ty, seats, Cast[cast].Plate, Cast[cast].Line));
+                tops.Add(new TableSeat(
+                    i, tx, ty, seats, Cast[cast].Plate, Cast[cast].Line, Heads: RegularHeads));
             }
             else if (crowd.TryGetValue(i, out int face))
             {
@@ -327,7 +431,10 @@ public static class CanteenRegulars
                     StrangerPlates[face % StrangerPlates.Count],
                     Barks[BarkIndex(bodyId, i, watch)],
                     Stranger: true,
-                    Talking: StrangerTalks(face % StrangerPlates.Count)));
+                    Talking: StrangerTalks(face % StrangerPlates.Count),
+                    // #823 · …and the party's size, off the same one authored row. Crowd() has already
+                    // refused to deal a face this top cannot seat, so this arrives fitting.
+                    Heads: StrangerHeads(face % StrangerPlates.Count)));
             }
             else
             {
@@ -457,7 +564,9 @@ public static class CanteenRegulars
     /// </summary>
     /// <param name="Plate">What stands over them, before anybody speaks.</param>
     /// <param name="Talking">Are they in a conversation with each other?</param>
-    private readonly record struct Face(string Plate, bool Talking);
+    /// <param name="Heads">#823 · HOW MANY OF THEM THERE ARE. Authored beside the sentence for the same
+    /// reason <paramref name="Talking"/> is: it is a fact about the party, not a property of the string.</param>
+    private readonly record struct Face(string Plate, bool Talking, int Heads);
 
     /// <summary>
     /// #792 · THE CROWD, WITH THE ONE FACT A HUNGRY TRAVELLER READS OFF A ROOM SECOND.
@@ -474,21 +583,32 @@ public static class CanteenRegulars
     /// character is silence. So the fact lives HERE, beside the sentence it belongs to, where an author
     /// writing the eleventh plate has to decide it, and a guard proves it is not the plural rule wearing a
     /// field name.</para>
+    ///
+    /// <para>#823 · HOW MANY OF THEM THERE ARE is the second fact, authored on the same line and for exactly
+    /// the same reason. It shipped as a bool — every occupied top took one chair — until the owner sat down
+    /// and counted: <i>"two haulers eating at a table that seats four, yet… only one seat out of four being
+    /// taken."</i> A crew is not a person, and the number of chairs a party takes is the kind of thing an
+    /// author decides when they write the sentence, never something a downstream caller reads out of it.</para>
     /// </summary>
     private static readonly Face[] Faces =
     [
-        new("◈ CAGE CREW, OFF SHIFT", true),
-        new("◈ TWO HAULIERS, EATING", true),
-        new("◈ A LOADER WITH A BAD WRIST", false),
-        new("◈ SOMEBODY'S WHOLE CREW AT ONE TABLE", true),
-        new("◈ A DRIVER READING A DOCKET", false),
-        new("◈ A YARD HAND, WAITING ON A CAR", false),
-        new("◈ A PAIR FROM THE SCAFFOLD GANG", true),
-        new("◈ A WEIGHBRIDGE CLERK ON A BREAK", false),
-        new("◈ THREE ON THE SAME CONTRACT", true),
+        new("◈ CAGE CREW, OFF SHIFT", true, 3),
+        new("◈ TWO HAULIERS, EATING", true, 2),
+        new("◈ A LOADER WITH A BAD WRIST", false, 1),
+        new("◈ SOMEBODY'S WHOLE CREW AT ONE TABLE", true, 4),
+        new("◈ A DRIVER READING A DOCKET", false, 1),
+        new("◈ A YARD HAND, WAITING ON A CAR", false, 1),
+        new("◈ A PAIR FROM THE SCAFFOLD GANG", true, 2),
+        new("◈ A WEIGHBRIDGE CLERK ON A BREAK", false, 1),
+        new("◈ THREE ON THE SAME CONTRACT", true, 3),
         // …and the one that makes this a fact rather than a word count.
-        new("◈ A COUPLE NOT TALKING", false),
+        new("◈ A COUPLE NOT TALKING", false, 2),
     ];
+
+    /// <summary>#823 · ONE NAMED REGULAR IS ONE PERSON — every one of the ten, which is #757's whole premise:
+    /// there is a chair, and somebody to ask. Named so that the deal site states it rather than typing a
+    /// bare 1 that a reader has to take on trust.</summary>
+    public const int RegularHeads = 1;
 
     /// <summary>The plates, in the crowd's own order — <see cref="StrangerPlates"/>'s backing, so the list
     /// every existing caller reads and the list the conversation fact is authored in cannot drift apart by
@@ -522,6 +642,12 @@ public static class CanteenRegulars
     /// top is drawn or pressed.</summary>
     public static bool StrangerTalks(int face) =>
         face >= 0 && face < Faces.Length && Faces[face].Talking;
+
+    /// <summary>#823 · How many people the crowd's <paramref name="face"/>th patron IS. The one source, in the
+    /// same shape as <see cref="StrangerTalks"/>; <see cref="TableSeat.Heads"/> is this answer carried to
+    /// wherever the top is drawn or pressed, and <see cref="TableSeat.Free"/> is the chairs it leaves.</summary>
+    public static int StrangerHeads(int face) =>
+        face >= 0 && face < Faces.Length ? Faces[face].Heads : 0;
 
     /// <summary>
     /// #751 · WHAT A STRANGER SAYS. Fourteen barks, drawn seeded per patron per watch — so the same table on
@@ -597,9 +723,12 @@ public static class CanteenRegulars
 
     /// <summary>WHICH TOPS THE CROWD IS AT, and which face each of them wears. Keyed by top ordinal, exactly
     /// like <see cref="Seating"/>, and it skips whatever the named regulars already have.</summary>
+    /// <param name="bill">#823 · What each top SEATS, so the deal can respect the furniture. A whole crew of
+    /// four cannot be dealt to a two-top: the party would be sitting in each other's laps, which is the exact
+    /// picture the owner sent back from the canteen.</param>
     private static Dictionary<int, int> Crowd(
         string bodyId, int level, UndergroundComplex.Amenity amenity, long watch,
-        IEnumerable<int> takenByTheCast)
+        IEnumerable<int> takenByTheCast, IReadOnlyList<int> bill)
     {
         var crowd = new Dictionary<int, int>();
 
@@ -631,10 +760,39 @@ public static class CanteenRegulars
                 tops, used);
             int face = DiceRule.Roll(
                 DiceRule.Seed($"hive:hall:face:{bodyId}:{table}", watch), StrangerPlates.Count).Face - 1;
-            crowd[table] = face;
+
+            // #823 · THE FURNITURE HAS A VETO. The die names a face; the top says whether it will take it.
+            if (FaceThatFits(face, table < bill.Count ? bill[table] : SeatCounts[0]) is { } fits)
+            {
+                crowd[table] = fits;
+            }
         }
 
         return crowd;
+    }
+
+    /// <summary>
+    /// #823 · THE FIRST FACE AT OR AFTER THE ROLLED ONE THAT THIS TOP CAN SEAT, or null if none of them can.
+    ///
+    /// <para>Same skip-forward discipline as <see cref="PickUnused"/> and the hall's seat bill, and for the
+    /// same reason: a re-roll loop on a seeded die is how a generator stops being deterministic. A hall's
+    /// twos take the ones and the pairs; the fours and sixes take the crews. Null is the honest answer for a
+    /// top nobody could sit at — the caller leaves it empty rather than seating four people on two chairs —
+    /// and no top the game builds is that small today (SeatCounts starts at 2 and half the faces are one
+    /// person), which is a thing the guard measures rather than a thing this comment promises.</para>
+    /// </summary>
+    private static int? FaceThatFits(int wanted, int seats)
+    {
+        for (int step = 0; step < Faces.Length; step++)
+        {
+            int candidate = ((wanted + step) % Faces.Length + Faces.Length) % Faces.Length;
+            if (Faces[candidate].Heads <= seats)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Take the rolled index, or the next free one after it. Two people on one chair and one person

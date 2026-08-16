@@ -53,6 +53,26 @@ public static class SeatedPosture
     /// This is the line for a captain who stood up in order to WALK, which is a different sentence.</summary>
     public const string StoodUpToWalkLine = "You stand, and the chair goes back under the table. Off you go.";
 
+    // ── #865 · THE SIT BEAT ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #865 · HOW LONG THE CAPTAIN IS OWED THE SIGHT OF THEMSELVES TAKING THE CHAIR, in real seconds.
+    ///
+    /// <para>Owner, 2026-08-13, at a canteen table on B1: <i>"I sat down the table but the pop ups blocked
+    /// my view of my avatar sitting down"</i> — and on the retry, when nothing covered it: <i>"Oh now it
+    /// picked the chair and it worked."</i> #820/#846's snap onto the seat is a tiny animation the player is
+    /// MEANT TO WATCH; it is the whole payoff of both issues, and one modal raised over it un-ships them.</para>
+    ///
+    /// <para>A number and not a frame count, because frames are whatever the tab is giving today and the
+    /// promise is about a MOMENT the player gets to see. "A beat or two" in the owner's words, in the room's
+    /// own tempo. FLAGGED for the owner's tuning.</para>
+    ///
+    /// <para>Nothing is DROPPED for it. Every card this holds off is latched by its own poll or held in the
+    /// story seam's queue, so the beat delays and never swallows — which is what makes the rule safe to make
+    /// unconditional.</para>
+    /// </summary>
+    public const double SitBeatSeconds = 1.2;
+
     // ── THE FIELD BOOK'S TWO REGISTERS ────────────────────────────────────────────────────────────────
 
     /// <summary>Whether deliberate authorship is allowed right now. One predicate, and it is this trivial on

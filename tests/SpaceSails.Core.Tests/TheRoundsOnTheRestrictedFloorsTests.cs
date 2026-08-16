@@ -31,14 +31,24 @@ public class TheRoundsOnTheRestrictedFloorsTests
     // ── WHERE THEY ARE, AND WHERE THEY DELIBERATELY ARE NOT ───────────────────────────────────────────
 
     /// <summary>
-    /// The B1 ruling, the directory's own bottom, and the two bands the building denies having.
+    /// The directory's own bottom, and the two bands the building denies having.
     ///
     /// <para><b>Proven RED</b> by dropping the <c>level >= DepthOf</c> clause from
     /// <see cref="PatrolBeat.IsPatrolled"/>: the unlisted lobby and every floor past the seam start
     /// rostering guards, and this names them.</para>
+    ///
+    /// <h3>#863 · THE ONE CLAUSE THAT WAS REVERSED</h3>
+    ///
+    /// <para>This test was called <c>NobodyWalksTheBar…</c> and its first complaint read <i>a round on the
+    /// floor the bar is on — the plate on that room says NO PASS REQUIRED</i>. Owner, 2026-08-13, watching a
+    /// man stand in a furnished aisle with nothing to do: <i>"let's try to have round because the guard looks
+    /// kind of silly just standing in the middle of an aisle."</i> So the bar floor is walked, the complaint
+    /// is inverted, and the plate is untouched — a captain with no paper is still walked out and never
+    /// harmed. The positive half of that law lives in <c>B1GetsItsRoundTests</c>; what stays here is that
+    /// every OTHER exclusion survived the reversal untouched.</para>
     /// </summary>
     [Fact]
-    public void NobodyWalksTheBarAndNobodyWalksThePartsTheBuildingDeniesHaving()
+    public void EveryWorkingFloorIsWalkedAndNobodyWalksThePartsTheBuildingDeniesHaving()
     {
         var complaints = new List<string>();
         int patrolled = 0, sitesWithARound = 0;
@@ -57,10 +67,13 @@ public class TheRoundsOnTheRestrictedFloorsTests
                     any = true;
                 }
 
-                if (walked && UndergroundComplex.TopPressurisedFloor(site) == level)
+                // #863 · …and the bar floor is now the other way round: it is a WORKING floor, it is the
+                // densest one in the building, and a guard standing still on it is what the owner watched.
+                if (!walked && UndergroundComplex.TopPressurisedFloor(site) == level
+                    && !UndergroundComplex.IsHeadOffice(site))
                 {
-                    complaints.Add($"{site} B{-level}: a round on the floor the bar is on — the plate on that " +
-                                   "room says NO PASS REQUIRED.");
+                    complaints.Add($"{site} B{-level}: nobody walks the floor with the park, the canteen and " +
+                                   "the offices on it — the guard is standing in the middle of an aisle.");
                 }
                 if (walked && UndergroundComplex.IsUnlisted(site, level))
                 {
@@ -77,16 +90,17 @@ public class TheRoundsOnTheRestrictedFloorsTests
             }
 
             // The positive half, stated as the building's own arithmetic rather than as a count somebody
-            // typed: a site whose DIRECTORY reaches below the bar has floors with a payroll on them, and
-            // every one of them must be walked. A site that stops at the bar has nothing to walk and is not
-            // a failure — it is a two-floor hole in the ground.
+            // typed: a site whose DIRECTORY reaches the bar floor or below has floors with a payroll on
+            // them, and every one of them must be walked. (#863 · <c>&lt;=</c>, not <c>&lt;</c>: the bar
+            // floor is inside the rota now, so a site whose directory stops exactly there still has one
+            // floor to walk rather than none.)
             //
             // …and never the head office, which is in this list on purpose: ENCELADUS is #411's building,
             // and a sweep that quietly skipped it would prove the exclusion nowhere.
             bool hasWorkingFloors =
                 !UndergroundComplex.IsHeadOffice(site)
                 && UndergroundComplex.TopPressurisedFloor(site) is { } top
-                && UndergroundComplex.DepthOf(site) < top;
+                && UndergroundComplex.DepthOf(site) <= top;
             Assert.True(
                 hasWorkingFloors == any,
                 $"{site}: the directory reaches to B{-UndergroundComplex.DepthOf(site)} under a bar on " +
@@ -196,8 +210,21 @@ public class TheRoundsOnTheRestrictedFloorsTests
 
                 (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(Field);
                 Assert.True(circuit.Count > 0, $"{site} B{-level}: a floor with no round to walk at all.");
-                Assert.Equal(shaftX, circuit[0].X, 6);
                 Assert.Equal("the car", circuit[0].What);
+
+                // #831 · THE LAW MOVED, BY THE OWNER'S OWN RULING, AND IT MOVED BY A PACE AND A HALF.
+                //
+                // Owner: "they actually in real life like have these check points they electronically sign
+                // on rounds to prove they did their round." Every stop now SNAPS to the square its watchclock
+                // station is signed from, so the car stop is no longer the shaft's own x to six decimal
+                // places — it is the plate beside the car, with a man looking at it. What this guard is about
+                // is untouched and is asserted untouched: the round STARTS at the car and works along the
+                // spine in order.
+                Assert.NotNull(circuit[0].Point);
+                Assert.True(
+                    System.Math.Abs(circuit[0].X - shaftX) <= PatrolBeat.CheckpointReachDu,
+                    $"{site} B{-level}: the first stop is "
+                    + $"{System.Math.Abs(circuit[0].X - shaftX):F1} du off the shaft in x — not the car.");
 
                 // The mouths, in the order the round meets them. Room stops sit between mouths and are not
                 // on the spine, so the ordering law is asked of the mouths alone.
@@ -208,7 +235,13 @@ public class TheRoundsOnTheRestrictedFloorsTests
                     {
                         continue;
                     }
-                    Assert.Equal(shaftY, stop.Y, 6);
+                    // #831 · …and a mouth stop is the station beside that mouth, so it stands off the spine's
+                    // centre line by the pace and a half a man signs a plate from. It is still IN the spine
+                    // corridor, which is what "on the spine" ever meant.
+                    Assert.True(
+                        System.Math.Abs(stop.Y - shaftY) <= UndergroundComplex.CorridorHalf,
+                        $"{site} B{-level}: a mouth stop stands {System.Math.Abs(stop.Y - shaftY):F1} du off "
+                        + "the spine — that is not in the corridor any more.");
                     if (stop.X < lastMouth)
                     {
                         complaints.Add(
@@ -431,12 +464,26 @@ public class TheRoundsOnTheRestrictedFloorsTests
 
         // …and past earshot, wall or no wall, there is nothing to hear. That is the range the fan owns.
         Assert.False(PatrolBeat.Heard(0, 0, PatrolBeat.EarshotDu + 1, 0, AWallBetween));
+
+        // #832 · THE RETIRED-COP LAW moved this floor. It was 18 du — short of the eye — which left a band
+        // from 18 to 30 where a guard behind a wall was neither drawn nor heard, and that band is exactly
+        // the owner's <i>"at no range may a walking man be neither seen nor heard"</i>. The boots now carry
+        // as far as the eye itself and never further: the marker still owns everything you can see, because
+        // Heard() is silent about anybody in plain sight.
         Assert.True(
-            PatrolBeat.EarshotDu < PatrolBeat.MarkerSightDu,
+            PatrolBeat.EarshotDu >= PatrolBeat.MarkerSightDu,
+            "a retired cop whose boots carry less far than your own eye is a ninja (#832).");
+        Assert.True(
+            PatrolBeat.EarshotDu <= PatrolBeat.MarkerSightDu,
             "boots that carry further than the eye would make the marker pointless.");
         Assert.True(
             PatrolBeat.EarshotDu > PatrolBeat.NoticeDu,
             "boots you can only hear once they have already seen you are not a warning.");
+
+        // The band the law was raised FOR: a guard on the far side of a wall, past the old 18 du and inside
+        // the eye's reach. Nothing drew him and nothing said he was there.
+        Assert.False(PatrolBeat.DrawnFor(0, 0, 24, 0, AWallBetween));
+        Assert.True(PatrolBeat.Heard(0, 0, 24, 0, AWallBetween));
     }
 
     /// <summary>
@@ -447,9 +494,11 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void TheTrackerHearsARoundLongBeforeAnythingIsDrawn()
     {
-        // A guard walking at the round's own speed, well past the eye and behind a wall.
+        // A guard walking at the round's own speed, well past the eye and behind a wall — and carrying the
+        // register Core declares for them (#830), which is what the client's one accessor feeds the fan.
         double outThere = PatrolBeat.MarkerSightDu + 12.0;
-        var walking = new MotionTracker.Entity(outThere, 0, PatrolBeat.WalkSpeed, 0);
+        var walking = new MotionTracker.Entity(
+            outThere, 0, PatrolBeat.WalkSpeed, 0, PatrolBeat.FanRegister);
 
         Assert.False(PatrolBeat.DrawnFor(0, 0, outThere, 0, AWallBetween), "the eye reaches too far.");
         Assert.False(PatrolBeat.Heard(0, 0, outThere, 0, AWallBetween), "the ear reaches too far.");
@@ -461,10 +510,82 @@ public class TheRoundsOnTheRestrictedFloorsTests
         IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(0, 0, [walking], reach);
         Assert.Single(blips);
         Assert.Equal(outThere, blips[0].Range, 3);
+        Assert.Equal(MotionTracker.BlipKind.Crisp, blips[0].Kind);
 
-        // …and a guard STANDING at a stop drops off it, which is what makes the stand a hiding place for
-        // them as much as a window for the captain. Motion only, the instrument's oldest law.
-        Assert.Empty(MotionTracker.Sweep(0, 0, [walking with { Vx = 0 }], reach));
+        // #830 · …and a guard STANDING at a stop does NOT drop off it. That was this file's own shipped
+        // sentence — "the stand is a hiding place for them as much as a window for the captain" — and the
+        // owner overruled it from the chair, watching PATROL 2 stand in plain sight while the fan called the
+        // corridor empty: <i>"if the guard is still then it would be a blurry blob"</i>. He is still there,
+        // and the instrument says so with less confidence rather than with silence.
+        IReadOnlyList<MotionTracker.Blip> standing =
+            MotionTracker.Sweep(0, 0, [walking with { Vx = 0 }], reach);
+        Assert.Single(standing);
+        Assert.Equal(MotionTracker.BlipKind.Blob, standing[0].Kind);
+    }
+
+    // ── #833 · THE APPROACH ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A WALLET IS READ AT ARM'S LENGTH AND A NOTICE HAPPENS ACROSS A CORRIDOR — and the two numbers may
+    /// never come together. Owner: <i>"I think the guard should approach us when it does the inspection."</i>
+    /// The shipped code raised the card the frame <see cref="PatrolBeat.Notices"/> fired, which is a man
+    /// reading your pass from nine deck units off.
+    /// </summary>
+    [Fact]
+    public void TheCardsReachIsAnArmAndTheNoticesIsACorridor()
+    {
+        Assert.True(PatrolBeat.CardReachDu > 0);
+        Assert.True(PatrolBeat.CardReachDu < PatrolBeat.NoticeDu / 3,
+            $"a card at {PatrolBeat.CardReachDu} du against a notice at {PatrolBeat.NoticeDu} du is not an " +
+            "approach, it is a formality.");
+
+        // …and the predicate agrees with the number, in both directions, at the boundary.
+        Assert.True(PatrolBeat.AtCardReach(0, 0, PatrolBeat.CardReachDu - 0.01, 0));
+        Assert.False(PatrolBeat.AtCardReach(0, 0, PatrolBeat.CardReachDu + 0.01, 0));
+        Assert.False(PatrolBeat.AtCardReach(0, 0, PatrolBeat.NoticeDu - 0.01, 0));
+    }
+
+    /// <summary>
+    /// WALKING AWAY IS ALLOWED, AND IT IS THE ONLY THING THAT EVER HAPPENS TO A CAPTAIN WHO DOES. He stops
+    /// coming when the gap opens past <see cref="PatrolBeat.GivesUpBeyondDu"/> or when the walk-up has run
+    /// its clock — and there is no third answer in this file, because there is no chase in this file.
+    /// </summary>
+    [Fact]
+    public void HeStopsComingAndThatIsTheWholeOfIt()
+    {
+        // Standing still at the reach he noticed you from: he is coming.
+        Assert.True(PatrolBeat.StillComing(0.0, 0, 0, PatrolBeat.NoticeDu, 0));
+        Assert.True(PatrolBeat.StillComing(PatrolBeat.WalkUpSeconds - 0.1, 0, 0, PatrolBeat.NoticeDu, 0));
+
+        // A step or two further than he registered you at: still coming — a man who has said "hold on" does
+        // not give up because you shifted your weight.
+        Assert.True(PatrolBeat.StillComing(0.0, 0, 0, PatrolBeat.NoticeDu + 1.0, 0));
+
+        // Away down the corridor, or twenty seconds of it: he goes back to work.
+        Assert.False(PatrolBeat.StillComing(0.0, 0, 0, PatrolBeat.GivesUpBeyondDu + 0.01, 0));
+        Assert.False(PatrolBeat.StillComing(PatrolBeat.WalkUpSeconds + 0.01, 0, 0, 0.5, 0));
+        Assert.False(PatrolBeat.StillComing(double.NaN, 0, 0, 0.5, 0));
+
+        // …and he gives up at a range he can still SEE you from. Following somebody you can see is the chase
+        // this file does not have.
+        Assert.True(PatrolBeat.GivesUpBeyondDu < PatrolBeat.MarkerSightDu);
+    }
+
+    /// <summary>#833 · The escort's own numbers hang together: the captain is kept closer than the tether, he
+    /// is worked briskly enough to close a lag, and the bound on the whole walk is longer than the longest
+    /// walk the floors can ask for (which <c>TheEscortIsAWalkTests</c> measures at 56 seconds).</summary>
+    [Fact]
+    public void TheEscortsNumbersCanActuallyPutTwoPeopleAtTheSameDoor()
+    {
+        Assert.True(PatrolBeat.ShoulderDu < PatrolBeat.TetherDu,
+            "the captain is held further away than the guard is allowed to let him lag — the escort would " +
+            "stand still forever.");
+        Assert.True(PatrolBeat.CatchUpFactor > 1.0, "a lag that cannot be closed is a lag that stays.");
+        Assert.True(PatrolBeat.AtTheCarDu < PatrolBeat.AtTheStopDu,
+            "the captain would be declared home before the guard had arrived with him.");
+        Assert.True(PatrolBeat.EscortSecondsCap > 60.0);
+        Assert.True(PatrolBeat.PumpsAfterSeconds < PatrolBeat.EscortSecondsCap / 4,
+            "the small talk has to land ON the walk, not at the end of it.");
     }
 
     // ── THE CHALLENGE ─────────────────────────────────────────────────────────────────────────────────
@@ -474,7 +595,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void ThePassSatisfiesAndNothingElseHappens()
     {
-        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, [PatrolBeat.Badge("luna")]);
+        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, PatrolBeat.Badge("luna"));
         Assert.True(read.Satisfied);
         Assert.Equal(PatrolBeat.SatisfiedLine, read.Line);
         Assert.Null(read.Consequence);
@@ -490,19 +611,20 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void EveryOtherWalletEndsAtTheLiftAndSaysWhyFirst()
     {
-        (string What, Satchel.Item[] Carried, string Expect)[] cases =
+        // #836 · One paper per case, because a read takes one paper. What was a wallet is now a HAND.
+        (string What, Satchel.Item? Handed, string Expect)[] cases =
         [
-            ("nothing at all", [], PatrolBeat.NothingLine),
-            ("only the cage chit", [CanteenTable.Chit(underAnotherName: false)], PatrolBeat.WrongPaperLine),
-            ("somebody else's site", [PatrolBeat.Badge("europa")], PatrolBeat.WrongSiteLine("europa")),
+            ("nothing at all", null, PatrolBeat.NothingLine),
+            ("only the cage chit", CanteenTable.Chit(underAnotherName: false), PatrolBeat.WrongPaperLine),
+            ("somebody else's site", PatrolBeat.Badge("europa"), PatrolBeat.WrongSiteLine("europa")),
             ("an authority card, which is not a person",
-                [new Satchel.Item(Satchel.Kind.Authority, new UndergroundComplex.AuthorityCard("luna", 1).Id)],
+                new Satchel.Item(Satchel.Kind.Authority, new UndergroundComplex.AuthorityCard("luna", 1).Id),
                 PatrolBeat.NothingLine),
         ];
 
-        foreach ((string what, Satchel.Item[] carried, string expect) in cases)
+        foreach ((string what, Satchel.Item? handed, string expect) in cases)
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, carried);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, handed);
             Assert.False(read.Satisfied, $"{what} satisfied a guard.");
             Assert.Equal(expect, read.Line);
             Assert.Equal(PatrolBeat.EscortLine, read.Consequence);
@@ -524,11 +646,11 @@ public class TheRoundsOnTheRestrictedFloorsTests
         Assert.True(PatrolBeat.BadgeHeld("luna", luna));
         Assert.False(PatrolBeat.BadgeHeld("europa", luna));
 
-        Assert.True(PatrolBeat.TheGuardReads("luna", Plate, luna).Satisfied);
-        Assert.False(PatrolBeat.TheGuardReads("europa", Plate, luna).Satisfied);
+        Assert.True(PatrolBeat.TheGuardReads("luna", Plate, luna[0]).Satisfied);
+        Assert.False(PatrolBeat.TheGuardReads("europa", Plate, luna[0]).Satisfied);
         Assert.Contains(
             BodyNames.Designation("luna"),
-            PatrolBeat.TheGuardReads("europa", Plate, luna).Line,
+            PatrolBeat.TheGuardReads("europa", Plate, luna[0]).Line,
             StringComparison.Ordinal);
 
         // The id round-trips, and nothing else in the wallet is mistaken for one.
@@ -658,15 +780,15 @@ public class TheRoundsOnTheRestrictedFloorsTests
         // …and the escort is the only consequence the read can hand back. A second one would be the
         // suspicion ladder arriving without a ruling.
         var consequences = new HashSet<string>(StringComparer.Ordinal);
-        foreach (Satchel.Item[] carried in new[]
+        foreach (Satchel.Item? handed in new Satchel.Item?[]
                  {
-                     Array.Empty<Satchel.Item>(),
-                     [PatrolBeat.Badge("luna")],
-                     [PatrolBeat.Badge("europa")],
-                     [CanteenTable.Chit(underAnotherName: true)],
+                     null,
+                     PatrolBeat.Badge("luna"),
+                     PatrolBeat.Badge("europa"),
+                     CanteenTable.Chit(underAnotherName: true),
                  })
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, carried);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, handed);
             consequences.Add(read.Consequence ?? "<nothing at all>");
         }
         Assert.Equal(
