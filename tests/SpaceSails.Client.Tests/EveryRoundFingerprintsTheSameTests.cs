@@ -26,7 +26,7 @@ namespace SpaceSails.Client.Tests;
 /// <para><b>It went in as its own commit on the untouched method</b>, before a line of it moved, so there was
 /// no chance of pinning what the new code happens to do.</para>
 ///
-/// <para><b>Twelve cases, 6,700 frames</b>, and between them they walk every arm of the chain the shipped
+/// <para><b>Thirteen cases, 7,100 frames</b>, and between them they walk every arm of the chain the shipped
 /// game can reach: the round's own leg (leaving a stop, spending a route, arriving, standing, planning the
 /// next leg while he stands), the hail and the walk-up, walking off on him, the read and the card it raises,
 /// the walk back to the car, the ride to the sky, the radio call and the run — caught, and lost — the knock
@@ -266,6 +266,19 @@ public sealed class EveryRoundFingerprintsTheSameTests
             return (map, ex);
         }, null, 400),
 
+        // …and THE CASE THE ORDER IS FOR. A man who has called it in AND watched the catch turn satisfies two
+        // arms at once, and which of them takes him is the whole of what a locked door is worth: he arrives,
+        // and then he is a man standing outside a door. Without this case the two arms are disjoint in every
+        // other case here and swapping them in the conductor would change nothing at all — a guard that could
+        // not tell pass from fail about the one ordering #821 was filed to fix.
+        new("he called it in, and then you shut a door in his face", () =>
+        {
+            (Pages.Map map, object ex) = OnAPatrolledFloor(TheFloorWithCubicles, 1);
+            Invoke(map, "TheRadioCall", FirstGuard(map), PatrolBeat.Provocation.SeenAtTheHasp, 0);
+            ShutYourselfIn(map, ex, seen: true);
+            return (map, ex);
+        }, null, 400),
+
         new("you duck in while he is already walking over", () =>
         {
             (Pages.Map map, object ex) = OnAPatrolledFloor(TheFloorWithCubicles, 1);
@@ -364,6 +377,7 @@ public sealed class EveryRoundFingerprintsTheSameTests
         ["he calls it in, and by the time he moves you are gone"] = "a2884452d3a026abc803fb92518f860400048334a32c0b9b41db567b53b1318a",
         ["you duck into a cubicle and he watched the catch turn"] = "36ebf01fec50e67c0ec5b4527cba376227058d1c44f863a2b0b643a1cbcca8c8",
         ["you duck into a cubicle and nobody saw a thing"] = "04b3faa6f4c9afd3f7a43e4c26868f7bb5d1254e7814f67aed653c831be37b5e",
+        ["he called it in, and then you shut a door in his face"] = "a9c912c09cdb876dac9c83ee59307eac2dffc185bba23d2d5568b2696c60b2a9",
         ["you duck in while he is already walking over"] = "437221d749b07097b9d74c6414d7d5b286f2bf344e3e9b0f39b8ec8bd1184fce",
     };
 
