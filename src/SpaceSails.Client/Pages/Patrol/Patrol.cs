@@ -28,8 +28,19 @@ public sealed partial class Map
     /// is narrowing the round's surface. Nested, the moved text needs nothing it did not already have in
     /// scope, and it is still ONE object with ONE surface.</para>
     /// </summary>
-    private sealed class Patrol
+    private sealed partial class Patrol
     {
+        /// <summary>#870 lane 6′c · THE ONE DOOR BACK TO THE PAGE. Everything the round's verbs need from the
+        /// page they are walked on is written down on <see cref="IPatrolHost"/> and reached through here —
+        /// there is no second field typed as the page, no cast back to it, and no bare page member anywhere
+        /// in this object. <c>ThePatrolKeepsItsOwnStateTests</c> sweeps all of it to keep that true.</summary>
+        private readonly IPatrolHost _host;
+
+        /// <summary>#870 lane 6′c · The page hands the round the page. An instance field initialiser may not
+        /// name <c>this</c>, so <c>_patrol</c> is built in <see cref="Map"/>'s own constructor — the one that
+        /// already builds the seat, for exactly the same language reason.</summary>
+        public Patrol(IPatrolHost host) => _host = host;
+
         // ── THE MEN, THE FLOOR AND THE CLOCKS ─────────────────────────────────────────
 
         /// <summary>Everybody walking this floor on a round. The one list — a guard is a mutable body and

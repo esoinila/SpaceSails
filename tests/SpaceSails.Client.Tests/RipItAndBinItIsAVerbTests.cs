@@ -78,16 +78,20 @@ public sealed class RipItAndBinItIsAVerbTests
         return src[at..end];
     }
 
-    /// <summary>#870 lane 6′a · The body of one of the patrol family's own questions, from
-    /// <c>Map.Patrol.cs</c>. Cut the same way <see cref="MethodBody"/> cuts the bin's, and for the same
-    /// reason: the rota rung of this ladder is asked of the round now, and a claim about what that question
-    /// is made of has to be read where the question is.</summary>
+    /// <summary>#870 lane 6′a · The body of one of the patrol family's own questions. Cut the same way
+    /// <see cref="MethodBody"/> cuts the bin's, and for the same reason: the rota rung of this ladder is
+    /// asked of the round now, and a claim about what that question is made of has to be read where the
+    /// question is.
+    ///
+    /// <para>#870 lane 6′c · RE-PATHED, never re-asserted. The round's verbs moved onto <c>Map.Patrol</c>
+    /// itself (<c>Pages/Patrol/Patrol.Floor.cs</c>), so the file this reads and the closing brace it cuts
+    /// at are both one nesting level deeper. Not one claim below changed.</para></summary>
     private static string RoundQuestion(string signature)
     {
-        string src = Source("Pages", "Map.Patrol.cs");
+        string src = Source("Pages", "Patrol", "Patrol.Floor.cs");
         int at = src.IndexOf(signature, StringComparison.Ordinal);
-        Assert.True(at > 0, $"Map.Patrol.cs no longer has `{signature}` — this guard cannot see the rung.");
-        int end = src.IndexOf("\n    }", at, StringComparison.Ordinal);
+        Assert.True(at > 0, $"the round no longer has `{signature}` — this guard cannot see the rung.");
+        int end = src.IndexOf("\n        }", at, StringComparison.Ordinal);
         Assert.True(end > at, $"`{signature}` has no end this guard can find.");
         return src[at..end];
     }
@@ -218,17 +222,17 @@ public sealed class RipItAndBinItIsAVerbTests
         // The ladder itself is Core's law and not a chain of ifs in a client file.
         //
         // #870 lane 6′a · RE-NEEDLED, never re-asserted. The rota rung is one question the patrol family
-        // answers about itself now (TheRoundHasEyesOnYou, Map.Patrol.cs) — the bin no longer walks the guard
+        // answers about itself now (TheRoundHasEyesOnYou, Pages/Patrol/Patrol.Floor.cs) — the bin no longer walks the guard
         // list. The predicate underneath it is unchanged, and it is asserted where it lives, so "the same
         // predicate the challenge runs on" is still a fact this guard can fail on.
         string who = MethodBody("private RipAndBin.Watcher? WhoIsWatchingYouRip(");
         Assert.Contains("RipAndBin.WhoSaw(", who, StringComparison.Ordinal);
         Assert.Contains("TheRoundHasEyesOnYou(", who, StringComparison.Ordinal);
         Assert.Contains(
-            "PatrolBeat.Notices(", RoundQuestion("private bool TheRoundHasEyesOnYou("),
+            "PatrolBeat.Notices(", RoundQuestion("public bool TheRoundHasEyesOnYou("),
             StringComparison.Ordinal);
         Assert.Contains(
-            "PatrolBeat.CanBeNoticed(", RoundQuestion("private bool TheRoundHasEyesOnYou("),
+            "PatrolBeat.CanBeNoticed(", RoundQuestion("public bool TheRoundHasEyesOnYou("),
             StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.EyesOn(", who, StringComparison.Ordinal);
         Assert.DoesNotContain("return RipAndBin.Watcher.", who, StringComparison.Ordinal);

@@ -321,7 +321,7 @@ public sealed class AJambIsNotASealedDoorTests
         // bare — owner: "turns to the nearest wall fixture, checks a plate, reads a docket" — and the few du
         // he takes to get to one are a slide, not a plan. It is the SAME body that already holds three of
         // these claims, walking two paces at the same gait for the same reason, and it is the third and last
-        // of them in Map.Patrol.cs. Nothing an Old One steps through was touched.
+        // of them in the round's own files. Nothing an Old One steps through was touched.
         Assert.Equal(5, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
@@ -331,7 +331,12 @@ public sealed class AJambIsNotASealedDoorTests
         //
         // #870 · The round is six partials by subject now, so the prefix names the FAMILY rather than one
         // file of it — three claims across all of them, exactly the three it counted when they were one.
-        Assert.Equal(3, claims.FindAll(c => c.StartsWith("Map.Patrol.", StringComparison.Ordinal)).Count);
+        //
+        // #870 lane 6′c · RE-PATHED. The verbs moved off the page onto the round itself, so the family's
+        // own files are `Patrol*.cs` under Pages/Patrol/ and the prefix is `Patrol.` — which is exactly
+        // those files and never `Map.Patrol.cs`, whose forwarders claim nothing. Still three, still the
+        // round's stride, #835's run and #831's two paces to the wall.
+        Assert.Equal(3, claims.FindAll(c => c.StartsWith("Patrol.", StringComparison.Ordinal)).Count);
     }
 
     private static string RepoRoot

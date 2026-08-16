@@ -172,31 +172,45 @@ public sealed class TheSeatKeepsItsOwnStateTests
     public void NothingEverRESeatsThePage()
     {
         var written = new List<string>();
+        int inTheConstructor = 0;
 
         foreach (string path in ClientSources())
         {
-            if (Relative(path) == TheOneFile)
-            {
-                continue;   // its own declaration, which is the one assignment allowed to exist
-            }
-
             string[] lines = File.ReadAllLines(path);
             for (int i = 0; i < lines.Length; i++)
             {
-                if (Regex.IsMatch(lines[i], @"\b_seating\s*=(?!=)"))
+                if (!Regex.IsMatch(lines[i], @"\b_seating\s*=(?!=)"))
                 {
-                    written.Add($"  {Relative(path)}:{i + 1} — {lines[i].Trim()}");
+                    continue;
                 }
+
+                if (Relative(path) == TheOneConstructor)
+                {
+                    inTheConstructor++;   // the one assignment allowed to exist
+                    continue;
+                }
+
+                written.Add($"  {Relative(path)}:{i + 1} — {lines[i].Trim()}");
             }
         }
 
         Assert.True(
-            written.Count == 0,
-            "#870 lane 6b · NOTHING RE-SEATS THE PAGE. `_seating` is readonly and assigned once, at its " +
-            "declaration. Written again here:\n" + string.Join("\n", written) +
+            written.Count == 0 && inTheConstructor == 1,
+            "#870 lane 6b · NOTHING RE-SEATS THE PAGE. `_seating` is readonly and assigned ONCE, in the " +
+            $"page's own constructor ({TheOneConstructor}), which writes it {inTheConstructor} time(s). " +
+            "Written again here:\n" + string.Join("\n", written) +
             "\n\nStanding up EMPTIES the seat (`_seating.Table = null`); it does not swap in a different " +
             "one. A second Seating is a second answer to \"where am I sitting\".");
     }
+
+    /// <summary>#870 lane 6′c · WHERE THE ONE ASSIGNMENT LIVES. 6c put it beside the field in
+    /// <see cref="TheOneFile"/>; the moment the ROUND needed the same treatment, the page's single
+    /// parameterless constructor had to name a field of the PATROL family from inside a file of the SEAT
+    /// family — which is exactly what this file's own "one door" sweep is there to catch. So the constructor
+    /// moved to a file that belongs to neither, and this is a re-PATH: the claim (assigned once, and only
+    /// there) is word for word what it was, and it now counts the one write rather than merely excusing a
+    /// whole file.</summary>
+    private const string TheOneConstructor = "Pages/Map.Collaborators.cs";
 
     // ── (3) AND IT IS NOT VACUOUS — ASKED OF THE RUNNING TYPE ─────────────────────────────────────────
 
