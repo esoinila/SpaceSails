@@ -24,7 +24,12 @@ namespace SpaceSails.Client.Tests;
 /// and every guard's whole state written down after every frame, sha256'd per case and PINNED.</para>
 ///
 /// <para><b>It went in as its own commit on the untouched method</b>, before a line of it moved, so there was
-/// no chance of pinning what the new code happens to do.</para>
+/// no chance of pinning what the new code happens to do. The digests below are the SECOND set: the first
+/// thirteen were taken the same way and reproduced across the split, and then the base moved under this lane
+/// and the transcript's last section had to change shape (see <see cref="WhatMoved"/>). Every digest here was
+/// re-measured at the merged base and checked against the <b>untouched</b> <c>AdvancePatrol</c> as well as
+/// against the split — the same thirteen either way — and on a linux runtime as well as on this desktop,
+/// because the first time this file met CI was a lesson in what a snapshot is allowed to depend on.</para>
 ///
 /// <para><b>Thirteen cases, 7,100 frames</b>, and between them they walk every arm of the chain the shipped
 /// game can reach: the round's own leg (leaving a stop, spending a route, arriving, standing, planning the
