@@ -565,7 +565,12 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void CORE_SaysOutLoudThatARoundCanNeverBeATail()
     {
-        string patrol = CoreSource("PatrolBeat.cs");
+        // #870 · The module is one partial class spread over PatrolBeat*.cs. Same needle, same code, new
+        // path — the source read here is the concatenation of every part, in ordinal order.
+        string patrol = string.Concat(Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
         Assert.Contains(
             "FootTail.OnARound(DeckName(index), x, y)", patrol, StringComparison.Ordinal);
 
