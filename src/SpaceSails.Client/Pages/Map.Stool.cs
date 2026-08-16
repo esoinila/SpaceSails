@@ -46,10 +46,6 @@ namespace SpaceSails.Client.Pages;
 /// </summary>
 public partial class Map
 {
-    /// <summary>The stool you are on, or null while you are standing at the counter. One at a time — there
-    /// is only one of you.</summary>
-    private StoolSeat? _stool;
-
     /// <summary>#756 QA · <c>?stool=1</c> — walk to the counter, open the card and TAKE A STOOL, so the
     /// seated posture is one URL away. Set in Map.Sim's cheat parse; read by the landing's last leg.</summary>
     private bool _stoolCheat;
@@ -123,7 +119,7 @@ public partial class Map
     /// </summary>
     private void TakeAStool()
     {
-        if (_surface is not { } ex || ex.Floor >= 0 || _stool is not null)
+        if (_surface is not { } ex || ex.Floor >= 0 || _seating.Stool is not null)
         {
             return;
         }
@@ -145,7 +141,7 @@ public partial class Map
             SitCaptainOn(row[seat].X, row[seat].Y);
         }
 
-        _stool = new StoolSeat
+        _seating.Stool = new StoolSeat
         {
             Index = seat,
             Key = StoolKey(ex, seat),
@@ -171,7 +167,7 @@ public partial class Map
     /// stool does — no placement, and nothing for a nudge to rescue.</para></summary>
     private void GetDownFromStool()
     {
-        _stool = null;
+        _seating.Stool = null;
         _barNotice = TheStools.GotDownLine;
         StateHasChanged();
     }
@@ -183,14 +179,9 @@ public partial class Map
     /// <c>GotDownLine</c> to say, and the caller is already clearing the notice slot and re-rendering on its
     /// own way out. It sits here, one line under its sibling, so the difference between the two is a thing a
     /// reader trips over rather than a thing they have to go and find.</summary>
-    private void LeaveTheStoolBehind() => _stool = null;
+    private void LeaveTheStoolBehind() => _seating.Stool = null;
 
     // ── THE MOVES ─────────────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>#749 · What is on the stool's panel right now. Core's own call, so a reply to a sentence
-    /// nobody has spoken is not drawn at all.</summary>
-    private IReadOnlyList<Encounter.Move> StoolMovesOnTheTable() =>
-        _stool is { } s ? Encounter.OnTheTable(s.Scene, s.Said) : [];
 
     /// <summary>
     /// Can this move be made right now? Core's requirement check, plus the two facts about a LADDER that
@@ -210,7 +201,7 @@ public partial class Map
     /// rule that a control which does nothing is worse than one that says why.</para>
     /// </summary>
     private bool StoolMoveOnOffer(Encounter.Move move) =>
-        _stool is { } s
+        _seating.Stool is { } s
         && Encounter.Available(move, _credits, _satchel, s.Said, s.Said)
         && _credits >= move.Credits
         && (move.Id == TheStools.Wait || !s.Said.Contains(move.Id));
@@ -218,7 +209,7 @@ public partial class Map
     /// <summary>Why a drawn move is refused, in words — because a refusal a player cannot read is the one
     /// kind of "no" this game does not allow itself (#212/#603).</summary>
     private string StoolMoveRefusal(Encounter.Move move) =>
-        _stool is { } s && s.Said.Contains(move.Id)
+        _seating.Stool is { } s && s.Said.Contains(move.Id)
             ? "You have already said that."
             : $"{move.Credits} cr, and you have {_credits}.";
 
@@ -228,7 +219,7 @@ public partial class Map
     private async Task StoolMoveClicked(string moveId)
     {
         StoolMove(moveId);
-        if (_stool is null && _barMenu is null)
+        if (_seating.Stool is null && _barMenu is null)
         {
             await RefocusMap();
         }
@@ -243,7 +234,7 @@ public partial class Map
     /// </summary>
     private void StoolMove(string moveId)
     {
-        if (_surface is not { } ex || _stool is not { } s)
+        if (_surface is not { } ex || _seating.Stool is not { } s)
         {
             return;
         }

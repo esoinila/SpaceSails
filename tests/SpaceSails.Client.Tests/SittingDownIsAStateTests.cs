@@ -229,8 +229,10 @@ public sealed class SittingDownIsAStateTests
         // …and the sim hands it over off the one seated answer, which is the open table itself.
         string sim = Sim();
         Assert.Contains("Seated: CaptainIsSeated", sim, StringComparison.Ordinal);
-        string seated = Source("Pages", "Map.Seated.cs");
-        Assert.Contains("CaptainIsSeated => _table is not null", seated, StringComparison.Ordinal);
+        // #870 lane 6b - re-PATHED, never re-needled: the one answer moved onto the seat object, so the
+        // claim (that it is one line and reads the table) is asserted where that line now is.
+        string seated = Source("Pages", "Seating", "Seating.cs");
+        Assert.Contains("CaptainIsSeated => Table is not null", seated, StringComparison.Ordinal);
     }
 
     // ── (b) WASD IN A CHAIR ───────────────────────────────────────────────────────────────────────────
