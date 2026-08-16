@@ -49,7 +49,7 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para><b>The parse loop's own answer</b> — the locals the 1,150-line <c>?query</c> chain writes, which
 /// are invisible in the fields above until something after the gate consumes them — is pinned separately
-/// by <c>TheBootReadsTheSameQueryTests</c>.</para>
+/// by <see cref="TheBootReadsTheSameQueryTests"/>.</para>
 ///
 /// <para><b>Red proof.</b> Swap any two side effects in the boot — the run recorded in the PR body moved
 /// <c>_credits = StartingCredits</c> below the <c>?credits=N</c> seed — and the hashes move.</para>
@@ -265,7 +265,7 @@ public sealed class TheBootBuildsTheSameWorldTests
 
     // ── The bench ────────────────────────────────────────────────────────────────────────────────────
 
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    internal const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
     /// <summary>Boot the SHIPPING component at <paramref name="url"/> and render everything it changed.
     ///
@@ -344,7 +344,7 @@ public sealed class TheBootBuildsTheSameWorldTests
 
     // ── The renderer: a value to a stable string, the same way every time ────────────────────────────
 
-    private static string Render(object? value) =>
+    internal static string Render(object? value) =>
         Render(value, depth: 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
 
     private static string Render(object? value, int depth, HashSet<object> walking)
@@ -470,7 +470,7 @@ public sealed class TheBootBuildsTheSameWorldTests
 
     // ── The services the page injects ────────────────────────────────────────────────────────────────
 
-    private static void NeverRender(Pages.Map map)
+    internal static void NeverRender(Pages.Map map)
     {
         // A ComponentBase that was never attached to a renderer throws out of StateHasChanged, and the boot
         // calls it five times. Telling the component it already has a render queued is the framework's own
@@ -482,13 +482,13 @@ public sealed class TheBootBuildsTheSameWorldTests
         pending.SetValue(map, true);
     }
 
-    private static void Hand(Pages.Map map, string property, object service) =>
+    internal static void Hand(Pages.Map map, string property, object service) =>
         typeof(Pages.Map).GetProperty(property, Hidden)!.SetValue(map, service);
 
-    private static HttpClient ScenariosFromDisk() =>
+    internal static HttpClient ScenariosFromDisk() =>
         new(new FromDisk()) { BaseAddress = new Uri("http://localhost/") };
 
-    private sealed class Bench : NavigationManager
+    internal sealed class Bench : NavigationManager
     {
         public Bench(string url) => Initialize("http://localhost/", "http://localhost" + url);
     }
