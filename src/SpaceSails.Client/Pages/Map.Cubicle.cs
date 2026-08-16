@@ -173,14 +173,10 @@ public partial class Map
     /// </summary>
     private void ShutTheCubicle(SurfaceExcursion ex, string key)
     {
+        // #870 lane 6′a · the bit that gets written is a guard's, so the round writes it — asked with this
+        // file's own sight blockers, on this frame, and BEFORE the rebuild below puts the partition across.
         IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
-        foreach (Guard g in _guards)
-        {
-            if (PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight))
-            {
-                g.SawYouShutIt = true;
-            }
-        }
+        RememberWhoWatchedTheCatchGoOver(sight);
 
         ex.CubiclesShut.Add(key);
         RebuildSurfaceDeck();
@@ -200,26 +196,17 @@ public partial class Map
     private void OpenTheCubicle(SurfaceExcursion ex, string key)
     {
         ex.CubiclesShut.Remove(key);
-        _walkedPastSaid = false;   // the next hide gets its own line
+        TheNextHideGetsItsOwnLine();
         RebuildSurfaceDeck();
 
         ShowPulseMessage(CubicleLock.UnlockedLine);
         LogAutopilotEvent(CubicleLock.UnlockedLine);
 
-        // EVERY guard forgets, and the FIRST one who was waiting takes the stop. Both halves matter. The
-        // forgetting is swept over the whole list rather than stopped at the man who knocked, because a
-        // second guard who also watched the catch go over would otherwise keep the bit and be standing
-        // outside the NEXT cubicle the captain shut, having seen nothing at all — a hide that stopped
-        // working for reasons the player cannot read. And only one of them takes the stop, because two men
-        // doing one job is #777's stacked card.
-        Guard? waiting = null;
-        foreach (Guard g in _guards)
-        {
-            waiting ??= g.Knocking ? g : null;
-            g.Knocking = false;
-            g.Knocked = false;
-            g.SawYouShutIt = false;
-        }
+        // EVERY guard forgets, and the FIRST one who was waiting takes the stop. Both halves matter, and
+        // #870 lane 6′a moved them into the round itself (Map.Patrol.Hide.cs) as one verb, where the reasons
+        // are written down: forgetting swept over the whole list, and only one man handed back, because two
+        // men doing one job is #777's stacked card. What happens to him is still this file's.
+        Guard? waiting = EverybodyForgetsTheCatch();
 
         if (waiting is { } him)
         {

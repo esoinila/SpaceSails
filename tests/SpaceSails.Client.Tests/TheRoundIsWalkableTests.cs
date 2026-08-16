@@ -344,7 +344,10 @@ public sealed class TheRoundIsWalkableTests
     {
         string accessor = Between(
             Pages("Map.SweepTeam.cs"), "private IEnumerable<MotionTracker.Entity> EverythingThatMoves()", "\n}");
-        Assert.Contains("_guards", accessor, StringComparison.Ordinal);
+        // #870 lane 6′a · RE-NEEDLED, never re-asserted: the fan asks the patrol family for the men on the
+        // floor (TheRoundOnFoot) instead of reading its list. The CONTACT is still declared here — which is
+        // the whole claim — and the accessor is still the one place any of them is listed.
+        Assert.Contains("TheRoundOnFoot", accessor, StringComparison.Ordinal);
         Assert.Contains("g.Vx, g.Vy", accessor, StringComparison.Ordinal);
     }
 

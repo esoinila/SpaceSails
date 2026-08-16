@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
@@ -48,6 +49,17 @@ public sealed class TheTableSceneIsOneRoomTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
 
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
@@ -173,7 +185,7 @@ public sealed class TheTableSceneIsOneRoomTests
     {
         // The other end of the wire. The panel's opener must read Core's table list off the SAME frozen
         // watch the deck was welded at — a press that re-read a clock would be bug class three with a face.
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         Assert.Contains("CanteenRegulars.Tables(", table, StringComparison.Ordinal);
         Assert.Contains("ex.CanteenWatch", table, StringComparison.Ordinal);
         Assert.DoesNotContain("SimTime", table, StringComparison.Ordinal);
@@ -234,7 +246,7 @@ public sealed class TheTableSceneIsOneRoomTests
         // #870 lane 6b - re-PATHED, never re-needled: TableMovesOnTheTable is a pure function of the
         // seat's own state, so it moved onto Seating. Both claims below are Contains, so reading the
         // two files concatenated is exact rather than a narrowing.
-        string table = Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.cs");
+        string table = Table() + Source("Pages", "Seating", "Seating.cs");
         Assert.Contains("Encounter.OnTheTable(", table, StringComparison.Ordinal);
         Assert.Contains("t.Said", table, StringComparison.Ordinal);
 
@@ -259,11 +271,11 @@ public sealed class TheTableSceneIsOneRoomTests
     [Fact]
     public void A_FIXED_OUTCOME_SPEAKS_BecauseTheMoveCarriesTheLineAndNotBecauseOfItsName()
     {
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
 
         int at = table.IndexOf("private void TableMove(", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs no longer has TableMove where this guard can read it.");
-        int end = table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal);
+        int end = table.IndexOf("\n        /// <summary>", at, StringComparison.Ordinal);
         string dispatch = table[at..(end > at ? end : table.Length)];
 
         // The dispatch reads what the move CARRIES…
@@ -285,9 +297,17 @@ public sealed class TheTableSceneIsOneRoomTests
     /// the nearest member declaration, forwards to the next one.</summary>
     private static string MethodBodyAround(string source, int at)
     {
-        int start = source.LastIndexOf("\n    private ", at, StringComparison.Ordinal);
-        Assert.True(start >= 0, "no member declaration above this call — the guard cannot cut a body.");
-        int end = source.IndexOf("\n    private ", at, StringComparison.Ordinal);
+        // #870 lane 6c · the two searches no longer spell out an indent depth OR an accessibility keyword.
+        // The table's verbs are one nesting level deeper now (members of Map.Seating), and the nine the page
+        // still forwards are `public` there rather than `private` — so a sentinel counting four spaces and
+        // one keyword would have cut from the wrong member or not at all. Same cut, same claims.
+        MatchCollection above = Regex.Matches(source[..at], @"
+\s*(?:private|public) ");
+        Assert.True(above.Count > 0, "no member declaration above this call — the guard cannot cut a body.");
+        int start = above[^1].Index;
+        Match below = Regex.Match(source[at..], @"
+\s*(?:private|public) ");
+        int end = below.Success ? at + below.Index : -1;
         return source[start..(end > start ? end : source.Length)];
     }
 
@@ -296,11 +316,11 @@ public sealed class TheTableSceneIsOneRoomTests
     {
         // Stated as its own negation, the way #680's guards state it. Every move ends at TableAnswered, and
         // TableAnswered stores the line for the panel and files the note — it may never pulse.
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
 
         int at = table.IndexOf("private void TableAnswered(", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs no longer has TableAnswered where this guard can read it.");
-        int end = table.IndexOf("\n    // ──", at + 1, StringComparison.Ordinal);
+        int end = table.IndexOf("\n        // ──", at + 1, StringComparison.Ordinal);
         string answered = table[at..(end > at ? end : table.Length)];
 
         Assert.Contains("t.Outcome = said.Line", answered, StringComparison.Ordinal);
@@ -342,7 +362,7 @@ public sealed class TheTableSceneIsOneRoomTests
         [
             "private void StandInTheCanteenIfAsked(",
             "private void TableMove(",
-            "private bool TryOpenTable()",
+            "public bool TryOpenTable()",
         ];
         foreach (string method in mayPulse)
         {
@@ -362,7 +382,7 @@ public sealed class TheTableSceneIsOneRoomTests
         // press one sentence at a table that cannot take you; a second pulse growing in there would be a line
         // said at a table the captain is actually sitting at, which is the thing this guard exists for.
         string open = MethodBodyAround(table, table.IndexOf(
-            "private bool TryOpenTable()", StringComparison.Ordinal));
+            "public bool TryOpenTable()", StringComparison.Ordinal));
         Assert.Equal(1, open.Split("ShowPulseMessage(").Length - 1);
         Assert.Contains("ShowPulseMessage(CanteenTable.TableIsFullLine)", open, StringComparison.Ordinal);
 
@@ -378,10 +398,10 @@ public sealed class TheTableSceneIsOneRoomTests
         // The exception that proves the law. Standing up shuts the panel, so there is no dialog subtree left
         // to say anything in — the pulse HUD is the only surface there is, and #680 is about which surface
         // the player is looking at rather than about pulses being wrong.
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         int at = table.IndexOf("if (moveId == CanteenTable.Leave)", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs no longer handles taking your leave where this guard can read it.");
-        string leaving = table[at..table.IndexOf("\n        if (moveId == CanteenTable.Show)", at, StringComparison.Ordinal)];
+        string leaving = table[at..table.IndexOf("\n            if (moveId == CanteenTable.Show)", at, StringComparison.Ordinal)];
 
         int closed = leaving.IndexOf("CloseTable()", StringComparison.Ordinal);
         int pulsed = leaving.IndexOf("ShowPulseMessage(", StringComparison.Ordinal);
@@ -563,10 +583,10 @@ public sealed class TheTableSceneIsOneRoomTests
     [Fact]
     public void A_FULL_TOP_SaysSoAndRaisesNoCard()
     {
-        string table = Source("Pages", "Map.Table.cs");
-        int at = table.IndexOf("private bool TryOpenTable()", StringComparison.Ordinal);
+        string table = Table();
+        int at = table.IndexOf("public bool TryOpenTable()", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs no longer has TryOpenTable.");
-        string body = table[at..table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
+        string body = table[at..table.IndexOf("\n        /// <summary>", at, StringComparison.Ordinal)];
 
         // (1) Core's line, by name.
         Assert.Contains("CanteenTable.TableIsFullLine", body, StringComparison.Ordinal);

@@ -46,6 +46,20 @@ public sealed class SittingIsNotACutsceneTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
+    private static string Seated() =>
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+
+
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
@@ -193,7 +207,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void THE_CUSTOMER_LINE_ReadsTheSameMembersTheMechanicsRunOn()
     {
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
 
         // One window, and the flag is derived from it rather than measured beside it.
         Assert.Contains("private bool APourInFrontOfYou => PourSecondsLeft is not null;", seated,
@@ -201,7 +215,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Single(Regex.Matches(seated, @"DrinkInHandSeconds \* 1000\.0"));
 
         // The line itself hands Core the ledger, the ceiling and the fill — no arithmetic of its own.
-        int at = seated.IndexOf("private string? SeatedCustomerLine()", StringComparison.Ordinal);
+        int at = seated.IndexOf("public string? SeatedCustomerLine()", StringComparison.Ordinal);
         Assert.True(at > 0, "there is no customer line.");
         string body = seated[at..(at + 900)];
         Assert.Contains("ex.RestPipsEased.TryGetValue(ex.CanteenWatch", body, StringComparison.Ordinal);
@@ -262,7 +276,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("SpreadDigClicked(dig)", body, StringComparison.Ordinal);
         Assert.DoesNotContain("@onclick=\"() => WriteItUp(dig)\"", body, StringComparison.Ordinal);
 
-        string seatedSrc = Source("Pages", "Map.Seated.cs");
+        string seatedSrc = Seated();
         int clicked = seatedSrc.IndexOf("private async Task SpreadDigClicked(", StringComparison.Ordinal);
         Assert.True(clicked > 0, "the spread row has no way home for the mouse.");
         string clickedBody = seatedSrc[clicked..(clicked + 700)];
@@ -295,7 +309,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void THE_DIG_TakesItsTimeAndThenTheBookGainsTheEntry()
     {
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
         string surface = Surface();
 
         // ONE CHANNEL: the write starts #696's hold rather than a clock of its own.
@@ -364,13 +378,13 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("RequestVaultSave();", landing, StringComparison.Ordinal);
 
         // INTERRUPTIBLE, and honestly: standing up ends it out loud, in the seated register's own reason.
-        string table = Source("Pages", "Map.Table.cs");
-        int close = table.IndexOf("private void CloseTable()", StringComparison.Ordinal);
+        string table = Table();
+        int close = table.IndexOf("public void CloseTable()", StringComparison.Ordinal);
         string closeBody = table[close..(close + 900)];
         Assert.Contains("Core.Processing.Interruption.StoodUp", closeBody, StringComparison.Ordinal);
         Assert.True(
             closeBody.IndexOf("AbandonProcessing(", StringComparison.Ordinal)
-                < closeBody.IndexOf("_seating.Table = null;", StringComparison.Ordinal),
+                < closeBody.IndexOf("Table = null;", StringComparison.Ordinal),
             "the table is gone before the abandon line has a strip to land on.");
 
         // …and so does somebody taking the chair opposite, which is the privacy the spread was licensed by
@@ -474,7 +488,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void THE_PRIVACY_GATE_IsAskedWithTheRoomsOwnFacts()
     {
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
 
         Assert.Contains("SeatedSpread.CanSpreadTheCase(seat, SeatedAlone)", seated, StringComparison.Ordinal);
         Assert.Contains("t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable", seated,
@@ -527,7 +541,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("pair.StartsWith(\"spread=\"", sim, StringComparison.Ordinal);
         Assert.Contains("_spreadCheat = true;", sim, StringComparison.Ordinal);
 
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
 
         // A CABINET, asked of the room's own list — never a coordinate the cheat typed (§13.15).
         Assert.Contains("FirstFreeTop(ex, a, quietOnly: true)", table, StringComparison.Ordinal);

@@ -224,6 +224,13 @@ public sealed class ALockedCubicleBuysTimeTests
     private static string Source(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat's verbs moved onto
+    /// <c>Map.Seating</c> behind <c>ISeatHost</c>, so the chair is two files now — the page's half and the
+    /// seat's own — read here concatenated in that order, which is exactly the text this guard read before
+    /// the move.</summary>
+    private static string Seat(string page, string seat) =>
+        Source(page) + Source(Path.Combine("Seating", seat));
+
     /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
     /// split. A part not named here is appended rather than dropped, so nothing can go unread.</summary>
@@ -298,7 +305,10 @@ public sealed class ALockedCubicleBuysTimeTests
     {
         string src = Code("Map.Cubicle.cs");
 
-        int asked = src.IndexOf("PatrolBeat.Notices", StringComparison.Ordinal);
+        // #870 lane 6′a · RE-NEEDLED, never re-asserted. The bit that gets written is a guard's, so the
+        // sightline moved into the round itself (RememberWhoWatchedTheCatchGoOver, Map.Patrol.Hide.cs). The
+        // ORDER is still the press's, and it is still the whole law: the ASK is what must come first.
+        int asked = src.IndexOf("RememberWhoWatchedTheCatchGoOver", StringComparison.Ordinal);
         int shutIt = src.IndexOf("ex.CubiclesShut.Add", StringComparison.Ordinal);
         int rebuilt = src.IndexOf("RebuildSurfaceDeck", StringComparison.Ordinal);
 
@@ -309,7 +319,9 @@ public sealed class ALockedCubicleBuysTimeTests
         Assert.True(rebuilt > asked, "the deck is rebuilt before the sightline is taken.");
 
         // …and it is the SAME predicate the challenge is gated on, not a second opinion about who sees what.
-        Assert.Contains("g.SawYouShutIt = true", src, StringComparison.Ordinal);
+        string round = CodeOf(Patrol());
+        Assert.Contains("PatrolBeat.Notices", round, StringComparison.Ordinal);
+        Assert.Contains("g.SawYouShutIt = true", round, StringComparison.Ordinal);
         Assert.Contains("SightBlockers()", src, StringComparison.Ordinal);
     }
 
@@ -363,8 +375,19 @@ public sealed class ALockedCubicleBuysTimeTests
         // …and EVERY guard forgets on the way out, not just the one who knocked. A second man who also
         // watched the catch go over would otherwise keep the bit and be standing outside the NEXT cubicle
         // the captain shut, having seen nothing at all.
-        Assert.Contains("g.SawYouShutIt = false;", press, StringComparison.Ordinal);
-        Assert.Contains("foreach (Guard g in _guards)", press, StringComparison.Ordinal);
+        //
+        // #870 lane 6′a · RE-NEEDLED, never re-asserted. The loop moved into the round as one verb
+        // (EverybodyForgetsTheCatch, Map.Patrol.Hide.cs), so the press is read for the ASK and the round for
+        // the SWEEP — cut to that one method's body, because the same two lines exist elsewhere in the
+        // family for another reason and a whole-file search would pass on them.
+        Assert.Contains("EverybodyForgetsTheCatch()", press, StringComparison.Ordinal);
+
+        int forgets = patrol.IndexOf(
+            "private Guard? EverybodyForgetsTheCatch()", StringComparison.Ordinal);
+        Assert.True(forgets > 0, "the forgetting is not where this guard thinks it is.");
+        string forgetting = patrol[forgets..patrol.IndexOf("\n    }", forgets, StringComparison.Ordinal)];
+        Assert.Contains("g.SawYouShutIt = false;", forgetting, StringComparison.Ordinal);
+        Assert.Contains("foreach (Guard g in _guards)", forgetting, StringComparison.Ordinal);
 
         // #835 · …AND THE DOOR MAY NOT DOWNGRADE A RUN INTO A REQUEST FOR PAPERS. A man who had called it
         // in and was coming at a run is still that man — the door stopped his legs, it did not un-say the
@@ -377,8 +400,17 @@ public sealed class ALockedCubicleBuysTimeTests
 
         // …and the round's own chase branch is BELOW the wait, so a man coming at a run cannot run through a
         // partition: he arrives, and then he is a man standing outside a door.
-        int waits = patrol.IndexOf("CubicleLock.WaitsAtTheDoor", StringComparison.Ordinal);
-        int runs = patrol.IndexOf("else if (g.AfterYou)", StringComparison.Ordinal);
+        //
+        // #870 · RE-NEEDLED, never re-asserted. The `if / else if` chain is a LIST now
+        // (`TheOneThingHeIsDoingThisFrame`), so the two lines this ordering lives on are the two arms' own
+        // calls in that list rather than the two clauses they used to be. Same law, same two things, in the
+        // same order — and it is pinned a second way now: the fingerprint case "he called it in, and then
+        // you shut a door in his face" (`EveryRoundFingerprintsTheSameTests`) exists precisely because it is
+        // the one case in the game where both arms want the same man, and it goes RED when these two lines
+        // are swapped.
+        int waits = patrol.IndexOf(
+            "if (HeIsWaitingOutsideTheDoorHeSawYouShut(", StringComparison.Ordinal);
+        int runs = patrol.IndexOf("if (HeIsComingAfterYou(", StringComparison.Ordinal);
         Assert.True(waits > 0 && runs > 0, "the hide and the run are not where this guard thinks they are.");
         Assert.True(waits < runs,
             "the run is taken before the wait, so a guard at a locked door would keep running at it — and "
@@ -424,13 +456,13 @@ public sealed class ALockedCubicleBuysTimeTests
     public void THE_LADDER_AsksTheCatchEveryFrame()
     {
         string seated = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Seated.cs"));
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating", "Seating.Seated.cs"));
 
         Assert.Contains("CubicleIsShut(wc) ? SeatedHud.Seat.LockedCubicle", seated, StringComparison.Ordinal);
 
         // …and an UNLOCKED cubicle is not dealt the top rung. It is not the cabinet's flag either — a
         // cabinet's door was paid for and this one is a catch on a partition.
-        string chair = Code("Map.OfficeChair.cs");
+        string chair = CodeOf(Seat("Map.OfficeChair.cs", "Seating.OfficeChair.cs"));
         Assert.Contains("Quiet = false", chair, StringComparison.Ordinal);
         Assert.Contains("CubicleKey = HiveInterior.CubicleKey", chair, StringComparison.Ordinal);
     }

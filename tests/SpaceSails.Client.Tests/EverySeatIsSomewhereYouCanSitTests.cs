@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
@@ -84,6 +85,26 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
+    private static string Bench() =>
+        Source("Pages", "Map.Bench.cs") + Source("Pages", "Seating", "Seating.Bench.cs");
+
+    private static string Stool() =>
+        Source("Pages", "Map.Stool.cs") + Source("Pages", "Seating", "Seating.Stool.cs");
+
+    private static string Chair() =>
+        Source("Pages", "Map.OfficeChair.cs") + Source("Pages", "Seating", "Seating.OfficeChair.cs");
+
 
     // ── (a) THE BENCH · SOLID TO SIT ON, AND A WAY OFF IT ────────────────────────────────────────────
 
@@ -351,37 +372,40 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     public void EVERY_SIT_VERB_PutsTheBodyOnTheSeatItAskedCoreFor()
     {
         // THE BENCH — Core picks the end, this file picks nothing.
-        string bench = Region(Source("Pages", "Map.Bench.cs"), "private void SitOnThisBench(");
-        Assert.Contains("bench.EndYouTake(_avatarX, _avatarY)", bench, StringComparison.Ordinal);
+        string bench = Region(Bench(), "private void SitOnThisBench(");
+        Assert.Contains("bench.EndYouTake(_host.AvatarX, _host.AvatarY)", bench, StringComparison.Ordinal);
         Assert.Contains("SitCaptainOn(", bench, StringComparison.Ordinal);
         Assert.Contains("TowardTheWalk(in green,", bench, StringComparison.Ordinal);
 
         // THE STOOL — the counter's own row, by the ordinal the verb was dealt.
-        string stool = Region(Source("Pages", "Map.Stool.cs"), "private void TakeAStool()");
+        string stool = Region(Stool(), "public void TakeAStool()");
         Assert.Contains(".TheStoolRow", stool, StringComparison.Ordinal);
         Assert.Contains("SitCaptainOn(row[seat].X, row[seat].Y)", stool, StringComparison.Ordinal);
 
         // THE TOPS — both presses, the ask-to-join and the free table.
-        string table = Source("Pages", "Map.Table.cs");
-        foreach (string verb in new[] { "private bool TryOpenTable()", "private bool TryTakeTable()" })
+        string table = Table();
+        foreach (string verb in new[] { "public bool TryOpenTable()", "public bool TryTakeTable()" })
         {
             string press = Region(table, verb);
-            Assert.Contains("top.ChairYouTake(_avatarX, _avatarY)", press, StringComparison.Ordinal);
+            Assert.Contains("top.ChairYouTake(_host.AvatarX, _host.AvatarY)", press, StringComparison.Ordinal);
             Assert.Contains("SitCaptainOn(sit.X, sit.Y)", press, StringComparison.Ordinal);
             Assert.Contains("StepOff = chair,", press, StringComparison.Ordinal);
         }
 
         // THE OFFICE CHAIR — shipped with the snap (#817) and on the shared placement with the rest.
-        string chair = Region(Source("Pages", "Map.OfficeChair.cs"), "private void SitInThisChair(");
+        string chair = Region(Chair(), "private void SitInThisChair(");
         Assert.Contains("SitCaptainOn(chair.X, chair.Y)", chair, StringComparison.Ordinal);
         Assert.Contains("StepOff = chair.StandAt,", chair, StringComparison.Ordinal);
 
         // …and NONE of them moves the avatar by hand. One placement for sitting down, so a fifth seat
         // cannot arrive with a fifth way of doing it.
-        foreach (string file in new[] { "Map.Bench.cs", "Map.Stool.cs", "Map.Table.cs", "Map.OfficeChair.cs" })
+        // #870 lane 6c · re-PATHED. Each of the four is TWO files now — the page's half and the seat's own
+        // verbs — and this sweep reads both, because narrowing it to either half would be a silent
+        // weakening of a DoesNotContain over the whole subject.
+        foreach (string family in new[] { Bench(), Stool(), Table(), Chair() })
         {
-            Assert.DoesNotContain("_avatarX =", Source("Pages", file), StringComparison.Ordinal);
-            Assert.DoesNotContain("_avatarX,  _avatarY) =", Source("Pages", file), StringComparison.Ordinal);
+            Assert.DoesNotContain("_avatarX =", family, StringComparison.Ordinal);
+            Assert.DoesNotContain("_avatarX,  _avatarY) =", family, StringComparison.Ordinal);
         }
     }
 
@@ -404,8 +428,8 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     [Fact]
     public void STANDING_UP_StepsOffThroughTheNudge()
     {
-        string close = Region(Source("Pages", "Map.Table.cs"), "private void CloseTable()");
-        Assert.Contains("_seating.Table?.StepOff", close, StringComparison.Ordinal);
+        string close = Region(Table(), "public void CloseTable()");
+        Assert.Contains("Table?.StepOff", close, StringComparison.Ordinal);
         Assert.Contains("StandCaptainAt(spot.X, spot.Y", close, StringComparison.Ordinal);
 
         // …and the placement itself is the one that does NOT nudge, said where somebody changing it will
@@ -422,7 +446,12 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     {
         int at = source.IndexOf(signature, StringComparison.Ordinal);
         Assert.True(at >= 0, $"the client no longer has `{signature}`.");
-        int end = source.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal);
+        // #870 lane 6c · the cut ends at the next docblock WHEREVER IT IS INDENTED. The verbs this
+        // helper reads live one nesting level deeper now (members of Map.Seating rather than of Map),
+        // so a sentinel that spelled out four spaces would have run to the end of the file and quietly
+        // widened every claim below. Same cut, same claims; it just stopped counting spaces.
+        Match next = Regex.Match(source[at..], @"\n\s*/// <summary>");
+        int end = next.Success ? at + next.Index : -1;
         return end > at ? source[at..end] : source[at..];
     }
 }

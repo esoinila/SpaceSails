@@ -337,14 +337,9 @@ public sealed partial class Map
 
         // The rota: the same predicate the challenge itself runs on (PatrolBeat.Notices), including the
         // grace off the car — a guard who has not registered you yet has not seen you do anything.
-        bool rota = false;
-        if (PatrolBeat.CanBeNoticed(_patrolFloorSeconds))
-        {
-            foreach (Guard g in _guards)
-            {
-                rota |= PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight);
-            }
-        }
+        // #870 lane 6′a · both halves are one question the round answers about itself, asked with this
+        // file's own sight blockers.
+        bool rota = TheRoundHasEyesOnYou(sight);
 
         // …and anybody at a seat who can see your hands. Core's own list of who is sitting where, off the
         // frozen watch the room was drawn with, so the people who saw it are the people on the floor.

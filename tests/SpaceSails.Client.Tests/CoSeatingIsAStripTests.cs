@@ -475,10 +475,22 @@ public sealed class CoSeatingIsAStripTests
     private static void Set(object o, string field, object? value) =>
         o.GetType().GetField(field, Hidden)!.SetValue(o, value);
 
+    /// <summary>#870 lane 6c · THE LOOKUP FOLLOWS THE VERB, and not one assertion moved. The seat's verbs
+    /// live on <c>Map.Seating</c> now, behind <c>ISeatHost</c>, and the page keeps a forwarder only where
+    /// something outside the seat family still calls one by name. So a verb that is not on the page is asked
+    /// of the seat object hanging off it — the same live page, the same real handler, the same arguments.
+    /// It is deliberately NOT a fallback for any name: a verb that has simply been DELETED still fails
+    /// loudly right here, which is what keeps this harness's anti-vacuous property.</summary>
     private static object? Invoke(Pages.Map map, string method, params object?[] args)
     {
         MethodInfo? call = typeof(Pages.Map).GetMethod(method, Hidden);
+        object target = map;
+        if (call is null && SeatState.Seat(map) is { } seat)
+        {
+            call = seat.GetType().GetMethod(method, Hidden);
+            target = seat;
+        }
         Assert.True(call is not null, $"the component has no `{method}` — this guard is reading a dead name.");
-        return call!.Invoke(map, args);
+        return call!.Invoke(target, args);
     }
 }
