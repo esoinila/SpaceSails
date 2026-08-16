@@ -54,8 +54,11 @@ public sealed class TheSeatKeepsItsOwnStateTests
     /// <c>src/SpaceSails.Client</c>.</summary>
     private const string TheOneFile = "Pages/Seating/Seating.cs";
 
-    /// <summary>The one field the page keeps, exactly as it is declared.</summary>
-    private const string TheOneField = "private readonly Seating _seating = new();";
+    /// <summary>The one field the page keeps, exactly as it is declared. #870 lane 6c re-SPELLED this needle
+    /// and changed nothing it claims: the seat is handed the page in the constructor now
+    /// (<c>new Seating(this)</c>), and an instance field initialiser may not name <c>this</c>, so the
+    /// initialiser moved off the declaration. Still one field, still readonly, still one file.</summary>
+    private const string TheOneField = "private readonly Seating _seating;";
 
     /// <summary>The five, before and after. Raw field name as the family used to declare it, then the
     /// property that replaced it, its declaration, and the type it still has.</summary>

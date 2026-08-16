@@ -49,8 +49,19 @@ public partial class Map
     /// <para><c>readonly</c>, and never re-assigned: standing up EMPTIES the seat, it does not swap in a
     /// different one. A captain who stood up and a captain who never sat are the same captain, and a second
     /// <see cref="Seating"/> would be a second answer to "where am I sitting" - this repo's first named bug
-    /// class, aimed at a posture.</para></summary>
-    private readonly Seating _seating = new();
+    /// class, aimed at a posture.</para>
+    ///
+    /// <para>#870 lane 6c - it is BUILT IN THE CONSTRUCTOR now rather than at its declaration, and that is a
+    /// language rule rather than a design change: the seat is handed the page it is a seat on
+    /// (<see cref="ISeatHost"/>), and an instance field initialiser may not name <c>this</c>. Still one seat,
+    /// still assigned exactly once, and the assignment still lives in this file - which is the one file the
+    /// guard against re-seating the page exempts.</para></summary>
+    private readonly Seating _seating;
+
+    /// <summary>#870 lane 6c - the page hands the seat the page, and that is the whole of this constructor. A
+    /// Blazor component is built by the framework before its parameters are set, so nothing else may happen
+    /// here; everything this page actually does starts at <c>OnInitialized</c> / <c>OnAfterRenderAsync</c>.</summary>
+    public Map() => _seating = new Seating(this);
 
     /// <summary>
     /// #870 lane 6b - WHAT IT IS TO BE SITTING DOWN: the whole of the state, and every question whose answer
@@ -63,9 +74,27 @@ public partial class Map
     /// <para>It knows nothing about the world it sits in. Nothing in here reads an excursion, a deck plan, a
     /// clock or a renderer - a question that needs the world is a question <see cref="Map"/> answers, and the
     /// list of those is in this file's own summary above.</para>
+    ///
+    /// <para>#870 lane 6c - AND NOW IT HAS THE VERBS TOO, in the partials beside this file
+    /// (<c>Seating.Seated.cs</c>, <c>Seating.Table.cs</c>, <c>Seating.Stool.cs</c>, <c>Seating.Bench.cs</c>,
+    /// <c>Seating.OfficeChair.cs</c>). What it still needs from the page it is drawn on is
+    /// <see cref="ISeatHost"/> and NOTHING else - twenty-eight members, written down, and a guard that says
+    /// the number may only come down. The paragraph above is still true where it is aimed: the reads in THIS
+    /// file are pure functions of the five, and the verbs next door reach the world through
+    /// <see cref="_host"/> or not at all.</para>
     /// </summary>
-    private sealed class Seating
+    private sealed partial class Seating
     {
+        /// <summary>#870 lane 6c - THE PAGE, and the only way to it. Every reach out of this object goes
+        /// through here, which is what makes <see cref="ISeatHost"/> the true and complete list of what a
+        /// chair needs from the page it is bolted to.</summary>
+        private readonly ISeatHost _host;
+
+        /// <summary>A seat is a seat ON something. There is no parameterless way to make one, deliberately:
+        /// a <see cref="Seating"/> with no host would be a chair floating in the dark, and every verb on it
+        /// would have to check.</summary>
+        public Seating(ISeatHost host) => _host = host;
+
         // -- THE FIVE, IN ONE PLACE --------------------------------------------------------------------
 
         /// <summary>The open table, or null. One at a time: you are sitting at it.</summary>
