@@ -61,7 +61,14 @@ public partial class Map
     /// <summary>#870 lane 6c - the page hands the seat the page, and that is the whole of this constructor. A
     /// Blazor component is built by the framework before its parameters are set, so nothing else may happen
     /// here; everything this page actually does starts at <c>OnInitialized</c> / <c>OnAfterRenderAsync</c>.</summary>
-    public Map() => _seating = new Seating(this);
+    /// <remarks>#870 lane 6′c - and the ROUND is handed the same page, for the same language reason, in the
+    /// same one place. Two collaborators, one constructor: a second <c>public Map()</c> is not a thing C#
+    /// allows, so this is the only place either assignment could go.</remarks>
+    public Map()
+    {
+        _seating = new Seating(this);
+        _patrol = new Patrol(this);
+    }
 
     /// <summary>
     /// #870 lane 6b - WHAT IT IS TO BE SITTING DOWN: the whole of the state, and every question whose answer

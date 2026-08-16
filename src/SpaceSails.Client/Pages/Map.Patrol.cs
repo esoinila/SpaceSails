@@ -59,17 +59,22 @@ public sealed partial class Map
     /// <summary>
     /// #870 lane 6′b · THE ROUND'S OWN STATE, IN ONE OBJECT (<c>Pages/Patrol/Patrol.cs</c>).
     ///
-    /// <para>Twenty-two loose fields became one. Everything below this line — putting them on the floor,
-    /// walking them, hailing, reading a wallet, walking a captain out — is a VERB, and a verb reads the
-    /// world: the avatar, the deck plan, the excursion, the card in front of the captain. Those stayed
-    /// here and write <c>_patrol.Guards</c> where they used to write a loose field.</para>
+    /// <para>Twenty-two loose fields became one. <b>#870 lane 6′c · AND NOW THE VERBS TOO</b> — putting men
+    /// on the floor, walking them, hailing, reading a wallet, running, walking a captain out — every one of
+    /// them lives on <c>Patrol</c>'s own partials beside its state (<c>Pages/Patrol/Patrol.*.cs</c>). What a
+    /// verb still needs from the page it is walked on is <see cref="IPatrolHost"/>, and that interface is
+    /// the whole of the coupling: twenty-one members, written down, and it may only shrink.</para>
     ///
     /// <para><b><c>readonly</c>, and never re-assigned.</b> Leaving a floor EMPTIES the round
     /// (<see cref="SpawnPatrolFor"/>); it does not swap in a different one. A second <c>Patrol</c> would be
     /// a second answer to <i>who is walking this floor</i>, which is this repo's first named bug class
     /// aimed at a rota. There is a guard fact for exactly that.</para>
+    ///
+    /// <para>#870 lane 6′c · It is BUILT IN THE CONSTRUCTOR now rather than at its declaration, and that is
+    /// a language rule rather than a design change: the round is handed the page it walks on, and an
+    /// instance field initialiser may not name <c>this</c>. Still one round, still assigned exactly once.</para>
     /// </summary>
-    private readonly Patrol _patrol = new();
+    private readonly Patrol _patrol;
 
     // ── #870 lane 6′a/6′b · WHAT THE REST OF THE PAGE MAY ASK THE ROUND ────────────────────────
     //
