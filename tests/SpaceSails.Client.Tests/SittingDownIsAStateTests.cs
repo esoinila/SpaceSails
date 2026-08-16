@@ -296,8 +296,8 @@ public sealed class SittingDownIsAStateTests
         int chain = sim.IndexOf("private bool TryDismissTopOverlay()", StringComparison.Ordinal);
         Assert.True(chain > 0);
 
-        int ask = sim.IndexOf("if (_standUpAsk) { KeepYourSeat(); return true; }", chain, StringComparison.Ordinal);
-        int table = sim.IndexOf("if (_table is not null) { CloseTable(); return true; }", chain, StringComparison.Ordinal);
+        int ask = sim.IndexOf("if (TheStandUpConfirmIsUp) { KeepYourSeat(); return true; }", chain, StringComparison.Ordinal);
+        int table = sim.IndexOf("if (CaptainIsSeated) { CloseTable(); return true; }", chain, StringComparison.Ordinal);
         Assert.True(ask > 0, "Escape does not reach the stand-up confirm at all.");
         Assert.True(ask < table,
             "Escape peels the TABLE before the confirm — the cancel key stands the captain up, which is the " +

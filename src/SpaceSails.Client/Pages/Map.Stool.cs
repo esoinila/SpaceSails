@@ -176,6 +176,15 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>#870 lane 6a · …AND THE OTHER WAY THE SEAT ENDS, which is not a getting-down at all: the
+    /// counter card itself closing (<c>CloseBarkeep</c> in <c>Map.Quests.Bar.cs</c>, #756). Walking away from
+    /// a counter cannot leave the captain sitting at it, so the state goes — but SILENTLY, and that is the
+    /// whole reason this is not <see cref="GetDownFromStool"/>: nobody got down off anything, so there is no
+    /// <c>GotDownLine</c> to say, and the caller is already clearing the notice slot and re-rendering on its
+    /// own way out. It sits here, one line under its sibling, so the difference between the two is a thing a
+    /// reader trips over rather than a thing they have to go and find.</summary>
+    private void LeaveTheStoolBehind() => _stool = null;
+
     // ── THE MOVES ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>#749 · What is on the stool's panel right now. Core's own call, so a reply to a sentence
