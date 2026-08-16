@@ -92,7 +92,8 @@ public sealed class NoSourceFileIsTooLongTests
             ["src/SpaceSails.Client/Pages/Map.Venting.cs"] = 1842,
 
             // Not in any lane yet — inherited debt, listed so it cannot grow.
-            ["src/SpaceSails.Core/PatrolBeat.cs"] = 1991,
+            // PatrolBeat.cs's row is GONE (lane 5d): the file is 224 lines now, and the largest of the eight
+            // partials it became is 460 — the whole family is under the line with no exception of its own.
             ["src/SpaceSails.Core/RingOffice.cs"] = 1762,
             ["src/SpaceSails.Client/Pages/Map.Deck.cs"] = 1687,
         };
