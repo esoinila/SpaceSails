@@ -137,7 +137,7 @@ public partial class Map
             // arriving after it must not reintroduce a fifth placement.
             _host.SitCaptainOn(cell.SeatX, cell.SeatY);
 
-            Table = new TableTalk
+            TakeThisSeat(new TableTalk
             {
                 Key = $"{ex.CanteenWatch}:{ex.Floor}:wc:{room.Number}:{cell.Index}",
                 Index = CubicleLock.ApproachOrdinal(room.Number, cell.Index),
@@ -161,10 +161,7 @@ public partial class Map
                 DrinkInHand = _host.APourInFrontOfYou,
                 Joined = true,
                 Outcome = CubicleLock.SatDownLine,
-            };
-
-            RendererInterop.PlayCue("reveal");
-            _host.StateHasChanged();
+            });
         }
 
         /// <summary>
@@ -183,7 +180,7 @@ public partial class Map
             // #820's snap, through the ONE helper every seat verb in this game sits the captain with.
             _host.SitCaptainOn(seat.X, seat.Y);
 
-            Table = new TableTalk
+            TakeThisSeat(new TableTalk
             {
                 // Its own prefix, so a stool, a chair, a bench and a canteen top with the same ordinal on the
                 // same floor can never share a wait counter — one key for four seats would be one source
@@ -205,10 +202,7 @@ public partial class Map
                 DrinkInHand = _host.APourInFrontOfYou,
                 Joined = true,
                 Outcome = ChamberFitting.TookAStoolLine(room.Plate),
-            };
-
-            RendererInterop.PlayCue("reveal");
-            _host.StateHasChanged();
+            });
         }
 
         /// <summary>How close a console has to be to a published seat to BE that seat. A rounding tolerance and
@@ -229,7 +223,7 @@ public partial class Map
             // by Core's own guard (NoRingSuiteIsAnEmptyFloorTests) rather than by a rescue at run time.
             _host.SitCaptainOn(chair.X, chair.Y);
 
-            Table = new TableTalk
+            TakeThisSeat(new TableTalk
             {
                 Key = OfficeChairKey(ex, room.Number, chair.Index),
                 // The APPROACH ordinal, and deliberately not the chair's own — Core owns the offset
@@ -270,10 +264,7 @@ public partial class Map
                 Outcome = RingOffice.TookAChairLine(
                     room.Plate, RingOffice.LooksAtTheGarden(in room),
                     RingOffice.WorksAtASurface(in room, in chair)),
-            };
-
-            RendererInterop.PlayCue("reveal");
-            _host.StateHasChanged();
+            });
         }
     }
 }

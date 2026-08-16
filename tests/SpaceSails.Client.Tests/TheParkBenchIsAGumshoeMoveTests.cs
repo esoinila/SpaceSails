@@ -432,10 +432,18 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         Assert.DoesNotContain("SitCaptainOn", press, StringComparison.Ordinal);
 
         // …and the sitting is opened in ONE place — one definition, and every way in goes through it, so a
-        // dev row and a key press cannot open two different benches. A second `_table = new TableTalk` in
-        // this file would be the first named bug class with a plank under it.
+        // dev row and a key press cannot open two different benches. A second sitting built in this file
+        // would be the first named bug class with a plank under it.
+        //
+        // #870 lane 6d · RE-NEEDLED, and it is the one needle this lane moved. The claim is untouched — ONE
+        // sitting is built in this file — but the spelling of building one is now `TakeThisSeat(new
+        // TableTalk { … })`, because the tail every site shared (the field, the reveal cue, the draw) is one
+        // method in `Seating.Sit.cs`. The old needle `Table = new TableTalk` no longer exists ANYWHERE in
+        // the client, so leaving it would have been a guard counting to one over a string that can never
+        // appear — a green test that asserts nothing. That six sites build exactly six sittings and all six
+        // go through the one method is held by `EverySeatTheCaptainTakesFingerprintsTheSameTests`.
         Assert.Equal(1, bench.Split("private void SitOnThisBench(").Length - 1);
-        Assert.Equal(1, bench.Split("Table = new TableTalk").Length - 1);
+        Assert.Equal(1, bench.Split("TakeThisSeat(new TableTalk").Length - 1);
         Assert.True(bench.Split("SitOnThisBench(").Length - 1 >= 3,
             "the bench sitting is no longer reached from both the [E] press and the dev row.");
     }

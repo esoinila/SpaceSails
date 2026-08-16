@@ -53,8 +53,10 @@ namespace SpaceSails.Core.Tests;
 /// to empty.</b> A crew that splits a listed file drops it under the line, and law 3 goes red on their branch
 /// naming their row. That is the gate working, not the gate breaking: the red IS the instruction, and the fix
 /// is the one-line deletion described above, in their own PR. #870's lanes 1–5 took all ten of the originally
-/// listed files under the line on 2026-08-16 and left exactly one row — <c>Map.Sim.World.cs</c>, which is one
-/// 1,656-line method that a pure move may not split, and which is lane 7's job.</para>
+/// listed files under the line on 2026-08-16, leaving one row — <c>Map.Sim.World.cs</c>, one 1,656-line method
+/// that a pure move may not split — and lane 7a took that one too, behind a fingerprint of the world every boot
+/// URL builds. <b>The list is EMPTY.</b> It is meant to stay that way: from here, law 1 is the whole gate, and
+/// the first row anybody writes will be a new debt rather than an inherited one.</para>
 ///
 /// <para><b>Proven able to fail three ways</b> before it was trusted — grow a listed file past its row, push
 /// an unlisted file over the line, and list a file that is already under it. The three REDs are quoted
@@ -78,12 +80,10 @@ public sealed class NoSourceFileIsTooLongTests
         new Dictionary<string, int>(StringComparer.Ordinal)
         {
             // #870 lane 4 — queued for the by-banner split.
-            // Map.Sim.cs's row is GONE (lane 4a, #891): the file is 254 lines now. What is left of that
-            // 3,788 is one member — `BootTheWorldAsync`, 1,656 lines of it — which a PURE-MOVE lane may not
-            // split, because splitting a method is not moving one. So the debt is re-written at its true
-            // size under the name of the file that actually carries it, and it is now the only thing between
-            // the whole Map.Sim family and the line.
-            ["src/SpaceSails.Client/Pages/Map.Sim.World.cs"] = 1680,
+            // Map.Sim.cs's row is GONE (lane 4a, #891): the file is 254 lines now, and Map.Sim.World.cs's
+            // row is GONE too (lane 7a) — the 1,656-line `BootTheWorldAsync` a pure move could not touch is
+            // its own named stages across seven files now, the largest 414, and every world it builds
+            // fingerprints exactly as it did before the cut (TheBootBuildsTheSameWorldTests).
 
             // #870 lane 5 — queued behind lane 4.
             // DeckView.cs's row is GONE (lane 5a): the file is 333 lines now, and the largest of the six

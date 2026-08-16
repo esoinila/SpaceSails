@@ -102,7 +102,7 @@ public partial class Map
             (double offX, double offY) = TowardTheWalk(in green, seatX, seatY);
             _host.SitCaptainOn(seatX, seatY);
 
-            Table = new TableTalk
+            TakeThisSeat(new TableTalk
             {
                 StepOff = (offX, offY),
                 Key = BenchKey(ex, bench.Index),
@@ -135,10 +135,7 @@ public partial class Map
                 // Nobody to ask. The bench is simply taken, and the taking is the scene's opening line.
                 Joined = true,
                 Outcome = sat.Opening,
-            };
-
-            RendererInterop.PlayCue("reveal");
-            _host.StateHasChanged();
+            });
         }
 
         // ── SOMEBODY SITS DOWN NEXT TO YOU ────────────────────────────────────────────────────────────────

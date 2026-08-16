@@ -120,7 +120,7 @@ public partial class Map
                         _host.SitCaptainOn(sit.X, sit.Y);
                     }
 
-                    Table = new TableTalk
+                    TakeThisSeat(new TableTalk
                     {
                         Key = TableKey(ex, top.Index),
                         Index = top.Index,
@@ -146,9 +146,7 @@ public partial class Map
                         // presents in the docked strip with the hall lit behind it. Owner, at the clerk's table:
                         // "what if I just sit and eat here… now I am kind of blinded of the surrounding here
                         // because somebody else sits in the same table."
-                    };
-                    RendererInterop.PlayCue("reveal");
-                    _host.StateHasChanged();
+                    });
                     return true;
                 }
             }
@@ -225,7 +223,7 @@ public partial class Map
                         _host.SitCaptainOn(sit.X, sit.Y);
                     }
 
-                    Table = new TableTalk
+                    TakeThisSeat(new TableTalk
                     {
                         Key = TableKey(ex, top.Index),
                         Index = top.Index,
@@ -249,9 +247,7 @@ public partial class Map
                         // kept by the content file, and a client that pinned one of the two registers here
                         // would print the wary line over a picture of somebody's boots.
                         Outcome = sat.Opening,
-                    };
-                    RendererInterop.PlayCue("reveal");
-                    _host.StateHasChanged();
+                    });
                     return true;
                 }
             }
