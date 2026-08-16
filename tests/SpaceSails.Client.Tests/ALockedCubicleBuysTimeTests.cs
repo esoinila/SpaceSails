@@ -377,8 +377,17 @@ public sealed class ALockedCubicleBuysTimeTests
 
         // …and the round's own chase branch is BELOW the wait, so a man coming at a run cannot run through a
         // partition: he arrives, and then he is a man standing outside a door.
-        int waits = patrol.IndexOf("CubicleLock.WaitsAtTheDoor", StringComparison.Ordinal);
-        int runs = patrol.IndexOf("else if (g.AfterYou)", StringComparison.Ordinal);
+        //
+        // #870 · RE-NEEDLED, never re-asserted. The `if / else if` chain is a LIST now
+        // (`TheOneThingHeIsDoingThisFrame`), so the two lines this ordering lives on are the two arms' own
+        // calls in that list rather than the two clauses they used to be. Same law, same two things, in the
+        // same order — and it is pinned a second way now: the fingerprint case "he called it in, and then
+        // you shut a door in his face" (`EveryRoundFingerprintsTheSameTests`) exists precisely because it is
+        // the one case in the game where both arms want the same man, and it goes RED when these two lines
+        // are swapped.
+        int waits = patrol.IndexOf(
+            "if (HeIsWaitingOutsideTheDoorHeSawYouShut(", StringComparison.Ordinal);
+        int runs = patrol.IndexOf("if (HeIsComingAfterYou(", StringComparison.Ordinal);
         Assert.True(waits > 0 && runs > 0, "the hide and the run are not where this guard thinks they are.");
         Assert.True(waits < runs,
             "the run is taken before the wait, so a guard at a locked door would keep running at it — and "
