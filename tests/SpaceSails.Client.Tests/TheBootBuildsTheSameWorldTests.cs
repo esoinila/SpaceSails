@@ -87,7 +87,15 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?archive=1&land=1&nerve=2"] = "dcb586e4eb0fe924f51bb38ac00d662e",
             ["/map?ashore=1&kaamos=bounce"] = "d081c4a19a015c970e5e221106844c6c",
             ["/map?ashore=1&start=space-bar"] = "d081c4a19a015c970e5e221106844c6c",
-            ["/map?badge=1"] = "507170eaa971ade92de7f3495db40309",
+            // #870 lane 6′b · RE-PINNED, and these two rows only. The patrol's twenty-two fields
+            // became properties on one `_patrol` object, and this sweep diffs a booted page against a
+            // virgin one — so the only URLs it can move are the ones where the boot writes patrol state
+            // at all, which is exactly `?badge=1` and `?patrol=2`. Dumped from both trees with
+            // SPACESAILS_BOOT_FINGERPRINT_DUMP: 2 of 75 rows differ, and in the built world the pair
+            // `_badgeCheat = yes` / `_patrolCheat = 2` is now the one line
+            // `_patrol = Patrol(BadgeCheat=…, RoundsCheat=…, …)`, carrying the same two values. The
+            // verbatim diff is in #870 lane 6′b's PR body. Nothing about what the boot DOES moved.
+            ["/map?badge=1"] = "41e90d677469b48cbce536b46cc41346",
             ["/map?bond=1"] = "83b81e054ef64191bc072e525b73d708",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "6b04d611d0a8dc6f5393e2429bee73f7",
             ["/map?converge=1"] = "7c57c271ad96f80a9837c04eb9c57a09",
@@ -133,7 +141,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?park=1&spread=1"] = "27a11235029568677b1cae9c695cfe10",
             ["/map?parkback=1"] = "32c620164d7721c54b5cfbfea4db5314",
             ["/map?parkwalk=1"] = "391b4e1fc0ebffc1bd23acfc937807d1",
-            ["/map?patrol=2"] = "1c6233520ea5b8c578200f5530660e56",
+            // #870 lane 6′b · RE-PINNED — see the note above `?badge=1`; same one reason.
+            ["/map?patrol=2"] = "0cbbfc1217818185455b968247b439a6",
             ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "824d8eef375c328e5f21669cc4e15be7",
             ["/map?ringoffice=1"] = "d71eed78f500fc4fc0778de0a263b216",
             ["/map?rip=1"] = "aac0ccce431e0dc68ca9fe6156d6b183",
