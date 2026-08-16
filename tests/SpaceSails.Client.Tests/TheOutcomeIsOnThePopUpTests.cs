@@ -170,7 +170,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [InlineData("Map.Outpost.cs", "private void OutpostEffectsInteract(", "SurfaceOutpost.EffectsLine(")]
     [InlineData("Map.SecretLab.cs", "private bool TrySecretLabDetectorReveal(", "SEALED DOOR")]
     [InlineData("Map.SecretLab.cs", "private void FireSecretLabReveal(", "It salvages YOU")]
-    [InlineData("Map.Venting.cs", "private void ReleaseWhatWasSealedIn(", "opens BOTH ways")]
+    [InlineData("Map.Venting.Doors.cs", "private void ReleaseWhatWasSealedIn(", "opens BOTH ways")]
     public void TheCardCarriesWhatThePressDid(string file, string signature, string line)
     {
         string body = Method(file, signature);
@@ -218,7 +218,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [InlineData("Map.Combat.FireControl.cs", "private void ToggleWeaponsTight(")]
     [InlineData("Map.Combat.Remote.cs", "private void ToggleBoatPower(")]
     [InlineData("Map.Sounding.cs", "private void ToggleQuietSearch(")]
-    [InlineData("Map.Venting.cs", "private void RescueSurvivor(")]
+    [InlineData("Map.Venting.Doors.cs", "private void RescueSurvivor(")]
     public void AnOpenPanelNeverPulsesItsOwnAnswer(string file, string signature)
     {
         string body = Method(file, signature);

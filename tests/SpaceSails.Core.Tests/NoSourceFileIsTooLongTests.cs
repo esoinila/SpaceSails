@@ -88,13 +88,14 @@ public sealed class NoSourceFileIsTooLongTests
             // DeckView.cs's row is GONE (lane 5a): the file is 333 lines now, and the largest of the six
             // partials it became is 1,152 — under the line without an exception of its own.
             ["src/SpaceSails.Client/Pages/Map.Patrol.cs"] = 2074,
-            ["src/SpaceSails.Client/Pages/Map.Venting.cs"] = 1842,
 
             // Not in any lane yet — inherited debt, listed so it cannot grow.
             // PatrolBeat.cs's row is GONE (lane 5d): the file is 224 lines now, and the largest of the eight
             // partials it became is 460 — the whole family is under the line with no exception of its own.
-            ["src/SpaceSails.Core/RingOffice.cs"] = 1762,
             ["src/SpaceSails.Client/Pages/Map.Deck.cs"] = 1687,
+
+            // RingOffice.cs's row is GONE (lane 5e): the file is 270 lines now, and the largest of the five
+            // partials it became is 763 — under the line without an exception of its own.
         };
 
     /// <summary>
