@@ -30,7 +30,7 @@ namespace SpaceSails.Client.Tests;
 /// booted at the URL under test. Every instance field whose rendered value DIFFERS between them is the
 /// boot's own work — the ship, the ephemeris, the traffic, the purse and the hold, the camera, the start
 /// picker, the scenario name, and every one of the four dozen <c>_…Cheat</c> flags the query sets. Those
-/// differences are rendered to a stable text (invariant culture, reals to twelve significant figures —
+/// differences are rendered to a stable text (invariant culture, reals to five significant figures —
 /// see <see cref="Real"/> for why not every bit — sets sorted, long
 /// primitive arrays folded to a digest) and hashed. Diffing against a virgin component rather than naming
 /// fields by hand is deliberate: a field the boot starts writing tomorrow enters the fingerprint on its
@@ -52,11 +52,12 @@ namespace SpaceSails.Client.Tests;
 /// are invisible in the fields above until something after the gate consumes them — is pinned separately
 /// by <see cref="TheBootReadsTheSameQueryTests"/>.</para>
 ///
-/// <para><b>The pins were re-captured</b> when <see cref="Real"/> replaced <c>"R"</c>, on the OLD
-/// one-method boot again (<c>58da0a3</c> checked back over the seven files, the split restored after) —
-/// never on the new code. The re-capture kept the sweep exactly as discriminating as it was:
-/// <b>59 of the 75 distinct, before and after</b>, so the coarser rendering folded no two worlds
-/// together. All three REDs below were re-measured under it and reddened the same URLs.</para>
+/// <para><b>The pins were re-captured</b> each time <see cref="Real"/> changed, on the OLD one-method
+/// boot again (<c>58da0a3</c>'s file checked back over the seven, the sibling guard that names the new
+/// members set aside, the split restored after) — never on the new code. The re-capture kept the sweep
+/// exactly as discriminating as it was: <b>59 of the 75 distinct at every precision from G12 down to
+/// G2</b>, so no rounding ever folded two worlds together. All three REDs below were re-measured under
+/// it and reddened the same URLs in the same numbers.</para>
 ///
 /// <para><b>Red proof, twice, both quoted verbatim in the PR body.</b> Swap two stages in the conductor
 /// and the hashes move. Moving <c>PointTheCameraAtHer</c> above <c>LayTheShipDownWithHerHistory</c> —
@@ -78,81 +79,81 @@ public sealed class TheBootBuildsTheSameWorldTests
     private static readonly IReadOnlyDictionary<string, string> TheWorldEachUrlBuilds =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["/map"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?archive=1&land=1&nerve=2"] = "c31d4b81c13403d5a50d557d042c0eee",
-            ["/map?ashore=1&kaamos=bounce"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?ashore=1&start=space-bar"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?badge=1"] = "3f9adba7851e4bc9fb10b341c6faeb6c",
-            ["/map?bond=1"] = "eb3a714f73c4209d0860c109bebf4e34",
-            ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "e8113e3fa47f6f8fe6fcd407ec9ee0d6",
-            ["/map?converge=1"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?counter=1"] = "bbd2e0d8bc49d13cdf701dc693618e77",
-            ["/map?credits=1234&fuel=7&simhours=9"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?credits=50000"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?death=collector&dock=selene-gate"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?death=impact"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?death=suffocated&dock=the-tilt&land=1"] = "023f406ae3306c0e1bc18c0288cb019b",
-            ["/map?deflection=1"] = "84a74a4a36d3e7d9419afebc3ca0164d",
-            ["/map?deflection=s&expedition=science&watchers=1&outpost=1&kit=1"] = "292d139ec61a9d1a30070ff935fe7002",
-            ["/map?designate=1"] = "36154996e43cae59ef46dfcb40cc29b9",
-            ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "93a4b40cff551165d5f2d25eda8cd684",
-            ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "607ea5d719ad195f32f003c9c1ecb3ea",
-            ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "b02e4dd40aeec482ed687f5adb36312a",
-            ["/map?dock=the-deep&body=triton&site=2&land=1"] = "eab072769180c5c40ceb36286996d5d4",
-            ["/map?dock=the-space-bar"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "a3891acfc97fd2a56b79adbe4479cc98",
-            ["/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1"] = "a55bc65c0eac21a307e105f8cef94978",
-            ["/map?dock=the-space-bar&body=phobos&site=1&land=1"] = "21eed50872e41e8c87a01ac26de12a25",
-            ["/map?dock=the-tilt&site=0"] = "9bde52258402d1e914d83a8f5b9641c2",
-            ["/map?dock=the-tilt&site=0&land=1"] = "aba61f9f9f160eba4394f5bebbaad341",
-            ["/map?dock=the-tilt&site=0&land=1&air=45&process=0&collectors=20&hurt=2&nerve=low"] = "e7f18b0b79498248de65e03327b085ff",
-            ["/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"] = "11ac975bee5692398cbdbaaca2412a89",
-            ["/map?dock=the-tilt&site=0&land=1&reevers=4"] = "7d79ea0d59a843f4ae95dbb1990a736a",
-            ["/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"] = "30e606cce37b3a75e9b04acfead50679",
-            ["/map?dock=the-tilt&site=1"] = "7ea4d8854c78ada2a26690b7eda292ad",
-            ["/map?dock=the-tilt&start=space-bar"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?expedition=mining"] = "21b9e4097a28d070ea8945d8112a0482",
-            ["/map?fetch=intel&tip=route&hoard=both&crack=active&backroom=quest"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?found=1&land=1"] = "12e0d96ab4042f1cc8b478a5774045b1",
-            ["/map?found=1&land=1&floor=17&card=all"] = "92d63504f795b2d5ece2a6c89b01f9aa",
-            ["/map?freight=1"] = "d33cb1caacbffe99b232b09f4c869d81",
-            ["/map?frontdoor=1"] = "a4e22d080e53893c4785497c6a7ed5c4",
-            ["/map?goodscar=1"] = "05e4cb71d353efeef6db3c394d24a877",
-            ["/map?kaamos=all"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?kaamos=hq&arrivalphase=2&land=1&floor=23"] = "9d81c68fe036cc1cfc23adf5bc22a602",
-            ["/map?kaamos=hq&land=1"] = "72ea39ce8d0467501c3a40525523eb53",
-            ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "0fd3db615a31a91a05e4fc159a218189",
-            ["/map?nebula=all"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?park=1"] = "ca6c581490998355adec3fbe99765941",
-            ["/map?park=1&spread=1"] = "defe4d9bdf5c554a9dab851940b7365f",
-            ["/map?parkback=1"] = "016cc728605550228f3cffd6bbafc94b",
-            ["/map?parkwalk=1"] = "c3ee6b00c02b574e7f310040408f98f5",
-            ["/map?patrol=2"] = "168a9174d46f91416b6667a8395e578a",
-            ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "0db411b05fae4d1d3d6912107bc31ebe",
-            ["/map?ringoffice=1"] = "8ab57eb0afac607376342a9a0c85c90d",
-            ["/map?rip=1"] = "5c77992d8df92668ad3607f8d885f22b",
-            ["/map?scenario=..%2Foops"] = "7bf7d58541ab0c950f493121793340d9",
-            ["/map?scenario=sol-eu"] = "4d1b6edfc6ce8576c057d6f6e116df7d",
-            ["/map?secretlab=1"] = "287282d112c6cb5638e109b9ee1d663d",
-            ["/map?secretlab=deep&land=1&card=next"] = "b3b52838f52f2d47bc83e43c988887f3",
-            ["/map?secretlab=deep&land=1&floor=1"] = "4b4ed5b74cb4fa5518be312eafb9653d",
-            ["/map?secretlab=deep&land=1&floor=1&card=next"] = "883d5904a94a719f84f2dfe3aa895adb",
-            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "7dbab42e8dd41795fbecb540c8e44e68",
-            ["/map?secretlab=deep&land=1&floor=21"] = "185a30aab6cd094a71f1e04d2b18e8eb",
-            ["/map?skim=saturn"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?sling=jupiter"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?spread=1"] = "96f626d5dd7e27f29739de0001cbef8c",
-            ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "21ca53c46ee6ecbdad6bf0edc195d04a",
-            ["/map?start=wreck&fetch=active"] = "49f1afdd124431f8ae85f21ef58e55c3",
-            ["/map?stool=1&neighbour=0"] = "5ac227c1d8f50fe3ab78bc343731d673",
-            ["/map?stool=1&neighbour=1"] = "c43f254d53c305bb43e213d8735b190a",
-            ["/map?tablescene=free&approach=1"] = "bba79899c8868a455d91b49264bb0341",
-            ["/map?tablescene=free&watch=5&approach=0"] = "975626024a31d823bb2db43beeaac12a",
-            ["/map?threads=1"] = "a78a6e0232eb469b68945806f6aa469a",
-            ["/map?threads=1&watch=5"] = "b2ba52a47913373e1ba2c62507a8a778",
-            ["/map?wreck=drivefailure&land=1"] = "69e78dd3c1e2299c09fdbe83866be08c",
-            ["/map?wreck=infested&land=1&sweep=3&mags=0&reevers=4"] = "e17726a4b4513fa6d971664d3bbf7329",
+            ["/map"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?archive=1&land=1&nerve=2"] = "dcb586e4eb0fe924f51bb38ac00d662e",
+            ["/map?ashore=1&kaamos=bounce"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?ashore=1&start=space-bar"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?badge=1"] = "507170eaa971ade92de7f3495db40309",
+            ["/map?bond=1"] = "83b81e054ef64191bc072e525b73d708",
+            ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "6b04d611d0a8dc6f5393e2429bee73f7",
+            ["/map?converge=1"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?counter=1"] = "018e98ea6bb7cfd5e4fe89716913ceff",
+            ["/map?credits=1234&fuel=7&simhours=9"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?credits=50000"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?death=collector&dock=selene-gate"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?death=impact"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?death=suffocated&dock=the-tilt&land=1"] = "080b8ac5a1937747eac30a03ab563eaa",
+            ["/map?deflection=1"] = "e7faa092f282690a919ed9fed8219599",
+            ["/map?deflection=s&expedition=science&watchers=1&outpost=1&kit=1"] = "63ba16694e3ce86209573de10ed5ac57",
+            ["/map?designate=1"] = "101bd632067e503aa71e78ba5c4e7db7",
+            ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "6a4b129978d9daefb94c6ea180e403b0",
+            ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "ea6c18f84913e458270be6d047c86a7a",
+            ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "bcd7871bd3de8b5f4190908f6558dca0",
+            ["/map?dock=the-deep&body=triton&site=2&land=1"] = "9cbd17823f70268c211883e90f29e9a3",
+            ["/map?dock=the-space-bar"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "b2121d4dfe90b824db0c63673b911739",
+            ["/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1"] = "548b193efc69282df05a5d6429949b6a",
+            ["/map?dock=the-space-bar&body=phobos&site=1&land=1"] = "482574666e14a03a43cd4e7ee391d9c0",
+            ["/map?dock=the-tilt&site=0"] = "edfce7a646f542e82c6836419d4fae48",
+            ["/map?dock=the-tilt&site=0&land=1"] = "0e93eb9f78c9407cc615b8bf189bd891",
+            ["/map?dock=the-tilt&site=0&land=1&air=45&process=0&collectors=20&hurt=2&nerve=low"] = "45209d8155650cee40159bd71e0fccd7",
+            ["/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"] = "14cc02fe12dae1dc136d027cb0d7d337",
+            ["/map?dock=the-tilt&site=0&land=1&reevers=4"] = "02520a5d6951fc36e81f432d21611ad7",
+            ["/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"] = "07e0364e714321c3d77233e6c296a77f",
+            ["/map?dock=the-tilt&site=1"] = "3d6f03ff4e70d079a9f5e5e8a7ee86e8",
+            ["/map?dock=the-tilt&start=space-bar"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?expedition=mining"] = "6ae43bb5f76e0897268347ead6a23bb3",
+            ["/map?fetch=intel&tip=route&hoard=both&crack=active&backroom=quest"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?found=1&land=1"] = "a9a6d4acb3cd3a5ee1b67a2fb7409b24",
+            ["/map?found=1&land=1&floor=17&card=all"] = "159417e7c50212bf344dcf423c8d51b6",
+            ["/map?freight=1"] = "cfa13e8e7a984c4415e908657e71ea3c",
+            ["/map?frontdoor=1"] = "23b8c3368fc5c6814104b2ac122ff0bc",
+            ["/map?goodscar=1"] = "fb783f2ab77f985a2c71dbdd75bb1f85",
+            ["/map?kaamos=all"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?kaamos=hq&arrivalphase=2&land=1&floor=23"] = "a6a00faa7d868ebf4865b1be030ea2ad",
+            ["/map?kaamos=hq&land=1"] = "8ef4066a474f7181c88f1acbe253a93b",
+            ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "733998fe1ca41218c5219c134e46e25b",
+            ["/map?nebula=all"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?park=1"] = "2d7155c0d14434a75a493abaad5fa7b9",
+            ["/map?park=1&spread=1"] = "27a11235029568677b1cae9c695cfe10",
+            ["/map?parkback=1"] = "32c620164d7721c54b5cfbfea4db5314",
+            ["/map?parkwalk=1"] = "391b4e1fc0ebffc1bd23acfc937807d1",
+            ["/map?patrol=2"] = "1c6233520ea5b8c578200f5530660e56",
+            ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "824d8eef375c328e5f21669cc4e15be7",
+            ["/map?ringoffice=1"] = "d71eed78f500fc4fc0778de0a263b216",
+            ["/map?rip=1"] = "aac0ccce431e0dc68ca9fe6156d6b183",
+            ["/map?scenario=..%2Foops"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?scenario=sol-eu"] = "eb003ac16c3a6594a6e5bf3370f8ec85",
+            ["/map?secretlab=1"] = "d9a05b8545b95742f190855182b7a519",
+            ["/map?secretlab=deep&land=1&card=next"] = "a9db3d32c9b37df1512ae11f05c4045c",
+            ["/map?secretlab=deep&land=1&floor=1"] = "08b80d1baad059329592a0f40cce7b23",
+            ["/map?secretlab=deep&land=1&floor=1&card=next"] = "0b8bb401cf67a9af9d86549d81b0c3d7",
+            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "82331f7aa8c4195f57186c0577d06c59",
+            ["/map?secretlab=deep&land=1&floor=21"] = "e7f82b85ff520a63dcb83034275de909",
+            ["/map?skim=saturn"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?sling=jupiter"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?spread=1"] = "1fde2e0abebea22f28b886d1a98a1be9",
+            ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "4d73bf59ce8dc9496efd0e17f5f6467c",
+            ["/map?start=wreck&fetch=active"] = "d081c4a19a015c970e5e221106844c6c",
+            ["/map?stool=1&neighbour=0"] = "acd52c6aea3a389e635a7e239aca7d42",
+            ["/map?stool=1&neighbour=1"] = "1cee407a0490ecad6e9effdbcd3d7d29",
+            ["/map?tablescene=free&approach=1"] = "93e8b401a0a38b07f9dbd947377cfdc0",
+            ["/map?tablescene=free&watch=5&approach=0"] = "c0f15734992c164ada2630e1917fdf02",
+            ["/map?threads=1"] = "ba39141253c852ffde69437c84c1b0e8",
+            ["/map?threads=1&watch=5"] = "b570cb71e2d3f84b440aa329c739363b",
+            ["/map?wreck=drivefailure&land=1"] = "1b22732588ca36fbae707ef85e73e5dc",
+            ["/map?wreck=infested&land=1&sweep=3&mags=0&reevers=4"] = "a1d8933ed8db7004014e90d347c054d0",
         };
 
     /// <summary>The bare front door, plus every dev URL the game itself offers, plus a set of hand-picked
@@ -357,41 +358,59 @@ public sealed class TheBootBuildsTheSameWorldTests
 
     // ── The renderer: a value to a stable string, the same way every time ────────────────────────────
 
-    /// <summary>#870 lane 7a · A REAL NUMBER, TO TWELVE SIGNIFICANT FIGURES — and the whole reason this
-    /// file has a rounding rule in it at all.
+    /// <summary>#870 lane 7a · A REAL NUMBER, TO FIVE SIGNIFICANT FIGURES — and this number is MEASURED,
+    /// not chosen.
     ///
     /// <para><b>Why not <c>"R"</c>.</b> It WAS <c>"R"</c> (round-trip, every bit), and the pins were captured
-    /// on Windows. The Linux runner then reddened all 75 — and the diff was ONE field, <c>_npcStates</c>,
-    /// which is what the four planners in <c>PlanTheTrafficAsync</c> produce. Verbatim, one pod's velocity
-    /// on the bare <c>/map</c>:</para>
+    /// on Windows. The ubuntu runner then reddened all 75, and the diff was ONE field — <c>_npcStates</c>,
+    /// what the four planners in <c>PlanTheTrafficAsync</c> produce. First it looked like last-bit noise:</para>
     ///
     /// <code>
-    ///   windows  X=-26868.865694231867  Y=-5381.603949383356  Length=27402.510920765795
-    ///   linux    X=-26868.865694231936  Y=-5381.60394938325   Length=27402.51092076584
+    ///   windows  X=-26868.865694231867  Y=-5381.603949383356   (the 14th significant digit)
+    ///   linux    X=-26868.865694231936  Y=-5381.60394938325
     /// </code>
     ///
-    /// <para>That is <c>Math.Sin</c>/<c>Cos</c>/<c>Atan2</c>/<c>Sqrt</c> disagreeing in the last bit or two,
-    /// at the FOURTEENTH significant digit and beyond. It says nothing about the boot: the two machines
-    /// really do compute slightly different doubles from identical inputs, and no amount of seeding fixes
-    /// it. #903 never met this because <c>IRenderer</c> takes nothing wider than a <c>float</c>, so its
-    /// transcript could not carry a double's last bit. A WORLD can, and this one does.</para>
+    /// <para>…so this rounded to twelve figures, and CI reddened all 75 AGAIN, because the truth is worse
+    /// than noise: the planners run an ITERATIVE solve, and a last-bit difference in a seed does not stay
+    /// last-bit. The same field, second run:</para>
     ///
-    /// <para><b>Why twelve is not a fudge.</b> Twelve significant figures is a metre in the distance to
-    /// Jupiter. The differences a method split can actually cause are not subtle — the three RED runs in
-    /// this lane's PR body move the camera from her hull to the origin (1.5e11 metres out), replace a berth
-    /// with the front door, and flip a bool. There is no refactor that changes a world in its thirteenth
-    /// digit and nowhere else. Two clear digits of daylight sit between the noise this discards (14+) and
-    /// the finest thing it still keeps.</para>
+    /// <code>
+    ///   windows  Velocity.Length=6476.52754287   (the SEVENTH significant digit)
+    ///   linux    Velocity.Length=6476.52736563
+    /// </code>
     ///
-    /// <para>Applied to <c>float</c> as well, so there is one rendering rule and not two — a <c>float</c>
-    /// carries about seven significant digits, so twelve rounds nothing off one. <c>NaN</c> and the
-    /// infinities keep their own words, and <c>-0</c> is folded to <c>0</c> so a sign that no arithmetic
-    /// can be held to cannot redden a run.</para>
+    /// <para><b>So the tolerance was measured rather than guessed.</b> Every number in all 75 fingerprints
+    /// was compared, Windows against the runner's own logged output: <b>429 of them differ, and the worst
+    /// disagreement is 6.19e-8 relative</b> (<c>/map?scenario=sol-eu</c>, <c>39860689.3333</c> against
+    /// <c>39860686.8659</c>) — the two machines agree to about 7.2 significant figures and no further.
+    /// Re-quantising both sides of that real pair at each precision:</para>
+    ///
+    /// <code>
+    ///   G12  75 of 75 URLs still differ      G6   0   ← the first that holds
+    ///   G8   75                              G5   0   ← chosen: 160x the worst divergence
+    ///   G7   74                              G4   0
+    /// </code>
+    ///
+    /// <para><b>Five, and not six, because a hash cannot carry a tolerance.</b> Rounding is not comparison:
+    /// two values that agree to six figures can still straddle a rounding boundary and render differently,
+    /// and the chance of that scales with (divergence / grid). At G6 the grid is 1e-6 against a 6.19e-8
+    /// worst case — sixteen times, which passed here but is one unlucky number away from a flaky merge gate.
+    /// G5's grid is 1e-5: <b>a hundred and sixty times the worst divergence this world has ever shown.</b></para>
+    ///
+    /// <para><b>And it costs nothing.</b> The sweep answers <b>59 distinct worlds of 75 at every precision
+    /// from G12 down to G2</b> — the worlds this guard tells apart differ by whole berths and whole ships,
+    /// never by a digit. The three REDs in the PR body move a camera 1.5e11 metres, replace a berth with the
+    /// front door, and flip a bool. There is no refactor of a method that changes a world by one part in a
+    /// hundred thousand and nowhere else.</para>
+    ///
+    /// <para>Applied to <c>float</c> too, so there is one rule and not two. <c>NaN</c> and the infinities
+    /// keep their own words, and <c>-0</c> is folded to <c>0</c> so a sign no arithmetic can be held to
+    /// cannot redden a run.</para>
     /// </summary>
     private static string Real(double d) =>
         double.IsNaN(d) || double.IsInfinity(d)
             ? d.ToString(CultureInfo.InvariantCulture)
-            : (d == 0 ? 0d : d).ToString("G12", CultureInfo.InvariantCulture);
+            : (d == 0 ? 0d : d).ToString("G5", CultureInfo.InvariantCulture);
 
     internal static string Render(object? value) =>
         Render(value, depth: 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
