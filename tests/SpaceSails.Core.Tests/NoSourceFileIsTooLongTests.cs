@@ -89,7 +89,6 @@ public sealed class NoSourceFileIsTooLongTests
             // DeckView.cs's row is GONE (lane 5a): the file is 333 lines now, and the largest of the six
             // partials it became is 1,152 — under the line without an exception of its own.
             ["src/SpaceSails.Client/Pages/Map.Patrol.cs"] = 2074,
-            ["src/SpaceSails.Client/Pages/Map.Venting.cs"] = 1842,
 
             // Not in any lane yet — inherited debt, listed so it cannot grow.
             ["src/SpaceSails.Core/PatrolBeat.cs"] = 1991,
