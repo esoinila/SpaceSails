@@ -405,7 +405,7 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     public void STANDING_UP_StepsOffThroughTheNudge()
     {
         string close = Region(Source("Pages", "Map.Table.cs"), "private void CloseTable()");
-        Assert.Contains("_table?.StepOff", close, StringComparison.Ordinal);
+        Assert.Contains("_seating.Table?.StepOff", close, StringComparison.Ordinal);
         Assert.Contains("StandCaptainAt(spot.X, spot.Y", close, StringComparison.Ordinal);
 
         // …and the placement itself is the one that does NOT nudge, said where somebody changing it will

@@ -452,8 +452,16 @@ public sealed class CoSeatingIsAStripTests
 
     /// <summary>A field OR a property, by name — the seated frame law is a property and the state it reads
     /// is a field, and a guard about one law should not care which the author chose.</summary>
+    /// <summary>#870 lane 6b - ...nor where the author put it: the five seat fields live on the page's
+    /// <c>_seating</c> object now, so the lookup follows them there (<see cref="SeatState"/>) and every
+    /// assertion below still asks for the state by the name it was written with.</summary>
     private static object? Get(object o, string name)
     {
+        if (SeatState.TryFollow(o, name, out object? seated))
+        {
+            return seated;
+        }
+
         FieldInfo? field = o.GetType().GetField(name, Hidden);
         if (field is not null)
         {

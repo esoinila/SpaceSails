@@ -262,7 +262,7 @@ public sealed class TheCounterTakesOrdersTests
         // and wiping it would be #680's bug committed by the fix for something else.
         Assert.DoesNotContain("_barNotice", back, StringComparison.Ordinal);
         // …nor does it get you off the stool, which is a different verb with a different button.
-        Assert.DoesNotContain("_stool = null", back, StringComparison.Ordinal);
+        Assert.DoesNotContain("_seating.Stool = null", back, StringComparison.Ordinal);
     }
 
     [Fact]
