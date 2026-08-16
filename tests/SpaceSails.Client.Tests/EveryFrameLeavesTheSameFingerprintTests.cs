@@ -670,6 +670,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     private static object? Read(Pages.Map map, string member)
     {
         Type t = typeof(Pages.Map);
+        if (PatrolState.TryFollow(map, member, out object? onTheRound)) return onTheRound;
         if (t.GetField(member, Hidden) is { } field) return field.GetValue(map);
         if (t.GetProperty(member, Hidden) is { } prop) return prop.GetValue(map);
         if (t.GetMethod(member, Hidden, Type.EmptyTypes) is { } call) return call.Invoke(map, null);
@@ -935,12 +936,23 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 
+    /// <summary>#870 lane 6′b · The twenty-two patrol fields live on the page's <c>_patrol</c>
+    /// object now, so the lookup follows them there (<see cref="PatrolState"/>); every assertion and
+    /// every pinned line below still asks for the state by the name it was written with.</summary>
     private static object? Get(object o, string member) =>
-        o.GetType().GetField(member, Hidden)!.GetValue(o);
+        PatrolState.TryFollow(o, member, out object? onTheRound)
+            ? onTheRound
+            : o.GetType().GetField(member, Hidden)!.GetValue(o);
 
-    private static void Set(object o, string field, object? value) =>
-        (o.GetType().GetField(field, Hidden)
-         ?? throw new InvalidOperationException($"the component has no `{field}`.")).SetValue(o, value);
+    /// <inheritdoc cref="Get"/>
+    private static void Set(object o, string field, object? value)
+    {
+        if (!PatrolState.TrySet(o, field, value))
+        {
+            (o.GetType().GetField(field, Hidden)
+             ?? throw new InvalidOperationException($"the component has no `{field}`.")).SetValue(o, value);
+        }
+    }
 
     private static object? Invoke(Pages.Map map, string method, params object?[] args)
     {

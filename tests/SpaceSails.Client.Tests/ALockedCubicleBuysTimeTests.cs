@@ -239,9 +239,15 @@ public sealed class ALockedCubicleBuysTimeTests
         string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
-            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
-            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+            // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
+            // is four files: Map.Patrol.Round.cs and Map.Patrol.Escort.cs had no caller outside the family
+            // to forward to and are gone. The count is still asserted, so a fifth part cannot go unread.
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Challenge.cs", "Map.Patrol.Run.cs",
+            "Map.PatrolHost.cs",
         ];
+        // #870 lane 6′b · RE-PATHED, never re-asserted. The round's twenty-two fields and the Guard they
+        // are made of moved into Pages/Patrol/, so the page this guard reads is EIGHT files now — the six
+        // verbs first, then the state. A part not named here is still appended rather than dropped.
         return string.Concat(
             Directory.EnumerateFiles(dir, "Map.Patrol*.cs")
                 .OrderBy(p => Array.IndexOf(order, Path.GetFileName(p)) switch
@@ -249,6 +255,8 @@ public sealed class ALockedCubicleBuysTimeTests
                     < 0 => int.MaxValue,
                     var i => i,
                 })
+                .Concat(Directory.EnumerateFiles(Path.Combine(dir, "Patrol"), "*.cs")
+                    .OrderBy(p => p, StringComparer.Ordinal))
                 .Select(File.ReadAllText));
     }
 
@@ -357,7 +365,11 @@ public sealed class ALockedCubicleBuysTimeTests
         Assert.DoesNotContain("OpensALockedCubicle(", patrol, StringComparison.Ordinal);
         Assert.DoesNotContain("CubiclesShut.Remove", patrol, StringComparison.Ordinal);
 
-        int loop = patrol.IndexOf("private void AdvancePatrol", StringComparison.Ordinal);
+        // #870 lane 6′c · RE-SPELLED, never re-asserted: the per-frame loop is a member of the round now
+        // and the page keeps a one-line forwarder of the same name, which appears EARLIER in this
+        // concatenation. Cutting at the forwarder would have put every claim below on the wrong side of
+        // the split — so the needle names the one that has a body.
+        int loop = patrol.IndexOf("public void AdvancePatrol", StringComparison.Ordinal);
         Assert.True(loop > 0, "the per-frame loop is not where this guard thinks it is.");
         foreach (string write in new[] { "CubiclesShut.Add", "CubiclesShut.Remove", "CubiclesShut.Clear" })
         {
@@ -377,17 +389,17 @@ public sealed class ALockedCubicleBuysTimeTests
         // the captain shut, having seen nothing at all.
         //
         // #870 lane 6′a · RE-NEEDLED, never re-asserted. The loop moved into the round as one verb
-        // (EverybodyForgetsTheCatch, Map.Patrol.Hide.cs), so the press is read for the ASK and the round for
+        // (EverybodyForgetsTheCatch — Pages/Patrol/Patrol.cs since 6′b), so the press is read for the ASK
         // the SWEEP — cut to that one method's body, because the same two lines exist elsewhere in the
         // family for another reason and a whole-file search would pass on them.
         Assert.Contains("EverybodyForgetsTheCatch()", press, StringComparison.Ordinal);
 
         int forgets = patrol.IndexOf(
-            "private Guard? EverybodyForgetsTheCatch()", StringComparison.Ordinal);
+            "public Guard? EverybodyForgetsTheCatch()", StringComparison.Ordinal);
         Assert.True(forgets > 0, "the forgetting is not where this guard thinks it is.");
-        string forgetting = patrol[forgets..patrol.IndexOf("\n    }", forgets, StringComparison.Ordinal)];
+        string forgetting = patrol[forgets..patrol.IndexOf("\n        }", forgets, StringComparison.Ordinal)];
         Assert.Contains("g.SawYouShutIt = false;", forgetting, StringComparison.Ordinal);
-        Assert.Contains("foreach (Guard g in _guards)", forgetting, StringComparison.Ordinal);
+        Assert.Contains("foreach (Guard g in Guards)", forgetting, StringComparison.Ordinal);
 
         // #835 · …AND THE DOOR MAY NOT DOWNGRADE A RUN INTO A REQUEST FOR PAPERS. A man who had called it
         // in and was coming at a run is still that man — the door stopped his legs, it did not un-say the

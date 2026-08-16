@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace SpaceSails.Client.Tests;
 
@@ -40,14 +41,26 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 lane 6′c · RE-PATHED, never re-asserted. The challenge's verbs moved onto the
+    /// round's own partials under <c>Pages/Patrol/</c>; every claim below is the claim it always was,
+    /// read where the line now is.</summary>
+    private static string Round(string file) => Path.Combine("Patrol", file);
+
     /// <summary>One method's body, cut at the next member declaration — the idiom every guard on this ground
-    /// already uses, so a body read here is a body read there.</summary>
-    private static string Method(string file, string signature)
+    /// already uses, so a body read here is a body read there.
+    ///
+    /// <para>#870 lane 6′c · THE SENTINEL STOPPED COUNTING SPACES. The verbs are one nesting level
+    /// deeper now (members of <c>Map.Patrol</c> rather than of <c>Map</c>), so a cut that searched for
+    /// exactly four spaces before <c>private</c> would have run past the end of its own member and
+    /// quietly widened every claim under it. It matches any indent, and <c>public</c> as well, because
+    /// the members the page forwards to are <c>public</c> on the round.</para></summary>
+    private static string Method(string file, string signature, string next = @"\n\s*(private|public) ")
     {
         string src = Pages(file);
         int at = src.IndexOf(signature, StringComparison.Ordinal);
         Assert.True(at >= 0, $"{file} no longer has `{signature}` where this guard can read it.");
-        int end = src.IndexOf("\n    private ", at + 1, StringComparison.Ordinal);
+        Match stop = Regex.Match(src[(at + 1)..], next);
+        int end = stop.Success ? at + 1 + stop.Index : -1;
         return src[at..(end > at ? end : src.Length)];
     }
 
@@ -73,13 +86,13 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void TheHailIsWhatOpensTheFan()
     {
-        string hail = Method("Map.Patrol.Challenge.cs", "private void TheHail(Guard g)");
+        string hail = Method(Round("Patrol.Challenge.cs"), "public void TheHail(Guard g)");
         Assert.Contains("FanTheWallet();", hail, StringComparison.Ordinal);
 
         // …and the read does not open one. The card is the answer, not a second question.
-        string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
+        string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
         Assert.DoesNotContain("FanTheWallet(", read, StringComparison.Ordinal);
-        Assert.Contains("_walletFanOpen = false;", read, StringComparison.Ordinal);
+        Assert.Contains("WalletFanOpen = false;", read, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -92,7 +105,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void OnePaperIsExactlyTodayAndCoreIsWhatSaysSo()
     {
-        string fan = Method("Map.Patrol.Challenge.cs", "private void FanTheWallet()");
+        string fan = Method(Round("Patrol.Challenge.cs"), "private void FanTheWallet()");
         Assert.Contains("WalletChoice.Fans(", fan, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.DefaultFor(", fan, StringComparison.Ordinal);
 
@@ -106,18 +119,19 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     /// is a read that can quietly optimise.
     /// </summary>
     /// <remarks>RED when <c>TheRoundStopsAtYou</c> passes <c>_satchel</c> (the shipped behaviour) or when
-    /// <c>ThePaperHandedOver</c> ignores <c>_paperInHand</c> and always returns the default: the captain's
+    /// <c>ThePaperHandedOver</c> ignores <c>PaperInHand</c> and always returns the default: the
+/// captain's
     /// choice is thrown away and the guard reads whatever the habit was.</remarks>
     [Fact]
     public void TheGuardIsHandedTheChosenPaperAndNeverTheWallet()
     {
-        string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
+        string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
         Assert.Contains("ThePaperHandedOver(", read, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.TheGuardReads(bodyId, g.Plate, handed)", read, StringComparison.Ordinal);
-        Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _satchel", read, StringComparison.Ordinal);
+        Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _host.Satchel", read, StringComparison.Ordinal);
 
-        string handed = Method("Map.Patrol.Challenge.cs", "private Satchel.Item? ThePaperHandedOver(");
-        Assert.Contains("_paperInHand", handed, StringComparison.Ordinal);
+        string handed = Method(Round("Patrol.Challenge.cs"), "private Satchel.Item? ThePaperHandedOver(");
+        Assert.Contains("PaperInHand", handed, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.StillHeld(", handed, StringComparison.Ordinal);
     }
 
@@ -131,7 +145,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void EveryReadIsFiledIncludingTheOneThatWentWell()
     {
-        string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
+        string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
 
         int filed = read.IndexOf("FileTheNameYouGave(", StringComparison.Ordinal);
         int satisfied = read.IndexOf("if (read.Satisfied)", StringComparison.Ordinal);
@@ -140,7 +154,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
             "the name is filed after the satisfied arm returns, so a pass that worked is never written down.");
 
         // …and the line and the row are composed off the SAME outcome the card was.
-        string file = Method("Map.Patrol.Challenge.cs", "private void FileTheNameYouGave(");
+        string file = Method(Round("Patrol.Challenge.cs"), "private void FileTheNameYouGave(");
         Assert.Contains("WalletChoice.WhatHappens(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.ShownNote(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.Remember(", file, StringComparison.Ordinal);
@@ -173,7 +187,11 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         }
 
         Assert.Contains(
-            "WalletChoice.HistoryLine(", Method("Map.Patrol.Challenge.cs", "private string TheBookOn("),
+            "WalletChoice.HistoryLine(",
+            // #870 lane 6′b · RE-PATHED: the book is the round's own state, so the member that reads
+            // it moved onto Patrol whole. Map keeps a forwarder with the same spelling, which is why
+            // the markup needle above did not have to move.
+            Method(Path.Combine("Patrol", "Patrol.cs"), "public string TheBookOn(", "\n        public "),
             StringComparison.Ordinal);
 
         foreach (string oracle in new[] { "TheGuardReads", "WhatHappens", "Satisfied", "%" })
@@ -191,7 +209,8 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     /// <para>And the rung is gated on the SAME property the dialog is drawn from, so Esc can never swallow a
     /// keystroke for a fan that is not on the screen.</para>
     /// </summary>
-    /// <remarks>RED when the Esc rung is removed, and RED when it is gated on <c>_walletFanOpen</c> while the
+    /// <remarks>RED when the Esc rung is removed, and RED when it is gated on the round's own
+/// <c>WalletFanOpen</c> while the
     /// dialog is gated on the fan's own count.</remarks>
     [Fact]
     public void EscapeShutsTheFanAndEnterDoesNotAnswerIt()
@@ -203,7 +222,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         // The keyboard YES may not pick a name for the captain.
         string confirm = Method("Map.Sim.Cancel.cs", "private bool TryConfirmTopOverlay()");
         Assert.DoesNotContain("WalletFan", confirm, StringComparison.Ordinal);
-        Assert.DoesNotContain("_paperInHand", confirm, StringComparison.Ordinal);
+        Assert.DoesNotContain("PaperInHand", confirm, StringComparison.Ordinal);
     }
 
     /// <summary>

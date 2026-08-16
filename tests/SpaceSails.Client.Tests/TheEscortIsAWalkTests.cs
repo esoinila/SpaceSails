@@ -555,15 +555,35 @@ public sealed class TheEscortIsAWalkTests
         string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
-            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
-            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+            // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
+            // is four files: Map.Patrol.Round.cs and Map.Patrol.Escort.cs had no caller outside the family
+            // to forward to and are gone. The count is still asserted, so a fifth part cannot go unread.
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Challenge.cs", "Map.Patrol.Run.cs",
+            "Map.PatrolHost.cs",
         ];
         Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
 
-        var parts = new string[order.Length];
+        // #870 lane 6′b · RE-PATHED, never re-asserted. The round's twenty-two fields and the Guard they
+        // are made of moved into Pages/Patrol/, so the page this guard reads is EIGHT files now — the six
+        // verbs first, in the order the one file laid them out, then the state. Both directories are
+        // counted, so a ninth part can never go unread.
+        string own = Path.Combine(dir, "Patrol");
+        string[] state =
+        [
+            "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
+            "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
+            "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+        ];
+        Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
+
+        var parts = new string[order.Length + state.Length];
         for (int i = 0; i < order.Length; i++)
         {
             parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        for (int i = 0; i < state.Length; i++)
+        {
+            parts[order.Length + i] = File.ReadAllText(Path.Combine(own, state[i]));
         }
         return string.Concat(parts);
     }
@@ -588,14 +608,14 @@ public sealed class TheEscortIsAWalkTests
         string patrol = Patrol();
 
         string sighting = Between(
-            patrol, "private void StopTheRoundIfAnybodySeesYou(", "private void TheHail(");
+            patrol, "private void StopTheRoundIfAnybodySeesYou(", "public void TheHail(");
         Assert.Contains("PatrolBeat.Notices(", sighting, StringComparison.Ordinal);
         Assert.Contains("TheHail(g);", sighting, StringComparison.Ordinal);
         // The shipped shape: the card, raised at up to NoticeDu.
         Assert.DoesNotContain("TheRoundStopsAtYou(", sighting, StringComparison.Ordinal);
 
         string walkUp = Between(patrol, "private void WalkUpToTheCaptain(", "private void GiveUpTheHail(");
-        Assert.Contains("PatrolBeat.AtCardReach(g.X, g.Y, _avatarX, _avatarY)", walkUp, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.AtCardReach(g.X, g.Y, _host.AvatarX, _host.AvatarY)", walkUp, StringComparison.Ordinal);
         Assert.Contains("TheRoundStopsAtYou(ex, g);", walkUp, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.StillComing(", walkUp, StringComparison.Ordinal);
 
@@ -618,18 +638,20 @@ public sealed class TheEscortIsAWalkTests
         string patrol = Patrol();
 
         string read = Between(patrol, "private void TheRoundStopsAtYou(", "── #833 · THE WALKED ESCORT");
-        Assert.Contains("_escortDue = g;", read, StringComparison.Ordinal);
+        Assert.Contains("EscortDue = g;", read, StringComparison.Ordinal);
         // The shipped shape, verbatim.
         Assert.DoesNotContain("StandCaptainAt(", read, StringComparison.Ordinal);
 
         string escort = Between(patrol, "private void WalkTheEscort(", "private static (double X, double Y) ShoulderOf(");
         Assert.Contains("SpendTheStride(g, dt, walls);", escort, StringComparison.Ordinal);
-        Assert.Contains("_deckPlan.Move(_avatarX, _avatarY", escort, StringComparison.Ordinal);
+        Assert.Contains("_host.DeckPlan.Move(_host.AvatarX, _host.AvatarY", escort, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.TetherDu", escort, StringComparison.Ordinal);
         Assert.DoesNotContain("StandCaptainAt(", escort, StringComparison.Ordinal);
 
         // The whole file has exactly one placement left, and it is the admitted cut.
-        Assert.Equal(1, Count(patrol, "StandCaptainAt("));
+        // #870 lane 6c - RE-SPELLED: it counts CALLS by the round, through the one door, rather than
+        // every mention of the name (the interface declares it and the page answers it).
+        Assert.Equal(1, Count(patrol, "_host.StandCaptainAt("));
         string cut = Between(patrol, "private void TheCutToTheLift(", "── WHERE THE PASS COMES FROM");
         Assert.Contains("StandCaptainAt(", cut, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.EscortCutLine", cut, StringComparison.Ordinal);
@@ -664,8 +686,8 @@ public sealed class TheEscortIsAWalkTests
         // …and the approach is NOT one of them. The captain may always walk away from a hail.
         string patrol = Patrol();
         string walkUp = Between(patrol, "private void WalkUpToTheCaptain(", "private void GiveUpTheHail(");
-        Assert.DoesNotContain("_avatarX =", walkUp, StringComparison.Ordinal);
-        Assert.DoesNotContain("_avatarY =", walkUp, StringComparison.Ordinal);
+        Assert.DoesNotContain("_host.AvatarX =", walkUp, StringComparison.Ordinal);
+        Assert.DoesNotContain("_host.AvatarY =", walkUp, StringComparison.Ordinal);
     }
 
     private static int Count(string text, string needle)
