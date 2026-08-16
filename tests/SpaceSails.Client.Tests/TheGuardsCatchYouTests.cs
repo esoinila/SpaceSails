@@ -384,6 +384,27 @@ public sealed class TheGuardsCatchYouTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
+
+        var parts = new string[order.Length];
+        for (int i = 0; i < order.Length; i++)
+        {
+            parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        return string.Concat(parts);
+    }
+
     /// <summary>#870 · The war room is six partials by subject now, so "the combat wiring" this guard counts
     /// over is all of them — exactly the text it read out of one file before the split.</summary>
     private static string Combat() => string.Concat(
@@ -447,7 +468,7 @@ public sealed class TheGuardsCatchYouTests
     [Fact]
     public void ARunIsEarnedAndASightingStillOnlyBuysAHail()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
 
         string sighting = Code(Between(
             patrol, "private void StopTheRoundIfAnybodySeesYou(", "private void TheHail("));
@@ -502,7 +523,7 @@ public sealed class TheGuardsCatchYouTests
     [Fact]
     public void ACatchNeverTouchesTheCaptainsHealth()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
 
         // The spellings a hit would have to be written in. (The words themselves appear in this file's own
         // prose, saying that they do not appear in its code — which is the doc-comment the ruling asked for.)
@@ -528,7 +549,7 @@ public sealed class TheGuardsCatchYouTests
     [Fact]
     public void HeIsNeverRubbedOutAndYouAreNeverDragged()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
 
         string run = Code(Between(patrol, "private void RunAfterTheCaptain(", "private void HeHasYou("));
         Assert.Contains("ReeverChase.Step(", run, StringComparison.Ordinal);
@@ -567,7 +588,7 @@ public sealed class TheGuardsCatchYouTests
     [Fact]
     public void TheKickOutRidesTheCarAndTakesThePassOutLoud()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
 
         string kick = Code(Between(patrol, "private void TheKickOut(", "/// #835 · THE BIG TEXT"));
 
@@ -610,7 +631,7 @@ public sealed class TheGuardsCatchYouTests
     [Fact]
     public void TheSignComesDownAgain()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
         string fade = Code(Between(patrol, "private void FadeTheKickedOutPlate(", "// ── DRAWING THEM"));
         Assert.Contains("RebuildSurfaceDeck();", fade, StringComparison.Ordinal);
         Assert.Contains("_kickedOutPlateFor = 0;", fade, StringComparison.Ordinal);

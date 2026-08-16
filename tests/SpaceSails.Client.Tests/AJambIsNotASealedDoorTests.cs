@@ -328,7 +328,10 @@ public sealed class AJambIsNotASealedDoorTests
 
         // Three times, and every one of them a contract guard: the round's own stride, #835's run, and #831's
         // two paces to the wall he has decided to read.
-        Assert.Equal(3, claims.FindAll(c => c.StartsWith("Map.Patrol.cs:", StringComparison.Ordinal)).Count);
+        //
+        // #870 · The round is six partials by subject now, so the prefix names the FAMILY rather than one
+        // file of it — three claims across all of them, exactly the three it counted when they were one.
+        Assert.Equal(3, claims.FindAll(c => c.StartsWith("Map.Patrol.", StringComparison.Ordinal)).Count);
     }
 
     private static string RepoRoot

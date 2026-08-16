@@ -279,6 +279,27 @@ public sealed class TheRoundIsWalkableTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
+
+        var parts = new string[order.Length];
+        for (int i = 0; i < order.Length; i++)
+        {
+            parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        return string.Concat(parts);
+    }
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -301,14 +322,14 @@ public sealed class TheRoundIsWalkableTests
     public void TheDroidFillerDrawsOnlyWhatTheCaptainCanSee()
     {
         string filler = Between(
-            Pages("Map.Patrol.cs"), "private void FillPatrolDroids(", "\n}");
+            Patrol(), "private void FillPatrolDroids(", "\n}");
 
         Assert.Contains("Seen", filler, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.Sighting.None", filler, StringComparison.Ordinal);
         Assert.Contains("-9999", filler, StringComparison.Ordinal);
 
         // …and the tier it reads is written from Core's predicate, once a frame, in the step.
-        string step = Between(Pages("Map.Patrol.cs"), "private void AdvancePatrol(", "private void WalkTheRound(");
+        string step = Between(Patrol(), "private void AdvancePatrol(", "private void WalkTheRound(");
         Assert.Contains("PatrolBeat.SightingFor(", step, StringComparison.Ordinal);
         Assert.Contains("SightBlockers()", step, StringComparison.Ordinal);
 
@@ -409,7 +430,7 @@ public sealed class TheRoundIsWalkableTests
     public void TheChallengeCardWearsThePaintingAndThePaintingShipped()
     {
         string stop = Between(
-            Pages("Map.Patrol.cs"), "private void TheRoundStopsAtYou(", "── WHERE THE PASS COMES FROM");
+            Patrol(), "private void TheRoundStopsAtYou(", "── WHERE THE PASS COMES FROM");
 
         // The card the guard raises carries the plate, by its Core name.
         Assert.Contains("PatrolBeat.ChallengeArtUrl", stop, StringComparison.Ordinal);
@@ -449,7 +470,7 @@ public sealed class TheRoundIsWalkableTests
             "the pass is granted inside the arrival's own composition, where its line loses the slot.");
 
         string issue = Between(
-            Pages("Map.Patrol.cs"), "private void IssueTheSitePass(", "── DRAWING THEM");
+            Patrol(), "private void IssueTheSitePass(", "── DRAWING THEM");
         Assert.Contains("PatrolBeat.BadgeHeld(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.CanTake(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.Add(", issue, StringComparison.Ordinal);
