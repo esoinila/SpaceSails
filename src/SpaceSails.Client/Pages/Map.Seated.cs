@@ -64,6 +64,20 @@ public partial class Map
     /// </summary>
     public bool CaptainIsSeated => _table is not null;
 
+    /// <summary>#870 lane 6a · THE SITTING ITSELF, for the one reader outside this family that needs the
+    /// whole of it rather than a question about it: the seated frame in <c>Map.razor</c>, whose strip and
+    /// card draw the plate, the art, the setting, the free chairs, the outcome and every move off this
+    /// object.
+    ///
+    /// <para>It exists so that <c>_table</c> is the seat family's field and nobody else's — the markup
+    /// renames a receiver and stops reaching into a private field of a partial it does not own (the guard is
+    /// <c>TheSeatKeepsItsOwnStateTests</c>, and lane 6b is what it is protecting). Anything that wants a
+    /// FACT rather than the furniture asks for the fact: <see cref="CaptainIsSeated"/>,
+    /// <see cref="SeatedIsDocked"/>, <see cref="SeatedWithCompany"/>, <see cref="SeatedIn"/>,
+    /// <see cref="SeatedAlone"/>. Do not add a second raw reader through here; add the question you
+    /// mean.</para></summary>
+    private TableTalk? SeatedTable => _table;
+
     /// <summary>
     /// #784/#783 · IS THE CAPTAIN RESTING — the question a panel asks when it is choosing which picture to
     /// draw. A table you took ALONE is a rest; a table with somebody talking across it is a conversation,
@@ -168,6 +182,12 @@ public partial class Map
     /// it is a question ABOUT the table, and it has to be able to go away without the table going with
     /// it.</summary>
     private bool _standUpAsk;
+
+    /// <summary>#870 lane 6a · Is that confirm on the screen right now? Asked from outside the family in two
+    /// places, and they are the two ends of one question: the card itself in <c>Map.razor</c>, and the cancel
+    /// / confirm chains in <c>Map.Sim.Cancel.cs</c>, which must reach it before they peel the panel
+    /// underneath it (Esc keeps the seat; Enter is the one question that key is allowed to answer).</summary>
+    private bool TheStandUpConfirmIsUp => _standUpAsk;
 
     /// <summary>#784 · THE STAND-UP CONFIRM — <i>are you sure you want to give the seat up?</i>
     ///
@@ -349,6 +369,13 @@ public partial class Map
     /// PRESENTATION back for a beat and never changes what the world did.</summary>
     private bool TheSitBeatIsSettling => _sitBeatOwedSeconds > 0.0;
 
+    /// <summary>#870 lane 6a · ARM IT. The one caller is <c>SitCaptainOn</c> in <c>Map.Surface.Frame.cs</c> —
+    /// the single placement every seat kind in the game goes through — and it used to write the field
+    /// directly from outside this family. The full beat, every time: re-arming a beat already running is what
+    /// a second sit-down IS, and the owed time is a hold on presentation, never a budget anybody has to
+    /// balance.</summary>
+    private void OweTheSitBeat() => _sitBeatOwedSeconds = SeatedPosture.SitBeatSeconds;
+
     /// <summary>#865 · Spend the beat. Called once from the surface tick with the frame's own dt, which is
     /// the same clock everything else down here is paid out of.</summary>
     private void SpendTheSitBeat(double dtRealSeconds)
@@ -492,6 +519,33 @@ public partial class Map
     /// ruled on the bar's.</para>
     /// </summary>
     private bool CaptainIsSeatedAnywhere => SeatedIn is not null;
+
+    // ── #870 lane 6a · WHAT THE COUNTER CARD ASKS ─────────────────────────────────────────────────────
+    //
+    // The bar card is drawn in Map.razor and it is ONE CARD IN TWO POSTURES (#756): standing at the counter
+    // it is the counter's, up on a stool it is the stool's. The markup used to ask that by reading _stool
+    // straight out of Map.Stool.cs three times over. These two members are those three reads named, and
+    // nothing else changed about what gets drawn.
+    //
+    // Note that SeatedIn == SeatedHud.Seat.BarStool is NOT the same question and must not be substituted for
+    // it: SeatedIn asks the table FIRST, so a captain who is somehow at a top would answer "not on a stool"
+    // while the stool state was still set. The card wants the posture it is drawing, not the ladder rung.
+
+    /// <summary>#870 lane 6a · Is the captain up on a counter stool right now? Asked by the bar card twice —
+    /// once to pick the window-wall picture over the desk art, once to choose between the take-a-stool verb
+    /// and the seated row.</summary>
+    private bool CaptainIsOnAStool => _stool is not null;
+
+    /// <summary>#870 lane 6a · What the bar card's plate says when the captain is sitting on one — the
+    /// neighbour's plate if she has turned to you, otherwise this stool's own number — and null on your feet,
+    /// where the card falls back to the keep's own name. The pick used to live in the markup with the field
+    /// under it; the sentence is Core's either way (<see cref="Core.Interior.TheStools"/>).</summary>
+    private string? SeatedStoolPlate =>
+        _stool is { } s
+            ? s.WithNeighbour
+                ? Core.Interior.TheStools.NeighbourPlate
+                : Core.Interior.TheStools.StoolPlate(s.Index)
+            : null;
 
     /// <summary>#784 · Why not, said out loud — the posture refusal on your feet, the privacy refusal in the
     /// wrong seat, null when the papers may come out. One ladder, asked top-down: standing beats seating,

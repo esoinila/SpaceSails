@@ -329,7 +329,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // …and the razor's own two ways out — the backdrop and the Close button — go through Dismiss, which
         // is the same seam. A third way out of this dialog would be a way out that does not restore anything.
         string razor = Source("Pages", "Map.razor");
-        int start = razor.IndexOf("@if (_table is { } tab)", StringComparison.Ordinal);
+        int start = razor.IndexOf("@if (SeatedTable is { } tab)", StringComparison.Ordinal);
         int end = razor.IndexOf("@if (_showSatchel)", start, StringComparison.Ordinal);
         string block = razor[start..end];
         Assert.Equal(3, block.Split("Dismiss(CloseTable)").Length - 1);
@@ -393,13 +393,14 @@ public sealed class YouCanSitAtAnEmptyTableTests
     /// blur (#680's whole lesson, applied to pixels).</para>
     ///
     /// <para><b>Proven RED</b> on the shipped panel — no image in the block at all:
-    /// <i>Assert.Contains() Failure: Sub-string not found. String: "@if (_table is { } tab)…"</i>.</para>
+    /// <i>Assert.Contains() Failure: Sub-string not found. String: "@if (_table is { } tab)…"</i> — quoted as
+    /// it actually read that day; #870 lane 6a has since renamed that receiver to <c>SeatedTable</c>.</para>
     /// </summary>
     [Fact]
     public void THE_SIT_PANEL_DrawsTheTableItIsAPanelFor()
     {
         string razor = Source("Pages", "Map.razor");
-        int start = razor.IndexOf("@if (_table is { } tab)", StringComparison.Ordinal);
+        int start = razor.IndexOf("@if (SeatedTable is { } tab)", StringComparison.Ordinal);
         Assert.True(start >= 0, "Map.razor no longer has the table card this guard knows how to find.");
         string block = razor[start..razor.IndexOf("@if (_showSatchel)", start, StringComparison.Ordinal)];
 
