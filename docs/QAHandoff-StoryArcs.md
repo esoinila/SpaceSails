@@ -146,9 +146,13 @@ satchel, `T` plants a sentry, `G` drops the chest.
 ```
 /map?kaamos=N        the KAAMOS plotline (features/KaamosPlotline.md)
 /map?kaamos=bounce   its FRONT DOOR — the freight agent whose docket the board keeps returning (#635)
+  ⚠ berth-less seed: bare, it stops at the save picker. Pair it — /map?kaamos=bounce&ashore=1&start=the-tilt
+  puts you IN a bar with Gilt-Eye holding the docket (verified 2026-08-06). Same for ?nebula=all.
 /map?kaamos=hq&land=1  the head office under the ice: the route already ridden, boots on the ground (#411)
   …&floor=23          B23 THE WINTERING HALL · &floor=24 THE BERTH OFFICE · &floor=12 THE STANDING ORDER
-/map?nebula=all      the nebula arc (features/NebulaArc.md)
+  (2026-08-06: this quick start used to lithobrake the parked ship into Enceladus — fixed by #744; if a
+  death card fires on boot here again, that is a regression of the LoiterClock law, not weather)
+/map?nebula=all      the nebula arc (features/NebulaArc.md) — berth-less seed, see ?kaamos=bounce note
 /map?bond=1          the bond
 /map?converge=1      arc convergence
 /map?deflection=1    a live deflection gig
@@ -164,6 +168,7 @@ nearly impossible to reach on purpose.
 
 | cheat | what it does |
 | --- | --- |
+| `?autowalk=1` | **click the deck and the captain WALKS there** (#738, 2026-08-06) — A\* over the same walls the boots obey, same air/nerve/threat bill, WASD cancels, honest refusal when no path. THE tool for playtesting floors: "walk to the locker, press E" is two actions instead of forty. |
 | `?floor=N` | ride straight down to B*N* in a Hive; clamped to the site's own bottom |
 | `?air=N` | start the excursion with *N* seconds of tank instead of a full one |
 | `?collectors=N` | force a repo boat to follow you down and land *N* seconds in, whatever the heat gauge says — the scene is deliberately rare and mid-mission, i.e. *"nearly impossible to playtest on purpose"* |
@@ -266,8 +271,13 @@ and what the screen said. A finding without a reproduction is a rumour.
 
 ### Two traps specific to this environment
 
-- **An MCP-driven browser tab is `document.hidden`** — rAF is throttled and timers are clamped, so `?land=1`
-  hangs mid-descent and any timing number measured there is worthless. You cannot drive the game that way.
-  Test by reasoning against the code and by targeted harnesses, or ask the owner to foreground a tab.
+- **An MCP-driven browser tab is hidden only when its window is** *(corrected 2026-08-06 — a full day was
+  played through MCP)*: with the Chrome window visible (even partially), `?land=1` completes, the on-foot sim
+  runs, and whole floors can be walked — pair it with `?autowalk=1` and clicks replace key-spam. The freeze
+  cases are a **fully occluded window** and a **locked Windows session** (both stop rAF dead and imitate a
+  game hang — diagnose with a rAF-vs-setTimeout probe and `Get-Process LogonUI` before filing anything).
+  Timing/perf numbers from an automated tab remain worthless either way; boot pegs the main thread 25–60 s
+  per URL, so retry screenshots rather than concluding a crash.
 - **Do not run the full suite or a build while the owner is playtesting** — it fights for the same file locks
-  (`Stop-Process -Name testhost -Force` clears a jam).
+  (`Stop-Process -Name testhost -Force` clears a jam — but NEVER a blanket `Stop-Process` on `dotnet`: on
+  2026-08-06 that killed the dev server twice and another crew's suite runs mid-flight).
