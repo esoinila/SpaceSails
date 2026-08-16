@@ -398,11 +398,20 @@ public sealed class TheTableSceneIsOneRoomTests
         Assert.Contains("roll=", sim, StringComparison.Ordinal);
 
         // ?tablescene=1 implies the whole route rather than adding a fourth spelling of it.
+        //
+        // #870 lane 7a · RE-NEEDLED, twice, and both are worth writing down. The window used to end at
+        // `else if (pair.StartsWith("roll="` — the next-but-many branch of a 1,150-line `else if` ladder,
+        // 434 lines further down. The ladder is eleven readers by subject now, `?roll=` lives in a
+        // different reader from `?tablescene=`, and in ordinal file order it is read out of the tree
+        // BEFORE it. So the window ends at the branch that has always sat directly under this one,
+        // `?spread=`: the SAME four lines this guard was ever really about, in a window 32 lines wide
+        // instead of 434 — strictly tighter, never wider. And the two `secretlab` locals are fields on
+        // `BootQuery` now, so the needles carry the holder. Not one Assert changed.
         int at = sim.IndexOf("pair.StartsWith(\"tablescene=\"", StringComparison.Ordinal);
-        Assert.True(at >= 0, "Map.Sim.cs no longer parses ?tablescene= where this guard can read it.");
-        string branch = sim[at..sim.IndexOf("else if (pair.StartsWith(\"roll=\"", at, StringComparison.Ordinal)];
-        Assert.Contains("secretlabCheat = true", branch, StringComparison.Ordinal);
-        Assert.Contains("secretlabDeep = true", branch, StringComparison.Ordinal);
+        Assert.True(at >= 0, "Map.Sim.World.QueryHive.cs no longer parses ?tablescene= where this guard can read it.");
+        string branch = sim[at..sim.IndexOf("else if (pair.StartsWith(\"spread=\"", at, StringComparison.Ordinal)];
+        Assert.Contains("q.SecretlabCheat = true", branch, StringComparison.Ordinal);
+        Assert.Contains("q.SecretlabDeep = true", branch, StringComparison.Ordinal);
         Assert.Contains("_landCheat = true", branch, StringComparison.Ordinal);
         Assert.Contains("_startingFloorCheat = -1", branch, StringComparison.Ordinal);
 

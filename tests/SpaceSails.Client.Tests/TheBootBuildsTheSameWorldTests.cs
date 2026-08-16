@@ -51,8 +51,14 @@ namespace SpaceSails.Client.Tests;
 /// are invisible in the fields above until something after the gate consumes them — is pinned separately
 /// by <see cref="TheBootReadsTheSameQueryTests"/>.</para>
 ///
-/// <para><b>Red proof.</b> Swap any two side effects in the boot — the run recorded in the PR body moved
-/// <c>_credits = StartingCredits</c> below the <c>?credits=N</c> seed — and the hashes move.</para>
+/// <para><b>Red proof, twice, both quoted verbatim in the PR body.</b> Swap two stages in the conductor
+/// and the hashes move. Moving <c>PointTheCameraAtHer</c> above <c>LayTheShipDownWithHerHistory</c> —
+/// the camera aimed at a ship that has not been laid down yet — reddens <b>75 of 75</b>. Moving
+/// <c>RaiseTheFrontDoorWhileTheReactorWarms</c> above <c>DefaultABerthForTheCheatsThatNeedOne</c> —
+/// so the front door is decided before the cheats that need a berth have invented theirs — reddens
+/// exactly <b>4 of 75</b>, and they are exactly the four URLs where a cheat has to invent a berth
+/// (<c>?bond=1</c> twice, <c>?ashore=1</c>, <c>?death=impact</c>). Both numbers matter: the first says
+/// the sweep sees the whole boot, the second says it is not merely sensitive to everything.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheBootBuildsTheSameWorldTests

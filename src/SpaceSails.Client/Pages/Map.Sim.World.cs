@@ -68,10 +68,22 @@ public partial class Map
     }
 
     /// <summary>Read the URL once, key by key. Each reader answers TRUE when the pair was its own and
-    /// the chain stops there — the <c>else if</c> ladder this replaces, one seam at a time. THE ORDER
-    /// IS THE BEHAVIOUR: <c>?found=</c> implies <c>?secretlab=</c>, <c>?threads=</c> implies
-    /// <c>?spread=</c> implies <c>?tablescene=</c>, and a pair that matches two prefixes belongs to the
-    /// first reader that claims it.</summary>
+    /// <c>||</c> stops the chain there — which is exactly what the <c>else if</c> ladder this replaces
+    /// did, one seam at a time.
+    ///
+    /// <para><b>What IS behaviour here, and what is not.</b> The chain's ORDER is not: all sixty-nine
+    /// <c>?key=</c> prefixes the eleven readers between them claim are distinct, and not one is a prefix
+    /// of another, so no pair can be claimed twice and no reader can be starved by the one above it
+    /// (measured on the tree, quoted in #870 lane 7a's PR body). The short-circuit is kept anyway,
+    /// because the day somebody adds <c>?dockside=</c> under a reader below <c>?dock=</c> is the day it
+    /// starts mattering, and the ladder it replaces would have behaved the same way.</para>
+    ///
+    /// <para>What IS behaviour is the IMPLICATIONS inside a reader — <c>?found=</c> turns
+    /// <c>?secretlab=</c> on, <c>?threads=</c> turns <c>?spread=</c> on which turns <c>?tablescene=</c>
+    /// on — and the order of the PAIRS in the URL, since several keys write the same field and the last
+    /// write is the one that stands. Both are pinned by <c>TheBootReadsTheSameQueryTests</c>: dropping a
+    /// single one of those implication lines reddens it (and the world sweep next door) on exactly the
+    /// URLs that key steers, and nothing else.</para></summary>
     private BootQuery ReadEveryQueryKey(Uri uri)
     {
         // #875 · /map?autowalk=1 IS RETIRED — still parsed, deliberately ignored. #729 built click-to-walk

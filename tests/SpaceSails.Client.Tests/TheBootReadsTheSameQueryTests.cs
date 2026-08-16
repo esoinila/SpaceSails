@@ -29,6 +29,11 @@ namespace SpaceSails.Client.Tests;
 /// no two URLs share BOTH fingerprints except the three that are supposed to build the bare world — the
 /// front door itself, a query of keys this page has never heard of, and a <c>?scenario=</c> the slug check
 /// rejects.</para>
+///
+/// <para><b>Red proof.</b> One implication line deleted from the <c>?tablescene=</c> branch —
+/// <c>q.SecretlabDeep = true;</c>, which is exactly the kind of side effect a method split is most
+/// likely to drop on the floor — reddens this guard AND the world sweep next door, on exactly the two
+/// <c>?tablescene=</c> URLs and on nothing else. Verbatim in the PR body.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheBootReadsTheSameQueryTests
