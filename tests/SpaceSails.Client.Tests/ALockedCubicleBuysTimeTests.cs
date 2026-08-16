@@ -224,6 +224,27 @@ public sealed class ALockedCubicleBuysTimeTests
     private static string Source(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. A part not named here is appended rather than dropped, so nothing can go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        return string.Concat(
+            Directory.EnumerateFiles(dir, "Map.Patrol*.cs")
+                .OrderBy(p => Array.IndexOf(order, Path.GetFileName(p)) switch
+                {
+                    < 0 => int.MaxValue,
+                    var i => i,
+                })
+                .Select(File.ReadAllText));
+    }
+
     /// <summary>
     /// The same file with every comment line taken out.
     ///
@@ -234,10 +255,13 @@ public sealed class ALockedCubicleBuysTimeTests
     /// A source guard that reads prose is the house's fifth bug class exactly — the assertion was right and
     /// the world it was handed could not tell pass from fail. Every text guard here reads CODE.</para>
     /// </summary>
-    private static string Code(string file)
+    private static string Code(string file) => CodeOf(Source(file));
+
+    /// <summary>The same, for a text that is already in hand rather than a filename.</summary>
+    private static string CodeOf(string text)
     {
         var kept = new List<string>();
-        foreach (string line in Source(file).Split('\n'))
+        foreach (string line in text.Split('\n'))
         {
             string trimmed = line.TrimStart();
             if (!trimmed.StartsWith("//", StringComparison.Ordinal))
@@ -300,7 +324,7 @@ public sealed class ALockedCubicleBuysTimeTests
     [Fact]
     public void THE_HIDE_StopsTheHailAndTheOpeningRaisesTheCard()
     {
-        string patrol = Code("Map.Patrol.cs");
+        string patrol = CodeOf(Patrol());
         string press = Code("Map.Cubicle.cs");
 
         // Nobody NEW notices you while the catch is over.

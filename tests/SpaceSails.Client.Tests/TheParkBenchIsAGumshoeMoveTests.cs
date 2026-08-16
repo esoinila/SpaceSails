@@ -64,6 +64,27 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
+
+        var parts = new string[order.Length];
+        for (int i = 0; i < order.Length; i++)
+        {
+            parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        return string.Concat(parts);
+    }
+
     private static string CoreSource(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", name));
 
@@ -338,7 +359,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // …written by the one stepper, read by the one filler, so the figure that has stopped and the
         // figure drawn as stopped are one figure.
-        string patrol = Source("Pages", "Map.Patrol.cs");
+        string patrol = Patrol();
         Assert.Contains("g.Held = FootTail.MustHold(", patrol, StringComparison.Ordinal);
         Assert.Contains("_guards[i].DeckName, _guards[i].Held", patrol, StringComparison.Ordinal);
     }
@@ -533,7 +554,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_HOLD_IsSpentOnTheOneStepperEveryMoverGoesThrough()
     {
-        string patrol = Source("Pages", "Map.Patrol.cs");
+        string patrol = Patrol();
         int at = patrol.IndexOf("private void AdvancePatrol(", StringComparison.Ordinal);
         string loop = patrol[at..patrol.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
 
@@ -573,7 +594,12 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void CORE_SaysOutLoudThatARoundCanNeverBeATail()
     {
-        string patrol = CoreSource("PatrolBeat.cs");
+        // #870 · The module is one partial class spread over PatrolBeat*.cs. Same needle, same code, new
+        // path — the source read here is the concatenation of every part, in ordinal order.
+        string patrol = string.Concat(Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
         Assert.Contains(
             "FootTail.OnARound(DeckName(index), x, y)", patrol, StringComparison.Ordinal);
 

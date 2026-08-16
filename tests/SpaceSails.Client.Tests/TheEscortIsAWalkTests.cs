@@ -547,6 +547,27 @@ public sealed class TheEscortIsAWalkTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
+    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// concatenated in the order the one file laid them out, which is exactly the text it read before the
+    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    private static string Patrol()
+    {
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] order =
+        [
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
+            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+        ];
+        Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
+
+        var parts = new string[order.Length];
+        for (int i = 0; i < order.Length; i++)
+        {
+            parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        return string.Concat(parts);
+    }
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -564,7 +585,7 @@ public sealed class TheEscortIsAWalkTests
     [Fact]
     public void ThePageOnlyReadsAWalletAtCardReach()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
 
         string sighting = Between(
             patrol, "private void StopTheRoundIfAnybodySeesYou(", "private void TheHail(");
@@ -594,7 +615,7 @@ public sealed class TheEscortIsAWalkTests
     [Fact]
     public void ThePageWalksTheCaptainBackAndNeverPlacesHimWithoutSayingSo()
     {
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
 
         string read = Between(patrol, "private void TheRoundStopsAtYou(", "── #833 · THE WALKED ESCORT");
         Assert.Contains("_escortDue = g;", read, StringComparison.Ordinal);
@@ -641,7 +662,7 @@ public sealed class TheEscortIsAWalkTests
         Assert.Contains("Core.PatrolBeat.EscortHeldLine", deck, StringComparison.Ordinal);
 
         // …and the approach is NOT one of them. The captain may always walk away from a hail.
-        string patrol = Pages("Map.Patrol.cs");
+        string patrol = Patrol();
         string walkUp = Between(patrol, "private void WalkUpToTheCaptain(", "private void GiveUpTheHail(");
         Assert.DoesNotContain("_avatarX =", walkUp, StringComparison.Ordinal);
         Assert.DoesNotContain("_avatarY =", walkUp, StringComparison.Ordinal);
