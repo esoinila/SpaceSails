@@ -523,7 +523,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     {
         SitOnTheBench(map);
         Invoke(map, "StandUpBeforeWalking");
-        Assert.True(Get(map, "_table") is null, "the captain is still sitting down.");
+        Assert.True(Read(map, "SeatedTable") is null, "the captain is still sitting down.");
     }
 
     // ── THE FINGERPRINT ───────────────────────────────────────────────────────────────────────────────
@@ -610,7 +610,9 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         ("the avatar (y)",       "_avatarY"),
         ("the avatar's heading", "_avatarHeading"),
         ("the route",            "_autoWalk"),
-        ("the seat",             "_table"),
+        // #904 (lane 6b) moved the seat's state into Seating; the ledger reads it through the page's own
+        // forwarder, which hands back the very same TableTalk — so the thirty pinned digests are unchanged.
+        ("the seat",             "SeatedTable"),
         ("the nerve",            "_nerve"),
         ("the tracker",          "_chirp"),
         ("the guards",           "_guards"),
