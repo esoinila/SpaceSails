@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -356,7 +356,7 @@ public sealed class TwoGripsOneWalkTests
         Assert.False(AutoWalk.EnabledIn("?designate=1"));
 
         // The boot still runs the parse, and throws the answer away.
-        string sim = ClientSource("Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("_ = AutoWalk.EnabledIn(uri.Query);", sim, StringComparison.Ordinal);
 
         // …and nothing reads it. Not the gate, not a scene cheat, not a corner of the deck.
@@ -556,6 +556,14 @@ public sealed class TwoGripsOneWalkTests
 
     private static string ClientSource(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static object? Get(object o, string member) =>
         o.GetType().GetField(member, Hidden) is { } f

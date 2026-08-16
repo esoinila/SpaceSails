@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -45,6 +45,14 @@ public sealed class SittingIsNotACutsceneTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard
     /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
@@ -478,7 +486,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void ESC_AsksTheSameQuestionWDoesWhileSeatedAloneAndStillLeavesAConversation()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Source("Pages", "Map.Sim.Cancel.cs");
         int chain = sim.IndexOf("private bool TryDismissTopOverlay()", StringComparison.Ordinal);
         Assert.True(chain > 0);
 
@@ -505,7 +513,7 @@ public sealed class SittingIsNotACutsceneTests
     [Fact]
     public void THE_DEMO_PutsATesterInAPrivateSeatWithSomethingToDig()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("pair.StartsWith(\"spread=\"", sim, StringComparison.Ordinal);
         Assert.Contains("_spreadCheat = true;", sim, StringComparison.Ordinal);
 

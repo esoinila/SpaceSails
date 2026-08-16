@@ -49,6 +49,14 @@ public sealed class TheTableSceneIsOneRoomTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard
     /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
     private static string Surface() => string.Concat(
@@ -377,7 +385,7 @@ public sealed class TheTableSceneIsOneRoomTests
     {
         // "A scene nobody can reach on demand is a scene that ships broken", and this one sits behind more
         // doors than anything we have shipped.
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("tablescene=", sim, StringComparison.Ordinal);
         Assert.Contains("roll=", sim, StringComparison.Ordinal);
 
@@ -410,7 +418,7 @@ public sealed class TheTableSceneIsOneRoomTests
     [Fact]
     public void THE_WATCH_IsPinnableOnDemandAndTheGuideSaysHow()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("watch=", sim, StringComparison.Ordinal);
         Assert.Contains("_watchCheat = pinned", sim, StringComparison.Ordinal);
 

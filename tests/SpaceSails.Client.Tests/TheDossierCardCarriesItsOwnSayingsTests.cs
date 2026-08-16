@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -43,6 +43,14 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
 
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string Rendering(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering", file));
@@ -199,8 +207,8 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheFourSentenceDossierIsOneUrlAway()
     {
-        Assert.Contains("kit=", Pages("Map.Sim.cs"), StringComparison.Ordinal);
-        Assert.True(Pages("Map.Sim.cs").Contains("_kitCheat = candidate is", StringComparison.Ordinal),
+        Assert.Contains("kit=", Sim(), StringComparison.Ordinal);
+        Assert.True(Sim().Contains("_kitCheat = candidate is", StringComparison.Ordinal),
             "?kit= is not parsed into the cheat the assembly reads (#774).");
 
         string assembly = Method("Map.Surface.Hive.cs", "private void AssembleSomebody(");
