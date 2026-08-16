@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
@@ -383,6 +384,14 @@ public sealed class TheGuardsCatchYouTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The war room is six partials by subject now, so "the combat wiring" this guard counts
+    /// over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Combat() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Combat*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -469,7 +478,7 @@ public sealed class TheGuardsCatchYouTests
         string seam = Code(Between(patrol, "private void SomebodySawThat(", "// ── #835 · THE TOP RUNG"));
         Assert.Contains("PatrolBeat.EarnsIt(why)", seam, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.Notices(", seam, StringComparison.Ordinal);
-        string combat = Code(Pages("Map.Combat.cs"));
+        string combat = Code(Combat());
         Assert.Contains("SomebodySawThat(Core.PatrolBeat.Provocation.SeenAtTheHasp);", combat,
             StringComparison.Ordinal);
         Assert.Equal(1, Count(combat, "SomebodySawThat("));
