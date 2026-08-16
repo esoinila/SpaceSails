@@ -33,9 +33,22 @@ namespace SpaceSails.Client.Tests;
 /// <c>Math.Sin</c>/<c>Cos</c>/<c>Atan2</c> is lost in the narrowing from double long before it can reach the
 /// transcript — which is why one digest can be pinned for Windows and for the Linux runner alike.</para>
 ///
-/// <para><b>This file is committed alone, ahead of the split</b> — every digest below was taken on the
-/// 1,058-line <c>Draw</c> exactly as it shipped, so there is no chance of pinning what the new code happens
-/// to do. The proof that these pins can go RED is run against the split itself and recorded in the PR.</para>
+/// <para><b>This file was committed alone, ahead of the split</b> — every digest below was taken on the
+/// 1,058-line <c>Draw</c> exactly as it shipped, so there was no chance of pinning what the new code
+/// happens to do.</para>
+///
+/// <para><b>Proven able to fail.</b> Two passes were swapped in the conductor — the doors drawn before the
+/// walls instead of after — and 32 of the 33 cases went red:</para>
+/// <code>
+/// 32 case(s) draw a different frame than the one pinned on the old code:
+///   ship · under way — 335 call(s), sha256 c2a11fc5f12e8d9ca5ac1718090f1929ab48d5d68a10d839168a8e19f52a905b
+///       pinned 335 call(s), sha256 84f477c2696097c1d9f85a65a9a5969d549d108741bc97113a1897553440ec4c
+///   luna B1 — 1591 call(s), sha256 cce9a1fe2bd3df44ea9003076b0d17e83dd1b737919f04f6eff999a6e928fef2
+///       pinned 1591 call(s), sha256 6ed0aaccf49a5d11ac851766f70f176ffb5da2ced290023149e7eddcabf0b4f4
+/// </code>
+/// <para>The one that stayed green is <c>luna B1 · the lamps are all there is</c>, and it is honest that it
+/// did: on a floor lit only by the suit lamp the mask discards the marks BOTH those passes lay, so swapping
+/// them really does draw the same frame. It is the reason there is a lit case for every dark one.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class EveryFrameHashesTheSameTests
