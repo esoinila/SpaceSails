@@ -194,7 +194,7 @@ def run(base, branch_dir, quiet=False):
         was = find_field_doc(base_src[where], raw)
         now = find_field_doc(landed, on)
         if raw == "_guards":
-            say("  n/a  %-27s %-6s (its one-line doc was rewritten -- printed in the PR body)"
+            say("  n/a  %-27s %-6s (it had NO docblock at the base -- one was written; see the PR body)"
                 % ("_guards -> Guards", "doc"))
             continue
         if was is None or now is None:
