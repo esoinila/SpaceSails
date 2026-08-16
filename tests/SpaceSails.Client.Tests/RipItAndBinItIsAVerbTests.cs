@@ -39,6 +39,20 @@ public sealed class RipItAndBinItIsAVerbTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
+    private static string Seated() =>
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+
+
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
@@ -265,7 +279,7 @@ public sealed class RipItAndBinItIsAVerbTests
     [Fact]
     public void THE_SPREAD_KeepsThePaperYouHaveJustDug()
     {
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
         int at = seated.IndexOf("private List<Core.Satchel.Item> SpreadableFinds()", StringComparison.Ordinal);
         Assert.True(at > 0, "the spread no longer builds its own rows.");
         string body = seated[at..(at + 500)];
@@ -314,7 +328,7 @@ public sealed class RipItAndBinItIsAVerbTests
     {
         Assert.Contains(DevStarts.All, e => e.Url.Contains("rip=1", StringComparison.Ordinal));
 
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         Assert.Contains("_ripCheat && TheSlopBinIn(ex, a) is { } bin", table, StringComparison.Ordinal);
         Assert.Contains("StandCaptainAt(bin.StandX, bin.StandY", table, StringComparison.Ordinal);
         Assert.Contains("SeedTheSpreadFinds();", table, StringComparison.Ordinal);

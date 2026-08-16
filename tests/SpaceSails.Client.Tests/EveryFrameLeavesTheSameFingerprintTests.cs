@@ -561,7 +561,14 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
                 continue;
             }
             fields++;
-            swept.Append(AsWritten(f.Name)).Append('=').Append(Render(f.GetValue(map), 1, [])).Append('\n');
+            // #870 lane 6c · the walk starts with the COMPONENT already on its own path. A
+            // collaborator the page hands ITSELF to (Map.Seating takes an ISeatHost) keeps a reference
+            // back to the page, and that reference is not a reading: it is the very object this loop is
+            // already sweeping. Seeding the path is what stops the walk re-entering the whole component
+            // from inside one of its own fields -- and it is why these hashes are still the ones #905
+            // captured on the old code rather than a re-baseline: with it, all thirty pinned texts are
+            // byte-identical.
+            swept.Append(AsWritten(f.Name)).Append('=').Append(Render(f.GetValue(map), 1, [map])).Append('\n');
         }
         sb.Append("sweep                 = ").Append(fields).Append(" fields, sha256 ")
           .Append(Sha256(swept.ToString())).Append('\n');
@@ -737,10 +744,23 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
             .Where(x => !x.IsStatic)
             .OrderBy(x => x.Name, StringComparer.Ordinal)];
         path.Add(v);
-        string body = string.Join(", ",
-            fields.Select(x => AsWritten(x.Name) + "=" + Render(x.GetValue(v), depth + 1, path)));
+        var fieldRows = new List<string>();
+        foreach (FieldInfo x in fields)
+        {
+            object? held = x.GetValue(v);
+
+            // #870 lane 6c · …and never a field that points BACK at something already on the path.
+            // A back-reference is not a reading: it is an object this walk has passed through, and
+            // following it -- or even printing a placeholder for it -- would make the fingerprint
+            // depend on how a collaborator is wired to its host rather than on what the frame wrote.
+            if (held is not null && path.Any(o => ReferenceEquals(o, held)))
+            {
+                continue;
+            }
+            fieldRows.Add(AsWritten(x.Name) + "=" + Render(held, depth + 1, path));
+        }
         path.RemoveAt(path.Count - 1);
-        return t.Name + "(" + body + ")";
+        return t.Name + "(" + string.Join(", ", fieldRows) + ")";
     }
 
     /// <summary>A property's backing field, written the way the property is.

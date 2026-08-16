@@ -47,6 +47,17 @@ public sealed class YouCanSitAtAnEmptyTableTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
+
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
@@ -226,10 +237,10 @@ public sealed class YouCanSitAtAnEmptyTableTests
         Assert.Contains("TryTakeTable()",
             deck[at..deck.IndexOf("break;", at, StringComparison.Ordinal)], StringComparison.Ordinal);
 
-        string table = Source("Pages", "Map.Table.cs");
-        int take = table.IndexOf("private bool TryTakeTable()", StringComparison.Ordinal);
+        string table = Table();
+        int take = table.IndexOf("public bool TryTakeTable()", StringComparison.Ordinal);
         Assert.True(take >= 0, "Map.Table.cs has no TryTakeTable.");
-        string body = table[take..table.IndexOf("\n    /// <summary>Stand up.", take, StringComparison.Ordinal)];
+        string body = table[take..table.IndexOf("\n        /// <summary>Stand up.", take, StringComparison.Ordinal)];
 
         Assert.Contains("CanteenRegulars.Tables(", body, StringComparison.Ordinal);
         Assert.Contains("ex.CanteenWatch", body, StringComparison.Ordinal);
@@ -243,7 +254,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // is snapped into it. No new geometry all the same: the coordinate is asked of Core and the body is
         // moved by the one placement, because this project has set the captain down inside a wall twice by a
         // caller typing coordinates about a room it did not own (§13.15).
-        Assert.Contains("top.ChairYouTake(_avatarX, _avatarY)", body, StringComparison.Ordinal);
+        Assert.Contains("top.ChairYouTake(_host.AvatarX, _host.AvatarY)", body, StringComparison.Ordinal);
         Assert.Contains("SitCaptainOn(sit.X, sit.Y)", body, StringComparison.Ordinal);
         Assert.DoesNotContain("StandCaptainAt", body, StringComparison.Ordinal);
         Assert.DoesNotContain("_avatarX =", body, StringComparison.Ordinal);
@@ -254,11 +265,11 @@ public sealed class YouCanSitAtAnEmptyTableTests
     [Fact]
     public void WAITING_AsksCoreAndTheApproachOpensTheSAME_PanelWithHerInIt()
     {
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
 
         int at = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs has no TableWaited — waiting is not wired.");
-        string waited = table[at..table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
+        string waited = table[at..table.IndexOf("\n        /// <summary>", at, StringComparison.Ordinal)];
 
         // The law is Core's, and the beat is the ROOM's memory — not the sitting's, or standing up and
         // sitting down again would be a re-roll.
@@ -271,7 +282,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // table, so the line the captain is reading does not blink (#680).
         int chair = table.IndexOf("private void SomebodyTakesTheChair(", StringComparison.Ordinal);
         Assert.True(chair >= 0, "nobody can take the chair opposite — the approach is not wired.");
-        string arrival = table[chair..table.IndexOf("\n    /// <summary>", chair, StringComparison.Ordinal)];
+        string arrival = table[chair..table.IndexOf("\n        /// <summary>", chair, StringComparison.Ordinal)];
         Assert.Contains("SittingAlone.TheVisitor()", arrival, StringComparison.Ordinal);
         Assert.Contains("t.Outcome = t.Scene.Opening", arrival, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowPulseMessage", arrival, StringComparison.Ordinal);
@@ -292,9 +303,9 @@ public sealed class YouCanSitAtAnEmptyTableTests
     [Fact]
     public void NOBODY_CAME_IsSaidOnThePanelThroughTheOneEnding()
     {
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         int at = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
-        string waited = table[at..table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
+        string waited = table[at..table.IndexOf("\n        /// <summary>", at, StringComparison.Ordinal)];
 
         Assert.Contains("SittingAlone.NobodyCame(", waited, StringComparison.Ordinal);
 
@@ -318,12 +329,12 @@ public sealed class YouCanSitAtAnEmptyTableTests
     [Fact]
     public void STANDING_UP_ShutsThePanelAndGivesTheKeysBack()
     {
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
 
-        int at = table.IndexOf("private async Task TableMoveClicked(", StringComparison.Ordinal);
+        int at = table.IndexOf("public async Task TableMoveClicked(", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs no longer routes mouse presses through TableMoveClicked.");
-        string clicked = table[at..table.IndexOf("\n    // ──", at, StringComparison.Ordinal)];
-        Assert.Contains("_seating.Table is null", clicked, StringComparison.Ordinal);
+        string clicked = table[at..table.IndexOf("\n        // ──", at, StringComparison.Ordinal)];
+        Assert.Contains("Table is null", clicked, StringComparison.Ordinal);
         Assert.Contains("RefocusMap()", clicked, StringComparison.Ordinal);
 
         // …and the razor's own two ways out — the backdrop and the Close button — go through Dismiss, which
@@ -357,14 +368,14 @@ public sealed class YouCanSitAtAnEmptyTableTests
         Assert.Contains("\"free\"", sim, StringComparison.Ordinal);
         Assert.Contains("_freeTableCheat", sim, StringComparison.Ordinal);
 
-        string table = Source("Pages", "Map.Table.cs");
-        Assert.Contains("_approachCheat", table, StringComparison.Ordinal);
+        string table = Table();
+        Assert.Contains("_host.ApproachCheat", table, StringComparison.Ordinal);
         Assert.Contains("FirstFreeTop(", table, StringComparison.Ordinal);
 
         // The cheat forces WHETHER and never WHO: it may not reach for the visitor's own content.
         int at = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
-        string waited = table[at..table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal)];
-        Assert.Contains("_approachCheat", waited, StringComparison.Ordinal);
+        string waited = table[at..table.IndexOf("\n        /// <summary>", at, StringComparison.Ordinal)];
+        Assert.Contains("_host.ApproachCheat", waited, StringComparison.Ordinal);
         Assert.Contains("SittingAlone.SomebodyComes(", waited, StringComparison.Ordinal);
 
         // The front door offers it as a button, and the guide says how by hand.
@@ -451,10 +462,10 @@ public sealed class YouCanSitAtAnEmptyTableTests
     [Fact]
     public void WHICH_PICTURE_AND_WHICH_SENTENCE_ComeFromTheOneAnswer()
     {
-        string table = Source("Pages", "Map.Table.cs");
-        int take = table.IndexOf("private bool TryTakeTable()", StringComparison.Ordinal);
+        string table = Table();
+        int take = table.IndexOf("public bool TryTakeTable()", StringComparison.Ordinal);
         Assert.True(take >= 0, "Map.Table.cs has no TryTakeTable.");
-        string body = table[take..table.IndexOf("\n    /// <summary>Stand up.", take, StringComparison.Ordinal)];
+        string body = table[take..table.IndexOf("\n        /// <summary>Stand up.", take, StringComparison.Ordinal)];
 
         Assert.Contains("SittingAlone.SitReadsAsRelaxed(", body, StringComparison.Ordinal);
         Assert.Contains("SittingAlone.TheTable(relaxed, drink)", body, StringComparison.Ordinal);
@@ -477,7 +488,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // …and when she leaves, the register is ASKED again rather than remembered — a glass goes warm.
         int back = table.IndexOf("private void BackToYourOwnTable(", StringComparison.Ordinal);
         Assert.True(back >= 0, "the table stops being yours again — BackToYourOwnTable is gone.");
-        string again = table[back..table.IndexOf("\n    /// <summary>", back, StringComparison.Ordinal)];
+        string again = table[back..table.IndexOf("\n        /// <summary>", back, StringComparison.Ordinal)];
         Assert.Contains("SittingAlone.SitReadsAsRelaxed(", again, StringComparison.Ordinal);
         Assert.Contains("SittingAlone.TheTable(t.Relaxed, t.DrinkInHand)", again, StringComparison.Ordinal);
     }

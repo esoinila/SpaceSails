@@ -56,6 +56,23 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
+    private static string Seated() =>
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+
+    private static string Bench() =>
+        Source("Pages", "Map.Bench.cs") + Source("Pages", "Seating", "Seating.Bench.cs");
+
+
     /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
@@ -389,7 +406,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         Assert.True(at >= 0, "[E] no longer answers at a park bench.");
         Assert.Contains("TryTakeBench();", deck[at..(at + 700)], StringComparison.Ordinal);
 
-        string bench = Source("Pages", "Map.Bench.cs");
+        string bench = Bench();
         Assert.Contains("{ Kind: DeckPlan.ConsoleKind.HiveBench } spot", bench, StringComparison.Ordinal);
         Assert.Contains("ParkBenches.At(in green, spot.X, spot.Y)", bench, StringComparison.Ordinal);
 
@@ -397,8 +414,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // captain is snapped onto the end they walked up to). Keeping the two apart is what lets the dev row
         // and the key press open one bench through one method — and StandCaptainAt in particular must never
         // appear on this path, because that nudge walks a body OUT of collision and a plank is solid.
-        int sit = bench.IndexOf("private bool TryTakeBench()", StringComparison.Ordinal);
-        string press = bench[sit..bench.IndexOf("\n    /// <summary>", sit, StringComparison.Ordinal)];
+        int sit = bench.IndexOf("public bool TryTakeBench()", StringComparison.Ordinal);
+        string press = bench[sit..bench.IndexOf("\n        /// <summary>", sit, StringComparison.Ordinal)];
         Assert.DoesNotContain("StandCaptainAt", press, StringComparison.Ordinal);
         Assert.DoesNotContain("SitCaptainOn", press, StringComparison.Ordinal);
 
@@ -406,7 +423,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // dev row and a key press cannot open two different benches. A second `_table = new TableTalk` in
         // this file would be the first named bug class with a plank under it.
         Assert.Equal(1, bench.Split("private void SitOnThisBench(").Length - 1);
-        Assert.Equal(1, bench.Split("_seating.Table = new TableTalk").Length - 1);
+        Assert.Equal(1, bench.Split("Table = new TableTalk").Length - 1);
         Assert.True(bench.Split("SitOnThisBench(").Length - 1 >= 3,
             "the bench sitting is no longer reached from both the [E] press and the dev row.");
     }
@@ -429,7 +446,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_RUNG_AndTheWholeBenchFact_AreBothAskedOfTheRoom()
     {
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
 
         // The rung. #799 left the bench in the enum with nothing pointing at it; this is the one line.
         Assert.Contains("t.Bench ? SeatedHud.Seat.ParkBench", seated, StringComparison.Ordinal);
@@ -463,11 +480,11 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_COMPANY_BEAT_PutsThePapersAwayBeforeThePrivacyGoes()
     {
-        string bench = Source("Pages", "Map.Bench.cs");
+        string bench = Bench();
         int at = bench.IndexOf(
             "private void SomebodyTakesTheOtherEnd(", StringComparison.Ordinal);
         Assert.True(at >= 0, "a bench no longer has an arrival of its own.");
-        string beat = bench[at..bench.IndexOf("\n    // ──", at, StringComparison.Ordinal)];
+        string beat = bench[at..bench.IndexOf("\n        // ──", at, StringComparison.Ordinal)];
 
         int away = beat.IndexOf(
             "AbandonProcessing(ex, Core.Processing.Interruption.CompanyArrived)", StringComparison.Ordinal);
@@ -483,7 +500,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         Assert.Contains("ParkBenches.SomebodyTookTheOtherEndLine", beat, StringComparison.Ordinal);
 
         // …and the wait beat routes a bench to it rather than to the hall's.
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         Assert.Contains("SomebodyTakesTheOtherEnd(ex, t);", table, StringComparison.Ordinal);
         Assert.Contains("ParkBenches.TheOtherEndIsFree(t.SharedSeat)", table, StringComparison.Ordinal);
     }
@@ -510,7 +527,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_TAIL_QUESTION_IsAskedOnTheBeatAndOfCore()
     {
-        string bench = Source("Pages", "Map.Bench.cs");
+        string bench = Bench();
         Assert.Contains(
             "afoot.Add(PatrolBeat.OnTheRound(i, _guards[i].X, _guards[i].Y));", bench,
             StringComparison.Ordinal);
@@ -526,14 +543,14 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // The beat asks it, and only on a bench: a hall table gives everybody a reason to sit, so the same
         // move there proves nothing and must not print a sentence claiming otherwise.
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         int waited = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
-        string beat = table[waited..table.IndexOf("\n    /// <summary>", waited, StringComparison.Ordinal)];
-        Assert.Contains("t.Bench ? TheTailReading() : null", beat, StringComparison.Ordinal);
+        string beat = table[waited..table.IndexOf("\n        /// <summary>", waited, StringComparison.Ordinal)];
+        Assert.Contains("t.Bench ? _host.TheTailReading() : null", beat, StringComparison.Ordinal);
 
         // …and the press that sits you down says nothing about it.
         int sit = bench.IndexOf("private void SitOnThisBench(", StringComparison.Ordinal);
-        string press = bench[sit..bench.IndexOf("\n    // ──", sit, StringComparison.Ordinal)];
+        string press = bench[sit..bench.IndexOf("\n        // ──", sit, StringComparison.Ordinal)];
         Assert.DoesNotContain("TheTailReading", press, StringComparison.Ordinal);
     }
 
@@ -646,8 +663,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     [Fact]
     public void THE_DEMO_ROW_SitsYouOnABenchWithThePapersOut()
     {
-        string bench = Source("Pages", "Map.Bench.cs");
-        int at = bench.IndexOf("private bool SitOnAFreeBenchIfAsked(", StringComparison.Ordinal);
+        string bench = Bench();
+        int at = bench.IndexOf("public bool SitOnAFreeBenchIfAsked(", StringComparison.Ordinal);
         Assert.True(at >= 0, "?park=1&spread=1 no longer sits anybody down.");
         string row = bench[at..];
 

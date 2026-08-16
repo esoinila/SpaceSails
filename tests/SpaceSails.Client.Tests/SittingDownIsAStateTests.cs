@@ -46,6 +46,20 @@ public sealed class SittingDownIsAStateTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
+    /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
+    /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
+    /// reads over is BOTH, concatenated in that order, which is exactly the text it read out of one file
+    /// before the verbs moved. Concatenated rather than narrowed to one half on purpose: several claims here
+    /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
+    /// weakening.</summary>
+    private static string Table() =>
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+
+    private static string Seated() =>
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+
+
     /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
     /// narrowed to one part on purpose: the claim below is a <c>DoesNotContain</c> over the WHOLE pen, and
@@ -306,9 +320,9 @@ public sealed class SittingDownIsAStateTests
             "opposite of what it was promised to do.");
 
         // And keeping your seat is free and reversible: nothing in it closes the table.
-        string seated = Source("Pages", "Map.Seated.cs");
-        int keep = seated.IndexOf("private void KeepYourSeat()", StringComparison.Ordinal);
-        int stand = seated.IndexOf("private void StandUpFromTable()", StringComparison.Ordinal);
+        string seated = Seated();
+        int keep = seated.IndexOf("public void KeepYourSeat()", StringComparison.Ordinal);
+        int stand = seated.IndexOf("public void StandUpFromTable()", StringComparison.Ordinal);
         Assert.True(keep > 0 && stand > keep);
         // The BODY, and not the paragraph above the next method — a doc comment naming a method is not a
         // call to it, and a guard that could not tell them apart would be reading prose for behaviour.
@@ -335,13 +349,13 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void THEREST_HangsOffTheWaitBeatAndSpendsThroughTheOrdinarySeams()
     {
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         int waited = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
         Assert.True(waited > 0);
         string body = table[waited..(waited + 2400)];
         Assert.Contains("RestOneSeatedBeat(ex, beat)", body, StringComparison.Ordinal);
 
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
         Assert.Contains("ShortRest.Beat(", seated, StringComparison.Ordinal);
         Assert.Contains("ApplyNerveRelief(", seated, StringComparison.Ordinal);
         // The gauge is never touched directly — #480's law, and the reason a recovery reads back.
@@ -367,9 +381,9 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void AndTheRestSpeaksInsideThePanelAfterTheRoomHasSpoken()
     {
-        string table = Source("Pages", "Map.Table.cs");
+        string table = Table();
         int waited = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
-        string body = table[waited..table.IndexOf("\n    /// <summary>", waited, StringComparison.Ordinal)];
+        string body = table[waited..table.IndexOf("\n        /// <summary>", waited, StringComparison.Ordinal)];
 
         // The room's sentence leads and the footnotes follow it — the whole of the composition law.
         // Whitespace-normalised, because a guard about ORDERING that a reformat can fail is a guard about
@@ -395,9 +409,9 @@ public sealed class SittingDownIsAStateTests
 
         // …and the join cannot swallow the room: handed no footnote it gives back exactly what the room
         // said, which is the branch every beat that gave nothing back takes.
-        string seated = Source("Pages", "Map.Seated.cs");
+        // #870 lane 6c · re-PATHED. The composer travelled with the wait beat, its only caller.
         Assert.Contains(
-            "? $\"{saidByTheRoom} {saidByTheBody}\" : saidByTheRoom;", seated, StringComparison.Ordinal);
+            "? $\"{saidByTheRoom} {saidByTheBody}\" : saidByTheRoom;", table, StringComparison.Ordinal);
     }
 
     // ── (d) POSTURE GATES WRITING ─────────────────────────────────────────────────────────────────────
@@ -425,7 +439,7 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void DELIBERATE_WritingOnYourFeetIsRefusedInWords()
     {
-        string seated = Source("Pages", "Map.Seated.cs");
+        string seated = Seated();
         int write = seated.IndexOf("private void WriteItUp(", StringComparison.Ordinal);
         Assert.True(write > 0, "there is no deliberate write for the posture law to gate.");
         int endOfWrite = seated.IndexOf("private void TheWriteUpLands(", StringComparison.Ordinal);
@@ -446,9 +460,9 @@ public sealed class SittingDownIsAStateTests
 
         // …and the gate itself asks CORE, for both halves. The client decides what "seated" and "alone"
         // MEAN; it never decides what a seat is FOR.
-        int refusal = seated.IndexOf("private string? SpreadRefusal", StringComparison.Ordinal);
+        int refusal = seated.IndexOf("public string? SpreadRefusal", StringComparison.Ordinal);
         Assert.True(refusal > 0, "there is no one gate for the two laws to live in.");
-        string ladder = seated[refusal..(refusal + 400)];
+        string ladder = seated[refusal..System.Math.Min(refusal + 400, seated.Length)];
         Assert.Contains("SeatedPosture.RefusalIfStanding(", ladder, StringComparison.Ordinal);
         Assert.Contains("SeatedSpread.RefusalAt(", ladder, StringComparison.Ordinal);
 

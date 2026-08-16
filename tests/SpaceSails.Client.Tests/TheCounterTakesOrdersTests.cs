@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -54,12 +55,25 @@ public sealed class TheCounterTakesOrdersTests
         throw new FileNotFoundException($"could not find src/SpaceSails.Client/Pages/{file} from {here}");
     }
 
-    private static string Method(string file, string signature)
+    /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The counter's seat is TWO files now: the
+    /// page's half (the <c>StoolSeat</c> record, the two dev cheats and the forwarders) and the verbs, which
+    /// moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. This is both, concatenated in that order —
+    /// exactly the text these guards read out of one file before the verbs moved, and concatenated rather
+    /// than narrowed because two of the claims below are <c>DoesNotContain</c> over the whole stool.</summary>
+    private static string Stool() =>
+        Pages("Map.Stool.cs") + Pages(Path.Combine("Seating", "Seating.Stool.cs"));
+
+    private static string Method(string file, string signature) => MethodOf(Pages(file), file, signature);
+
+    /// <summary>The same cut, over a text already in hand. The end sentinel no longer spells out an indent
+    /// depth: the verbs are one nesting level deeper now (members of <c>Map.Seating</c>), and a sentinel
+    /// counting four spaces would have run to the end of the file and widened every claim.</summary>
+    private static string MethodOf(string src, string label, string signature)
     {
-        string src = Pages(file);
         int at = src.IndexOf(signature, StringComparison.Ordinal);
-        Assert.True(at >= 0, $"{file} no longer has `{signature}` where this guard can read it.");
-        int end = src.IndexOf("\n    private ", at + 1, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"{label} no longer has `{signature}` where this guard can read it.");
+        Match next = Regex.Match(src[(at + 1)..], @"\n\s*private ");
+        int end = next.Success ? at + 1 + next.Index : -1;
         return src[at..(end > at ? end : src.Length)];
     }
 
@@ -181,20 +195,20 @@ public sealed class TheCounterTakesOrdersTests
         Assert.Contains("@(() => BuyDrink(d))", block, StringComparison.Ordinal);   // …on the SAME card.
 
         // Take-a-stool picks the seat by ASKING CORE which one is free, and never by walking the row here.
-        string take = Method("Map.Stool.cs", "private void TakeAStool()");
+        string take = MethodOf(Stool(), "the stool", "public void TakeAStool()");
         Assert.Contains("TheStools.FirstFreeStool(", take, StringComparison.Ordinal);
         Assert.Contains("ex.CanteenWatch", take, StringComparison.Ordinal);
         Assert.Contains("TheStools.RowIsFullLine", take, StringComparison.Ordinal);   // #603: refused out loud
-        Assert.DoesNotContain("_barMenu = null", take, StringComparison.Ordinal);     // …and the bar stays open
+        Assert.DoesNotContain("BarMenu = null", take, StringComparison.Ordinal);     // …and the bar stays open
         Assert.DoesNotContain("_showBarMenu = false", take, StringComparison.Ordinal);
 
         // #680/#736 · What the stool answers is written into the slot this card ALREADY draws, never pulsed
         // under the card's own blur. One outcome slot on one card.
-        Assert.Contains("_barNotice = TheStools.TookAStoolLine;", take, StringComparison.Ordinal);
+        Assert.Contains("_host.BarNotice = TheStools.TookAStoolLine;", take, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowPulseMessage", take, StringComparison.Ordinal);
-        Assert.DoesNotContain("ShowPulseMessage", Method("Map.Stool.cs", "private void StoolWaited("),
+        Assert.DoesNotContain("ShowPulseMessage", MethodOf(Stool(), "the stool", "private void StoolWaited("),
             StringComparison.Ordinal);
-        Assert.DoesNotContain("ShowPulseMessage", Method("Map.Stool.cs", "private void StoolMove("),
+        Assert.DoesNotContain("ShowPulseMessage", MethodOf(Stool(), "the stool", "private void StoolMove("),
             StringComparison.Ordinal);
     }
 
@@ -207,13 +221,13 @@ public sealed class TheCounterTakesOrdersTests
         //
         // RED PROOF: delete the `!ex.TableApproached.Contains(s.Key) &&` clause and the guard's own
         // one-approach assertion fails; delete the TheStools.SomebodyTurns call and it fails naming it.
-        string waited = Method("Map.Stool.cs", "private void StoolWaited(");
+        string waited = MethodOf(Stool(), "the stool", "private void StoolWaited(");
 
         Assert.Contains("TheStools.SomebodyTurns(", waited, StringComparison.Ordinal);
         Assert.Contains("ex.TableWaits[s.Key] = beat + 1;", waited, StringComparison.Ordinal);
         Assert.Contains("!ex.TableApproached.Contains(s.Key)", waited, StringComparison.Ordinal);
         Assert.Contains("ex.TableApproached.Add(s.Key);", waited, StringComparison.Ordinal);
-        Assert.Contains("_neighbourCheat", waited, StringComparison.Ordinal);
+        Assert.Contains("_host.NeighbourCheat", waited, StringComparison.Ordinal);
 
         // …and the silence is told, from the pool the ROOM picks — which of the three it is depends on
         // whether anybody is actually beside you, asked of Core rather than guessed here.
@@ -236,9 +250,9 @@ public sealed class TheCounterTakesOrdersTests
         // sentences can be re-said is not a conversation, and a paid one is a leak.
         //
         // RED PROOF: drop the `!s.Said.Contains(move.Id)` clause and this fails.
-        string offer = Method("Map.Stool.cs", "private bool StoolMoveOnOffer(");
+        string offer = MethodOf(Stool(), "the stool", "public bool StoolMoveOnOffer(");
         Assert.Contains("!s.Said.Contains(move.Id)", offer, StringComparison.Ordinal);
-        Assert.Contains("_credits >= move.Credits", offer, StringComparison.Ordinal);
+        Assert.Contains("_host.Credits >= move.Credits", offer, StringComparison.Ordinal);
 
         // …and WAIT is the exception, because waiting is the whole verb of sitting there and the room
         // answers differently every beat. A climbed-once law that swallowed Wait would turn the stool into a
@@ -247,22 +261,22 @@ public sealed class TheCounterTakesOrdersTests
 
         // Refused OUT LOUD and not silently missing (#212/#603): the button is still drawn, and its title
         // says which of the two refusals it is.
-        Assert.Contains("already said that", Method("Map.Stool.cs", "private string StoolMoveRefusal("),
+        Assert.Contains("already said that", MethodOf(Stool(), "the stool", "public string StoolMoveRefusal("),
             StringComparison.OrdinalIgnoreCase);
 
         // #757's wave-off, at a counter: letting it lie ends the VISIT and not the sitting. The stool is
         // yours again and the panel never blinks — one occupation of one seat all along.
-        string pressed = Method("Map.Stool.cs", "private void StoolMove(");
+        string pressed = MethodOf(Stool(), "the stool", "private void StoolMove(");
         Assert.Contains("BackToYourOwnStool(s);", pressed, StringComparison.Ordinal);
 
-        string back = Method("Map.Stool.cs", "private void BackToYourOwnStool(");
+        string back = MethodOf(Stool(), "the stool", "private void BackToYourOwnStool(");
         Assert.Contains("s.WithNeighbour = false;", back, StringComparison.Ordinal);
         Assert.Contains("s.Said.Clear();", back, StringComparison.Ordinal);
         // …it does NOT touch the outcome slot: what she said on the way out is the last thing that happened,
         // and wiping it would be #680's bug committed by the fix for something else.
-        Assert.DoesNotContain("_barNotice", back, StringComparison.Ordinal);
+        Assert.DoesNotContain("_host.BarNotice", back, StringComparison.Ordinal);
         // …nor does it get you off the stool, which is a different verb with a different button.
-        Assert.DoesNotContain("_seating.Stool = null", back, StringComparison.Ordinal);
+        Assert.DoesNotContain("Stool = null", back, StringComparison.Ordinal);
     }
 
     [Fact]
