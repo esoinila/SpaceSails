@@ -72,7 +72,7 @@ public sealed class TheCounterTakesOrdersTests
         //
         // Red proof: delete the `OpenCounterService(counter);` line — or the `CounterService.For(` question
         // in front of it — and this fails naming what went missing.
-        string press = Method("Map.Surface.cs", "private void HiveAmenityInteract()");
+        string press = Method("Map.Surface.Canteen.cs", "private void HiveAmenityInteract()");
 
         Assert.Contains("CounterService.For(", press, StringComparison.Ordinal);
         Assert.Contains("OpenCounterService(", press, StringComparison.Ordinal);
@@ -150,7 +150,7 @@ public sealed class TheCounterTakesOrdersTests
     {
         // Owner's standing rule: every new feature ships with a URL that demos it. And it must reach the
         // fixture by ASKING which one serves — a hand-typed square would drift the day the hall is recarved.
-        string stand = Method("Map.Surface.cs", "private void StandAtTheCounterIfAsked(");
+        string stand = Method("Map.Surface.Cheats.cs", "private void StandAtTheCounterIfAsked(");
 
         Assert.Contains("CounterService.For(", stand, StringComparison.Ordinal);
         Assert.Contains("StandCaptainAt(a.X, a.Y", stand, StringComparison.Ordinal);
@@ -277,7 +277,7 @@ public sealed class TheCounterTakesOrdersTests
         // …and the route's last leg opens the card and takes the seat THROUGH THE VERY HANDLERS the player
         // reaches, so a tester lands in the scene a captain gets — including which stool is free, which is
         // the room's answer and never the cheat's.
-        string stand = Method("Map.Surface.cs", "private void StandAtTheCounterIfAsked(");
+        string stand = Method("Map.Surface.Cheats.cs", "private void StandAtTheCounterIfAsked(");
         Assert.Contains("_stoolCheat", stand, StringComparison.Ordinal);
         Assert.Contains("OpenCounterService(counter);", stand, StringComparison.Ordinal);
         Assert.Contains("TakeAStool();", stand, StringComparison.Ordinal);

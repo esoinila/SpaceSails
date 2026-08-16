@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,6 +48,14 @@ public sealed class TheTableSceneIsOneRoomTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard
+    /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Surface() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static DeckPlan DeckFor(string body, int level, long watch = 0) =>
         HiveInterior.FloorDeck(body, level, MoonSurface.ExpeditionField(), 0, (_, _) => { }, [], watch);
@@ -407,7 +415,7 @@ public sealed class TheTableSceneIsOneRoomTests
         Assert.Contains("_watchCheat = pinned", sim, StringComparison.Ordinal);
 
         // Applied where the excursion freezes its watch, and nowhere else.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
         Assert.Contains("ex.CanteenWatch = _watchCheat ?? PatronRota.WatchIndex(SimTime);",
             surface, StringComparison.Ordinal);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(surface, @"ex\.CanteenWatch = "));
@@ -426,7 +434,7 @@ public sealed class TheTableSceneIsOneRoomTests
         // #743's staff mess, entered with cover. The beat is additive — the room's own card still fires
         // first — and it never plays in the same frame as that card, because a pulse under an open card is
         // #680 again.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Canteen.cs");
         int at = surface.IndexOf("private void CheckStaffMessUnderfoot()", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Surface.cs no longer has CheckStaffMessUnderfoot.");
         string body = surface[at..surface.IndexOf("\n    // ──", at, StringComparison.Ordinal)];

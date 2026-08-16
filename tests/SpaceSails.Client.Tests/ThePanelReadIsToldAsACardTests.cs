@@ -49,7 +49,7 @@ public sealed class ThePanelReadIsToldAsACardTests
     /// <summary>The refusal half of <c>PressLiftButton</c>: from the method's opening to the line that closes
     /// the panel, which is where the success path begins.</summary>
     private static string RefusalPath() => Between(
-        Pages("Map.Surface.cs"), "private void PressLiftButton(", "_showLiftPanel = false");
+        Pages("Map.Surface.Hive.cs"), "private void PressLiftButton(", "_showLiftPanel = false");
 
     /// <summary>
     /// The panel reads the wallet through the MATRIX and nothing else. One source, and the second set of
@@ -190,13 +190,13 @@ public sealed class ThePanelReadIsToldAsACardTests
     public void AnAcceptedReadRaisesItsCardWhenTheDoorsOPEN()
     {
         string press = Between(
-            Pages("Map.Surface.cs"), "private void PressLiftButton(", "private void CloseLiftPanel(");
+            Pages("Map.Surface.Hive.cs"), "private void PressLiftButton(", "private void CloseLiftPanel(");
         Assert.True(!press.Contains("TheGateAccepted", StringComparison.Ordinal),
             "the accepted card is raised on the frame the panel closes and the floor is torn down — the " +
             "exact place the owner never saw the beat (#689).");
 
         string ride = Between(
-            Pages("Map.Surface.cs"),
+            Pages("Map.Surface.Hive.cs"),
             "private void RideTheLiftTo(",
             "private (double X, double Y) SecretLabHeadSpot(");
 
@@ -242,7 +242,7 @@ public sealed class ThePanelReadIsToldAsACardTests
     public void TheFarSiteLeadIsNotSpentUntilThePocketHasTakenTheCard()
     {
         string haul = Between(
-            Pages("Map.Surface.cs"), "private void HiveHaulInteract(", "\n    /// <summary>#585 - A door");
+            Pages("Map.Surface.Hive.cs"), "private void HiveHaulInteract(", "\n    /// <summary>#585 - A door");
 
         int mint = haul.IndexOf("NameAMoonWorthLookingAt(", StringComparison.Ordinal);
         int asked = haul.IndexOf("UndergroundComplex.WhatGoesInThePocket(", StringComparison.Ordinal);

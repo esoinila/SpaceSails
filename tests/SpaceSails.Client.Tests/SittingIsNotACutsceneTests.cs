@@ -46,6 +46,14 @@ public sealed class SittingIsNotACutsceneTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard
+    /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Surface() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
 
@@ -207,7 +215,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("ToggleSatchel();", deck, StringComparison.Ordinal);
 
         // The fork is at the OPEN, and it is posture and nothing else.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
         Assert.Contains(
             "_satchelPage = CaptainIsSeatedAnywhere ? SatchelPage.Spread : SatchelPage.Carried;",
             surface, StringComparison.Ordinal);
@@ -270,7 +278,7 @@ public sealed class SittingIsNotACutsceneTests
     public void THE_DIG_TakesItsTimeAndThenTheBookGainsTheEntry()
     {
         string seated = Source("Pages", "Map.Seated.cs");
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
 
         // ONE CHANNEL: the write starts #696's hold rather than a clock of its own.
         Assert.Contains("BeginProcessing(ex, Core.Processing.Work.Write, item, standing, null);", seated,
@@ -408,7 +416,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("style=\"width:@((int)(dockedDug * 100))%\"", whileDigging, StringComparison.Ordinal);
 
         // ── ONE CLOCK. The strip's fraction and the deck rectangle's are the same Core call ──
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Surface();
         int frac = surface.IndexOf("private double? ProcessingFraction()", StringComparison.Ordinal);
         Assert.True(frac > 0, "the strip's bar has no fraction of its own to read.");
         string fracBody = surface[frac..(frac + 260)];

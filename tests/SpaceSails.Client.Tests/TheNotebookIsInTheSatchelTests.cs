@@ -169,7 +169,7 @@ public sealed class TheNotebookIsInTheSatchelTests
         // The filter's one real trap. The book files a note under FieldNotes.PlaceLabel(body, site); a tab
         // that built "Miranda · The Ridge Camp" for itself would match today and drift the first time the
         // label changes — the repo's first named bug class (two sources of truth) aimed at a string.
-        string place = Expression("Map.Surface.cs", "private string? PlaceUnderfoot()");
+        string place = Expression("Map.Surface.Satchel.cs", "private string? PlaceUnderfoot()");
 
         Assert.True(place.Contains("FieldNotes.PlaceLabel(", StringComparison.Ordinal),
             "the NOTES tab re-derives the name of the ground it is standing on instead of asking " +
@@ -183,7 +183,7 @@ public sealed class TheNotebookIsInTheSatchelTests
             "the satchel's this-ground view never names the ground through the book's own label (#690).");
 
         // And the filtering itself is Core's grouping, not a predicate written in the dialog.
-        string here = Expression("Map.Surface.cs", "private IReadOnlyList<Core.FieldNote> NotesFromThisGround()");
+        string here = Expression("Map.Surface.Satchel.cs", "private IReadOnlyList<Core.FieldNote> NotesFromThisGround()");
         Assert.True(here.Contains("Core.FieldNotes.Here(", StringComparison.Ordinal),
             "the this-ground filter is not the ledger's own grouping filtered — it is a second reading of " +
             "the log (#690).");
@@ -204,13 +204,13 @@ public sealed class TheNotebookIsInTheSatchelTests
                      "private void OpenSatchelAtTheDoor()",
                  })
         {
-            string body = Method("Map.Surface.cs", opener);
+            string body = Method("Map.Surface.Satchel.cs", opener);
             Assert.True(body.Contains("TheSatchelOpensOnThePocket()", StringComparison.Ordinal),
                 $"{opener} does not land the dialog on CARRIED — the page a captain left it on last time " +
                 "answers a question they did not ask (#690).");
         }
 
-        string reset = Method("Map.Surface.cs", "private void TheSatchelOpensOnThePocket()");
+        string reset = Method("Map.Surface.Satchel.cs", "private void TheSatchelOpensOnThePocket()");
         Assert.True(reset.Contains("SatchelPage.Carried", StringComparison.Ordinal),
             "the open-reset does not select the CARRIED page (#690).");
         // #741 · The two-state ground filter became a three-state READING of the book (this ground / every
@@ -222,7 +222,7 @@ public sealed class TheNotebookIsInTheSatchelTests
 
         // #688's I toggle survives the second page: the key still shuts the pocket it opens, whichever half
         // of it is showing.
-        string toggle = Method("Map.Surface.cs", "private void ToggleSatchel()");
+        string toggle = Method("Map.Surface.Satchel.cs", "private void ToggleSatchel()");
         Assert.True(toggle.Contains("CloseSatchel()", StringComparison.Ordinal),
             "I no longer closes the satchel (#688).");
         Assert.False(toggle.Contains("SatchelPage", StringComparison.Ordinal),

@@ -64,7 +64,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // warning (#609), the face of the gate that read the paper (#684) — and used to pulse every saying as
         // it went. Whatever the ranks decided, the winner spent its whole dwell behind a backdrop.
         string ride = Between(
-            Pages("Map.Surface.cs"),
+            Pages("Map.Surface.Hive.cs"),
             "private void RideTheLiftTo(",
             "private (double X, double Y) SecretLabHeadSpot(");
         string loop = Between(ride, "foreach (UndergroundComplex.Saying saying in", "ApplyNerveShock(");
@@ -85,7 +85,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // can only ask it once the arrival has finished raising things. Released above the loop and the
         // answer is about a screen that is one frame out of date — which is the bug, with extra steps.
         string ride = Between(
-            Pages("Map.Surface.cs"),
+            Pages("Map.Surface.Hive.cs"),
             "private void RideTheLiftTo(",
             "private (double X, double Y) SecretLabHeadSpot(");
 
@@ -105,7 +105,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // #769's residual list, second entry: "LandTheCollectors / StepCollectors — the arrival line and the
         // shelter note are eaten by the siege plate they raise." Same shape, same family: the world acting.
         string land = Between(
-            Pages("Map.Surface.cs"), "private void LandTheCollectors(", "private void TheWritIsServed(");
+            Pages("Map.Surface.RepoBoat.cs"), "private void LandTheCollectors(", "private void TheWritIsServed(");
 
         Assert.True(!land.Contains("ShowPulseMessage(", StringComparison.Ordinal),
             "the collectors' arrival still pulses under the plate it raises in the same breath (#768/#583).");
@@ -122,7 +122,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // The one sentence in the scene that tells a captain the shelter they are standing in will not save
         // them — said, until now, under the picture of the people who came for them.
         string step = Between(
-            Pages("Map.Surface.cs"), "private void StepCollectors(", "private static double Distance(");
+            Pages("Map.Surface.RepoBoat.cs"), "private void StepCollectors(", "private static double Distance(");
 
         Assert.True(step.Contains("HoldSaying(CollectorLanding.ShelterIsNotSanctuaryLine", StringComparison.Ordinal),
             "the shelter warning is pulsed under the siege plate raised two lines below it (#768/#583).");

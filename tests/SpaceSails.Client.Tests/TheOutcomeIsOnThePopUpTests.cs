@@ -118,7 +118,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void EveryPopUpTheSeamRoutesToRendersItsOwnOutcome()
     {
-        string seam = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        string seam = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
         var slots = new List<string>();
         foreach (Match m in Regex.Matches(seam, @"(_[A-Za-z]\w*) = line;"))
         {
@@ -250,7 +250,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheShelfLineIsComposedIntoTheCardItOpens()
     {
-        string body = Method("Map.Surface.cs", "private void HiveHaulInteract(");
+        string body = Method("Map.Surface.Hive.cs", "private void HiveHaulInteract(");
 
         Assert.True(body.Contains("shelf.Line + \"\\n\\n\" + shelf.Card", StringComparison.Ordinal),
             "the odd book's shelf line is not on the card the press opens — and the comment beside it has " +

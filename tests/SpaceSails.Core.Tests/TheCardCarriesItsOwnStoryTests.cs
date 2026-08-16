@@ -81,7 +81,7 @@ public sealed class TheCardCarriesItsOwnStoryTests
         // is hold the client to reading the one source: a hand-written row in Map.Surface would be a second
         // answer to "what is printed on this card", and this repo's table of expensive bugs is that shape
         // top to bottom. Same idiom as TheDeathCardReadsTheNarrationSeamTests, for the same reason.
-        string surface = ReadRepoFile("src/SpaceSails.Client/Pages/Map.Surface.cs");
+        string surface = ReadRepoFile("src/SpaceSails.Client/Pages/Map.Surface.Darkroom.cs");
         int at = surface.IndexOf("private static string SatchelLabel", StringComparison.Ordinal);
         Assert.True(at > 0, "SatchelLabel has moved — this guard is reading a file that no longer says it.");
 

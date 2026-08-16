@@ -360,7 +360,7 @@ public sealed class TheRoundIsNotStandingStillTests
     [Fact]
     public void TheSentenceAndTheSweepReadTheSameList()
     {
-        string hud = Pages("Map.Surface.cs");
+        string hud = Pages("Map.Surface.Hud.cs");
 
         Assert.Contains("MotionTracker.ReadoutOf(blips, closing)", hud, StringComparison.Ordinal);
         Assert.Contains("MotionTracker.CadenceOf(blips)", hud, StringComparison.Ordinal);

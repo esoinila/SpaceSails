@@ -434,7 +434,7 @@ public sealed class SittingDownIsAStateTests
         // …and the automatic gist-once jot is UNTOUCHED. The owner's own words name it as the standing
         // register that stays — "a scrawl on a moving knee, #696's idiom" — so #696's leave-and-photograph
         // must still work with both feet on the floor, or this issue has deleted a shipped feature.
-        string surface = Source("Pages", "Map.Surface.cs");
+        string surface = Source("Pages", "Map.Surface.Satchel.cs");
         int leave = surface.IndexOf("private void LeaveItem(", StringComparison.Ordinal);
         int setDown = surface.IndexOf("private void SetItDown(", StringComparison.Ordinal);
         Assert.True(leave > 0 && setDown > leave);

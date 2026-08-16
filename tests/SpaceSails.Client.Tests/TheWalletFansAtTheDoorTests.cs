@@ -75,7 +75,7 @@ public sealed class TheWalletFansAtTheDoorTests
         Assert.True(satchel.Contains("_walletOpen", StringComparison.Ordinal),
             "the wallet has no open/shut state, so it is not a folder — it is a label (#697).");
 
-        string wallet = Method("Map.Surface.cs", "private IReadOnlyList<Core.Satchel.Item> Wallet()");
+        string wallet = Method("Map.Surface.Darkroom.cs", "private IReadOnlyList<Core.Satchel.Item> Wallet()");
         Assert.True(wallet.Contains("Satchel.OfKind(", StringComparison.Ordinal)
             && wallet.Contains("Kind.Authority", StringComparison.Ordinal),
             "the wallet is not Core's own grouping of the pocket — the dialog has its own idea of which " +
@@ -88,7 +88,7 @@ public sealed class TheWalletFansAtTheDoorTests
         // #690's ruling, applied to the folder it did not know about yet: the page a captain left the dialog
         // on last time answers a question they did not ask. Collapsed is the point of the row — a wallet that
         // reopened expanded would be four card rows with an extra line above them.
-        string reset = Method("Map.Surface.cs", "private void TheSatchelOpensOnThePocket()");
+        string reset = Method("Map.Surface.Satchel.cs", "private void TheSatchelOpensOnThePocket()");
         Assert.True(reset.Contains("_walletOpen = false", StringComparison.Ordinal),
             "the open-reset leaves the wallet however the last visit left it — the collapse is the whole " +
             "row (#697/#690).");
@@ -105,7 +105,7 @@ public sealed class TheWalletFansAtTheDoorTests
             "the folder row offers nothing — the wallet is a label and the captain still presses four times " +
             "(#697).");
 
-        string fan = Method("Map.Surface.cs", "private void TryTheWholeWallet()");
+        string fan = Method("Map.Surface.Darkroom.cs", "private void TryTheWholeWallet()");
         Assert.True(fan.Contains("SatchelTry.OfferWallet(", StringComparison.Ordinal),
             "the fan does not ask Core to fold the wallet — the client is ranking refusals for itself " +
             "(#697/#683).");
@@ -114,7 +114,7 @@ public sealed class TheWalletFansAtTheDoorTests
 
         // And it is offered exactly where an authority may be offered, asked of the same law the rows ask
         // (SatchelTry.CanOffer) rather than of a list of targets written out here (#688).
-        string where = Method("Map.Surface.cs",
+        string where = Method("Map.Surface.Darkroom.cs",
             "private (SatchelTry.Target Target, string? Context, string Label)? WalletTarget()");
         Assert.True(where.Contains("SatchelTry.CanOffer(", StringComparison.Ordinal),
             "the fan decides for itself which targets read authorities instead of asking Core (#697/#688).");
@@ -127,7 +127,7 @@ public sealed class TheWalletFansAtTheDoorTests
         // what a single successful try does — no more, and not a hand-written copy of it that drifts. So the
         // fan owns no state transition of its own: it does not pulse, it does not close the satchel, and it
         // does not spend anything out of the pocket.
-        string fan = Method("Map.Surface.cs", "private void TryTheWholeWallet()");
+        string fan = Method("Map.Surface.Darkroom.cs", "private void TryTheWholeWallet()");
 
         foreach (string forbidden in new[]
                  {
@@ -143,13 +143,13 @@ public sealed class TheWalletFansAtTheDoorTests
         Assert.True(fan.Contains("TheOfferIsAnswered(", StringComparison.Ordinal),
             "the fan does not end through the same resolution the single try ends through (#697).");
 
-        string one = Method("Map.Surface.cs", "private void TryItem(");
+        string one = Method("Map.Surface.Darkroom.cs", "private void TryItem(");
         Assert.True(one.Contains("TheOfferIsAnswered(", StringComparison.Ordinal),
             "the single try no longer shares its ending with the fan — there are two endings again (#697).");
 
         // #680's law survives the new press: a refusal is said INSIDE the dialog, which is the one layer the
         // backdrop cannot blur.
-        string answered = Method("Map.Surface.cs", "private void TheOfferIsAnswered(");
+        string answered = Method("Map.Surface.Darkroom.cs", "private void TheOfferIsAnswered(");
         Assert.True(answered.Contains("_satchelOutcome", StringComparison.Ordinal),
             "a refused offer no longer stores its line for the dialog — it goes behind the blur (#680).");
     }

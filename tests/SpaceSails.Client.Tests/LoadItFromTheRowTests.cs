@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -368,7 +368,7 @@ public sealed class LoadItFromTheRowTests
     public void THE_REACH_RuleIsAskedInOnePlace()
     {
         string surface = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.cs"));
+            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Darkroom.cs"));
         string handLoad = File.ReadAllText(Path.Combine(
             RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.HandLoad.cs"));
 

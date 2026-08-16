@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -57,7 +57,7 @@ public sealed class TheLiftRefusalIsReadableTests
         // The panel stays open on a refusal — that is what makes it a panel and not a slot machine — so
         // any line pulsed from inside PressLiftButton's refusal path plays behind the frosted glass. The
         // success path closes the panel first, and its lines (the card accepted, the ride) may pulse.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Pages("Map.Surface.Hive.cs");
         int at = surface.IndexOf("private void PressLiftButton(", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Surface.cs no longer has PressLiftButton where this guard can read it.");
         int panelCloses = surface.IndexOf("_showLiftPanel = false", at, StringComparison.Ordinal);

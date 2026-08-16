@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace SpaceSails.Client.Tests;
@@ -75,7 +75,7 @@ public sealed class TheTryOutcomeIsReadableTests
         // #697 moved that ending out of TryItem into the one resolution BOTH presses share — the single card
         // and the fanned wallet — which is where this law now has to hold. That is a strengthening, not a
         // relocation: there is exactly one place left that can get it wrong.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Pages("Map.Surface.Darkroom.cs");
         int at = surface.IndexOf("private void TheOfferIsAnswered(", StringComparison.Ordinal);
         Assert.True(at >= 0,
             "Map.Surface.cs no longer has TheOfferIsAnswered where this guard can read it — the offer's " +
