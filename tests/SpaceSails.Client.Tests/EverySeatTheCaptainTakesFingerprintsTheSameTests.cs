@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -459,7 +460,134 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
         }
     }
 
+    /// <summary>
+    /// THERE IS ONE PLACE A SITTING IS OPENED — the half of this lane the fingerprint above is blind to.
+    ///
+    /// <para><c>RendererInterop.PlayCue</c> is a <c>[JSImport]</c> behind <c>OperatingSystem.IsBrowser()</c>:
+    /// off a browser it compiles to nothing, and <c>StateHasChanged</c> on a component with a render handle
+    /// already pending is a no-op by construction. Neither can be read off a running object, so neither is
+    /// in a hash — which means that without this fact a lane could drop the cue from <c>TakeThisSeat</c>, or
+    /// play it BEFORE the seat is in the field, and sixteen digests would still reproduce. So the tail is
+    /// held where it can be seen: in the source.</para>
+    ///
+    /// <para>Three laws. <b>Six sites, and every one goes through the one method</b> — a seventh
+    /// <c>new TableTalk</c>, or a site that goes back to building the record and assigning it itself,
+    /// reddens by count. <b>One assignment</b> — exactly one line in the whole family puts a sitting into
+    /// <c>Table</c>, and it is in <c>Seating.Sit.cs</c> (clearing it is not opening one, so
+    /// <c>Table = null</c> is not counted). <b>And the tail is these three statements in THIS order</b>,
+    /// spelled out, because the order is the behaviour: the panel the captain is about to read is a
+    /// function of the seat, so the draw has to be the frame after the seat is in.</para>
+    /// </summary>
+    [Fact]
+    public void ThereIsOnePlaceASittingIsOpened()
+    {
+        IReadOnlyList<(string Name, string Text)> family = TheSeatFamily();
+
+        int built = family.Sum(f => Occurrences(f.Text, "new TableTalk"));
+        int through = family.Sum(f => Occurrences(f.Text, "TakeThisSeat(new TableTalk"));
+        Assert.True(built == 6 && through == 6,
+            $"#870 lane 6d · the seat family builds {built} sitting(s) and {through} of them go through "
+            + "`TakeThisSeat`. There are SIX construction sites and every one of them must, because the "
+            + "reveal cue and the draw live in that method and nowhere else. A seventh way to open a "
+            + "sitting needs a row in `WhichSite`, a pin above, and a line in the PR body.\n\n"
+            + string.Join("\n", family.Select(f =>
+                $"  {f.Name}: {Occurrences(f.Text, "new TableTalk")} built, "
+                + $"{Occurrences(f.Text, "TakeThisSeat(new TableTalk")} through")));
+
+        string[] assigns =
+        [
+            .. family.SelectMany(f => Code(f.Text)
+                .Where(l => l.StartsWith("Table = ", StringComparison.Ordinal) && l != "Table = null;")
+                .Select(l => $"{f.Name}: {l}")),
+        ];
+        Assert.True(assigns.Length == 1 && assigns[0].StartsWith("Seating.Sit.cs:", StringComparison.Ordinal),
+            "#870 lane 6d · a sitting goes into the field in exactly ONE place, and it is "
+            + "`Seating.Sit.cs · TakeThisSeat`. Found:\n  " + string.Join("\n  ", assigns));
+
+        string[] tail =
+        [
+            .. Code(BodyOf(Named(family, "Seating.Sit.cs"), "private void TakeThisSeat(TableTalk seat)")),
+        ];
+        string[] theThreeLines =
+        [
+            "Table = seat;",
+            "RendererInterop.PlayCue(\"reveal\");",
+            "_host.StateHasChanged();",
+        ];
+        Assert.Equal(theThreeLines, tail);
+    }
+
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>The seat's own files, by name, in ordinal order — the same text the six sites were read out
+    /// of before the tail moved.</summary>
+    private static IReadOnlyList<(string Name, string Text)> TheSeatFamily()
+    {
+        DirectoryInfo? at = new(AppContext.BaseDirectory);
+        while (at is not null && !Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
+        {
+            at = at.Parent;
+        }
+
+        Assert.True(at is not null, $"could not find the repo root above {AppContext.BaseDirectory}");
+        string dir = Path.Combine(at!.FullName, "src", "SpaceSails.Client", "Pages", "Seating");
+        (string Name, string Text)[] files =
+        [
+            .. Directory.EnumerateFiles(dir, "Seating*.cs")
+                .OrderBy(p => p, StringComparer.Ordinal)
+                .Select(p => (Path.GetFileName(p), File.ReadAllText(p))),
+        ];
+        Assert.True(files.Length >= 6,
+            $"the seat family is {files.Length} file(s) — this guard is reading a dead directory: {dir}");
+        return files;
+    }
+
+    private static string Named(IReadOnlyList<(string Name, string Text)> family, string name)
+    {
+        string? hit = family.Where(f => f.Name == name).Select(f => f.Text).FirstOrDefault();
+        Assert.True(hit is not null, $"the seat family has no `{name}` — this guard reads a dead path.");
+        return hit!;
+    }
+
+    private static int Occurrences(string text, string needle)
+    {
+        int n = 0;
+        for (int at = text.IndexOf(needle, StringComparison.Ordinal); at >= 0;
+             at = text.IndexOf(needle, at + needle.Length, StringComparison.Ordinal))
+        {
+            n++;
+        }
+
+        return n;
+    }
+
+    /// <summary>Statements only. Doc comments, whole-line comments and blanks are skipped — the moved
+    /// docblocks travelled byte-identical and are not what that fact is about.</summary>
+    private static IEnumerable<string> Code(string text) =>
+        text.Split('\n')
+            .Select(l => l.Trim().TrimEnd('\r'))
+            .Where(l => l.Length > 0 && !l.StartsWith("//", StringComparison.Ordinal));
+
+    /// <summary>The body of a member, brace-matched off its signature.</summary>
+    private static string BodyOf(string text, string signature)
+    {
+        int at = text.IndexOf(signature, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"`{signature}` is not there — this guard is reading a dead name.");
+        int open = text.IndexOf('{', at);
+        Assert.True(open >= 0, $"`{signature}` has no body.");
+
+        int depth = 0;
+        for (int i = open; i < text.Length; i++)
+        {
+            depth += text[i] == '{' ? 1 : text[i] == '}' ? -1 : 0;
+            if (depth == 0)
+            {
+                return text[(open + 1)..i];
+            }
+        }
+
+        throw new InvalidOperationException($"`{signature}`'s body is not brace-balanced.");
+    }
 
     private static object? Prop(object o, string name) =>
         o.GetType().GetProperty(name, Hidden)!.GetValue(o);
