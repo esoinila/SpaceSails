@@ -344,7 +344,10 @@ public sealed class TheRoundIsWalkableTests
     {
         string accessor = Between(
             Pages("Map.SweepTeam.cs"), "private IEnumerable<MotionTracker.Entity> EverythingThatMoves()", "\n}");
-        Assert.Contains("_guards", accessor, StringComparison.Ordinal);
+        // #870 lane 6′a · RE-NEEDLED, never re-asserted: the fan asks the patrol family for the men on the
+        // floor (TheRoundOnFoot) instead of reading its list. The CONTACT is still declared here — which is
+        // the whole claim — and the accessor is still the one place any of them is listed.
+        Assert.Contains("TheRoundOnFoot", accessor, StringComparison.Ordinal);
         Assert.Contains("g.Vx, g.Vy", accessor, StringComparison.Ordinal);
     }
 
@@ -405,7 +408,14 @@ public sealed class TheRoundIsWalkableTests
         Assert.Contains("badge=1", hive, StringComparison.Ordinal);
 
         // And the cheat the docs promise is a cheat the parser actually reads.
-        string boot = Between(Pages("Map.Sim.World.cs"), "private async Task BootTheWorldAsync(", "\n    }");
+        // #870 lane 7a · This used to cut BootTheWorldAsync out of one file with Between(), because the
+        // whole boot WAS one method. The boot is its own stages across Map.Sim.World*.cs now, so the same
+        // text is every one of them concatenated — re-PATHED, never re-needled.
+        string boot = string.Concat(
+            Directory.EnumerateFiles(
+                    Path.Combine(root, "src", "SpaceSails.Client", "Pages"), "Map.Sim.World*.cs")
+                .OrderBy(p => p, StringComparer.Ordinal)
+                .Select(File.ReadAllText));
         Assert.Contains("\"patrol=\"", boot, StringComparison.Ordinal);
         Assert.Contains("\"badge=\"", boot, StringComparison.Ordinal);
     }

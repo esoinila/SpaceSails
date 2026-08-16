@@ -330,6 +330,74 @@ public sealed partial class Map
     /// of the challenge is reachable without working the whole cage-crew lane first.</summary>
     private bool _badgeCheat;
 
+    // ── #870 lane 6′a · WHAT THE REST OF THE PAGE MAY ASK THE ROUND ───────────────────────────────────
+    //
+    // Everything above this banner is the patrol's own, and ThePatrolKeepsItsOwnStateTests holds that line:
+    // no file outside these six partials names one of those fields. What the rest of the client actually
+    // wanted was never a field anyway — a bench wants to know who is walking the floor, a bin whether the
+    // rota has eyes on the captain, a boot-time query parser to force a round onto a floor that rolled none.
+    // Those are questions, and this is where the round answers them. Each one names the site that asked for
+    // it, so the day a member has no asker left it can be deleted rather than inherited.
+
+    /// <summary>#870 lane 6′a · EVERYBODY WALKING THIS FLOOR ON A ROUND — for the two instruments that must
+    /// see them and are not part of this family: the park bench's tail-check (<c>Map.Bench.cs</c>, which
+    /// stamps each of them a mover on a PUBLISHED round and therefore never a tail) and the motion fan's
+    /// contact list (<c>Map.SweepTeam.cs</c>, which owes the captain a blip for a man who walks).
+    ///
+    /// <para>A read-only view of the one list and never a copy: both callers read positions and velocities
+    /// that change every frame, and a cached copy of where everybody was is exactly the disagreement between
+    /// the panel and the sim this codebase does not allow.</para></summary>
+    private IReadOnlyList<Guard> TheRoundOnFoot => _guards;
+
+    /// <summary>#870 lane 6′a · IS ANYBODY ON THE ROTA WATCHING THE CAPTAIN RIGHT NOW? Asked by
+    /// <c>Map.Bin.cs</c>, which needs the top rung of <see cref="RipAndBin.WhoSaw"/>'s ladder: tearing
+    /// something up in front of a round is not the same as tearing it up alone.
+    ///
+    /// <para>It is the challenge's own predicate (<see cref="PatrolBeat.Notices"/>), over the caller's own
+    /// sight blockers, INCLUDING the grace off the car (<see cref="PatrolBeat.CanBeNoticed"/>) — a guard who
+    /// has not registered you yet has not seen you do anything. Both halves live here so that a second
+    /// caller cannot take one of them and miss the other.</para></summary>
+    private bool TheRoundHasEyesOnYou(IReadOnlyList<SurfaceCollision.Segment> sight)
+    {
+        bool seen = false;
+        if (PatrolBeat.CanBeNoticed(_patrolFloorSeconds))
+        {
+            foreach (Guard g in _guards)
+            {
+                seen |= PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight);
+            }
+        }
+        return seen;
+    }
+
+    /// <summary>#870 lane 6′a · <c>?patrol=N</c> asked for N rounds on the floor it boots onto. Written by
+    /// the one pass that reads the query (<c>Map.Sim.World.cs</c>) and spent by
+    /// <see cref="SpawnPatrolFor"/>.</summary>
+    private void ForceTheRoundsTo(int rounds) => _patrolCheat = rounds;
+
+    /// <summary>#870 lane 6′a · Has the query already forced a round? Asked twice in the same boot pass
+    /// (<c>Map.Sim.World.cs</c>): once by <c>?patrol=</c> to decide whether to imply the whole route, and
+    /// once by <c>?badge=</c>, which needs a round to show its pass to and must not overwrite the count a
+    /// <c>?patrol=2</c> on the same URL has already asked for.</summary>
+    private bool TheQueryHasForcedARound => _patrolCheat is not null;
+
+    /// <summary>#870 lane 6′a · …and a round to show a pass to, unless one has already been asked for.
+    /// <c>?badge=1</c> implies <c>?patrol=1</c> — a pass with nobody to show it to is not a thing anybody
+    /// can test — but a <c>?patrol=2</c> on the same URL wins, because overwriting it would quietly hand a
+    /// tester the easier scene they did not ask for.</summary>
+    private void ForceARoundIfNoneAsked() => _patrolCheat ??= 1;
+
+    /// <summary>#870 lane 6′a · <c>?badge=1</c> — mint this site's own pass into the wallet at the landing.
+    /// Written by the boot pass (<c>Map.Sim.World.cs</c>); the minting itself happens on the surface, where
+    /// the site is known.</summary>
+    private void MintTheSitePassAtTheLanding() => _badgeCheat = true;
+
+    /// <summary>#870 lane 6′a · …and whether it was asked for, read by the landing that does the minting
+    /// (<c>Map.Surface.Cheats.cs</c>). Deliberately NOT "does the captain hold a pass" — that is
+    /// <see cref="PatrolBeat.BadgeHeld"/>, and a captain who earned one holds it with no query at
+    /// all.</summary>
+    private bool TheSitePassIsMintedAtTheLanding => _badgeCheat;
+
     /// <summary>How long between mentions of the boots. Long enough that it is an event; short enough that
     /// a captain who has walked away and come back is told again.</summary>
     private const double HeardAgainSeconds = 20.0;
@@ -526,69 +594,7 @@ public sealed partial class Map
                 g.CoverAt = null;
                 g.CoverFor = 0;
             }
-            if (ReferenceEquals(g, _escort))
-            {
-                // #833 · The one guard who is not walking a round at all. He is ahead of everything else in
-                // this loop because an escort in progress is not a thing a bench can stop and not a thing a
-                // sighting can interrupt: the captain is at his shoulder, and there is nothing left to see.
-                g.Held = false;
-                WalkTheEscort(g, dt, walls);
-            }
-            else if (hide is { } shut && CubicleLock.WaitsAtTheDoor(g.SawYouShutIt))
-            {
-                // #821 · He watched the catch go over. He does not open it — nothing in this game does
-                // (CubicleLock.OpensALockedCubicle) — he walks over, knocks once, and waits.
-                //
-                // ABOVE #835's RUN, and that is the whole of what the door is worth. A man coming at a run
-                // cannot run through a partition: he arrives, and then he is a man standing outside a door.
-                // What he is NOT is finished — he keeps AfterYou and he keeps his reason, so opening the
-                // door gives the captain back the exact rung of the ladder they ducked out of rather than a
-                // softer one. IT BUYS TIME, NOT SAFETY, and this branch is where that sentence is spent.
-                g.Held = false;
-                WaitOutsideTheCubicle(g, dt, walls, in shut.Cell);
-            }
-            else if (g.AfterYou)
-            {
-                // #835 · The other man who is not walking a round. He is held off the bench law for the
-                // escort's own reason and one of his own: #793's hold is a law about a TAIL — something
-                // following you covertly, which has to stop when you stop or the trick is up. A man who has
-                // said your floor and your direction into a radio is not being covert about anything.
-                //
-                // #821 · A run that did NOT see the catch turn carries on to where you were, which is what
-                // losing somebody looks like, and #835's own cap ends it. A locked door is not a smoke bomb.
-                g.Held = false;
-                RunAfterTheCaptain(ex, g, dt, walls);
-            }
-            else if (hide is not null && g.WalkingUp)
-            {
-                // …and a man who was crossing the floor to somebody who is now behind a door has lost them.
-                //
-                // #835 · NOT BOOKED AS WALKING OFF, and the distinction is exact rather than generous. This
-                // branch is only ever reached by a guard who did NOT see the catch turn — the man who did is
-                // two branches up, knocking — so what happened is that somebody came round a corner into an
-                // empty washroom. That is the GROUND ending it, and #835's own rule is that a refusal by the
-                // ground may never be booked against the man standing in front of it. The captain who ducks
-                // in where he can see them does not get this branch at all; they get the knock, which is the
-                // whole of what the door was ever worth.
-                GiveUpTheHail(g, i, walkedAway: false);
-                g.Held = false;
-            }
-            else if (g.Held)
-            {
-                // A tail that has been made cannot walk on past you. It stops where it stopped, and it drops
-                // off the motion fan honestly while it does — the same clause the stand at a stop keeps.
-                //
-                // #831 · …and it stops AT SOMETHING. The rule is untouched; the picture is not a statue.
-                TheCoverAct(g, dt, walls, sight);
-            }
-            else if (g.WalkingUp)
-            {
-                WalkUpToTheCaptain(ex, g, i, dt, walls);
-            }
-            else
-            {
-                WalkTheRound(g, dt, walls);
-            }
+            TheOneThingHeIsDoingThisFrame(ex, g, i, dt, walls, sight, hide);
 
             // WHAT THE CAPTAIN MAY KNOW. One call, one answer, used by the marker and by nothing else — so
             // a guard behind a wall is off the deck by construction rather than by a renderer's opinion.
@@ -620,5 +626,176 @@ public sealed partial class Map
         {
             TheRoundWalkedPast();
         }
+    }
+
+    // ── #870 · THE ONE THING HE IS DOING, AND THE ORDER THAT DECIDES IT ───────────────────────────────
+
+    /// <summary>
+    /// #870 · WHAT THIS MAN IS DOING THIS FRAME — exactly one of seven things, and the ORDER IS THE FEATURE.
+    ///
+    /// <para>Every arm below was written into one <c>if / else if</c> chain by the six issues that built this
+    /// file, and the chain's order carried five separate rulings that were named nowhere. It is a list now,
+    /// read top to bottom, and the first arm that will have him takes him. Each arm's own docblock says what
+    /// it is; this is the priority, and WHY it is this priority:</para>
+    ///
+    /// <list type="number">
+    /// <item><b>He is walking you out</b> (#833) — an escort in progress is not a thing a bench can stop and
+    /// not a thing a sighting can interrupt. He is not on a round at all, so nothing below applies to him.</item>
+    /// <item><b>He is waiting outside the door he saw you shut</b> (#821) — ABOVE the run, and that is the
+    /// whole of what a locked door is worth: a man coming at a run cannot run through a partition.</item>
+    /// <item><b>He is coming after you</b> (#835) — above everything a round does, because a man who has said
+    /// your floor into a radio has stopped doing his rounds.</item>
+    /// <item><b>He has lost you to a door</b> (#821/#835) — only ever reached by a man who did NOT watch the
+    /// catch turn, because the man who did is two arms up, knocking.</item>
+    /// <item><b>He is made and covering for it</b> (#793/#831) — the hold, which is asked once a frame of
+    /// every mover in <see cref="AdvancePatrol"/> and spent here.</item>
+    /// <item><b>He is crossing the floor to you</b> (#833) — a hail is a detour from the round, so it sits
+    /// under everything that is not the round and over the round itself.</item>
+    /// <item>…and if nobody wants anything of him, <b>he walks his round</b>. The default, the ordinary case,
+    /// and the one the whole floor is mostly made of.</item>
+    /// </list>
+    ///
+    /// <para><b>Nothing here decides anything.</b> Every arm keeps the guard clause it was written with, in
+    /// the order it was written in; the arms return whether they took him, and this reads as the list. The
+    /// #870 lane that made it a list pinned every frame of twelve rounds first
+    /// (<c>EveryRoundFingerprintsTheSameTests</c>) and reproduced every hash after — including a RED run with
+    /// two of these lines swapped, which is the proof that the order below is load-bearing rather than
+    /// decorative.</para>
+    /// </summary>
+    private void TheOneThingHeIsDoingThisFrame(
+        SurfaceExcursion ex, Guard g, int index, double dt,
+        IReadOnlyList<SurfaceCollision.Segment> walls,
+        IReadOnlyList<SurfaceCollision.Segment> sight,
+        (RingOffice.Stall Cell, string Key)? hide)
+    {
+        if (HeIsWalkingYouOut(g, dt, walls)) { return; }
+        if (HeIsWaitingOutsideTheDoorHeSawYouShut(g, dt, walls, hide)) { return; }
+        if (HeIsComingAfterYou(ex, g, dt, walls)) { return; }
+        if (HeHasLostYouToADoor(g, index, hide)) { return; }
+        if (HeIsMadeAndCoveringForIt(g, dt, walls, sight)) { return; }
+        if (HeIsCrossingTheFloorToYou(ex, g, index, dt, walls)) { return; }
+
+        WalkTheRound(g, dt, walls);
+    }
+
+    /// <summary>#833 · THE ESCORT. The one guard on the floor who is not walking a round, walking the captain
+    /// off it at his shoulder.</summary>
+    private bool HeIsWalkingYouOut(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        if (!ReferenceEquals(g, _escort))
+        {
+            return false;
+        }
+
+        // #833 · The one guard who is not walking a round at all. He is ahead of everything else in
+        // this loop because an escort in progress is not a thing a bench can stop and not a thing a
+        // sighting can interrupt: the captain is at his shoulder, and there is nothing left to see.
+        g.Held = false;
+        WalkTheEscort(g, dt, walls);
+        return true;
+    }
+
+    /// <summary>#821 · THE KNOCK. He watched the catch go over, so he is standing outside it — and standing
+    /// outside it is the whole of what he does.</summary>
+    private bool HeIsWaitingOutsideTheDoorHeSawYouShut(
+        Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls,
+        (RingOffice.Stall Cell, string Key)? hide)
+    {
+        if (hide is not { } shut || !CubicleLock.WaitsAtTheDoor(g.SawYouShutIt))
+        {
+            return false;
+        }
+
+        // #821 · He watched the catch go over. He does not open it — nothing in this game does
+        // (CubicleLock.OpensALockedCubicle) — he walks over, knocks once, and waits.
+        //
+        // ABOVE #835's RUN, and that is the whole of what the door is worth. A man coming at a run
+        // cannot run through a partition: he arrives, and then he is a man standing outside a door.
+        // What he is NOT is finished — he keeps AfterYou and he keeps his reason, so opening the
+        // door gives the captain back the exact rung of the ladder they ducked out of rather than a
+        // softer one. IT BUYS TIME, NOT SAFETY, and this branch is where that sentence is spent.
+        g.Held = false;
+        WaitOutsideTheCubicle(g, dt, walls, in shut.Cell);
+        return true;
+    }
+
+    /// <summary>#835 · THE RUN. He has called it in and he is coming — the earned branch, and never the
+    /// ambient one.</summary>
+    private bool HeIsComingAfterYou(
+        SurfaceExcursion ex, Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        if (!g.AfterYou)
+        {
+            return false;
+        }
+
+        // #835 · The other man who is not walking a round. He is held off the bench law for the
+        // escort's own reason and one of his own: #793's hold is a law about a TAIL — something
+        // following you covertly, which has to stop when you stop or the trick is up. A man who has
+        // said your floor and your direction into a radio is not being covert about anything.
+        //
+        // #821 · A run that did NOT see the catch turn carries on to where you were, which is what
+        // losing somebody looks like, and #835's own cap ends it. A locked door is not a smoke bomb.
+        g.Held = false;
+        RunAfterTheCaptain(ex, g, dt, walls);
+        return true;
+    }
+
+    /// <summary>#821 · THE EMPTY WASHROOM. He was crossing the floor to somebody who is behind a door now,
+    /// and that is the ground ending his hail rather than the captain doing it.</summary>
+    private bool HeHasLostYouToADoor(Guard g, int index, (RingOffice.Stall Cell, string Key)? hide)
+    {
+        if (hide is null || !g.WalkingUp)
+        {
+            return false;
+        }
+
+        // …and a man who was crossing the floor to somebody who is now behind a door has lost them.
+        //
+        // #835 · NOT BOOKED AS WALKING OFF, and the distinction is exact rather than generous. This
+        // branch is only ever reached by a guard who did NOT see the catch turn — the man who did is
+        // two branches up, knocking — so what happened is that somebody came round a corner into an
+        // empty washroom. That is the GROUND ending it, and #835's own rule is that a refusal by the
+        // ground may never be booked against the man standing in front of it. The captain who ducks
+        // in where he can see them does not get this branch at all; they get the knock, which is the
+        // whole of what the door was ever worth.
+        GiveUpTheHail(g, index, walkedAway: false);
+        g.Held = false;
+        return true;
+    }
+
+    /// <summary>#793/#831 · THE COVER ACT. A made tail that has been stopped by a captain sitting down, doing
+    /// something plausible about it.</summary>
+    private bool HeIsMadeAndCoveringForIt(
+        Guard g, double dt,
+        IReadOnlyList<SurfaceCollision.Segment> walls,
+        IReadOnlyList<SurfaceCollision.Segment> sight)
+    {
+        if (!g.Held)
+        {
+            return false;
+        }
+
+        // A tail that has been made cannot walk on past you. It stops where it stopped, and it drops
+        // off the motion fan honestly while it does — the same clause the stand at a stop keeps.
+        //
+        // #831 · …and it stops AT SOMETHING. The rule is untouched; the picture is not a statue.
+        TheCoverAct(g, dt, walls, sight);
+        return true;
+    }
+
+    /// <summary>#833 · THE APPROACH. He has said hold on, and he is walking over to say the rest of it to
+    /// your face.</summary>
+    private bool HeIsCrossingTheFloorToYou(
+        SurfaceExcursion ex, Guard g, int index, double dt,
+        IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        if (!g.WalkingUp)
+        {
+            return false;
+        }
+
+        WalkUpToTheCaptain(ex, g, index, dt, walls);
+        return true;
     }
 }

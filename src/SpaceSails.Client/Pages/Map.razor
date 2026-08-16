@@ -1798,7 +1798,9 @@
        bark are lines on this strip and their moves are buttons in this row, which is what keeps the rest
        pips, the spread gating and #829's case-door label working identically whether the chair opposite is
        empty or not. *@
-    @if (_table is { } tab)
+    @* #870 lane 6a · SeatedTable is the seat family's own named read of the sitting itself, so this markup
+       renames a receiver instead of reaching into the private state of a partial it does not own. *@
+    @if (SeatedTable is { } tab)
     {
     @if (SeatedIsDocked)
     {
@@ -2035,7 +2037,7 @@
        the thing the eye and the cancel key both reach first. Plain words and nothing else (#782/#783): the
        question, what it costs when it costs something, and the two answers. Esc is the second road to "stay
        where you are", and Enter to "stand up" (see TryConfirmTopOverlay's flagged exception). *@
-    @if (_standUpAsk)
+    @if (TheStandUpConfirmIsUp)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
             <div class="deck-offer-card stand-up-card" @onclick:stopPropagation="true">
@@ -2686,8 +2688,7 @@
                 <div class="wallet-fan-rows">
                     @foreach (SpaceSails.Core.Satchel.Item paper in fanPapers)
                     {
-                        bool inHand = _paperInHand is { } held
-                                      && held.Kind == paper.Kind && held.Id == paper.Id;
+                        bool inHand = ThePaperInYourHandIs(paper);
                         <button type="button"
                                 class="@(inHand ? "wallet-paper picked" : "wallet-paper")"
                                 @onclick="() => ChooseThePaper(paper)">
@@ -2700,7 +2701,7 @@
                                 }
                             </span>
                             <span class="wallet-paper-claims">@SpaceSails.Core.WalletChoice.Claims(paper)</span>
-                            <span class="wallet-paper-book">@SpaceSails.Core.WalletChoice.HistoryLine(paper, fanEx.Stop.Body.Id, _shownBook)</span>
+                            <span class="wallet-paper-book">@TheBookOn(paper, fanEx.Stop.Body.Id)</span>
                         </button>
                     }
                 </div>
@@ -2971,11 +2972,12 @@
                stool it is the stool's, and the plate says which seat. Not a second card and not a second
                menu — see Map.Stool.cs for why the one-E-per-fixture rule points here. *@
             <div class="deck-offer-giver">
-                @if (_stool is { } seatedPlate)
+                @* #870 lane 6a · The pick between the neighbour's plate and this stool's own number moved
+                   into the seat family as SeatedStoolPlate — same two Core sentences, same condition, one
+                   fewer reader of Map.Stool.cs's private state. *@
+                @if (SeatedStoolPlate is { } seatedPlate)
                 {
-                    @(seatedPlate.WithNeighbour
-                        ? SpaceSails.Core.Interior.TheStools.NeighbourPlate
-                        : SpaceSails.Core.Interior.TheStools.StoolPlate(seatedPlate.Index))
+                    @seatedPlate
                 }
                 else
                 {
@@ -2987,7 +2989,7 @@
                up on a stool you are above the bottles with the window wall in front of you, and what is
                behind the glass is the green. Core owns both pictures and the caption; this picks by whether
                you sat down. Same onerror-hide law as every other art slot — no file, no frame. *@
-            @if (_stool is not null)
+            @if (CaptainIsOnAStool)
             {
                 <img class="bar-desk-art" src="@SpaceSails.Core.Interior.TheStools.SeatedArtUrl" alt=""
                      aria-hidden="true" onerror="this.style.display='none'" />
@@ -3132,7 +3134,7 @@
                    a full row refuses OUT LOUD in the notice slot above. *@
                 @if (CounterHasStools())
                 {
-                    @if (_stool is null)
+                    @if (!CaptainIsOnAStool)
                     {
                         <button type="button" class="btn btn-sm btn-outline-warning"
                                 title="Get up on one of the tall seats at the counter"

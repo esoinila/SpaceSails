@@ -44,6 +44,12 @@ public static partial class PatrolBeat
     ///
     /// <para>Plan-time and not per-frame: it runs once on the route the leg was planned with, over a list
     /// that is already in hand. Lab 45's frame budget is untouched.</para>
+    ///
+    /// <para>#870 · <b>The conductor.</b> Four banners used to run down the inside of this method; they are
+    /// four named steps now, called IN ORDER, and the order is the whole content of the lane — a shift eased
+    /// before it is known which waypoints are on a straight run at all lays a different line down the same
+    /// corridor. <c>EveryLaneItLaysHashesTheSameTests</c> pins that order as twenty-three digests taken on
+    /// the code as it stood before the split.</para>
     /// </summary>
     public static IReadOnlyList<DeckReachability.Point> KeepRight(
         IReadOnlyList<DeckReachability.Point>? route,
@@ -56,10 +62,25 @@ public static partial class PatrolBeat
             return route ?? [];
         }
 
-        // ── WHICH WAYPOINTS ARE ON A STRAIGHT RUN AT ALL, and which way is right there.
         var rightX = new double[n];
         var rightY = new double[n];
         var straight = new bool[n];
+
+        WhichWaypointsAreOnAStraightRun(route, n, straight, rightX, rightY);
+        int[] ease = HowFarFromTheNearestTurn(straight, n);
+        double[] scale = HowFarTheOffsetIsTaken(straight, ease, n);
+        AndTheGroundMayRefuseAnyOfIt(route, rightX, rightY, scale, n, radius, walls);
+        return TheLineAsItIsWalked(route, rightX, rightY, scale, n);
+    }
+
+    /// <summary>#831 · WHICH WAYPOINTS ARE ON A STRAIGHT RUN AT ALL, and which way is right there. The
+    /// right hand of a heading (ax, ay) is (ay, −ax) — see <see cref="KeepRight"/> for why that is south of
+    /// an eastbound walk on this deck. A waypoint that is not on a straight run keeps its zero normal and is
+    /// never offset by anything downstream.</summary>
+    private static void WhichWaypointsAreOnAStraightRun(
+        IReadOnlyList<DeckReachability.Point> route, int n,
+        bool[] straight, double[] rightX, double[] rightY)
+    {
         for (int i = 1; i < n - 1; i++)
         {
             double bx = route[i].X - route[i - 1].X, by = route[i].Y - route[i - 1].Y;
@@ -71,10 +92,7 @@ public static partial class PatrolBeat
             }
             bx /= bl; by /= bl; ax /= al; ay /= al;
 
-            // A CORNER GIVES THE LANE UP. This is the doorway clause and the mouth clause both — the route
-            // turns at exactly those places — and it is what keeps the offset from ever being asked to hold
-            // through a 6.4 du leaf.
-            if ((bx * ax) + (by * ay) < LaneStraightEnough)
+            if (ACornerGivesTheLaneUp(bx, by, ax, ay))
             {
                 continue;
             }
@@ -82,8 +100,20 @@ public static partial class PatrolBeat
             rightX[i] = ay;
             rightY[i] = -ax;
         }
+    }
 
-        // ── HOW FAR EACH ONE IS FROM THE NEAREST TURN, in cells, so the shift can be eased.
+    /// <summary>#831 · A CORNER GIVES THE LANE UP. This is the doorway clause and the mouth clause both —
+    /// the route turns at exactly those places — and it is what keeps the offset from ever being asked to
+    /// hold through a 6.4 du leaf.</summary>
+    private static bool ACornerGivesTheLaneUp(double bx, double by, double ax, double ay) =>
+        (bx * ax) + (by * ay) < LaneStraightEnough;
+
+    /// <summary>#831 · HOW FAR EACH ONE IS FROM THE NEAREST TURN, in cells, so the shift can be eased. Two
+    /// passes, forward and back, and the smaller of the two runs wins — which is what makes a straight
+    /// stretch shorter than twice the ramp taper from BOTH ends rather than reaching full offset in the
+    /// middle of it.</summary>
+    private static int[] HowFarFromTheNearestTurn(bool[] straight, int n)
+    {
         var ease = new int[n];
         int run = 0;
         for (int i = 0; i < n; i++)
@@ -97,16 +127,33 @@ public static partial class PatrolBeat
             run = straight[i] ? run + 1 : 0;
             ease[i] = Math.Min(ease[i], run);
         }
+        return ease;
+    }
 
-        // ── HOW FAR THE OFFSET IS TAKEN AT EACH ONE, before the ground has been asked at all.
+    /// <summary>#831 · HOW FAR THE OFFSET IS TAKEN AT EACH ONE, before the ground has been asked at all.
+    /// The fraction of <see cref="LaneOffsetDu"/> this waypoint would like, if nothing were in the
+    /// way.</summary>
+    private static double[] HowFarTheOffsetIsTaken(bool[] straight, int[] ease, int n)
+    {
         var scale = new double[n];
         for (int i = 1; i < n - 1; i++)
         {
             scale[i] = straight[i] ? Math.Min(1.0, ease[i] / (double)LaneEaseCells) : 0.0;
         }
+        return scale;
+    }
 
-        // ── …AND THE GROUND MAY REFUSE ANY OF IT, ASKED OF THE WHOLE HOP AND NOT ONLY OF THE WAYPOINT.
-        //
+    /// <summary>
+    /// #831 · …AND THE GROUND MAY REFUSE ANY OF IT, ASKED OF THE WHOLE HOP AND NOT ONLY OF THE WAYPOINT.
+    ///
+    /// <para>Takes the wanted offsets down until every hop on the line is one a body walks. Nothing is added
+    /// here — the only thing this step can do to <paramref name="scale"/> is make it smaller.</para>
+    /// </summary>
+    private static void AndTheGroundMayRefuseAnyOfIt(
+        IReadOnlyList<DeckReachability.Point> route,
+        double[] rightX, double[] rightY, double[] scale, int n, double radius,
+        IReadOnlyList<SurfaceCollision.Segment>? walls)
+    {
         // This is the clause the first cut of this lane did not have, and three of this generator's
         // twenty-five patrolled floors said so: an offset moves a man sideways BETWEEN two points the A*
         // proved, and it is the ground between them that a wedged guard ends up standing in. Checking the
@@ -155,7 +202,15 @@ public static partial class PatrolBeat
                 }
             }
         }
+    }
 
+    /// <summary>#831 · THE LINE AS IT IS ACTUALLY WALKED — every waypoint moved by however much of the
+    /// offset survived the ground, both ends of the leg included (their scale is zero, so a lane never moves
+    /// a STOP).</summary>
+    private static List<DeckReachability.Point> TheLineAsItIsWalked(
+        IReadOnlyList<DeckReachability.Point> route,
+        double[] rightX, double[] rightY, double[] scale, int n)
+    {
         var laned = new List<DeckReachability.Point>(n);
         for (int i = 0; i < n; i++)
         {

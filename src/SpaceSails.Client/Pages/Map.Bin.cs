@@ -337,14 +337,9 @@ public sealed partial class Map
 
         // The rota: the same predicate the challenge itself runs on (PatrolBeat.Notices), including the
         // grace off the car — a guard who has not registered you yet has not seen you do anything.
-        bool rota = false;
-        if (PatrolBeat.CanBeNoticed(_patrolFloorSeconds))
-        {
-            foreach (Guard g in _guards)
-            {
-                rota |= PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight);
-            }
-        }
+        // #870 lane 6′a · both halves are one question the round answers about itself, asked with this
+        // file's own sight blockers.
+        bool rota = TheRoundHasEyesOnYou(sight);
 
         // …and anybody at a seat who can see your hands. Core's own list of who is sitting where, off the
         // frozen watch the room was drawn with, so the people who saw it are the people on the floor.
@@ -366,7 +361,11 @@ public sealed partial class Map
             // seat: a bar top is in full view of the keep — who is security (#781) — and of everyone
             // waiting to be served. You cannot even spread the case here; tearing something up is louder.
             atTheCounter: SeatedIn == SeatedHud.Seat.BarStool,
-            companyAtTheTable: _table is not null && !SeatedAlone,
+            // #870 lane 6a · CaptainIsSeated is the seat family's own name for "there is a table under the
+            // captain" — asked here rather than read out of its state. NOT SeatedWithCompany, which is the
+            // chair opposite alone: this wants the privacy ladder's fuller answer, where somebody on the far
+            // end of a shared bench counts as company too.
+            companyAtTheTable: CaptainIsSeated && !SeatedAlone,
             overlooked);
     }
 }

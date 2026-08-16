@@ -1,0 +1,45 @@
+# TheRegolithOnFoot / APlannedRoute
+# the mark one frame after another leaves on the component — #870 lane 7c
+stopped-at            = ran to the end of the frame
+the real clock        = 3983.333333333
+the frame's now       = 3983.333333333
+the FrameGap clock    = 0.01666666666667
+the hold, said        = no
+the accumulator       = 0.9833333333333
+the sim clock         = 3
+the ship              = ShipState(Charge=0, Position=Vector2d(X=-35125530858.17, Y=150556823432), SimTime=3, Velocity=Vector2d(X=-29006.20383677, Y=-6767.267047755))
+warp asked            = 1
+warp effective        = 1
+nearest body          = CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=1000, Eccentricity=0, Id="selene-gate", InitialPhase=0.4, IsHaven… 236 chars, sha256 6a64b74b6151bfbe
+nearest body at       = Vector2d(X=-33635465733.92, Y=145837280515.5)
+nearest body moving   = Vector2d(X=-29404.64591599, Y=-5824.884399414)
+the pursuit trail     = []
+this frame's drag     = 0
+the next sweep        = 60
+the next projection   = 21600
+the trajectory        = [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the closest pass      = Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the armable pass      = Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the long haul         = ∅
+the pulse             = PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+arcing                = no
+the camera            = Camera(Center=Vector2d(X=-35125530858.17, Y=150556823432), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPixel… 165 chars, sha256 62a5aa854aac4243
+the HUD's last paint  = 3800
+the avatar            = 22.32160949707
+the avatar (y)        = -4.228576660156
+the avatar's heading  = -0.7853981633975
+the route             = ∅
+the seat              = ∅
+the nerve             = 100
+the tracker           = ChirpState(Armed=yes, ClearSeconds=7.983333333333)
+the guards            = []
+the patrol clock      = 0
+the traffic           = [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the hunters           = []
+the ordnance          = []
+the ghost             = ∅
+the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1247.8, AirWarned=no, Bots=[], Buried=no, BurnFired=no, Cache=∅, CanteenWat… 4750 chars, sha256 46453328c4660206
+the pulse cooldown    = -1
+sweep                 = 679 fields, sha256 01612f48aa25eec56bfd7d685991ac19aaadc26f80633e8e97efa23040a60d81
+walked-view pen       = 941761 calls, sha256 41927e1183051a867d6ba590faca80e59cacc21caab3fd613ad2abf0d612de00
+map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

@@ -2,7 +2,13 @@
 
 namespace SpaceSails.Client.Rendering;
 
-// Subject: one frame of the deck, drawn top to bottom (part of DeckView).
+// Subject: one frame of the deck (part of DeckView).
+//
+// #870 lane 7b · Draw was 1,058 lines in one method, with five banners inside itself marking where one
+// pass of the pen ended and the next began. It is the conductor now: it sets the projection up, arms and
+// disarms the lamp, and calls the passes IN ORDER — and the order is the whole picture, which is why the
+// split was made under a snapshot (EveryFrameHashesTheSameTests pins the ordered draw-call list of
+// thirty-three real frames by sha256). Every pass keeps the comments it was written with.
 public sealed partial class DeckView
 {
     // #424 HULL-SHUDDER · the unison pause. When a shudder fires on a populated interior deck (the ship,
@@ -24,7 +30,13 @@ public sealed partial class DeckView
 
         Placement place = PlacementFor(plan, widthPx, heightPx, state.AvatarX, state.AvatarY, panX, panY);
         float scale = place.Scale, ox = place.Ox, oy = place.Oy;
-        (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
+
+        // #870 lane 7b · THE PROJECTION, WRITTEN DOWN ONCE AND HANDED ROUND. Every pass below is given
+        // this rather than a scale and an origin to multiply out for itself: the arithmetic that says
+        // where a deck unit lands on the glass exists in exactly one place on this page, and it is the
+        // exact inverse of the one the click reads back through Placement.ToDeck (#729).
+        Func<double, double, (float X, float Y)> project =
+            (dx, dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
         // #708 · ON A DARK FLOOR THE PEN GOES BEHIND THE LAMP. Everything from here to the sentries is the
         // WORLD — ground, walls, doors, plates, fixtures, husks, bodies — and on a dark floor none of it
@@ -56,24 +68,83 @@ public sealed partial class DeckView
             return best;
         }
 
+        // …and the same, handed round as one answer rather than as the overlay to re-search.
+        Func<double, double, int> darkState = DarkState;
+
         // Ship-only dressing (cargo crates, shuttle cradle, reactor, cantina tables) is hardcoded to
         // the ship's geometry — a bare haven room has none of it, but a docked complex still contains
         // the ship. Everything else (backdrops, walls, doors, labels, consoles, droids, the avatar) is
         // plan-driven and general.
         bool isShip = plan.ShipFixtures;
 
+        // ── #870 lane 7b · THE ORDER IS THE PICTURE ────────────────────────────────────────────────
+        //
+        //    A deck plan is painted the way a scene is: the ground, then what is built on it, then what
+        //    stands in it, then the dark, then the instruments — each pass covering some of what the one
+        //    before it laid down. NOT ONE LINE OF THIS MAY BE REORDERED, and that is not a style note:
+        //    a wall drawn after a room label paints over the label, and a plate drawn before the fan's
+        //    smudges hides a contact heard through a wall. The snapshot guard pins this list.
+
+        PaintTheGround(plan, scale, ox, oy, project);
+        HideWhatNobodyHasLookedInto(darkRegions, scale, project);
+        FillTheStructure(plan, scale, project);
+        FillTheFurniture(plan, project, darkState);
+        DrawTheWalls(plan, project, darkState);
+        DrawTheDoors(plan, in state, project);
+        NameTheRooms(plan, project, darkState);
+        MarkTheGround(surface, scale, project);
+
+        if (isShip)
+        {
+            DressTheShip(in state, simTime, scale, project);
+        }
+
+        DrawTheSeats(plan, scale, project);
+        DrawTheFigures(plan, simTime, npcHoldTime, crewGlance, scale, project);
+
+        // ── #708 · AND HERE THE DARK IS LAID DOWN. The world is drawn; the mask comes off; the black goes on
+        //    over everything the headlights do not reach, with a hard edge where the cone stops.
+        //
+        //    Everything BELOW this line is drawn over the dark on purpose, and each for its own reason:
+        //    a deployed sentry (it carries a lamp — you can see a light in a dark hall even if you cannot
+        //    see what it lights), the motion fan's smudges and ghosts (an instrument, #591, whose whole
+        //    worth is hearing what you cannot see), the overload countdown (a lit display), the blood and
+        //    the screen-flash (they happen to YOU), the captain's own mark, and the corner gauges.
+        if (state.Dark)
+        {
+            _renderer = _canvas;
+            PaintTheDark(widthPx, heightPx, in state, scale, ox, oy);
+        }
+
+        DrawTheSentries(surface, simTime, scale, project);
+        DrawWhatTheFanHeard(surface, simTime, scale, project);
+        CountDownTheOverload(surface, scale, project);
+        DrawTheConsoles(plan, in state, project, darkState);
+        DrawTheCaptain(in state, surface, widthPx, heightPx, scale, project);
+        DrawTheInstruments(in state, surface, simTime, widthPx, heightPx, ox);
+
+        _mask.Disarm();     // #708 · the lamp is a per-frame fact; nothing survives the frame it was aimed in
+        _renderer.EndFrame();
+    }
+
+    /// <summary>#870 lane 7b · THE GROUND, AND WHAT LIES ON IT — the room backdrops under every vector
+    /// overlay, the grid's cold ribs, #563's scenery, and the falloff into the dark at an unseen bound.
+    /// The first pass of the frame: every pass after it is drawn ON this.</summary>
+    private void PaintTheGround(
+        DeckPlan plan, float scale, float ox, float oy, Func<double, double, (float X, float Y)> project)
+    {
         // Room backdrops sit UNDER every vector overlay (walls, consoles, avatar, labels stay on top
         // for legibility — the hybrid look). Each is top-left at (X, Y) deck-units, W×H deck-units.
         // Registration is idempotent, so calling it per frame is cheap.
         foreach (DeckPlan.Backdrop bd in plan.Backdrops)
         {
-            (float bx, float by) = P(bd.X, bd.Y);
+            (float bx, float by) = project(bd.X, bd.Y);
             _renderer.DrawImage(_renderer.RegisterImage(bd.Url), bx, by, bd.W * scale, bd.H * scale, bd.Alpha);
         }
 
         for (int gx = -22; gx <= 28; gx += 4)
         {
-            DrawSeg(P(gx, -9.6), P(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
+            DrawSeg(project(gx, -9.6), project(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
         }
 
         // #563 · THE FIELD FALLS INTO THE DARK. An UNSEEN wall stops the captain and draws nothing, which
@@ -105,11 +176,19 @@ public sealed partial class DeckView
                 SpaceSails.Core.SurfaceScenery.Kind.Ridge => (new RgbaColor(84, 78, 70, 200), 1.7f),
                 _ => (new RgbaColor(58, 60, 66, 175), 1.3f),
             };
-            DrawSeg(P(m.X1, m.Y1), P(m.X2, m.Y2), ink, wide);
+            DrawSeg(project(m.X1, m.Y1), project(m.X2, m.Y2), ink, wide);
         }
 
         DrawUnseenFalloff(plan, scale, ox, oy);
+    }
 
+    /// <summary>#870 lane 7b · #371's still-UNSEEN chambers, painted as hatched voids over the floor and
+    /// UNDER everything that follows — the walls, fittings and consoles inside them are skipped by the
+    /// passes below, so there is nothing left to poke through.</summary>
+    private void HideWhatNobodyHasLookedInto(
+        System.Collections.Generic.IReadOnlyList<(double X0, double Y0, double X1, double Y1, int Seen)>? darkRegions,
+        float scale, Func<double, double, (float X, float Y)> project)
+    {
         // #371 Phase 3 fog: paint the still-UNSEEN forced chambers as dark hatched voids — unknown ground
         // behind a freshly-forced door — over the floor/grid, under everything that follows (the walls and
         // consoles inside are skipped, so nothing pokes through). Explored/visible chambers get no void.
@@ -121,7 +200,7 @@ public sealed partial class DeckView
                 {
                     continue;
                 }
-                (float vx0, float vy0) = P(x0, y1); // deck +y is up on screen → y1 is the top edge
+                (float vx0, float vy0) = project(x0, y1); // deck +y is up on screen → y1 is the top edge
                 float vw = (float)(x1 - x0) * scale, vh = (float)(y1 - y0) * scale;
                 FillRect(vx0, vy0, vw, vh, VoidFill);
                 for (float vhy = vy0 + 6f; vhy < vy0 + vh; vhy += 7f) // crude hatch
@@ -131,7 +210,14 @@ public sealed partial class DeckView
                 _renderer.DrawText(vx0 + vw / 2f, vy0 + vh / 2f, "· ? ·", VoidText, "10px monospace", TextAlign.Center);
             }
         }
+    }
 
+    /// <summary>#870 lane 7b · #537's metal foam: the thickness a wall is made of, filled and hatched as
+    /// CUT MATERIAL, so the one stretch of it that is hollow reads exactly like all the rest. The banner
+    /// inside carries the owner's own words for both halves of it.</summary>
+    private void FillTheStructure(
+        DeckPlan plan, float scale, Func<double, double, (float X, float Y)> project)
+    {
         // ── #537 · STRUCTURE, FILLED. Owner, reading the deck after the wall padding shipped: "we should cover
         //    those narrow spaces … all of them … if we can see into them from the hall then they don't hide
         //    anything", then how it should look — "some kind of fill there would make it look like the space is
@@ -150,8 +236,8 @@ public sealed partial class DeckView
         //    stretch of it that is hollow looks like all the rest until somebody sounds it.
         foreach (DeckPlan.Structure s in plan.Structures)
         {
-            (float fx0, float fy0) = P(Math.Min(s.X0, s.X1), Math.Max(s.Y0, s.Y1));
-            (float fx1, float fy1) = P(Math.Max(s.X0, s.X1), Math.Min(s.Y0, s.Y1));
+            (float fx0, float fy0) = project(Math.Min(s.X0, s.X1), Math.Max(s.Y0, s.Y1));
+            (float fx1, float fy1) = project(Math.Max(s.X0, s.X1), Math.Min(s.Y0, s.Y1));
             float fw = fx1 - fx0, fh = fy1 - fy0;
             if (fw <= 0 || fh <= 0)
             {
@@ -189,7 +275,14 @@ public sealed partial class DeckView
                 }
             }
         }
+    }
 
+    /// <summary>#870 lane 7b · #868's fittings, filled — over the floor and UNDER the walls, so a wall
+    /// segment that happens to be a desk's own edge still draws on top of its fill and nothing a captain
+    /// can walk into is painted over. The banner inside is the owner's ruling.</summary>
+    private void FillTheFurniture(
+        DeckPlan plan, Func<double, double, (float X, float Y)> project, Func<double, double, int> darkState)
+    {
         // ── #868 · THE FURNITURE, FILLED. Owner, reading a cold room off the plan: "The graphics kind of does
         //    not show there being a table" · "The bench is a line" · "The Shelving is clear as furniture
         //    goes" — one room, the negative control and the positive control three paces apart. His fix, in
@@ -208,14 +301,14 @@ public sealed partial class DeckView
         //    which is this house's own named way of ending up with a drawn shape that disagrees with the sim.
         foreach (DeckPlan.FurnitureSpot f in plan.Furniture)
         {
-            (float gx0, float gy0) = P(Math.Min(f.X0, f.X1), Math.Max(f.Y0, f.Y1));
-            (float gx1, float gy1) = P(Math.Max(f.X0, f.X1), Math.Min(f.Y0, f.Y1));
+            (float gx0, float gy0) = project(Math.Min(f.X0, f.X1), Math.Max(f.Y0, f.Y1));
+            (float gx1, float gy1) = project(Math.Max(f.X0, f.X1), Math.Min(f.Y0, f.Y1));
             float gw = gx1 - gx0, gh = gy1 - gy0;
             if (gw <= 0 || gh <= 0)
             {
                 continue;   // a degenerate box is a SEGMENT (a screen, a chamber's own bench) and draws as one
             }
-            if (DarkState((f.X0 + f.X1) / 2.0, (f.Y0 + f.Y1) / 2.0) == 0)
+            if (darkState((f.X0 + f.X1) / 2.0, (f.Y0 + f.Y1) / 2.0) == 0)
             {
                 continue;   // #371 · in a room nobody has looked into yet, there is no furniture to see
             }
@@ -235,7 +328,14 @@ public sealed partial class DeckView
             DrawSeg((gx1, gy1), (gx0, gy1), FurnitureEdge, 1f);
             DrawSeg((gx0, gy1), (gx0, gy0), FurnitureEdge, 1f);
         }
+    }
 
+    /// <summary>#870 lane 7b · The walls, in the ink of what they are made of — #589's body stone, #605's
+    /// department livery, #677's third material that takes no ink from either, and #563's unseen bound
+    /// that collides and draws nothing at all.</summary>
+    private void DrawTheWalls(
+        DeckPlan plan, Func<double, double, (float X, float Y)> project, Func<double, double, int> darkState)
+    {
         foreach (DeckPlan.Wall w in plan.Walls)
         {
             // #563 · An UNSEEN wall is never drawn — the open field's envelope, which collides but has no
@@ -248,7 +348,7 @@ public sealed partial class DeckView
 
             // #371 Phase 3 fog: a wall inside a still-unseen forced chamber is hidden (the room is unknown
             // until the captain looks in); one in an explored-but-out-of-sight chamber draws dim.
-            int ws = DarkState((w.X1 + w.X2) / 2.0, (w.Y1 + w.Y2) / 2.0);
+            int ws = darkState((w.X1 + w.X2) / 2.0, (w.Y1 + w.Y2) / 2.0);
             if (ws == 0)
             {
                 continue;
@@ -279,10 +379,17 @@ public sealed partial class DeckView
             // rubble is a monolith that stops being the centrepiece of the moon it stands on. Seamless is
             // heavier than either, because it is the one surface in the game with no line-work inside it and
             // weight is all the drawing has left to say SOLID with.
-            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color,
+            DrawSeg(project(w.X1, w.Y1), project(w.X2, w.Y2), color,
                 w.IsSeamless ? 3.5f : w.IsHull || w.IsStone ? 2.5f : 1.5f);
         }
+    }
 
+    /// <summary>#870 lane 7b · The doors: #462's airlock interlock (only the leaf nearest the captain may
+    /// stand open), #585's locked hatch drawn heaviest of all, #592's imported ink and #606's machined
+    /// frame. Drawn after the walls because a door is set INTO one.</summary>
+    private void DrawTheDoors(
+        DeckPlan plan, in State state, Func<double, double, (float X, float Y)> project)
+    {
         // Automatic airlock doors (the docking tube): shut across the passage until you near them,
         // then they retract to a stub at each jamb. Purely visual — the passage is always walkable.
         foreach (DeckPlan.Door d in plan.Doors)
@@ -298,8 +405,8 @@ public sealed partial class DeckView
                 // drawn heaviest of all, with a second inner stroke so it looks barred rather than merely
                 // shut. (The "say locked on approach" half is the console at its midpoint, which names what
                 // is behind it as you come near.)
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 5.5f);
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), new RgbaColor(20, 26, 38, 220), 2.0f);
+                DrawSeg(project(d.X1, d.Y1), project(d.X2, d.Y2), DoorLocked, 5.5f);
+                DrawSeg(project(d.X1, d.Y1), project(d.X2, d.Y2), new RgbaColor(20, 26, 38, 220), 2.0f);
                 continue;
             }
             double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
@@ -356,15 +463,15 @@ public sealed partial class DeckView
             if (open)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).
-                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
-                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
+                DrawSeg(project(d.X1, d.Y1), project(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
+                DrawSeg(project(d.X2, d.Y2), project(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
             }
             else
             {
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), shut, weight);
+                DrawSeg(project(d.X1, d.Y1), project(d.X2, d.Y2), shut, weight);
                 if (d.Machined)
                 {
-                    DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), new RgbaColor(18, 20, 30, 210), 2f);
+                    DrawSeg(project(d.X1, d.Y1), project(d.X2, d.Y2), new RgbaColor(18, 20, 30, 210), 2f);
                 }
             }
             if (d.Machined)
@@ -376,12 +483,19 @@ public sealed partial class DeckView
                 if (jl > 0.01f)
                 {
                     float nx = -jy / jl * 0.9f, ny = jx / jl * 0.9f;
-                    DrawSeg(P(d.X1 - nx, d.Y1 - ny), P(d.X1 + nx, d.Y1 + ny), shut, 2.5f);
-                    DrawSeg(P(d.X2 - nx, d.Y2 - ny), P(d.X2 + nx, d.Y2 + ny), shut, 2.5f);
+                    DrawSeg(project(d.X1 - nx, d.Y1 - ny), project(d.X1 + nx, d.Y1 + ny), shut, 2.5f);
+                    DrawSeg(project(d.X2 - nx, d.Y2 - ny), project(d.X2 + nx, d.Y2 + ny), shut, 2.5f);
                 }
             }
         }
+    }
 
+    /// <summary>#870 lane 7b · What the structure is CALLED — #600/#612's signage on its plate first and
+    /// in a dimmer ink, then #348's room labels on theirs. One pass, because the order between the two is
+    /// the whole of the rule: paint on a wall must not compete with the caption over a console.</summary>
+    private void NameTheRooms(
+        DeckPlan plan, Func<double, double, (float X, float Y)> project, Func<double, double, int> darkState)
+    {
         // #348: each room label on its own dark backing plate for contrast over the art panels, with
         // MED BAY drawn as the clean-room exception (see the RoomLabel* colours above).
         // #600 · SIGNAGE, painted on the structure at the size a facility actually paints it. Owner, riding
@@ -400,11 +514,11 @@ public sealed partial class DeckView
         // labels are now the same instrument at two scales, which is one thing to learn instead of two.
         foreach ((float bx, float by, string text, float px, int tone) in plan.BigLabels)
         {
-            if (DarkState(bx, by) == 0)
+            if (darkState(bx, by) == 0)
             {
                 continue;
             }
-            (float bxp, float byp) = P(bx, by);
+            (float bxp, float byp) = project(bx, by);
             // #612 · Owner: "The meters and the floor name could be yellow here... they are kind of hidden
             // now.... it should say if the floor is pressurized also." Tone chooses the ink and nothing
             // else: tone 1 is the relief of somewhere you can breathe, tone 2 is the one that costs you, and
@@ -430,12 +544,12 @@ public sealed partial class DeckView
 
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
-            int ls = DarkState(lx, ly); // #371 Phase 3 fog: hide an unseen chamber's label, dim an explored one
+            int ls = darkState(lx, ly); // #371 Phase 3 fog: hide an unseen chamber's label, dim an explored one
             if (ls == 0)
             {
                 continue;
             }
-            (float lxp, float lyp) = P(lx, ly);
+            (float lxp, float lyp) = project(lx, ly);
             if (ls == 1)
             {
                 _renderer.DrawText(lxp, lyp, text, ExploredText, "10px monospace", TextAlign.Center);
@@ -445,7 +559,14 @@ public sealed partial class DeckView
                 DrawRoomLabel(lxp, lyp, text, medBay: text == "MED BAY");
             }
         }
+    }
 
+    /// <summary>#870 lane 7b · #313's surface ground marks — the swept grid first, then own caches, a
+    /// panic-dropped chest, #314's husks and #371's movement echoes. All of it under the movers, so a
+    /// figure can stand on any of it.</summary>
+    private void MarkTheGround(
+        SurfaceHud? surface, float scale, Func<double, double, (float X, float Y)> project)
+    {
         // #313 surface ground overlays: own caches' ✗ marks and a panic-dropped chest (drawn under the
         // avatar/droids so a mover can stand on them).
         if (surface is { } hud)
@@ -457,7 +578,7 @@ public sealed partial class DeckView
             {
                 foreach ((double swx, double swy, bool hard) in swept)
                 {
-                    (float sx, float sy) = P(swx, swy);
+                    (float sx, float sy) = project(swx, swy);
                     if (hard)
                     {
                         _renderer.DrawText(sx, sy + 3, "✕", new RgbaColor(120, 110, 95, 150), "10px monospace", TextAlign.Center);
@@ -471,7 +592,7 @@ public sealed partial class DeckView
             }
             foreach ((double mx, double my, bool haunted) in hud.CacheMarks)
             {
-                (float sx, float sy) = P(mx, my);
+                (float sx, float sy) = project(mx, my);
                 var xcol = haunted ? new RgbaColor(230, 120, 90, 230) : new RgbaColor(230, 210, 120, 230);
                 _renderer.DrawText(sx, sy + 4, "✗", xcol, "bold 16px monospace", TextAlign.Center);
                 if (haunted)
@@ -481,7 +602,7 @@ public sealed partial class DeckView
             }
             if (hud.HasDroppedChest)
             {
-                (float dx2, float dy2) = P(hud.DropX, hud.DropY);
+                (float dx2, float dy2) = project(hud.DropX, hud.DropY);
                 _renderer.DrawText(dx2, dy2 + 5, "🧰", new RgbaColor(200, 160, 90, 240), "15px monospace", TextAlign.Center);
                 _renderer.DrawText(dx2, dy2 - 11, "dropped chest", new RgbaColor(200, 160, 90, 180), "8px monospace", TextAlign.Center);
             }
@@ -490,7 +611,7 @@ public sealed partial class DeckView
             {
                 foreach ((double hkx, double hky) in husks)
                 {
-                    (float sx, float sy) = P(hkx, hky);
+                    (float sx, float sy) = project(hkx, hky);
                     _renderer.DrawCircle(sx, sy, 0.55f * scale, HuskColor, HuskColor);
                     _renderer.DrawText(sx, sy + 3, "×", new RgbaColor(90, 60, 60, 220), "bold 11px monospace", TextAlign.Center);
                 }
@@ -502,7 +623,7 @@ public sealed partial class DeckView
             {
                 foreach ((double ex2, double ey2, double alpha) in echoes)
                 {
-                    (float sx, float sy) = P(ex2, ey2);
+                    (float sx, float sy) = project(ex2, ey2);
                     byte a = (byte)Math.Clamp(alpha * 180.0, 0, 180);
                     var ring = new RgbaColor(EchoColor.R, EchoColor.G, EchoColor.B, a);
                     _renderer.DrawCircle(sx, sy, (0.35f + 0.5f * (float)alpha) * scale, null, ring, 1.2f);
@@ -510,50 +631,60 @@ public sealed partial class DeckView
                 }
             }
         }
+    }
 
-        if (isShip)
+    /// <summary>#870 lane 7b · The ship's own dressing, and only hers: the crates in the top-port hold,
+    /// the shuttle in its cradle or away doing piracy, and the reactor with #295's charge conduit. A bare
+    /// haven room has none of it; a docked complex still contains the ship.</summary>
+    private void DressTheShip(
+        in State state, double simTime, float scale, Func<double, double, (float X, float Y)> project)
+    {
+        // Cargo crates: one per unit aboard (in the top-port hold now — #295).
+        for (int i = 0; i < Math.Min(state.CargoUnits, 12); i++)
         {
-            // Cargo crates: one per unit aboard (in the top-port hold now — #295).
-            for (int i = 0; i < Math.Min(state.CargoUnits, 12); i++)
-            {
-                (float cx, float cy) = P(-10 + (i % 4) * 1.9, 5 + (i / 4) * 1.6);
-                DrawBox(cx, cy, 0.65f * scale, CrateColor);
-            }
-
-            // Shuttle in its cradle (bottom-port bay now — #295) — or away doing piracy.
-            if (!state.ShuttleAway)
-            {
-                DrawShuttle(P(-6.5, -6.5), scale, simTime);
-            }
-            else
-            {
-                (float bx, float by) = P(-6.5, -6.5);
-                _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
-                if (Math.Sin(simTime * 0.005) > 0)
-                {
-                    DrawSeg(P(-9, -9.9), P(-5, -9.9), new RgbaColor(255, 120, 80, 220), 3f);
-                }
-            }
-
-            // Reactor + charge conduit (engine room).
-            (float rx, float ry) = P(-19, 2.5);
-            _renderer.DrawCircle(rx, ry, 1.6f * scale, null, InnerLine, 2f);
-            double throb = 0.5 + 0.5 * Math.Sin(simTime * 0.002);
-            var reactor = new RgbaColor(120, 200, 255, (byte)(90 + 70 * throb));
-            _renderer.DrawCircle(rx, ry, 0.9f * scale, reactor, reactor);
-            if (state.ElectricUniverse)
-            {
-                var conduit = new RgbaColor(255, 240, 120, (byte)(40 + 180 * state.Charge));
-                DrawSeg(P(-19, 1), P(-20, -4), conduit, 3f);
-            }
-
+            (float cx, float cy) = project(-10 + (i % 4) * 1.9, 5 + (i / 4) * 1.6);
+            DrawBox(cx, cy, 0.65f * scale, CrateColor);
         }
 
+        // Shuttle in its cradle (bottom-port bay now — #295) — or away doing piracy.
+        if (!state.ShuttleAway)
+        {
+            DrawShuttle(project(-6.5, -6.5), scale, simTime);
+        }
+        else
+        {
+            (float bx, float by) = project(-6.5, -6.5);
+            _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
+            if (Math.Sin(simTime * 0.005) > 0)
+            {
+                DrawSeg(project(-9, -9.9), project(-5, -9.9), new RgbaColor(255, 120, 80, 220), 3f);
+            }
+        }
+
+        // Reactor + charge conduit (engine room).
+        (float rx, float ry) = project(-19, 2.5);
+        _renderer.DrawCircle(rx, ry, 1.6f * scale, null, InnerLine, 2f);
+        double throb = 0.5 + 0.5 * Math.Sin(simTime * 0.002);
+        var reactor = new RgbaColor(120, 200, 255, (byte)(90 + 70 * throb));
+        _renderer.DrawCircle(rx, ry, 0.9f * scale, reactor, reactor);
+        if (state.ElectricUniverse)
+        {
+            var conduit = new RgbaColor(255, 240, 120, (byte)(40 + 180 * state.Charge));
+            DrawSeg(project(-19, 1), project(-20, -4), conduit, 3f);
+        }
+    }
+
+    /// <summary>#870 lane 7b · #792/#793's seats — a top's ring and the chairs round it, the counter's
+    /// tall stools, and the park's benches end by end. Free, taken, and who is already talking, in the
+    /// two inks this deck has meant those things with since they were drawn.</summary>
+    private void DrawTheSeats(
+        DeckPlan plan, float scale, Func<double, double, (float X, float Y)> project)
+    {
         // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor, and — where the
         // plan bothered to say — the chairs round it and who is in them (#792).
         foreach (DeckPlan.TableTop top in plan.Tables)
         {
-            (float cx2, float cy2) = P(top.X, top.Y);
+            (float cx2, float cy2) = project(top.X, top.Y);
             _renderer.DrawCircle(cx2, cy2, 0.9f * scale, null, InnerLine, 1.5f);
             DrawSeatsRound(cx2, cy2, top, scale);
         }
@@ -561,7 +692,7 @@ public sealed partial class DeckView
         // #792 · The tall seats at a counter — free and taken, in the same two inks the chairs use.
         foreach (DeckPlan.StoolSpot stool in plan.Stools)
         {
-            (float sx, float sy) = P(stool.X, stool.Y);
+            (float sx, float sy) = project(stool.X, stool.Y);
             DrawBacklessSeat(sx, sy, stool.Taken, stool.RowHasSomebody, scale);
         }
 
@@ -572,10 +703,19 @@ public sealed partial class DeckView
         // is gone before a captain walks the length of a 278 du park to find out by pressing.
         foreach (DeckPlan.BenchSpot end in plan.BenchSeats)
         {
-            (float bx, float by) = P(end.X, end.Y);
+            (float bx, float by) = project(end.X, end.Y);
             DrawBacklessSeat(bx, by, end.Taken, end.BenchHasSomebody, scale);
         }
+    }
 
+    /// <summary>#870 lane 7b · Everybody on the deck who is not the captain — #295's Old Ones, #583's repo
+    /// crew, #538's sweep team and its lamp cone, #804's guard on his round, the working crew, #424's
+    /// unison pause and crew glance, #793's held figure and #832's smeared one at the far end of the eye.
+    /// The last pass of the WORLD: everything after it is drawn over the dark.</summary>
+    private void DrawTheFigures(
+        DeckPlan plan, double simTime, double? npcHoldTime, bool crewGlance,
+        float scale, Func<double, double, (float X, float Y)> project)
+    {
         // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).
         // #424 HULL-SHUDDER: during the unison pause the NPCs are filled at the FROZEN onset time (all their
         // simTime-driven idle jitter / patrol / pace stop together — the synchronized held breath), and their
@@ -589,7 +729,7 @@ public sealed partial class DeckView
         for (int di = 0; di < plan.DroidCount; di++)
         {
             DeckPlan.Droid droid = _droids[di];
-            (float dx, float dy) = P(droid.X, droid.Y);
+            (float dx, float dy) = project(droid.X, droid.Y);
             // #295: the Reevers read hostile — a red mark, not the crew's grey.
             bool reever = droid.Name == "Reever";
             bool collector = droid.Name == "Collector";   // #583: a repo crew on foot, amber not red
@@ -701,21 +841,14 @@ public sealed partial class DeckView
                     "8px monospace", TextAlign.Center);
             }
         }
+    }
 
-        // ── #708 · AND HERE THE DARK IS LAID DOWN. The world is drawn; the mask comes off; the black goes on
-        //    over everything the headlights do not reach, with a hard edge where the cone stops.
-        //
-        //    Everything BELOW this line is drawn over the dark on purpose, and each for its own reason:
-        //    a deployed sentry (it carries a lamp — you can see a light in a dark hall even if you cannot
-        //    see what it lights), the motion fan's smudges and ghosts (an instrument, #591, whose whole
-        //    worth is hearing what you cannot see), the overload countdown (a lit display), the blood and
-        //    the screen-flash (they happen to YOU), the captain's own mark, and the corner gauges.
-        if (state.Dark)
-        {
-            _renderer = _canvas;
-            PaintTheDark(widthPx, heightPx, in state, scale, ox, oy);
-        }
-
+    /// <summary>#870 lane 7b · #314's deployed sentries and their scoreboard magazines — drawn ON the grid
+    /// and OVER the dark, because a sentry carries a lamp and you can see a light in an unlit hall even
+    /// when you cannot see what it lights.</summary>
+    private void DrawTheSentries(
+        SurfaceHud? surface, double simTime, float scale, Func<double, double, (float X, float Y)> project)
+    {
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
         // dropping, and its crude two-digit magazine readout riding above (seven-segment red, dim at 00).
         // Drawn ON the grid, not a corner widget — the counter is meant to be read from across the map.
@@ -730,10 +863,10 @@ public sealed partial class DeckView
             for (int i = 0; i < sentries.Count; i++)
             {
                 (double bxr, double byr, string counter, bool dry, bool firing, double aimX, double aimY) = sentries[i];
-                (float sx, float sy) = P(bxr, byr);
+                (float sx, float sy) = project(bxr, byr);
                 if (firing && !dry)
                 {
-                    (float zx, float zy) = P(aimX, aimY);
+                    (float zx, float zy) = project(aimX, aimY);
                     DrawSeg((sx, sy), (zx, zy), ZapColor, 1.6f);
                     _renderer.DrawCircle(zx, zy, 3f, ZapColor, ZapColor);
                 }
@@ -776,7 +909,14 @@ public sealed partial class DeckView
                     $"bold {fontPx:0.#}px monospace", TextAlign.Center);
             }
         }
+    }
 
+    /// <summary>#870 lane 7b · #488's instrument half: the edgeless smudge over roughly where a return came
+    /// from, and the colder broken ring where the fan last had something. Both are painted as AREAS on
+    /// purpose — a dot would claim a precision a crude fan does not have.</summary>
+    private void DrawWhatTheFanHeard(
+        SurfaceHud? surface, double simTime, float scale, Func<double, double, (float X, float Y)> project)
+    {
         // #488 · WHAT THE FAN HEARS THROUGH STEEL. A soft, edgeless bloom over roughly where the return
         // came from — big enough that it names a REGION and not a spot. Drawn under everything else so a
         // contact you can actually see is always the sharper mark on the deck.
@@ -784,7 +924,7 @@ public sealed partial class DeckView
         {
             foreach ((double smx, double smy, double smr) in heard)
             {
-                (float ssx, float ssy) = P(smx, smy);
+                (float ssx, float ssy) = project(smx, smy);
                 float rPx = (float)(smr * scale);
                 // Three widening rings, each fainter: no hard edge anywhere, so the eye reads "somewhere
                 // about here" rather than a position.
@@ -808,7 +948,7 @@ public sealed partial class DeckView
         {
             foreach ((double gx, double gy, double fade) in ghosts)
             {
-                (float gsx, float gsy) = P(gx, gy);
+                (float gsx, float gsy) = project(gx, gy);
                 byte a = (byte)Math.Clamp(70 * fade, 0f, 255f);
                 float gr = (float)(2.4 * scale);
                 _renderer.DrawCircle(gsx, gsy, gr, new RgbaColor(150, 120, 160, (byte)(a / 3)), default);
@@ -823,13 +963,20 @@ public sealed partial class DeckView
                 }
             }
         }
+    }
 
+    /// <summary>#870 lane 7b · #488's overload countdown, anchored to the thing that is about to fail so it
+    /// recedes behind the captain as they run — the one number that decides whether they live, kept out of
+    /// the message channel where the PA calls are.</summary>
+    private void CountDownTheOverload(
+        SurfaceHud? surface, float scale, Func<double, double, (float X, float Y)> project)
+    {
         // #488 · THE OVERLOAD, ON THE GRID. Same scoreboard as a magazine, bigger and always alarm-red,
         // anchored to the thing that is about to fail — so it recedes behind the captain as they run, and
         // the one number that decides whether they live is never in the message channel with the PA calls.
         if (surface is { Countdown: { } burn })
         {
-            (float bx, float by) = P(burn.X, burn.Y);
+            (float bx, float by) = project(burn.X, burn.Y);
             float pw = 5.4f * scale, ph = 3.2f * scale;
             float top = by - 2.4f * scale;
 
@@ -842,7 +989,19 @@ public sealed partial class DeckView
             _renderer.DrawText(bx, top + ph / 2 + px * 0.35f, burn.Text, SegAlarm,
                 $"bold {px:0.#}px monospace", TextAlign.Center);
         }
+    }
 
+    /// <summary>#870 lane 7b · The consoles, and the ONE prompt that is the true one — the offer is drawn
+    /// only where <see cref="DeckPlan.NearestConsoleSpot"/> would actually answer, and #791's service run
+    /// is marked down the whole length that answers.
+    ///
+    /// <para>#708 · This pass puts the lamp BACK on the pen and takes it off again. Consoles are drawn late
+    /// — after the fan's smudges, so a contact heard through a wall is not painted over by a plate — which
+    /// puts them on the far side of the blackout; they are WORLD all the same, so the world is drawn in two
+    /// passes and both of them are behind the headlights.</para></summary>
+    private void DrawTheConsoles(
+        DeckPlan plan, in State state, Func<double, double, (float X, float Y)> project, Func<double, double, int> darkState)
+    {
         // Consoles.
         //
         // ONE PROMPT, AND IT IS THE TRUE ONE. Owner, twice, on two different decks: "there two e's are too
@@ -873,11 +1032,11 @@ public sealed partial class DeckView
         {
             // #371 Phase 3 fog: a console inside an unseen chamber is unknown (hidden); an explored one is
             // dimmed. A still-sealed door's console sits OUTSIDE any chamber rect, so it always shows.
-            if (DarkState(console.X, console.Y) == 0)
+            if (darkState(console.X, console.Y) == 0)
             {
                 continue;
             }
-            (float sx, float sy) = P(console.X, console.Y);
+            (float sx, float sy) = project(console.X, console.Y);
 
             // Lit only when [E] would actually reach THIS console. The radius check is still the gate —
             // NearestConsoleSpot applies it — so nothing lights up across the ship; what changed is that a
@@ -899,7 +1058,7 @@ public sealed partial class DeckView
             // which is the split this deck has paid for more than any other.
             if (console.IsRun)
             {
-                DrawServiceRun(console, c, near, P);
+                DrawServiceRun(console, c, near, project);
             }
 
             _renderer.DrawCircle(sx, sy, near ? 5f : 3.5f, c, c);
@@ -911,15 +1070,23 @@ public sealed partial class DeckView
                 // on an eighty-du desk it is the stretch of counter under your elbow, because an [E] forty
                 // du away at the plate would be the game answering a press it looks like it is refusing.
                 (float ex, float ey) = console.NearestPointTo(state.AvatarX, state.AvatarY);
-                (float px, float py) = P(ex, ey);
+                (float px, float py) = project(ex, ey);
                 _renderer.DrawText(px, py + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
             }
         }
 
         _renderer = _canvas;    // #708 · and off again — everything below is the captain, or an instrument
+    }
 
+    /// <summary>#870 lane 7b · The captain, and the things that happen to THEM — #453's blood on the ground
+    /// and #467's wash round the edges of the screen, #784's seated figure or the standing one and its
+    /// spoke, and #313's channel bar with #562's glyph saying which slow thing this is.</summary>
+    private void DrawTheCaptain(
+        in State state, SurfaceHud? surface, int widthPx, int heightPx, float scale,
+        Func<double, double, (float X, float Y)> project)
+    {
         // The captain.
-        (float ax, float ay) = P(state.AvatarX, state.AvatarY);
+        (float ax, float ay) = project(state.AvatarX, state.AvatarY);
 
         // #453 · BLOOD, when a blow gets past the block (owner: "Maybe a splash of blood when reever hit
         // goes through players attempt to block it. :-D"). Seeded spatter around the captain, thrown on the
@@ -995,7 +1162,14 @@ public sealed partial class DeckView
             FillRect(bx0, by0, bw, bh, new RgbaColor(20, 24, 30, 220));
             FillRect(bx0, by0, bw * (float)Math.Clamp(dig.DigProgress, 0, 1), bh, fillInk);
         }
+    }
 
+    /// <summary>#870 lane 7b · The corner and edge chrome, which is not the world and never was: #313's
+    /// motion fan, #317/#330's nerve gauge and its ledger, #327's orbit line, #825's stall banner on its
+    /// own line under it, the keybar, and #440's standing prompt above it.</summary>
+    private void DrawTheInstruments(
+        in State state, SurfaceHud? surface, double simTime, int widthPx, int heightPx, float ox)
+    {
         // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including
         // contacts beyond the grid edge — the early warning. Cadence pulses the blips as they close.
         if (surface is { Instruments: true } tHud)
@@ -1069,9 +1243,6 @@ public sealed partial class DeckView
             var promptColor = new RgbaColor(255, 205, 90, (byte)Math.Clamp(255 * breathe, 60, 255));
             _renderer.DrawText(ox, heightPx - 30, standing, promptColor, "bold 14px monospace", TextAlign.Center);
         }
-
-        _mask.Disarm();     // #708 · the lamp is a per-frame fact; nothing survives the frame it was aimed in
-        _renderer.EndFrame();
     }
 
     // #424 THE UNEXPLAINED SIGNAL · the crew glance. From the freshly-filled _droids, work out each WORKING

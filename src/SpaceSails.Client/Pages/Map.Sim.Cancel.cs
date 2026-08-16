@@ -49,7 +49,7 @@ public partial class Map
         // #784 · The stand-up confirm sits ABOVE the table it is asking about, and Esc means KEEP YOUR SEAT.
         // Owner: "one press confirms, Esc keeps you seated." Listed here rather than under the table so the
         // cancel key cannot answer the question by doing the thing the question is about.
-        if (_standUpAsk) { KeepYourSeat(); return true; }
+        if (TheStandUpConfirmIsUp) { KeepYourSeat(); return true; }
         // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
         // always available, and a keyboard cancel that could not reach the one panel whose design law is
         // "you may always stand up" would be the game contradicting itself with a keystroke.
@@ -65,7 +65,7 @@ public partial class Map
         // so the keys pay for the stand instead of asking about it. Esc says nothing about where the captain
         // is going, which is exactly why it is still worth a question.
         if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
-        if (_table is not null) { CloseTable(); return true; }
+        if (CaptainIsSeated) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
@@ -160,7 +160,7 @@ public partial class Map
         // SEATED — Esc and every other key leave the chair where it is — so Enter confirms the thing the
         // captain just asked for rather than deciding something for them. FLAGGED for the owner: this is a
         // judgement call.
-        if (_standUpAsk) { StandUpFromTable(); return true; }
+        if (TheStandUpConfirmIsUp) { StandUpFromTable(); return true; }
         // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
         // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
         // on purpose, and its absence is the feature.

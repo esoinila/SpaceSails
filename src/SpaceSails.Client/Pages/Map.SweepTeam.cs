@@ -544,7 +544,10 @@ public sealed partial class Map
         // travelling, and the fan owes the captain the unsure blob for it rather than clean silence. The
         // register is Core's own answer (PatrolBeat.FanRegister) and not a flag typed here — the day a
         // second kind of figure walks these floors it declares its own, in Core, beside its own rules.
-        foreach (Guard g in _guards)
+        // #870 lane 6′a · TheRoundOnFoot is the patrol family's own name for the men walking this floor. The
+        // CONTACT is still declared here, exactly as the comment above demands — every kind of figure that
+        // moves is listed in this one method — and only the reaching-in is gone.
+        foreach (Guard g in TheRoundOnFoot)
         {
             yield return new MotionTracker.Entity(g.X, g.Y, g.Vx, g.Vy, PatrolBeat.FanRegister);
         }

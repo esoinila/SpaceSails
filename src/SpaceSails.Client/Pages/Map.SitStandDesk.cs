@@ -55,7 +55,7 @@ public partial class Map
     /// <summary>How close a console has to be to a published control to BE that control. The rounding
     /// tolerance <c>SameChairDu</c> is, and for the same reason: the console was hung on Core's own
     /// coordinate and the only thing between them is a float cast.</summary>
-    private const double SameControlDu = SameChairDu;
+    private const double SameControlDu = Seating.SameChairDu;
 
     /// <summary>One desk's key. The floor and the room and the fitting — never the coordinate, because a
     /// key made of a position is a key that changes when somebody moves a wall.</summary>
