@@ -598,28 +598,46 @@ public sealed class EveryRoundFingerprintsTheSameTests
         return sb.ToString();
     }
 
-    /// <summary>Every scalar on the whole page, by name — read once before a case and once after.</summary>
+    /// <summary>Every scalar on the whole page, by name — read once before a case and once after.
+    ///
+    /// <para>#870 lane 6′b · …and the round's own twenty-two, which are not fields on the page any more
+    /// (<see cref="PatrolState"/>). They are read through the same classification and written down under the
+    /// name they had, because THEY are the scalars a patrol frame actually moves: dropping them would have
+    /// left this census diffing everything except the subject of the file. Not one pinned line changed.
+    /// </para></summary>
     private static Dictionary<string, string> EveryScalarOnThePage(Pages.Map map)
     {
         var seen = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (FieldInfo f in typeof(Pages.Map)
             .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
         {
-            object? v = f.GetValue(map);
-            if (v is null)
-            {
-                seen[f.Name] = "-";
-            }
-            else if (v is bool or int or long or double or float or string or Enum or decimal)
-            {
-                seen[f.Name] = R(v);
-            }
-            else if (v is ICollection col)
-            {
-                seen[f.Name + ".Count"] = col.Count.ToString(Inv);
-            }
+            Note(seen, f.Name, f.GetValue(map));
+        }
+        foreach ((string raw, _) in PatrolState.TheTwentyTwo)
+        {
+            Assert.True(PatrolState.TryFollow(map, raw, out object? onTheRound),
+                $"`{raw}` was not followed onto the round — this census is reading a dead name.");
+            Note(seen, raw, onTheRound);
         }
         return seen;
+    }
+
+    /// <summary>One reading, classified the one way — a scalar by its value, a collection by its count, and
+    /// anything else not at all.</summary>
+    private static void Note(Dictionary<string, string> seen, string name, object? v)
+    {
+        if (v is null)
+        {
+            seen[name] = "-";
+        }
+        else if (v is bool or int or long or double or float or string or Enum or decimal)
+        {
+            seen[name] = R(v);
+        }
+        else if (v is ICollection col)
+        {
+            seen[name + ".Count"] = col.Count.ToString(Inv);
+        }
     }
 
     /// <summary>
@@ -711,8 +729,15 @@ public sealed class EveryRoundFingerprintsTheSameTests
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 
+    /// <summary>#870 lane 6′b · The twenty-two patrol fields live on the page's <c>_patrol</c>
+    /// object now, so the lookup follows them there (<see cref="PatrolState"/>); every assertion and
+    /// every pinned line below still asks for the state by the name it was written with.</summary>
     private static object? Get(object o, string name)
     {
+        if (PatrolState.TryFollow(o, name, out object? onTheRound))
+        {
+            return onTheRound;
+        }
         FieldInfo? field = o.GetType().GetField(name, Hidden);
         if (field is not null)
         {
@@ -723,8 +748,14 @@ public sealed class EveryRoundFingerprintsTheSameTests
         return prop!.GetValue(o);
     }
 
-    private static void Set(object o, string field, object? value) =>
-        o.GetType().GetField(field, Hidden)!.SetValue(o, value);
+    /// <inheritdoc cref="Get"/>
+    private static void Set(object o, string field, object? value)
+    {
+        if (!PatrolState.TrySet(o, field, value))
+        {
+            o.GetType().GetField(field, Hidden)!.SetValue(o, value);
+        }
+    }
 
     private static object? Invoke(Pages.Map map, string method, params object?[] args)
     {

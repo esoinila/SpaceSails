@@ -74,7 +74,7 @@ public sealed partial class Map
         // #836 · …and the fan comes down here too. A man who has said your floor into a radio is not going to
         // look at a piece of paper, and a chooser left up over a run would be a decision with nothing on the
         // other end of it.
-        _walletFanOpen = false;
+        _patrol.WalletFanOpen = false;
 
         g.AfterYou = true;
         g.Why = why;
@@ -167,7 +167,7 @@ public sealed partial class Map
     /// lump the model already keeps for a hand laid on you — rather than a new cause nobody ruled on.</para>
     ///
     /// <para>Then it is the ladder, and the ladder is the escort you already know: the card goes up, and the
-    /// walk it names starts on the first frame after it comes down (<see cref="_escortDue"/>), which is the
+    /// walk it names starts on the first frame after it comes down (<see cref="Patrol.EscortDue"/>), which is the
     /// frame the captain can watch it happen on.</para>
     /// </summary>
     private void HeHasYou(SurfaceExcursion ex, Guard g)
@@ -189,7 +189,7 @@ public sealed partial class Map
 
         // The same two-armed card the wallet read is told on, with the guard's own plate behind it — one
         // picture for the whole feature, because the man in it has not decided anything yet either (#804).
-        PatrolBeat.Read held = PatrolBeat.TheGuardHasYou(g.Plate, why, _escortsThisWatch);
+        PatrolBeat.Read held = PatrolBeat.TheGuardHasYou(g.Plate, why, _patrol.EscortsThisWatch);
         _viewObject = new DeckPlan.ConsoleSpot(
             DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
             held.Label, PatrolBeat.ChallengeArtUrl, held.Card, held.Told);
@@ -199,7 +199,7 @@ public sealed partial class Map
         ApplyNerveShock(NervePips.TouchPips * NervePips.PipUnit, "a hand closed on your arm in a corridor");
         FileNote(PatrolBeat.EscortNote, "👮");
 
-        _escortDue = g;
+        _patrol.EscortDue = g;
         RequestVaultSave();
     }
 
@@ -252,30 +252,30 @@ public sealed partial class Map
     /// </summary>
     private void SomebodySawThat(PatrolBeat.Provocation why)
     {
-        if (!PatrolBeat.EarnsIt(why) || _guards.Count == 0 || _surface is not { Floor: < 0 })
+        if (!PatrolBeat.EarnsIt(why) || _patrol.Guards.Count == 0 || _surface is not { Floor: < 0 })
         {
             return;
         }
 
         // Not while somebody is already walking you out, and not while somebody is already coming: an
         // escalation on top of an escalation is two men doing one job.
-        if (_escort is not null || _escortDue is not null || _kickOutRideDue)
+        if (_patrol.Escort is not null || _patrol.EscortDue is not null || _patrol.KickOutRideDue)
         {
             return;
         }
 
         IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
-        for (int i = 0; i < _guards.Count; i++)
+        for (int i = 0; i < _patrol.Guards.Count; i++)
         {
-            if (_guards[i].AfterYou)
+            if (_patrol.Guards[i].AfterYou)
             {
                 return;
             }
         }
 
-        for (int i = 0; i < _guards.Count; i++)
+        for (int i = 0; i < _patrol.Guards.Count; i++)
         {
-            Guard g = _guards[i];
+            Guard g = _patrol.Guards[i];
             if (!PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight))
             {
                 continue;
@@ -316,7 +316,7 @@ public sealed partial class Map
         }
 
         // The plate is armed BEFORE the ride, because the ride rebuilds the deck the plate is painted on.
-        _kickedOutPlateFor = PatrolBeat.KickedOutPlateSeconds;
+        _patrol.KickedOutPlateFor = PatrolBeat.KickedOutPlateSeconds;
         RideTheLiftTo(ex, 0);
 
         // ONE REGION, NOT TWO PULSES — #774's law, and this moment is exactly what it is for. The ejection
@@ -355,7 +355,7 @@ public sealed partial class Map
     /// </summary>
     private (float X, float Y, string Text, float Px, int Tone)[]? TheKickedOutPlate(SurfaceExcursion ex)
     {
-        if (_kickedOutPlateFor <= 0)
+        if (_patrol.KickedOutPlateFor <= 0)
         {
             return null;
         }
@@ -378,15 +378,15 @@ public sealed partial class Map
     /// being a per-frame cost on every excursion this game has.</summary>
     private void FadeTheKickedOutPlate(double dtRealSeconds)
     {
-        if (_kickedOutPlateFor <= 0)
+        if (_patrol.KickedOutPlateFor <= 0)
         {
             return;
         }
 
-        _kickedOutPlateFor -= System.Math.Min(dtRealSeconds, MaxSurfaceStepSeconds);
-        if (_kickedOutPlateFor <= 0)
+        _patrol.KickedOutPlateFor -= System.Math.Min(dtRealSeconds, MaxSurfaceStepSeconds);
+        if (_patrol.KickedOutPlateFor <= 0)
         {
-            _kickedOutPlateFor = 0;
+            _patrol.KickedOutPlateFor = 0;
             RebuildSurfaceDeck();
         }
     }
@@ -419,11 +419,11 @@ public sealed partial class Map
             // #832 · …as does whether this is a figure or a MARKER. Out at the far end of the eye's reach
             // the pen gets a silhouette to draw and no round number to write over it — the sim decides which
             // rung (PatrolBeat.SightingFor), the renderer only draws what it is handed.
-            buffer[slot] = underground && i < _guards.Count
-                           && _guards[i].Seen != PatrolBeat.Sighting.None
+            buffer[slot] = underground && i < _patrol.Guards.Count
+                           && _patrol.Guards[i].Seen != PatrolBeat.Sighting.None
                 ? new DeckPlan.Droid(
-                    _guards[i].X, _guards[i].Y, _guards[i].Facing, _guards[i].DeckName, _guards[i].Held,
-                    _guards[i].Seen == PatrolBeat.Sighting.Smear)
+                    _patrol.Guards[i].X, _patrol.Guards[i].Y, _patrol.Guards[i].Facing, _patrol.Guards[i].DeckName, _patrol.Guards[i].Held,
+                    _patrol.Guards[i].Seen == PatrolBeat.Sighting.Smear)
                 : new DeckPlan.Droid(-9999, -9999, 0, PatrolBeat.DeckName(i));
         }
     }

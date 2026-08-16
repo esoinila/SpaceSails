@@ -798,10 +798,22 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         ];
         Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
 
-        var parts = new string[order.Length];
+        // #870 lane 6′b · RE-PATHED, never re-asserted. The round's twenty-two fields and the Guard they
+        // are made of moved into Pages/Patrol/, so the page this guard reads is EIGHT files now — the six
+        // verbs first, in the order the one file laid them out, then the state. Both directories are
+        // counted, so a ninth part can never go unread.
+        string own = Path.Combine(dir, "Patrol");
+        string[] state = ["Patrol.cs", "Guard.cs"];
+        Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
+
+        var parts = new string[order.Length + state.Length];
         for (int i = 0; i < order.Length; i++)
         {
             parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        for (int i = 0; i < state.Length; i++)
+        {
+            parts[order.Length + i] = File.ReadAllText(Path.Combine(own, state[i]));
         }
         return string.Concat(parts);
     }
@@ -830,7 +842,7 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
 
         // The cover act, and the honest hold inside it.
         Assert.Contains(
-            "PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight, walls)", walk, StringComparison.Ordinal);
+            "PatrolBeat.CoverFor(g.X, g.Y, _patrol.Readables, sight, walls)", walk, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.AtTheCover(", walk, StringComparison.Ordinal);
 
         // …and it is what the HELD branch of the step actually calls.

@@ -42,12 +42,12 @@ public sealed class TheWalletFansWhileHeWalksOverTests
 
     /// <summary>One method's body, cut at the next member declaration — the idiom every guard on this ground
     /// already uses, so a body read here is a body read there.</summary>
-    private static string Method(string file, string signature)
+    private static string Method(string file, string signature, string next = "\n    private ")
     {
         string src = Pages(file);
         int at = src.IndexOf(signature, StringComparison.Ordinal);
         Assert.True(at >= 0, $"{file} no longer has `{signature}` where this guard can read it.");
-        int end = src.IndexOf("\n    private ", at + 1, StringComparison.Ordinal);
+        int end = src.IndexOf(next, at + 1, StringComparison.Ordinal);
         return src[at..(end > at ? end : src.Length)];
     }
 
@@ -79,7 +79,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         // …and the read does not open one. The card is the answer, not a second question.
         string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
         Assert.DoesNotContain("FanTheWallet(", read, StringComparison.Ordinal);
-        Assert.Contains("_walletFanOpen = false;", read, StringComparison.Ordinal);
+        Assert.Contains("_patrol.WalletFanOpen = false;", read, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -106,7 +106,8 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     /// is a read that can quietly optimise.
     /// </summary>
     /// <remarks>RED when <c>TheRoundStopsAtYou</c> passes <c>_satchel</c> (the shipped behaviour) or when
-    /// <c>ThePaperHandedOver</c> ignores <c>_paperInHand</c> and always returns the default: the captain's
+    /// <c>ThePaperHandedOver</c> ignores <c>_patrol.PaperInHand</c> and always returns the default: the
+/// captain's
     /// choice is thrown away and the guard reads whatever the habit was.</remarks>
     [Fact]
     public void TheGuardIsHandedTheChosenPaperAndNeverTheWallet()
@@ -117,7 +118,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _satchel", read, StringComparison.Ordinal);
 
         string handed = Method("Map.Patrol.Challenge.cs", "private Satchel.Item? ThePaperHandedOver(");
-        Assert.Contains("_paperInHand", handed, StringComparison.Ordinal);
+        Assert.Contains("_patrol.PaperInHand", handed, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.StillHeld(", handed, StringComparison.Ordinal);
     }
 
@@ -173,7 +174,11 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         }
 
         Assert.Contains(
-            "WalletChoice.HistoryLine(", Method("Map.Patrol.Challenge.cs", "private string TheBookOn("),
+            "WalletChoice.HistoryLine(",
+            // #870 lane 6′b · RE-PATHED: the book is the round's own state, so the member that reads
+            // it moved onto Patrol whole. Map keeps a forwarder with the same spelling, which is why
+            // the markup needle above did not have to move.
+            Method(Path.Combine("Patrol", "Patrol.cs"), "public string TheBookOn(", "\n        public "),
             StringComparison.Ordinal);
 
         foreach (string oracle in new[] { "TheGuardReads", "WhatHappens", "Satisfied", "%" })
@@ -191,7 +196,8 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     /// <para>And the rung is gated on the SAME property the dialog is drawn from, so Esc can never swallow a
     /// keystroke for a fan that is not on the screen.</para>
     /// </summary>
-    /// <remarks>RED when the Esc rung is removed, and RED when it is gated on <c>_walletFanOpen</c> while the
+    /// <remarks>RED when the Esc rung is removed, and RED when it is gated on the round's own
+/// <c>WalletFanOpen</c> while the
     /// dialog is gated on the fan's own count.</remarks>
     [Fact]
     public void EscapeShutsTheFanAndEnterDoesNotAnswerIt()
@@ -203,7 +209,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         // The keyboard YES may not pick a name for the captain.
         string confirm = Method("Map.Sim.Cancel.cs", "private bool TryConfirmTopOverlay()");
         Assert.DoesNotContain("WalletFan", confirm, StringComparison.Ordinal);
-        Assert.DoesNotContain("_paperInHand", confirm, StringComparison.Ordinal);
+        Assert.DoesNotContain("PaperInHand", confirm, StringComparison.Ordinal);
     }
 
     /// <summary>

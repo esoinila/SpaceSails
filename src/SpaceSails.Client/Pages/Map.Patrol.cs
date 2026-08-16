@@ -56,298 +56,32 @@ namespace SpaceSails.Client.Pages;
 /// </summary>
 public sealed partial class Map
 {
-    /// <summary>One guard, walking. Mutable and client-side for the reason the Reevers and the sweep team
-    /// are: the rules are pure in Core and the list is the client's business.</summary>
-    private sealed class Guard
-    {
-        /// <summary>What is drawn over them — the ROUND's number, from Core.</summary>
-        public required string DeckName { get; init; }
-
-        /// <summary>Who they read as when the round stops at you.</summary>
-        public required string Plate { get; init; }
-
-        public double X;
-        public double Y;
-        public double Facing;
-
-        /// <summary>How fast they are travelling this frame. A MOTION tracker hears travel and nothing else,
-        /// so without this the fan would report an empty floor while two people walked it — the panel
-        /// disagreeing with the sim, which is the one thing this codebase does not allow.</summary>
-        public double Vx;
-        public double Vy;
-
-        /// <summary>Which stop of the shared beat they are heading for.</summary>
-        public int Leg;
-
-        /// <summary>Seconds left standing at the stop they have reached. THE GAP a captain times.</summary>
-        public double Standing;
-
-        /// <summary>Seconds since this one last stopped the round at the captain. Starts far in the past so
-        /// the first challenge of a floor is never held back.</summary>
-        public double SinceStop = PatrolBeat.AfterTheStopSeconds * 4;
-
-        /// <summary>The A* leg they are spending, or null when the next one is due.</summary>
-        public AutoWalk? Route;
-
-        /// <summary>#858 · The NEXT leg, being planned a slice at a time while he stands at this one. Null
-        /// whenever he is not standing at a stop.
-        ///
-        /// <para>Lab 45 priced the plan he used to make on the frame he left a stop at up to 6.4 ms — 38.6%
-        /// of a 60 fps frame, natively, in a game that ships to WASM — and it lands on a frame the player is
-        /// often watching him on. He stands for five seconds either way; this is the same work, done then.
-        /// It carries the two points it was planned between (<c>AutoWalk.Planner.PlannedFor</c>), so a man
-        /// whose errand changed while he stood can never be handed a route he did not ask for.</para></summary>
-        public AutoWalk.Planner? Planning;
-
-        /// <summary>#832 · How many times in a row this leg has been re-planned because the ground refused a
-        /// step. Bounded, so a stop that genuinely cannot be reached is dropped rather than ground at
-        /// forever — and reset the moment they arrive anywhere.</summary>
-        public int Retries;
-
-        /// <summary>#832 · What the captain can make of them on the frame just drawn — nothing, a distant
-        /// figure, or the marker. Read by the droid filler, written by the step: one answer per frame, so
-        /// the marker, the smear and the challenge cannot disagree about whether there is anybody
-        /// there.</summary>
-        public PatrolBeat.Sighting Seen;
-
-        /// <summary>#793 · Whether this one is HELD — stopped because the captain sat down on a bench in the
-        /// open (<see cref="FootTail.MustHold"/>). One answer per frame, written by the step and read by the
-        /// filler, so the figure that has stopped and the figure DRAWN as stopped are one figure.
-        ///
-        /// <para>It is false for every guard in the game and will stay false: a round is a route the
-        /// building published before the captain arrived, and a published route cannot be a tail. The field
-        /// is here because the hold is a law about MOVERS rather than about watchers — the day something
-        /// does follow the captain, it must not need a second stepper to be stopped by a bench.</para></summary>
-        public bool Held;
-
-        /// <summary>#833 · Whether this one has said <i>hold on</i> and is crossing the floor to you. The
-        /// round is suspended while it is true and resumes from wherever he ends up, whether he arrives or
-        /// gives up — a walk-up is a detour, never a new state machine.</summary>
-        public bool WalkingUp;
-
-        /// <summary>#833 · How long he has been walking up. Bounded by
-        /// <see cref="PatrolBeat.WalkUpSeconds"/>, because a captain who keeps a pillar between you and him
-        /// for twenty seconds has walked away by any honest reading.</summary>
-        public double WalkUpFor;
-
-        /// <summary>#833 · Seconds until the next re-plan. A walk-up and an escort chase a MOVING target (the
-        /// captain, and the captain's shoulder), and an A* every frame is not free in WASM — nor is it what a
-        /// man crossing a corridor does.</summary>
-        public double RePlanIn;
-
-        /// <summary>#835 · Whether this one has called it in and is coming at a run. False for every guard on
-        /// every floor until the captain earns it, which is the whole of the ambient law.</summary>
-        public bool AfterYou;
-
-        /// <summary>#835 · Why he is. Carried on the man rather than on the page because it is what he SAYS
-        /// when he reaches you (<see cref="PatrolBeat.WhyHeCame"/>), and a reason kept anywhere else could
-        /// be a different reason by the time the card goes up.</summary>
-        public PatrolBeat.Provocation Why;
-
-        /// <summary>#835 · How long he has been at it. Bounded by
-        /// <see cref="PatrolBeat.AfterYouSecondsCap"/> — he is a retired cop, not a wolf.</summary>
-        public double AfterYouFor;
-
-        /// <summary>#835 · Seconds of radio left before he moves. He stands still for this, and that beat IS
-        /// the warning the run is starting.</summary>
-        public double CallingIn;
-
-        /// <summary>#835 · Which hand he takes a wall on when the direct run is spent — <c>ReeverChase</c>'s
-        /// own stable handedness, so he rounds a corner instead of dithering at the face of it. Fixed when
-        /// the run starts, per #324's reason: a side that changed frame to frame is a body that never gets
-        /// anywhere.</summary>
-        public int WallSide = 1;
-
-        /// <summary>
-        /// #821 · WAS HE LOOKING AT YOU WHEN THE CATCH WENT OVER?
-        ///
-        /// <para>THE one bit the whole hide turns on. It is written by the press
-        /// (<c>Map.Cubicle.ShutTheCubicle</c>) off <see cref="PatrolBeat.Notices"/> — the same predicate the
-        /// challenge is gated on, over the same sight blockers, on the frame the catch turned — and never
-        /// re-derived here, because a partition goes across the opening on the very next rebuild and every
-        /// answer after that would be "no".</para>
-        ///
-        /// <para>False is the ordinary case and the one the feature is FOR: a man who came round the corner
-        /// afterwards is looking at a door with OCCUPIED on it, which is what a washroom door says all
-        /// day.</para>
-        /// </summary>
-        public bool SawYouShutIt;
-
-        /// <summary>#821 · Whether he is standing outside a shut cubicle waiting for it to open. The round is
-        /// suspended while it is true and resumes from wherever he ends up — a wait is a detour, exactly as a
-        /// walk-up is, and never a new state machine.</summary>
-        public bool Knocking;
-
-        /// <summary>#821 · Whether the two knuckles have already landed. Once per wait: a man who knocked
-        /// twice would be a loop, and the whole of the line is that he does not knock again.</summary>
-        public bool Knocked;
-
-        /// <summary>#831 · Which watchclock station he last signed on his round, or 0 before the first one.
-        /// It is what makes the DOUBLE SIGN-IN readable: a made tail's cover act at the station he signed a
-        /// minute ago is the gumshoe's confirmation, and nothing anywhere says so out loud
-        /// (<see cref="PatrolBeat.DoubleSignIn"/>).</summary>
-        public int SignedPoint;
-
-        /// <summary>#831 · Which station he is signing RIGHT NOW as a cover act, or 0 when he is not
-        /// performing one. Written by the hold, read by the audit — one answer per frame, so the man who has
-        /// stopped and the man DRAWN as having stopped for something are one man.</summary>
-        public int CoverPoint;
-
-        /// <summary>#831 · WHAT HE DECIDED TO READ, held for as long as the hold lasts. A man who re-chose
-        /// the nearest fixture every frame walks toward one, gets nearer a second, turns round, and shuffles
-        /// between the two forever — which is a statue with extra steps. He picks once.</summary>
-        public PatrolBeat.WallThing? CoverAt;
-
-        /// <summary>#831 · How long he has been getting to it. Bounded by
-        /// <see cref="PatrolBeat.CoverDriftSeconds"/>: past that he reads it from where he stands.</summary>
-        public double CoverFor;
-    }
-
-    private readonly List<Guard> _guards = [];
-
-    /// <summary>#831 · Everything on this floor's walls a held man could plausibly be reading — the
-    /// watchclock stations first, then the shut doors' signs and the posters (<see cref="PatrolBeat.ReadablesOn"/>).
-    /// Built once with the round, for the round's own reason: it is a fact about the floor, and a stepper
-    /// that searched the floor plan every frame would be Lab 45's bill paid sixty times a second.</summary>
-    private readonly List<PatrolBeat.WallThing> _patrolReadables = [];
-
-    /// <summary>The beat: the stops, in the order this watch walks them. Built once when the floor is
-    /// entered so every guard on it shares ONE route and a captain can learn it — the sweep team's rule,
-    /// for its reason: being hidden from has to be legible.</summary>
-    private readonly List<PatrolBeat.Stop> _patrolBeat = [];
-
-    /// <summary>How long the captain has been on this floor. Feeds <see cref="PatrolBeat.CanBeNoticed"/>, so
-    /// stepping out of the car into somebody's face is a beat rather than an instant.</summary>
-    private double _patrolFloorSeconds;
-
-    /// <summary>How long since the boots were last mentioned. One line, cooled — a warning, not a
-    /// narrator.</summary>
-    private double _patrolHeardAgo;
-
-    // ── #833 · THE WALK BACK, AS STATE ────────────────────────────────────────────────────────────────
-    //
-    // Deliberately four small fields on the page rather than a class: an escort is one guard, one destination
-    // and one clock, it exists only while a floor does, and the moment it needs a type of its own it will be
-    // because something other than the lift is a destination — which is a ruling nobody has made.
-
-    /// <summary>#833 · The guard walking the captain back to the car, or null. While it is set the captain's
-    /// controls are HELD (<see cref="CaptainIsUnderEscort"/>) and this guard walks the escort rather than his
-    /// round.</summary>
-    private Guard? _escort;
-
-    /// <summary>#833 · The guard whose read failed and whose walk back has not started yet. The card is up in
-    /// front of the captain at that moment; the walk begins when it comes down, so the player watches the
-    /// walk rather than reading about it over the top of one.</summary>
-    private Guard? _escortDue;
-
-    /// <summary>#833 · Where the escort is going: the car's own mouth, from the one placement the sim ever
-    /// puts the captain through (#681). It is the END STATE of the walk rather than the start of it.</summary>
-    private (double X, double Y) _escortCar;
-
-    /// <summary>#833 · How long the walk back has been going. Bounded by
-    /// <see cref="PatrolBeat.EscortSecondsCap"/> — past which the cut is ADMITTED rather than narrated.</summary>
-    private double _escortSeconds;
-
-    /// <summary>#833 · Whether the small talk has landed yet. Once per escort: a man who said the same thing
-    /// about the pumps twice on one corridor would be a loop, not a character.</summary>
-    private bool _escortSaidPumps;
-
-    /// <summary>#833 · Are the captain's controls being held by somebody walking them off the floor? Read by
-    /// the deck's own stepper and by its key handler — the same one answer, so the keys and the legs cannot
-    /// disagree about who is steering.
+    /// <summary>
+    /// #870 lane 6′b · THE ROUND'S OWN STATE, IN ONE OBJECT (<c>Pages/Patrol/Patrol.cs</c>).
     ///
-    /// <para>#835 · A run is deliberately NOT in here. The controls are held for the walk out and for nothing
-    /// else: a captain being come after must be able to run, or rung five ("escape is possible") would be a
-    /// sentence with no keys behind it.</para></summary>
-    private bool CaptainIsUnderEscort => _escort is not null;
-
-    // ── #835 · WHAT THE WATCH REMEMBERS ───────────────────────────────────────────────────────────────
-    //
-    // Two counters and the shift they belong to. They are on the PAGE rather than on a guard because they
-    // are facts about the captain's evening, not about a man: the owner's complaint was that the same FACE
-    // had been booked four times, and the fourth guard to write it down is as entitled to know as the first.
-    // They survive a floor change (the floors are one site's evening) and they turn over with the watch, the
-    // same clock everything else down here turns over on.
-
-    /// <summary>#835 · Which watch <see cref="_escortsThisWatch"/> and <see cref="_walkedAwayThisWatch"/>
-    /// belong to. Anything else is last night's paperwork.</summary>
-    private long _patrolWatch = long.MinValue;
-
-    /// <summary>#835 · How many times a round has walked the captain back to a car this watch. The number the
-    /// owner's own evening produced, and the one both halves of the escalation ask
-    /// (<see cref="PatrolBeat.BookedTooOften"/>).</summary>
-    private int _escortsThisWatch;
-
-    /// <summary>#835 · How many hails the captain has simply walked away from this watch. The first is free
-    /// and stays free.</summary>
-    private int _walkedAwayThisWatch;
-
-    /// <summary>#835 · Whether the walk in progress ends at the sky rather than at the car. Decided ONCE,
-    /// where the walk begins, off the same predicate the card's own sentence was composed from — so the man
-    /// who said he was not pressing the button for your floor is the man who does not press it.</summary>
-    private bool _kickOutDue;
-
-    /// <summary>#835 · The escort has reached the car and the ride up is owed. Armed rather than taken, the
-    /// same way <see cref="_escortDue"/> is: the ride happens on a frame of its own, outside the loop that is
-    /// walking the list of guards it is about to empty.</summary>
-    private bool _kickOutRideDue;
-
-    /// <summary>#835 · How long the KICKED OUT plate stays painted on the shed wall. Counted down on the
-    /// surface, where nothing else in this file runs, and one rebuild takes it away again.</summary>
-    private double _kickedOutPlateFor;
-
-    // ── #836 · THE FLETCH WALLET, AS STATE ────────────────────────────────────────────────────────────
-    //
-    // Owner, evening playtest 2026-08-11: "I think I should be able to pick the badge I show the guard...
-    // like Fletch ... suppose we have 4 different ID's ... one of them real".
-    //
-    // Three fields, and the division between them is the whole of the feature: what is IN YOUR HAND (decided
-    // during the approach, spent at the read), whether the fan is OPEN in front of you, and what the book
-    // remembers about every paper you have ever handed anybody. The first two die with the floor; the third
-    // is durable, because it is the only thing a chooser row's hint is ever derived from.
-
-    /// <summary>#836 · The paper that goes into his hand when he arrives. Seeded at the hail from
-    /// <see cref="WalletChoice.DefaultFor"/> — last shown at this site, else the real one — so a captain who
-    /// ignores the fan entirely still hands over the paper a reasonable person would already be holding.</summary>
-    private Satchel.Item? _paperInHand;
-
-    /// <summary>#836 · Is the fan up? Only ever while somebody is walking over
-    /// (<see cref="WalletChoice.Fans"/> said there was a choice to make), and it comes down the moment he is
-    /// at arm's length: no swapping papers in front of a guard.</summary>
-    private bool _walletFanOpen;
-
-    /// <summary>#836 · THE CAPTAIN'S OWN PAPER TRAIL — one row per read, naming which identity was shown and
-    /// how it went. Durable (it rides the vault), because <i>worked here, twice</i> is worth nothing if it
-    /// forgets between excursions, and because the owner's own reading of it is the horror: <i>two names on
-    /// one face across one watch is the facility's own case against you</i>, pointed back at the captain.</summary>
-    private readonly List<WalletChoice.Shown> _shownBook = [];
-
-    /// <summary>Dev cheat: <c>?patrol=N</c> forces N rounds onto whatever restricted floor you boot onto,
-    /// so the scene is reachable without waiting for a watch that rolled two.</summary>
-    private int? _patrolCheat;
-
-    /// <summary>Dev cheat: <c>?badge=1</c> mints this site's own pass at the landing, so the satisfied arm
-    /// of the challenge is reachable without working the whole cage-crew lane first.</summary>
-    private bool _badgeCheat;
-
-    // ── #870 lane 6′a · WHAT THE REST OF THE PAGE MAY ASK THE ROUND ───────────────────────────────────
-    //
-    // Everything above this banner is the patrol's own, and ThePatrolKeepsItsOwnStateTests holds that line:
-    // no file outside these six partials names one of those fields. What the rest of the client actually
-    // wanted was never a field anyway — a bench wants to know who is walking the floor, a bin whether the
-    // rota has eyes on the captain, a boot-time query parser to force a round onto a floor that rolled none.
-    // Those are questions, and this is where the round answers them. Each one names the site that asked for
-    // it, so the day a member has no asker left it can be deleted rather than inherited.
-
-    /// <summary>#870 lane 6′a · EVERYBODY WALKING THIS FLOOR ON A ROUND — for the two instruments that must
-    /// see them and are not part of this family: the park bench's tail-check (<c>Map.Bench.cs</c>, which
-    /// stamps each of them a mover on a PUBLISHED round and therefore never a tail) and the motion fan's
-    /// contact list (<c>Map.SweepTeam.cs</c>, which owes the captain a blip for a man who walks).
+    /// <para>Twenty-two loose fields became one. Everything below this line — putting them on the floor,
+    /// walking them, hailing, reading a wallet, walking a captain out — is a VERB, and a verb reads the
+    /// world: the avatar, the deck plan, the excursion, the card in front of the captain. Those stayed
+    /// here and write <c>_patrol.Guards</c> where they used to write a loose field.</para>
     ///
-    /// <para>A read-only view of the one list and never a copy: both callers read positions and velocities
-    /// that change every frame, and a cached copy of where everybody was is exactly the disagreement between
-    /// the panel and the sim this codebase does not allow.</para></summary>
-    private IReadOnlyList<Guard> TheRoundOnFoot => _guards;
+    /// <para><b><c>readonly</c>, and never re-assigned.</b> Leaving a floor EMPTIES the round
+    /// (<see cref="SpawnPatrolFor"/>); it does not swap in a different one. A second <c>Patrol</c> would be
+    /// a second answer to <i>who is walking this floor</i>, which is this repo's first named bug class
+    /// aimed at a rota. There is a guard fact for exactly that.</para>
+    /// </summary>
+    private readonly Patrol _patrol = new();
+
+    // ── #870 lane 6′a/6′b · WHAT THE REST OF THE PAGE MAY ASK THE ROUND ────────────────────────
+    //
+    // What the rest of the client actually wanted was never a field — a bench wants to know who is walking
+    // the floor, a bin whether the rota has eyes on the captain, a boot-time query parser to force a round
+    // onto a floor that rolled none. Those are questions, and this is where the round answers them. Each
+    // one names the site that asked for it, so the day a member has no asker left it can be deleted rather
+    // than inherited.
+    //
+    // FIFTEEN OF THEM ARE ONE-LINE FORWARDERS ONTO <see cref="Patrol"/>, in the block at the bottom of this
+    // page. They are here because all fifteen are already asked for by name from outside the family and 6′b
+    // is not the lane that rewrites those callers; 6′c is, and it deletes the block whole.
 
     /// <summary>#870 lane 6′a · IS ANYBODY ON THE ROTA WATCHING THE CAPTAIN RIGHT NOW? Asked by
     /// <c>Map.Bin.cs</c>, which needs the top rung of <see cref="RipAndBin.WhoSaw"/>'s ladder: tearing
@@ -360,43 +94,15 @@ public sealed partial class Map
     private bool TheRoundHasEyesOnYou(IReadOnlyList<SurfaceCollision.Segment> sight)
     {
         bool seen = false;
-        if (PatrolBeat.CanBeNoticed(_patrolFloorSeconds))
+        if (PatrolBeat.CanBeNoticed(_patrol.FloorSeconds))
         {
-            foreach (Guard g in _guards)
+            foreach (Guard g in _patrol.Guards)
             {
                 seen |= PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight);
             }
         }
         return seen;
     }
-
-    /// <summary>#870 lane 6′a · <c>?patrol=N</c> asked for N rounds on the floor it boots onto. Written by
-    /// the one pass that reads the query (<c>Map.Sim.World.cs</c>) and spent by
-    /// <see cref="SpawnPatrolFor"/>.</summary>
-    private void ForceTheRoundsTo(int rounds) => _patrolCheat = rounds;
-
-    /// <summary>#870 lane 6′a · Has the query already forced a round? Asked twice in the same boot pass
-    /// (<c>Map.Sim.World.cs</c>): once by <c>?patrol=</c> to decide whether to imply the whole route, and
-    /// once by <c>?badge=</c>, which needs a round to show its pass to and must not overwrite the count a
-    /// <c>?patrol=2</c> on the same URL has already asked for.</summary>
-    private bool TheQueryHasForcedARound => _patrolCheat is not null;
-
-    /// <summary>#870 lane 6′a · …and a round to show a pass to, unless one has already been asked for.
-    /// <c>?badge=1</c> implies <c>?patrol=1</c> — a pass with nobody to show it to is not a thing anybody
-    /// can test — but a <c>?patrol=2</c> on the same URL wins, because overwriting it would quietly hand a
-    /// tester the easier scene they did not ask for.</summary>
-    private void ForceARoundIfNoneAsked() => _patrolCheat ??= 1;
-
-    /// <summary>#870 lane 6′a · <c>?badge=1</c> — mint this site's own pass into the wallet at the landing.
-    /// Written by the boot pass (<c>Map.Sim.World.cs</c>); the minting itself happens on the surface, where
-    /// the site is known.</summary>
-    private void MintTheSitePassAtTheLanding() => _badgeCheat = true;
-
-    /// <summary>#870 lane 6′a · …and whether it was asked for, read by the landing that does the minting
-    /// (<c>Map.Surface.Cheats.cs</c>). Deliberately NOT "does the captain hold a pass" — that is
-    /// <see cref="PatrolBeat.BadgeHeld"/>, and a captain who earned one holds it with no query at
-    /// all.</summary>
-    private bool TheSitePassIsMintedAtTheLanding => _badgeCheat;
 
     /// <summary>How long between mentions of the boots. Long enough that it is an event; short enough that
     /// a captain who has walked away and come back is told again.</summary>
@@ -414,32 +120,32 @@ public sealed partial class Map
     /// </summary>
     private void SpawnPatrolFor(SurfaceExcursion ex)
     {
-        _guards.Clear();
-        _patrolBeat.Clear();
-        _patrolReadables.Clear();
-        _patrolFloorSeconds = 0;
-        _patrolHeardAgo = HeardAgainSeconds;
+        _patrol.Guards.Clear();
+        _patrol.Beat.Clear();
+        _patrol.Readables.Clear();
+        _patrol.FloorSeconds = 0;
+        _patrol.HeardAgo = HeardAgainSeconds;
 
         // #833 · …and the walk back dies with the floor it was being walked on. The car IS the destination,
         // so a captain who has ridden it is a captain the escort is over for — and an escort holding a guard
         // off a list that has just been cleared would hold the controls forever.
-        _escort = null;
-        _escortDue = null;
-        _escortSeconds = 0;
-        _escortSaidPumps = false;
+        _patrol.Escort = null;
+        _patrol.EscortDue = null;
+        _patrol.EscortSeconds = 0;
+        _patrol.EscortSaidPumps = false;
 
         // #835 · …and so does the run and the ride it was owed. A captain who got into the car mid-run has
         // ESCAPED — rung five, and the honest one — so the man who was coming is left standing on a floor
         // this page is no longer simulating. The ride owed is cleared for the same reason it is cleared at
         // the top of TheKickOut: it has either just happened or it never will.
-        _kickOutDue = false;
-        _kickOutRideDue = false;
+        _patrol.KickOutDue = false;
+        _patrol.KickOutRideDue = false;
 
         // #836 · …and so does the paper in your hand. A hand goes to a pocket for a man who is walking over,
         // and the man is a floor above now. The BOOK is not cleared here — that is the durable half, and a
         // captain who has ridden one floor has not forgotten which name worked downstairs.
-        _walletFanOpen = false;
-        _paperInHand = null;
+        _patrol.WalletFanOpen = false;
+        _patrol.PaperInHand = null;
 
         // #821 · …and so does the hide. A floor change is a new set of doors and a new set of men, and a
         // "he walked past" line kept from the floor above would be a beat about a room nobody is in.
@@ -449,7 +155,7 @@ public sealed partial class Map
         // a shut cubicle is to turn the catch back — but a door left OCCUPIED on a floor nobody is standing
         // on would be a room the building had sealed against itself, forever, with nothing to say why. The
         // set is the excursion's rather than the vault's for the same reason (see SurfaceExcursion).
-        _walkedPastSaid = false;
+        _patrol.WalkedPastSaid = false;
         ex.CubiclesShut.Clear();
 
         string bodyId = ex.Stop.Body.Id;
@@ -458,11 +164,11 @@ public sealed partial class Map
         // #835 · THE WATCH'S OWN MEMORY, turned over with the shift and with nothing else. Asked before the
         // patrolled-floor gate below, because a captain who has been thrown out and has come back down to a
         // floor with nobody on it is still the same evening.
-        if (_patrolWatch != ex.CanteenWatch)
+        if (_patrol.Watch != ex.CanteenWatch)
         {
-            _patrolWatch = ex.CanteenWatch;
-            _escortsThisWatch = 0;
-            _walkedAwayThisWatch = 0;
+            _patrol.Watch = ex.CanteenWatch;
+            _patrol.EscortsThisWatch = 0;
+            _patrol.WalkedAwayThisWatch = 0;
         }
 
         if (!PatrolBeat.IsPatrolled(bodyId, level))
@@ -473,35 +179,35 @@ public sealed partial class Map
         SurfaceLayout.Field field = MoonSurface.ExpeditionField();
         UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(bodyId, level, field);
 
-        _patrolBeat.AddRange(PatrolBeat.BeatFor(bodyId, level, ex.CanteenWatch, floor, field));
-        if (_patrolBeat.Count < 2)
+        _patrol.Beat.AddRange(PatrolBeat.BeatFor(bodyId, level, ex.CanteenWatch, floor, field));
+        if (_patrol.Beat.Count < 2)
         {
             // A floor whose plan yields nothing to walk gets nobody. It is not a failure worth a sentence —
             // an empty corridor is what this building is mostly made of — but it must not put a guard on a
             // round with one stop in it, standing still forever at the car.
-            _patrolBeat.Clear();
+            _patrol.Beat.Clear();
             return;
         }
 
         // #831 · …and everything on this floor's walls a held man could be reading. Off Core, once, with the
         // round it belongs to.
-        _patrolReadables.AddRange(PatrolBeat.ReadablesOn(floor, field));
+        _patrol.Readables.AddRange(PatrolBeat.ReadablesOn(floor, field));
 
-        int heads = _patrolCheat is { } forced
+        int heads = _patrol.RoundsCheat is { } forced
             ? System.Math.Clamp(forced, 0, PatrolBeat.MostOnAFloor)
             : PatrolBeat.GuardsOn(bodyId, level, ex.CanteenWatch);
 
         for (int i = 0; i < heads; i++)
         {
-            int leg = PatrolBeat.StartLeg(_patrolBeat.Count, i, System.Math.Max(1, heads));
-            PatrolBeat.Stop at = _patrolBeat[leg];
-            _guards.Add(new Guard
+            int leg = PatrolBeat.StartLeg(_patrol.Beat.Count, i, System.Math.Max(1, heads));
+            PatrolBeat.Stop at = _patrol.Beat[leg];
+            _patrol.Guards.Add(new Guard
             {
                 DeckName = PatrolBeat.DeckName(i),
                 Plate = PatrolBeat.PlateOf(bodyId, level, ex.CanteenWatch, i),
                 X = at.X,
                 Y = at.Y,
-                Leg = (leg + 1) % _patrolBeat.Count,
+                Leg = (leg + 1) % _patrol.Beat.Count,
                 Standing = PatrolBeat.StandSeconds,
 
                 // #831 · A man is put on the floor already signing the station he is standing at, looking at
@@ -523,14 +229,14 @@ public sealed partial class Map
         // is above the gate rather than behind it.
         FadeTheKickedOutPlate(dtRealSeconds);
 
-        if (_guards.Count == 0 || _surface is not { } ex || ex.Floor >= 0)
+        if (_patrol.Guards.Count == 0 || _surface is not { } ex || ex.Floor >= 0)
         {
             return;
         }
 
         double dt = System.Math.Min(dtRealSeconds, MaxSurfaceStepSeconds);
-        _patrolFloorSeconds += dt;
-        _patrolHeardAgo += dt;
+        _patrol.FloorSeconds += dt;
+        _patrol.HeardAgo += dt;
 
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
@@ -539,18 +245,18 @@ public sealed partial class Map
         // CloseViewObject because this is the one place that runs every frame of every floor: whichever road
         // out of the card the captain took — Esc, Enter, E, the backdrop, Close — the walk starts on the
         // first frame after it, and there is no fifth road that could miss it.
-        if (_escortDue is { } due && _viewObject is null)
+        if (_patrol.EscortDue is { } due && _viewObject is null)
         {
-            _escortDue = null;
+            _patrol.EscortDue = null;
             BeginTheWalkBack(due, walls);
         }
 
         // #835 · …and the same clause for the rung above it. The ride up is armed at the car and taken here,
         // on a frame of its own: the ride empties the list of guards this method is about to walk, and a loop
         // that cleared its own collection mid-iteration is a bug looking for a rare afternoon.
-        if (_kickOutRideDue && _viewObject is null)
+        if (_patrol.KickOutRideDue && _viewObject is null)
         {
-            _kickOutRideDue = false;
+            _patrol.KickOutRideDue = false;
             TheKickOut(ex);
             return;
         }
@@ -576,9 +282,9 @@ public sealed partial class Map
         (RingOffice.Stall Cell, string Key)? hide = TheCubicleTheCaptainIsShutIn(ex);
 
         bool anythingHeard = false;
-        for (int i = 0; i < _guards.Count; i++)
+        for (int i = 0; i < _patrol.Guards.Count; i++)
         {
-            Guard g = _guards[i];
+            Guard g = _patrol.Guards[i];
             g.SinceStop += dt;
 
             // #831 · One answer per frame about whether he is performing a cover act, written below by the
@@ -607,9 +313,9 @@ public sealed partial class Map
 
         // …and the ear, once, cooled. It is deliberately said only for somebody the captain CANNOT see: a
         // line about boots over a marker you are looking at is the picture and the sentence disagreeing.
-        if (anythingHeard && _patrolHeardAgo >= HeardAgainSeconds)
+        if (anythingHeard && _patrol.HeardAgo >= HeardAgainSeconds)
         {
-            _patrolHeardAgo = 0;
+            _patrol.HeardAgo = 0;
             ShowPulseMessage(PatrolBeat.HeardLine);
             LogAutopilotEvent(PatrolBeat.HeardLine);
         }
@@ -682,7 +388,7 @@ public sealed partial class Map
     /// off it at his shoulder.</summary>
     private bool HeIsWalkingYouOut(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
-        if (!ReferenceEquals(g, _escort))
+        if (!ReferenceEquals(g, _patrol.Escort))
         {
             return false;
         }
@@ -798,4 +504,58 @@ public sealed partial class Map
         WalkUpToTheCaptain(ex, g, index, dt, walls);
         return true;
     }
+
+    // ── #870 lane 6′b · THE FIFTEEN FORWARDERS, AND WHEN THEY GO ────────────────────────────
+    //
+    // Every one of the fifteen questions the round answers moved onto Patrol whole; every one of them is
+    // ALSO called by name from a file outside this family (measured, one caller at a time — the table is in
+    // the PR body). So each keeps its old spelling and its old accessibility here, which is what proves
+    // nothing outside the family gained a reach it did not have. 6′c deletes this block and points those
+    // callers at the host surface instead; the guard's own fact names that as the clause to relax, rather
+    // than leaving a row to be quietly deleted to make a sweep go green.
+
+    /// <inheritdoc cref="Patrol.CaptainIsUnderEscort"/>
+    private bool CaptainIsUnderEscort => _patrol.CaptainIsUnderEscort;
+
+    /// <inheritdoc cref="Patrol.TheRoundOnFoot"/>
+    private IReadOnlyList<Guard> TheRoundOnFoot => _patrol.TheRoundOnFoot;
+
+    /// <inheritdoc cref="Patrol.ForceTheRoundsTo"/>
+    private void ForceTheRoundsTo(int rounds) => _patrol.ForceTheRoundsTo(rounds);
+
+    /// <inheritdoc cref="Patrol.TheQueryHasForcedARound"/>
+    private bool TheQueryHasForcedARound => _patrol.TheQueryHasForcedARound;
+
+    /// <inheritdoc cref="Patrol.ForceARoundIfNoneAsked"/>
+    private void ForceARoundIfNoneAsked() => _patrol.ForceARoundIfNoneAsked();
+
+    /// <inheritdoc cref="Patrol.MintTheSitePassAtTheLanding"/>
+    private void MintTheSitePassAtTheLanding() => _patrol.MintTheSitePassAtTheLanding();
+
+    /// <inheritdoc cref="Patrol.TheSitePassIsMintedAtTheLanding"/>
+    private bool TheSitePassIsMintedAtTheLanding => _patrol.TheSitePassIsMintedAtTheLanding;
+
+    /// <inheritdoc cref="Patrol.TheNextHideGetsItsOwnLine"/>
+    private void TheNextHideGetsItsOwnLine() => _patrol.TheNextHideGetsItsOwnLine();
+
+    /// <inheritdoc cref="Patrol.EverybodyForgetsTheCatch"/>
+    private Guard? EverybodyForgetsTheCatch() => _patrol.EverybodyForgetsTheCatch();
+
+    /// <inheritdoc cref="Patrol.ThePaperInYourHandIs"/>
+    private bool ThePaperInYourHandIs(Satchel.Item paper) => _patrol.ThePaperInYourHandIs(paper);
+
+    /// <inheritdoc cref="Patrol.TheBookOn"/>
+    private string TheBookOn(Satchel.Item paper, string bodyId) => _patrol.TheBookOn(paper, bodyId);
+
+    /// <inheritdoc cref="Patrol.YourPaperTrail"/>
+    private IReadOnlyList<WalletChoice.Shown> YourPaperTrail => _patrol.YourPaperTrail;
+
+    /// <inheritdoc cref="Patrol.ForgetThePaperTrail"/>
+    private void ForgetThePaperTrail() => _patrol.ForgetThePaperTrail();
+
+    /// <inheritdoc cref="Patrol.RestoreAPaperTrailRow"/>
+    private void RestoreAPaperTrailRow(WalletChoice.Shown row) => _patrol.RestoreAPaperTrailRow(row);
+
+    /// <inheritdoc cref="Patrol.CloseTheWalletFan"/>
+    private void CloseTheWalletFan() => _patrol.CloseTheWalletFan();
 }

@@ -33,7 +33,7 @@ public sealed partial class Map
             return;
         }
 
-        PatrolBeat.Stop target = _patrolBeat[g.Leg % _patrolBeat.Count];
+        PatrolBeat.Stop target = _patrol.Beat[g.Leg % _patrol.Beat.Count];
 
         if (g.Route is not { Active: true })
         {
@@ -56,7 +56,7 @@ public sealed partial class Map
                 // (§13.1) and a guard is not the place to find out otherwise — so the round simply drops
                 // the stop and carries on rather than standing in a corridor forever.
                 g.Retries = 0;
-                g.Leg = (g.Leg + 1) % _patrolBeat.Count;
+                g.Leg = (g.Leg + 1) % _patrol.Beat.Count;
                 return;
             }
 
@@ -97,7 +97,7 @@ public sealed partial class Map
                 g.SignedPoint = station.Number;
             }
 
-            g.Leg = (g.Leg + 1) % _patrolBeat.Count;
+            g.Leg = (g.Leg + 1) % _patrol.Beat.Count;
             return;
         }
 
@@ -115,7 +115,7 @@ public sealed partial class Map
             if (++g.Retries > PatrolBeat.RePlansPerLeg)
             {
                 g.Retries = 0;
-                g.Leg = (g.Leg + 1) % _patrolBeat.Count;
+                g.Leg = (g.Leg + 1) % _patrol.Beat.Count;
             }
         }
     }
@@ -140,12 +140,12 @@ public sealed partial class Map
     /// </summary>
     private void PlanTheNextLegWhileHeStands(Guard g, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
-        if (_patrolBeat.Count == 0)
+        if (_patrol.Beat.Count == 0)
         {
             return;
         }
 
-        PatrolBeat.Stop next = _patrolBeat[g.Leg % _patrolBeat.Count];
+        PatrolBeat.Stop next = _patrol.Beat[g.Leg % _patrol.Beat.Count];
         if (g.Planning is not { } ahead
             || !ahead.PlannedFor(
                 new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(next.X, next.Y)))
@@ -271,7 +271,7 @@ public sealed partial class Map
         g.CoverFor += dt;
 
         // HE PICKS ONCE, on the frame the hold starts, and then it is what he is doing.
-        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, _patrolReadables, sight, walls);
+        g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, _patrol.Readables, sight, walls);
 
         if (g.CoverAt is not { } thing)
         {

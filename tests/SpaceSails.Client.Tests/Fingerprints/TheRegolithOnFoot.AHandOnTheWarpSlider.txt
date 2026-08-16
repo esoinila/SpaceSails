@@ -40,6 +40,6 @@ the ordnance          = []
 the ghost             = ∅
 the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Bots=[], Buried=no, BurnFired=no, Cache=∅, CanteenWat… 4750 chars, sha256 ff2cbb75a6f62a53
 the pulse cooldown    = -1
-sweep                 = 679 fields, sha256 fc57e7477cb70528efaded37a2121c80b58aaa1c833c69ee5e0637c1a81057fb
+sweep                 = 658 fields, sha256 6032a7e951eb3403c22c439fd92835e60b7ffbcdf3fce91c03edc97ec7bd0e83
 walked-view pen       = 470908 calls, sha256 23bf8db0f41e803f86153303b132b051550c1993c24830dbd3a570b18c802b1c
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

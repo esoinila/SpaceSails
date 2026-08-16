@@ -94,10 +94,22 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         ];
         Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
 
-        var parts = new string[order.Length];
+        // #870 lane 6′b · RE-PATHED, never re-asserted. The round's twenty-two fields and the Guard they
+        // are made of moved into Pages/Patrol/, so the page this guard reads is EIGHT files now — the six
+        // verbs first, in the order the one file laid them out, then the state. Both directories are
+        // counted, so a ninth part can never go unread.
+        string own = Path.Combine(dir, "Patrol");
+        string[] state = ["Patrol.cs", "Guard.cs"];
+        Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
+
+        var parts = new string[order.Length + state.Length];
         for (int i = 0; i < order.Length; i++)
         {
             parts[i] = File.ReadAllText(Path.Combine(dir, order[i]));
+        }
+        for (int i = 0; i < state.Length; i++)
+        {
+            parts[order.Length + i] = File.ReadAllText(Path.Combine(own, state[i]));
         }
         return string.Concat(parts);
     }
@@ -378,7 +390,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // figure drawn as stopped are one figure.
         string patrol = Patrol();
         Assert.Contains("g.Held = FootTail.MustHold(", patrol, StringComparison.Ordinal);
-        Assert.Contains("_guards[i].DeckName, _guards[i].Held", patrol, StringComparison.Ordinal);
+        Assert.Contains("_patrol.Guards[i].DeckName, _patrol.Guards[i].Held", patrol, StringComparison.Ordinal);
     }
 
     // ── (c) THE SIT VERB IS WIRED, AND IT IS WIRED TO CORE'S OWN BENCH ───────────────────────────────
@@ -534,7 +546,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     ///
     /// <para>That RED is kept verbatim because it is what was read that day. #870 lane 6′a has since
     /// renamed the receiver: the bench asks the patrol family for <c>TheRoundOnFoot</c> rather than reading
-    /// its <c>_guards</c>, so the needle below spells it that way. The claim is the same one.</para>
+    /// its <c>_patrol.Guards</c>, so the needle below spells it that way. The claim is the same one.</para>
     /// </summary>
     [Fact]
     public void THE_TAIL_QUESTION_IsAskedOnTheBeatAndOfCore()
