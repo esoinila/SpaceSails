@@ -54,7 +54,7 @@ public sealed class TheShelfIsReadWhereItStandsTests
 
     /// <summary>The branch itself: everything between the one ask and the haul path it must never reach.</summary>
     private static string BookBranch() =>
-        Between(Pages("Map.Surface.cs"), "if (OddBooks.Search(", "// Everything found down here is FILED");
+        Between(Pages("Map.Surface.Hive.cs"), "if (OddBooks.Search(", "// Everything found down here is FILED");
 
     [Fact]
     public void TheBookIsAskedForBEFORETheRoomIsEverTurnedIntoAHaul()

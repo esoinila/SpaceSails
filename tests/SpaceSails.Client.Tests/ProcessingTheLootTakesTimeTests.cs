@@ -85,7 +85,7 @@ public sealed class ProcessingTheLootTakesTimeTests
     {
         // Owner's ruling, first half: filing a document's gist on leave is seconds of standing still. Before
         // #696 this method did the whole job inline — ground, pocket, book, sentence — in one frame.
-        string leave = Method("Map.Surface.cs", "private void LeaveItem(Core.Satchel.Item item)");
+        string leave = Method("Map.Surface.Satchel.cs", "private void LeaveItem(Core.Satchel.Item item)");
 
         Assert.Contains("BeginProcessing(", leave, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.Work.File", leave, StringComparison.Ordinal);
@@ -110,7 +110,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // map takes the same standing-still seconds." A game that charged for filing and gave the clue read
         // away free would teach the captain to read everything on the spot and file nothing, which deletes
         // the decision the cost model was built to create.
-        string tryIt = Method("Map.Surface.cs", "private void TryItem(Core.Satchel.Item item)");
+        string tryIt = Method("Map.Surface.Darkroom.cs", "private void TryItem(Core.Satchel.Item item)");
 
         Assert.Contains("BeginProcessing(", tryIt, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.Work.Read", tryIt, StringComparison.Ordinal);
@@ -118,7 +118,7 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // The clock is in front of THIS press and not inside the shared ending — a hold bolted into
         // TheOfferIsAnswered would put twenty seconds in front of a wallet fan at a door as well (#697).
-        string ending = CodeOnly(Method("Map.Surface.cs", "private void TheOfferIsAnswered("));
+        string ending = CodeOnly(Method("Map.Surface.Darkroom.cs", "private void TheOfferIsAnswered("));
         Assert.DoesNotContain("BeginProcessing(", ending, StringComparison.Ordinal);
     }
 
@@ -128,7 +128,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // The whole of "an interruption loses nothing", made structural rather than promised: the document is
         // still in the sleeve for the entire hold, because the press that started it removed nothing, filed
         // nothing and put nothing on the ground. There is no clean-up path to get wrong.
-        string begin = CodeOnly(Method("Map.Surface.cs", "private void BeginProcessing("));
+        string begin = CodeOnly(Method("Map.Surface.Darkroom.cs", "private void BeginProcessing("));
 
         Assert.DoesNotContain("Satchel.Remove(", begin, StringComparison.Ordinal);
         Assert.DoesNotContain("FileNote(", begin, StringComparison.Ordinal);
@@ -158,7 +158,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // #697's law, one lane later: a hand-written second copy of an ending is this repo's first named bug
         // class aimed at a state transition. The hold ends through the SAME two methods a press ended through
         // before it existed, with the same arguments.
-        string done = Method("Map.Surface.cs", "private void CompleteProcessing(");
+        string done = Method("Map.Surface.Darkroom.cs", "private void CompleteProcessing(");
 
         Assert.Contains("TheOfferIsAnswered(", done, StringComparison.Ordinal);
         Assert.Contains("SetItDown(", done, StringComparison.Ordinal);
@@ -224,7 +224,7 @@ public sealed class ProcessingTheLootTakesTimeTests
     [Fact]
     public void WalkingOffTheSpotAbandonsIt()
     {
-        string step = Method("Map.Surface.cs", "private void StepProcessing(");
+        string step = Method("Map.Surface.Darkroom.cs", "private void StepProcessing(");
 
         // The tolerance is Core's, asked here — a stand-still radius written out inline would be the fifth
         // named bug class with a hold on the end of it.
@@ -243,7 +243,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // #564's founding rule: air must never be a silent timer that kills you. A warning that fires while
         // the captain is watching a progress bar fill is that timer in a costume — so the bar goes away and
         // the alarm has the screen. The dependency points ONE way: the suit interrupts the darkroom.
-        string suit = Method("Map.Surface.cs", "private void StepSuitAir(double dtRealSeconds)");
+        string suit = Method("Map.Surface.Tank.cs", "private void StepSuitAir(double dtRealSeconds)");
 
         Assert.Contains("ProcessingIsInterrupted(", suit, StringComparison.Ordinal);
         Assert.Contains("Interruption.Alarm", suit, StringComparison.Ordinal);
@@ -285,19 +285,19 @@ public sealed class ProcessingTheLootTakesTimeTests
         string hud = Pages("Map.Surface.cs");
         Assert.Contains("Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)", hud, StringComparison.Ordinal);
 
-        string glyph = Method("Map.Surface.cs", "private static string SurfaceChannelGlyph(");
+        string glyph = Method("Map.Surface.Hud.cs", "private static string SurfaceChannelGlyph(");
         Assert.Contains("Core.Processing.Glyph", glyph, StringComparison.Ordinal);
 
         // Not cold-green. The rearm is the ship helping you; standing still in the open for twenty seconds is
         // the cost the mechanic is made of, and a soothing colour over it would be the picture arguing with
         // the sim.
-        string aid = Method("Map.Surface.cs", "private static bool SurfaceChannelIsAid(");
+        string aid = Method("Map.Surface.Hud.cs", "private static bool SurfaceChannelIsAid(");
         Assert.Contains("ex.Processing is null", aid, StringComparison.Ordinal);
 
         // And the bright line above the keybar outranks the chest while a hold runs: for those seconds the
         // only thing left to decide is whether the boots stay put, and "hold position" without a number is an
         // instruction to wait an unknown length of time while something walks towards you.
-        string prompt = Method("Map.Surface.cs", "private string? BuildStandingPrompt(");
+        string prompt = Method("Map.Surface.Hud.cs", "private string? BuildStandingPrompt(");
         Assert.Contains("ex.Processing is { } paper", prompt, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.SecondsLeft(", prompt, StringComparison.Ordinal);
     }
@@ -314,10 +314,10 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // And the outcome of a finished leave is said wherever the captain is actually looking, which after
         // #696 is a fork rather than a fact: the dialog if they reopened it, the HUD if they did not.
-        string setDown = Method("Map.Surface.cs", "private void SetItDown(");
+        string setDown = Method("Map.Surface.Satchel.cs", "private void SetItDown(");
         Assert.Contains("SayItWhereTheyAreLooking(", setDown, StringComparison.Ordinal);
 
-        string say = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        string say = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
         Assert.Contains("_showSatchel", say, StringComparison.Ordinal);
         Assert.Contains("_satchelOutcome", say, StringComparison.Ordinal);
         Assert.Contains("ShowPulseMessage(", say, StringComparison.Ordinal);
@@ -325,7 +325,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // The hold shuts the pocket. Written down because it deliberately REVERSES #691's "the satchel stays
         // open" call, and a future pass that restores that line without reading this one would put the fan
         // back behind the blur for the twenty seconds it matters most.
-        Assert.Contains("CloseSatchel();", Method("Map.Surface.cs", "private void BeginProcessing("),
+        Assert.Contains("CloseSatchel();", Method("Map.Surface.Darkroom.cs", "private void BeginProcessing("),
             StringComparison.Ordinal);
     }
 
@@ -354,7 +354,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // seconds of a fifteen-second hold is not expressible. And it asks GistOf, the same question the press
         // branches on, so the rows that carry a clock are exactly the rows the hint warns about.
         Assert.Contains("LeaveHintFor(item)", SatchelBlock(), StringComparison.Ordinal);
-        string hint = Method("Map.Surface.cs", "private string LeaveHintFor(");
+        string hint = Method("Map.Surface.Darkroom.cs", "private string LeaveHintFor(");
         Assert.Contains("LeftBehind.GistOf(", hint, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.LeaveHint(ProcessingSeconds)", hint, StringComparison.Ordinal);
     }
@@ -371,7 +371,7 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // And a zero-length hold resolves on the press rather than one frame later, because a frame is a tick
         // of air out on the regolith and a cheat that quietly charged for it would make the guard above flap.
-        string begin = Method("Map.Surface.cs", "private void BeginProcessing(");
+        string begin = Method("Map.Surface.Darkroom.cs", "private void BeginProcessing(");
         Assert.Contains("ProcessingSeconds <= 0", begin, StringComparison.Ordinal);
         Assert.Contains("CompleteProcessing(ex, hold);", begin, StringComparison.Ordinal);
 

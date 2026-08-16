@@ -607,6 +607,6 @@ public sealed class TheGuardsCatchYouTests
         Assert.Contains("_kickedOutPlateFor = 0;", fade, StringComparison.Ordinal);
 
         // …and it is asked for on the one rebuild that draws the regolith.
-        Assert.Contains("bigLabels: TheKickedOutPlate(ex)", Code(Pages("Map.Surface.cs")), StringComparison.Ordinal);
+        Assert.Contains("bigLabels: TheKickedOutPlate(ex)", Code(Pages("Map.Surface.Frame.cs")), StringComparison.Ordinal);
     }
 }

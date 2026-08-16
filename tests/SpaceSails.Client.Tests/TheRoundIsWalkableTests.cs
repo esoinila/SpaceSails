@@ -336,7 +336,7 @@ public sealed class TheRoundIsWalkableTests
     public void TheHiveDeckHasRoomForARound()
     {
         string rebuild = Between(
-            Pages("Map.Surface.cs"), "private void RebuildSurfaceDeck()", "if (Derelict.TryParseWreckId(");
+            Pages("Map.Surface.Frame.cs"), "private void RebuildSurfaceDeck()", "if (Derelict.TryParseWreckId(");
         Assert.Contains("HiveInterior.FloorDeck(", rebuild, StringComparison.Ordinal);
         Assert.Contains("SurfaceDroidCount, FillSurfaceDroids", rebuild, StringComparison.Ordinal);
         Assert.DoesNotContain(
@@ -354,11 +354,11 @@ public sealed class TheRoundIsWalkableTests
     public void TheRoundIsBuiltWhenTheFloorChangesAndNotWhenTheDeckIsRebuilt()
     {
         string ride = Between(
-            Pages("Map.Surface.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
+            Pages("Map.Surface.Hive.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
         Assert.Contains("SpawnPatrolFor(ex)", ride, StringComparison.Ordinal);
 
         string rebuild = Between(
-            Pages("Map.Surface.cs"), "private void RebuildSurfaceDeck()", "private void ComposeWhatYouLeft(");
+            Pages("Map.Surface.Frame.cs"), "private void RebuildSurfaceDeck()", "private void ComposeWhatYouLeft(");
         Assert.DoesNotContain("SpawnPatrolFor", rebuild, StringComparison.Ordinal);
     }
 
@@ -437,7 +437,7 @@ public sealed class TheRoundIsWalkableTests
     public void ThePassIsIssuedWhenTheCageTakesYouDown()
     {
         string ride = Between(
-            Pages("Map.Surface.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
+            Pages("Map.Surface.Hive.cs"), "private void RideTheLiftTo(", "private (double X, double Y) SecretLabHeadSpot(");
         Assert.Contains("chitGateThisRide = true", ride, StringComparison.Ordinal);
         Assert.Contains("IssueTheSitePass(ex)", ride, StringComparison.Ordinal);
 

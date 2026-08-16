@@ -48,7 +48,7 @@ public sealed class TheChitRidesTheCageTests
     }
 
     private static string TheRide() => Between(
-        Pages("Map.Surface.cs"),
+        Pages("Map.Surface.Hive.cs"),
         "private void RideTheLiftTo(",
         "private (double X, double Y) SecretLabHeadSpot(");
 
@@ -86,7 +86,7 @@ public sealed class TheChitRidesTheCageTests
         // closes the panel and immediately rebuilds the floor; anything said between those two events is
         // said to a screen that is being replaced.
         string press = Between(
-            Pages("Map.Surface.cs"), "private void PressLiftButton(", "private void CloseLiftPanel(");
+            Pages("Map.Surface.Hive.cs"), "private void PressLiftButton(", "private void CloseLiftPanel(");
         Assert.True(!press.Contains("ChitGate", StringComparison.Ordinal),
             "PressLiftButton says the chit's gate line itself — the frame the panel closes and the floor " +
             "transition begins, which is exactly where the owner never saw the card's (#689/#752).");

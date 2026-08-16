@@ -246,7 +246,7 @@ public sealed class TheEyeIsHandedTheSameStoneTests
     public void ThePageFilesItsSightBlockersIntoTheIndexAndKeepsThem()
     {
         string sight = Between(
-            Pages("Map.Surface.cs"),
+            Pages("Map.Surface.Reevers.cs"),
             "private IReadOnlyList<SurfaceCollision.Segment> SightBlockers()",
             "private bool IsDoorShut(");
 

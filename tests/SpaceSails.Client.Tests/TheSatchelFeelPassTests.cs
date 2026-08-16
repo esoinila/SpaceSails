@@ -77,7 +77,7 @@ public sealed class TheSatchelFeelPassTests
             "the I key does not toggle — it can only ever open the satchel, so pressing it again does " +
             "nothing and the captain is left hunting for the close button (#688).");
 
-        string toggle = Method("Map.Surface.cs", "private void ToggleSatchel()");
+        string toggle = Method("Map.Surface.Satchel.cs", "private void ToggleSatchel()");
         Assert.True(toggle.Contains("_showSatchel", StringComparison.Ordinal),
             "ToggleSatchel never looks at whether the satchel is open — it cannot be a toggle.");
         Assert.True(toggle.Contains("CloseSatchel()", StringComparison.Ordinal),
@@ -91,7 +91,7 @@ public sealed class TheSatchelFeelPassTests
         // Core's (SatchelTry.CanOffer, pinned in WhatYouLeaveIsStillThereTests); what this guard forbids is
         // the client routing around it, which is exactly what it did — TargetFor handed back the open-at
         // target for every row in the pocket without asking anybody.
-        string targetFor = Method("Map.Surface.cs",
+        string targetFor = Method("Map.Surface.Darkroom.cs",
             "private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(");
 
         int opened = targetFor.IndexOf("_satchelTarget is { } at", StringComparison.Ordinal);
@@ -140,7 +140,7 @@ public sealed class TheSatchelFeelPassTests
         // SetItDown is the drop the clock ends in — which is also what makes the far end of a hold the
         // effect the game already had rather than a second copy of it. These guards read the drop wherever
         // the drop lives; what they must never do is quietly stop asking.
-        string leave = Method("Map.Surface.cs", "private void SetItDown(");
+        string leave = Method("Map.Surface.Satchel.cs", "private void SetItDown(");
 
         // #680/#686's law applies to this line too, and it is the easiest one in the game to get wrong: a
         // confirmation routed to the pulse HUD while the satchel is open renders under the backdrop's blur —
@@ -154,7 +154,7 @@ public sealed class TheSatchelFeelPassTests
             "the drop pulses its line directly, which is the exact shape #680 was filed on the moment the " +
             "satchel happens to be open over it.");
 
-        string says = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        string says = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
         Assert.True(says.Contains("_satchelOutcome", StringComparison.Ordinal)
             && says.Contains("_showSatchel", StringComparison.Ordinal),
             "the say-it router does not consult the satchel — the line it places cannot be in the right " +
