@@ -187,7 +187,7 @@ public sealed class TheTableSceneIsOneRoomTests
     private static string TableBlock()
     {
         string razor = Source("Pages", "Map.razor");
-        int start = razor.IndexOf("@if (_table is { } tab)", StringComparison.Ordinal);
+        int start = razor.IndexOf("@if (SeatedTable is { } tab)", StringComparison.Ordinal);
         Assert.True(start >= 0, "Map.razor no longer has the table block this guard knows how to find.");
         int end = razor.IndexOf("@if (_showSatchel)", start, StringComparison.Ordinal);
         Assert.True(end > start, "Map.razor's table block no longer ends where this guard expects.");

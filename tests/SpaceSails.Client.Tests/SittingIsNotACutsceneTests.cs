@@ -79,9 +79,9 @@ public sealed class SittingIsNotACutsceneTests
     private static string SeatedRegion()
     {
         string razor = Source("Pages", "Map.razor");
-        int start = razor.IndexOf("@if (_table is { } tab)", StringComparison.Ordinal);
+        int start = razor.IndexOf("@if (SeatedTable is { } tab)", StringComparison.Ordinal);
         Assert.True(start >= 0, "Map.razor no longer has the seated region this guard knows how to find.");
-        int end = razor.IndexOf("@if (_standUpAsk)", start, StringComparison.Ordinal);
+        int end = razor.IndexOf("@if (TheStandUpConfirmIsUp)", start, StringComparison.Ordinal);
         Assert.True(end > start, "the seated region no longer ends at the stand-up confirm.");
         return razor[start..end];
     }
@@ -498,11 +498,11 @@ public sealed class SittingIsNotACutsceneTests
         int chain = sim.IndexOf("private bool TryDismissTopOverlay()", StringComparison.Ordinal);
         Assert.True(chain > 0);
 
-        int confirm = sim.IndexOf("if (_standUpAsk) { KeepYourSeat(); return true; }", chain,
+        int confirm = sim.IndexOf("if (TheStandUpConfirmIsUp) { KeepYourSeat(); return true; }", chain,
             StringComparison.Ordinal);
         int docked = sim.IndexOf("if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }", chain,
             StringComparison.Ordinal);
-        int table = sim.IndexOf("if (_table is not null) { CloseTable(); return true; }", chain,
+        int table = sim.IndexOf("if (CaptainIsSeated) { CloseTable(); return true; }", chain,
             StringComparison.Ordinal);
 
         Assert.True(confirm > 0 && docked > confirm,
