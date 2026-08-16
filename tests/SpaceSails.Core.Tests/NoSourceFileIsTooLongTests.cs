@@ -89,7 +89,8 @@ public sealed class NoSourceFileIsTooLongTests
             // #870 lane 5 — queued behind lane 4.
             // DeckView.cs's row is GONE (lane 5a): the file is 333 lines now, and the largest of the six
             // partials it became is 1,152 — under the line without an exception of its own.
-            ["src/SpaceSails.Client/Pages/Map.Patrol.cs"] = 2074,
+            // Map.Patrol.cs's row is GONE too (lane 5b): the file is 624 lines now, and the largest of the
+            // six partials it became is 430 — the whole family is under the line, with no new row.
             ["src/SpaceSails.Client/Pages/Map.Venting.cs"] = 1842,
 
             // Not in any lane yet — inherited debt, listed so it cannot grow.

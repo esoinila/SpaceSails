@@ -73,11 +73,11 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void TheHailIsWhatOpensTheFan()
     {
-        string hail = Method("Map.Patrol.cs", "private void TheHail(Guard g)");
+        string hail = Method("Map.Patrol.Challenge.cs", "private void TheHail(Guard g)");
         Assert.Contains("FanTheWallet();", hail, StringComparison.Ordinal);
 
         // …and the read does not open one. The card is the answer, not a second question.
-        string read = Method("Map.Patrol.cs", "private void TheRoundStopsAtYou(");
+        string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
         Assert.DoesNotContain("FanTheWallet(", read, StringComparison.Ordinal);
         Assert.Contains("_walletFanOpen = false;", read, StringComparison.Ordinal);
     }
@@ -92,7 +92,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void OnePaperIsExactlyTodayAndCoreIsWhatSaysSo()
     {
-        string fan = Method("Map.Patrol.cs", "private void FanTheWallet()");
+        string fan = Method("Map.Patrol.Challenge.cs", "private void FanTheWallet()");
         Assert.Contains("WalletChoice.Fans(", fan, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.DefaultFor(", fan, StringComparison.Ordinal);
 
@@ -111,12 +111,12 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void TheGuardIsHandedTheChosenPaperAndNeverTheWallet()
     {
-        string read = Method("Map.Patrol.cs", "private void TheRoundStopsAtYou(");
+        string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
         Assert.Contains("ThePaperHandedOver(", read, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.TheGuardReads(bodyId, g.Plate, handed)", read, StringComparison.Ordinal);
         Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _satchel", read, StringComparison.Ordinal);
 
-        string handed = Method("Map.Patrol.cs", "private Satchel.Item? ThePaperHandedOver(");
+        string handed = Method("Map.Patrol.Challenge.cs", "private Satchel.Item? ThePaperHandedOver(");
         Assert.Contains("_paperInHand", handed, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.StillHeld(", handed, StringComparison.Ordinal);
     }
@@ -131,7 +131,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void EveryReadIsFiledIncludingTheOneThatWentWell()
     {
-        string read = Method("Map.Patrol.cs", "private void TheRoundStopsAtYou(");
+        string read = Method("Map.Patrol.Challenge.cs", "private void TheRoundStopsAtYou(");
 
         int filed = read.IndexOf("FileTheNameYouGave(", StringComparison.Ordinal);
         int satisfied = read.IndexOf("if (read.Satisfied)", StringComparison.Ordinal);
@@ -140,7 +140,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
             "the name is filed after the satisfied arm returns, so a pass that worked is never written down.");
 
         // …and the line and the row are composed off the SAME outcome the card was.
-        string file = Method("Map.Patrol.cs", "private void FileTheNameYouGave(");
+        string file = Method("Map.Patrol.Challenge.cs", "private void FileTheNameYouGave(");
         Assert.Contains("WalletChoice.WhatHappens(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.ShownNote(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.Remember(", file, StringComparison.Ordinal);
