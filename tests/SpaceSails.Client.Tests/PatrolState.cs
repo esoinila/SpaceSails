@@ -82,6 +82,35 @@ public static class PatrolState
     public static object? Round(object o) =>
         o.GetType().GetField("_patrol", Hidden)?.GetValue(o);
 
+    /// <summary>
+    /// #870 lane 6′c · …AND THE SAME FOR A VERB. 6′b moved the round's STATE; 6′c moved its VERBS, so a
+    /// harness that drives the real code by name has to look in the same two places a read does — on the
+    /// page first, because thirteen of them are still forwarded there under their old spellings, and then on
+    /// the round hanging off it.
+    ///
+    /// <para>Page FIRST and never the other way round: a forwarder and the member it forwards to are the
+    /// same call, and preferring the page is what keeps a harness pointed at exactly the entry point the
+    /// shipped callers use.</para>
+    ///
+    /// <para>It is deliberately NOT a fallback that invents anything. A name that is on neither comes back
+    /// null, and the caller's own assertion then fails loudly — which is what keeps the anti-vacuous
+    /// property every one of these harnesses relies on.</para>
+    /// </summary>
+    public static (object Target, MethodInfo Call)? Verb(object page, string name)
+    {
+        if (page.GetType().GetMethod(name, Either) is { } onThePage)
+        {
+            return (page, onThePage);
+        }
+
+        if (Round(page) is { } round && round.GetType().GetMethod(name, Either) is { } onTheRound)
+        {
+            return (round, onTheRound);
+        }
+
+        return null;
+    }
+
     /// <summary>Follow one of the twenty-two to where it now lives.</summary>
     /// <returns><c>true</c> only when <paramref name="name"/> is one of the twenty-two AND the page carries
     /// a round — in which case <paramref name="value"/> is the state a raw field read used to give. Anything

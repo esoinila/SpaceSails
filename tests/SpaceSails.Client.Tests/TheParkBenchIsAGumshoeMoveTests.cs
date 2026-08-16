@@ -89,8 +89,11 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
-            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
-            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+            // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
+            // is four files: Map.Patrol.Round.cs and Map.Patrol.Escort.cs had no caller outside the family
+            // to forward to and are gone. The count is still asserted, so a fifth part cannot go unread.
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Challenge.cs", "Map.Patrol.Run.cs",
+            "Map.PatrolHost.cs",
         ];
         Assert.Equal(order.Length, Directory.GetFiles(dir, "Map.Patrol*.cs").Length);
 
@@ -99,7 +102,12 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // verbs first, in the order the one file laid them out, then the state. Both directories are
         // counted, so a ninth part can never go unread.
         string own = Path.Combine(dir, "Patrol");
-        string[] state = ["Patrol.cs", "Guard.cs"];
+        string[] state =
+        [
+            "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
+            "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
+            "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+        ];
         Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
 
         var parts = new string[order.Length + state.Length];
@@ -390,7 +398,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // figure drawn as stopped are one figure.
         string patrol = Patrol();
         Assert.Contains("g.Held = FootTail.MustHold(", patrol, StringComparison.Ordinal);
-        Assert.Contains("_patrol.Guards[i].DeckName, _patrol.Guards[i].Held", patrol, StringComparison.Ordinal);
+        Assert.Contains("Guards[i].DeckName, Guards[i].Held", patrol, StringComparison.Ordinal);
     }
 
     // ── (c) THE SIT VERB IS WIRED, AND IT IS WIRED TO CORE'S OWN BENCH ───────────────────────────────
@@ -546,7 +554,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     ///
     /// <para>That RED is kept verbatim because it is what was read that day. #870 lane 6′a has since
     /// renamed the receiver: the bench asks the patrol family for <c>TheRoundOnFoot</c> rather than reading
-    /// its <c>_patrol.Guards</c>, so the needle below spells it that way. The claim is the same one.</para>
+    /// its <c>Guards</c>, so the needle below spells it that way. The claim is the same one.</para>
     /// </summary>
     [Fact]
     public void THE_TAIL_QUESTION_IsAskedOnTheBeatAndOfCore()
@@ -609,7 +617,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     public void THE_HOLD_IsSpentOnTheOneStepperEveryMoverGoesThrough()
     {
         string patrol = Patrol();
-        int at = patrol.IndexOf("private void AdvancePatrol(", StringComparison.Ordinal);
+        int at = patrol.IndexOf("public void AdvancePatrol(", StringComparison.Ordinal);
 
         // #870 · The window is the step AND the conductor it hands each man to, which is everything from
         // AdvancePatrol's signature down to the first arm — the two of them are the one stepper now.
@@ -642,18 +650,18 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // selecting everybody, which is the same law failing the other way round.
         int arm = patrol.IndexOf("private bool HeIsMadeAndCoveringForIt(", StringComparison.Ordinal);
         Assert.True(arm > 0, "the cover-act arm has moved — this guard can no longer see the fork it guards.");
-        string heldArm = patrol[arm..patrol.IndexOf("\n    /// <summary>", arm, StringComparison.Ordinal)];
+        string heldArm = patrol[arm..patrol.IndexOf("\n        /// <summary>", arm, StringComparison.Ordinal)];
         Assert.Contains("if (!g.Held)", heldArm, StringComparison.Ordinal);
         Assert.Contains("TheCoverAct(g, dt, walls, sight);", heldArm, StringComparison.Ordinal);
 
         int act = patrol.IndexOf("private void TheCoverAct(", StringComparison.Ordinal);
         Assert.True(act >= 0, "TheCoverAct has moved — this guard can no longer see the hold it guards.");
-        string cover = patrol[act..patrol.IndexOf("\n    // ──", act, StringComparison.Ordinal)];
+        string cover = patrol[act..patrol.IndexOf("\n        // ──", act, StringComparison.Ordinal)];
         Assert.Contains("g.Vx = 0;", cover, StringComparison.Ordinal);
         Assert.Contains("g.Vy = 0;", cover, StringComparison.Ordinal);
 
         // …and the seated fact is the bench's, asked once for the frame.
-        Assert.Contains("bool sitting = SeatedOnABenchInTheOpen;", loop, StringComparison.Ordinal);
+        Assert.Contains("bool sitting = _host.SeatedOnABenchInTheOpen;", loop, StringComparison.Ordinal);
         // #870 lane 6b - re-PATHED: the predicate is a pure function of the seat's own state, so it moved
         // onto Seating with the other fourteen. Same one line, same claim, asserted where it now is.
         Assert.Contains(

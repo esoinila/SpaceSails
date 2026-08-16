@@ -757,10 +757,17 @@ public sealed class EveryRoundFingerprintsTheSameTests
         }
     }
 
+    /// <summary>#870 lane 6′c · A VERB FOLLOWS THE WAY A READ ALREADY DID. The round's verbs moved onto
+    /// <c>Map.Patrol</c>, so this looks on the page first (thirteen of them are still forwarded there under
+    /// their old spellings, and a forwarder is the same call) and then on the round hanging off it. Where it
+    /// looks is <see cref="PatrolState"/>'s to know, exactly as <c>_guards</c> and <c>_escort</c> are — one
+    /// copy of "where the round is now", which is why #909's bug class cannot come back through here.</summary>
     private static object? Invoke(Pages.Map map, string method, params object?[] args)
     {
-        MethodInfo? call = typeof(Pages.Map).GetMethod(method, Hidden);
-        Assert.True(call is not null, $"the page has no `{method}` — this guard is reading a dead name.");
-        return call!.Invoke(map, args);
+        (object Target, MethodInfo Call)? found = PatrolState.Verb(map, method);
+        Assert.True(
+            found is not null,
+            $"neither the page nor its round has `{method}` — this guard is reading a dead name.");
+        return found!.Value.Call.Invoke(found.Value.Target, args);
     }
 }

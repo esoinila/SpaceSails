@@ -239,8 +239,11 @@ public sealed class ALockedCubicleBuysTimeTests
         string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
-            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Round.cs",
-            "Map.Patrol.Challenge.cs", "Map.Patrol.Escort.cs", "Map.Patrol.Run.cs",
+            // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
+            // is four files: Map.Patrol.Round.cs and Map.Patrol.Escort.cs had no caller outside the family
+            // to forward to and are gone. The count is still asserted, so a fifth part cannot go unread.
+            "Map.Patrol.cs", "Map.Patrol.Hide.cs", "Map.Patrol.Challenge.cs", "Map.Patrol.Run.cs",
+            "Map.PatrolHost.cs",
         ];
         // #870 lane 6′b · RE-PATHED, never re-asserted. The round's twenty-two fields and the Guard they
         // are made of moved into Pages/Patrol/, so the page this guard reads is EIGHT files now — the six
@@ -362,7 +365,11 @@ public sealed class ALockedCubicleBuysTimeTests
         Assert.DoesNotContain("OpensALockedCubicle(", patrol, StringComparison.Ordinal);
         Assert.DoesNotContain("CubiclesShut.Remove", patrol, StringComparison.Ordinal);
 
-        int loop = patrol.IndexOf("private void AdvancePatrol", StringComparison.Ordinal);
+        // #870 lane 6′c · RE-SPELLED, never re-asserted: the per-frame loop is a member of the round now
+        // and the page keeps a one-line forwarder of the same name, which appears EARLIER in this
+        // concatenation. Cutting at the forwarder would have put every claim below on the wrong side of
+        // the split — so the needle names the one that has a body.
+        int loop = patrol.IndexOf("public void AdvancePatrol", StringComparison.Ordinal);
         Assert.True(loop > 0, "the per-frame loop is not where this guard thinks it is.");
         foreach (string write in new[] { "CubiclesShut.Add", "CubiclesShut.Remove", "CubiclesShut.Clear" })
         {

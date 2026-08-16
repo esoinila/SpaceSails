@@ -54,21 +54,13 @@ public partial class Map
     /// <para>#870 lane 6c - it is BUILT IN THE CONSTRUCTOR now rather than at its declaration, and that is a
     /// language rule rather than a design change: the seat is handed the page it is a seat on
     /// (<see cref="ISeatHost"/>), and an instance field initialiser may not name <c>this</c>. Still one seat,
-    /// still assigned exactly once, and the assignment still lives in this file - which is the one file the
-    /// guard against re-seating the page exempts.</para></summary>
+    /// still assigned exactly once.</para>
+    ///
+    /// <para>#870 lane 6′c - and the ASSIGNMENT moved out of this file, into <c>Map.Collaborators.cs</c>. The
+    /// round is handed the page the same way now, and one constructor cannot live in two families' files; a
+    /// page field named in a seat file is also exactly what the seat's own sweep is there to catch, and an
+    /// exemption for it would have been a guard weakened to make room for a second collaborator.</para></summary>
     private readonly Seating _seating;
-
-    /// <summary>#870 lane 6c - the page hands the seat the page, and that is the whole of this constructor. A
-    /// Blazor component is built by the framework before its parameters are set, so nothing else may happen
-    /// here; everything this page actually does starts at <c>OnInitialized</c> / <c>OnAfterRenderAsync</c>.</summary>
-    /// <remarks>#870 lane 6′c - and the ROUND is handed the same page, for the same language reason, in the
-    /// same one place. Two collaborators, one constructor: a second <c>public Map()</c> is not a thing C#
-    /// allows, so this is the only place either assignment could go.</remarks>
-    public Map()
-    {
-        _seating = new Seating(this);
-        _patrol = new Patrol(this);
-    }
 
     /// <summary>
     /// #870 lane 6b - WHAT IT IS TO BE SITTING DOWN: the whole of the state, and every question whose answer
