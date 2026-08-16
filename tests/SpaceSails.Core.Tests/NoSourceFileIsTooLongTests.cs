@@ -80,7 +80,6 @@ public sealed class NoSourceFileIsTooLongTests
             ["src/SpaceSails.Client/Pages/Map.Sim.cs"] = 3788,
             ["src/SpaceSails.Client/Pages/Map.Combat.cs"] = 3006,
             ["src/SpaceSails.Client/Pages/Map.Plot.cs"] = 2725,
-            ["src/SpaceSails.Client/Pages/Map.Quests.cs"] = 2503,
 
             // #870 lane 5 — queued behind lane 4.
             ["src/SpaceSails.Client/Rendering/DeckView.cs"] = 2459,

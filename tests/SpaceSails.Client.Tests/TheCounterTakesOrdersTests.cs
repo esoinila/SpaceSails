@@ -91,7 +91,7 @@ public sealed class TheCounterTakesOrdersTests
     {
         // The one-seam law, read off the source. If OpenCounterService ever grows its own dialog state, the
         // B1 counter and the Tilt bar stop being one machine and this repo grows its sixth twice-told truth.
-        string open = Method("Map.Quests.cs", "private void OpenCounterService(");
+        string open = Method("Map.Quests.Bar.cs", "private void OpenCounterService(");
 
         Assert.Contains("_barMenu = counter;", open, StringComparison.Ordinal);
         Assert.Contains("_barNotice = counter.Greeting;", open, StringComparison.Ordinal);
@@ -110,7 +110,7 @@ public sealed class TheCounterTakesOrdersTests
     {
         // (b) #736's law, for the verb this issue adds. BuyDrink is the one handler both counters share, so
         // its answer has to land in the slot the open card draws — and the card has to draw it.
-        string buy = Method("Map.Quests.cs", "private void BuyDrink(");
+        string buy = Method("Map.Quests.Bar.cs", "private void BuyDrink(");
 
         Assert.Contains("_barNotice = receipt;", buy, StringComparison.Ordinal);
         Assert.Contains("_barNotice =", buy, StringComparison.Ordinal);
