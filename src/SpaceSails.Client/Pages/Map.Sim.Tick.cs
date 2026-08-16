@@ -32,19 +32,6 @@ public partial class Map
         _viewportHeight = (int)Math.Round(heightPx);
     }
 
-    /// <summary>
-    /// ONE FRAME, AS A LIST OF ITS PHASES.
-    ///
-    /// <para>#870 lane 7c: this was 505 lines in a straight line. Nothing about the order below has changed —
-    /// the order IS the frame, and <c>EveryFrameLeavesTheSameFingerprintTests</c> holds twenty-four snapshots
-    /// taken on the commit before the split to say so. What changed is that each phase now has a name, so the
-    /// frame can be read at the altitude a reader actually needs: what happens, in what order, and where it
-    /// stops.</para>
-    ///
-    /// <para>THREE PLACES IT CAN STOP EARLY, and each one is a different fiction: a long haul is crossing and
-    /// the world is frozen; a shuttle run owns the glass; the captain is on their feet somewhere and the map is
-    /// not being drawn at all.</para>
-    /// </summary>
     private void OnTick(double highResTimestampMs)
     {
         if (_renderer is null || _ephemeris is null || _simulator is null)
@@ -52,7 +39,12 @@ public partial class Map
             return;
         }
 
-        double dtRealSeconds = TakeTheFrameClock(highResTimestampMs);
+        double dtRealSeconds = _lastTimestampMs is null
+            ? 0
+            : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
+        _lastTimestampMs = highResTimestampMs;
+        _frameNowMs = highResTimestampMs;
+        MarkFrameServiced(dtRealSeconds);   // #825: the REAL stall clock — the one both the banner and the controls read
 
         // #255: a long haul is crossing — the world is frozen mid-jump (the re-seed owns the clock, and
         // the void is never integrated). The overlay paints via Blazor; the canvas holds its last frame.
@@ -63,95 +55,22 @@ public partial class Map
 
         FlushVaultSaveIfDirty();  // #225: one debounced autosave write per frame when a durable event fired
 
-        StepTheAmbientBeats(dtRealSeconds, highResTimestampMs);
-        LookAroundAndPickTheWarp();
-        FillTheAccumulator(dtRealSeconds);
-
-        bool recordTrail = OpenThePursuitTrail();
-        int stepsThisFrame = ConsumeTheAccumulator(recordTrail);
-        PinHerToTheDockAndDriftTheGhost();
-        AccountForWhatTheStepsDid(stepsThisFrame);
-
-        StepEverybodyElseAboutUs();
-        RefreshWhatTheInstrumentsSay(dtRealSeconds);
-
-        UpdatePrediction();
-
-        ReprojectThePassesOnTheirCadence(highResTimestampMs);
-        ReprojectTheTrajectoryWhenItIsDue(highResTimestampMs);
-
-        _pulse = _pulse.Expire(highResTimestampMs);
-        SoundTheArcOnItsRisingEdge();
-
-        if (FollowShip)
-        {
-            _camera.CenterOn(_ship.Position);
-        }
-
-        if (TheShuttleRunOwnsThisFrame(dtRealSeconds, highResTimestampMs))
-        {
-            return;
-        }
-
-        AdvanceHerOwnClocks(dtRealSeconds);
-
-        if (TheWalkedViewOwnsThisFrame(dtRealSeconds, highResTimestampMs))
-        {
-            return;
-        }
-
-        PaintTheMapFrame();
-        DrawTheScopeInsetIfItIsUp();
-        LetTheShipSpeakIfAnybodyIsAboard(highResTimestampMs);
-        RevealOneStepOfTheFiringSolution(highResTimestampMs);
-        RefreshTheHudOnItsThrottle(highResTimestampMs);
-    }
-
-    /// <summary>How long since the last frame, in real seconds — and the one line into the stall clock both
-    /// the banner and the controls read. Zero on the very first frame, and never negative.</summary>
-    private double TakeTheFrameClock(double highResTimestampMs)
-    {
-        double dtRealSeconds = _lastTimestampMs is null
-            ? 0
-            : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
-        _lastTimestampMs = highResTimestampMs;
-        _frameNowMs = highResTimestampMs;
-        MarkFrameServiced(dtRealSeconds);   // #825: the REAL stall clock — the one both the banner and the controls read
-        return dtRealSeconds;
-    }
-
-    /// <summary>The three ambient beats, in the order they were written — a tremor, its colder sibling, and
-    /// the announcement that follows either of them.</summary>
-    private void StepTheAmbientBeats(double dtRealSeconds, double highResTimestampMs)
-    {
         StepShudder(dtRealSeconds, highResTimestampMs); // #424 HULL-SHUDDER: the ambient interior-deck tremor
         StepSignal(dtRealSeconds, highResTimestampMs);  // #424 THE UNEXPLAINED SIGNAL: the shudder's colder sibling
         StepCaution(highResTimestampMs);                // #424 THE CAUTION ANNOUNCEMENT: the rough-passage PA
-    }
 
-    /// <summary>What is nearest, what a coast just brushed past, where the skip is taking us — and, out of all
-    /// of that, how fast the clock is allowed to run this frame.</summary>
-    private void LookAroundAndPickTheWarp()
-    {
         UpdateNearestBody();
         CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
         DriveSkip();            // #172: own the warp while skipping — arrive/announce, or yield to the helm
         UpdateEffectiveWarp();
-    }
 
-    /// <summary>Buy this frame's worth of sim seconds, and never more than the loop below can spend.</summary>
-    private void FillTheAccumulator(double dtRealSeconds)
-    {
         if (!Paused)
         {
             _simAccumulator += dtRealSeconds * _effectiveWarp;
-            _simAccumulator = Math.Min(_simAccumulator, MaxStepsPerFrame * _simulator!.TimeStep); // Clamp accumulator
+            _simAccumulator = Math.Min(_simAccumulator, MaxStepsPerFrame * _simulator.TimeStep); // Clamp accumulator
         }
-    }
 
-    /// <summary>Start this frame's trail, and say whether anything is going to be written to it.</summary>
-    private bool OpenThePursuitTrail()
-    {
+        double simTimeBefore = _ship.SimTime;
         // The pursuit quantum trail (see SteerHuntersByQuantumTrail — the abort switch): remember
         // where the ship actually IS through this frame's integration, at the hunter-quantum
         // cadence, so pursuit steering can look up sim-time positions instead of the frame-end
@@ -164,24 +83,12 @@ public partial class Map
             _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
         }
 
-        return recordTrail;
-    }
-
-    /// <summary>
-    /// THE FIXED-STEP LOOP: spend the accumulator, and hand back how many steps it bought.
-    ///
-    /// <para>Everything that can interrupt an advance lives in here, because every one of them is a thing that
-    /// happens BETWEEN two integrator steps: a scheduled burn epoch inside the quantum, a surface crossing
-    /// inside the quantum, a drag peak inside the quantum. A clamped ship takes the clock-only branch.</para>
-    /// </summary>
-    private int ConsumeTheAccumulator(bool recordTrail)
-    {
         int stepsThisFrame = 0;
         // PR-I: watch the drag load through this frame's steps so a cloud-top dip can hole the sail. Only
         // paid near an atmosphere-bearing body (where warp auto-drops to 1 s steps, so the peak is caught).
         _frameMaxDragDecel = 0;
         bool watchDrag = _dockedHavenId is null && _nearestBody?.Atmosphere is not null;
-        while (_simAccumulator >= _simulator!.TimeStep)
+        while (_simAccumulator >= _simulator.TimeStep)
         {
             if (stepsThisFrame >= MaxStepsPerFrame)
             {
@@ -289,13 +196,6 @@ public partial class Map
             _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
         }
 
-        return stepsThisFrame;
-    }
-
-    /// <summary>Where the loop actually left her — which, for a berthed ship and for a lie that is still out
-    /// there flying, is not where the integrator put them.</summary>
-    private void PinHerToTheDockAndDriftTheGhost()
-    {
         // Clamped in a dock: the gravity integrator just coasted the ship off on its own arc, but a
         // berthed ship rides the station instead. Pin it back onto the dock at the new SimTime — this
         // is what lets you warp the heat away without steering (owner: "no guiding while docked").
@@ -308,14 +208,9 @@ public partial class Map
         // step with the real clock — one extra body, integrated only while the lie is out.
         if (_beaconGhost is { } ghost && SimTime > ghost.SimTime)
         {
-            _beaconGhost = _simulator!.RunAdaptive(ghost, SimTime - ghost.SimTime);
+            _beaconGhost = _simulator.RunAdaptive(ghost, SimTime - ghost.SimTime);
         }
-    }
 
-    /// <summary>The consequences that are only owed when the clock actually moved. A frame that bought no
-    /// steps bills none of them.</summary>
-    private void AccountForWhatTheStepsDid(int stepsThisFrame)
-    {
         if (stepsThisFrame > 0)
         {
             CheckSailHole(); // PR-I: a too-deep cloud-top dip holes the sail (before burns can fire)
@@ -327,11 +222,7 @@ public partial class Map
             }
             CheckLockedFire();
         }
-    }
 
-    /// <summary>Everybody else who is moving out there, and the sweep that notices them on its own clock.</summary>
-    private void StepEverybodyElseAboutUs()
-    {
         StepNpcs();
         StepOrdnance();
         CheckPyramids();
@@ -341,12 +232,7 @@ public partial class Map
             SweepSensors();
             _nextSweepSimTime = _ship.SimTime + SensorSweepSimSeconds;
         }
-    }
 
-    /// <summary>The once-a-frame recomputes: what the ⚓ says, what the 🛬 says, what the window says, what the
-    /// nerve says. Every one of them is a question the HUD is about to be asked.</summary>
-    private void RefreshWhatTheInstrumentsSay(double dtRealSeconds)
-    {
         UpdateDockStatus();
         UpdateDockAffordance(); // #212/#211/#213: recompute the one-truth ⚓ affordance (runs paused too)
         UpdateLandableInRange(); // #339-follow: cache which landable grounds the shuttle can reach now (map 🛬 bright state)
@@ -358,12 +244,9 @@ public partial class Map
         // step, so a throw forced by the approach is billed on the same tick the captain crossed the line.
         StepArchiveNode();
         StepNerve(dtRealSeconds); // #317: the nerve gauge advances every tick — regolith drains, the ship eases
-    }
 
-    /// <summary>The passes, on their own 300 ms cadence: which body we come nearest, which we could arm, which
-    /// we could sling off, which we could skim — and what the destination's own departure would cost.</summary>
-    private void ReprojectThePassesOnTheirCadence(double highResTimestampMs)
-    {
+        UpdatePrediction();
+
         if (_passDirty && highResTimestampMs - _lastReprojectMs > 300)
         {
             _passDirty = false;
@@ -428,12 +311,7 @@ public partial class Map
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
             UpdateCourseOpportunities(); // M29: what does this course conveniently brush by?
         }
-    }
 
-    /// <summary>The ribbon itself, on two clocks: a 250 ms one for a horizon the captain just changed, and a
-    /// sim-time one for a coast that has simply outrun the last projection.</summary>
-    private void ReprojectTheTrajectoryWhenItIsDue(double highResTimestampMs)
-    {
         if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
         {
             _horizonDirty = false;
@@ -445,11 +323,9 @@ public partial class Map
         {
             ReprojectTrajectory();
         }
-    }
 
-    /// <summary>Thunder, once per arcing episode.</summary>
-    private void SoundTheArcOnItsRisingEdge()
-    {
+        _pulse = _pulse.Expire(highResTimestampMs);
+
         // Thunder on the rising edge of an arc (M10 polish) — once per arcing episode.
         bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
         if (arcing && !_wasArcing)
@@ -457,12 +333,12 @@ public partial class Map
             RendererInterop.PlayCue("arc");
         }
         _wasArcing = arcing;
-    }
 
-    /// <summary>The first of the frame's three early stops: a shuttle run owns the glass, so the map is not
-    /// drawn at all. True when the frame is finished here.</summary>
-    private bool TheShuttleRunOwnsThisFrame(double dtRealSeconds, double highResTimestampMs)
-    {
+        if (FollowShip)
+        {
+            _camera.CenterOn(_ship.Position);
+        }
+
         if (_shuttleRun is not null)
         {
             // Guarded: an exception escaping a frame callback kills renderer.js's rAF chain
@@ -491,17 +367,15 @@ public partial class Map
                     EndShuttleRun(boarded: false, $"Shuttle fault: {ex.GetType().Name}");
                 }
 
-                RefreshTheHudOnItsThrottle(highResTimestampMs);
-                return true;
+                if (highResTimestampMs - _lastHudUpdateMs > 200)
+                {
+                    _lastHudUpdateMs = highResTimestampMs;
+                    InvokeAsync(StateHasChanged);
+                }
+                return;
             }
         }
 
-        return false;
-    }
-
-    /// <summary>Her own clocks, which run whether or not the captain is aboard to watch them.</summary>
-    private void AdvanceHerOwnClocks(double dtRealSeconds)
-    {
         // #523 · HER CHARGE SYSTEMS BELONG TO THE SHIP, NOT TO A VIEW. The contactor holds the hull down and
         // spends expellant doing it, and the charge soaking into the boards behind the panel keeps climbing,
         // whether the captain is walking her corridor or sitting at the helm — the stealth tax is paid in
@@ -519,12 +393,7 @@ public partial class Map
         // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be
         // served there.
         AdvanceStoryCards();
-    }
 
-    /// <summary>The second early stop: the captain is on their feet, so the frame is a walked view and the map
-    /// is never opened. True when the frame is finished here.</summary>
-    private bool TheWalkedViewOwnsThisFrame(double dtRealSeconds, double highResTimestampMs)
-    {
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);
@@ -533,22 +402,35 @@ public partial class Map
             AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
             DrawWalkFrame();
 
-            DrawTheScopeInsetIfItIsUp();
-            RefreshTheHudOnItsThrottle(highResTimestampMs);
-            return true;
+            if (_showScope && _scopeView is not null)
+            {
+                _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
+            }
+
+            if (highResTimestampMs - _lastHudUpdateMs > 200)
+            {
+                _lastHudUpdateMs = highResTimestampMs;
+                InvokeAsync(StateHasChanged);
+            }
+            return;
         }
 
-        return false;
-    }
-
-    /// <summary>The map itself, opened and flushed in one place so the two halves of a frame cannot come
-    /// apart. Everything between them is a layer, and the order of the layers is what is on top.</summary>
-    private void PaintTheMapFrame()
-    {
         _camera.SetViewport(_viewportWidth, _viewportHeight);
-        _renderer!.BeginFrame(_viewportWidth, _viewportHeight, Background);
+        _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
-        AnchorThePlotFrameToItsBody();
+        // #135: re-anchor the co-moving plot frame to the frame body's CURRENT position, once per
+        // frame. If the chosen body vanished (scenario reload), fall back to Sun/inertial.
+        if (_plotFrameBodyId is not null && _ephemeris is not null)
+        {
+            if (_ephemeris.Bodies.Any(b => b.Id == _plotFrameBodyId))
+            {
+                _plotFrameAnchor = _ephemeris.Position(_plotFrameBodyId, SimTime);
+            }
+            else
+            {
+                _plotFrameBodyId = null;
+            }
+        }
 
         DrawStreams();
         if (LayerVisible("routes.lanes"))
@@ -613,41 +495,12 @@ public partial class Map
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
-    }
 
-    /// <summary>Where the co-moving plot frame is standing this frame.</summary>
-    private void AnchorThePlotFrameToItsBody()
-    {
-        // #135: re-anchor the co-moving plot frame to the frame body's CURRENT position, once per
-        // frame. If the chosen body vanished (scenario reload), fall back to Sun/inertial.
-        if (_plotFrameBodyId is not null && _ephemeris is not null)
-        {
-            if (_ephemeris.Bodies.Any(b => b.Id == _plotFrameBodyId))
-            {
-                _plotFrameAnchor = _ephemeris.Position(_plotFrameBodyId, SimTime);
-            }
-            else
-            {
-                _plotFrameBodyId = null;
-            }
-        }
-    }
-
-    /// <summary>The scope inset, which is its own little canvas and is drawn from BOTH the walked frame and
-    /// the map frame — one call, so the two can never come to draw two different scopes.</summary>
-    private void DrawTheScopeInsetIfItIsUp()
-    {
         if (_showScope && _scopeView is not null)
         {
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
-    }
 
-    /// <summary>Her whole channel — alarm strip, parrot, advert, the arrival-brake ask — in one place,
-    /// gated once. The comment inside is #580's ruling, and the reason the gate is a wall rather than a
-    /// filter.</summary>
-    private void LetTheShipSpeakIfAnybodyIsAboard(double highResTimestampMs)
-    {
         // #580 · THE SHIP'S VOICE DOES NOT REACH A CAPTAIN WHO IS NOT ABOARD HER. Owner, walking Miranda:
         // "in miranda here... why does the parrot talk about debt collectors now" / "we do not want any ship
         // type warnings received here on the surface ... that mechanic should not be active here" / "where
@@ -669,11 +522,7 @@ public partial class Map
             EvaluateLongCoastAdvert(highResTimestampMs); // #172: next-event cache + long-coast squawk
             UpdateArrivalBrakeGate(highResTimestampMs);  // #304: the arrival-brake ask while the window is open
         }
-    }
 
-    /// <summary>One Newton iteration per beat, so the solution is watched being found rather than announced.</summary>
-    private void RevealOneStepOfTheFiringSolution(double highResTimestampMs)
-    {
         // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
         if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
             && highResTimestampMs - _lastRevealMs > 250)
@@ -681,26 +530,13 @@ public partial class Map
             _lastRevealMs = highResTimestampMs;
             _revealedIterations++;
         }
-    }
 
-    /// <summary>
-    /// The one HUD refresh, on the one 200 ms throttle — reached from all THREE ways a frame can end.
-    ///
-    /// <para>Blazor re-renders the whole page after every event unless it is told not to (see the
-    /// <c>IHandleEvent</c> seam), which is why the HUD's refresh is the frame's job and not an event's. It
-    /// was written out three times in the old straight-line frame; three copies of a throttle is three
-    /// chances for one of them to drift, and the drift would look exactly like a HUD that stutters only
-    /// while the shuttle is out.</para>
-    /// </summary>
-    private void RefreshTheHudOnItsThrottle(double highResTimestampMs)
-    {
         if (highResTimestampMs - _lastHudUpdateMs > 200)
         {
             _lastHudUpdateMs = highResTimestampMs;
             InvokeAsync(StateHasChanged);
         }
     }
-
 
     // The one walked-view paint — first person or the top-down deck — for whatever plan is welded on
     // right now. Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once

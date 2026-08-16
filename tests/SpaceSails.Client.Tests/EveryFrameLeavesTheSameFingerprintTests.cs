@@ -32,8 +32,8 @@ namespace SpaceSails.Client.Tests;
 /// <h3>THE LAW: A FINGERPRINT, CAPTURED ON THE OLD CODE FIRST</h3>
 ///
 /// <para>So the guard is a SNAPSHOT. A real <see cref="Pages.Map"/> is booted on six worlds, each is driven
-/// through <c>OnTick</c> with a FIXED sequence of <c>highResTimestampMs</c> values, and afterwards everything
-/// the frame wrote is serialised into one deterministic text and hashed. The hashes below were taken on the
+/// through <c>OnTick</c> with five FIXED sequences of <c>highResTimestampMs</c> values and inputs, and
+/// afterwards everything the frame wrote is serialised into one deterministic text and hashed. The hashes below were taken on the
 /// commit BEFORE the split and committed on their own ("the snapshot, on the old code") so that they could
 /// never be quietly re-baselined afterwards: git says which commit each number came from.</para>
 ///
@@ -93,37 +93,45 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    // ── THE TWENTY-FOUR ROWS ───────────────────────────────────────────────────────────────────────────────
+    // ── THE THIRTY ROWS ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Six worlds × four sequences. Each hash is the sha256 of the fingerprint text committed beside it in
-    /// <c>Fingerprints/&lt;world&gt;.&lt;sequence&gt;.txt</c>, taken on the pre-split commit.
+    /// Six worlds × five sequences. Each row is the fingerprint text committed beside it in
+    /// <c>Fingerprints/&lt;world&gt;.&lt;sequence&gt;.txt</c>, taken on the PRE-SPLIT code — the first twenty on
+    /// commit b19ef16, the plasma world's four on 04bb219, and the warp slider's six on the commit that put
+    /// the unsplit method back in the tree to capture them.
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]
     [InlineData(World.HerOwnDeckInFlight, Sequence.OneLongGap)]
     [InlineData(World.HerOwnDeckInFlight, Sequence.AHeldKey)]
     [InlineData(World.HerOwnDeckInFlight, Sequence.APlannedRoute)]
+    [InlineData(World.HerOwnDeckInFlight, Sequence.AHandOnTheWarpSlider)]
     [InlineData(World.TheRegolithOnFoot, Sequence.SteadyFrames)]
     [InlineData(World.TheRegolithOnFoot, Sequence.OneLongGap)]
     [InlineData(World.TheRegolithOnFoot, Sequence.AHeldKey)]
     [InlineData(World.TheRegolithOnFoot, Sequence.APlannedRoute)]
+    [InlineData(World.TheRegolithOnFoot, Sequence.AHandOnTheWarpSlider)]
     [InlineData(World.AHiveFloorWithAPatrol, Sequence.SteadyFrames)]
     [InlineData(World.AHiveFloorWithAPatrol, Sequence.OneLongGap)]
     [InlineData(World.AHiveFloorWithAPatrol, Sequence.AHeldKey)]
     [InlineData(World.AHiveFloorWithAPatrol, Sequence.APlannedRoute)]
+    [InlineData(World.AHiveFloorWithAPatrol, Sequence.AHandOnTheWarpSlider)]
     [InlineData(World.ACaptainInAChair, Sequence.SteadyFrames)]
     [InlineData(World.ACaptainInAChair, Sequence.OneLongGap)]
     [InlineData(World.ACaptainInAChair, Sequence.AHeldKey)]
     [InlineData(World.ACaptainInAChair, Sequence.APlannedRoute)]
+    [InlineData(World.ACaptainInAChair, Sequence.AHandOnTheWarpSlider)]
     [InlineData(World.TheMapFrameInFlight, Sequence.SteadyFrames)]
     [InlineData(World.TheMapFrameInFlight, Sequence.OneLongGap)]
     [InlineData(World.TheMapFrameInFlight, Sequence.AHeldKey)]
     [InlineData(World.TheMapFrameInFlight, Sequence.APlannedRoute)]
+    [InlineData(World.TheMapFrameInFlight, Sequence.AHandOnTheWarpSlider)]
     [InlineData(World.TheElectricUniverse, Sequence.SteadyFrames)]
     [InlineData(World.TheElectricUniverse, Sequence.OneLongGap)]
     [InlineData(World.TheElectricUniverse, Sequence.AHeldKey)]
     [InlineData(World.TheElectricUniverse, Sequence.APlannedRoute)]
+    [InlineData(World.TheElectricUniverse, Sequence.AHandOnTheWarpSlider)]
     public void EveryFrameItRunsFingerprintsTheSame(World world, Sequence sequence)
     {
         string produced = DriveAndFingerprint(world, sequence);
@@ -161,8 +169,8 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     }
 
     /// <summary>The snapshot is worth nothing if the bench cannot tell one world from another — a guard handed
-    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Twenty-four
-    /// rows, twenty-four different fingerprints.</summary>
+    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Thirty rows,
+    /// thirty different fingerprints.</summary>
     [Fact]
     public void EveryRowIsADifferentFrame()
     {
@@ -176,7 +184,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
                 "driving the same frame, so one of them could never fail.");
             seen[hash] = Path.GetFileName(file);
         }
-        Assert.Equal(24, seen.Count);
+        Assert.Equal(30, seen.Count);
     }
 
     // ── THE WORLDS ────────────────────────────────────────────────────────────────────────────────────
@@ -219,6 +227,25 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
         /// <summary>A route clicked on the sixth frame and then walked out.</summary>
         APlannedRoute,
+
+        /// <summary>
+        /// The warp slider MOVED under the frame — down to 1× on the fortieth frame, back to 1000× on the
+        /// eightieth.
+        ///
+        /// <para>Written because the other four could not tell a lie either. In all six worlds above the warp
+        /// is set once at boot and never touched again, so <c>_effectiveWarp</c> is a CONSTANT for the whole
+        /// run — and a constant cannot show a one-frame lag. Moving the phase that PICKS the warp to the far
+        /// side of the phase that SPENDS it left all twenty-four fingerprints identical: the accumulator was
+        /// buying its seconds at last frame's rate, and last frame's rate was this frame's rate. The one frame
+        /// where that is not true is the very first — and on the very first frame <c>dtRealSeconds</c> is
+        /// exactly zero, so nothing is bought at any rate at all.</para>
+        ///
+        /// <para>With a hand on the slider the boundary is real: on the fortieth frame the accumulator buys
+        /// either <c>dt × 1</c> or <c>dt × 1000</c> depending purely on which side of it the write landed, and
+        /// the sim clock says which happened for the eighty frames after. That is the accumulator boundary
+        /// this file exists to hold still.</para>
+        /// </summary>
+        AHandOnTheWarpSlider,
     }
 
     // ── DRIVING ONE ROW ───────────────────────────────────────────────────────────────────────────────
@@ -260,6 +287,13 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
             if (i == 20 && sequence == Sequence.OneLongGap)
             {
                 t += 16_000;   // the owner's own gap, off #825
+            }
+            if (sequence == Sequence.AHandOnTheWarpSlider && (i == 40 || i == 80))
+            {
+                // The one thing no other row does: change the rate the accumulator is about to buy at, on
+                // a frame that is going to buy. See the sequence's own note — without this, the phase that
+                // picks the warp and the phase that spends it can be swapped and nothing anywhere moves.
+                Set(map, "Warp", i == 40 ? 1 : 1000);
             }
 
             Frame(t);
