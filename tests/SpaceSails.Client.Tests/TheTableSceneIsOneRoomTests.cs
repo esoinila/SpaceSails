@@ -231,7 +231,10 @@ public sealed class TheTableSceneIsOneRoomTests
 
         // …and the question is Core's, over the SITTING's own memory. A client that kept its own idea of when
         // an answer exists would hand the guard stop a different rule than the canteen (#746's whole claim).
-        string table = Source("Pages", "Map.Table.cs");
+        // #870 lane 6b - re-PATHED, never re-needled: TableMovesOnTheTable is a pure function of the
+        // seat's own state, so it moved onto Seating. Both claims below are Contains, so reading the
+        // two files concatenated is exact rather than a narrowing.
+        string table = Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.cs");
         Assert.Contains("Encounter.OnTheTable(", table, StringComparison.Ordinal);
         Assert.Contains("t.Said", table, StringComparison.Ordinal);
 

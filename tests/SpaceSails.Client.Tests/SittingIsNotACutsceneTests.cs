@@ -147,8 +147,10 @@ public sealed class SittingIsNotACutsceneTests
         // `_table is { Solo: true }` until the owner ruled that joining a stranger's top keeps the room
         // visible: Solo is OCCUPANCY (the fact the privacy ladder reads) and the frame is a different
         // question with a different answer at exactly one table — the one you asked to sit at.
-        string seated = Source("Pages", "Map.Seated.cs");
-        Assert.Contains("private bool SeatedIsDocked => _table is { TheyCameToYou: false };", seated,
+        // #870 lane 6b - re-PATHED, never re-needled: the frame fork is a pure function of the seat's
+        // own state, so it moved onto Seating with the other fourteen. Same one line, same claim.
+        string seated = Source("Pages", "Seating", "Seating.cs");
+        Assert.Contains("public bool SeatedIsDocked => Table is { TheyCameToYou: false };", seated,
             StringComparison.Ordinal);
     }
 
@@ -368,7 +370,7 @@ public sealed class SittingIsNotACutsceneTests
         Assert.Contains("Core.Processing.Interruption.StoodUp", closeBody, StringComparison.Ordinal);
         Assert.True(
             closeBody.IndexOf("AbandonProcessing(", StringComparison.Ordinal)
-                < closeBody.IndexOf("_table = null;", StringComparison.Ordinal),
+                < closeBody.IndexOf("_seating.Table = null;", StringComparison.Ordinal),
             "the table is gone before the abandon line has a strip to land on.");
 
         // …and so does somebody taking the chair opposite, which is the privacy the spread was licensed by

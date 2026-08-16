@@ -323,7 +323,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         int at = table.IndexOf("private async Task TableMoveClicked(", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Table.cs no longer routes mouse presses through TableMoveClicked.");
         string clicked = table[at..table.IndexOf("\n    // ──", at, StringComparison.Ordinal)];
-        Assert.Contains("_table is null", clicked, StringComparison.Ordinal);
+        Assert.Contains("_seating.Table is null", clicked, StringComparison.Ordinal);
         Assert.Contains("RefocusMap()", clicked, StringComparison.Ordinal);
 
         // …and the razor's own two ways out — the backdrop and the Close button — go through Dismiss, which
