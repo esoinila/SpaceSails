@@ -235,7 +235,7 @@ public partial class Map
         // coordinates it writes are the ones the room's polls read, so sitting down was itself what walked
         // the captain into the card. Armed here rather than in five separate seat verbs, on the same
         // discipline the snap already keeps: one placement, one law, every seat kind.
-        _sitBeatOwedSeconds = Core.SeatedPosture.SitBeatSeconds;
+        OweTheSitBeat();
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
