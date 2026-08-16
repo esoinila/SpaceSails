@@ -77,7 +77,12 @@ public sealed class NoSourceFileIsTooLongTests
         new Dictionary<string, int>(StringComparer.Ordinal)
         {
             // #870 lane 4 — queued for the by-banner split.
-            ["src/SpaceSails.Client/Pages/Map.Sim.cs"] = 3788,
+            // Map.Sim.cs's row is GONE (lane 4a, #891): the file is 254 lines now. What is left of that
+            // 3,788 is one member — `BootTheWorldAsync`, 1,656 lines of it — which a PURE-MOVE lane may not
+            // split, because splitting a method is not moving one. So the debt is re-written at its true
+            // size under the name of the file that actually carries it, and it is now the only thing between
+            // the whole Map.Sim family and the line.
+            ["src/SpaceSails.Client/Pages/Map.Sim.World.cs"] = 1680,
             ["src/SpaceSails.Client/Pages/Map.Combat.cs"] = 3006,
             ["src/SpaceSails.Client/Pages/Map.Plot.cs"] = 2725,
             ["src/SpaceSails.Client/Pages/Map.Quests.cs"] = 2503,
