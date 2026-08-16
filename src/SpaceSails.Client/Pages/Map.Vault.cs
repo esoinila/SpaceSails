@@ -412,8 +412,8 @@ public partial class Map
             // for the satchel's own reason one line down: the file carries the FACT and the sentences on a
             // chooser row are rebuilt from it. Durable because "worked here, twice" is worth nothing if the
             // book forgets between excursions.
-            PapersShown = _shownBook.Count > 0
-                ? new PapersShownSection { Shown = [.. _shownBook.Select(r => r.Stored)] }
+            PapersShown = YourPaperTrail.Count > 0
+                ? new PapersShownSection { Shown = [.. YourPaperTrail.Select(r => r.Stored)] }
                 : null,
             // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
             // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
@@ -917,12 +917,12 @@ public partial class Map
         // #836 · The captain's paper trail — which identity was handed to which man, on which floor. A row
         // this build cannot parse is dropped rather than thrown over, the same tolerance the satchel gets;
         // a pre-#836 file simply has none, and every chooser row honestly reads "never shown".
-        _shownBook.Clear();
+        ForgetThePaperTrail();
         foreach (string stored in vault.PapersShown?.Shown ?? [])
         {
             if (WalletChoice.Shown.TryParse(stored, out WalletChoice.Shown row))
             {
-                _shownBook.Add(row);
+                RestoreAPaperTrailRow(row);
             }
         }
 

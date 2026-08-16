@@ -231,7 +231,7 @@ public partial class Map
             // is about to walk you into has something to read. Site-scoped like the card above and minted
             // the same way — into the real wallet, with the real id, so what the guard says is what he
             // would have said about a pass that was earned.
-            if (_badgeCheat)
+            if (TheSitePassIsMintedAtTheLanding)
             {
                 string passBody = landedOn.Stop.Body.Id;
                 if (!PatrolBeat.BadgeHeld(passBody, _satchel))
