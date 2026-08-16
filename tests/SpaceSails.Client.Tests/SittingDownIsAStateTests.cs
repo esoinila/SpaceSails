@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,6 +45,14 @@ public sealed class SittingDownIsAStateTests
 
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// of them — exactly the text it read out of one file before the split.</summary>
+    private static string Sim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
@@ -199,7 +207,7 @@ public sealed class SittingDownIsAStateTests
         Assert.DoesNotContain("_table", deckView, StringComparison.Ordinal);
 
         // …and the sim hands it over off the one seated answer, which is the open table itself.
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("Seated: CaptainIsSeated", sim, StringComparison.Ordinal);
         string seated = Source("Pages", "Map.Seated.cs");
         Assert.Contains("CaptainIsSeated => _table is not null", seated, StringComparison.Ordinal);
@@ -264,7 +272,7 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void ESCAPE_KeepsTheSeatRatherThanTakingIt()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Source("Pages", "Map.Sim.Cancel.cs");
         int chain = sim.IndexOf("private bool TryDismissTopOverlay()", StringComparison.Ordinal);
         Assert.True(chain > 0);
 
@@ -473,7 +481,7 @@ public sealed class SittingDownIsAStateTests
     [Fact]
     public void THEDEMO_LetsATesterWatchTheRestActuallyWork()
     {
-        string sim = Source("Pages", "Map.Sim.cs");
+        string sim = Sim();
         Assert.Contains("\"low\" or \"fraying\" => 2,", sim, StringComparison.Ordinal);
         Assert.Contains("pair.StartsWith(\"hurt=\"", sim, StringComparison.Ordinal);
 

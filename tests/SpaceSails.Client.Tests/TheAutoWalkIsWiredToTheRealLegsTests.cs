@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -37,8 +37,13 @@ public sealed class TheAutoWalkIsWiredToTheRealLegsTests
     private static string MapDeck() =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Deck.cs"));
 
-    private static string MapSim() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Sim.cs"));
+    /// <summary>#870 · The sim page is nine partials by subject now, so "Map.Sim" a guard reads over
+    /// is all of them — exactly the text it read out of one file before the split.</summary>
+    private static string MapSim() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     [Fact]
     public void AMovementKeyCancelsTheWalkOnThePressItself()
