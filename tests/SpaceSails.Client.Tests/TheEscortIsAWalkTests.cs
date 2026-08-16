@@ -649,7 +649,9 @@ public sealed class TheEscortIsAWalkTests
         Assert.DoesNotContain("StandCaptainAt(", escort, StringComparison.Ordinal);
 
         // The whole file has exactly one placement left, and it is the admitted cut.
-        Assert.Equal(1, Count(patrol, "_host.StandCaptainAt("));   // #870 lane 6c: CALLS, through the one door
+        // #870 lane 6c - RE-SPELLED: it counts CALLS by the round, through the one door, rather than
+        // every mention of the name (the interface declares it and the page answers it).
+        Assert.Equal(1, Count(patrol, "_host.StandCaptainAt("));
         string cut = Between(patrol, "private void TheCutToTheLift(", "── WHERE THE PASS COMES FROM");
         Assert.Contains("StandCaptainAt(", cut, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.EscortCutLine", cut, StringComparison.Ordinal);
