@@ -140,7 +140,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // Esc, Enter, E again, the backdrop and the Close button all end in these two methods — so the
         // release hangs there and nowhere else. Any code that clears the field BY HAND is a road out of the
         // card that swallows the held line, which is the shipped bug wearing a new hat.
-        string deck = Pages("Map.Deck.cs");
+        string deck = Pages("Map.Deck.Fixtures.cs");
         string reveal = Pages("Map.RevealCard.cs");
 
         Assert.True(Between(deck, "private void CloseViewObject(", "private void KnockOnHatch(")
@@ -156,7 +156,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
             foreach (string field in new[] { "_viewObject", "_revealCard" })
             {
                 int by = File.ReadAllText(file).Split($"{field} = null").Length - 1;
-                string owner = field == "_viewObject" ? "Map.Deck.cs" : "Map.RevealCard.cs";
+                string owner = field == "_viewObject" ? "Map.Deck.Fixtures.cs" : "Map.RevealCard.cs";
                 int allowed = Path.GetFileName(file) == owner ? 1 : 0;   // the Close method itself
                 Assert.True(by <= allowed,
                     $"{Path.GetFileName(file)} clears {field} by hand — that is a road out of the card that " +

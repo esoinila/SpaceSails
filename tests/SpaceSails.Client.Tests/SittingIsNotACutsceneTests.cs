@@ -62,6 +62,14 @@ public sealed class SittingIsNotACutsceneTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Doc(string name) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
 
@@ -218,7 +226,7 @@ public sealed class SittingIsNotACutsceneTests
     public void THE_I_KEY_OpensTheSpreadSeatedAndThePocketStanding()
     {
         // The key is still one key, and it still reaches the satchel.
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
         Assert.Contains("case \"i\" or \"I\":", deck, StringComparison.Ordinal);
         Assert.Contains("ToggleSatchel();", deck, StringComparison.Ordinal);
 

@@ -254,8 +254,7 @@ public sealed class TheBinTakesTheKeyTests
     [Fact]
     public void THE_KEY_IsClaimedByWhicheverFixtureIsNearer()
     {
-        string deck = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Deck.cs"));
+        string deck = Deck();
 
         int press = deck.IndexOf("if (TryOpenTheBinOverTheSleeve())", StringComparison.Ordinal);
         int dispatch = deck.IndexOf("switch (_deckPlan.NearestConsole(", StringComparison.Ordinal);
@@ -422,6 +421,14 @@ public sealed class TheBinTakesTheKeyTests
         Assert.True(at > 0, "the spread row has lost its shredder.");
         return razor[at..(at + 400)];
     }
+
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string Razor() =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));

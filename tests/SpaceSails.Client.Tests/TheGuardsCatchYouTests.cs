@@ -413,6 +413,16 @@ public sealed class TheGuardsCatchYouTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claims below count and refuse over the WHOLE page, and pointing
+    /// them at a single partial would be a silent weakening.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -572,7 +582,7 @@ public sealed class TheGuardsCatchYouTests
 
         // The controls stay the captain's for a run. They are held for the walk OUT and for nothing else —
         // the three places #833 put them and no fourth.
-        string deck = Code(Pages("Map.Deck.cs"));
+        string deck = Code(Deck());
         Assert.Equal(3, Count(deck, "CaptainIsUnderEscort"));
         Assert.DoesNotContain("AfterYou", deck, StringComparison.Ordinal);
     }

@@ -40,6 +40,14 @@ public sealed class TheSatchelFeelPassTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>The satchel block of Map.razor — from the modal's opening guard to the view-object block that
     /// follows it, so every assertion is about THIS dialog's subtree and not the file at large.</summary>
     private static string SatchelBlock()
@@ -68,7 +76,7 @@ public sealed class TheSatchelFeelPassTests
         // Owner: "If I press I when inventory is open, let's close it then." One line of feel, and the kind
         // that is invisible until you are standing in a corridor with a pack coming and the pocket you opened
         // by reflex will not go away by the same reflex.
-        string key = Pages("Map.Deck.cs");
+        string key = Deck();
         int at = key.IndexOf("case \"i\" or \"I\":", StringComparison.Ordinal);
         Assert.True(at >= 0, "Map.Deck.cs no longer has the I keybind where this guard can read it.");
         string branch = key[at..key.IndexOf("case \"h\" or \"H\":", at, StringComparison.Ordinal)];
@@ -194,7 +202,7 @@ public sealed class TheSatchelFeelPassTests
         Assert.True(surface.Contains("private bool TryPickUpWhatYouLeft(", StringComparison.Ordinal),
             "nothing in the client ever picks a left thing back up — the drop verb is a delete key (#688/#615).");
 
-        string deck = Pages("Map.Deck.cs");
+        string deck = Deck();
         int interact = deck.IndexOf("private void InteractAtConsole()", StringComparison.Ordinal);
         Assert.True(interact >= 0, "Map.Deck.cs no longer has InteractAtConsole where this guard can read it.");
         int recovers = deck.IndexOf("TryPickUpWhatYouLeft()", interact, StringComparison.Ordinal);

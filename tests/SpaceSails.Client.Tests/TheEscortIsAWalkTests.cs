@@ -537,6 +537,16 @@ public sealed class TheEscortIsAWalkTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split. Concatenated rather than
+    /// narrowed to one part on purpose: the claims below count and refuse over the WHOLE page, and pointing
+    /// them at a single partial would be a silent weakening.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
     /// split. The count is asserted, so a seventh part can never go unread.</summary>
@@ -638,7 +648,7 @@ public sealed class TheEscortIsAWalkTests
     [Fact]
     public void TheControlsAreHeldOnlyWhileSomebodyIsWalkingYouOut()
     {
-        string deck = Pages("Map.Deck.cs");
+        string deck = Deck();
 
         // The one predicate, the one sentence, and the frame's own refusal of a held key / a live route.
         Assert.Contains("TheCaptainsLegsAreTheirOwn => _deckMode && !CaptainIsUnderEscort", deck,

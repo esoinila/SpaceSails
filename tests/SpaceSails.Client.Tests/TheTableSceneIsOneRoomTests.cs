@@ -65,6 +65,14 @@ public sealed class TheTableSceneIsOneRoomTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static DeckPlan DeckFor(string body, int level, long watch = 0) =>
         HiveInterior.FloorDeck(body, level, MoonSurface.ExpeditionField(), 0, (_, _) => { }, [], watch);
 
@@ -573,7 +581,7 @@ public sealed class TheTableSceneIsOneRoomTests
 
         // Map.Deck's arm still raises the card on a false and only on a false, which is what makes (2) load-
         // bearing rather than decorative.
-        string deck = Source("Pages", "Map.Deck.cs");
+        string deck = Deck();
         Assert.Contains("if (!TryOpenTable())", deck, StringComparison.Ordinal);
     }
 }

@@ -312,6 +312,14 @@ public sealed class TheRoundIsNotStandingStillTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
+    /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
+    /// all of them — exactly the text it read out of one file before the split.</summary>
+    private static string Deck() => string.Concat(
+        Directory.EnumerateFiles(
+                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
     /// split. The count is asserted, so a seventh part can never go unread.</summary>
@@ -356,7 +364,7 @@ public sealed class TheRoundIsNotStandingStillTests
         Assert.DoesNotContain("budget > 0;", walk, StringComparison.Ordinal);
 
         // …and it is the CAPTAIN'S epsilon, so the two steppers cannot drift apart again unnoticed.
-        Assert.Contains("budget > 1e-9", Pages("Map.Deck.cs"), StringComparison.Ordinal);
+        Assert.Contains("budget > 1e-9", Deck(), StringComparison.Ordinal);
 
         // A snag is not an arrival: the stand and the leg advance are behind the "there" test alone.
         Assert.DoesNotContain("if (there || g.Route is not { Active: true })", walk, StringComparison.Ordinal);

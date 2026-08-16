@@ -22,15 +22,15 @@ namespace SpaceSails.Core.Tests;
 /// <c>UndergroundComplex.Block.cs</c> at 1,447, so the line is not sitting on top of a real case: it has
 /// 53 lines of daylight beneath it, and it is not a threshold that quietly selects everything.</para>
 ///
-/// <para><b>A ratchet, not a wall.</b> Ten files are over the line today, and a gate that simply banned them
-/// would have to be turned off to be committed — so instead each one is written down by PATH with the size
-/// it is RIGHT NOW, and three laws hold the list:</para>
+/// <para><b>A ratchet, not a wall.</b> Ten files were over the line the day this gate landed, and a gate
+/// that simply banned them would have to be turned off to be committed — so instead each one is written
+/// down by PATH with the size it was on the day it was listed, and three laws hold the list:</para>
 ///
 /// <list type="number">
 /// <item><b>No new offenders.</b> A file not on the list may not cross 1,500. This is the law that matters;
 /// the other two only stop the list from rotting.</item>
 /// <item><b>Listed files may only SHRINK.</b> A file's real size must be at or below its written allowance.
-/// Touch <c>Map.Plot.cs</c> and add forty lines and this goes red with both numbers in the message. The fix
+/// Touch a listed file and add forty lines and this goes red with both numbers in the message. The fix
 /// is never to raise the number — it is to put the forty lines somewhere they belong. (If a genuine,
 /// argued-for growth is the right answer, the number is edited in a commit that says WHY, and a reviewer
 /// gets to see the allowance move. That is the whole point of writing it down.)</item>
@@ -49,11 +49,12 @@ namespace SpaceSails.Core.Tests;
 /// (law 3 will tell you to, by name, if you forget). Do it in the SAME PR as the split. Anything a splitter
 /// has to remember to do in a later PR is a thing that does not get done.</para>
 ///
-/// <para><b>#870 lanes 4 and 5 will make rows here go stale on purpose.</b> The sibling crews splitting
-/// <c>Map.Sim.cs</c>, <c>Map.Combat.cs</c>, <c>Map.Plot.cs</c>, <c>Map.Quests.cs</c>, <c>DeckView.cs</c>,
-/// <c>Map.Patrol.cs</c> and <c>Map.Venting.cs</c> will each drop their file under the line, and law 3 will
-/// go red on their branch naming their row. That is the gate working, not the gate breaking: the red IS the
-/// instruction, and the fix is the one-line deletion described above, in their own PR.</para>
+/// <para><b>The list is whatever is written down in <see cref="WrittenExceptions"/> today, and it is meant
+/// to empty.</b> A crew that splits a listed file drops it under the line, and law 3 goes red on their branch
+/// naming their row. That is the gate working, not the gate breaking: the red IS the instruction, and the fix
+/// is the one-line deletion described above, in their own PR. #870's lanes 1–5 took all ten of the originally
+/// listed files under the line on 2026-08-16 and left exactly one row — <c>Map.Sim.World.cs</c>, which is one
+/// 1,656-line method that a pure move may not split, and which is lane 7's job.</para>
 ///
 /// <para><b>Proven able to fail three ways</b> before it was trusted — grow a listed file past its row, push
 /// an unlisted file over the line, and list a file that is already under it. The three REDs are quoted
@@ -90,13 +91,13 @@ public sealed class NoSourceFileIsTooLongTests
             // Map.Patrol.cs's row is GONE too (lane 5b): the file is 624 lines now, and the largest of the
             // six partials it became is 430 — the whole family is under the line, with no new row.
 
-            // Not in any lane yet — inherited debt, listed so it cannot grow.
+            // The inherited debt that was in no lane at all is gone too, and it went the same way.
             // PatrolBeat.cs's row is GONE (lane 5d): the file is 224 lines now, and the largest of the eight
             // partials it became is 460 — the whole family is under the line with no exception of its own.
-            ["src/SpaceSails.Client/Pages/Map.Deck.cs"] = 1687,
-
             // RingOffice.cs's row is GONE (lane 5e): the file is 270 lines now, and the largest of the five
             // partials it became is 763 — under the line without an exception of its own.
+            // Map.Deck.cs's row is GONE (lane 5f): the file is 178 lines now, and the largest of the seven
+            // partials it became is 489 — under the line without an exception of its own.
         };
 
     /// <summary>
@@ -177,9 +178,9 @@ public sealed class NoSourceFileIsTooLongTests
     /// #870 · The ratchet. Each written exception is a ceiling that only ever comes down: a listed file must
     /// be at or below the size it was on the day it was written down.
     ///
-    /// <para><b>Proven RED</b> by appending 200 lines to <c>src/SpaceSails.Client/Pages/Map.Venting.cs</c> —
-    /// the message names the file, its allowance, its real size and the overshoot. Quoted in the PR
-    /// body.</para>
+    /// <para><b>Proven RED</b> by appending 200 lines to a file that was a written exception at the time
+    /// (<c>Map.Venting.cs</c>, 1,842 → 2,042) — the message names the file, its allowance, its real size and
+    /// the overshoot. Quoted in the PR body.</para>
     /// </summary>
     [Fact]
     public void NoListedFileHasGrownPastItsWrittenAllowance()
@@ -209,9 +210,9 @@ public sealed class NoSourceFileIsTooLongTests
     /// has fallen under the line — or that no longer exists under that path — must have its row deleted, and
     /// this says so by name so the fix is one line.
     ///
-    /// <para>This is the assertion #870's later lanes will meet head-on, BY DESIGN: the crew that splits
-    /// <c>Map.Sim.cs</c> drops it under 1,500, this goes red naming that row, and they delete it in the same
-    /// PR. See the class docblock.</para>
+    /// <para>This is the assertion #870's lanes met head-on, BY DESIGN: a crew splits a listed file, drops
+    /// it under 1,500, this goes red naming that row, and they delete it in the same PR. Ten rows have gone
+    /// that way. See the class docblock.</para>
     ///
     /// <para><b>Proven RED</b> by adding a row for <c>src/SpaceSails.Core/SurfaceLayout.cs</c> (1,207 lines,
     /// well under the line) — the message names the file, its size, the line, and says "remove me". Quoted
