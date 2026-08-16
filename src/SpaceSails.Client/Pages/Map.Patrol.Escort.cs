@@ -30,8 +30,8 @@ public sealed partial class Map
         // composed from a moment ago (PatrolBeat.TheGuardHasYou): the man who said he was not pressing the
         // button for your floor is the man who does not press it. Two answers to one question, worked out in
         // two places, is the sentence-vs-sim bug class this feature has already paid for twice.
-        _kickOutDue = PatrolBeat.BookedTooOften(_escortsThisWatch);
-        _escortsThisWatch++;
+        _patrol.KickOutDue = PatrolBeat.BookedTooOften(_patrol.EscortsThisWatch);
+        _patrol.EscortsThisWatch++;
 
         AutoWalk.Attempt planned = AutoWalk.Plan(
             true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(sx, sy),
@@ -54,10 +54,10 @@ public sealed partial class Map
         g.Standing = 0;
         g.Retries = 0;
         g.RePlanIn = PatrolBeat.RePlanEverySeconds;
-        _escort = g;
-        _escortCar = (sx, sy);
-        _escortSeconds = 0;
-        _escortSaidPumps = false;
+        _patrol.Escort = g;
+        _patrol.EscortCar = (sx, sy);
+        _patrol.EscortSeconds = 0;
+        _patrol.EscortSaidPumps = false;
     }
 
     /// <summary>
@@ -76,9 +76,9 @@ public sealed partial class Map
     /// </summary>
     private void WalkTheEscort(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
-        _escortSeconds += dt;
+        _patrol.EscortSeconds += dt;
         g.RePlanIn -= dt;
-        (double sx, double sy) = _escortCar;
+        (double sx, double sy) = _patrol.EscortCar;
 
         double hx = sx - g.X, hy = sy - g.Y;
         bool heIsThere = (hx * hx) + (hy * hy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
@@ -132,9 +132,9 @@ public sealed partial class Map
         }
 
         // The small talk, once, on the walk — the punishment's whole texture is a man this unbothered.
-        if (!_escortSaidPumps && _escortSeconds >= PatrolBeat.PumpsAfterSeconds)
+        if (!_patrol.EscortSaidPumps && _patrol.EscortSeconds >= PatrolBeat.PumpsAfterSeconds)
         {
-            _escortSaidPumps = true;
+            _patrol.EscortSaidPumps = true;
             ShowPulseMessage(PatrolBeat.PumpsLine);
             LogAutopilotEvent(PatrolBeat.PumpsLine);
         }
@@ -142,7 +142,7 @@ public sealed partial class Map
         double adx = sx - _avatarX, ady = sy - _avatarY;
         if (heIsThere && (adx * adx) + (ady * ady) <= PatrolBeat.AtTheCarDu * PatrolBeat.AtTheCarDu)
         {
-            bool up = _kickOutDue;
+            bool up = _patrol.KickOutDue;
             EndTheEscort(g);
 
             // #835 · THE WALK THAT KEEPS GOING. Owner: "If we get kicked out then maybe we end up back to the
@@ -150,7 +150,7 @@ public sealed partial class Map
             // machinery. He does not go back to his round from here; he gets in with you.
             if (up)
             {
-                _kickOutRideDue = true;
+                _patrol.KickOutRideDue = true;
                 return;
             }
 
@@ -161,7 +161,7 @@ public sealed partial class Map
 
         // The bound. A walk that has taken a minute and a half is a walk something is wrong with, and the one
         // honest way out of it is to say so rather than to keep narrating it.
-        if (_escortSeconds > PatrolBeat.EscortSecondsCap)
+        if (_patrol.EscortSeconds > PatrolBeat.EscortSecondsCap)
         {
             EndTheEscort(g);
             TheCutToTheLift(sx, sy);
@@ -192,9 +192,9 @@ public sealed partial class Map
     /// the round starts anyway, with the cooldown running so the doors are not a place you get asked twice.</summary>
     private void EndTheEscort(Guard g)
     {
-        _escort = null;
-        _escortSeconds = 0;
-        _escortSaidPumps = false;
+        _patrol.Escort = null;
+        _patrol.EscortSeconds = 0;
+        _patrol.EscortSaidPumps = false;
         g.Vx = 0;
         g.Vy = 0;
         g.Route = null;
@@ -219,9 +219,9 @@ public sealed partial class Map
         // #835 · …and a cut may shorten the walk but it may never change where it ends. If the card said he
         // was riding up with you, he rides up with you: a jump-cut that quietly downgraded a kick-out to an
         // escort would be the sentence and the sim disagreeing about the one consequence that costs anything.
-        if (_kickOutDue)
+        if (_patrol.KickOutDue)
         {
-            _kickOutRideDue = true;
+            _patrol.KickOutRideDue = true;
         }
     }
 }

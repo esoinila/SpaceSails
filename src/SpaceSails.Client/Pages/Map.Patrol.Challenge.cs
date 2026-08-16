@@ -95,7 +95,7 @@ public sealed partial class Map
         // #836 · Nobody is coming, so the fan comes down. A wallet open in front of a captain with no man
         // crossing the floor is a dialog with no clock on it — and the paper stays in the hand, because
         // deciding who you are is not undone by somebody thinking better of asking.
-        _walletFanOpen = false;
+        _patrol.WalletFanOpen = false;
 
         g.WalkingUp = false;
         g.WalkUpFor = 0;
@@ -105,7 +105,7 @@ public sealed partial class Map
         g.Vy = 0;
         g.SinceStop = 0;
 
-        if (walkedAway && PatrolBeat.WalkingOffEarnsIt(++_walkedAwayThisWatch))
+        if (walkedAway && PatrolBeat.WalkingOffEarnsIt(++_patrol.WalkedAwayThisWatch))
         {
             TheRadioCall(g, PatrolBeat.Provocation.WalkedAwayTwice, index);
             return;
@@ -131,13 +131,13 @@ public sealed partial class Map
     {
         // …and never while somebody is already on their way over, or walking you out. An approach is the
         // stop, in progress; a second one behind it would be two men doing one job.
-        if (_viewObject is not null || !PatrolBeat.CanBeNoticed(_patrolFloorSeconds)
-            || _escort is not null || _escortDue is not null)
+        if (_viewObject is not null || !PatrolBeat.CanBeNoticed(_patrol.FloorSeconds)
+            || _patrol.Escort is not null || _patrol.EscortDue is not null)
         {
             return;
         }
 
-        foreach (Guard g in _guards)
+        foreach (Guard g in _patrol.Guards)
         {
             if (g.WalkingUp || g.AfterYou)
             {
@@ -145,9 +145,9 @@ public sealed partial class Map
             }
         }
 
-        for (int i = 0; i < _guards.Count; i++)
+        for (int i = 0; i < _patrol.Guards.Count; i++)
         {
-            Guard g = _guards[i];
+            Guard g = _patrol.Guards[i];
             if (g.SinceStop < PatrolBeat.AfterTheStopSeconds
                 || !PatrolBeat.Notices(g.X, g.Y, _avatarX, _avatarY, sight))
             {
@@ -158,7 +158,7 @@ public sealed partial class Map
             // buys it — it is the four lines already on the clipboard. Owner: the fiction strains when the
             // same guard books the same face four times and just keeps walking. Everything else about this
             // loop is #833's, unchanged: notice, hail, walk over, read.
-            if (PatrolBeat.BookedTooOften(_escortsThisWatch))
+            if (PatrolBeat.BookedTooOften(_patrol.EscortsThisWatch))
             {
                 TheRadioCall(g, PatrolBeat.Provocation.BookedTooManyTimes, i);
                 return;
@@ -224,7 +224,7 @@ public sealed partial class Map
     /// <summary>#836 · Is the fan actually in front of the captain? Asked by the dialog that draws it AND by
     /// the cancel key that shuts it, so Esc can never swallow a keystroke for a dialog nobody can see — a
     /// wallet that lost a paper between the hail and the frame is a wallet with no choice left in it.</summary>
-    private bool WalletFanIsUp => _walletFanOpen && TheWalletFan.Count > 1;
+    private bool WalletFanIsUp => _patrol.WalletFanOpen && TheWalletFan.Count > 1;
 
     /// <summary>
     /// #836 · THE HAIL PUTS A PAPER IN YOUR HAND, and — only when there is a choice to make — opens the fan.
@@ -242,8 +242,8 @@ public sealed partial class Map
         }
 
         string bodyId = ex.Stop.Body.Id;
-        _paperInHand = WalletChoice.DefaultFor(bodyId, _satchel, _shownBook);
-        _walletFanOpen = WalletChoice.Fans(bodyId, _satchel);
+        _patrol.PaperInHand = WalletChoice.DefaultFor(bodyId, _satchel, _patrol.ShownBook);
+        _patrol.WalletFanOpen = WalletChoice.Fans(bodyId, _satchel);
     }
 
     /// <summary>#836 · ONE CHOICE, and picking is the whole of it. There is no confirm step — the row IS the
@@ -252,14 +252,10 @@ public sealed partial class Map
     /// choice, under time pressure, made BEFORE the read.</i></summary>
     private void ChooseThePaper(Satchel.Item paper)
     {
-        _paperInHand = paper;
-        _walletFanOpen = false;
+        _patrol.PaperInHand = paper;
+        _patrol.WalletFanOpen = false;
         RendererInterop.PlayCue("blip");
     }
-
-    /// <summary>#836 · Shutting the fan without touching it. Whatever was already in the hand stays in it —
-    /// no arm of this dialog can leave a captain holding nothing they did not choose to hold.</summary>
-    private void CloseTheWalletFan() => _walletFanOpen = false;
 
     /// <summary>
     /// #836 · WHAT ACTUALLY GOES INTO HIS HAND, asked at the read and not before.
@@ -270,52 +266,9 @@ public sealed partial class Map
     /// never opened the fan is holding anyway.</para>
     /// </summary>
     private Satchel.Item? ThePaperHandedOver(string bodyId) =>
-        _paperInHand is { } chosen && WalletChoice.StillHeld(_satchel, chosen)
+        _patrol.PaperInHand is { } chosen && WalletChoice.StillHeld(_satchel, chosen)
             ? chosen
-            : WalletChoice.DefaultFor(bodyId, _satchel, _shownBook);
-
-    // ── #870 lane 6′a · WHAT THE MARKUP AND THE VAULT MAY ASK THE WALLET ──────────────────────────────
-    //
-    // The hand and the book are the challenge's own state (Map.Patrol.cs), and the guard says so. Two files
-    // outside this family have a real question about them — the fan dialog in Map.razor draws a row per
-    // paper, and Map.Vault.cs carries the book across excursions — and both ask it here rather than reading
-    // the fields.
-
-    /// <summary>#870 lane 6′a · IS THIS THE PAPER ALREADY IN YOUR HAND? One row of the fan, asked by the
-    /// dialog that draws it (<c>Map.razor</c>) to mark the picked row and to say so on its face.
-    ///
-    /// <para>Compared by KIND AND ID, never by reference: the fan is rebuilt from the satchel every time it
-    /// is asked (<see cref="TheWalletFan"/>), so the row's item and the held item are equal papers and not
-    /// the same object.</para></summary>
-    private bool ThePaperInYourHandIs(Satchel.Item paper) =>
-        _paperInHand is { } held && held.Kind == paper.Kind && held.Id == paper.Id;
-
-    /// <summary>#870 lane 6′a · WHAT THE BOOK SAYS ABOUT HANDING THIS PAPER OVER HERE — <i>worked here,
-    /// twice</i> — for the hint under a fan row (<c>Map.razor</c>). The sentence is Core's
-    /// (<see cref="WalletChoice.HistoryLine"/>); what this adds is that the book it is read out of is the
-    /// captain's own and nobody else has to hold it to ask.</summary>
-    private string TheBookOn(Satchel.Item paper, string bodyId) =>
-        WalletChoice.HistoryLine(paper, bodyId, _shownBook);
-
-    /// <summary>#870 lane 6′a · THE CAPTAIN'S OWN PAPER TRAIL, read-only — for the vault
-    /// (<c>Map.Vault.cs</c>), which writes every row's opaque <c>Stored</c> string into the save. A view of
-    /// the one book and never a copy.</summary>
-    private IReadOnlyList<WalletChoice.Shown> YourPaperTrail => _shownBook;
-
-    /// <summary>#870 lane 6′a · …and emptying it before a load pours the saved rows back in
-    /// (<c>Map.Vault.cs</c>). The book is <c>readonly</c> and outlives every excursion, so a load REFILLS it
-    /// rather than replacing it; without this a captain would carry the last game's paperwork into the
-    /// next.</summary>
-    private void ForgetThePaperTrail() => _shownBook.Clear();
-
-    /// <summary>#870 lane 6′a · …and one row back in, exactly as it was filed (<c>Map.Vault.cs</c>).
-    ///
-    /// <para>Deliberately NOT <see cref="FileTheNameYouGave"/>, and not <see cref="WalletChoice.Remember"/>
-    /// either: filing is what happens when a guard READS a paper — it composes an outcome, folds the row
-    /// into the book under Core's own rules and writes a line in the field book. A load is not a read. It
-    /// puts back rows that were already filed, in the order the save has them, and a captain who reloads
-    /// must not find a fresh note about a challenge that happened last week.</para></summary>
-    private void RestoreAPaperTrailRow(WalletChoice.Shown row) => _shownBook.Add(row);
+            : WalletChoice.DefaultFor(bodyId, _satchel, _patrol.ShownBook);
 
     /// <summary>
     /// He stops, reads what is in your wallet, and tells you the answer. The judgement is Core's and only
@@ -332,7 +285,7 @@ public sealed partial class Map
         // #836 · THE PAPER, AND THEN THE READ OF IT. The fan comes down here whether or not the captain ever
         // touched it — his hand is out, and the whole ruling is that there is no swapping in front of him.
         string bodyId = ex.Stop.Body.Id;
-        _walletFanOpen = false;
+        _patrol.WalletFanOpen = false;
         Satchel.Item? handed = ThePaperHandedOver(bodyId);
 
         PatrolBeat.Read read = PatrolBeat.TheGuardReads(bodyId, g.Plate, handed);
@@ -372,7 +325,7 @@ public sealed partial class Map
         // ARMED here, because the card telling the captain about it is standing in front of him at this exact
         // moment; the walk starts on the first frame after the card comes down, which is the frame he can
         // actually watch it happen on.
-        _escortDue = g;
+        _patrol.EscortDue = g;
         RequestVaultSave();
     }
 
@@ -397,9 +350,9 @@ public sealed partial class Map
         if (handed is { } paper)
         {
             IReadOnlyList<WalletChoice.Shown> filed = WalletChoice.Remember(
-                _shownBook, new WalletChoice.Shown(paper.Id, bodyId, level, how));
-            _shownBook.Clear();
-            _shownBook.AddRange(filed);
+                _patrol.ShownBook, new WalletChoice.Shown(paper.Id, bodyId, level, how));
+            _patrol.ShownBook.Clear();
+            _patrol.ShownBook.AddRange(filed);
 
             FileNote(
                 WalletChoice.ShownNote(paper, bodyId, level, how, name), WalletChoice.GlyphOf(paper));
