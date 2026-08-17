@@ -530,8 +530,10 @@
 .map-plot-nodes {
     /* PR-D2: only one step editor expands at a time now (accordion), but that one editor is taller than
        an old always-inline row — give the list room so the open editor shows without immediately scrolling.
-       #838 added the quick-select row and its frame note, so the open editor is ~2 lines taller again. */
-    max-height: 24rem;
+       #838 added the quick-select row and its frame note, so the open editor is ~2 lines taller again.
+       #926 added the nudge pair and the trip-frame offer — another ~3 lines when the offer stands — so the
+       list grows rather than shrinking the words on it (#782: the pressure valve is SCROLL, never size). */
+    max-height: 28rem;
     overflow-y: auto;
 }
 
@@ -552,11 +554,43 @@
     padding-inline: 0.25rem;
 }
 
-/* Whose frame those four buttons speak in — small, quiet, and always under them. */
+/* #926 · the two five-degree nudges — mouse-only aim, right under the four quick selects. A flex pair
+   rather than a grid: they are a matched pair, not a row of four, and at ~4.4rem each they take under
+   9.5rem of the open editor's ~34.6rem, so nothing below them moves. */
+.map-burn-nudge {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+}
+
+.map-burn-nudge .btn {
+    min-width: 4.4rem;
+    white-space: nowrap;
+    padding-inline: 0.4rem;
+}
+
+/* Whose frame those four buttons speak in — small, quiet, and always under them. #926 added the second
+   half of that sentence (the frame the plan is READ in), so it is allowed to wrap onto a second line. */
 .map-burn-frame-note {
     font-size: 0.72rem;
     line-height: 1.1;
     margin-bottom: 0.3rem;
+}
+
+/* #926 · the trip-frame offer. Loud enough to be read — this is the thing the owner had to remember by
+   hand — and quiet enough not to shout over the four buttons above it. The sentence WRAPS: at 0.78rem the
+   open editor's ~34.6rem holds ~88 characters to a line, and the longest sentence this scenario can build
+   ("…in RINGSIDE EXCHANGE's frame — the trip to HIGHPORT SATELLITE WORKS is in the SUN's.") is ~105, so
+   it takes two lines and the panel never grows sideways past its 38rem. */
+.map-burn-frame-offer {
+    margin-bottom: 0.4rem;
+}
+
+.map-burn-frame-offer-line {
+    font-size: 0.78rem;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+    color: #ffda6a;
 }
 
 .map-plot-pulses {
