@@ -113,6 +113,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "6b04d611d0a8dc6f5393e2429bee73f7",
             ["/map?converge=1"] = "7c57c271ad96f80a9837c04eb9c57a09",
             ["/map?counter=1"] = "018e98ea6bb7cfd5e4fe89716913ceff",
+            ["/map?counter=1&watch=2"] = "ff74a24fe79e64fc3eb2a75a61f67e3d",
+            ["/map?counter=1&watch=5"] = "a820956fa6e1d6aab91b34d85bb74d1f",
             ["/map?credits=1234&fuel=7&simhours=9"] = "7c57c271ad96f80a9837c04eb9c57a09",
             ["/map?credits=50000"] = "7c57c271ad96f80a9837c04eb9c57a09",
             ["/map?death=collector&dock=selene-gate"] = "d081c4a19a015c970e5e221106844c6c",

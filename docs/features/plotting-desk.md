@@ -21,13 +21,39 @@ by walking up and pressing `E`.
 ## Burn nodes
 
 - **Add burn at scrub** drops a maneuver node at the current scrub time.
-- Each node has: a direction toggle (**+** accelerate / **−** decelerate), a **pulse count**
-  (1–20), and a free **percent field** — any decimal from 0.01% to 50% per pulse. A 10% pulse is
-  a hammer (~3 km/s at interplanetary speed); a 0.5% node is a scalpel for fine matching.
+- Each node has: **four quick selects** for its direction, a **pulse count** (1–20), and a free
+  **percent field** — any decimal from 0.01% to 50% per pulse. A 10% pulse is a hammer (~3 km/s at
+  interplanetary speed); a 0.5% node is a scalpel for fine matching.
 - Click a node's marker on the ribbon to select it — its row highlights and the scrub jumps to
   that moment.
 - **@** re-times a node to the current scrub position; **×** deletes it.
 - "Planned: N / M" shows how many pulses your plan spends against how many you're carrying.
+
+### The four directions (#838)
+
+The planner aims a burn in the **vector view only**, and it does it in four words — with respect to
+the trajectory **at that node**, not to wherever the ship's nose happens to point right now:
+
+| Button | What it means |
+| --- | --- |
+| **▶ FORWARD** | with the trajectory at this node — push the orbit along (prograde) |
+| **◀ BACK** | against it — hold the orbit back (retrograde) |
+| **▲ UP** | away from the body — lift the orbit (radial out) |
+| **▼ DOWN** | toward the body — drop the orbit (radial in) |
+
+The body **up** and **down** are measured from is named under the buttons: the frame you have
+selected if you have one, otherwise whichever body's Hill sphere holds the ghost at that moment,
+otherwise the Sun. The four are always exact quarter turns apart, solved from the ghost's own
+position and velocity at the node's epoch — **re-time the node and press again and you get a new
+answer**, because by then the course has moved on. The pressed direction lights up, and goes dark
+by itself the moment the node is re-timed out from under it.
+
+**Free aim** stays for the exception: type any angle into the degrees field (course-relative by
+default, `abs`/`rel` toggles it to the world heading) and the burn points there.
+
+The **+ / −** idiom is not gone from the game — it belongs to reflex flying: the live `+`, `−`,
+`↑`, `↓` keys that scale the ship's velocity right now. Planning and reflex are two different
+questions, and each keeps the control that answers it.
 
 ## Closest-pass warning
 

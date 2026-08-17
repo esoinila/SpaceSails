@@ -364,7 +364,10 @@ public partial class Map
             // cheat's own.
             if (_stoolCheat)
             {
-                OpenCounterService(counter);
+                // #781 · Through Core's own fork, so ?stool=1&watch=2 seats a tester in front of the KEEP and
+                // ?stool=1&watch=5 in front of the machine — which is the difference this issue is about, and
+                // it must not be a thing only the real press path knows.
+                OpenCounterService(Core.Interior.CounterService.OnWatch(counter, ex.CanteenWatch));
                 TakeAStool();
                 ShowPulseMessage(
                     "🧪 DEV ?stool=1: up on a stool at THE COUNTER, menu and all. Press Wait — and add "
@@ -373,7 +376,11 @@ public partial class Map
             }
 
             ShowPulseMessage(
-                "🧪 DEV ?counter=1: THE COUNTER, in reach. Press E to open the card and order something.");
+                Core.Interior.TheKeep.KeptWatch(ex.CanteenWatch)
+                    ? "🧪 DEV ?counter=1: THE COUNTER, in reach, on a watch somebody is working it. Press E "
+                      + "to open the card — then Hear a rumour, and come back on a later watch."
+                    : "🧪 DEV ?counter=1: THE COUNTER, in reach, on a dead watch — it serves itself. Press E "
+                      + "to open the card, and add ?watch=2 to find somebody behind it.");
             return;
         }
     }
