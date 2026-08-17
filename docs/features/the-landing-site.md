@@ -1220,6 +1220,28 @@ and nothing is owed, and a refusal costs what a refused card costs at the gate, 
 to the moon (#715). The satchel does **not** grow a tree yet: inside #697's fold the cards sit under the name
 of whoever gave them to you, and only when there are two or more names.
 
+**And the other end of that axis: the kit that hears the buttons** (#763). Owner, streaming on the heels of
+#760: *"you search for signal in the vicinity — something in the BT/WiFi register — find it, and get the
+secret button pressed, pretty much by just knowing where to go to look."* Where the remote is who your ship
+CLAIMS TO BE on an operator's network, the **SDR SCANNER** is for a captain with no standing at all: it does
+not authenticate, it LISTENS. It is a satchel item (`Satchel.Kind.Tool`, bulky, in the pockets proper),
+standard issue for the outlaw register — one turns up under a bunk in about one ruin in
+`SurfaceSalvage.KitOneInN`, and the Rusty Roadstead keeps one under the back counter for coin
+(`Barkeep.BackCounter`). **SCAN** (`SdrScanner.Hits`) lists, on the kit's own card, every radio-addressed
+affordance within `ScanReachDu` of where you are standing — the floor's own cars and, where one exists, the
+gate to the band below — as a bearing in the building's compass and a rough range, and **never a plate**:
+*a lift call · about 40 du · westward*. That is the whole feature the owner asked for, because the panel is
+entitled to say nothing at all about a band the building does not admit to (#592) and a carrier is not
+entitled to anything. Detection is passive, free and leaves no trace anywhere; **PRESS** is a second,
+deliberate control, and it is where you stop being innocent — accepted only where no register covers the door
+(the halls nobody dug, #677), refused everywhere else with the refusal charged to that outfit and to nobody
+else (#715, through the same `RefusedAtTheGate` the remote's refusal uses). It never buys depth: the one band
+a press is accepted on has nothing under it, so §13.5 stands and the kit's payoff is KNOWING. At the head
+office the kit is **quiet** — its outfit answers no radio (#411) and the watchers emit nothing (#649/#672) —
+in one line that says less than it knows, and a canon sweep keeps every string this feature ships from ever
+claiming otherwise. The first floor the kit hears anything on is a story beat (#761), told once, on the kit's
+own card, never as a second modal over the first (#777's discipline).
+
 | gets a card | does not |
 | --- | --- |
 | an authority card (which shaft, which site; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |

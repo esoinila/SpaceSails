@@ -2679,6 +2679,18 @@
                                                 title="@LoadHint(item)"
                                                 @onclick="() => OpenTheLoadChooser(item)">@SpaceSails.Core.SentryHandLoad.LoadLabel</button>
                                     }
+                                    @* #763 · SCAN — read what the kit has been hearing since you walked in.
+                                       Drawn only on the kit, for the shredder's and the loader's reason: on
+                                       a keycard this is not a refusal, it is a verb that does not apply.
+                                       Live wherever it IS drawn and never disabled — with nothing in reach
+                                       it opens onto the sentence that says so, which is the only way
+                                       "proximity is the only skill" can be learned. *@
+                                    @if (ScanIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-load"
+                                                title="@ScanHint(item)"
+                                                @onclick="() => ScanWithTheKit(item)">@SpaceSails.Core.SdrScanner.ScanLabel</button>
+                                    }
                                  </div>;
                         }
 
@@ -2831,6 +2843,23 @@
                 @if (vo.Caption is { Length: > 0 } cap)
                 {
                     <div class="view-object-caption">@cap</div>
+                }
+                @* #763 · THE PRESS, ON THE KIT'S OWN SCREEN. Detection was passive and cost nothing; this
+                   is the button, and the owner's whole ruling is that it may never be automatic — "There
+                   was a button. I pushed it." One control per carrier the kit heard, recomputed from where
+                   the captain is standing rather than stored, and never disabled: a press that is going to
+                   be refused still has to be pressable, because the refusal is the thing worth learning. *@
+                @if (TheKitsCardIsUp)
+                {
+                    @foreach (SpaceSails.Core.SdrScanner.Hit hit in TheKitSweeps())
+                    {
+                        <div class="satchel-row">
+                            <span class="satchel-item-name">@SpaceSails.Core.SdrScanner.HitLine(hit)</span>
+                            <button type="button" class="satchel-load"
+                                    title="@SpaceSails.Core.SdrScanner.PressBlurb"
+                                    @onclick="() => PressTheHit(hit)">@SpaceSails.Core.SdrScanner.PressLabel</button>
+                        </div>
+                    }
                 }
                 @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
                    (#736) on the other full-screen card, because the surface raises this one. The
@@ -3223,6 +3252,15 @@
                        than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
                        keep`, which is the only thing the game is ever allowed to call him. *@
                     <button type="button" class="btn btn-sm btn-outline-info" title="@($"Ask {keep.Name} what they've heard lately")" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                }
+                @* #763 · THE BACK COUNTER. Drawn only where the venue admits to having one
+                   (Barkeep.BackCounter) — carrying a receiver is legal everywhere and selling one over the
+                   bar is a thing about the ROOM. Never disabled: an empty purse is answered in the keep's
+                   own words rather than by a control that will not press (#212/#603). *@
+                @if (TheBackCounterIsOpen)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@Core.SdrScanner.CardStory" @onclick="BuyTheKit">@Core.SdrScanner.BuyLabel</button>
                 }
                 @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
                    (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@

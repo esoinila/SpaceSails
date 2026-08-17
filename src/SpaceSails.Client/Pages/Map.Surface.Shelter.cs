@@ -231,6 +231,25 @@ public partial class Map
                 break;
             }
 
+            // #763 · SOMEBODY'S SDR, under a bunk. The one intake outside the Hive that can be refused, so
+            // it is the one that has to keep #678's law: a find the pocket will not take is STILL LYING
+            // THERE. The room was marked searched a few lines above this switch, so it is unmarked again —
+            // the sentence and the world must agree that nothing was consumed.
+            case SurfaceSalvage.Find.Kit:
+            {
+                if (!Core.Satchel.CanTake(_satchel, Core.SdrScanner.TheKit))
+                {
+                    ex.RuinsSearched.Remove(key);
+                    ShowPulseMessage(UndergroundComplex.PocketFullLine);
+                    break;
+                }
+
+                _satchel = [.. Core.Satchel.Add(_satchel, Core.SdrScanner.TheKit)];
+                RendererInterop.PlayCue("board");
+                ShowAndFile(SurfaceSalvage.KitLine(), Core.SdrScanner.Glyph);
+                break;
+            }
+
             case SurfaceSalvage.Find.Papers:
                 // Texture, never testimony (#563): a roster, a docket, a note in a locker. Nothing here
                 // explains what is outside, and nothing ever will.
