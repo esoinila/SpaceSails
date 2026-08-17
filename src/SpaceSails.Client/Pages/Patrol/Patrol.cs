@@ -258,9 +258,7 @@ public sealed partial class Map
             foreach (Guard g in Guards)
             {
                 waiting ??= g.Knocking ? g : null;
-                g.Knocking = false;
-                g.Knocked = false;
-                g.SawYouShutIt = false;
+                g.HeForgetsTheCatch();
             }
             return waiting;
         }

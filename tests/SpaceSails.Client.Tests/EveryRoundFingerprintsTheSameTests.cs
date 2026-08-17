@@ -400,7 +400,7 @@ public sealed class EveryRoundFingerprintsTheSameTests
         var wrong = new List<string>();
         foreach (Case c in EveryCase())
         {
-            (string text, int frames, _) = Walk(c);
+            (string text, int frames, _, _) = Walk(c);
             string got = Sha256(text);
             if (!Pinned.TryGetValue(c.Name, out string? want) || !string.Equals(want, got, StringComparison.Ordinal))
             {
@@ -459,6 +459,53 @@ public sealed class EveryRoundFingerprintsTheSameTests
         Assert.Equal(0, seen.GetValueOrDefault("the cover act"));
     }
 
+    /// <summary>
+    /// #870 lane 6′d · …AND THE THREE THINGS THAT DO COEXIST STILL DO. The other half of
+    /// <see cref="IsHeStillOneMan"/>, and the half that keeps it honest: <c>Guard.Check()</c> is a list of
+    /// seven pairs it says never happen, and a list like that is worth exactly as much as the pairs it
+    /// LEAVES OFF are real.
+    ///
+    /// <para>Two of the three are ordinary and this file walks them by the hundred. The third — the spent
+    /// walk-up clock — is the one 6′d found and filed rather than swept: <c>WalkUpFor</c> is left standing on
+    /// a man who has stopped walking up, because the only two roads out of the walk-up that zero it are the
+    /// two that also end it, and the road through the CARD is not one of them. It is unreadable while stale
+    /// (nothing reads it except the walk-up, and starting one zeroes it) and it is left exactly as the
+    /// shipped code leaves it. The owner decides whether it is worth a line.</para>
+    /// </summary>
+    [Fact]
+    public void TheThreeThingsThatDoCoexistStillDo()
+    {
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (Case c in EveryCase())
+        {
+            foreach ((string what, int n) in Walk(c).AlsoTrue)
+            {
+                seen[what] = seen.GetValueOrDefault(what) + n;
+            }
+        }
+
+        string counted = string.Join(", ", seen.Select(kv => $"{kv.Key}×{kv.Value}"));
+
+        // THE ONE THAT REALLY HAPPENS, and 6′d's filed finding. 1,972 guard-frames of these thirteen
+        // cases have a walk-up clock running on a man who is not walking up.
+        Assert.True(seen.GetValueOrDefault("a spent walk-up clock") > 0,
+            "nobody ever stops walking up with the clock still running — 6′d's filed finding has gone "
+            + "away, and this fact should go with it.\ncounted: " + counted);
+
+        // …and the two that do not, each for its own reason, each stated rather than left silent.
+        //
+        // THE BENCH one is a law: TheHoldArmIsUnreachableAndTheGuardSaysSo below proves MustHold is false
+        // for every guard on every floor however the captain sits, so a suspended walk-up cannot arise.
+        Assert.Equal(0, seen.GetValueOrDefault("a walk-up a bench has suspended"));
+
+        // THE STAND one is NOT a law — it is reachable (a man standing out his five seconds when a door
+        // takes him off the round keeps the stand and gains a route), and no case in this file reaches it.
+        // That is why it is tallied here and deliberately NOT asserted by Guard.Check: an invariant nothing
+        // has ever walked is a clause waiting to go red on somebody else's afternoon. A case that reaches it
+        // is worth adding, and this number is where it would show up.
+        Assert.Equal(0, seen.GetValueOrDefault("a stand remembered across a detour"));
+    }
+
     /// <summary>#793 · THE HOLD ARM CANNOT BE ENTERED FROM THIS METHOD'S OWN INPUTS, and that is the shipped
     /// law rather than a gap in the case set: a guard is always <c>OnAPublishedRound</c>, a published round
     /// can never be <c>IsTailing</c>, so <c>MustHold</c> is false for every guard on every floor however the
@@ -479,10 +526,12 @@ public sealed class EveryRoundFingerprintsTheSameTests
 
     // ── WALKING ONE CASE ──────────────────────────────────────────────────────────────────────────────
 
-    private static (string Text, int Frames, IReadOnlyDictionary<string, int> Arms) Walk(Case c)
+    private static (string Text, int Frames, IReadOnlyDictionary<string, int> Arms,
+                    IReadOnlyDictionary<string, int> AlsoTrue) Walk(Case c)
     {
         (Pages.Map map, object ex) = c.Stage();
         var arms = new Dictionary<string, int>(StringComparer.Ordinal);
+        var alsoTrue = new Dictionary<string, int>(StringComparer.Ordinal);
         var sb = new StringBuilder();
         sb.Append("case ").Append(c.Name).Append('\n');
 
@@ -501,11 +550,53 @@ public sealed class EveryRoundFingerprintsTheSameTests
 
             sb.Append("f").Append(frame).Append(" dt=").Append(R(dt)).Append('\n');
             sb.Append(TheFloorAfterThatFrame(map, ex));
+            IsHeStillOneMan(map, c, frame, alsoTrue);
         }
 
         sb.Append("── what this case moved on the page ──\n")
           .Append(WhatMoved(before, EveryScalarOnThePage(map)));
-        return (Normalize(sb.ToString()), c.Frames, arms);
+        return (Normalize(sb.ToString()), c.Frames, arms, alsoTrue);
+    }
+
+    /// <summary>
+    /// #870 lane 6′d · AND HE IS STILL ONE MAN. <c>Guard.Check()</c> asked of every guard after every frame
+    /// of every case — seven pairs of postures that may never be true together, over 7,100 frames.
+    ///
+    /// <para>It rides inside the walk rather than in a case set of its own, so it costs nothing and so it
+    /// cannot drift out of step with the transcripts: the frame that is pinned is the frame that is
+    /// checked.</para>
+    ///
+    /// <para>The three pairs that DO coexist are tallied instead of asserted, and named here as they are on
+    /// <c>Guard.Check</c>: a walk-up a bench has suspended, a stand remembered across a detour, and a spent
+    /// walk-up clock. They are behaviour, not slips, and <see cref="TheThreeThingsThatDoCoexistStillDo"/>
+    /// makes each of them a number rather than a paragraph.</para>
+    /// </summary>
+    private static void IsHeStillOneMan(
+        Pages.Map map, Case c, int frame, Dictionary<string, int> alsoTrue)
+    {
+        foreach (object g in Guards(map))
+        {
+            object? wrong = g.GetType().GetMethod("Check", Hidden)!.Invoke(g, []);
+            Assert.True(wrong is null,
+                $"case \"{c.Name}\", frame {frame}: {wrong}\n"
+                + "Two postures that cannot coexist are both true on one guard. This is not a test that "
+                + "needs relaxing: either a transition forgot one of the assignments it owns, or the arms "
+                + "of the chain have been reordered under it.");
+
+            bool held = (bool)Get(g, "Held")!, walkingUp = (bool)Get(g, "WalkingUp")!;
+            Tally(alsoTrue, "a walk-up a bench has suspended", held && walkingUp);
+            Tally(alsoTrue, "a stand remembered across a detour",
+                (double)Get(g, "Standing")! > 0 && Get(g, "Route") is AutoWalk { Active: true });
+            Tally(alsoTrue, "a spent walk-up clock", (double)Get(g, "WalkUpFor")! > 0 && !walkingUp);
+        }
+    }
+
+    private static void Tally(Dictionary<string, int> into, string what, bool it)
+    {
+        if (it)
+        {
+            into[what] = into.GetValueOrDefault(what) + 1;
+        }
     }
 
     /// <summary>Which arm each guard would take on the frame about to be spent. A replica of the chain's own
