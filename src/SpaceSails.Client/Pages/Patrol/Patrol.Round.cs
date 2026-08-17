@@ -28,7 +28,7 @@ public sealed partial class Map
         {
             if (g.Standing > 0)
             {
-                g.Standing -= dt;
+                g.HeSpendsAFrameStanding(dt);
                 g.Vx = 0;   // a stopped mover drops off a motion fan, honestly
                 g.Vy = 0;
                 PlanTheNextLegWhileHeStands(g, walls);
@@ -49,7 +49,7 @@ public sealed partial class Map
                 AutoWalk.Planner plan = g.Planning is { } ahead && ahead.PlannedFor(from, to)
                     ? ahead
                     : PlanTheLeg(g, target, walls);
-                g.Planning = null;
+                g.HeForgetsThePlanAhead();
                 AutoWalk.Attempt planned = plan.Finish();
 
                 if (planned.Route is null)
@@ -57,8 +57,7 @@ public sealed partial class Map
                     // Nothing connects. The audit says this cannot happen on a floor this generator builds
                     // (§13.1) and a guard is not the place to find out otherwise — so the round simply drops
                     // the stop and carries on rather than standing in a corridor forever.
-                    g.Retries = 0;
-                    g.Leg = (g.Leg + 1) % Beat.Count;
+                    g.HeDropsTheStop(Beat.Count);
                     return;
                 }
 
@@ -73,9 +72,9 @@ public sealed partial class Map
                 // is the belt under the braces rather than the fix — but it is the clause that means no future
                 // lane can ever be the reason a man stops getting anywhere, which is the difference between a
                 // preference and a wall.
-                g.Route = AutoWalk.Along(g.Retries == 0
+                g.HeTakesTheRoute(AutoWalk.Along(g.Retries == 0
                     ? PatrolBeat.KeepRight(planned.Route.Route, walls, DeckPlan.AvatarRadius)
-                    : planned.Route.Route);
+                    : planned.Route.Route));
             }
 
             SpendTheStride(g, dt, walls);
@@ -84,9 +83,7 @@ public sealed partial class Map
             bool there = (gx * gx) + (gy * gy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
             if (there)
             {
-                g.Route = null;
-                g.Retries = 0;
-                g.Standing = PatrolBeat.StandSeconds;   // THE GAP the whole feature is about
+                g.HeArrivesAtTheStop();   // THE GAP the whole feature is about starts here
 
                 // #831 · …and the gap has a body now. He turns to the plate on the wall and signs it. The
                 // facing comes off Core's own fixture rather than being worked out here, so the man and the
@@ -96,10 +93,10 @@ public sealed partial class Map
                     // From where he ACTUALLY ended up, not from the square Core measured the fixture off:
                     // AtTheStopDu is a tolerance and a man a stride short of the plate is still looking at it.
                     g.Facing = System.Math.Atan2(station.Y - g.Y, station.X - g.X);
-                    g.SignedPoint = station.Number;
+                    g.HeSignsIn(station.Number);
                 }
 
-                g.Leg = (g.Leg + 1) % Beat.Count;
+                g.HeTakesTheNextLeg(Beat.Count);
                 return;
             }
 
@@ -113,11 +110,10 @@ public sealed partial class Map
             // guard is not the place to find out otherwise).
             if (g.Route is not { Active: true })
             {
-                g.Route = null;
-                if (++g.Retries > PatrolBeat.RePlansPerLeg)
+                g.HeDropsHisRoute();
+                if (g.HeTriesTheLegAgain() > PatrolBeat.RePlansPerLeg)
                 {
-                    g.Retries = 0;
-                    g.Leg = (g.Leg + 1) % Beat.Count;
+                    g.HeDropsTheStop(Beat.Count);
                 }
             }
         }
@@ -153,7 +149,7 @@ public sealed partial class Map
                     new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(next.X, next.Y)))
             {
                 ahead = PlanTheLeg(g, next, walls);
-                g.Planning = ahead;
+                g.HePlansAhead(ahead);
             }
             ahead.Advance(PatrolBeat.PlanCellsAFrame);
         }
@@ -269,11 +265,14 @@ public sealed partial class Map
             IReadOnlyList<SurfaceCollision.Segment> walls,
             IReadOnlyList<SurfaceCollision.Segment> sight)
         {
-            g.Route = null;
-            g.CoverFor += dt;
+            g.HeDropsHisRoute();
+            g.HeIsOneFrameFurtherIntoTheCover(dt);
 
             // HE PICKS ONCE, on the frame the hold starts, and then it is what he is doing.
-            g.CoverAt ??= PatrolBeat.CoverFor(g.X, g.Y, Readables, sight, walls);
+            if (g.CoverAt is null)
+            {
+                g.HePicksSomethingToRead(PatrolBeat.CoverFor(g.X, g.Y, Readables, sight, walls));
+            }
 
             if (g.CoverAt is not { } thing)
             {
@@ -288,7 +287,7 @@ public sealed partial class Map
             // HE IS LOOKING AT IT the whole time, walking to it or standing at it. A man crossing two du to a
             // plate has already decided which plate.
             g.Facing = System.Math.Atan2(thing.Y - g.Y, thing.X - g.X);
-            g.CoverPoint = thing.Point;
+            g.HeCovers(thing.Point);
 
             if (PatrolBeat.AtTheCover(g.X, g.Y, in thing) || g.CoverFor > PatrolBeat.CoverDriftSeconds)
             {

@@ -846,7 +846,12 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         Assert.Contains("AutoWalk.Along(g.Retries == 0", walk, StringComparison.Ordinal);
         Assert.Contains(": planned.Route.Route)", walk, StringComparison.Ordinal);
         Assert.Contains("System.Math.Atan2(station.Y - g.Y, station.X - g.X)", walk, StringComparison.Ordinal);
-        Assert.Contains("g.SignedPoint = station.Number", walk, StringComparison.Ordinal);
+        // #870 lane 6′d · RE-SPELLED, never re-asserted. The write moved onto the man as a named
+        // transition (Guard.cs), so the claim is asserted in the two halves it is now written in: the
+        // caller that says it happened, and the one line on the type that does it.
+        Assert.Contains("g.HeSignsIn(station.Number);", walk, StringComparison.Ordinal);
+        Assert.Contains("public void HeSignsIn(int point) => SignedPoint = point;", Patrol(),
+            StringComparison.Ordinal);
 
         // The cover act, and the honest hold inside it.
         Assert.Contains(

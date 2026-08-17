@@ -368,17 +368,37 @@ public sealed class EveryRoundFingerprintsTheSameTests
 
     // ── THE PINS ──────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>What each case's transcript hashed to on the 175-line <c>AdvancePatrol</c> of
-    /// <c>d064085</c>, before a line of it was moved. A change here is either a behaviour change in the round
-    /// or a change to the floor the round is walked on; both are things a human should have to look at.</summary>
+    /// <summary>
+    /// What each case's transcript hashed to on the 175-line <c>AdvancePatrol</c> of <c>d064085</c>, before a
+    /// line of it was moved. A change here is either a behaviour change in the round or a change to the floor
+    /// the round is walked on; both are things a human should have to look at.
+    ///
+    /// <para><b>#920 · TWO OF THE THIRTEEN WERE RE-RECORDED, AND THIS IS THE THIRD KIND OF CHANGE.</b> This
+    /// transcript writes down EVERY field and property of a <c>Guard</c>, so a lane that changes a piece of
+    /// state the round never reads still moves a hash — the digest is a fingerprint of the man, not only of
+    /// what he did. #920 zeroed <c>WalkUpFor</c> when the walk-up ends at card reach, and the two cases with a
+    /// card in them moved: <i>he hails you and you walk away from it</i> (286 frames) and <i>he crosses the
+    /// floor, reads your papers, and walks you to the car</i> (1,686). 1,972 frames — the exact number
+    /// <see cref="TheTwoThatCoexistAndTheOneThatIsNowALaw"/> had been tallying.</para>
+    ///
+    /// <para>It was proved a state change and not a behaviour change the only honest way: both transcripts
+    /// were written out whole and compared LINE BY LINE. All thirteen have the same line count either way;
+    /// eleven are byte-identical; and on every one of the 1,972 lines that differ, deleting the
+    /// <c>WalkUpFor=…</c> token from both sides makes the two lines byte-identical — every other field, the
+    /// route and its cursor, the card, the pulse, the log and the end-of-case "what this case moved on the
+    /// page" section included. Nothing else moved by a digit. <b>If either digest below ever moves again, that
+    /// is not this lane's kind of change and the same line-by-line diff is what settles it.</b></para>
+    /// </summary>
     private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
     {
         ["an empty floor still fades the plate"] = "148ff6f3378feede544d018d3771364edfe52e86ecdf3b316d39696757114ab3",
         ["up on the surface there is no round at all"] = "343943d96209111af869ab6dbe8a2fb427427d89b9ca1eb09e9de0fa1934d8ae",
         ["two men walk the round and nobody is watching"] = "07cd8ad1a5538d1e77e4c603c96aeadb8d5c25f4b180d9cb7f4c2de9ffafc34d",
         ["one man walks the round, all the way round it"] = "11c4a45bcf8bc5264099ba24343ce57433152cba227fd2714cd37ce05af3dc43",
-        ["he hails you and you walk away from it"] = "11047c537b2e1ecba26719c794e327c7d3ad52e311cf78d257c894777b0ae9e4",
-        ["he crosses the floor, reads your papers, and walks you to the car"] = "e28da120432d3a69b47871db86e9e6b90769ea195a72ad04b7f4ef3bfa186708",
+        // #920 · re-recorded (was 11047c53… / e28da120…) — the walk-up clock now stops when the walk-up does,
+        // and the transcript writes the clock down. 1,972 lines, WalkUpFor and nothing else. See above.
+        ["he hails you and you walk away from it"] = "df04406d32e2a8b7a1976d86c4b3d3cb4fb8b3d7a48f2235cbbf8a2aa84ddb86",
+        ["he crosses the floor, reads your papers, and walks you to the car"] = "c61af7ba65721b6df96fa87d5f56473f0885021899e7dd7c4c35d16c3dfccb7c",
         ["…and this time he does not press the button for your floor"] = "a5e4b2a86ccc31b32346959aedd538af55b9b05a38cf2afbf20bf2448a8d4140",
         ["he calls it in, comes at a run, and he has you"] = "6b5da25dd0810d31fb57a276925f43b3292795059265c08f33456636a64f583d",
         ["he calls it in, and by the time he moves you are gone"] = "23bd65d4552be534fcbfc6b59b8ecdc2a4d3209a700982b2ba0869f217aa01e1",
@@ -400,7 +420,7 @@ public sealed class EveryRoundFingerprintsTheSameTests
         var wrong = new List<string>();
         foreach (Case c in EveryCase())
         {
-            (string text, int frames, _) = Walk(c);
+            (string text, int frames, _, _) = Walk(c);
             string got = Sha256(text);
             if (!Pinned.TryGetValue(c.Name, out string? want) || !string.Equals(want, got, StringComparison.Ordinal))
             {
@@ -459,6 +479,57 @@ public sealed class EveryRoundFingerprintsTheSameTests
         Assert.Equal(0, seen.GetValueOrDefault("the cover act"));
     }
 
+    /// <summary>
+    /// #870 lane 6′d · …AND THE THINGS THAT DO COEXIST. The other half of
+    /// <see cref="IsHeStillOneMan"/>, and the half that keeps it honest: <c>Guard.Check()</c> is a list of
+    /// eight pairs it says never happen, and a list like that is worth exactly as much as the pairs it
+    /// LEAVES OFF are real.
+    ///
+    /// <para><b>#920 · The third one is gone from the list, which is the whole of this lane.</b> The spent
+    /// walk-up clock — <c>WalkUpFor</c> left standing on a man who has stopped walking up — was 6′d's filed
+    /// finding at <b>1,972</b> guard-frames of these thirteen cases: two of the three roads out of a walk-up
+    /// zeroed it and the road THROUGH THE CARD did not. <c>Guard.HeStopsWalkingUp</c> zeroes it now and
+    /// <c>Guard.Check</c> asserts it, so the tally below is 0 and stays 0. It is kept as a NUMBER rather than
+    /// deleted on purpose: the day somebody drops the clause from <c>Check</c>, this line is what still
+    /// counts the frames, and a law with a second witness is a law that cannot be quietly relaxed.</para>
+    /// </summary>
+    [Fact]
+    public void TheTwoThatCoexistAndTheOneThatIsNowALaw()
+    {
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (Case c in EveryCase())
+        {
+            foreach ((string what, int n) in Walk(c).AlsoTrue)
+            {
+                seen[what] = seen.GetValueOrDefault(what) + n;
+            }
+        }
+
+        string counted = string.Join(", ", seen.Select(kv => $"{kv.Key}×{kv.Value}"));
+
+        // #920 · THE ONE THAT USED TO REALLY HAPPEN — 1,972 of these frames carried a walk-up clock on a man
+        // who was not walking up, and now none of them do. Guard.Check asserts it, so IsHeStillOneMan would
+        // already have thrown on the frame it went wrong; this is the second witness, and it is the one that
+        // still counts if the clause is ever dropped from Check.
+        Assert.Equal(0, seen.GetValueOrDefault("a spent walk-up clock"));
+
+        // …and the two that DO coexist, each for its own reason, each stated rather than left silent.
+        //
+        // THE BENCH one is a law: TheHoldArmIsUnreachableAndTheGuardSaysSo below proves MustHold is false
+        // for every guard on every floor however the captain sits, so a suspended walk-up cannot arise.
+        Assert.Equal(0, seen.GetValueOrDefault("a walk-up a bench has suspended"));
+
+        // THE STAND one is NOT a law — it is reachable BY CONSTRUCTION and no case in this file reaches it.
+        // #920 checked, because a pair observed zero times looks exactly like a pair that cannot happen: a
+        // man arrives at a stop (HeArrivesAtTheStop — five seconds owed, no route), the captain shuts a
+        // cubicle on him while he stands, and WaitOutsideTheCubicle hands him a route to that door on a frame
+        // where nothing has touched the stand, because Standing is spent only by HeSpendsAFrameStanding and
+        // that is the ROUND's arm, not the arm he is in. So it is tallied here and deliberately NOT asserted
+        // by Guard.Check: an invariant nothing has ever walked is a clause waiting to go red on somebody
+        // else's afternoon. A case that reaches it is worth adding, and this number is where it shows up.
+        Assert.Equal(0, seen.GetValueOrDefault("a stand remembered across a detour"));
+    }
+
     /// <summary>#793 · THE HOLD ARM CANNOT BE ENTERED FROM THIS METHOD'S OWN INPUTS, and that is the shipped
     /// law rather than a gap in the case set: a guard is always <c>OnAPublishedRound</c>, a published round
     /// can never be <c>IsTailing</c>, so <c>MustHold</c> is false for every guard on every floor however the
@@ -479,10 +550,12 @@ public sealed class EveryRoundFingerprintsTheSameTests
 
     // ── WALKING ONE CASE ──────────────────────────────────────────────────────────────────────────────
 
-    private static (string Text, int Frames, IReadOnlyDictionary<string, int> Arms) Walk(Case c)
+    private static (string Text, int Frames, IReadOnlyDictionary<string, int> Arms,
+                    IReadOnlyDictionary<string, int> AlsoTrue) Walk(Case c)
     {
         (Pages.Map map, object ex) = c.Stage();
         var arms = new Dictionary<string, int>(StringComparer.Ordinal);
+        var alsoTrue = new Dictionary<string, int>(StringComparer.Ordinal);
         var sb = new StringBuilder();
         sb.Append("case ").Append(c.Name).Append('\n');
 
@@ -501,11 +574,55 @@ public sealed class EveryRoundFingerprintsTheSameTests
 
             sb.Append("f").Append(frame).Append(" dt=").Append(R(dt)).Append('\n');
             sb.Append(TheFloorAfterThatFrame(map, ex));
+            IsHeStillOneMan(map, c, frame, alsoTrue);
         }
 
         sb.Append("── what this case moved on the page ──\n")
           .Append(WhatMoved(before, EveryScalarOnThePage(map)));
-        return (Normalize(sb.ToString()), c.Frames, arms);
+        return (Normalize(sb.ToString()), c.Frames, arms, alsoTrue);
+    }
+
+    /// <summary>
+    /// #870 lane 6′d · AND HE IS STILL ONE MAN. <c>Guard.Check()</c> asked of every guard after every frame
+    /// of every case — eight pairs of postures that may never be true together (#920 added the eighth), over
+    /// 7,100 frames.
+    ///
+    /// <para>It rides inside the walk rather than in a case set of its own, so it costs nothing and so it
+    /// cannot drift out of step with the transcripts: the frame that is pinned is the frame that is
+    /// checked.</para>
+    ///
+    /// <para>Three pairs are tallied rather than asserted, and named here as they are on <c>Guard.Check</c>:
+    /// a walk-up a bench has suspended, a stand remembered across a detour, and a spent walk-up clock. The
+    /// first two are behaviour, not slips. The third was too until #920 made it a law, and its tally is kept
+    /// as the second witness — <see cref="TheTwoThatCoexistAndTheOneThatIsNowALaw"/> makes each of them a
+    /// number rather than a paragraph.</para>
+    /// </summary>
+    private static void IsHeStillOneMan(
+        Pages.Map map, Case c, int frame, Dictionary<string, int> alsoTrue)
+    {
+        foreach (object g in Guards(map))
+        {
+            object? wrong = g.GetType().GetMethod("Check", Hidden)!.Invoke(g, []);
+            Assert.True(wrong is null,
+                $"case \"{c.Name}\", frame {frame}: {wrong}\n"
+                + "Two postures that cannot coexist are both true on one guard. This is not a test that "
+                + "needs relaxing: either a transition forgot one of the assignments it owns, or the arms "
+                + "of the chain have been reordered under it.");
+
+            bool held = (bool)Get(g, "Held")!, walkingUp = (bool)Get(g, "WalkingUp")!;
+            Tally(alsoTrue, "a walk-up a bench has suspended", held && walkingUp);
+            Tally(alsoTrue, "a stand remembered across a detour",
+                (double)Get(g, "Standing")! > 0 && Get(g, "Route") is AutoWalk { Active: true });
+            Tally(alsoTrue, "a spent walk-up clock", (double)Get(g, "WalkUpFor")! > 0 && !walkingUp);
+        }
+    }
+
+    private static void Tally(Dictionary<string, int> into, string what, bool it)
+    {
+        if (it)
+        {
+            into[what] = into.GetValueOrDefault(what) + 1;
+        }
     }
 
     /// <summary>Which arm each guard would take on the frame about to be spent. A replica of the chain's own

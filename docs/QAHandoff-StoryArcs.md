@@ -96,7 +96,9 @@ are the fast paths per arc, so nobody has to fly anywhere to test anything.
 Dev server: `dotnet run --project src/SpaceSails.Client --urls http://localhost:PORT`, then
 `http://localhost:PORT/map?<cheats>`.
 
-> **This project's own rule, written in `Map.Sim.cs` next to these cheats:**
+> **This project's own rule, written next to these cheats in `Map.Sim.World.Query.cs`** (they lived in
+> `Map.Sim.cs` when this was written; #870 moved the boot and its `?query=` readers into
+> `Pages/Map.Sim.World.*.cs` — seven files, unchanged behaviour)**:**
 > *"a scene nobody can reach on demand is a scene that ships broken"* and *"Testing is a feature (owner's
 > rule)."* That is the authority for the line above: an arc with no quick start is a finding, not an
 > inconvenience.
@@ -163,12 +165,16 @@ satchel, `T` plants a sentry, `G` drops the chest.
 
 ### The full cheat surface, verified against `Map.Sim.cs` on 2026-08-02
 
+*(Where to re-verify it today: #870 split that file — the boot's `?query=` readers are
+`Pages/Map.Sim.World.cs` + the six `Map.Sim.World.Query*.cs`, and `Core/DevStarts.cs` is the catalogue
+the guide's tables are checked against.)*
+
 Several of these are not in the testing guide's tables and are the fastest way into scenes that are otherwise
 nearly impossible to reach on purpose.
 
 | cheat | what it does |
 | --- | --- |
-| `?autowalk=1` | **click the deck and the captain WALKS there** (#738, 2026-08-06) — A\* over the same walls the boots obey, same air/nerve/threat bill, WASD cancels, honest refusal when no path. THE tool for playtesting floors: "walk to the locker, press E" is two actions instead of forty. |
+| ~~`?autowalk=1`~~ | **RETIRED — not a cheat any more** *(corrected 2026-08-17)*. Click-to-walk shipped behind this flag (#738, 2026-08-06); the owner ruled on 2026-08-15 that clicking and the walk keys are two spellings of one control, and **#875 turned it always on** — a click on the deck walks the captain on every walked view, with no URL at all, refused and held by the very same predicate that refuses and holds the arrow keys. The flag is still parsed and **changes nothing**, kept only as a no-op alias so old dev links boot. What the click always was and still is: A\* over the same walls the boots obey, same air/nerve/threat bill, any movement key cancels, honest refusal when no path. Still THE tool for playtesting floors — you just no longer have to ask for it. |
 | `?floor=N` | ride straight down to B*N* in a Hive; clamped to the site's own bottom |
 | `?air=N` | start the excursion with *N* seconds of tank instead of a full one |
 | `?collectors=N` | force a repo boat to follow you down and land *N* seconds in, whatever the heat gauge says — the scene is deliberately rare and mid-mission, i.e. *"nearly impossible to playtest on purpose"* |
@@ -273,7 +279,8 @@ and what the screen said. A finding without a reproduction is a rumour.
 
 - **An MCP-driven browser tab is hidden only when its window is** *(corrected 2026-08-06 — a full day was
   played through MCP)*: with the Chrome window visible (even partially), `?land=1` completes, the on-foot sim
-  runs, and whole floors can be walked — pair it with `?autowalk=1` and clicks replace key-spam. The freeze
+  runs, and whole floors can be walked — and clicks replace key-spam with no flag to add, since #875 (this
+  used to say "pair it with `?autowalk=1`"; corrected 2026-08-17). The freeze
   cases are a **fully occluded window** and a **locked Windows session** (both stop rAF dead and imitate a
   game hang — diagnose with a rAF-vs-setTimeout probe and `Get-Process LogonUI` before filing anything).
   Timing/perf numbers from an automated tab remain worthless either way; boot pegs the main thread 25–60 s

@@ -22,8 +22,8 @@ public sealed partial class Map
         private void WalkUpToTheCaptain(
             SurfaceExcursion ex, Guard g, int index, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
         {
-            g.WalkUpFor += dt;
-            g.RePlanIn -= dt;
+            g.HeIsOneFrameFurtherIntoTheWalkUp(dt);
+            g.HeCountsDownToARePlan(dt);
 
             // THE READ HAPPENS HERE AND NOWHERE ELSE. Face to face, at card distance — which is the whole of
             // #833's first half, and the reason this clause is above everything else in the method.
@@ -31,14 +31,14 @@ public sealed partial class Map
             {
                 g.Vx = 0;
                 g.Vy = 0;
-                g.Route = null;
+                g.HeDropsHisRoute();
                 g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
 
                 // …unless something else is already in front of the captain. He simply stands there at arm's
                 // length until it comes down: a challenge behind a backdrop is a challenge nobody read (#777).
                 if (_host.ViewObject is null)
                 {
-                    g.WalkingUp = false;
+                    g.HeStopsWalkingUp();
                     TheRoundStopsAtYou(ex, g);
                 }
                 return;
@@ -56,7 +56,7 @@ public sealed partial class Map
 
             if (g.Route is not { Active: true } || g.RePlanIn <= 0)
             {
-                g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+                g.HeWillRePlanInAWhile();
                 AutoWalk.Attempt planned = AutoWalk.Plan(
                     true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(_host.AvatarX, _host.AvatarY),
                     walls, DeckPlan.AvatarRadius,
@@ -74,7 +74,7 @@ public sealed partial class Map
                     GiveUpTheHail(g, index, walkedAway: false);
                     return;
                 }
-                g.Route = planned.Route;
+                g.HeTakesTheRoute(planned.Route);
             }
 
             SpendTheStride(g, dt, walls);
@@ -99,13 +99,9 @@ public sealed partial class Map
             // deciding who you are is not undone by somebody thinking better of asking.
             WalletFanOpen = false;
 
-            g.WalkingUp = false;
-            g.WalkUpFor = 0;
-            g.Route = null;
-            g.Retries = 0;
+            g.HeGivesUp();
             g.Vx = 0;
             g.Vy = 0;
-            g.SinceStop = 0;
 
             if (walkedAway && PatrolBeat.WalkingOffEarnsIt(++WalkedAwayThisWatch))
             {
@@ -182,13 +178,7 @@ public sealed partial class Map
         public void TheHail(Guard g)
         {
             FanTheWallet();
-            g.WalkingUp = true;
-            g.WalkUpFor = 0;
-            g.RePlanIn = 0;
-            g.Standing = 0;
-            g.Route = null;
-            g.Retries = 0;
-            g.SinceStop = 0;
+            g.HeStartsWalkingUp();
             g.Vx = 0;
             g.Vy = 0;
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
@@ -272,8 +262,7 @@ public sealed partial class Map
         /// </summary>
         private void TheRoundStopsAtYou(SurfaceExcursion ex, Guard g)
         {
-            g.SinceStop = 0;
-            g.Standing = PatrolBeat.StandSeconds;
+            g.HeStandsAtYou();
             g.Vx = 0;
             g.Vy = 0;
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
