@@ -30,7 +30,9 @@ Judge every beat against these, in order:
 1. **The beat exists on screen.** A truth that lives only in Core constants or a writers' bible is not
    being told. (The reveal shock hooks 40/30/64 are the standing example: designed, never consumed.)
 2. **You can reach it on demand.** *"A scene nobody can reach on demand is a scene that ships
-   broken"* — `Map.Sim.cs`'s own rule. An arc beat with no cheat start is a finding; file it or fix it.
+   broken"* — the boot's own rule, written beside the `?query=` readers in `Map.Sim.World.Query.cs`
+   (it was `Map.Sim.cs` until #870 split the boot out). An arc beat with no cheat start is a finding;
+   file it or fix it.
 3. **The fiction arrives one beat early** (#380). An event must introduce its fiction before it needs
    it. A tell you can only read after the trap is not a tell (#534's law, generalized).
 4. **The sentence matches the sim** (bug class 3). Read every line the game prints against what the
@@ -66,7 +68,8 @@ currently unreachable or untold.
 
 ## 3 · New cheat starts to add (each one a small PR with a guard)
 
-The rule: boot-time params, parsed in the one loop in `Map.Sim.cs` (`OnAfterRenderAsync`), documented
+The rule: boot-time params, parsed by `ReadEveryQueryKey` in `Map.Sim.World.cs` and consumed by the six
+`Map.Sim.World.Query*.cs` readers (#870 — it was one loop in `Map.Sim.cs` when this was written), documented
 in `testing-guide.md` Appendix A **in the same PR**, and listed in `DevStarts.cs` if a button earns
 its place. A cheat is a feature; prove it with a test where the seam allows.
 
