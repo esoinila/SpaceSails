@@ -53,8 +53,8 @@ whether a room is sealed, but *why*.
 
 - [Big picture / vision](docs/SpaceSails_plan_big_picture.md)
 - [Detailed implementation plan](docs/SpaceSails_plan_detailed.md) — milestones, architecture, working agreement
-- [Coding helpers](docs/coding-helpers.md) — driving the `grok` & `gemini` CLIs headlessly to offload implementation
-- [Architecture](docs/architecture.md) — the box view, the duty-station UI shape, multiplayer-with-desks design notes, and why WebAssembly
+- [Coding helpers](docs/coding-helpers.md) — driving the `grok` & `gemini` CLIs headlessly to offload implementation, and the house laws structural work obeys (purity proofs, snapshot-first splits, ratchets)
+- [Architecture](docs/architecture.md) — the box view, where the code lives (the families, the two collaborator objects, the 1,500-line size gate), the duty-station UI shape, multiplayer-with-desks design notes, and why WebAssembly
 - [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal (mirrored in-game at `/guide`)
 - [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature, and **Appendix A: the boot cheats** (31 `?param=` quick starts — a scene nobody can reach on demand is a scene that ships broken)
 - [Story-arc QA handoff](docs/QAHandoff-StoryArcs.md) — how the narrative content is tested, and the five named bug classes that keep coming back
@@ -149,7 +149,7 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
 | `scenarios/` | Scenario data files (`sol.json`, `sol-eu.json`, `wheel.json`, `oops.json`) |
 | `labs/` | The Gravity Lab — 41 runnable lesson probes + the lab-viz host |
-| `tests/` | xUnit test projects (Core, Client, and the UI gate) |
+| `tests/` | xUnit test projects (Core, Client, and the UI gate), plus `tests/scripts/` — the Python purity/assert accounting a pure-move PR has to show |
 
 ## Provenance
 

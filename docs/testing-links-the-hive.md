@@ -6,7 +6,9 @@ boots straight into the situation, and **every floor number below was read out o
 document full of confident URLs that land on the wrong floor is worse than no document (§13.19's own lesson,
 one head along).*
 
-`Map.Sim.cs`'s rule applies: **a scene nobody can reach on demand is a scene that ships broken.**
+The boot's own rule applies: **a scene nobody can reach on demand is a scene that ships broken.** It is
+written beside the `?query=` readers in `Pages/Map.Sim.World.Query.cs` (it was `Map.Sim.cs` until #870
+split the boot into `Map.Sim.World.*`).
 
 ---
 
