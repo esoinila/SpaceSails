@@ -3000,7 +3000,7 @@
     transform: rotate(7deg);
     padding: 0.2rem 0.5rem;
     font-weight: 900;
-    font-size: 0.9rem;
+    font-size: 1.05rem;
     letter-spacing: 0.05em;
     color: #8affb0;
     border: 2px solid #8affb0;
@@ -3009,9 +3009,14 @@
     text-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.8);
 }
 
+/* #782 · THE HEDGE WORD IS THE JOKE, so it has to be legible enough to BE one. It shipped at 0.6rem —
+   9.6 px of 0.85-opacity mint laid over whichever gen-AI photograph the brief drew, which on the owner's
+   phone is not fine print, it is texture. EveryTextReadsTests found it by sweeping the runtime art slots.
+   It keeps its place below the stamp's shout (1.05rem over 0.875rem) and stops being a smudge; the parent
+   grew by the same step so the hierarchy the stamp is drawn in survives the fix. */
 .eb-stamp span {
     display: block;
-    font-size: 0.6rem;
+    font-size: 0.875rem;
     font-weight: 700;
     opacity: 0.85;
 }
@@ -3714,17 +3719,23 @@
     padding: 0.7rem 0.9rem 0.7rem 2rem;
     text-align: left;
     color: rgba(219, 230, 242, 0.9);
-    font-size: 0.87rem;
+    /* #782 · was 0.87rem, which lays out at 13.9 px — under the 14 px floor by a tenth of a pixel, on the
+       one card that tells a captain the five things that will kill them on the regolith. The live probe
+       measured it on the phone. The pressure valve here is the card's own scroll (#735), never the type. */
+    font-size: 0.9rem;
     line-height: 1.5;
     background: rgba(0, 0, 0, 0.25);
     border-left: 2px solid rgba(240, 190, 110, 0.5);
     border-radius: 0.3rem;
 }
 
+/* #782 · The footnote under the lesson shipped at 0.78rem (12.5 px) in half-alpha ink — 4.43:1 against the
+   card's own ground, under WCAG AA, and small with it. It is the line that tells a captain the keys stay
+   spelled out somewhere, so it is close to the last line in the game that should be a whisper. */
 .ground-lesson-foot {
     margin-top: 0.8rem;
-    color: rgba(219, 230, 242, 0.5);
-    font-size: 0.78rem;
+    color: rgba(219, 230, 242, 0.78);
+    font-size: 0.9rem;
 }
 
 /* #563 — the map-just-grew card. Same frame as the first-ground lesson (they are siblings: the two things

@@ -27,7 +27,7 @@ Fly and plot, first of all — the whole game hangs off the plotting table. Then
 
 ## 🧮 The Gravity Lab — learn orbital mechanics by running it
 
-This repo is secretly edutainment. **Forty-one** type-it-in lessons under
+This repo is secretly edutainment. **Forty-four** type-it-in lessons under
 [`labs/`](labs/README.md) teach numerical orbital mechanics on the game's own deterministic
 engine — fork a probe, run it, break it on purpose, learn the physics and the programming at
 once, the way magazine listings taught a generation to code:
@@ -56,7 +56,7 @@ whether a room is sealed, but *why*.
 - [Coding helpers](docs/coding-helpers.md) — driving the `grok` & `gemini` CLIs headlessly to offload implementation, and the house laws structural work obeys (purity proofs, snapshot-first splits, ratchets)
 - [Architecture](docs/architecture.md) — the box view, where the code lives (the families, the two collaborator objects, the 1,500-line size gate), the duty-station UI shape, multiplayer-with-desks design notes, and why WebAssembly
 - [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal (mirrored in-game at `/guide`)
-- [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature, and **Appendix A: the boot cheats** (31 `?param=` quick starts — a scene nobody can reach on demand is a scene that ships broken)
+- [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature, and **Appendix A: the boot cheats** (65 rows naming 59 distinct `?param=` quick starts, plus 53 one-click dev starts in the game's own front door — a scene nobody can reach on demand is a scene that ships broken)
 - [Story-arc QA handoff](docs/QAHandoff-StoryArcs.md) — how the narrative content is tested, and the five named bug classes that keep coming back
 - [Worldbuilding notes](docs/worldbuilding-notes.md) — the owner's canon and standing design rulings
 - [The Gravity Lab](labs/README.md) — a type-it-in numerical orbital mechanics tutorial series built on `SpaceSails.Core` itself, fork-run-break style
@@ -148,7 +148,7 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | `src/SpaceSails.Client` | Blazor WASM client |
 | `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
 | `scenarios/` | Scenario data files (`sol.json`, `sol-eu.json`, `wheel.json`, `oops.json`) |
-| `labs/` | The Gravity Lab — 41 runnable lesson probes + the lab-viz host |
+| `labs/` | The Gravity Lab — 44 runnable lesson probes + the lab-viz host |
 | `tests/` | xUnit test projects (Core, Client, and the UI gate), plus `tests/scripts/` — the Python purity/assert accounting a pure-move PR has to show |
 
 ## Provenance
