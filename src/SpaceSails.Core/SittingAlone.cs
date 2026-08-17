@@ -364,12 +364,17 @@ public static class SittingAlone
         "A while goes by. Somewhere behind the counter a fridge cycles, stops, and starts again.",
     ];
 
-    /// <summary>#751/#757 · And what waiting is like BEHIND A DOOR. Nobody comes; that is what the door is
-    /// for, and the lines say so without ever saying it is a rule.</summary>
+    /// <summary>#751/#757 · And what waiting is like BEHIND A DOOR. Nobody comes; that is what the room is
+    /// for, and the lines say so without ever saying it is a rule.
+    ///
+    /// <para>#758 · The first of them said <i>the door is shut</i>, and usually it is not: a cabinet stands
+    /// open behind a curtain until somebody dogs it (<see cref="CabinetPrivacy"/>). It says the thing that
+    /// is true at BOTH stages now — the hall does not walk in here — because a line asserting a leaf the sim
+    /// has left open is the third named bug class shipping inside the feature that opened it.</para></summary>
     public static readonly IReadOnlyList<string> NobodyCameCabinet =
     [
-        "A while goes by. Nobody comes, and nobody was going to — the door is shut and that is the whole " +
-        "of what you are paying for.",
+        "A while goes by. Nobody comes, and nobody was going to — the hall does not walk in here, and that " +
+        "is the whole of what you are paying for.",
         "The hall carries on somewhere past the panelling, a long way off, like weather.",
     ];
 

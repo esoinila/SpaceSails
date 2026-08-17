@@ -62,12 +62,18 @@ public static class HiveInterior
     /// Replayed onto every rebuild for the reason a shot hasp is: a room searched, a satchel opened or a bin
     /// used rebuilds this deck, and a door that came open again while the captain sat still behind it would
     /// be the world growing its walls back with somebody looking straight at them.</param>
+    /// <param name="cabinetsDogged">#758 · The cabinets whose padded leaf is out of the wall and dogged, by
+    /// <see cref="CabinetPrivacy.Key"/>. ABSENT MEANS CURTAIN — the state every cabinet is in until somebody
+    /// decides otherwise — so a caller with nothing to say draws the building as it stands. The plan carries
+    /// it as one glyph on the cabinet's own plate (<see cref="CabinetPrivacy.PlateFor"/>) and this file
+    /// composes nothing: which mark means which stage is Core's, exactly as VACANT/OCCUPIED is.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
         IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0,
         IReadOnlyCollection<string>? locksShotOpen = null,
-        IReadOnlyCollection<string>? cubiclesShut = null)
+        IReadOnlyCollection<string>? cubiclesShut = null,
+        IReadOnlyCollection<string>? cabinetsDogged = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -475,9 +481,21 @@ public static class HiveInterior
                 foreach (UndergroundComplex.Cabinet cabinet in theHall.Cabinets)
                 {
                     double inward = cabinet.X > hallMidX ? -1.0 : 1.0;
+
+                    // #758 · …AND WHICH STAGE IT IS STANDING AT, as one glyph on the end of that plate. The
+                    // whole of the deck's contribution to the curtain: a captain crossing the hall can see
+                    // which of three doors is cloth and which is dogged, and nothing is spelled out. Absent
+                    // from the set is CURTAIN — the state the building keeps them in — so a floor built with
+                    // nothing to say draws the row as it stands rather than as three shut doors.
+                    CabinetPrivacy.Stage stage =
+                        cabinetsDogged is not null
+                        && cabinetsDogged.Contains(CabinetPrivacy.Key(level, cabinet.Number))
+                            ? CabinetPrivacy.Stage.Door
+                            : CabinetPrivacy.Stage.Curtain;
+
                     labels.Add((
                         (float)(cabinet.X + (inward * (cabinet.HalfW + 2.0))),
-                        (float)cabinet.Y, cabinet.Plate));
+                        (float)cabinet.Y, CabinetPrivacy.PlateFor(cabinet.Plate, stage)));
                 }
             }
 

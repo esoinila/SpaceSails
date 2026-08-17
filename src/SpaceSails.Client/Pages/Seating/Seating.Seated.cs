@@ -241,7 +241,10 @@ public partial class Map
                 SittingAlone.Fill(ex.CanteenWatch),
                 // #865 · …and one clause knows about the company. "YOUR OWN TABLE" printed while the weighbridge
                 // clerk eats opposite would be the strip and the room disagreeing about whose top this is.
-                SeatedWithCompany);
+                SeatedWithCompany,
+                // #758 · …and the room clause knows which stage the leaf is standing at. A strip saying "the
+                // door is shut" to a captain sitting behind cloth is the same fault, one clause along.
+                CabinetStage);
         }
 
         // ── PRIVACY GATES THE SPREAD ──────────────────────────────────────────────────────────────────────

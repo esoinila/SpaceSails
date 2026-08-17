@@ -136,8 +136,9 @@ public partial class Map
                             : CanteenTable.SceneFor(who, ex.TableTempOverheard),
                         Seats = top.Seats,
                         Free = top.Free,
-                        Bark = top.Line,
+                        Bark = TheBarkAtThisTop(ex, top),
                         Quiet = top.Quiet,
+                        Cabinet = top.Cabinet,
                         // #865 · SOLO IS FALSE AND THE FRAME IS STILL THE STRIP, and the two lines that are not
                         // here are the whole of the ruling. Solo stays false because somebody IS in the chair
                         // opposite — that is the occupancy the privacy ladder reads, and a top you are sharing is
@@ -236,6 +237,7 @@ public partial class Map
                         // premise (#757: "sitting alone is STATE"), and the panel says it in chairs.
                         Free = Math.Max(0, top.Seats - 1),
                         Quiet = top.Quiet,
+                        Cabinet = top.Cabinet,
                         Solo = true,
                         Relaxed = relaxed,
                         DrinkInHand = drink,
@@ -754,7 +756,127 @@ public partial class Map
                 ex.TableMoves.Add(MoveKey(t, CanteenTable.Show + ":relevant"));
             }
 
+            // #758 · …AND WHETHER THE WEAVE LET ANY OF IT OUT. This is the sensitive beat — paper on a table
+            // in a room with a door — so it is the beat the curtain is rolled on, and NOTHING IS SAID about
+            // the answer either way. A true does not change this outcome, does not raise a card and does not
+            // touch the field book; it waits on the excursion until somebody who has no way of knowing says
+            // the cabinet's number out loud (TheBarkAtThisTop). A dogged leaf never gets as far as the die.
+            if (t.Cabinet > 0)
+            {
+                int beat = ex.CabinetBeats++;
+                if (CabinetPrivacy.Leaks(ex.Stop.Body.Id, t.Cabinet, ex.CanteenWatch, beat, CabinetStage))
+                {
+                    ex.CabinetLeaked = t.Cabinet;
+                }
+            }
+
             TableAnswered(ex, t, CanteenTable.Show, said);
+        }
+
+        // ── #758 · THE CURTAIN AND THE DOOR ───────────────────────────────────────────────────────────────
+        //
+        // Owner, 2026-08-06: "the cabinets could have some kind of privacy curtain effect ... something that
+        // prevents the sound or sight catching what happens there too easily but is not a real door."
+        //
+        // The law is Core's (CabinetPrivacy) and the state is the excursion's set of dogged leaves. What is
+        // here is the seat's own three lines: which stage the room the captain is IN stands at, what the one
+        // strip button says, and what pressing it does.
+
+        /// <summary>#758 · Which stage this sitting's cabinet stands at — <c>Curtain</c> anywhere that is not
+        /// a cabinet at all, because a hall table has no leaf to dog and the default is the honest answer.
+        ///
+        /// <para>Asked of the one set the DECK is drawn from (<c>ex.CabinetsDogged</c>) and never of a flag
+        /// captured when the captain sat down, exactly as the cubicle's catch is (#821): the leaf can be
+        /// worked while you are already sitting behind it, and the glyph on the plan and the clause on the
+        /// strip have to change on the same frame.</para></summary>
+        public CabinetPrivacy.Stage CabinetStage =>
+            _host.Surface is { } ex && Table is { Cabinet: > 0 } t
+            && ex.CabinetsDogged.Contains(CabinetPrivacy.Key(ex.Floor, t.Cabinet))
+                ? CabinetPrivacy.Stage.Door
+                : CabinetPrivacy.Stage.Curtain;
+
+        /// <summary>#758 · Is there a leaf to work from this seat? A cabinet is the only seat in the game with
+        /// a door of its own, so the strip's button exists nowhere else.</summary>
+        public bool ACabinetLeafToWork => Table is { Cabinet: > 0 };
+
+        /// <summary>What the one button says, which is always the OTHER stage — the room never has to
+        /// announce the state it is already in.</summary>
+        public string CabinetLeafLabel => CabinetPrivacy.LabelFor(CabinetStage);
+
+        /// <summary>…and what it says on the way past, which is the cost.</summary>
+        public string CabinetLeafHint => CabinetPrivacy.HintFor(CabinetStage);
+
+        /// <summary>
+        /// #758 · WORK THE LEAF — the whole of the captain's half of the mechanic, in one press.
+        ///
+        /// <para>Dogging is public and the counter remembers: the who-was-inside line goes into the book
+        /// ONCE per cabinet per excursion, on the way shut only, and never for the cloth. Letting the leaf
+        /// back open writes nothing, because the thing worth remembering happened when it closed and a book
+        /// does not un-write.</para>
+        ///
+        /// <para>It does not rebuild the deck itself — the plan's glyph is refreshed by the page wrapper the
+        /// strip actually calls (<c>WorkTheCabinetLeaf</c> on <see cref="Map"/>), for the reason every other
+        /// verb in this family reaches the world through <see cref="_host"/>: a seat that rebuilt decks would
+        /// need a twenty-ninth thing from the page.</para>
+        /// </summary>
+        public void DrawOrDogTheCabinet()
+        {
+            if (_host.Surface is not { } ex || Table is not { Cabinet: > 0 } t)
+            {
+                return;
+            }
+
+            string key = CabinetPrivacy.Key(ex.Floor, t.Cabinet);
+            CabinetPrivacy.Stage from = CabinetStage;
+            CabinetPrivacy.Stage to = from == CabinetPrivacy.Stage.Door
+                ? CabinetPrivacy.Stage.Curtain
+                : CabinetPrivacy.Stage.Door;
+
+            if (to == CabinetPrivacy.Stage.Door)
+            {
+                ex.CabinetsDogged.Add(key);
+            }
+            else
+            {
+                ex.CabinetsDogged.Remove(key);
+            }
+
+            // The counter's long memory. Core says WHICH transition is memorable; the set says whether this
+            // room has already been written down. Two guards read this line: it fires once, and never for a
+            // curtain.
+            if (CabinetPrivacy.TheCounterWritesItDown(from, to) && ex.CabinetsWitnessed.Add(key))
+            {
+                _host.FileNote(CabinetPrivacy.WhoWasInsideNote(t.Cabinet), CanteenRegulars.Glyph);
+            }
+
+            // Said on the strip, in the one layer the room stays lit behind (#865).
+            t.Outcome = CabinetPrivacy.SaidOn(to);
+            _host.RequestVaultSave();
+            _host.StateHasChanged();
+        }
+
+        /// <summary>
+        /// #758 · WHAT THE PERSON AT THIS TOP SAYS — and, exactly once, the thing said by somebody who has no
+        /// way of knowing it.
+        ///
+        /// <para>A leak behind the curtain is never announced on the beat it happens. It comes back HERE,
+        /// later, in another part of the room, as a stranger naming a cabinet number and then declining to go
+        /// on — #715's per-entity memory arriving as a sentence rather than as a meter, which is the same
+        /// seam <see cref="RipAndBin.SeenNote"/> uses. Spent by being said, so it is one moment and not a
+        /// tone the rest of the evening takes on.</para>
+        ///
+        /// <para>Never in a cabinet, and never from one of the ten named regulars: the whole point is that it
+        /// is somebody nobody would think to watch.</para>
+        /// </summary>
+        private static string? TheBarkAtThisTop(SurfaceExcursion ex, CanteenRegulars.TableSeat top)
+        {
+            if (top.Stranger && top.Cabinet == 0 && ex.CabinetLeaked is { } cabinet)
+            {
+                ex.CabinetLeaked = null;
+                return CabinetPrivacy.BarkThatKnows(cabinet);
+            }
+
+            return top.Line;
         }
 
         /// <summary>
