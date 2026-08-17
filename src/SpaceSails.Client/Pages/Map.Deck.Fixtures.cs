@@ -218,20 +218,25 @@ public partial class Map
         if (_pinEntry == job.Pin)
         {
             RendererInterop.PlayCue("board");
+            // #736 · The pad is dismissed BY THIS PRESS, so it is dismissed FIRST and the receipt is said
+            // after: a line routed to a panel that is about to be torn down is a line nobody reads. With the
+            // pad gone the seam puts it on whatever is still in front of the captain, and with nothing in
+            // front of them at all it puts it on the world — which is what this branch always wanted.
+            CancelPin();
             if (_dockedHavenId is { } station && HavenInterior.HatchGrowsWing(station, job.TargetShipId))
             {
                 // Doors that grow the world (PR-F): this hatch opens a real back room. Weld it on and
                 // leave the job Active — you still have to walk in and lift the package off the shelf.
                 UnlockHatch(station, job.TargetShipId);
-                ShowPulseMessage("The lock blinks green — the hatch grinds aside onto a dark back room. Something's on the shelf inside. Step in and take it. 📦");
+                SayItWhereTheyAreLooking("The lock blinks green — the hatch grinds aside onto a dark back room. Something's on the shelf inside. Step in and take it. 📦");
             }
             else
             {
-                // A plain lockup: the package is simply behind the panel, pocketed on the spot.
-                job.State = QuestState.PickedUp;
-                ShowPulseMessage("The lock blinks green — the hatch sighs open. You pocket the package and pull it shut behind you. 📦");
+                // #727 · A plain lockup: the package is simply behind the panel, pocketed on the spot — a
+                // step the chair issued, finished on foot at a keypad, through the one writer.
+                AdvanceMission(job, QuestState.PickedUp,
+                    "The lock blinks green — the hatch sighs open. You pocket the package and pull it shut behind you. 📦");
             }
-            CancelPin();
         }
         else
         {

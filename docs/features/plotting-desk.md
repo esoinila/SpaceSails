@@ -51,9 +51,39 @@ by itself the moment the node is re-timed out from under it.
 **Free aim** stays for the exception: type any angle into the degrees field (course-relative by
 default, `abs`/`rel` toggles it to the world heading) and the burn points there.
 
-The **+ / −** idiom is not gone from the game — it belongs to reflex flying: the live `+`, `−`,
-`↑`, `↓` keys that scale the ship's velocity right now. Planning and reflex are two different
+And for the captain flying with the mouse alone (owner, 2026-08-17: *"the vector rotation is good for
+flying with mouse alone, without inputting … like ±5 degrees"*), **−5°** and **+5°** turn the aim five
+degrees off wherever it points now — press FORWARD, then +5° twice, and the burn sits ten degrees off
+the ghost's prograde without a key being touched. The step lives once, in Core
+(`NodeFrame.NudgeDegrees`), and it is an ANGLE, which is why the buttons wear a degree sign.
+
+The **+ / −** *factor* idiom is not gone from the game — it belongs to reflex flying: the live `+`,
+`−`, `↑`, `↓` keys that scale the ship's velocity right now. Planning and reflex are two different
 questions, and each keeps the control that answers it.
+
+### The frame you READ the plan in (#926)
+
+Owner, playing the vector planner (2026-08-17): *"the real thrust amounts are dependent on the
+coordinate origin. I had to remember to switch to Sun to get the ship to really start moving from
+Earth towards Mars."* In Earth's frame a Mars transfer looks like almost nothing; the interesting
+motion is the Sun's, and the plot frame (#135/#143/#206) decides which one you are looking at.
+
+So the step editor **names the frame it reads the plan in** — *reading in EARTH's frame* — always; and
+when the plan has a destination whose trip is in a different frame, it says so in one line and offers
+that frame in one press:
+
+> You are reading this plan in EARTH's frame — the trip to MARS is in the SUN's.
+> **[ Read it in the Sun's frame ]**
+
+**The trip's frame is the common parent of both ends** (`TripFrame.Of` in Core): the deepest body that
+is an ancestor-or-self of the ghost's own primary at the node AND of the destination. Earth→Mars: the
+Sun. Earth→Luna: Earth. Europa→Ganymede: Jupiter. When that body is the root of the hierarchy the
+answer is the null frame — the Sun / inertial one.
+
+It **offers, and never switches by itself** (the owner's option A; auto-switching was rejected). The
+press moves only what you JUDGE by — the ribbon and the numbers. The four quick selects go on aiming
+in the NODE's frame whatever the map is drawn about, because an escape burn is Earth-prograde either
+way, so a burn's heading is byte-identical before and after the press.
 
 ## Closest-pass warning
 

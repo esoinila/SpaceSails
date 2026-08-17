@@ -172,6 +172,25 @@ code {
     color: #c02d76;
 }
 
+/* ── #782 · THE QUIET VOICE IS STILL A VOICE ─────────────────────────────────────────────────────────
+   Owner ruling, 2026-08-08: "All text needs to have good contrast from the background as a general
+   ruling… text that cannot be read is horrible."
+
+   Bootstrap's `.text-secondary` is #6c757d — a grey picked for a WHITE page. This game has no white
+   page. On the card family's own darkest fill, rgb(6, 9, 15), it measures 4.25:1, which is UNDER WCAG
+   AA for body text (4.5:1) — and it is the owner's own sentence about #780, "text and background are
+   both dark", wearing a utility class instead of a hand-typed colour.
+
+   Found by the live probe in tests/SpaceSails.UiGate/EveryTextReadsTests, which read it at 390 × 700
+   off the B1 counter card: the who-is-in-tonight line (#410) and the barkeep's tell (#781), both
+   4.25:1. There are ~179 of these across the client and every one of them is a QUIET aside on a dark
+   ground, so the fix belongs here — once, after Bootstrap in the load order — and not in 179 places.
+   #a8b3c4 measures 9.4:1 on the same ground and is still visibly the quieter voice next to the
+   #e8ecf4 the cards speak in. */
+.text-secondary {
+    color: #a8b3c4 !important;
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
     color: var(--bs-secondary-color);
     text-align: end;

@@ -48,9 +48,11 @@ public partial class Map
             // dark-web buy, but free) and log it as a settled entry. No hunt, no dock payout.
             _intelLedger.Add(new RouteIntel(offer.TargetShipId, SimTime, RouteIntel.DefaultValiditySeconds, Price: 0));
             _routeIntelProvenance[offer.TargetShipId] = new IntelProvenance(offer.Giver, DockedStationName(), SimTime);
-            offer.State = QuestState.TurnedIn;
             _quests.Add(offer);
-            ShowPulseMessage($"Tip logged — {offer.TargetCallsign} is on your contacts now (🕸 stale in 30 d) — filed in the Captain's ledger (0).");
+            // #727 · Settled at birth, but through the one writer all the same — an exception in the law is
+            // how the next author learns there is somewhere else to write this enum.
+            AdvanceMission(offer, QuestState.TurnedIn,
+                $"Tip logged — {offer.TargetCallsign} is on your contacts now (🕸 stale in 30 d) — filed in the Captain's ledger (0).");
             return;
         }
 
@@ -208,8 +210,9 @@ public partial class Map
         {
             if (q is { Kind: QuestKind.Hunt, State: QuestState.Active } && q.TargetShipId == shipId)
             {
-                q.State = QuestState.Complete;
-                ShowPulseMessage($"Contract met — {q.TargetCallsign} is down. {q.Reward:N0} cr waiting at any haven. 🎯");
+                // #727 · through the one writer, and said where the captain is looking (#736).
+                AdvanceMission(q, QuestState.Complete,
+                    $"Contract met — {q.TargetCallsign} is down. {q.Reward:N0} cr waiting at any haven. 🎯");
             }
         }
     }
@@ -234,8 +237,11 @@ public partial class Map
             Vector2d wreck = _ephemeris.Position(q.SourceBodyId, SimTime);
             if ((_ship.Position - wreck).Length <= FetchPickupRangeM)
             {
-                q.State = QuestState.PickedUp;
-                ShowPulseMessage($"Got it — the wallet was wedged between the seats. Now get it to {q.TargetCallsign}, quiet-like. 💾");
+                // #727 · the one writer. This leg IS the chair's — a proximity the ship earns by coasting,
+                // and the compass collapses it accordingly — but it goes through the same door all the same,
+                // so "the chair advanced it" and "the boots advanced it" stay one code path.
+                AdvanceMission(q, QuestState.PickedUp,
+                    $"Got it — the wallet was wedged between the seats. Now get it to {q.TargetCallsign}, quiet-like. 💾");
                 RendererInterop.PlayCue("board");
             }
         }
@@ -247,20 +253,24 @@ public partial class Map
     private void DeliverFetch(Quest q)
     {
         _credits += q.Reward;
-        q.State = QuestState.TurnedIn;
         // A history builds even in the shadows — but quietly: no fanfare would suit an under-the-
         // table hand-off, so the relationship is seeded (#185) without the pop-up the bar job gets.
         _contacts.RecordCompletion(q.Giver, q.Giver, q.Reward, SimTime);
-        ShowPulseMessage($"The wallet changes hands under the table — +{q.Reward:N0} cr, and we never met. 🕶");
+        // #727/#736 · A STEP FINISHED ON FOOT — you walked to his table and pressed [E] on him. It goes
+        // through the one writer the chair's own legs go through, and the receipt lands on whatever pop-up
+        // that press left in front of the captain rather than on a banner behind its backdrop.
+        AdvanceMission(q, QuestState.TurnedIn,
+            $"The wallet changes hands under the table — +{q.Reward:N0} cr, and we never met. 🕶");
     }
 
     // Hand the cracked-hatch package back to the Fixer, same station, same under-the-table terms.
     private void DeliverCrack(Quest q)
     {
         _credits += q.Reward;
-        q.State = QuestState.TurnedIn;
         _contacts.RecordCompletion(q.Giver, q.Giver, q.Reward, SimTime); // seed the history, keep it quiet
-        ShowPulseMessage($"The package slides across the table — +{q.Reward:N0} cr, no receipt. 🕶");
+        // #727/#736 · The other hand-off, on foot at the same table, through the same writer.
+        AdvanceMission(q, QuestState.TurnedIn,
+            $"The package slides across the table — +{q.Reward:N0} cr, no receipt. 🕶");
     }
 
     // Berthing at a haven settles any cargo-run contract bound for it. Called from ToggleDock.
@@ -270,16 +280,15 @@ public partial class Map
         {
             if (q is { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active } && q.DestBodyId == dockId)
             {
-                q.State = QuestState.Complete;
-                ShowPulseMessage(q.Kind == QuestKind.Favor
+                AdvanceMission(q, QuestState.Complete, q.Kind == QuestKind.Favor
                     ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
                     : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
             }
             // #223: a fetch-a-cache job pays when the DUG chest is carried back to the giver's bar.
             else if (q is { Kind: QuestKind.FetchCache, State: QuestState.PickedUp } && q.DestBodyId == dockId)
             {
-                q.State = QuestState.Complete;
-                ShowPulseMessage($"Chest delivered to {q.TargetCallsign} — {q.Reward:N0} cr for the recovery. 🗺");
+                AdvanceMission(q, QuestState.Complete,
+                    $"Chest delivered to {q.TargetCallsign} — {q.Reward:N0} cr for the recovery. 🗺");
             }
         }
     }
@@ -292,8 +301,11 @@ public partial class Map
         {
             if (q is { Kind: QuestKind.FetchCache, State: QuestState.Active } && q.TargetShipId == cache.Id)
             {
-                q.State = QuestState.PickedUp;
-                ShowPulseMessage($"{MissionBrief.NextPrefix}{MissionBrief.Action(FactsFor(q))}");
+                // #727/#736 · THE DIG is the purest on-foot completion in the game: a shovel, a hole, and
+                // the chair three hundred thousand kilometres up. Through the one writer, and the next-step
+                // line lands on whatever the shovel left in front of the captain.
+                AdvanceMission(q, QuestState.PickedUp,
+                    $"{MissionBrief.NextPrefix}{MissionBrief.Action(FactsFor(q))}");
             }
         }
     }
@@ -336,8 +348,7 @@ public partial class Map
             if (BodyById(destId) is not { } dest || IsDockableHaven(dest)) continue; // stations: ⚓ Dock path
             if (IsBoundAtMoonHaven(dest))
             {
-                q.State = QuestState.Complete;
-                ShowPulseMessage(q.Kind == QuestKind.Favor
+                AdvanceMission(q, QuestState.Complete, q.Kind == QuestKind.Favor
                     ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
                     : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
                 delivered = true;

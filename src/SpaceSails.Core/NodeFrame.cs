@@ -184,6 +184,37 @@ public static class NodeFrame
     public static string FrameNote(string primaryName) =>
         $"Aimed off the course at this node · up/down from {primaryName}";
 
+    /// <summary>
+    /// #926 · HOW BIG A NUDGE IS. Owner (2026-08-17, playing): <i>"Let's add the plus and minus buttons to
+    /// the burn scrub angle … the vector rotation is good for flying with mouse alone, without inputting …
+    /// like ±5 degrees."</i> Five degrees, in ONE place, so the two button faces and the act they perform
+    /// can never drift apart.
+    ///
+    /// <para>This is NOT the reflex-flying idiom that left the planner with #916's ruling — that was a
+    /// control that scaled the ship's SPEED by a factor. This turns the node's AIM by a fixed angle, which
+    /// is the vector view's own language, and is why the buttons wear a degree sign.</para>
+    /// </summary>
+    public const double NudgeDegrees = 5.0;
+
+    /// <summary>Turn a heading by one nudge. <paramref name="sign"/> is +1 (counter-clockwise) or −1, and
+    /// the result is wrapped back into <c>[0, 360)</c> — the wrap is the whole point: nudging down from 2°
+    /// must land on 357°, not on −3°, or the free-aim echo and the burned heading start reading different
+    /// numbers.</summary>
+    public static double Nudge(double headingDegrees, int sign) =>
+        Wrap360(headingDegrees + (sign >= 0 ? NudgeDegrees : -NudgeDegrees));
+
+    /// <summary>The two nudge buttons' faces. A degree sign, never a bare plus-or-minus glyph — the
+    /// planner's nudge is an ANGLE, and #916's law that the reflex idiom stays out of this panel stands.</summary>
+    public static string NudgeLabel(int sign) => (sign >= 0 ? "+" : "−") + NudgeAmount + "°";
+
+    /// <summary>What a nudge button promises: mouse-only aim, five degrees at a time, off whatever this
+    /// node is pointed at right now.</summary>
+    public static string NudgeHint(int sign) =>
+        $"Turn this burn's aim {NudgeAmount}° {(sign >= 0 ? "counter-clockwise" : "clockwise")} — mouse only, no typing";
+
+    private static string NudgeAmount =>
+        NudgeDegrees.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary>Whether a stored heading still points along a quick select's direction, within
     /// <paramref name="toleranceDegrees"/>. Used to light the button that matches — and to let it go dark
     /// the moment the node is re-timed and the ghost's frame has moved under it.</summary>

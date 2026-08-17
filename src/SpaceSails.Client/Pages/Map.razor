@@ -2084,6 +2084,9 @@
                         SatchelPage.Bin => BinWithinReach() is { } titleBin
                             ? SpaceSails.Core.RipAndBin.PickerTitle(titleBin.Tier)
                             : SpaceSails.Core.RipAndBin.Label,
+                        // #727 · Not "your missions" — WHY YOU ARE DOWN HERE, which is the question the page
+                        // answers and the one a captain three floors into a basement is actually asking.
+                        SatchelPage.Missions => "🗺 WHY YOU ARE DOWN HERE",
                         _ => "🎒 WHAT YOU ARE CARRYING",
                     })
                 </div>
@@ -2106,6 +2109,18 @@
                             title="What the ground has told you"
                             @onclick="() => _satchelPage = SatchelPage.Notes">
                         📓 NOTES
+                    </button>
+                    @* #727 · THE THIRD POCKET. What you learned (📓) and what you owe (🗺) are two different
+                       questions, and the book keeps its opinionless voice by not being asked the second one.
+                       Unlike SPREAD and THE BIN this tab is ALWAYS drawn: a compass that vanished when there
+                       was nothing on it would answer "why am I down here" with silence, and the whole point
+                       of the page is that the answer is never nothing — it is "nothing owed on foot", said
+                       out loud, on the page. *@
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Missions ? "on" : "")"
+                            title="What you took on, and what of it you can do standing here"
+                            @onclick="() => _satchelPage = SatchelPage.Missions">
+                        🗺 MISSIONS@(CompassOnFoot() is { Count: > 0 } owed ? $" ({owed.Count})" : "")
                     </button>
                     @* #784 · THE SPREAD, and the tab exists only when there is a table under it. Owner's law:
                        "writing things down requires sitting down to be properly done" — and the tab follows
@@ -2407,6 +2422,54 @@
                         <div class="satchel-empty">@SpaceSails.Core.RipAndBin.NothingToBinLine</div>
                     }
                 }
+                else if (_satchelPage == SatchelPage.Missions)
+                {
+                    @* ── #727 · THE CARRIED COMPASS ──────────────────────────────────────────────────────
+                       Owner, 2026-08-06: "Right now the tasks and missions have been ship-UI specific, so a
+                       mission that works outside the ship UI is something new… we should filter out /
+                       minimize ship-specific stuff to appropriate ('cannot do in this UI level, but high
+                       level: go to Moon X') type info in the carried mission UI."
+
+                       ONE MODEL, TWO PROJECTIONS. Every row here is the SAME contract the captain's own
+                       desk draws, read through the same CurrentStepOf and folded by Core
+                       (MissionProjection.OnFoot). The foot-level step is the desk's own words, byte for
+                       byte; everything else is one collapsed sentence naming where the ship must go.
+
+                       AND NO BUTTON IT CANNOT HONOUR. The carried view is READ-ONLY in v1 (the issue's own
+                       fence: signing on happens where people are), so this page renders no control at all
+                       — not a greyed one, not a hidden one. A dead affordance in a satchel would be the
+                       lift-that-only-went-down bug wearing a UI. The steps you CAN act on you act on by
+                       walking to the thing and pressing [E], exactly as you always did; this page only
+                       tells you which of them are here and which are a voyage. *@
+                    <div class="satchel-sub">@SpaceSails.Core.MissionProjection.CompassBlurb</div>
+
+                    @if (_satchelOutcome is { Length: > 0 } missionSaid)
+                    {
+                        <div class="satchel-outcome">@missionSaid</div>
+                    }
+
+                    @if (CompassOnFoot() is { Count: > 0 } compass)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.CompassLine job in compass)
+                            {
+                                <div class="satchel-note mission-line">
+                                    <div class="mission-title">@job.Title</div>
+                                    <div class="mission-why">@job.Why</div>
+                                    @* The one place the fold shows: a step you can act on where you stand
+                                       reads in the desk's own hand, a step you cannot reads as DIRECTION.
+                                       The class is the only difference the markup makes — the words are
+                                       Core's either way. *@
+                                    <div class="mission-step @(job.Actionable ? "here" : "away")">@job.Step</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.MissionProjection.NothingOwedOnFoot</div>
+                    }
+                }
                 else
                 {
                 <div class="satchel-sub">
@@ -2650,12 +2713,41 @@
                                 }
                             </div>
 
+                            @* ── #760 · WHOSE STANDING IS WHOSE ──────────────────────────────────────
+                               Owner: "if the flat list grows past feel, group accesses into an expandable
+                               tree/folder view in the satchel: company/estate as the folder, per-site
+                               grants beneath."
+
+                               NOT A TREE YET. The pocket has not filled — a tree over four cards is a
+                               filing cabinet built for a wallet — so this is the smallest true version of
+                               the same idea: inside the fold the cards sit under the name of whoever gave
+                               them to you, WHEN THERE ARE TWO OR MORE NAMES. One outfit gets no heading,
+                               because a heading over a list that is entirely one thing is a label that
+                               cannot be read for information (#697's folder-of-one, one size up).
+
+                               The grouping is Core's (SiteOperator.Accesses) and so is the decision not to
+                               group: this page has no arithmetic about companies and cannot drift from the
+                               predicate the gates are using. *@
                             @if (_walletOpen)
                             {
                                 <div class="satchel-wallet-cards">
-                                    @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                    @if (SpaceSails.Core.SiteOperator.Accesses(wallet) is { Count: > 0 } outfits)
                                     {
-                                        @Row(card)
+                                        @foreach (SpaceSails.Core.SiteOperator.Folder outfit in outfits)
+                                        {
+                                            <div class="satchel-place">@outfit.Heading</div>
+                                            @foreach (SpaceSails.Core.Satchel.Item card in outfit.Cards)
+                                            {
+                                                @Row(card)
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                        {
+                                            @Row(card)
+                                        }
                                     }
                                 </div>
                             }
@@ -3842,6 +3934,24 @@
                                 title="@ShootTheLock.PanelBlurb"
                                 @onclick="OpenDesignate">
                             @ShootTheLock.OpenLabel
+                        </button>
+                    }
+
+                    @* #760 · THE FIFTH SWITCH, and the only one that addresses a company. Owner: "the ship
+                       remote … can use it over the air: send messages that open places and enable things — a
+                       door unbolted before you reach it, a lift enabled from the surface."
+
+                       On the ground only, like DESIGNATE, and LIVE whether or not there is anything to send
+                       (#212/#603): a handset with no standing in it answers with the sentence that says what
+                       would fix it, and a handset on a moon nobody wired answers with the silence. A switch
+                       that vanished where it would refuse would teach a captain nothing except that the game
+                       is arbitrary. *@
+                    @if (_surface is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@RemoteSend.Blurb"
+                                @onclick="SendTheStanding">
+                            @RemoteSend.OpenLabel
                         </button>
                     }
                 </div>
@@ -5049,7 +5159,42 @@
                                                         @onclick="() => SetNodeDirection(node, _dir)">@NodeFrame.Label(_dir)</button>
                                             }
                                         </div>
-                                        <div class="map-burn-frame-note text-secondary">@NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime))</div>
+                                        @* #926 · FLYING WITH THE MOUSE ALONE. Owner (2026-08-17, playing): "Let's add
+                                           the plus and minus buttons to the burn scrub angle … the vector rotation is
+                                           good for flying with mouse alone, without inputting … like ±5 degrees." Five
+                                           degrees off whatever the node points at now — a quick select then a nudge or
+                                           two, and the aim is set without the keyboard ever coming into it. The face is
+                                           an ANGLE (a degree sign), because this is the vector view's own idiom and not
+                                           the reflex-flying control #916 sent back to the live keys. *@
+                                        <div class="map-burn-nudge" role="group" aria-label="Nudge this burn's aim five degrees">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(-1)"
+                                                    @onclick="() => NudgeNodeAim(node, -1)">@NodeFrame.NudgeLabel(-1)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(1)"
+                                                    @onclick="() => NudgeNodeAim(node, 1)">@NodeFrame.NudgeLabel(1)</button>
+                                        </div>
+                                        @* #926 — the frame note now says BOTH frames the panel lives between: the one the
+                                           aim is solved in (the node's, #916) and the one the plan is READ in (the plot
+                                           frame). The second one is what the owner had to remember to switch by hand. *@
+                                        <div class="map-burn-frame-note text-secondary">
+                                            @NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime)) · @TripFrame.ReadingNote(PlotFrameName())
+                                        </div>
+                                        @* #926 · ONE LINE, ONE PRESS. Owner (2026-08-17): "the real thrust amounts are
+                                           dependent on the coordinate origin. I had to remember to switch to Sun to get
+                                           the ship to really start moving from Earth towards Mars." Ruling A: name the
+                                           frame, offer the trip's — never switch by yourself. The press moves what the
+                                           captain JUDGES by (the ribbon, the numbers); the quick selects go on aiming in
+                                           the node's frame, because an escape burn is Earth-prograde either way. *@
+                                        @if (TripFrameOffer(node.SimTime) is { } _offer)
+                                        {
+                                            <div class="map-burn-frame-offer">
+                                                <div class="map-burn-frame-offer-line">@TripFrame.OfferLine(PlotFrameName(), _offer.DestinationName, _offer.FrameName)</div>
+                                                <button type="button" class="btn btn-sm btn-warning w-100"
+                                                        title="@TripFrame.OfferButtonHint(_offer.FrameName)"
+                                                        @onclick="() => SetPlotFrame(_offer.FrameId)">@TripFrame.OfferButton(_offer.FrameName)</button>
+                                            </div>
+                                        }
                                         <div class="map-burn-aim d-flex flex-wrap align-items-center gap-1">
                                             @* Free aim — the exception the vector view keeps. #201: the burn angle is
                                                ship-heading-RELATIVE by default — 0 = straight ahead, +90 = starboard,
@@ -5113,10 +5258,14 @@
                                         🛰 @(_orbitKept ? "Holding orbit at" : HarborVocabulary.ArmedStepVerb(HarborClassOf(_armedId))) @BodyName(_armedId)
                                         <span class="text-secondary">— @(_orbitKept ? (_keepTrimPulsesPerDay > 0 ? $"keeping · trim ≈{_keepTrimPulsesPerDay} p/day" : "keeping the park") : _active ? "flying the approach" : "armed · waiting for the window")</span>
                                         @* The promise the autopilot quoted at arm time (#146): the whole-journey
-                                           budget it proved affordable before committing. *@
+                                           budget it proved affordable before committing. #928: the number is the
+                                           CHARGED one — the autopilot's tenth — which is also what the tank is
+                                           really billed as the burns fire, so this line and the expellant gauge
+                                           can never tell two stories. *@
                                         @if (_armedBudgetPulses > 0)
                                         {
                                             <span class="text-info small">· budgeted ≈@(_armedBudgetPulses) p</span>
+                                            <span class="text-secondary small d-block">💸 the autopilot flies at a tenth of the tank a hand would spend</span>
                                         }
                                         @* #146: the in-well transfer plan riding under this arm — the
                                            planner's one-line quote while the cheap Lambert arc is active. *@

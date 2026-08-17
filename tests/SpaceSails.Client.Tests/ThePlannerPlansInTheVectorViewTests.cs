@@ -87,8 +87,16 @@ public sealed class ThePlannerPlansInTheVectorViewTests
 
     /// <summary>
     /// LAW ONE — the maneuver-node planner offers no ± control of any kind. Not the mode toggle, not the
-    /// prograde/retrograde pair, not the ±15° nudges. This is the half of the ruling that is a DELETION,
-    /// and a deletion is the easiest thing in the world to undo by accident.
+    /// prograde/retrograde pair, not the ±15° ↺/↻ nudges. This is the half of the ruling that is a
+    /// DELETION, and a deletion is the easiest thing in the world to undo by accident.
+    ///
+    /// <para>#926, and it is not a contradiction: the planner DOES have degree nudges again, by the
+    /// owner's own request the same evening — <i>"Let's add the plus and minus buttons to the burn scrub
+    /// angle … the vector rotation is good for flying with mouse alone … like ±5 degrees."</i> What came
+    /// back is an ANGLE (<c>−5°</c> / <c>+5°</c>, wearing a degree sign, turning the node's aim), not the
+    /// reflex-flying FACTOR idiom this law is about — the mode toggle, the prograde/retrograde pair, and
+    /// the ± that scaled the ship's speed. The needles below are the bare glyphs of that idiom, so both
+    /// things are true at once and neither guard has to be weakened for the other.</para>
     /// </summary>
     [Fact]
     public void ThePlanner_OffersNoPlusMinusControl()

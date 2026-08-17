@@ -401,8 +401,17 @@ public static partial class UndergroundComplex
         // floor — not because it is careless, but because a hull that is on the board is expected and the
         // building has never had any other kind of visitor. The gate is simply ABSENT, and the absence is
         // the rank difference: the same panel, and only one of them negotiates.
+        //
+        // #760 · …and WHICH cards it answers to is one predicate now (Honours), not a string comparison. The
+        // panel used to ask whether the exact id of THIS gate's card was in the captain's hand, which was the
+        // body-id equality standing in for "does this outfit know you" — so a captain holding the same
+        // company's paper from the site on the next moon was refused by a gate that had every reason to read
+        // it. The exact id is still tried first: it is the common case, it is a string comparison, and it
+        // keeps this loop honest about what it is doing.
         var gateCard = new AuthorityCard(bodyId, next);
-        bool carded = heldCardIds.Contains(gateCard.Id);
+        AuthorityCard? readCard =
+            heldCardIds.Contains(gateCard.Id) ? gateCard : StandingAmong(heldCardIds, gateCard);
+        bool carded = readCard is not null;
         bool holdsIt = IsHeadOffice(bodyId) || carded;
 
         // #592/#677 · Two different silences, one rule. The building does not admit the unlisted band exists,
@@ -453,7 +462,10 @@ public static partial class UndergroundComplex
             // other one, and a captain who found it should be told about THAT paper. One row per floor —
             // the panel is a set of buttons and a button that appeared twice would be a building with two
             // of the same door in it.
-            carded && !IsHeadOffice(bodyId) ? CardTitle(gateCard)
+            // #760 · …and it names the card the gate ACTUALLY reads, which on a standing is a card issued
+            // somewhere else. A row that printed this site's own designation over a card from the next moon
+            // would be the sentence reporting a world the sim is not running.
+            carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
                 : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
             OpenedByChit: chitOpens));
         return stops;
