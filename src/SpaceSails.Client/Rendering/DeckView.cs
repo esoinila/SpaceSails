@@ -196,6 +196,21 @@ public sealed partial class DeckView
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
     private readonly float[] _scratch = new float[32];
 
+    // #841 / Lab 46 · THE STOPWATCH, AND IT IS NULL. Everything the draw-cost probe knows lives on this one
+    // object, and it does not exist unless ?perf=1 asked for it: every mark site in the conductor is
+    // `_perf?.Mark(…)`, so an unarmed build pays one null check per pass and never reads a clock. It hangs
+    // HERE rather than on the Map component on purpose — see FramePerf's own note on #905's frame ledger.
+    private FramePerf? _perf;
+
+    /// <summary>#841 · The draw-cost probe, or null — which is what it is in every build nobody armed.
+    /// The page reads it to paint the HUD line; nothing else in the client holds it.</summary>
+    public FramePerf? Perf => _perf;
+
+    /// <summary>#841 · Arm the draw-cost probe (<c>?perf=1</c>). <paramref name="say"/> is where the console
+    /// block goes — <c>Console.WriteLine</c> in the browser, a collector in the guard. Idempotent: a second
+    /// call keeps the window that is already filling.</summary>
+    public FramePerf ArmThePerfProbe(Action<string> say) => _perf ??= new FramePerf(say);
+
     // #314 magazine-counter change-emphasis (owner, live playtest 2026-07-19: "make the round-count
     // numbers even bigger … I love to see those numbers move"). The DeckView draw is immediate-mode
     // and stateless, so a brief pop on decrement needs somewhere to remember each bot's last counter

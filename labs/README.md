@@ -479,6 +479,21 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     be justified on sim cost) and caught **two of its own measurement bugs** before publishing: tiered JIT timing
     tier-0 code, and an early-exiting predicate timed on a mixed query set.
 
+46. [**What a draw costs**](46-what-a-draw-costs/README.md) — the first lab here whose results table ships
+    **EMPTY**, and that is the finding. Lab 45 closed #841's sim half at 0.36% of a frame and refused the
+    other half out loud: there is no headless path to a canvas, and a timing taken from an MCP-driven tab is
+    invalid here because the tab is `document.hidden` (rAF throttled, timers clamped). So this lab is not a
+    program — it is an **instrument fitted to the game**: `?perf=1` puts a stopwatch on the walked view's
+    conductor and times its **eighteen passes by name**, the **flush across to the canvas**
+    (`CanvasRenderer.EndFrame` — the one line of the frame that reaches JavaScript; everything above it only
+    fills an array), and the whole `DrawWalkFrame`, over a rolling 120-frame window, reported both on the
+    glass and as a greppable console block. The laboratory is a **real foreground Chrome window on the
+    owner's own machine**, and the recipe, the empty tables and the clock's own resolution trap (5–100 µs, so
+    a single pass in a single frame is *not* a reading) are written down **before** any number is. So is the
+    **decision rule**: culling earns a lane if the furnished floor's p95 clears X ms at phone size, or if the
+    furniture passes are more than Y% of the draw — suggested 4 ms / 30%, the owner's call, agreed before the
+    data arrives so that a threshold is a threshold and not a description.
+
 ## Framing rule
 
 Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons

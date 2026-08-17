@@ -43,6 +43,17 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* #841 / Lab 46 · WHAT THIS FRAME COST, ON THE GLASS. Only ever present under ?perf=1 — the probe is
+       null otherwise and this element with it. It is HTML rather than canvas text on purpose: #782's law is
+       about size and contrast, and the sweep next door can only read a rule it can find in a stylesheet, so
+       the perf line wears .perf-hud (its own opaque ground, its own real font size) instead of being a 10px
+       monospace whisper nothing could check. The reading is the rolling window, refreshed on the page's own
+       5 Hz HUD throttle; the copy that goes into the lab's table is the console block. *@
+    @if (_deckView?.Perf is { HudLine.Length: > 0 } perf)
+    {
+        <div class="perf-hud" role="status">@perf.HudLine</div>
+    }
+
     @* Start picker (2026-07-08): "why always Earth?" — a boot chooser of named start points, over
        the freshly-built world. Skips the long transit for playtesting and lets a run begin at a gas
        giant or already ashore. Suppressed when /map?start=<id> already picked one. Same registry. *@

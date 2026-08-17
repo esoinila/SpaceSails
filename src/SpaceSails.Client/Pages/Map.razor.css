@@ -21,6 +21,32 @@
     cursor: grabbing;
 }
 
+/* #841 / Lab 46 · THE DRAW-COST LINE. Present only under ?perf=1, but a dev instrument is still text a
+   human has to read off a phone-sized screen at a glance, so it keeps #782's law rather than pleading dev:
+   its OWN near-opaque ground (never the hall painting behind the canvas), a real font size above the 14 px
+   floor, and a halo on top of that because the numbers are what is being read. It wraps rather than
+   shrinking — the pressure valve is never size — and it never eats a pointer, because the whole point is to
+   walk around underneath it while it counts. */
+.perf-hud {
+    position: absolute;
+    top: 0.35rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(62rem, 96vw);
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(120, 220, 255, 0.45);
+    border-radius: 0.35rem;
+    background: rgba(4, 8, 12, 0.94);
+    color: #cfefff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+    overflow-wrap: anywhere;
+    pointer-events: none;
+    z-index: 6;
+}
+
 /* Console quip toast while walking the deck / in first person (the Nav HUD that hosts pulse
    messages is hidden then). Centred near the top, clear of the desk tab bar. */
 .deck-pulse-toast {

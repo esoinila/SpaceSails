@@ -25,6 +25,7 @@ public sealed partial class DeckView
         double panX = 0, double panY = 0, SurfaceHud? surface = null, double? npcHoldTime = null,
         bool crewGlance = false)
     {
+        _perf?.BeginDraw();     // #841 · null in every build nobody armed; see FramePerf
         _renderer = _canvas;    // never inherit a mask from a frame that threw
         _renderer.BeginFrame(widthPx, heightPx, state.Dark ? Pitch : Floor);
 
@@ -84,23 +85,42 @@ public sealed partial class DeckView
         //    before it laid down. NOT ONE LINE OF THIS MAY BE REORDERED, and that is not a style note:
         //    a wall drawn after a room label paints over the label, and a plate drawn before the fan's
         //    smudges hides a contact heard through a wall. The snapshot guard pins this list.
+        //
+        //    #841 / Lab 46 · …AND IT IS ALSO THE SEAM A CLOCK GOES ON. One timestamp after each pass, so a
+        //    pass's cost is the gap to the one before it. `_perf` is null unless ?perf=1 armed it, the
+        //    names are LITERALS (a pass renamed without its mark is red — see FramePerf.Mark), and a pass
+        //    behind an `if` is marked OUTSIDE the `if` on purpose: "the ship's dressing cost nothing on
+        //    this floor because there is no ship" is a reading, and a row that came and went between
+        //    frames would be a table that changes shape while you read it.
 
         PaintTheGround(plan, scale, ox, oy, project);
+        _perf?.Mark("PaintTheGround");
         HideWhatNobodyHasLookedInto(darkRegions, scale, project);
+        _perf?.Mark("HideWhatNobodyHasLookedInto");
         FillTheStructure(plan, scale, project);
+        _perf?.Mark("FillTheStructure");
         FillTheFurniture(plan, project, darkState);
+        _perf?.Mark("FillTheFurniture");
         DrawTheWalls(plan, project, darkState);
+        _perf?.Mark("DrawTheWalls");
         DrawTheDoors(plan, in state, project);
+        _perf?.Mark("DrawTheDoors");
         NameTheRooms(plan, project, darkState);
+        _perf?.Mark("NameTheRooms");
         MarkTheGround(surface, scale, project);
+        _perf?.Mark("MarkTheGround");
 
         if (isShip)
         {
             DressTheShip(in state, simTime, scale, project);
         }
 
+        _perf?.Mark("DressTheShip");
+
         DrawTheSeats(plan, scale, project);
+        _perf?.Mark("DrawTheSeats");
         DrawTheFigures(plan, simTime, npcHoldTime, crewGlance, scale, project);
+        _perf?.Mark("DrawTheFigures");
 
         // ── #708 · AND HERE THE DARK IS LAID DOWN. The world is drawn; the mask comes off; the black goes on
         //    over everything the headlights do not reach, with a hard edge where the cone stops.
@@ -116,15 +136,29 @@ public sealed partial class DeckView
             PaintTheDark(widthPx, heightPx, in state, scale, ox, oy);
         }
 
+        _perf?.Mark("PaintTheDark");
+
         DrawTheSentries(surface, simTime, scale, project);
+        _perf?.Mark("DrawTheSentries");
         DrawWhatTheFanHeard(surface, simTime, scale, project);
+        _perf?.Mark("DrawWhatTheFanHeard");
         CountDownTheOverload(surface, scale, project);
+        _perf?.Mark("CountDownTheOverload");
         DrawTheConsoles(plan, in state, project, darkState);
+        _perf?.Mark("DrawTheConsoles");
         DrawTheCaptain(in state, surface, widthPx, heightPx, scale, project);
+        _perf?.Mark("DrawTheCaptain");
         DrawTheInstruments(in state, surface, simTime, widthPx, heightPx, ox);
+        _perf?.Mark("DrawTheInstruments");
 
         _mask.Disarm();     // #708 · the lamp is a per-frame fact; nothing survives the frame it was aimed in
         _renderer.EndFrame();
+
+        // #841 · …and THIS is the number #841 has been missing: the one line of the frame that crosses into
+        // JavaScript and hands the recorded command buffer to the canvas (CanvasRenderer.EndFrame). Every
+        // pass above only fills an array; nothing is DRAWN until here.
+        _perf?.Mark(FramePerf.FlushRow);
+        _perf?.CloseDraw();
     }
 
     /// <summary>#870 lane 7b · THE GROUND, AND WHAT LIES ON IT — the room backdrops under every vector
