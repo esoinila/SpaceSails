@@ -67,13 +67,19 @@ public static class HiveInterior
     /// decides otherwise — so a caller with nothing to say draws the building as it stands. The plan carries
     /// it as one glyph on the cabinet's own plate (<see cref="CabinetPrivacy.PlateFor"/>) and this file
     /// composes nothing: which mark means which stage is Core's, exactly as VACANT/OCCUPIED is.</param>
+    /// <param name="booked">#770 · The negotiation room the captain is holding on this floor this watch, or
+    /// null. Two marks and nothing else: the room's own door carries the BOOKED plate
+    /// (<see cref="RoomBooking.Booking.Plate"/>) and its street leaves are drawn dogged. It is passed in
+    /// rather than read out of a ledger here for the reason the watch is — the room that is DRAWN and the
+    /// room the [E] key asks about have to be one room.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
         IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0,
         IReadOnlyCollection<string>? locksShotOpen = null,
         IReadOnlyCollection<string>? cubiclesShut = null,
-        IReadOnlyCollection<string>? cabinetsDogged = null)
+        IReadOnlyCollection<string>? cabinetsDogged = null,
+        RoomBooking.Booking? booked = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -161,8 +167,36 @@ public static class HiveInterior
             }
         }
 
+        // ── #770 · …AND WHICH STREET LEAVES BELONG TO A ROOM THE CAPTAIN HAS PAID FOR ──────────────────
+        //
+        // The cubicle's own idiom one room up, with the one difference the feature is about: a booked leaf is
+        // DRAWN dogged and is NOT walled. RoomBooking.HonoursTheDoor is the law — the door honours the
+        // BOOKER and only until the watch turns — and the only body on this deck is the booker, so what a
+        // captain sees is their own room shut against the corridor and open to them. Nothing is added to
+        // floor.Walls, because a wall here would be the plan refusing the one person the room is for.
+        var bookedLeaves = new HashSet<string>(StringComparer.Ordinal);
+        if (booked is { } theRoom && floor.Park is { } bookedPark)
+        {
+            foreach (UndergroundComplex.RingRoom suite in bookedPark.Frontage)
+            {
+                if (!RoomBooking.HoldsThisRoom(in theRoom, level, suite.Number, canteenWatch))
+                {
+                    continue;
+                }
+                foreach (SurfaceLayout.Doorway leaf in suite.Doors)
+                {
+                    bookedLeaves.Add(LeafKey(leaf));
+                }
+            }
+        }
+
         foreach (SurfaceLayout.Doorway d in floor.Doorways)
         {
+            if (bookedLeaves.Contains(LeafKey(d)))
+            {
+                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Locked: true));
+                continue;
+            }
             if (shut.Contains(LeafKey(d)))
             {
                 // Drawn as the shut door it is, with the partition behind it. #821's law is that this buys
@@ -598,6 +632,21 @@ public static class HiveInterior
             // in a room somebody else furnished.
             foreach (UndergroundComplex.RingRoom suite in green.Frontage)
             {
+                // ── #770 · THE ONE ROOM ON THE FRONTAGE WITH A NAME AGAINST IT ────────────────────────
+                //
+                // The ring's plates are not otherwise stencilled on the plan — a block of forty-du suites
+                // with a caption on every one of them is a wall of text over a garden, and the plate is
+                // already told where it matters (the sit line names the room you sat down in). What IS drawn
+                // is the room somebody has PAID FOR, because that is a state and states go on the plan: the
+                // door reads BOOKED and which shift it is booked for, exactly as a cubicle's leaf reads
+                // OCCUPIED. Core owns the words (RoomBooking.Booking.Plate) and this composes nothing.
+                if (booked is { } mine
+                    && RoomBooking.HoldsThisRoom(in mine, level, suite.Number, canteenWatch))
+                {
+                    labels.Add((
+                        (float)suite.Door.X1, (float)suite.Door.Y1, mine.Plate));
+                }
+
                 foreach (RingOffice.Fixture fitting in suite.Furniture)
                 {
                     if (fitting.Plate.Length > 0)

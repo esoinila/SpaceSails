@@ -82,7 +82,12 @@ public partial class Map
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
                 SurfaceDroidCount, FillSurfaceDroids, ex.HiveRoomsEmptied,
-                ex.CanteenWatch, ex.LocksShotOpen, ex.CubiclesShut, ex.CabinetsDogged);
+                ex.CanteenWatch, ex.LocksShotOpen, ex.CubiclesShut, ex.CabinetsDogged,
+                // #770 · …and the negotiation room the captain is holding this watch, read off the counter's
+                // own book (#715) rather than out of a field on this component. Null on every floor nobody
+                // has booked a room on, which is every floor of every site until somebody asks at the
+                // counter — so #905's thirty pinned fingerprints see exactly what they saw before.
+                TheRoomYouHold(ex));
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.

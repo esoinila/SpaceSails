@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
@@ -97,7 +99,7 @@ public partial class Map
                         continue;
                     }
 
-                    SitInThisChair(ex, room, chair);
+                    SitInThisChair(ex, floor, room, chair);
                     return true;
                 }
 
@@ -213,7 +215,8 @@ public partial class Map
         /// <summary>The one place an office-chair sitting is opened, so a dev row and a captain's [E] can never
         /// open two different chairs.</summary>
         private void SitInThisChair(
-            SurfaceExcursion ex, in UndergroundComplex.RingRoom room, RingOffice.Chair chair)
+            SurfaceExcursion ex, UndergroundComplex.FloorPlan floor,
+            in UndergroundComplex.RingRoom room, RingOffice.Chair chair)
         {
             // #820 · THE SNAP. The body goes into the chair, at Core's own published seat, through the one
             // helper every seat verb in the game now sits the captain with. It was StandCaptainAt when this
@@ -222,6 +225,42 @@ public partial class Map
             // works on the solid one. Nothing is lost here, because a suite's chairs are proved to be real floor
             // by Core's own guard (NoRingSuiteIsAnEmptyFloorTests) rather than by a rescue at run time.
             _host.SitCaptainOn(chair.X, chair.Y);
+
+            // ── #770 · …AND WHETHER THIS IS THE ROOM YOU PAID FOR ─────────────────────────────────────
+            //
+            // Asked of the PLAN the room was drawn from (see TheRoomYouBooked) rather than of a flag, so the
+            // plate stencilled on the door and the scene the strip holds cannot be about two different rooms.
+            //
+            // IT IS STILL ONE CONSTRUCTION SITE, deliberately: #870 lane 6d's ratchet says there are six ways
+            // to open a sitting in this game and every one of them goes through TakeThisSeat, because the
+            // reveal cue and the draw live in that method and nowhere else. A booked negotiation room is not
+            // a seventh way to sit down — it is the SAME chair in the same suite, with a different scene on
+            // the table and somebody across it. So what forks below are VALUES, and there is one record.
+            RoomBooking.Booking? mine = TheRoomYouBooked(ex, in room);
+            CanteenRegulars.Seated? party = mine is null
+                ? null
+                : RoomBooking.TheDelegation(
+                    ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch, WhoIsInTheHall(ex, floor));
+
+            // #868 · The ordinary chair's scene ASKS THE ROOM IT IS IN, and then the SEAT. The garden clause
+            // is reachable only where the room is dressed as a suite that faces the green
+            // (RingOffice.LooksAtTheGarden) — the owner sat down in a cold room on the back street and was
+            // told the whole wall in front of him was the garden — and the worktop clause only where a
+            // worktop is actually within reach of this chair (RingOffice.WorksAtASurface), which the bench
+            // outside the block's cubicles and the seat inside a privacy booth are not. Core owns both
+            // questions; nothing here decides what a room looks at or what is standing in front of a seat.
+            //
+            // #770 · …and a room you paid for has two more scenes, both Core's: one with a delegation across
+            // the long table, and one with nobody. Being told nobody came is #757's own law arriving where it
+            // costs the most — nothing happening is an OUTCOME here and never a control that went quiet.
+            Encounter.Scene scene =
+                mine is null
+                    ? RingOffice.TheChair(
+                        room.Plate, RingOffice.LooksAtTheGarden(in room),
+                        RingOffice.WorksAtASurface(in room, in chair))
+                : party is { } them
+                    ? RoomBooking.TheDelegationTable(them.Plate)
+                    : RoomBooking.TheEmptyRoom();
 
             TakeThisSeat(new TableTalk
             {
@@ -236,35 +275,102 @@ public partial class Map
                 // separately all the same (RingOffice.Chair.StandAt), so the day a suite's chairs are tucked
                 // under their desks this reads the new square rather than the old assumption.
                 StepOff = chair.StandAt,
-                Who = CanteenTable.Who.None,
-                Plate = RingOffice.SeatPlate,
-                // #868 · …and the scene ASKS THE ROOM IT IS IN, and then the SEAT. The garden clause is
-                // reachable only where the room is dressed as a suite that faces the green
-                // (RingOffice.LooksAtTheGarden) — the owner sat down in a cold room on the back street and was
-                // told the whole wall in front of him was the garden — and the worktop clause only where a
-                // worktop is actually within reach of this chair (RingOffice.WorksAtASurface), which the bench
-                // outside the block's cubicles and the seat inside a privacy booth are not. Core owns both
-                // questions; nothing here decides what a room looks at or what is standing in front of a seat.
-                Scene = RingOffice.TheChair(
-                    room.Plate, RingOffice.LooksAtTheGarden(in room),
-                    RingOffice.WorksAtASurface(in room, in chair)),
+                // #751's stranger tier for the delegation, and deliberately so: a party across a table is
+                // people at a table, and small talk at a table is small talk at a table however much the room
+                // cost. Nothing about the named cast's deep scenes is borrowed — v1 is the gesture and not a
+                // relationship (#760's standing negotiation is v2).
+                Who = party is null ? CanteenTable.Who.None : CanteenTable.Who.Stranger,
+                Plate = party?.Plate
+                    ?? (mine is null ? RingOffice.SeatPlate : RoomBooking.EmptyRoomPlate),
+                Bark = party?.Line,
+                Scene = scene,
                 Seats = Math.Max(1, room.Seats.Count),
-                Free = Math.Max(0, room.Seats.Count - 1),
-                // A room with a door and nobody in it. Quiet is the cabinet's own flag and it is the true one
-                // here for the same reason: nothing at a counter can see you, and the exposure ladder should
-                // say so rather than treating a private office as a table in a bar.
+                Free = Math.Max(0, room.Seats.Count - (party is null ? 1 : 2)),
+                // A room with a door. Quiet is the cabinet's own flag and it is the true one here for the same
+                // reason: nothing at a counter can see you, and the exposure ladder should say so rather than
+                // treating a private office as a table in a bar.
+                //
+                // #770/#758 · …and a room you PAID for has a leaf you can dog, which is what the coin bought.
+                // The ordinal is the booked room's own (RoomBooking.LeafOrdinal) so working this leaf can
+                // never work a cabinet off the hall — one key for two doors is one source consumed as if it
+                // were two.
                 Quiet = true,
-                Solo = true,
+                Cabinet = mine is { } held ? RoomBooking.LeafOrdinal(held.Room) : 0,
+                Solo = party is null,
                 // #783's relaxed register belongs to a bought glass in a canteen. There is no bar in an office
                 // and no art of one — borrowing the picture would be showing a room the captain is not in.
                 Relaxed = false,
                 DrinkInHand = _host.APourInFrontOfYou,
                 // Nobody to ask. The chair is simply taken, and the taking is the scene's opening line.
                 Joined = true,
-                Outcome = RingOffice.TookAChairLine(
-                    room.Plate, RingOffice.LooksAtTheGarden(in room),
-                    RingOffice.WorksAtASurface(in room, in chair)),
+                Outcome = scene.Opening,
             });
         }
+
+        // ── #770 · THE ROOM YOU PAID FOR ──────────────────────────────────────────────────────────────────
+        //
+        // Owner's idea: you book one of the block's park-view negotiation rooms at the counter, and the deal
+        // gets done ACROSS THE LONG TABLE with somebody sitting opposite.
+        //
+        // IT IS NOT A NEW SEAT AND NOT A NEW PANEL. Sitting down here is the office chair's own verb, the
+        // office chair's own snap (#820) and #865's own docked strip — the room stays lit behind it, the
+        // company is said on the strip's own line, and the delegation's moves arrive the only way moves ever
+        // arrive in this game, as an Encounter.Scene. It is not even a new CONSTRUCTION SITE: SitInThisChair
+        // above still builds exactly one TableTalk and still hands it to TakeThisSeat, which is #870 lane 6d's
+        // ratchet and the reason the reveal cue and the draw can live in one method. The two questions below
+        // are the whole of what this room adds.
+
+        /// <summary>
+        /// #770 · IS THIS THE ROOM THE CAPTAIN BOOKED — asked of the PLAN, which is the only honest place.
+        ///
+        /// <para><c>CabinetStage</c>'s discipline one room along: the booked plate is stencilled beside the
+        /// room's first street door by <c>HiveInterior</c> off the counter's own book, and this reads THAT
+        /// label back through Core's own parser (<see cref="RoomBooking.TryReadPlate"/>). So the stencil a
+        /// captain can walk up and read IS the fact the table runs on, and the drawn room and the pressed
+        /// room are one room by construction rather than by two callers agreeing.</para>
+        ///
+        /// <para>It also keeps the seat's contract with the page at twenty-eight
+        /// (<see cref="ISeatHost"/>): the plan is already one of the four things a chair may ask for, and no
+        /// twenty-ninth member — nor a field anywhere #905's frame ledger sweeps — was needed to carry a
+        /// booking into a chair.</para>
+        /// </summary>
+        private RoomBooking.Booking? TheRoomYouBooked(
+            SurfaceExcursion ex, in UndergroundComplex.RingRoom room)
+        {
+            foreach ((float x, float y, string text) in _host.DeckPlan.RoomLabels)
+            {
+                if (Math.Abs(x - room.Door.X1) >= SameChairDu
+                    || Math.Abs(y - room.Door.Y1) >= SameChairDu)
+                {
+                    continue;
+                }
+                if (RoomBooking.TryReadPlate(text, out long watch, out bool big)
+                    && watch == ex.CanteenWatch)
+                {
+                    return new RoomBooking.Booking(
+                        ex.Floor, room.Number, big, watch, RoomBooking.TheCaptain);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Who is in the hall on this shift, for the delegation pick. Core's own rota
+        /// (<see cref="CanteenRegulars.Sitting"/>) off the floor already laid by the press — the person who
+        /// walked over to your table is a person the captain could have walked up to instead.</summary>
+        private static IReadOnlyList<CanteenRegulars.Seated> WhoIsInTheHall(
+            SurfaceExcursion ex, UndergroundComplex.FloorPlan floor)
+        {
+            foreach (UndergroundComplex.Amenity a in floor.Amenities)
+            {
+                IReadOnlyList<CanteenRegulars.Seated> sat =
+                    CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch);
+                if (sat.Count > 0)
+                {
+                    return sat;
+                }
+            }
+            return [];
+        }
+
     }
 }

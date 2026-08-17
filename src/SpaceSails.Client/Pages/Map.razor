@@ -3348,6 +3348,22 @@
                        keep`, which is the only thing the game is ever allowed to call him. *@
                     <button type="button" class="btn btn-sm btn-outline-info" title="@($"Ask {keep.Name} what they've heard lately")" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
                 }
+                @* ── #770 · BOOK A ROOM AT THE COUNTER ─────────────────────────────────────────────────
+                   Owner's idea: the block rents its park-view suites by the watch, and the plate on their
+                   doors has said BOOK AT THE COUNTER since #816 with nowhere to do it. TWO PRICES, because
+                   the ring has two sizes of them (#775's amenity gradient at the till) — and both buttons
+                   are drawn whatever this floor happens to have on it (#212: an affordance never hides),
+                   with every refusal said out loud in the notice slot above (#603).
+
+                   The verb is the counter's, so it lives here rather than at a door: it is the same one
+                   press that already buys a glass, a round and a receiver at this desk. *@
+                @if (TheCounterRentsRooms)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@BookingHint" @onclick="() => BookARoom(false)">@SpaceSails.Core.Interior.RoomBooking.BookLabel(false)</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@BookingHint" @onclick="() => BookARoom(true)">@SpaceSails.Core.Interior.RoomBooking.BookLabel(true)</button>
+                }
                 @* #763 · THE BACK COUNTER. Drawn only where the venue admits to having one
                    (Barkeep.BackCounter) — carrying a receiver is legal everywhere and selling one over the
                    bar is a thing about the ROOM. Never disabled: an empty purse is answered in the keep's

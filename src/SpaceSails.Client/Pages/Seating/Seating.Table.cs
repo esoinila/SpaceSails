@@ -833,10 +833,19 @@ public partial class Map
             //
             // #917 · …and the FROZEN WATCH goes with it, because the keep only tends this bar on the living
             // ones and the sentence has to be able to say so. The fact is filed on both; the words fork.
+            //
+            // #770 · …and WHICH LEAF it was is a fact the sentence has to carry honestly. A booked negotiation
+            // room borrows this whole mechanic (a room with a door is a room with a door) on an ordinal of its
+            // own, and a book that called suite 5 on the garden "cabinet 405" would be the note reporting a
+            // different building than the one the captain is sitting in.
             if (CabinetPrivacy.TheCounterWritesItDown(from, to) && ex.CabinetsWitnessed.Add(key))
             {
                 _host.FileNote(
-                    CabinetPrivacy.WhoWasInsideNote(t.Cabinet, ex.CanteenWatch), CanteenRegulars.Glyph);
+                    Core.Interior.RoomBooking.IsABookedLeaf(t.Cabinet)
+                        ? Core.Interior.RoomBooking.DoggedTheDoorNote(
+                            Core.Interior.RoomBooking.RoomOfLeaf(t.Cabinet), ex.CanteenWatch)
+                        : CabinetPrivacy.WhoWasInsideNote(t.Cabinet, ex.CanteenWatch),
+                    CanteenRegulars.Glyph);
             }
 
             // Said on the strip, in the one layer the room stays lit behind (#865).
@@ -901,7 +910,13 @@ public partial class Map
             if (top.Stranger && top.Cabinet == 0 && ex.CabinetLeaked is { } cabinet)
             {
                 ex.CabinetLeaked = null;
-                return CabinetPrivacy.BarkThatKnows(cabinet);
+                // #770 · …and it names what it actually leaked out of. A booked suite on the garden is not
+                // cabinet three off the back of the hall, and the one sentence in this whole mechanic that
+                // reaches the player must not be the one that gets the building wrong.
+                return Core.Interior.RoomBooking.IsABookedLeaf(cabinet)
+                    ? Core.Interior.RoomBooking.BarkThatKnows(
+                        Core.Interior.RoomBooking.RoomOfLeaf(cabinet))
+                    : CabinetPrivacy.BarkThatKnows(cabinet);
             }
 
             return top.Line;
