@@ -372,6 +372,15 @@ public sealed class EveryFrameHashesTheSameTests
     // changes, either the picture changed or the code that draws it did, and both are the thing this guard
     // exists to notice.
 
+    // ── #758 · THE FIVE HALL FLOORS WERE RE-PINNED, AND THE CALL COUNTS PROVE WHY ─────────────────────
+    //
+    // The cabinets carry a privacy glyph on their plate now (CabinetPrivacy.PlateFor), so the three floors
+    // in this list that have a CANTEEN HALL in them — luna B1 in its three states, phobos B1, titan B1 —
+    // draw a different STRING at the same coordinate. Every one of the five kept its call count to the mark
+    // (1591 / 1607 / 1617 / 1563 / 1512, unchanged); nothing was added to the frame, moved in it or taken
+    // out of it, and every other row in this table is byte-identical. That is the whole of the change, and
+    // it is what a re-pin is allowed to look like.
+
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
         ["ship · under way"] = (335, "84f477c2696097c1d9f85a65a9a5969d549d108741bc97113a1897553440ec4c"),
@@ -385,7 +394,7 @@ public sealed class EveryFrameHashesTheSameTests
         ["haven · red-eye"] = (346, "b16f67dbb88f45a585b1bc47ec6ddcb965e199505b6c9d8aec79fed2d0550842"),
         ["haven · the-deep"] = (350, "43c9a94c0ee1d22dc1bb2212c9951306fb1c5029126a98212b55efc4ad55059c"),
         ["wreck · HullBreach"] = (592, "a6861bad89c60f79b415fdbe913c809cfba6f6d832c8ee1a689764f37019f482"),
-        ["luna B1"] = (1591, "6ed0aaccf49a5d11ac851766f70f176ffb5da2ced290023149e7eddcabf0b4f4"),
+        ["luna B1"] = (1591, "55c45b3b3650a18f23d2ff98d6db568fb2ed3c6faed37bbc5b4dacecd8f4cf7f"),
         ["luna B2"] = (426, "2a74f1342bd3e2eeced21aac071fc9b844481a9e6abb26823b31389b599901d8"),
         ["luna B3"] = (315, "757c755407eea1e5f88998b04094bcef4c3fbe73bf2dadd025e3a8a5e6853287"),
         ["luna B4"] = (316, "9da4200e95d79865e0b1cd4b5e354048c946d1ef9af83bc0c9e35a056a635ee5"),
@@ -399,10 +408,10 @@ public sealed class EveryFrameHashesTheSameTests
         ["luna B12"] = (309, "50a2f7952d013e4ef93a399e73d438d3461c8e80821db7bb1c745fd51ab31542"),
         ["luna B13"] = (421, "219604d9c664bd15c413eb683a09473a980a281ddfa76d83e4b4c323d798b6a8"),
         ["luna B1 · the lamps are all there is"] = (128, "7116fa86b505d015afd4218dce97075de9237b309a0b617a2eb441248e4af643"),
-        ["luna B1 · sat down at a desk"] = (1607, "0d183fb7256795d857d94850773f34f6e34798a8fca992944f565524ebeb29ae"),
-        ["luna B1 · the round is out, and the buzzer went"] = (1617, "7f30e140ef53fd173f50118a55df71ccbc1346c658b339dbcc40f02e31ff0b90"),
-        ["phobos B1"] = (1563, "c6a9b5b9c54e74c0664d7567b2bfe1ced5007156be80236adb1b90b0c0567ae9"),
-        ["titan B1"] = (1512, "e79db73c682aa4615097549d375f442e45fcadb734d8b06ebc847538dc555f51"),
+        ["luna B1 · sat down at a desk"] = (1607, "5e584fa821b815ccc8be8fc5b44a4047e4777ca4ddbeba562bfcff47127c763b"),
+        ["luna B1 · the round is out, and the buzzer went"] = (1617, "977fb55d912c173ff908179ddbba53c5e3a447fee1efef982cf6df4e51f7c4a7"),
+        ["phobos B1"] = (1563, "9ed4a1c5c39f66a72397ef1d4d63eb8474b5cb3c8f5c37b2aad3cd46c5519e60"),
+        ["titan B1"] = (1512, "b860421213c683108ee326a18794b6cb9ebc993940bbb81c4a15c7693ae92929"),
         ["surface · luna site 0"] = (3771, "6405eda6ad8f3486a553cce6f7b5fa95afe7c0dd4d346721e5a84db3544c5941"),
         ["surface · luna site 0, the whole excursion"] = (3881, "e9e22a17582dffa7d4f6a9041d421d89a12b04b54ea6d231c45dc14f467c1c3c"),
         ["surface · luna site 0, dark, and the fan hears something"] = (266, "d3ea7f061938e922b2128a6620dd755fef86f998bd474e140e6db30f46a7a25a"),

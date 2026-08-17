@@ -448,6 +448,16 @@ public partial class Map
         /// answer to a question about a room the client does not own.</summary>
         public bool Quiet { get; init; }
 
+        /// <summary>#758 · WHICH cabinet, as the plate beside its door reads — 0 anywhere else.
+        ///
+        /// <para><see cref="Quiet"/> is the room CLASS and this is the ROOM. They were one bool while a
+        /// cabinet's only question was whether the counter has eyes in here, and they came apart the moment a
+        /// cabinet acquired a state of its own: a curtain is drawn per LEAF, the keep writes down which one
+        /// you were in, and the bark that knows too much says the number. Core's own
+        /// (<see cref="CanteenRegulars.TableSeat.Cabinet"/>), carried rather than re-derived, so the top the
+        /// captain is sitting at and the leaf they are dogging are one room.</para></summary>
+        public int Cabinet { get; init; }
+
         /// <summary>
         /// #793 · Whether this seat is a PARK BENCH rather than a canteen top.
         ///
@@ -610,4 +620,34 @@ public partial class Map
 
     /// <inheritdoc cref="Seating.TableShowables"/>
     private IReadOnlyList<Core.Satchel.Item> TableShowables() => _seating.TableShowables();
+
+    // ── #758 · THE CURTAIN AND THE DOOR, FROM THE STRIP ───────────────────────────────────────────────
+    //
+    // Three of these are the ordinary forwarders the rule above allows for a press and the two things its
+    // button has to draw. The fourth is the one that could not live in the seat: working a leaf changes what
+    // the DECK says about that leaf, and rebuilding a deck is a page's job — a seat that could do it would
+    // need a twenty-ninth member on ISeatHost, and that interface may only shrink.
+
+    /// <inheritdoc cref="Seating.ACabinetLeafToWork"/>
+    private bool ACabinetLeafToWork => _seating.ACabinetLeafToWork;
+
+    /// <inheritdoc cref="Seating.CabinetLeafLabel"/>
+    private string CabinetLeafLabel => _seating.CabinetLeafLabel;
+
+    /// <inheritdoc cref="Seating.CabinetLeafHint"/>
+    private string CabinetLeafHint => _seating.CabinetLeafHint;
+
+    /// <summary>#758 · Draw the curtain, or dog the door. The seat decides and remembers
+    /// (<see cref="Seating.DrawOrDogTheCabinet"/>); this puts the answer back on the plan, because the
+    /// cabinet's glyph is drawn from the set that press just changed and a plan still showing cloth over a
+    /// dogged leaf is the picture and the sim disagreeing about a room the captain is sitting in.</summary>
+    private void WorkTheCabinetLeaf()
+    {
+        if (!ACabinetLeafToWork)
+        {
+            return;
+        }
+        _seating.DrawOrDogTheCabinet();
+        RebuildSurfaceDeck();
+    }
 }

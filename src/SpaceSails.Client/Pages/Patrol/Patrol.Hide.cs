@@ -24,7 +24,7 @@ public sealed partial class Map
             {
                 if (PatrolBeat.Notices(g.X, g.Y, _host.AvatarX, _host.AvatarY, sight))
                 {
-                    g.SawYouShutIt = true;
+                    g.HeSeesYouShutTheDoor();
                 }
             }
         }
@@ -79,25 +79,24 @@ public sealed partial class Map
         private void WaitOutsideTheCubicle(
             Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, in RingOffice.Stall cell)
         {
-            g.WalkingUp = false;
-            g.RePlanIn -= dt;
+            g.HeStopsWalkingUp();
+            g.HeCountsDownToARePlan(dt);
 
             double dx = cell.StepX - g.X, dy = cell.StepY - g.Y;
             if ((dx * dx) + (dy * dy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu)
             {
                 g.Vx = 0;
                 g.Vy = 0;
-                g.Route = null;
+                g.HeDropsHisRoute();
                 g.Facing = System.Math.Atan2(cell.DoorY - g.Y, cell.DoorX - g.X);
 
                 if (!g.Knocking)
                 {
-                    g.Knocking = true;
-                    g.Standing = 0;
+                    g.HeStandsAtTheDoor();
                 }
                 if (!g.Knocked)
                 {
-                    g.Knocked = true;
+                    g.HeKnocksOnce();
                     _host.ShowPulseMessage(CubicleLock.KnockLine, PulseRank.Beat);
                     _host.LogAutopilotEvent(CubicleLock.KnockLine);
                     _host.ShowPulseMessage(CubicleLock.BoughtTimeLine);
@@ -108,7 +107,7 @@ public sealed partial class Map
 
             if (g.Route is not { Active: true } || g.RePlanIn <= 0)
             {
-                g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+                g.HeWillRePlanInAWhile();
                 AutoWalk.Attempt planned = AutoWalk.Plan(
                     true, new DeckReachability.Point(g.X, g.Y),
                     new DeckReachability.Point(cell.StepX, cell.StepY),
@@ -123,16 +122,14 @@ public sealed partial class Map
                     // The ground will not give him a route to a door he watched shut. He is not left crossing a
                     // washroom forever: he forgets he saw anything and goes back on the round, which is the
                     // mildest honest outcome and the only one this file has ever had.
-                    g.SawYouShutIt = false;
-                    g.Knocking = false;
-                    g.Knocked = false;
-                    g.Route = null;
+                    g.HeForgetsTheCatch();
+                    g.HeDropsHisRoute();
                     return;
                 }
-                g.Route = planned.Route;
+                g.HeTakesTheRoute(planned.Route);
             }
 
-            g.Knocking = false;
+            g.HeIsStillWalkingToTheDoor();
             SpendTheStride(g, dt, walls);
         }
     }

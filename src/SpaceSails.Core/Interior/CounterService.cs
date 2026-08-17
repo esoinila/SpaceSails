@@ -16,6 +16,11 @@ namespace SpaceSails.Core.Interior;
 /// rock is somehow worse. So <see cref="Barkeep.SelfService"/> is set, and the card drops the two verbs
 /// that need a person — standing a round, and asking what they have heard.</para>
 ///
+/// <para>#781 · <b>…on the DEAD watches.</b> The paragraph above was never the whole truth, only the
+/// small-hours one: on the living watches there is a keep at the front of this counter
+/// (<see cref="OnWatch"/>, <see cref="TheKeep"/>), and the reading above stands word for word on the watches
+/// he is not working. What he actually is, the game never says.</para>
+///
 /// <para><b>The menu's law</b> (owner ruling, the menu's voice, final): every item jokes about what is
 /// BELOW, because gallows humour about the deep is this hall's way of never asking about it — and no item
 /// may ever be RIGHT about it. Not one name or line here states a true fact about the lower bands. Comedy
@@ -104,4 +109,52 @@ public static class CounterService
             ? BranchCounter
             : null;
     }
+
+    // ── #781 · …AND WHO IS BEHIND IT, WHICH IS A FACT ABOUT THE WATCH ───────────────────────────────────
+    //
+    // Owner, live at this fixture: "There should be a bar keep there (really like hidden security guard)."
+    //
+    // ONE RECORD, DERIVED FROM THE OTHER. The kept counter is BranchCounter `with` four fields changed — the
+    // name, the greeting, the rumours, and whether anybody is behind it. Everything else is the same object:
+    // the same card under the glass, the same prices, the same desk in the photograph. So "the keep pours the
+    // same coffee" is structural rather than a promise somebody kept while typing a second literal, and the
+    // dead-watch reading below is not a copy of #772's counter — it IS #772's counter, byte for byte.
+
+    /// <summary>#781 · The counter with somebody behind it. #618's "nobody is back there" stays true of the
+    /// ROOM BEHIND: the keep works the front, and is never seen entering or leaving it.</summary>
+    private static readonly Barkeep KeptCounter = BranchCounter with
+    {
+        Name = TheKeep.Name,
+        Welcome = TheKeep.Welcome,
+        Rumors = TheKeep.Rumors,
+        SelfService = false,
+    };
+
+    /// <summary>
+    /// #781 · WHO IS SERVING AT THIS COUNTER ON THIS WATCH.
+    ///
+    /// <para>The living watches get the keep and the two person-verbs #772 gated away — a round for the room,
+    /// and asking what he has heard. The dead ones get the self-service counter exactly as it has always been:
+    /// the very instance, so a guard can assert byte-identity rather than compare two lists of strings and
+    /// hope.</para>
+    ///
+    /// <para>Anything that is not this counter comes back untouched, so a haven bar handed through here is a
+    /// haven bar — the fork is about ONE fixture and must never become a rule about barkeeps.</para>
+    /// </summary>
+    public static Barkeep OnWatch(Barkeep counter, long watch)
+    {
+        ArgumentNullException.ThrowIfNull(counter);
+        return counter == BranchCounter && TheKeep.KeptWatch(watch) ? KeptCounter : counter;
+    }
+
+    /// <summary>The same question asked of the building rather than of a record already in hand — the
+    /// three-argument twin of <see cref="For(string, UndergroundComplex.Comfort)"/>, for callers that have a
+    /// site and a watch and no counter yet.</summary>
+    public static Barkeep? For(string bodyId, UndergroundComplex.Comfort use, long watch) =>
+        For(bodyId, use) is { } counter ? OnWatch(counter, watch) : null;
+
+    /// <summary>Is THE KEEP the one behind this card? Asked here rather than by comparing a name at a call
+    /// site, because a string compare against "the keep" is a second answer to a question this file owns —
+    /// and it would say yes to any venue that ever named a barkeep the same thing.</summary>
+    public static bool ServedByTheKeep(Barkeep? keep) => keep is not null && keep == KeptCounter;
 }

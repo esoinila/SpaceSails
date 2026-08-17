@@ -149,17 +149,10 @@ public partial class Map
     private void ScrubToDestinationPass(ClosestApproach.Pass cp) =>
         _scrubOffsetSeconds = Math.Max(0, cp.SimTime - _ship.SimTime);
 
-    private Vector2d SampledVelocityAt(double simTime)
-    {
-        for (int i = 1; i < _samples.Count; i++)
-        {
-            if (_samples[i].SimTime >= simTime)
-            {
-                double dt = _samples[i].SimTime - _samples[i - 1].SimTime;
-                return dt <= 0 ? _ship.Velocity : (_samples[i].Position - _samples[i - 1].Position) / dt;
-            }
-        }
-        return _ship.Velocity;
-    }
+    // #838: the secant of the bracketing sample pair — the ghost's velocity — now lives in Core
+    // (NodeFrame.VelocityAt), so the pass estimate here and the planner's four quick selects read the
+    // ribbon the same way.
+    private Vector2d SampledVelocityAt(double simTime) =>
+        NodeFrame.VelocityAt(_samples, simTime, _ship.Velocity);
 
 }

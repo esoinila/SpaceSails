@@ -111,7 +111,12 @@ public partial class Map
             return;
         }
 
-        var newNode = new PlanNode { SimTime = t, Action = ManeuverAction.Accelerate, Pulses = 1 };
+        // #838 · a burn is born in the vector view, aimed FORWARD in the ghost's frame at its own epoch —
+        // which flies identically to the old ± Accelerate it replaces (a Vector pulse down the velocity
+        // vector IS a Factor Accelerate; see ManeuverPlan) but is now a heading the four quick selects and
+        // the free aim can both speak about.
+        var newNode = new PlanNode { SimTime = t, Action = ManeuverAction.Accelerate, Pulses = 1, Mode = BurnMode.Vector };
+        AimNode(newNode, NodeDirection.Forward);
         _planNodes.Add(newNode);
         SortNodes();
         RebuildPlan();
@@ -128,50 +133,108 @@ public partial class Map
         }
     }
 
-    private void SetAction(PlanNode node, ManeuverAction action)
+    // #838 — SetAction (the planner's ± prograde/retrograde pair) is GONE with the ruling: nothing else
+    // called it. A node's Action still rides along for the auto-plot path's Factor nodes and is what
+    // EnsureVectorPlanning reads to convert one, but the planner no longer offers a control that sets it.
+
+    // #838 · THE PLANNER SPEAKS VECTOR, ALWAYS. The ± factor burn is reflex flying's idiom and left the
+    // maneuver-node planner with the owner's ruling; a node opened for editing is therefore converted to
+    // the Vector burn that flies EXACTLY the same course — prograde for the old +, retrograde for the old
+    // − (a Vector pulse along ±v scales the speed by the same Percent, proven in Core) — so nothing about
+    // the plotted trajectory changes, only the language the panel edits it in. Legacy nodes reach the
+    // planner from the auto-plot path, which still lays Factor nodes.
+    private void EnsureVectorPlanning(PlanNode node)
     {
-        if (node.Action == action)
+        if (node.Mode == BurnMode.Vector)
         {
             return;
         }
 
-        node.Action = action;
+        node.Mode = BurnMode.Vector;
+        AimNode(node, node.Action == ManeuverAction.Accelerate ? NodeDirection.Forward : NodeDirection.Back);
         RebuildPlan();
         ReprojectTrajectory();
     }
 
-    // Flip a node between the classic ± factor burn and the X-Pilot heading burn. Switching *into*
-    // Vector mode seeds the heading with the ship's velocity direction at that point, so the burn
-    // starts neutral (straight ahead — identical to a Factor Accelerate) and the pilot then rotates
-    // it toward the pod they mean to chase.
-    private void ToggleBurnMode(PlanNode node)
+    // #838 · a quick select: point this node's burn along one of the four trajectory-relative directions,
+    // solved in the GHOST'S frame at the node's own epoch. Nothing is cached — re-time the node and press
+    // again and the ribbon is re-read at the new time, because by then the course has moved on.
+    private void SetNodeDirection(PlanNode node, NodeDirection direction)
     {
-        if (node.Mode == BurnMode.Factor)
-        {
-            node.Mode = BurnMode.Vector;
-            node.HeadingDegrees = HeadingAlongCourseAt(node.SimTime);
-        }
-        else
-        {
-            node.Mode = BurnMode.Factor;
-        }
-
+        node.Mode = BurnMode.Vector;
+        AimNode(node, direction);
         RebuildPlan();
         ReprojectTrajectory();
     }
 
-    // World-space heading (degrees, 0° = +X, CCW) of the projected velocity at a plotted time.
-    private double HeadingAlongCourseAt(double simTime)
+    // The aim itself, without the rebuild — one call into Core, handed the ghost's own state at the node.
+    private void AimNode(PlanNode node, NodeDirection direction) =>
+        node.HeadingDegrees = NodeFrame.HeadingAt(
+            direction, _samples, node.SimTime,
+            PlanningPrimaryPositionAt(node.SimTime), _ship.Position, _ship.Velocity);
+
+    // Is this node currently pointed along that quick select? Lights the matching button — and lets every
+    // button go dark the moment the node is re-timed and the frame it was solved in has moved.
+    private bool NodeAimedAlong(PlanNode node, NodeDirection direction) =>
+        node.Mode == BurnMode.Vector && NodeFrame.PointsAlong(
+            node.HeadingDegrees,
+            NodeFrame.HeadingAt(direction, _samples, node.SimTime,
+                                PlanningPrimaryPositionAt(node.SimTime), _ship.Position, _ship.Velocity));
+
+    // #838 · which body "up" and "down" are measured from at a node's epoch: the captain's chosen plot
+    // frame when he has one (#135/#143 — the frame is what the drawn plot MEANS, so it is also what the
+    // radials mean), otherwise the innermost body whose Hill sphere holds the ghost at that instant, and
+    // the Sun when nothing does. Whichever it is, the panel names it, so "up" is never a guess.
+    private string? PlanningPrimaryIdAt(double simTime)
     {
-        Vector2d v = SampledVelocityAt(simTime);
-        if (v.LengthSquared == 0)
+        if (_ephemeris is null)
         {
-            return 0;
+            return null;
+        }
+        if (_plotFrameBodyId is not null && _ephemeris.Bodies.Any(b => b.Id == _plotFrameBodyId))
+        {
+            return _plotFrameBodyId;
         }
 
-        double deg = Math.Atan2(v.Y, v.X) * 180.0 / Math.PI;
-        return deg < 0 ? deg + 360 : deg;
+        Vector2d ghost = SamplePositionAt(simTime);
+        string? best = null;
+        double bestHill = double.MaxValue;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (body.ParentId is null || body.Kind == BodyKind.Station)
+            {
+                continue;
+            }
+            CelestialBody? parent = _ephemeris.Bodies.FirstOrDefault(b => b.Id == body.ParentId);
+            if (parent is null)
+            {
+                continue;
+            }
+            double hill = OrbitRule.HillRadius(body, parent.Mu);
+            if (hill <= 0 || hill >= bestHill)
+            {
+                continue;
+            }
+            if ((ghost - _ephemeris.Position(body.Id, simTime)).Length < hill)
+            {
+                (bestHill, best) = (hill, body.Id);
+            }
+        }
+        return best;
     }
+
+    private Vector2d PlanningPrimaryPositionAt(double simTime)
+    {
+        string? id = PlanningPrimaryIdAt(simTime);
+        return id is null || _ephemeris is null ? Vector2d.Zero : _ephemeris.Position(id, simTime);
+    }
+
+    private string PlanningPrimaryName(double simTime) =>
+        PlanningPrimaryIdAt(simTime) is { } id ? BodyName(id) : "the Sun";
+
+    // World-space heading (degrees, 0° = +X, CCW) of the projected velocity at a plotted time — the
+    // ghost's prograde, which is also what the rel/abs angle field reads its zero from.
+    private double HeadingAlongCourseAt(double simTime) => NodeFrame.Prograde(SampledVelocityAt(simTime));
 
     private void SetHeading(PlanNode node, ChangeEventArgs e)
     {
@@ -188,12 +251,9 @@ public partial class Map
         }
     }
 
-    private void NudgeHeading(PlanNode node, double delta)
-    {
-        node.HeadingDegrees = WrapDegrees(node.HeadingDegrees + delta);
-        RebuildPlan();
-        ReprojectTrajectory();
-    }
+    // #838 — NudgeHeading (the ±15° ↺/↻ pair) is GONE, not moved: nothing else in the game called it.
+    // Reflex flying's plus/minus is a different control entirely — the live +/−/arrow keys in
+    // Map.Sim.Keys, which scale the ship's velocity right now — and it is untouched by this issue.
 
     private static double WrapDegrees(double deg)
     {
@@ -316,6 +376,7 @@ public partial class Map
         _selectedPlanNode = best;
         _openEditor = FlightEditorKind.Burn;
         _scrubOffsetSeconds = Math.Max(0, best.SimTime - _ship.SimTime);
+        EnsureVectorPlanning(best);   // #838: the panel that just opened plans in the vector view
         return true;
     }
 

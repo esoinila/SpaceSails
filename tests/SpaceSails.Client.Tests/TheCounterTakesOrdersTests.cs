@@ -293,7 +293,12 @@ public sealed class TheCounterTakesOrdersTests
         // the room's answer and never the cheat's.
         string stand = Method("Map.Surface.Cheats.cs", "private void StandAtTheCounterIfAsked(");
         Assert.Contains("_stoolCheat", stand, StringComparison.Ordinal);
-        Assert.Contains("OpenCounterService(counter);", stand, StringComparison.Ordinal);
+        // #781 · …through Core's own who-is-behind-it fork, which is the very call the real [E] press makes.
+        // What this claim protects is unchanged — the card is opened by the shipped handler and the seat is
+        // taken by the shipped verb — and the argument is now the counter the WATCH says is serving, because
+        // a cheat that opened the unforked card would be demoing a counter that does not ship.
+        Assert.Contains("OpenCounterService(Core.Interior.CounterService.OnWatch(counter, ex.CanteenWatch));",
+            stand, StringComparison.Ordinal);
         Assert.Contains("TakeAStool();", stand, StringComparison.Ordinal);
     }
 

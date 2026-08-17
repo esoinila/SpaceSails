@@ -53,6 +53,8 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "9082e8dcc2a7a6887268cc61a1484725",
             ["/map?converge=1"] = "4e82a376afa29b6585aee0b77139cd69",
             ["/map?counter=1"] = "724bfab09e6e78001d448fae522dfe45",
+            ["/map?counter=1&watch=2"] = "724bfab09e6e78001d448fae522dfe45",
+            ["/map?counter=1&watch=5"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?credits=1234&fuel=7&simhours=9"] = "e45e2435adfcdc8faa40e81f723dbb0d",
             ["/map?credits=50000"] = "cc6e4609cdd3fa37f99a4b32e7229af0",
             ["/map?death=collector&dock=selene-gate"] = "1b0759305685764b2ae0f2322e2adf69",

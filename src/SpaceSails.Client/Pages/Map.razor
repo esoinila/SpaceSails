@@ -1889,6 +1889,17 @@
                             title="@(open ? m.Label : TableMoveRefusal(m))"
                             @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
                 }
+                @* #758 · THE CURTAIN AND THE DOOR. One button, at the one seat in this game that has a leaf
+                   of its own, and it always offers the OTHER stage — a room never has to announce the state
+                   it is already standing in. Owner: "something that prevents the sound or sight catching
+                   what happens there too easily but is not a real door." The tooltip carries the cost,
+                   because the cost IS the mechanic: the whole hall watches a cabinet door close. *@
+                @if (ACabinetLeafToWork)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="@CabinetLeafHint"
+                            @onclick="WorkTheCabinetLeaf">@CabinetLeafLabel</button>
+                }
                 @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
                    refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
                    press, because that is how the gumshoe rule gets learned. Once a sheet of this sitting
@@ -3015,6 +3026,16 @@
             {
                 <div class="deck-bank-notice small">@note</div>
             }
+            @* #781 · THE TELL, ON THE SECOND LINE. Owner: "There should be a bar keep there (really like
+               hidden security guard)" — and the whole of him is here, in one sentence a watch, under the one
+               he greeted you with. It is never a speech and never in quotes: nobody in this room remarks on
+               it, and the game does not either. Core owns the three sentences and which one this shift wears
+               (off the FROZEN watch, never a clock); this draws it only where somebody is behind the counter,
+               which on a dead watch is nobody at all. *@
+            @if (TheKeepsTell() is { } tell)
+            {
+                <div class="deck-offer-blurb small text-secondary">@tell</div>
+            }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
             @* #306/#308/#347 The drink as a two-edged trust maneuver, OFFER-FIRST (owner 2026-07-18: "The
                person may refuse the drink here. That possibility should be determined first"). Extending the
@@ -3106,7 +3127,10 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
                             title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
-                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                    @* #781 · The tooltip names WHOEVER is behind this counter, off Core's own field, rather
+                       than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
+                       keep`, which is the only thing the game is ever allowed to call him. *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@($"Ask {keep.Name} what they've heard lately")" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
                 }
                 @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
                    (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@
@@ -5007,73 +5031,64 @@
                                 </div>
                                 @if (_open)
                                 {
-                                    <div class="map-plan-step-edit d-flex flex-wrap align-items-center gap-1">
-                                        @* Mode toggle: ± is the classic prograde/retrograde factor burn; ✚ is
-                                           the X-Pilot point-and-burn that aims a heading to chase a climbing pod. *@
-                                        <button type="button"
-                                                class="btn btn-sm @(node.Mode == BurnMode.Vector ? "btn-info" : "btn-outline-info") map-plot-mode"
-                                                title="@(node.Mode == BurnMode.Vector ? "X-Pilot burn (aim a heading) — click for ± factor burn" : "± factor burn (prograde/retrograde) — click for X-Pilot heading burn")"
-                                                @onclick="() => ToggleBurnMode(node)">@(node.Mode == BurnMode.Vector ? "✚" : "±")</button>
-                                        @if (node.Mode == BurnMode.Vector)
-                                        {
-                                            @* X-Pilot: a world-space heading in degrees, plus quick ±15° nudges. The glyphs
-                                               promise the VISIBLE rotation of the map arrow: heading is math-CCW (Y up) but the
-                                               screen draws Y down, so +15° turns the drawn arrow counter-clockwise — ↺ must be
-                                               the POSITIVE nudge (#154, both buttons were inverted vs what the player sees). *@
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate counter-clockwise (+15°)"
-                                                    @onclick="() => NudgeHeading(node, 15)">↺</button>
-                                            @* #201: the burn angle is ship-heading-RELATIVE by default — 0 = straight
-                                               ahead, +90 = starboard, −90 = port — the lateral-closing move the owner
-                                               types mid-chase. The rel/abs toggle keeps the old world heading a click
-                                               away; the stored HeadingDegrees is always world-space (BurnHeadingConvention). *@
+                                    @* #838 · THE PLANNER PLANS IN THE VECTOR VIEW, AND IN FOUR WORDS. Owner:
+                                       "I almost always use those four directions in respect to our trajectory…
+                                       the intermediate angles are the exception." Ruling A (2026-08-17): the ±
+                                       idiom — the mode toggle, the prograde/retrograde pair AND the ±15° ↺/↻
+                                       nudges — leaves this panel for good and stays where it works, in reflex
+                                       flying (the live +/−/arrow keys). What stands here instead: four quick
+                                       selects solved in the GHOST'S frame at THIS node's epoch, and free aim
+                                       underneath as the exception. *@
+                                    <div class="map-plan-step-edit">
+                                        <div class="map-burn-quick" role="group" aria-label="Burn direction at this node">
+                                            @foreach (NodeDirection _dir in NodeFrame.QuickSelects)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm @(NodeAimedAlong(node, _dir) ? "btn-info" : "btn-outline-info")"
+                                                        title="@NodeFrame.Hint(_dir, PlanningPrimaryName(node.SimTime))"
+                                                        @onclick="() => SetNodeDirection(node, _dir)">@NodeFrame.Label(_dir)</button>
+                                            }
+                                        </div>
+                                        <div class="map-burn-frame-note text-secondary">@NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime))</div>
+                                        <div class="map-burn-aim d-flex flex-wrap align-items-center gap-1">
+                                            @* Free aim — the exception the vector view keeps. #201: the burn angle is
+                                               ship-heading-RELATIVE by default — 0 = straight ahead, +90 = starboard,
+                                               −90 = port. The rel/abs toggle keeps the world heading a click away; the
+                                               stored HeadingDegrees is always world-space (BurnHeadingConvention). *@
                                             <div class="input-group input-group-sm map-plot-heading">
                                                 <input type="text" inputmode="decimal" class="form-control form-control-sm"
                                                        value="@(_burnAngleAbsolute
                                                            ? node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture)
                                                            : BurnHeadingConvention.WorldToRelative(HeadingAlongCourseAt(node.SimTime), node.HeadingDegrees).ToString("+0.#;-0.#;0", CultureInfo.InvariantCulture))"
                                                        title="@(_burnAngleAbsolute
-                                                           ? "Absolute nose heading in degrees (0° = +X, counter-clockwise)"
-                                                           : "Burn angle off the ship's heading — 0 = straight ahead, +90 = starboard (right), −90 = port (left)")"
+                                                           ? "Free aim — absolute nose heading in degrees (0° = +X, counter-clockwise)"
+                                                           : "Free aim — burn angle off the course at this node: 0 = straight ahead, +90 = starboard (right), −90 = port (left)")"
                                                        @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
                                                 <span class="input-group-text">°</span>
                                                 <button type="button" class="btn btn-outline-secondary"
-                                                        title="@(_burnAngleAbsolute ? "Reading absolute world heading — click for ship-relative (±off heading)" : "Reading ship-relative angle (0 ahead, +90 starboard, −90 port) — click for absolute world heading")"
+                                                        title="@(_burnAngleAbsolute ? "Reading absolute world heading — click for course-relative (the angle off the track)" : "Reading course-relative angle (0 ahead, +90 starboard, −90 port) — click for absolute world heading")"
                                                         @onclick="() => _burnAngleAbsolute = !_burnAngleAbsolute">@(_burnAngleAbsolute ? "abs" : "rel")</button>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate clockwise (−15°)"
-                                                    @onclick="() => NudgeHeading(node, -15)">↻</button>
-                                        }
-                                        else
-                                        {
-                                            <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
-                                                <button type="button"
-                                                        class="btn @(node.Action == ManeuverAction.Accelerate ? "btn-success" : "btn-outline-secondary")"
-                                                        title="Burn prograde — speed up along the track"
-                                                        @onclick="() => SetAction(node, ManeuverAction.Accelerate)">+</button>
-                                                <button type="button"
-                                                        class="btn @(node.Action == ManeuverAction.Decelerate ? "btn-warning" : "btn-outline-secondary")"
-                                                        title="Burn retrograde — slow down along the track"
-                                                        @onclick="() => SetAction(node, ManeuverAction.Decelerate)">&minus;</button>
+                                            @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
+                                            <input type="number" class="form-control form-control-sm map-plot-pulses"
+                                                   min="1" max="@MaxNodePulses" value="@node.Pulses"
+                                                   title="Pulses this burn spends"
+                                                   @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                            @* Text (not number) input so the 4-decimal padding actually shows —
+                                               browsers strip trailing zeros from type=number. Owner: at least
+                                               ".0000" must be visible for fine thrust trims. *@
+                                            <div class="input-group input-group-sm map-plot-percent">
+                                                <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                       value="@(node.Percent.ToString("0.0000", CultureInfo.InvariantCulture))"
+                                                       title="Per-pulse thrust strength in percent — any decimal, shown to four places"
+                                                       @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
+                                                <span class="input-group-text">%</span>
                                             </div>
-                                        }
-                                        @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
-                                        <input type="number" class="form-control form-control-sm map-plot-pulses"
-                                               min="1" max="@MaxNodePulses" value="@node.Pulses"
-                                               @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
-                                        @* Text (not number) input so the 4-decimal padding actually shows —
-                                           browsers strip trailing zeros from type=number. Owner: at least
-                                           ".0000" must be visible for fine thrust trims. *@
-                                        <div class="input-group input-group-sm map-plot-percent">
-                                            <input type="text" inputmode="decimal" class="form-control form-control-sm"
-                                                   value="@(node.Percent.ToString("0.0000", CultureInfo.InvariantCulture))"
-                                                   title="Per-pulse thrust strength in percent — any decimal, shown to four places"
-                                                   @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
-                                            <span class="input-group-text">%</span>
+                                            <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
+                                                    @onclick="() => RetimeToScrub(node)">@@</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                                                    @onclick="() => DeleteNode(node)">&times;</button>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
-                                                @onclick="() => RetimeToScrub(node)">@@</button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
-                                                @onclick="() => DeleteNode(node)">&times;</button>
                                     </div>
                                 }
                             </div>

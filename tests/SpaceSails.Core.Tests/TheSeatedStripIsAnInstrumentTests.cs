@@ -139,12 +139,32 @@ public class TheSeatedStripIsAnInstrumentTests
             "a threshold that selects everything, or nothing, is a clause that asserts nothing. Saw: "
             + string.Join(" / ", seen));
 
-        // A CABINET is not a fill at all. The door is what you paid for, nobody comes (SomebodyComes refuses
+        // A CABINET is not a fill at all. The room is what you paid for, nobody comes (SomebodyComes refuses
         // on a quiet top), and the strip says the thing that is true about the room you are IN.
+        //
+        // #758 · …AND IT SAYS WHICH LEAF IT IS. This used to assert "the door is shut" on every cabinet in
+        // the game, which was true while a cabinet came dogged and stopped being true the day the curtain
+        // shipped. Both stages are asked now, at every watch: neither may drift with the fill, they may not
+        // be the same sentence, and only the dogged one may claim a shut door.
         foreach (long watch in EveryWatch())
         {
-            string cabinet = SeatedHud.RoomClause(SeatedHud.Seat.Cabinet, SittingAlone.Fill(watch));
-            Assert.Contains("the door is shut", cabinet, StringComparison.Ordinal);
+            double fill = SittingAlone.Fill(watch);
+            string cloth = SeatedHud.RoomClause(
+                SeatedHud.Seat.Cabinet, fill, CabinetPrivacy.Stage.Curtain);
+            string leaf = SeatedHud.RoomClause(
+                SeatedHud.Seat.Cabinet, fill, CabinetPrivacy.Stage.Door);
+
+            Assert.Equal(SeatedHud.CabinetCurtainClause, cloth);
+            Assert.Equal(SeatedHud.CabinetDoggedClause, leaf);
+            Assert.NotEqual(cloth, leaf);
+            Assert.DoesNotContain("the door is", cloth, StringComparison.Ordinal);
+            Assert.Contains("the door is dogged", leaf, StringComparison.Ordinal);
+
+            // The default is the state the BUILDING keeps its cabinets in, and it is the cloth. A default
+            // that reported a dogged leaf would tell every captain who never pressed the button that they
+            // were safe.
+            Assert.Equal(cloth, SeatedHud.RoomClause(SeatedHud.Seat.Cabinet, fill));
+
             Assert.False(SittingAlone.SomebodyComes("test-body", -1, 0, watch, 0, quiet: true),
                 "the strip says nobody is coming while the room says somebody might.");
         }

@@ -171,14 +171,21 @@ public static class SeatedHud
     /// <summary>The room clause, off <see cref="SittingAlone.Fill"/> — the same fraction the approach roll is
     /// scaled by, so how full the hall reads and how likely somebody is to cross it are one fact.
     ///
-    /// <para>A cabinet is not a fill at all: the door is what you paid for, nobody comes, and the strip says
+    /// <para>A cabinet is not a fill at all: the room is what you paid for, nobody comes, and the strip says
     /// the thing that is actually true about the room you are in rather than a crowd figure for a hall you
-    /// cannot see.</para></summary>
-    public static string RoomClause(Seat seat, double watchFill)
+    /// cannot see.</para>
+    ///
+    /// <para>#758 · …AND WHICH OF THE TWO STAGES IT IS STANDING AT. This clause said <i>the door is shut</i>
+    /// on every cabinet in the game, which was true while a cabinet came with its leaf dogged and stopped
+    /// being true the day the curtain shipped. A strip reporting a shut door to a captain sitting behind
+    /// cloth is a sentence and a sim disagreeing about one leaf — the third named bug class — so the stage
+    /// is handed in, and it defaults to the state every cabinet in the building is in.</para></summary>
+    public static string RoomClause(
+        Seat seat, double watchFill, CabinetPrivacy.Stage cabinetStage = CabinetPrivacy.Stage.Curtain)
     {
         if (seat == Seat.Cabinet)
         {
-            return "the door is shut — nobody is crossing the room to you";
+            return cabinetStage == CabinetPrivacy.Stage.Door ? CabinetDoggedClause : CabinetCurtainClause;
         }
 
         // #821 · …AND A LOCKED CUBICLE IS NOT A ROOM YOU CAN BE CROSSED IN EITHER — but for a different
@@ -224,6 +231,16 @@ public static class SeatedHud
     public const string LockedCubicleClause =
         "the catch is over — the door buys time, and the floor is still out there";
 
+    /// <summary>#758 · The room clause a cabinet gets AT STAGE ONE. Both halves are true at once and the
+    /// second half is the one the mechanic lives in: nobody will walk in on you, and cloth is not steel.</summary>
+    public const string CabinetCurtainClause =
+        "the curtain is across — nobody is crossing the room to you, and cloth is not steel";
+
+    /// <summary>…and AT STAGE TWO, which is the sentence the strip used to say about every cabinet in the
+    /// building and now says only about the ones somebody decided about.</summary>
+    public const string CabinetDoggedClause =
+        "the door is dogged — nobody is crossing the room to you";
+
     // ── THE LINE ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>What the clauses are joined with. One separator, so the line reads as one instrument.</summary>
@@ -243,14 +260,16 @@ public static class SeatedHud
     /// <param name="sharedTop">#865 · Is somebody else at this top? Optional, and it changes exactly one
     /// clause — the seat's own name — because the whole ruling is that co-seating is the SAME strip with
     /// company in it and not a second instrument.</param>
+    /// <param name="cabinetStage">#758 · Which stage the cabinet is standing at, ignored at every other
+    /// seat. Appended and defaulted, so every existing caller still means the room it meant.</param>
     public static string CustomerLine(
         Seat seat, double? pourSecondsLeft, int pipsEasedThisWatch, int pipCap, double watchFill,
-        bool sharedTop = false) =>
+        bool sharedTop = false, CabinetPrivacy.Stage cabinetStage = CabinetPrivacy.Stage.Curtain) =>
         string.Join(Join,
             $"{Glyph} {SeatLabel(seat, sharedTop)}",
             PourClause(pourSecondsLeft),
             RestClause(pipsEasedThisWatch, pipCap),
-            RoomClause(seat, watchFill));
+            RoomClause(seat, watchFill, cabinetStage));
 
     // ── THE STRIP'S OWN CHROME ────────────────────────────────────────────────────────────────────────
 
@@ -268,7 +287,8 @@ public static class SeatedHud
         yield return RestClause(0, ShortRest.NervePipCapPerWatch);
         yield return RestClause(ShortRest.NervePipCapPerWatch, ShortRest.NervePipCapPerWatch);
         yield return RoomClause(Seat.LockedCubicle, 0);
-        yield return RoomClause(Seat.Cabinet, 0);
+        yield return RoomClause(Seat.Cabinet, 0, CabinetPrivacy.Stage.Curtain);
+        yield return RoomClause(Seat.Cabinet, 0, CabinetPrivacy.Stage.Door);
         yield return RoomClause(Seat.ParkBench, 0);
         yield return RoomClause(Seat.HallTable, 1);
         yield return RoomClause(Seat.HallTable, SittingAlone.BusyAt);

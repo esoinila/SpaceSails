@@ -735,7 +735,8 @@ that arrives already blown.
 
 ### The archive node — `?archive=1`
 
-> **The house rule this cheat exists for, written in `Map.Sim.cs` beside the others:** *"a scene nobody can
+> **The house rule this cheat exists for, written beside the others in `Map.Sim.World.Query.cs`** (#870 split
+> the boot out of `Map.Sim.cs`)**:** *"a scene nobody can
 > reach on demand is a scene that ships broken."* The node is aboard about **one eligible wreck in three**,
 > and the compartment it sits in is one room of one hull — which makes it, like the repo boat and the deep
 > Hive floors, nearly impossible to playtest on purpose.

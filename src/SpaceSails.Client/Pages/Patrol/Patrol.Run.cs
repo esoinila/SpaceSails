@@ -78,17 +78,7 @@ public sealed partial class Map
             // other end of it.
             WalletFanOpen = false;
 
-            g.AfterYou = true;
-            g.Why = why;
-            g.AfterYouFor = 0;
-            g.CallingIn = PatrolBeat.CallItInSeconds;
-            g.WallSide = index % 2 == 0 ? 1 : -1;
-            g.WalkingUp = false;
-            g.WalkUpFor = 0;
-            g.Standing = 0;
-            g.Route = null;
-            g.Retries = 0;
-            g.SinceStop = 0;
+            g.HeCallsItIn(why, index);
             g.Vx = 0;
             g.Vy = 0;
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
@@ -115,13 +105,13 @@ public sealed partial class Map
         private void RunAfterTheCaptain(
             SurfaceExcursion ex, Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
         {
-            g.AfterYouFor += dt;
+            g.HeIsOneFrameFurtherIntoTheRun(dt);
 
             // THE RADIO FIRST, AND HE STANDS STILL FOR IT. This beat is the warning, and a man who talked while
             // he ran would have spent it. He is off the fan for it too, honestly — he is not travelling.
             if (g.CallingIn > 0)
             {
-                g.CallingIn -= dt;
+                g.HeSpendsAFrameOnTheRadio(dt);
                 g.Vx = 0;
                 g.Vy = 0;
                 g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
@@ -185,8 +175,7 @@ public sealed partial class Map
 
             PatrolBeat.Provocation why = g.Why;
             EndTheRun(g);
-            g.Standing = PatrolBeat.StandSeconds;
-            g.SinceStop = 0;
+            g.HeStandsAtYou();
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
 
             // The same two-armed card the wallet read is told on, with the guard's own plate behind it — one
@@ -213,8 +202,7 @@ public sealed partial class Map
         private void HeLosesYou(Guard g)
         {
             EndTheRun(g);
-            g.Standing = PatrolBeat.StandSeconds;
-            g.SinceStop = 0;
+            g.HeStandsAtYou();
             _host.ShowPulseMessage(PatrolBeat.LostYouLine, PulseRank.Beat);
             _host.LogAutopilotEvent(PatrolBeat.LostYouLine);
         }
@@ -223,12 +211,7 @@ public sealed partial class Map
         /// of it behind on the man.</summary>
         private static void EndTheRun(Guard g)
         {
-            g.AfterYou = false;
-            g.AfterYouFor = 0;
-            g.CallingIn = 0;
-            g.Why = PatrolBeat.Provocation.None;
-            g.Route = null;
-            g.Retries = 0;
+            g.HeStopsRunning();
             g.Vx = 0;
             g.Vy = 0;
         }

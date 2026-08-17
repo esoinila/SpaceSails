@@ -116,6 +116,19 @@ public static class DevStarts
             "B1 of a deep site, standing at THE COUNTER. Press E: the service card opens on the menu — "
             + "coffee, a fry-up, and three pours that joke about the deep. Buying answers on the card (#756).",
             "/map?counter=1"),
+        // #781 · …AND THE SAME COUNTER WITH SOMEBODY BEHIND IT. Owner, live at this fixture: "There should be
+        // a bar keep there (really like hidden security guard)." Two rows, because the FORK is the feature:
+        // which of the two a captain meets is decided by the watch, and a tester who could only reach one of
+        // them could not see that there were two. ?watch=2 is the hall's fullest shift, ?watch=5 its emptiest.
+        new("🍺👁", "The keep, on a watch he is working",
+            "B1 of a deep site at the hall's busiest shift, standing at THE COUNTER. Press E: somebody is "
+            + "behind it — a round for the room and Hear a rumour are on the card, and under his greeting is "
+            + "one sentence about him that nobody in the room remarks on (#781).",
+            "/map?counter=1&watch=2"),
+        new("🍺🌑", "…and the same counter on a dead one",
+            "The same fixture at the emptiest shift. The card is #772's word for word: the counter serves "
+            + "itself, and the two verbs that need a person are not there to press (#781).",
+            "/map?counter=1&watch=5"),
         // #756 · THE HIGH CHAIRS. Owner, live: "there should be high chairs so sitting at the bar desk is
         // also possible." Two rows, for #757's own reason: whether the one beside you turns is a seeded roll
         // sitting behind a seeded occupancy, so without a lever the she-speaks beat is reachable only by

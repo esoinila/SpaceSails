@@ -374,26 +374,10 @@ public partial class Map
     }
 
     // Position on the projected path at a given sim time, linearly interpolated between the two
-    // bracketing samples. Clamps to the endpoints outside the projected horizon.
-    private Vector2d SamplePositionAt(double simTime)
-    {
-        IReadOnlyList<TrajectorySample> s = _samples;
-        if (s.Count == 0) return _ship.Position;
-        if (simTime <= s[0].SimTime) return s[0].Position;
-        if (simTime >= s[^1].SimTime) return s[^1].Position;
-
-        int lo = 0, hi = s.Count - 1;
-        while (hi - lo > 1)
-        {
-            int mid = (lo + hi) >> 1;
-            if (s[mid].SimTime <= simTime) lo = mid; else hi = mid;
-        }
-
-        TrajectorySample a = s[lo];
-        TrajectorySample b = s[hi];
-        double span = b.SimTime - a.SimTime;
-        double f = span > 0 ? (simTime - a.SimTime) / span : 0;
-        return a.Position + (b.Position - a.Position) * f;
-    }
+    // bracketing samples. Clamps to the endpoints outside the projected horizon. #838 moved the
+    // interpolation itself into Core (NodeFrame) so the ghost the ribbon DRAWS and the ghost the quick
+    // selects AIM IN are read out of the samples by one function.
+    private Vector2d SamplePositionAt(double simTime) =>
+        NodeFrame.PositionAt(_samples, simTime, _ship.Position);
 
 }

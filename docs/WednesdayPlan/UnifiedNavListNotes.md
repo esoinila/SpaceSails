@@ -60,6 +60,23 @@ re-solve times (or mark stale where physics changed).
   live** — SOLVE, arm/disarm, add-the-burn, dock controls all belong inside their step's
   expanded panel, not loose on the HUD. The step list IS the button organization (#123/#124's
   cure in one move).
+- **A burn step's direction is four words, in the ghost's frame (#838, owner ruling A,
+  2026-08-17).** Owner, at the end of a playtest: *"The actual scrub flying should probably only use
+  the vector view but have like quick selects for forward, backward, up and down directions. I think
+  the plus- and minus flying is something that works for reflex flying but our planning sailship
+  flying almost always use the vector view. I almost always use those four directions in respect to
+  our trajectory... the intermediate angles are the exception. Also that panel could be bigger to fit
+  all the buttons properly."* So the burn step's sub-panel offers **▶ FORWARD · ◀ BACK · ▲ UP ·
+  ▼ DOWN** — prograde, retrograde and the two radials in the game's plain words — and nothing else
+  by default; free aim (any typed angle) stays as the documented exception. The ± idiom leaves the
+  planner entirely and stays where it works, in reflex flying (the live `+`/`−`/arrow keys). **The
+  frame law:** all four are solved from the ghost's own position and velocity **at that node's
+  epoch**, against the primary at that same instant — never off the ship's live heading, because the
+  planner plans the future and the two frames differ exactly when planning matters most. Nothing is
+  cached: re-time the step and press again and the direction is re-solved off the re-projected
+  ribbon. The words and the arithmetic both live in Core (`NodeFrame`), so the panel, the glance
+  line and any future desk can never disagree about what "up" means. The plotting panel was widened
+  (32 → 38 rem) so the four buttons and the free-aim row each fit on one line.
 - Drag-to-reorder (stretch goal): only meaningful between steps whose order is a free choice;
   a physics-ordered step (a sling solved for a specific pass epoch) snaps back with a one-line
   why. V1 can ship without dragging — click-to-edit matters more.

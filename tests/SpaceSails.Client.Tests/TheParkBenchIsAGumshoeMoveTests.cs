@@ -397,7 +397,12 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // …written by the one stepper, read by the one filler, so the figure that has stopped and the
         // figure drawn as stopped are one figure.
         string patrol = Patrol();
-        Assert.Contains("g.Held = FootTail.MustHold(", patrol, StringComparison.Ordinal);
+        // #870 lane 6′d · RE-SPELLED, never re-asserted. The write moved onto the man as a named
+        // transition (Guard.cs), so the claim is asserted in the two halves it is now written in: the
+        // caller that says it happened, and the one line on the type that does it.
+        Assert.Contains("g.HeIsHeld(FootTail.MustHold(", patrol, StringComparison.Ordinal);
+        Assert.Contains("public void HeIsHeld(bool held) => Held = held;", patrol,
+            StringComparison.Ordinal);
         Assert.Contains("Guards[i].DeckName, Guards[i].Held", patrol, StringComparison.Ordinal);
     }
 
@@ -623,14 +628,18 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // AdvancePatrol's signature down to the first arm — the two of them are the one stepper now.
         int conductor = patrol.IndexOf(
             "private void TheOneThingHeIsDoingThisFrame(", at, StringComparison.Ordinal);
-        int firstArm = patrol.IndexOf("private bool HeIsWalkingYouOut(", conductor, StringComparison.Ordinal);
+        int firstArm = patrol.IndexOf("private void HeIsWalkingYouOut(", conductor, StringComparison.Ordinal);
         Assert.True(at >= 0 && conductor > at && firstArm > conductor,
             "the step, its conductor and its arms are not where this guard thinks they are.");
         string loop = patrol[at..firstArm];
 
-        int asked = loop.IndexOf("g.Held = FootTail.MustHold(", StringComparison.Ordinal);
-        int forked = loop.IndexOf("if (HeIsMadeAndCoveringForIt(", StringComparison.Ordinal);
-        int walked = loop.IndexOf("WalkTheRound(g, dt, walls);", StringComparison.Ordinal);
+        int asked = loop.IndexOf("g.HeIsHeld(FootTail.MustHold(", StringComparison.Ordinal);
+        // #870 lane 6′d · RE-NEEDLED, never re-asserted. The list is a SWITCH now, over the seven states
+        // Guard.Doing names, so the fork is the cover act's own case label rather than an `if` — the same
+        // position in the same order, one arm further from being a clause somebody can quietly reword.
+        int forked = loop.IndexOf(
+            "case Guard.Doing.Covering: HeIsMadeAndCoveringForIt(", StringComparison.Ordinal);
+        int walked = loop.IndexOf("default: WalkTheRound(g, dt, walls);", StringComparison.Ordinal);
         Assert.True(asked >= 0 && forked > asked && walked > forked,
             "the stepper walks every mover whatever a bench has decided — a hold nothing consults is a law "
             + "with no teeth.");
@@ -648,10 +657,16 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // #870 · …and the branch is a named arm now, so the call and the guard clause that reaches it are
         // asserted TOGETHER: an arm that called TheCoverAct on somebody who is not held would be the hold
         // selecting everybody, which is the same law failing the other way round.
-        int arm = patrol.IndexOf("private bool HeIsMadeAndCoveringForIt(", StringComparison.Ordinal);
+        // #870 lane 6′d · …and the guard clause it was asserted with is not IN the arm any more: the six
+        // predicates that pick between the arms are one expression on the man himself
+        // (Guard.DoingThisFrame), and the arm is reached from exactly one case label. So the pair is
+        // asserted where the pair now is — the state is entered only when he is HELD, and that state
+        // dispatches to this arm and to nothing else. Same law, in the two halves it is written in.
+        Assert.Contains(": Held ? Doing.Covering", patrol, StringComparison.Ordinal);
+
+        int arm = patrol.IndexOf("private void HeIsMadeAndCoveringForIt(", StringComparison.Ordinal);
         Assert.True(arm > 0, "the cover-act arm has moved — this guard can no longer see the fork it guards.");
         string heldArm = patrol[arm..patrol.IndexOf("\n        /// <summary>", arm, StringComparison.Ordinal)];
-        Assert.Contains("if (!g.Held)", heldArm, StringComparison.Ordinal);
         Assert.Contains("TheCoverAct(g, dt, walls, sight);", heldArm, StringComparison.Ordinal);
 
         int act = patrol.IndexOf("private void TheCoverAct(", StringComparison.Ordinal);

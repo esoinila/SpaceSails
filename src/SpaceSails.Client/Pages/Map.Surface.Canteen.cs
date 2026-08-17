@@ -60,7 +60,10 @@ public partial class Map
                     FileNote(UndergroundComplex.AmenityLine(ex.Stop.Body.Id, a.Use), "🍽");
                     RequestVaultSave();   // the field note is a possession too (#587)
                 }
-                OpenCounterService(counter);
+                // #781 · …AND WHO IS BEHIND IT IS A FACT ABOUT THE WATCH, asked of Core off the FROZEN one
+                // (#709) rather than off the clock: the room drawn on this floor and the person who answers
+                // the press have to be one shift, which is this project's third named bug class.
+                OpenCounterService(Core.Interior.CounterService.OnWatch(counter, ex.CanteenWatch));
                 return;
             }
 
