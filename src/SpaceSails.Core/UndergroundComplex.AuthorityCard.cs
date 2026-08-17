@@ -34,14 +34,72 @@ public static partial class UndergroundComplex
     // Canon holds: a card may be countersigned by an office that denies existing. It never says what the
     // building was for.
 
-    /// <summary>Which shaft band this card runs. The identity is the fact — a card is for one band of one
-    /// facility, decided by the world rather than by the moment it is used.</summary>
-    public readonly record struct AuthorityCard(string BodyId, int Band)
-    {
-        /// <summary>The stable string a save file and a carried-cards set hold.</summary>
-        public string Id => $"{BodyId}#{Band}";
+    // ── #760 · STANDING IS WITH AN OPERATOR, NOT WITH A DOOR ────────────────────────────────────────────
+    //
+    // Owner, 2026-08-08: "same-company labs on different sites may accept the same cards for access … a card
+    // that opens Company X's shaft on this moon should be honored at Company X's dig on the next one."
+    //
+    // The world was disagreeing with its own props. The estates stencilled on these cards have been
+    // company-shaped since #679 and the gate was matching a BODY ID — so a captain who had worked two sites
+    // of one outfit was a stranger at the second, and the countersignature that is supposed to mean
+    // "somebody vouches for this person" meant "this person may open this hole".
+    //
+    // What a card carries now is a STANDING: an operator, and how far down that operator's org chart the
+    // holder sits. Everything else about the card is untouched, and deliberately so — the face, the office,
+    // the title, the site code, and the id in every existing save.
 
-        /// <summary>Read one back off a save. Returns false on anything that is not a card we wrote.</summary>
+    /// <summary>#760 · How far down an operator's org chart the holder sits.</summary>
+    public enum Reach
+    {
+        /// <summary>The operator's own. Honoured at every gate of theirs, everywhere.</summary>
+        Prime,
+
+        /// <summary>A vendor or contractor working to them. Honoured where the gate publishes that it takes
+        /// vendors — the shafts do, the head office does not (<see cref="AcceptsVendors"/>).</summary>
+        Vendor,
+    }
+
+    /// <summary>#760 · WHO VOUCHES FOR THE HOLDER, AND HOW FAR. Null on a card is not a missing standing: it
+    /// is the ordinary one — the site's own operator, at prime reach — which is what every card in every save
+    /// written before this issue is, and what every card the world mints today still is.</summary>
+    /// <param name="OperatorId">The outfit's key (<see cref="SiteOperator.Operator"/>).</param>
+    /// <param name="Reach">Prime or vendor.</param>
+    public readonly record struct Standing(string OperatorId, Reach Reach);
+
+    /// <summary>Which shaft band this card runs, and whose standing it is. The identity is the fact — a card
+    /// is for one band, decided by the world rather than by the moment it is used.</summary>
+    /// <param name="BodyId">The site it was issued at.</param>
+    /// <param name="Band">The shaft band it runs.</param>
+    /// <param name="Standing">#760 · Null for the ordinary card: the site's own operator, prime reach. An
+    /// explicit standing is a card that says whose it is because the site it is being read at cannot
+    /// say.</param>
+    public readonly record struct AuthorityCard(string BodyId, int Band, Standing? Standing = null)
+    {
+        /// <summary>The stable string a save file and a carried-cards set hold.
+        ///
+        /// <para>#760 · An ordinary card's id is <b>byte for byte the one it has always been</b> —
+        /// <c>body#band</c> — because an ordinary card is what the world mints and what every save holds. A
+        /// card carrying an explicit standing spells it out after an <c>@</c>, which an older build's parser
+        /// rejects rather than misreads (it wants an integer where the operator key starts), so a save read
+        /// by a build that predates this issue drops a card it cannot place instead of inventing one.</para></summary>
+        public string Id => Standing is { } s
+            ? $"{BodyId}#{Band}@{s.OperatorId}/{(s.Reach == Reach.Vendor ? 'V' : 'P')}"
+            : $"{BodyId}#{Band}";
+
+        /// <summary>#760 · WHOSE STANDING THIS IS. The site's own operator unless the card says otherwise —
+        /// one question, asked here, so nothing downstream has to know that "nothing written on it" and "the
+        /// standing of the place that issued it" are the same card.</summary>
+        public string OperatorId => Standing?.OperatorId ?? SiteOperator.Of(BodyId).Id;
+
+        /// <summary>#760 · How far the holder sits down that operator's org chart. Prime unless the card says
+        /// otherwise — which is every card this build mints, and every card in every older save.</summary>
+        public Reach ReachOfIt => Standing?.Reach ?? Reach.Prime;
+
+        /// <summary>Read one back off a save. Returns false on anything that is not a card we wrote.
+        ///
+        /// <para>#760 · BOTH FORMS. <c>body#band</c> — every card ever written before this issue — reads back
+        /// as the card it has always been: the site's own operator, prime reach. <c>body#band@operator/P</c>
+        /// or <c>/V</c> reads back the standing that was written down. Nothing else parses.</para></summary>
         public static bool TryParse(string? id, out AuthorityCard card)
         {
             card = default;
@@ -49,16 +107,158 @@ public static partial class UndergroundComplex
             {
                 return false;
             }
+
+            // #760 · The standing, if one was written down. Taken off first, so the band arithmetic below is
+            // the arithmetic it has always been and the old form runs through code that never learned a new
+            // shape.
+            Standing? standing = null;
+            int at = id.LastIndexOf('@');
+            if (at >= 0)
+            {
+                string tail = id[(at + 1)..];
+                int slash = tail.LastIndexOf('/');
+                if (slash <= 0 || tail.Length - slash != 2)
+                {
+                    return false;
+                }
+                Reach reach;
+                switch (tail[^1])
+                {
+                    case 'P':
+                        reach = Reach.Prime;
+                        break;
+                    case 'V':
+                        reach = Reach.Vendor;
+                        break;
+                    default:
+                        return false;
+                }
+                standing = new Standing(tail[..slash], reach);
+                id = id[..at];
+            }
+
             int cut = id.LastIndexOf('#');
             if (cut <= 0 || !int.TryParse(id.AsSpan(cut + 1), System.Globalization.NumberStyles.Integer,
                     System.Globalization.CultureInfo.InvariantCulture, out int band) || band < 0)
             {
                 return false;
             }
-            card = new AuthorityCard(id[..cut], band);
+            card = new AuthorityCard(id[..cut], band, standing);
             return true;
         }
     }
+
+    /// <summary>#760 · WHAT KIND OF GATE IS BEING ASKED. The one thing a gate publishes about itself that
+    /// changes who it honours, and it is a property of the DOOR rather than of the building — which is what
+    /// keeps it from becoming a second copy of "is this the head office".</summary>
+    public enum GateKind
+    {
+        /// <summary>A shaft gate under a branch office. Takes vendors: the holes were dug by contractors and
+        /// always have been.</summary>
+        Shaft,
+
+        /// <summary>The head office's own. Takes nobody's vendors — a contractor's paper is standing with
+        /// whoever hired them, and nobody at this address hired them.
+        ///
+        /// <para>FLAGGED, said out loud rather than left to be discovered: <b>no gate in the shipped game is
+        /// of this kind yet</b>. The head office's shaft gate is deliberately ABSENT (#411) and that absence
+        /// is its rank difference. This is the rule written ahead of its door, so the day HQ grows one the
+        /// answer is already there and already guarded — and it is the owner's to overrule in one line.</para></summary>
+        HeadOffice,
+    }
+
+    /// <summary>#760 · Does this gate take a vendor's paper? Fable's default for v1, in one place: the shafts
+    /// do, the head office does not.</summary>
+    public static bool AcceptsVendors(GateKind kind) => kind != GateKind.HeadOffice;
+
+    /// <summary>
+    /// #760 · <b>THE ONE PREDICATE.</b> Does the card in this hand open that gate?
+    ///
+    /// <para>Three questions and no fourth: the gate's own band, the operator who runs the site the gate is
+    /// in, and whether a vendor's reach is far enough for this kind of door. It replaces the body-id equality
+    /// that used to stand in for all three, which is why ONE function now answers for the lift panel, the
+    /// satchel's TRY, the wallet fan and the remote's send. Four callers reaching four conclusions about one
+    /// question is the bug class this repo keeps a table of.</para>
+    ///
+    /// <para><b>The band still has to match.</b> Standing travels; a shaft number does not. A card runs one
+    /// hole per site, and #679's sharpest refusal — <i>this card runs shaft 3 of this site</i> — is exactly
+    /// what would be lost by turning an operator's paper into a skeleton key to their whole estate.</para>
+    /// </summary>
+    /// <param name="held">The card in the captain's hand.</param>
+    /// <param name="gate">The gate: the site it is in, and the band it runs.</param>
+    /// <param name="kind">What kind of door it is. A shaft unless somebody says otherwise.</param>
+    public static bool Honours(AuthorityCard held, AuthorityCard gate, GateKind kind = GateKind.Shaft) =>
+        held.Band == gate.Band
+        && string.Equals(held.OperatorId, SiteOperator.Of(gate.BodyId).Id, StringComparison.Ordinal)
+        && (held.ReachOfIt == Reach.Prime || AcceptsVendors(kind));
+
+    /// <summary>#760 · Does anything in this wallet open that gate, and which? The pocket's version of
+    /// <see cref="Honours"/>, written once so the panel and the remote can never disagree about a
+    /// satchel.</summary>
+    public static AuthorityCard? StandingFor(
+        IReadOnlyList<Satchel.Item>? carried, AuthorityCard gate, GateKind kind = GateKind.Shaft)
+    {
+        foreach (Satchel.Item item in carried ?? [])
+        {
+            if (item.Kind == Satchel.Kind.Authority
+                && AuthorityCard.TryParse(item.Id, out AuthorityCard held)
+                && Honours(held, gate, kind))
+            {
+                return held;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>#760 · The same question asked of a set of card IDS rather than of a pocket — what the lift
+    /// panel is handed. It is <see cref="StandingFor"/> with the wallet already unpacked, and it asks
+    /// <see cref="Honours"/> exactly as that one does: two callers of one predicate, never two
+    /// predicates.</summary>
+    public static AuthorityCard? StandingAmong(
+        IReadOnlyCollection<string>? heldCardIds, AuthorityCard gate, GateKind kind = GateKind.Shaft)
+    {
+        foreach (string id in heldCardIds ?? [])
+        {
+            if (AuthorityCard.TryParse(id, out AuthorityCard held) && Honours(held, gate, kind))
+            {
+                return held;
+            }
+        }
+        return null;
+    }
+
+    // ── #715/#760 · WHAT A REFUSAL COSTS, AND WHO REMEMBERS IT ───────────────────────────────────────────
+    //
+    // Owner's ruling on #715: "the illegal heat should be targeted at the entity we crossed ... so not like
+    // the Casinos that distribute cheaters lists in Vegas". #760 needs exactly one thing out of that meter —
+    // that a standing REFUSED over the air costs what a card refused at a gate costs — and #715 is still
+    // open, so there is no meter to bank it in.
+    //
+    // What is published here is therefore the CHARGE and not a total: who is owed, and how much. One
+    // function, read by the gate and by the remote, so the day #715 lands there is one number to wire up and
+    // no second spelling of it to go looking for. It is keyed to the OPERATOR and never to the moon, which is
+    // the whole of the ruling: you burned somebody, and they remember, and nobody tells anybody else.
+
+    /// <summary>#715 · Heat owed to one outfit.</summary>
+    /// <param name="OperatorId">Who is owed it. Never a body id — a rock does not hold a grudge.</param>
+    /// <param name="Points">How much. Zero is a real answer and the commonest one.</param>
+    public readonly record struct HeatCharge(string OperatorId, int Points);
+
+    /// <summary>#715/#760 · What one refused authority costs. Small, because being refused mostly costs you
+    /// the refusal; the pressure comes from doing it again.</summary>
+    public const int RefusedCardHeat = 1;
+
+    /// <summary>#715/#760 · WHAT A REFUSAL AT THIS SITE'S GATE CHARGES, and to whom. The one function both
+    /// the gate and the remote read.</summary>
+    public static HeatCharge RefusedAtTheGate(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return new HeatCharge(SiteOperator.Of(bodyId).Id, RefusedCardHeat);
+    }
+
+    /// <summary>#715/#760 · Nothing owed to anybody: what an accepted standing costs, and what a send into a
+    /// silence costs.</summary>
+    public static HeatCharge NothingOwed => new(string.Empty, 0);
 
     /// <summary>Does this site have a shaft band that deep at all? Band 0 is the one the surface lift head
     /// serves; a band exists when its top floor is still inside the site's own depth.
@@ -294,6 +494,23 @@ public static partial class UndergroundComplex
         $"reads the card without hesitating — {CardTitle(card)}, countersigned by an office that stopped " +
         "answering its own post decades ago and never once revoked a thing. The car below is colder than " +
         "the one above.";
+
+    /// <summary>#760 · What the gate says when it honours a card that was issued somewhere else.
+    ///
+    /// <para>Its own sentence, because it is its own fact. "The gate reads it without hesitating" is what a
+    /// card's own gate says; this is a gate deciding that an office two moons away is an office it answers
+    /// to, and a captain let through on that basis has learned something real about the world — which is
+    /// exactly the payoff #715 names for making entities legible.</para>
+    ///
+    /// <para>It names the SITE the card came from and not the outfit. The site code is printed on the card
+    /// in the captain's hand (#679); the company is a thing they can look up in their own pocket, where the
+    /// satchel groups the wallet under it. A gate that read a company name out loud would be doing the
+    /// player's inference for them.</para></summary>
+    public static string StandingHonouredLine(AuthorityCard held) =>
+        $"🎫 The gate reads it, and it is not this building's card — it was issued for " +
+        $"{BodyNames.Designation(held.BodyId)} SITE, and the gate opens anyway. Whoever the " +
+        "countersignatures answer to, they answer for this hole too. Nobody down here was ever working for " +
+        "the moon.";
 
     // ── #684 · THE PANEL READS YOUR WALLET WITHOUT BEING ASKED, AND THAT READ IS A SCENE ───────────────
     //

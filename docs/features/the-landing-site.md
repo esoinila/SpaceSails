@@ -1202,6 +1202,24 @@ that is up, never only in the panel row behind its backdrop. An empty wallet is 
 `AuthorityCardFallbackArtUrl`, the nameless face, because painting one of the five offices onto a pass the
 captain does not have would be the game lying about a possession.
 
+**Standing is with an OPERATOR, and it travels** (#760). Owner: *"same-company labs on different sites may
+accept the same cards for access."* The estates stencilled on these cards have been company-shaped since #679
+— PROCUREMENT · SCHEDULE C, INSPECTORATE · NO STANDING — while the gate matched a **body id**, so a captain
+who had worked two sites of one outfit was a stranger at the second. `SiteOperator.Of(bodyId)` now says who
+runs a site (four outfits, seeded off the body id like the depth and the kinds; the head office's own is never
+rolled), a card carries an optional `Standing` — operator plus `Reach.Prime | Vendor` — that round-trips
+through its id while the ordinary card's id stays byte for byte the one every save already holds, and **one
+predicate**, `UndergroundComplex.Honours`, answers for the lift panel, the satchel's TRY, the wallet fan and
+the remote: same band, same operator, and a vendor's reach only where the gate publishes `AcceptsVendors`
+(shafts yes, the head office no). The band still has to match — standing travels, a shaft number does not — so
+#679's refusals are untouched and gain the rung they were missing between them: *our paper, wrong hole*. On
+the handset, **SEND STANDING** (`RemoteSend`) puts that standing on the operator's net and opens ahead of you
+exactly the gate the wallet would open in person and nothing else, told on the panel that is up (#736); where
+the operator publishes no network — the head office (#411) and the halls nobody dug (#677) — nothing goes out
+and nothing is owed, and a refusal costs what a refused card costs at the gate, keyed to the outfit and never
+to the moon (#715). The satchel does **not** grow a tree yet: inside #697's fold the cards sit under the name
+of whoever gave them to you, and only when there are two or more names.
+
 | gets a card | does not |
 | --- | --- |
 | an authority card (which shaft, which site; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |

@@ -247,10 +247,23 @@ public static class SatchelTry
             return 0;
         }
 
-        return UndergroundComplex.AuthorityCard.TryParse(wanted, out UndergroundComplex.AuthorityCard gate)
-            && string.Equals(held.BodyId, gate.BodyId, StringComparison.Ordinal)
-                ? 2     // Wrong shaft, THIS site — the nearest miss there is, and it names the shaft it runs.
-                : 1;    // Somebody else's building.
+        if (!UndergroundComplex.AuthorityCard.TryParse(wanted, out UndergroundComplex.AuthorityCard gate))
+        {
+            return 1;
+        }
+
+        // Wrong shaft, THIS site — the nearest miss there is, and it names the shaft it runs.
+        if (string.Equals(held.BodyId, gate.BodyId, StringComparison.Ordinal))
+        {
+            return 3;
+        }
+
+        // #760 · The rung this issue added: OUR PAPER, WRONG HOLE. It teaches more than a stranger's card
+        // (you have standing with whoever runs this place, and there is a shaft of theirs your paper does
+        // open) and less than a card off this very site (which names a floor of this building to go back to).
+        return string.Equals(held.OperatorId, SiteOperator.Of(gate.BodyId).Id, StringComparison.Ordinal)
+            ? 2
+            : 1;    // Somebody else's building.
     }
 
     /// <summary>#697 · An empty wallet. The dialog never shows the folder with nothing in it, which is exactly
@@ -295,6 +308,25 @@ public static class SatchelTry
             return new(true, "🎫 The gate reads it without hesitating.");
         }
 
+        // ── #760 · STANDING TRAVELS ──
+        //
+        // The comparison above is a card meeting its OWN gate, and everything past it used to be a refusal.
+        // It is not any more, because standing is with an operator and not with a door — one predicate,
+        // UndergroundComplex.Honours, and this is a caller of it rather than a second opinion. A card issued
+        // at another site of the same outfit, for this gate's band, is a card this gate has every reason to
+        // read: the countersignature is the company's, and the company is the one that dug this hole.
+        //
+        // It gets its OWN sentence, because it is a different fact from "this is your card" and a captain
+        // being let through on the strength of an office two moons away should be told that is what happened.
+        // Every refusal below is untouched to the syllable — #679/#683 are the best storytelling this ground
+        // has, and this issue widens who gets in, not what a no sounds like.
+        if (UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard standing)
+            && UndergroundComplex.AuthorityCard.TryParse(wanted, out UndergroundComplex.AuthorityCard atGate)
+            && UndergroundComplex.Honours(standing, atGate))
+        {
+            return new(true, UndergroundComplex.StandingHonouredLine(standing));
+        }
+
         // ── #679 · A REFUSAL THAT SORTS THE WALLET ──
         //
         // Owner: "We need story telling about whether cards etc work or not." The old sentence —
@@ -319,6 +351,20 @@ public static class SatchelTry
                     "this site — deeper paper than this gate wants, or shallower, but either way not the " +
                     "authority for the hole in front of you. The countersignatures are fine. The shaft " +
                     "number is not.");
+            }
+
+            // #760 · …and the rung between the two, which did not exist while a gate matched a site code:
+            // OUR PAPER, WRONG HOLE. The outfit is the one that runs this building, so the gate has an
+            // opinion about the card and the opinion is about the shaft number. It never says the operator's
+            // name — the gate is a machine reading a countersignature, and the company on it is a thing the
+            // captain can look up in their own pocket (the satchel groups the wallet by it).
+            if (UndergroundComplex.AuthorityCard.TryParse(wanted, out UndergroundComplex.AuthorityCard theirs)
+                && string.Equals(held.OperatorId, SiteOperator.Of(theirs.BodyId).Id, StringComparison.Ordinal))
+            {
+                return new(false,
+                    $"🔒 The gate reads it, and it knows the countersignature: whoever runs this building " +
+                    $"runs the one this was issued at, and it was issued for shaft {held.Band + 1}. Standing " +
+                    "is not the problem. The hole is. This gate is the wrong one to be holding it up to.");
             }
 
             return new(false,

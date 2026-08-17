@@ -132,6 +132,40 @@ public partial class Map
         StateHasChanged();
     }
 
+    // ── #760 · SEND STANDING: the handset's fifth switch, and the only one that talks to a stranger ──────
+    //
+    // Owner, 2026-08-08: "Where that standing exists, the ship remote … can use it over the air: send
+    // messages that open places and enable things — a door unbolted before you reach it, a lift enabled from
+    // the surface. The wallet is who you claim to be in person; the remote is who your ship claims to be on
+    // the operator's network."
+    //
+    // It belongs on THIS handset for the reason the other four do: every switch on it orders something that
+    // is somewhere else, and this one is that gesture pointed at a company rather than at a machine.
+    //
+    // The page decides nothing. Which gate, whether it opens, what it costs and every word of the answer are
+    // Core's (RemoteSend) — this method presses the button and shows what came back, which is #736's law: the
+    // sentence IS the feedback, said on the pop-up that is up.
+    private void SendTheStanding()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        RemoteSend.Sent sent = RemoteSend.Send(ex.Stop.Body.Id, ex.Floor, _satchel);
+        _remoteOutcome = sent.Line;
+
+        // The book keeps it whatever the screen does (#693). It is also the only record of what a refusal
+        // cost: #715's meter is not built, so the charge Core hands back has nowhere to be banked yet — and a
+        // client inventing a heat total to put it in would be a second source for a number that does not
+        // exist. What the captain gets today is what every other beat down here gives them: a line in the
+        // field book saying who was addressed and what came back.
+        FileNote(sent.Line, sent.Worked ? "📡" : "🔒");
+
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
     /// <summary>
     /// The guns a captain may point: SET DOWN, and with something in the drum.
     ///

@@ -30,6 +30,28 @@ public sealed class TheLiftPanelTests
     private static IReadOnlyList<UndergroundComplex.LiftStop> Panel(string body, int level, params string[] cards) =>
         UndergroundComplex.LiftPanel(body, level, cards);
 
+    /// <summary>#760 · A site run by SOMEBODY ELSE. "Another site" stopped being the right idea the day
+    /// standing began to travel: a card issued at the same outfit's dig on the next moon is honoured here
+    /// now, deliberately, so a guard that wants a stranger's paper has to go and find a stranger.
+    ///
+    /// <para>It throws rather than giving up quietly, because a fixture that quietly handed back a site of
+    /// the SAME operator would turn both guards below into worlds that cannot tell pass from fail.</para></summary>
+    private static string ASiteOfAnotherOperator(string body)
+    {
+        string mine = SiteOperator.Of(body).Id;
+        for (int i = 0; i < 200; i++)
+        {
+            string other = $"somewhere-else-{i}";
+            if (!string.Equals(SiteOperator.Of(other).Id, mine, StringComparison.Ordinal))
+            {
+                return other;
+            }
+        }
+        throw new InvalidOperationException(
+            $"no site in 200 tries answers to anybody but {mine} — the operator roll has collapsed, and " +
+            "every 'another site' assertion in this file would be passing vacuously.");
+    }
+
     [Fact]
     public void FromEVERYFloorTheSurfaceIsOneButtonAway()
     {
@@ -211,6 +233,10 @@ public sealed class TheLiftPanelTests
     public void ANOTHERSitesCardOpensNothingHere()
     {
         // The wallet is not a skeleton key — the identity carries the body (#590).
+        //
+        // #760 · …and it carries the OUTFIT, which is what the identity was always standing in for. A card
+        // from another site of the SAME operator opens this gate now, by design (TheStandingTravelsTests
+        // pins that side); what may never open it is somebody else's paper, and this is that half.
         foreach (string body in Bodies)
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
@@ -224,7 +250,7 @@ public sealed class TheLiftPanelTests
                     continue;
                 }
                 UndergroundComplex.LiftStop stop = Assert.Single(
-                    Panel(body, level, new UndergroundComplex.AuthorityCard("somewhere-else", next).Id),
+                    Panel(body, level, new UndergroundComplex.AuthorityCard(ASiteOfAnotherOperator(body), next).Id),
                     s => UndergroundComplex.BandOf(s.Level) == next && s.Level < 0);
                 Assert.NotNull(stop.Refusal);
             }
@@ -267,7 +293,7 @@ public sealed class TheLiftPanelTests
                 // Carrying nothing, or carrying another site's paper: the panel promises nothing.
                 Assert.All(Panel(body, level), s => Assert.Null(s.OpenedBy));
                 Assert.All(
-                    Panel(body, level, new UndergroundComplex.AuthorityCard("somewhere-else", next).Id),
+                    Panel(body, level, new UndergroundComplex.AuthorityCard(ASiteOfAnotherOperator(body), next).Id),
                     s => Assert.Null(s.OpenedBy));
 
                 // Carrying it: exactly one row says so, it is the gated one, and it says the card's own

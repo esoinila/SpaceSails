@@ -2713,12 +2713,41 @@
                                 }
                             </div>
 
+                            @* ── #760 · WHOSE STANDING IS WHOSE ──────────────────────────────────────
+                               Owner: "if the flat list grows past feel, group accesses into an expandable
+                               tree/folder view in the satchel: company/estate as the folder, per-site
+                               grants beneath."
+
+                               NOT A TREE YET. The pocket has not filled — a tree over four cards is a
+                               filing cabinet built for a wallet — so this is the smallest true version of
+                               the same idea: inside the fold the cards sit under the name of whoever gave
+                               them to you, WHEN THERE ARE TWO OR MORE NAMES. One outfit gets no heading,
+                               because a heading over a list that is entirely one thing is a label that
+                               cannot be read for information (#697's folder-of-one, one size up).
+
+                               The grouping is Core's (SiteOperator.Accesses) and so is the decision not to
+                               group: this page has no arithmetic about companies and cannot drift from the
+                               predicate the gates are using. *@
                             @if (_walletOpen)
                             {
                                 <div class="satchel-wallet-cards">
-                                    @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                    @if (SpaceSails.Core.SiteOperator.Accesses(wallet) is { Count: > 0 } outfits)
                                     {
-                                        @Row(card)
+                                        @foreach (SpaceSails.Core.SiteOperator.Folder outfit in outfits)
+                                        {
+                                            <div class="satchel-place">@outfit.Heading</div>
+                                            @foreach (SpaceSails.Core.Satchel.Item card in outfit.Cards)
+                                            {
+                                                @Row(card)
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                        {
+                                            @Row(card)
+                                        }
                                     }
                                 </div>
                             }
@@ -3905,6 +3934,24 @@
                                 title="@ShootTheLock.PanelBlurb"
                                 @onclick="OpenDesignate">
                             @ShootTheLock.OpenLabel
+                        </button>
+                    }
+
+                    @* #760 · THE FIFTH SWITCH, and the only one that addresses a company. Owner: "the ship
+                       remote … can use it over the air: send messages that open places and enable things — a
+                       door unbolted before you reach it, a lift enabled from the surface."
+
+                       On the ground only, like DESIGNATE, and LIVE whether or not there is anything to send
+                       (#212/#603): a handset with no standing in it answers with the sentence that says what
+                       would fix it, and a handset on a moon nobody wired answers with the silence. A switch
+                       that vanished where it would refuse would teach a captain nothing except that the game
+                       is arbitrary. *@
+                    @if (_surface is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@RemoteSend.Blurb"
+                                @onclick="SendTheStanding">
+                            @RemoteSend.OpenLabel
                         </button>
                     }
                 </div>
