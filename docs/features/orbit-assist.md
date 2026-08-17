@@ -39,6 +39,22 @@ You don't have to wait next to a planet for the window to open — the [plotting
 can **arm** an insertion at a planned closest pass, and the game fires it automatically the moment
 your live flight enters the window, spending pulses for you. See that page for how to arm one.
 
+## The autopilot flies at a tenth (#928)
+
+An **autopilot-flown** approach costs the tank one tenth of what the same arrival costs a hand. Owner
+ruling, 2026-08-17 — *"Now the autopilot often refuses when it calculates the cost to be too big. If we
+divide the cost by 10 that we calculate, it should fix it nicely."* — with the fiction that the autopilot
+burns on the exact node, in the exact direction, at the exact instant, and never over-corrects, which is a
+trajectory no thumb on a key can fly. The factor is one constant in Core
+(`AutopilotRehearsal.EconomyFactor = 10`) and it applies at **both** ends: the arm-time rehearsal's
+estimate is divided by it *before* the affordability verdict, and the burns the armed autopilot actually
+fires charge the tank the same tenth (accumulated, so ten one-pulse burns cost one pulse — never ten, and
+never zero). Estimate, refusal line and the tank after arrival therefore quote the same number, and
+"it won't strand you" is still a promise the sim can be made to keep. Two things are **not** economized:
+a pulse you spend yourself (the `+`/`−` reflex burn, a plotted burn fired at its epoch, the hand-pressed
+**Enter orbit** above, weapons, the docking match, a long-haul departure), and the kept orbit's
+station-keeping trims, which are quoted separately from Lab 25's per-body table and paid in full.
+
 ## Tips
 
 - The panel favors an armed target: if you've armed an insertion at a specific body, the panel

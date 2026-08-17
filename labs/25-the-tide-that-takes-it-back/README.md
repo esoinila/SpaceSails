@@ -198,6 +198,14 @@ the trim budget at arm time ("insertion armed … trim ≈27 p/day") and holds t
 constants until the captain deliberately disarms (double-confirmed) or the tank runs dry — a LOUD
 handback, after which the #180 degradation alert takes over as the backstop.
 
+**These numbers are NOT divided by #928's tenth.** The autopilot's approach — the transfer impulse, the
+approach burns and the insertion — charges the tank ⌈raw/10⌉ since the owner's 2026-08-17 ruling
+(`AutopilotRehearsal.EconomyFactor`), on the fiction that it flies a trajectory a hand cannot. Holding a
+park is not that: a trim is the tide's bill, it comes due whoever is at the controls, and it is quoted
+from the table above and paid in full. So "trim ≈27 p/day" still means twenty-seven pulses a day, and
+`OrbitHold.HoldSeconds` still divides a real tank by a real rate. The law this lab exists for —
+auto-orbit ends in a KEPT orbit, held until the captain disarms or the tank runs dry — is untouched.
+
 ## Break it on purpose
 
 1. **Re-circularize at the current radius.** Point `OrbitKeeping.Trim` at the ship's own radius
