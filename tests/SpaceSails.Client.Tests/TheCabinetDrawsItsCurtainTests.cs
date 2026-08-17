@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -174,17 +175,34 @@ public sealed class TheCabinetDrawsItsCurtainTests
     /// longer collapse anything, and the only thing left that can keep the counter's line single is the
     /// law.</para>
     ///
+    /// <para><b>#917 · BOTH WATCHES, ONE FACT EACH.</b> The keep tends this bar only on the living watches,
+    /// so the counter's line has two readings and the dead one names nobody. Driven on a watch of each kind
+    /// — with the kind asserted off <see cref="SpaceSails.Core.Interior.TheKeep.KeptWatch"/> rather than assumed, so a
+    /// re-tuned rota cannot leave this row quietly testing the same watch twice — and the OTHER reading is
+    /// required to be absent from the book, which is what stops the two sentences from being one string with
+    /// a spare.</para>
+    ///
     /// <para><b>The RED case.</b> Replace the <c>TheCounterWritesItDown(from, to) &amp;&amp;
     /// ex.CabinetsWitnessed.Add(key)</c> condition in <c>Seating.DrawOrDogTheCabinet</c> with <c>true</c>:
-    /// the witness set stays empty and the undogging files a second copy, and two assertions fire.</para>
+    /// the witness set stays empty and the undogging files a second copy, and two assertions fire. Hand
+    /// <c>WhoWasInsideNote</c> a constant watch instead of <c>ex.CanteenWatch</c> and the dead-watch row
+    /// fires on the first press, with a man named behind an empty counter.</para>
     /// </summary>
-    [Fact]
-    public void THE_COUNTER_KeepsOneLine_HoweverManyTimesTheLeafIsWorked()
+    [Theory]
+    [InlineData(2)]   // the hall at 0.95 — somebody is behind the counter
+    [InlineData(5)]   // the hall at 0.15 — self-service, and #618's "nobody is back there" is literal
+    public void THE_COUNTER_KeepsOneLine_HoweverManyTimesTheLeafIsWorked(long watch)
     {
-        Pages.Map map = OnTheFloor();
+        Pages.Map map = OnTheFloor(watch);
         int cabinet = SitDownInACabinet(map);
 
-        string theLine = CabinetPrivacy.WhoWasInsideNote(cabinet);
+        Assert.Equal(watch, TheFrozenWatch(map));
+        string theLine = CabinetPrivacy.WhoWasInsideNote(cabinet, watch);
+
+        // The two readings are genuinely two, and only the one this watch calls for may ever be filed.
+        string theOtherWatchesLine = CabinetPrivacy.WhoWasInsideNote(
+            cabinet, SpaceSails.Core.Interior.TheKeep.KeptWatch(watch) ? ADeadWatch() : ALivingWatch());
+        Assert.NotEqual(theLine, theOtherWatchesLine);
 
         Assert.Equal(CabinetPrivacy.Stage.Curtain, StageNow(map));
         Assert.Equal(0, TimesFiled(map, theLine));
@@ -219,6 +237,30 @@ public sealed class TheCabinetDrawsItsCurtainTests
         Assert.True(TimesFiled(map, theLine) == 1,
             $"the same cabinet was written down {TimesFiled(map, theLine)} times in one sitting.");
         Assert.Single(TheWitnessSet(map));
+
+        // …and the reading belonging to the OTHER kind of watch never reached the book. A keep who was
+        // described looking up while the counter stood empty is the fault #917 sent this back for.
+        Assert.True(TimesFiled(map, theOtherWatchesLine) == 0,
+            "the book carries the other watch's sentence about the counter — on watch "
+            + watch.ToString(CultureInfo.InvariantCulture) + " the keep "
+            + (SpaceSails.Core.Interior.TheKeep.KeptWatch(watch) ? "IS" : "is NOT") + " behind it.");
+    }
+
+    /// <summary>A watch the keep works, and one he does not — read off the hall's own numbers rather than
+    /// typed here, so the rows above cannot both end up on the same kind of shift.</summary>
+    private static long ALivingWatch() => EveryWatch().First(SpaceSails.Core.Interior.TheKeep.KeptWatch);
+
+    private static long ADeadWatch() => EveryWatch().First(w => !SpaceSails.Core.Interior.TheKeep.KeptWatch(w));
+
+    private static IEnumerable<long> EveryWatch() =>
+        Enumerable.Range(0, CanteenRegulars.WatchFill.Count).Select(i => (long)i);
+
+    /// <summary>The watch the deck was actually built on — asked of the excursion, never of the constant the
+    /// bench handed in, so a cheat that failed to take shows up as a red row instead of a green one.</summary>
+    private static long TheFrozenWatch(Pages.Map map)
+    {
+        object ex = Get(map, "_surface")!;
+        return (long)ex.GetType().GetProperty("CanteenWatch", Hidden)!.GetValue(ex)!;
     }
 
     /// <summary>
@@ -349,7 +391,7 @@ public sealed class TheCabinetDrawsItsCurtainTests
 
     /// <summary>A live component on a real Hive floor — the bench <c>CoSeatingIsAStripTests.OnTheFloor</c>
     /// established, unchanged, because a second one would be a second answer to "what is a floor".</summary>
-    private static Pages.Map OnTheFloor()
+    private static Pages.Map OnTheFloor(long? watch = null)
     {
         var map = new Pages.Map();
 
@@ -375,6 +417,15 @@ public sealed class TheCabinetDrawsItsCurtainTests
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
         Set(map, "_fpMode", false);
+
+        // #917 · WHICH SHIFT THE ROOM IS DRAWN ON, through the game's own pin (`_watchCheat`) and set BEFORE
+        // the rebuild, because the rebuild is what freezes the watch onto the excursion. A watch written
+        // afterwards would be the room drawn on one shift and pressed on another, which is the very fault
+        // #709 froze the watch to prevent.
+        if (watch is { } pinned)
+        {
+            Set(map, "_watchCheat", (long?)pinned);
+        }
 
         Invoke(map, "RebuildSurfaceDeck");
         return map;

@@ -208,13 +208,91 @@ public sealed class TheCurtainAndTheDoorTests
             CabinetPrivacy.Stage.Door, CabinetPrivacy.Stage.Door),
             "a door that was already shut was written down again.");
 
-        // The fact itself names the room, because that is what makes the bark that knows too much land.
+        // The fact itself names the room, on every watch, because that is what makes the bark that knows too
+        // much land.
+        foreach (int band in EveryBand())
+        {
+            for (int cabinet = 1; cabinet <= UndergroundComplex.CabinetsPerHall; cabinet++)
+            {
+                string note = CabinetPrivacy.WhoWasInsideNote(cabinet, band);
+                Assert.Contains(
+                    cabinet.ToString(CultureInfo.InvariantCulture), note, StringComparison.Ordinal);
+                Assert.NotEqual(CabinetPrivacy.WhoWasInsideNote(cabinet + 1, band), note);
+            }
+        }
+    }
+
+    /// <summary>
+    /// #917 · THE LINE IS WRITTEN ON BOTH WATCHES, AND ONLY ONE OF THEM HAS A MAN IN IT.
+    ///
+    /// <para>The keep tends this bar on the living watches only (<see cref="Interior.TheKeep.KeptWatch"/>),
+    /// so the sentence that had him looking up named somebody who is not there on two watches in six — a
+    /// sentence and a sim disagreeing about a PERSON, which is the third named bug class one room over from
+    /// where this feature already found it about a leaf.</para>
+    ///
+    /// <para><b>The fact does not fork; only the words do.</b> A door coming out of a wall goes in the
+    /// counter's book whether or not anybody was standing at the till, and the dead-watch line says exactly
+    /// that and declines to say who wrote it. Both readings name the cabinet, so the bark that knows too much
+    /// still lands either way.</para>
+    ///
+    /// <para><b>Anti-vacuous:</b> both watches are required to be REACHED over the rota the game has — a
+    /// building where the keep was always there, or never, would make this guard a test of one string.</para>
+    ///
+    /// <para><b>The RED case.</b> Take the <c>Interior.TheKeep.KeptWatch(watch)</c> fork out of
+    /// <see cref="CabinetPrivacy.WhoWasInsideNote"/> and return the kept line always: the dead watches fail
+    /// on the man who is not behind the counter, and the two-readings assertion fails with one.</para>
+    /// </summary>
+    [Fact]
+    public void THE_COUNTERS_LINE_NamesTheKeepOnlyOnTheWatchesHeIsBehindIt()
+    {
+        var living = new HashSet<string>(StringComparer.Ordinal);
+        var dead = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (int band in EveryBand())
+        {
+            string note = CabinetPrivacy.WhoWasInsideNote(1, band);
+
+            // The fact is filed on every watch there is. It is a ledger, not a witness statement.
+            Assert.StartsWith("Dogged the door of cabinet 1 from inside.", note, StringComparison.Ordinal);
+
+            if (Interior.TheKeep.KeptWatch(band))
+            {
+                living.Add(note);
+                Assert.Contains("The keep behind the counter looked up", note, StringComparison.Ordinal);
+            }
+            else
+            {
+                dead.Add(note);
+                Assert.DoesNotContain("The keep behind the counter", note, StringComparison.Ordinal);
+                Assert.Contains("nobody behind the counter to look up", note, StringComparison.Ordinal);
+                Assert.Contains("It was written down anyway.", note, StringComparison.Ordinal);
+            }
+        }
+
+        Assert.True(living.Count == 1 && dead.Count == 1,
+            $"the counter's line has {living.Count} living reading(s) and {dead.Count} dead one(s) across "
+            + "the rota — both must be REACHED, and each must be one sentence, or this guard is measuring a "
+            + "string that never varies (or one that varies for the wrong reason).");
+
+        // …and the whole of what changed is who is described. The room is named identically either way, so
+        // a captain re-reading the book on any watch can still tell which door it was.
+        Assert.NotEqual(living.Single(), dead.Single());
         for (int cabinet = 1; cabinet <= UndergroundComplex.CabinetsPerHall; cabinet++)
         {
-            string note = CabinetPrivacy.WhoWasInsideNote(cabinet);
-            Assert.Contains(cabinet.ToString(CultureInfo.InvariantCulture), note, StringComparison.Ordinal);
-            Assert.NotEqual(CabinetPrivacy.WhoWasInsideNote(cabinet + 1), note);
+            foreach (int band in EveryBand())
+            {
+                Assert.Contains(
+                    $"cabinet {cabinet.ToString(CultureInfo.InvariantCulture)} from inside",
+                    CabinetPrivacy.WhoWasInsideNote(cabinet, band), StringComparison.Ordinal);
+            }
         }
+
+        // The rota really does have both kinds of watch — asked of the hall's own numbers rather than of
+        // this file's opinion of them.
+        int kept = EveryBand().Count(b => Interior.TheKeep.KeptWatch(b));
+        Assert.True(kept > 0 && kept < CanteenRegulars.WatchFill.Count,
+            $"{kept} of {CanteenRegulars.WatchFill.Count} watches are kept — one of the two readings above "
+            + "is unreachable and the assertions about it are asserting nothing.");
     }
 
     // ── (e) WHO BRINGS YOU, AND WHAT THEY DO WITH THE DOOR ────────────────────────────────────────────

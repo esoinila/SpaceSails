@@ -844,9 +844,13 @@ public partial class Map
             // The counter's long memory. Core says WHICH transition is memorable; the set says whether this
             // room has already been written down. Two guards read this line: it fires once, and never for a
             // curtain.
+            //
+            // #917 · …and the FROZEN WATCH goes with it, because the keep only tends this bar on the living
+            // ones and the sentence has to be able to say so. The fact is filed on both; the words fork.
             if (CabinetPrivacy.TheCounterWritesItDown(from, to) && ex.CabinetsWitnessed.Add(key))
             {
-                _host.FileNote(CabinetPrivacy.WhoWasInsideNote(t.Cabinet), CanteenRegulars.Glyph);
+                _host.FileNote(
+                    CabinetPrivacy.WhoWasInsideNote(t.Cabinet, ex.CanteenWatch), CanteenRegulars.Glyph);
             }
 
             // Said on the strip, in the one layer the room stays lit behind (#865).

@@ -152,12 +152,32 @@ public static class CabinetPrivacy
     public static bool TheCounterWritesItDown(Stage from, Stage to) =>
         from == Stage.Curtain && to == Stage.Door;
 
-    /// <summary>What the captain's own book keeps of it — the fact, never the mechanic, in the flat register
+    /// <summary>
+    /// What the captain's own book keeps of it — the fact, never the mechanic, in the flat register
     /// <see cref="RipAndBin.SeenNote"/> established. It is the second thing this game has filed about being
-    /// KNOWN somewhere.</summary>
-    public static string WhoWasInsideNote(int cabinet) =>
-        $"Dogged the door of cabinet {cabinet} from inside. The keep behind the counter looked up at the " +
-        "sound and wrote something down without hurrying.";
+    /// KNOWN somewhere.
+    ///
+    /// <para><b>#917 · AND IT ASKS WHETHER THERE IS A MAN THERE TO LOOK UP.</b> The keep tends this bar on
+    /// the LIVING watches only (<see cref="Interior.TheKeep.KeptWatch"/>); on the dead ones the counter is
+    /// self-service and #618's "nobody is back there" is literally true of the front as well. So the
+    /// original sentence — <i>the keep behind the counter looked up</i> — named a man who is not there on
+    /// two watches in six, which is a sentence and a sim disagreeing about a person: this repository's third
+    /// named bug class, and the same fault the strip's cabinet clause was carrying about a leaf.</para>
+    ///
+    /// <para><b>THE FACT IS WRITTEN ON BOTH WATCHES.</b> Only the sentence forks. The counter's long memory
+    /// is a ledger and not a witness statement — a door coming out of a wall is written down whether or not
+    /// anybody was standing at the till when it happened, and the dead-watch line says exactly that and
+    /// declines to say who wrote it. Owner-authored, 2026-08-17.</para>
+    /// </summary>
+    /// <param name="cabinet">Which cabinet, as the plate reads.</param>
+    /// <param name="watch">The frozen watch — <c>Interior.PatronRota.WatchIndex</c>, the same number the
+    /// hall was drawn on, never a live clock.</param>
+    public static string WhoWasInsideNote(int cabinet, long watch) =>
+        Interior.TheKeep.KeptWatch(watch)
+            ? $"Dogged the door of cabinet {cabinet} from inside. The keep behind the counter looked up at "
+                + "the sound and wrote something down without hurrying."
+            : $"Dogged the door of cabinet {cabinet} from inside. There was nobody behind the counter to "
+                + "look up. It was written down anyway.";
 
     // ── THE LEAK LAW ──────────────────────────────────────────────────────────────────────────────────
 
@@ -262,6 +282,16 @@ public static class CabinetPrivacy
             : Stage.Door;
     }
 
+    /// <summary>#917 · Every watch the rota has, so a sweep of this feature's prose cannot miss the half of
+    /// it that is only said when nobody is behind the counter.</summary>
+    private static IEnumerable<long> EveryWatchTheRotaHas()
+    {
+        for (long watch = 0; watch < CanteenRegulars.WatchFill.Count; watch++)
+        {
+            yield return watch;
+        }
+    }
+
     /// <summary>Every authored sentence this feature owns, for the canon sweep — a method rather than a
     /// list, #709's discipline, so a line added below cannot be a line the sweep never sees.</summary>
     public static IEnumerable<string> AllProse()
@@ -272,7 +302,12 @@ public static class CabinetPrivacy
         yield return DogTheDoorHint;
         yield return CurtainDrawnLine;
         yield return DoorDoggedLine;
-        yield return WhoWasInsideNote(1);
+        // Both watches, because the keep is only behind the counter on four of the six and the sweep must
+        // walk the sentence that is said when he is not.
+        foreach (long watch in EveryWatchTheRotaHas())
+        {
+            yield return WhoWasInsideNote(1, watch);
+        }
         yield return BarkThatKnows(1);
     }
 }
