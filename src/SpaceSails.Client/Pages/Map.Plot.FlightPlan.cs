@@ -59,8 +59,13 @@ public partial class Map
     {
         string arrow = node.Mode == BurnMode.Vector ? "✚"
             : node.Action == ManeuverAction.Accelerate ? "▲" : "▼";
+        // #838: a burn pointed along one of the four quick selects says so in words — the glance line
+        // reads "▲ UP", not "+90° rel", for the aim the captain actually pressed. Free aim (the
+        // exception) still quotes its angle in the panel's own convention.
         // #201: mirror the input's convention — ship-relative by default ("+90° rel"), absolute on toggle.
-        string dir = node.Mode == BurnMode.Vector
+        string dir = node.Mode == BurnMode.Vector && QuickSelectOf(node) is { } quick
+            ? NodeFrame.Label(quick)
+            : node.Mode == BurnMode.Vector
             ? (_burnAngleAbsolute
                 ? $"{node.HeadingDegrees.ToString("0", CultureInfo.InvariantCulture)}°"
                 : $"{BurnHeadingConvention.WorldToRelative(HeadingAlongCourseAt(node.SimTime), node.HeadingDegrees).ToString("+0;-0;0", CultureInfo.InvariantCulture)}° rel")
@@ -69,6 +74,20 @@ public partial class Map
             : node.SimTime <= SimTime ? "now"
             : $"in {FormatDuration(node.SimTime - SimTime)}";
         return $"burn {arrow} {node.Pulses} p → {dir} · {when}";
+    }
+
+    // #838 — which quick select, if any, this node is currently pointed along (solved fresh in the ghost's
+    // frame at the node's epoch, same as the buttons). null = free aim, the exception the vector view keeps.
+    private NodeDirection? QuickSelectOf(PlanNode node)
+    {
+        foreach (NodeDirection direction in NodeFrame.QuickSelects)
+        {
+            if (NodeAimedAlong(node, direction))
+            {
+                return direction;
+            }
+        }
+        return null;
     }
 
     // PR-D2: the flight-plan accordion. Clicking a step's line (or its ribbon node) expands its editor;
@@ -85,6 +104,7 @@ public partial class Map
         {
             _openEditor = FlightEditorKind.Burn;
             _selectedPlanNode = node;
+            EnsureVectorPlanning(node);   // #838: the planner's one surface is the vector view
         }
     }
 
