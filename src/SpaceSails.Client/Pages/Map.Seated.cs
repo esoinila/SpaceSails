@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
@@ -253,6 +254,23 @@ public partial class Map
         // the entry, so a re-press on a sheet already in the book is not a second roll; nothing is said
         // either way, which is the whole of the mechanic.
         _seating.ASensitiveBeatBehindTheCurtain();
+
+        // #770/#715 · …AND IF THIS TABLE IS ONE YOU BOOKED AND SOMEBODY IS SITTING ACROSS IT, THE DIG FILES
+        // UNDER THEM. The captain's field book already has the entry (above); this is the OTHER book — the
+        // delegation's own, in the shape #781 established at this counter, a machine id and nothing a panel
+        // could ever print. Working a case in front of somebody is a thing that HAPPENED to that somebody,
+        // and #715's whole grammar is that such a thing is remembered per entity rather than as a meter.
+        //
+        // Never at an empty booked room (there is nobody to file under) and never at a hall table (nobody
+        // booked it): both are asked of the sitting rather than assumed.
+        if (_seating.Table is
+            { Who: Core.CanteenTable.Who.Stranger, Plate: { Length: > 0 } them, Cabinet: > 0 } booked
+            && RoomBooking.IsABookedSitting(booked.Scene.Id))
+        {
+            _contacts.RecordKnownTell(
+                them, them,
+                RoomBooking.DugAgainstThem(RoomBooking.RoomOfLeaf(booked.Cabinet), ex.CanteenWatch));
+        }
 
         string said = SeatedPosture.WrittenUpLine(SatchelLabel(item), gist);
         if (_seating.Table is { } t)
