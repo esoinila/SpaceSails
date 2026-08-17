@@ -167,6 +167,20 @@ public partial class Map
         ReprojectTrajectory();
     }
 
+    // #926 · FLYING WITH THE MOUSE ALONE. Owner (2026-08-17, playing): "Let's add the plus and minus
+    // buttons to the burn scrub angle … the vector rotation is good for flying with mouse alone, without
+    // inputting … like ±5 degrees." Turn THIS node's aim five degrees, off whatever it points at now — so
+    // pressing FORWARD then +5° lands five degrees off the ghost's prograde, and the ribbon re-solves the
+    // way any heading edit does. Distinct from the reflex-flying idiom #916 sent out of this panel: that
+    // one scaled the ship's speed by a factor, this one is an angle, in the vector view's own language.
+    private void NudgeNodeAim(PlanNode node, int sign)
+    {
+        node.Mode = BurnMode.Vector;
+        node.HeadingDegrees = NodeFrame.Nudge(node.HeadingDegrees, sign);
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
     // The aim itself, without the rebuild — one call into Core, handed the ghost's own state at the node.
     private void AimNode(PlanNode node, NodeDirection direction) =>
         node.HeadingDegrees = NodeFrame.HeadingAt(
@@ -196,31 +210,9 @@ public partial class Map
             return _plotFrameBodyId;
         }
 
-        Vector2d ghost = SamplePositionAt(simTime);
-        string? best = null;
-        double bestHill = double.MaxValue;
-        foreach (CelestialBody body in _ephemeris.Bodies)
-        {
-            if (body.ParentId is null || body.Kind == BodyKind.Station)
-            {
-                continue;
-            }
-            CelestialBody? parent = _ephemeris.Bodies.FirstOrDefault(b => b.Id == body.ParentId);
-            if (parent is null)
-            {
-                continue;
-            }
-            double hill = OrbitRule.HillRadius(body, parent.Mu);
-            if (hill <= 0 || hill >= bestHill)
-            {
-                continue;
-            }
-            if ((ghost - _ephemeris.Position(body.Id, simTime)).Length < hill)
-            {
-                (bestHill, best) = (hill, body.Id);
-            }
-        }
-        return best;
+        // #926 — the innermost-Hill law moved to Core (TripFrame.PrimaryAt), unchanged, because the trip
+        // frame needs the SAME reading of where the ghost really is. One law, two callers.
+        return TripFrame.PrimaryAt(SamplePositionAt(simTime), _ephemeris, simTime);
     }
 
     private Vector2d PlanningPrimaryPositionAt(double simTime)

@@ -5112,7 +5112,42 @@
                                                         @onclick="() => SetNodeDirection(node, _dir)">@NodeFrame.Label(_dir)</button>
                                             }
                                         </div>
-                                        <div class="map-burn-frame-note text-secondary">@NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime))</div>
+                                        @* #926 · FLYING WITH THE MOUSE ALONE. Owner (2026-08-17, playing): "Let's add
+                                           the plus and minus buttons to the burn scrub angle … the vector rotation is
+                                           good for flying with mouse alone, without inputting … like ±5 degrees." Five
+                                           degrees off whatever the node points at now — a quick select then a nudge or
+                                           two, and the aim is set without the keyboard ever coming into it. The face is
+                                           an ANGLE (a degree sign), because this is the vector view's own idiom and not
+                                           the reflex-flying control #916 sent back to the live keys. *@
+                                        <div class="map-burn-nudge" role="group" aria-label="Nudge this burn's aim five degrees">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(-1)"
+                                                    @onclick="() => NudgeNodeAim(node, -1)">@NodeFrame.NudgeLabel(-1)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(1)"
+                                                    @onclick="() => NudgeNodeAim(node, 1)">@NodeFrame.NudgeLabel(1)</button>
+                                        </div>
+                                        @* #926 — the frame note now says BOTH frames the panel lives between: the one the
+                                           aim is solved in (the node's, #916) and the one the plan is READ in (the plot
+                                           frame). The second one is what the owner had to remember to switch by hand. *@
+                                        <div class="map-burn-frame-note text-secondary">
+                                            @NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime)) · @TripFrame.ReadingNote(PlotFrameName())
+                                        </div>
+                                        @* #926 · ONE LINE, ONE PRESS. Owner (2026-08-17): "the real thrust amounts are
+                                           dependent on the coordinate origin. I had to remember to switch to Sun to get
+                                           the ship to really start moving from Earth towards Mars." Ruling A: name the
+                                           frame, offer the trip's — never switch by yourself. The press moves what the
+                                           captain JUDGES by (the ribbon, the numbers); the quick selects go on aiming in
+                                           the node's frame, because an escape burn is Earth-prograde either way. *@
+                                        @if (TripFrameOffer(node.SimTime) is { } _offer)
+                                        {
+                                            <div class="map-burn-frame-offer">
+                                                <div class="map-burn-frame-offer-line">@TripFrame.OfferLine(PlotFrameName(), _offer.DestinationName, _offer.FrameName)</div>
+                                                <button type="button" class="btn btn-sm btn-warning w-100"
+                                                        title="@TripFrame.OfferButtonHint(_offer.FrameName)"
+                                                        @onclick="() => SetPlotFrame(_offer.FrameId)">@TripFrame.OfferButton(_offer.FrameName)</button>
+                                            </div>
+                                        }
                                         <div class="map-burn-aim d-flex flex-wrap align-items-center gap-1">
                                             @* Free aim — the exception the vector view keeps. #201: the burn angle is
                                                ship-heading-RELATIVE by default — 0 = straight ahead, +90 = starboard,

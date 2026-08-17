@@ -160,6 +160,36 @@ public partial class Map
         return $"{label}: {relKmps.ToString("N1", CultureInfo.InvariantCulture)} km/s";
     }
 
+    // #926 — the name of the frame the plan is being READ in. Derived, never stored: the one truth is
+    // _plotFrameBodyId, and null is the Sun / inertial frame everywhere in this family.
+    private string PlotFrameName() => _plotFrameBodyId is null ? "Sun" : BodyName(_plotFrameBodyId);
+
+    // #926 · THE TRIP'S FRAME, AND WHETHER IT IS WORTH OFFERING. Owner (2026-08-17, playing #916's vector
+    // planner): "the real thrust amounts are dependent on the coordinate origin. I had to remember to
+    // switch to Sun to get the ship to really start moving from Earth towards Mars."
+    //
+    // The offer stands exactly when all of these hold: the plan HAS a destination, and the trip's frame —
+    // the common parent of the ghost at THIS node and that destination, Core's TripFrame — is not the
+    // frame being read. Nothing is cached and no new field is kept: both halves of the state already
+    // exist (_plotFrameBodyId + _destinationBodyId), so this is a question asked as the panel draws.
+    //
+    // Ruling A, not B: the planner OFFERS. It never switches by itself.
+    private (string? FrameId, string FrameName, string DestinationName)? TripFrameOffer(double simTime)
+    {
+        if (_ephemeris is null || _destinationBodyId is null)
+        {
+            return null;
+        }
+        if (TripFrame.At(SamplePositionAt(simTime), _destinationBodyId, _plotFrameBodyId, _ephemeris, simTime)
+            is not { } offer)
+        {
+            return null;   // no trip, or already read in the frame the trip is in — nothing to say
+        }
+        return (offer.TripFrameBodyId,
+                offer.TripFrameBodyId is null ? "Sun" : BodyName(offer.TripFrameBodyId),
+                BodyName(_destinationBodyId));
+    }
+
     private void SetPlotFrame(string? bodyId)
     {
         _plotFrameBodyId = bodyId;

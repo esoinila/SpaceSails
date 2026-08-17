@@ -103,6 +103,16 @@ step deltas, relative speeds, and vectors quoted Saturn-centric at Saturn (Jupit
 at Jupiter), with a visible frame chip. Heliocentric numbers made the Saturn moon tour
 unreadable — the primary's ~10 km/s solar orbit drowned the moon-to-moon deltas.
 
+**Shipped, and the other half of it (#926, 2026-08-17).** The frame chip landed with #135/#143/#206;
+what it never did was SAY which frame the step editor was reading a plan in, and the owner hit the
+mirror image of the Saturn problem from the other side — *"the real thrust amounts are dependent on
+the coordinate origin. I had to remember to switch to Sun to get the ship to really start moving from
+Earth towards Mars."* A planet-centric frame drowns an interplanetary trip exactly as the solar frame
+drowned the moon tour. So the step editor now names its reading frame always, and when the plan has a
+destination it offers the **trip's** frame — the common parent of both ends (`TripFrame.Of`: the Sun
+for Earth→Mars, Earth for Earth→Luna, Jupiter for Europa→Ganymede) — in one press. It offers; it never
+switches by itself, and the press moves the ribbon and the numbers, never the plan.
+
 ## Build order proposal
 
 1. **PR-D1 — steps for insertions:** model armed auto-orbit as a flight-plan step (read-only
