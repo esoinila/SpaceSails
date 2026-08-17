@@ -474,6 +474,37 @@ chip's text not matching the desk's own "ship's articles" headline.
 
 ---
 
+## 20. The carried compass — MISSIONS in the satchel (#727)
+
+*(See [captains-position.md](features/captains-position.md).)*
+
+1. Open `/map?start=cinder-roost&crack=active`. Press `0` and confirm the **📜 Ledger** tab lists the
+   break-in with the status label **"▶ Crack hatch V-06 — code …"** (the hatch id and code are the
+   station's own).
+2. Leave the desk and walk the station deck. Press `I`. Confirm the satchel's tab strip reads
+   **🎒 CARRIED · 📓 NOTES · 🗺 MISSIONS**, with a count beside MISSIONS.
+3. Press **🗺 MISSIONS**. Confirm the title reads *WHY YOU ARE DOWN HERE*, and that the break-in's
+   line shows the job's name, its why, and **the desk's step word for word** — the same hatch id and
+   the same code, in the lit ink.
+4. Confirm there is **no button anywhere on the page** — no burn, no dock, no "abandon". The carried
+   view is read-only; you act by walking to the thing and pressing `E`.
+5. Now `/map?start=cinder-roost&fetch=active`. On the same page, confirm the fetch reads
+   **"⛵ return to the ship — next: Derelict Roadster"** and not "fly to the roadster" — a run the
+   chair owns must render as direction, never as an instruction you cannot follow down here.
+6. Walk to the hatch, press `E`, key the code. Confirm the package is pocketed and the receipt is
+   readable. Then press `I` → 🗺 MISSIONS again and confirm the line has moved on to the hand-off.
+7. Press `I` on the MISSIONS page, walk to The Fixer at the bar, press `E`. With the satchel open,
+   confirm the pay-off sentence appears **inside the satchel**, not on the HUD banner behind it.
+8. Take nothing on at all (`/map?ashore=1`) and open 🗺 MISSIONS. Confirm the page still exists and
+   says *"Nothing owed on foot…"* rather than showing a blank list or hiding the tab.
+
+**Broken looks like:** a mission on the captain's desk that is missing from the pane (or the other
+way round), a foot-level step worded differently in the two places, a burn/dock/clamp instruction
+shown verbatim to a captain on foot, any button on the pane, the tab vanishing when the compass is
+empty, or a completion beat that fires on the banner behind the satchel's backdrop.
+
+---
+
 ## Appendix A — URL dev cheats (start from the testable situation)
 
 Owner's bench rule (2026-07-18): *"being able to start from the testable situation helps us

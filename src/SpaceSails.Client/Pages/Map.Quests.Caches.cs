@@ -145,9 +145,12 @@ public partial class Map
             && _dockedHavenId is { } st && HavenInterior.HatchGrowsWing(st, q.TargetShipId));
         if (job is { State: QuestState.Active })
         {
-            job.State = QuestState.PickedUp;
             RendererInterop.PlayCue("board");
-            ShowPulseMessage("You peel the package from behind the shelf and pocket it. Now get it back to the Fixer. 📦");
+            // #727/#736 · A step the CHAIR issued, finished on foot at a shelf in a back room — so it goes
+            // through the one writer, and the beat is told wherever the captain's eye actually is rather
+            // than on a HUD banner that a card or an open satchel would be sitting on top of.
+            AdvanceMission(job, QuestState.PickedUp,
+                "You peel the package from behind the shelf and pocket it. Now get it back to the Fixer. 📦");
         }
         else if (job is not null)
         {

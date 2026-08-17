@@ -127,6 +127,15 @@ public partial class Map
         /// away from one this is not a page you are being refused, it is a page that does not apply. The
         /// press on a row is the same act the spread's own shredder fires (<see cref="RipAndBin"/>).</summary>
         Bin,
+
+        /// <summary>#727 · MISSIONS — the carried compass. Owner: <i>"a mission that works outside the ship
+        /// UI is something new… filter out / minimize ship-specific stuff to appropriate ('cannot do in this
+        /// UI level, but high level: go to Moon X') type info in the carried mission UI."</i> What you owe,
+        /// beside what you learned (📓) and what you are carrying (🎒) — one pocket per question. It reads
+        /// the SAME <c>_quests</c> the captain's desk reads, through
+        /// <see cref="MissionProjection.OnFoot"/>: one model, two projections, never two mission lists.
+        /// Always drawn — an empty compass is an answer ("nothing owed on foot"), not a missing page.</summary>
+        Missions,
     }
 
     private SatchelPage _satchelPage = SatchelPage.Carried;

@@ -4771,6 +4771,40 @@
     border-radius: 0.2rem;
 }
 
+/* #727 · THE CARRIED COMPASS — one block per live mission on the satchel's MISSIONS page. It reuses
+   .satchel-note's card so a mission reads like everything else the satchel holds open; these three only say
+   which of its lines is the name, which is the why, and which is the step. */
+.mission-line {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border-left-color: rgba(216, 181, 106, 0.45);
+}
+
+.mission-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: #d8b56a;
+}
+
+.mission-why {
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: #7b8ca3;
+}
+
+/* The fold, and the only thing this markup decides. A step you can act on where you stand is LIT — it is the
+   sentence you opened the page for. A step that is a voyage is the same size in a quieter ink: DIRECTION,
+   not an affordance, because the pane cannot honour it and must never look as though it could. */
+.mission-step {
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.mission-step.here { color: #e6dcc8; }
+
+.mission-step.away { color: #93a3b8; }
+
 /* #741 · THE RED PEN, on its own row under the filters — an instrument taken out of the satchel, with the
    register it puts the page in beside it. The nodes themselves are a child component and carry their own
    sheet (Components/NotebookNodes.razor.css); these two are drawn by Map.razor. */
