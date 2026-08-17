@@ -5296,10 +5296,14 @@
                                         🛰 @(_orbitKept ? "Holding orbit at" : HarborVocabulary.ArmedStepVerb(HarborClassOf(_armedId))) @BodyName(_armedId)
                                         <span class="text-secondary">— @(_orbitKept ? (_keepTrimPulsesPerDay > 0 ? $"keeping · trim ≈{_keepTrimPulsesPerDay} p/day" : "keeping the park") : _active ? "flying the approach" : "armed · waiting for the window")</span>
                                         @* The promise the autopilot quoted at arm time (#146): the whole-journey
-                                           budget it proved affordable before committing. *@
+                                           budget it proved affordable before committing. #928: the number is the
+                                           CHARGED one — the autopilot's tenth — which is also what the tank is
+                                           really billed as the burns fire, so this line and the expellant gauge
+                                           can never tell two stories. *@
                                         @if (_armedBudgetPulses > 0)
                                         {
                                             <span class="text-info small">· budgeted ≈@(_armedBudgetPulses) p</span>
+                                            <span class="text-secondary small d-block">💸 the autopilot flies at a tenth of the tank a hand would spend</span>
                                         }
                                         @* #146: the in-well transfer plan riding under this arm — the
                                            planner's one-line quote while the cheap Lambert arc is active. *@

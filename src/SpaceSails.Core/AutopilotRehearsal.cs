@@ -22,6 +22,13 @@ namespace SpaceSails.Core;
 /// absorbs that residual error, so an accepted plan keeps a real cushion. The permanent fix — a
 /// parent-frame transfer that flies the giant's well cheaply instead of fighting it — is the separate
 /// follow-up lane (#146 stays open); this guard just refuses the trips that would strand you.</para>
+///
+/// <para><b>#928 — and it is priced at the autopilot's tenth.</b> Everything above is unchanged except
+/// the unit the verdict is taken in: an autopilot-flown approach charges the tank ⌈raw/10⌉ (see
+/// <see cref="EconomyFactor"/>), at BOTH ends — this rehearsal's estimate and the burns the live loop
+/// fires. The residual step-size error the reserve absorbs is divided by the same ten, so the cushion
+/// is if anything more generous than it was; the promise "it won't strand you" is unchanged and still
+/// proven by flying the thing.</para>
 /// </summary>
 public static class AutopilotRehearsal
 {
@@ -34,6 +41,59 @@ public static class AutopilotRehearsal
 
     /// <summary>Reserve pulses for a tank of the given capacity (at least 1).</summary>
     public static int ReservePulses(int capacity) => Math.Max(1, (int)Math.Ceiling(ReserveFraction * capacity));
+
+    /// <summary>
+    /// <b>THE AUTOPILOT'S TENTH (#928).</b> An autopilot-flown approach costs the tank ONE TENTH of the
+    /// raw Δv price a hand would pay for the same journey. The owner, playing 2026-08-17:
+    /// <i>"The autopilot declines too easily … we should fix it to be less picky / expensive … for plot
+    /// reasons we don't want to plot approaches too long. Like we should increase the limit of accepting
+    /// by 10 X at least without extra cost (or have that effect)."</i> and
+    /// <i>"Now the autopilot often refuses when it calculates the cost to be too big. If we divide the
+    /// cost by 10 that we calculate, it should fix it nicely."</i>
+    ///
+    /// <para><b>The fiction.</b> The autopilot flies the fine trajectory a hand cannot: it burns on the
+    /// exact node, in the exact direction, at the exact instant, and never over-corrects — so the same
+    /// arrival costs it a fraction of what a captain's thumb spends chasing the same geometry. The
+    /// economy is the AUTOPILOT'S, not the tank's: a manual pulse (the captain's own +/−, a plotted burn
+    /// fired by hand, a hand-pressed orbital insertion, weapons, the docking match, a long-haul
+    /// departure) costs exactly what it always cost.</para>
+    ///
+    /// <para><b>One factor, both ends.</b> The divide is applied to the rehearsal's pulse count BEFORE
+    /// the budget verdict (<see cref="RehearsalResult.PulsesCharged"/>, which is what
+    /// <see cref="RehearsalResult.Deliverable"/> and the refusal line's numbers are judged on) AND to
+    /// what the flown autopilot burns actually charge the tank (<see cref="ChargeForBurn"/>). Dividing
+    /// only the estimate would arm trips the tank cannot finish — which the same sentence,
+    /// <i>"It won't strand you"</i>, forbids. The raw count stays on <see cref="RehearsalResult.Pulses"/>
+    /// for the docs, the labs and the diagnostics.</para>
+    ///
+    /// <para><b>Not economized:</b> the kept orbit's station-keeping trims. Those are quoted separately
+    /// and honestly from Lab 25's per-body table ("trim ≈N p/day") and spent in full — the tenth is the
+    /// price of an APPROACH, and the Lab 25 law (auto-orbit ends in a KEPT orbit, held until you disarm
+    /// or the tank runs dry) reads off an unchanged trim budget.</para>
+    /// </summary>
+    public const int EconomyFactor = 10;
+
+    /// <summary>What the tank is charged for <paramref name="rawPulses"/> raw autopilot pulses:
+    /// ⌈raw / <see cref="EconomyFactor"/>⌉. Ceiling, never floor — a journey that burns at all is
+    /// charged at least one pulse, so the tenth can never round a real burn away to free flight.</summary>
+    public static int Charged(int rawPulses) =>
+        rawPulses <= 0 ? 0 : (rawPulses + EconomyFactor - 1) / EconomyFactor;
+
+    /// <summary>
+    /// <b>The accumulator — the one place the rounding is decided.</b> What the tank pays for the NEXT
+    /// autopilot burn of <paramref name="burnRawPulses"/> raw pulses, given <paramref name="rawSpentBefore"/>
+    /// raw pulses already burnt on this armed journey: the difference of the two charged totals.
+    ///
+    /// <para>Charging each burn ⌈cost/10⌉ on its own would OVER-charge (ten one-pulse burns would cost
+    /// ten, not one); truncating each burn would UNDER-charge to zero forever (a run of one-pulse burns
+    /// would fly free). Accumulating instead makes the flown total exactly <see cref="Charged"/> of the
+    /// flown raw total — the very formula the arm-time estimate quotes — so the panel's number, the
+    /// refusal's numbers and the tank after arrival all agree. Ten autopilot pulses cost one; five cost
+    /// one, not zero. The caller keeps only the RAW running total (the client's <c>_armedSpentPulses</c>
+    /// ledger, reset on every arm); no extra state is needed anywhere.</para>
+    /// </summary>
+    public static int ChargeForBurn(int rawSpentBefore, int burnRawPulses) =>
+        Charged(Math.Max(0, rawSpentBefore) + Math.Max(0, burnRawPulses)) - Charged(Math.Max(0, rawSpentBefore));
 
     /// <summary>Fine step (s) used once inside capture range, where the approach/insert burns
     /// happen — matches the 60 s the OrbitAutopilotTests e2e loops thread the window with.</summary>
@@ -55,13 +115,16 @@ public static class AutopilotRehearsal
     public const int DefaultMaxIterations = 40_000;
 
     /// <param name="Captured">The rehearsal reached a bound insertion — the autopilot can deliver.</param>
-    /// <param name="Pulses">Total mass pulses the whole journey would spend: every approach burn
-    /// plus the insertion (the number the arm-time contract quotes).</param>
+    /// <param name="Pulses">Total RAW mass pulses the whole journey would spend: every approach burn
+    /// plus the insertion, priced the way a hand would pay for them. Since #928 this is NOT the number
+    /// the arm-time contract quotes — see <see cref="RehearsalResult.PulsesCharged"/> — it is kept as
+    /// the honest Δv headline for the docs, the labs and the diagnostics.</param>
     /// <param name="ApproachBurns">How many approach burns it took (diagnostic; less trustworthy
     /// than <see cref="Pulses"/> across step sizes — see the fidelity note).</param>
     /// <param name="SimDurationSeconds">Sim time from arm to insertion (or to the cutoff).</param>
-    /// <param name="BudgetExceeded">The rehearsed cost ran past the affordable budget before it
-    /// could capture — the classic #146 deep-well fuel bleed. This is a refusal reason.</param>
+    /// <param name="BudgetExceeded">The rehearsed cost — CHARGED at the #928 tenth — ran past the
+    /// affordable budget before it could capture: the classic #146 deep-well fuel bleed, now measured
+    /// against what the autopilot actually spends. This is a refusal reason.</param>
     /// <param name="HorizonReached">Neither captured nor blew the budget within the horizon —
     /// also un-promisable, so also a refusal.</param>
     /// <param name="Path">The rehearsed trajectory (time-stamped), for drawing the autopilot's
@@ -76,6 +139,13 @@ public static class AutopilotRehearsal
         bool HorizonReached,
         IReadOnlyList<TrajectorySample> Path)
     {
+        /// <summary>#928: what the TANK is charged for this journey — ⌈<see cref="Pulses"/> /
+        /// <see cref="EconomyFactor"/>⌉, the autopilot's tenth. This is the number the budget verdict is
+        /// taken on, the number the refusal line and the arm line quote, and (via
+        /// <see cref="ChargeForBurn"/>, which accumulates to exactly this formula) the number the flown
+        /// journey really costs. Estimate, refusal and the tank after arrival therefore agree.</summary>
+        public int PulsesCharged => Charged(Pulses);
+
         /// <summary>The autopilot can honestly promise this journey: it captures within budget.</summary>
         public bool Deliverable => Captured && !BudgetExceeded && !HorizonReached;
     }
@@ -90,9 +160,13 @@ public static class AutopilotRehearsal
     /// <param name="simulator">Used only to advance the coast (its own timestep is irrelevant; the
     /// rehearsal picks the step and calls <see cref="Simulator.RunAdaptive"/>).</param>
     /// <param name="targetBodyId">The body being armed for.</param>
-    /// <param name="budgetPulses">The most the journey may spend before it is declared unaffordable
-    /// (the caller passes tank − reserve). Hitting it sets <see cref="RehearsalResult.BudgetExceeded"/>
-    /// and stops early — which is exactly what makes the doomed Titan case cheap to rehearse.</param>
+    /// <param name="budgetPulses">The most the journey may CHARGE THE TANK before it is declared
+    /// unaffordable (the caller passes tank − reserve). Since #928 the running cost is compared at the
+    /// autopilot's tenth — <see cref="Charged"/>(pulses) &gt; budget — so the verdict is taken on the
+    /// pulses the tank really loses, the same number <see cref="ChargeForBurn"/> charges in flight.
+    /// Hitting it sets <see cref="RehearsalResult.BudgetExceeded"/> and stops early — which is what
+    /// keeps the doomed Titan case cheap to rehearse (it now bleeds ten times as much raw Δv before it
+    /// trips, which is the point of the ruling; the iteration cap is the backstop either way).</param>
     /// <param name="capturePath">Record the trajectory for the #148 intended-path polyline.</param>
     /// <param name="schedule">The #146 in-well transfer plan from <see cref="TransferPlanner"/>, when
     /// the arm rode a cheap Lambert arc instead of the legacy approach loop. When present, the
@@ -186,7 +260,7 @@ public static class AutopilotRehearsal
                 int burnCost = OrbitRule.PulsesFor(burn.DeltaV.Length, ship.Velocity.Length);
                 pulses += burnCost;
                 approachBurns++;
-                if (pulses > budgetPulses)
+                if (Charged(pulses) > budgetPulses) // #928: judged on what the tank is charged, not the raw Δv
                 {
                     return new RehearsalResult(
                         false, pulses, approachBurns, ship.SimTime - startTime, true, false, path);
@@ -258,7 +332,7 @@ public static class AutopilotRehearsal
                     int approachCost = OrbitRule.ApproachPulseCost(ship, bodyPos, bodyVel, body, obstacle, hill);
                     pulses += approachCost;
                     approachBurns++;
-                    if (pulses > budgetPulses)
+                    if (Charged(pulses) > budgetPulses) // #928: the tenth the autopilot really pays
                     {
                         // The #146 bleed: it would burn past the tank before capturing. Bail cheaply.
                         return new RehearsalResult(
@@ -278,7 +352,7 @@ public static class AutopilotRehearsal
                     // The insertion is the arrival; it may spend into the reserve. Un-affordable
                     // outright (more than the whole budget-plus-reserve) is still a refusal.
                     return new RehearsalResult(
-                        true, pulses, approachBurns, ship.SimTime - startTime, pulses > budgetPulses, false, path);
+                        true, pulses, approachBurns, ship.SimTime - startTime, Charged(pulses) > budgetPulses, false, path);
 
                 default: // None — coast. Step coarse when far (no burn possible), fine when near.
                     double distance = (ship.Position - bodyPos).Length;

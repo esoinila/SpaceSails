@@ -4,8 +4,13 @@ namespace SpaceSails.Core.Tests;
 /// The autopilot's promise (issues #146/#147, owner ruling: "dropping from autopilot is the horrible
 /// scenario — it should never ever happen when there was nothing external to cause it"). The arm-time
 /// rehearsal flies the whole armed journey with the real OrbitRule decision logic and prices it, so
-/// the feasibility question is settled on the click: the doomed Titan inbound is refused; the cheap
+/// the feasibility question is settled on the click: what the tank cannot pay for is refused; the cheap
 /// Enceladus park is accepted.
+///
+/// <para>#928 re-denominated that price — an autopilot-flown approach charges the tank ⌈raw/10⌉ — so the
+/// costs measured here are unchanged but the VERDICTS moved: the deep-well Titan inbound is affordable at
+/// the tenth and is now armed (and really flown, in <c>TheAutopilotFliesAtATenthTests</c>), while the
+/// budget guard itself is untouched and still bites — see the empty-budget cases below.</para>
 /// </summary>
 public class AutopilotRehearsalTests
 {
@@ -34,12 +39,21 @@ public class AutopilotRehearsalTests
     }
 
     [Fact]
-    public void Titan_InboundOnASaturnEllipse_IsRefused_ItWouldBleedTheTankDry()
+    public void Titan_InboundOnASaturnEllipse_StillBleedsTheRawTank_ButFliesAtATenthSince928()
     {
-        // Tonight's live failure (build 6f483d6): armed auto-orbit Titan from ~2.4 M km while screaming
+        // The #146 live failure (build 6f483d6): armed auto-orbit Titan from ~2.4 M km while screaming
         // through Saturn's well. Titan's capture floor is 3e9 m, so 2.4e9 m is already "in range" — the
         // approach engages, Saturn keeps re-accelerating the ship, rel-speed climbs past the limit, and
-        // it re-burns for days (33 km/s of Δv, 175→8 pulses). The rehearsal must SEE that and refuse.
+        // it re-burns for days (33 km/s of Δv, 175→8 pulses). The rehearsal SEES that: the raw Δv price
+        // is 587 pulses, far past the 205 a 250-pulse tank can afford, and that measurement is UNCHANGED.
+        //
+        // #928 changed what the ship is CHARGED for it. The owner, playing: "Now the autopilot often
+        // refuses when it calculates the cost to be too big. If we divide the cost by 10 that we
+        // calculate, it should fix it nicely." At the autopilot's tenth this journey costs 59 p, the tank
+        // affords it, and it is armed — so this test now asserts BOTH halves: the raw bleed is still
+        // measured (the #146 geometry did not improve) and the trip is now promisable. That it is
+        // genuinely flyable — flown to the park with the same tenth charging the tank, never stranded —
+        // is proven in TheAutopilotFliesAtATenthTests, which is where the #928 promise lives.
         (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
         Vector2d saturnPos = eph.Position("saturn", 0);
         Vector2d saturnVel = BodyVel(eph, "saturn", 0);
@@ -53,15 +67,19 @@ public class AutopilotRehearsalTests
 
         int budget = Tank - AutopilotRehearsal.ReservePulses(Tank);
         AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(ship, eph, sim, "titan", budget);
-        _out.WriteLine($"TITAN #146: captured={r.Captured} pulses={r.Pulses} burns={r.ApproachBurns} " +
-            $"budgetExceeded={r.BudgetExceeded} horizon={r.HorizonReached} durDays={r.SimDurationSeconds / 86400:F2} budget={budget}");
+        _out.WriteLine($"TITAN #146/#928: captured={r.Captured} rawPulses={r.Pulses} charged={r.PulsesCharged} " +
+            $"burns={r.ApproachBurns} budgetExceeded={r.BudgetExceeded} horizon={r.HorizonReached} " +
+            $"durDays={r.SimDurationSeconds / 86400:F2} budget={budget}");
 
-        Assert.False(r.Deliverable,
-            $"Titan inbound should be refused. captured={r.Captured} pulses={r.Pulses} burns={r.ApproachBurns} " +
-            $"budgetExceeded={r.BudgetExceeded} horizon={r.HorizonReached} durDays={r.SimDurationSeconds / 86400:F1}");
-        // And the honest headline: its rehearsed cost blows past what the tank can afford.
-        Assert.True(r.Pulses > budget || r.HorizonReached,
-            $"Expected the cost to exceed the affordable budget ({budget}) or fail to capture; got pulses={r.Pulses}.");
+        // #146, unchanged: the RAW cost of this geometry blows past what a hand could afford.
+        Assert.True(r.Pulses > budget,
+            $"The #146 bleed should still be measured: raw pulses {r.Pulses} vs an affordable {budget}.");
+        // #928: at the autopilot's tenth it is affordable, so the autopilot promises it.
+        Assert.True(r.Deliverable,
+            $"Titan inbound should be promisable at the tenth. captured={r.Captured} raw={r.Pulses} " +
+            $"charged={r.PulsesCharged} budget={budget} horizon={r.HorizonReached}");
+        Assert.True(r.PulsesCharged <= budget,
+            $"Expected the charged cost to fit the budget ({budget}); got {r.PulsesCharged} (raw {r.Pulses}).");
     }
 
     [Fact]
@@ -332,8 +350,12 @@ public class AutopilotRehearsalTests
     [Fact]
     public void MoonRun_Schedule_TinyBudget_BailsBudgetExceeded()
     {
-        // T5: a 5-pulse budget can't even afford the departure burn — the rehearsal bails BudgetExceeded
-        // before it ever captures, exactly like the Approach case.
+        // T5: a tank that is ALL reserve (budget 0) can't afford the departure burn even at #928's tenth —
+        // the rehearsal bails BudgetExceeded before it ever captures, exactly like the Approach case. (The
+        // budget was 5 before #928, when the guard was read against the raw Δv; the tenth buys ten times
+        // the headroom, so the same "can't even leave" case is now spelled with an empty budget. A budget
+        // of 5 is ALSO still a refusal here — see the second half — because the run costs 54 raw p ⇒ 6
+        // charged; that is the guard that this is not merely an arithmetic edge at zero.)
         (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
         ShipState ship = DoorstepShip(eph);
 
@@ -341,11 +363,18 @@ public class AutopilotRehearsalTests
         Assert.True(plan.Ok, $"planner should find a transfer window; failure='{plan.Failure}'");
 
         AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
-            ship, eph, sim, "titan", budgetPulses: 5, schedule: plan.ToSchedule());
-        _out.WriteLine($"MOON-RUN tiny budget: captured={r.Captured} budgetExceeded={r.BudgetExceeded} pulses={r.Pulses}");
+            ship, eph, sim, "titan", budgetPulses: 0, schedule: plan.ToSchedule());
+        _out.WriteLine($"MOON-RUN empty budget: captured={r.Captured} budgetExceeded={r.BudgetExceeded} " +
+            $"raw={r.Pulses} charged={r.PulsesCharged}");
 
-        Assert.True(r.BudgetExceeded, "A 5-pulse budget must trip BudgetExceeded on the departure burn.");
+        Assert.True(r.BudgetExceeded, "An empty budget must trip BudgetExceeded on the departure burn.");
         Assert.False(r.Captured, "It must never report a capture it could not afford.");
+
+        // …and the tenth is not a licence: a 5-pulse budget is still short of this 54-raw-pulse run.
+        AutopilotRehearsal.RehearsalResult five = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "titan", budgetPulses: 5, schedule: plan.ToSchedule());
+        _out.WriteLine($"MOON-RUN 5-pulse budget: deliverable={five.Deliverable} raw={five.Pulses} charged={five.PulsesCharged}");
+        Assert.False(five.Deliverable, $"5 p is short of the run's {five.PulsesCharged} charged pulses.");
     }
 
     // ---- #155 the last mile: co-orbital rendezvous with the Ringside Exchange STATION, rehearsed ----
@@ -431,9 +460,11 @@ public class AutopilotRehearsalTests
     [Fact]
     public void StationRun_Schedule_TinyBudget_BailsBudgetExceeded()
     {
-        // T8: a 1-pulse budget can't afford both rendezvous burns — the rehearsal trips BudgetExceeded
-        // while flying the scheduled arc, and must never report a capture it could not pay for. The budget
-        // guard is identical to the moon-run and Approach cases; a μ=0 station gets no free pass.
+        // T8: a tank that is ALL reserve (budget 0) can't afford the rendezvous burns — the rehearsal trips
+        // BudgetExceeded while flying the scheduled arc, and must never report a capture it could not pay
+        // for. The budget guard is identical to the moon-run and Approach cases; a μ=0 station gets no free
+        // pass. (Budget 1 before #928: the whole phasing bus is ~2 raw pulses, which at the autopilot's
+        // tenth is 1 charged — affordable now, and rightly so. The guard is the empty tank instead.)
         (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
         ShipState ship = RingsideShip(eph);
 
@@ -441,10 +472,11 @@ public class AutopilotRehearsalTests
         Assert.True(plan.Ok, $"the rendezvous planner should quote a phasing bus; failure='{plan.Failure}'");
 
         AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
-            ship, eph, sim, "ringside-exchange", budgetPulses: 1, schedule: plan.ToSchedule());
-        _out.WriteLine($"STATION-RUN tiny budget: captured={r.Captured} budgetExceeded={r.BudgetExceeded} pulses={r.Pulses}");
+            ship, eph, sim, "ringside-exchange", budgetPulses: 0, schedule: plan.ToSchedule());
+        _out.WriteLine($"STATION-RUN empty budget: captured={r.Captured} budgetExceeded={r.BudgetExceeded} " +
+            $"raw={r.Pulses} charged={r.PulsesCharged}");
 
-        Assert.True(r.BudgetExceeded, "A 1-pulse budget must trip BudgetExceeded flying the rendezvous.");
+        Assert.True(r.BudgetExceeded, "An empty budget must trip BudgetExceeded flying the rendezvous.");
         Assert.False(r.Captured, "It must never report a dock-envelope capture it could not afford.");
     }
 }

@@ -168,8 +168,16 @@ public partial class Map
     // (reserve reached, watchdog, refusal) is LOUD: a persistent reason, a ledger receipt, warp
     // dropped to 1×. The owner's ruling: "dropping from autopilot should never happen when there was
     // nothing external to cause it." ----
-    private int _armedBudgetPulses;              // rehearsal-quoted total cost for the current arm
-    private int _armedSpentPulses;               // approach+insert pulses spent since this arm
+    private int _armedBudgetPulses;              // rehearsal-quoted CHARGED cost for the current arm (#928: the tenth)
+    // #928 THE TENTH'S ACCUMULATOR, and it is this field: the RAW (un-economized) approach+insert pulses
+    // burnt since this arm. Every autopilot burn asks AutopilotRehearsal.ChargeForBurn(_armedSpentPulses,
+    // rawCost) what the TANK loses and adds the RAW cost here, so the flown total charged is exactly
+    // ⌈raw/10⌉ — the same formula the arm-time estimate quotes. Ten one-pulse burns cost one pulse, not
+    // ten and not zero. No new state was needed for the accumulator (#905's frame ledger stays pinned):
+    // the running raw total IS the accumulator, and every arm resets it. (Station-keeping trims also add
+    // here for the diagnostic count, but they are charged in FULL — the tenth is the price of an
+    // approach, not of holding a park — and no approach burn can follow a kept orbit without a re-arm.)
+    private int _armedSpentPulses;
     private string? _autopilotStandDownReason;   // persistent "you have the ship" line (decline/handback)
     private string? _dockReadyStatus;            // #155: persistent "in the envelope — hit ⚓ Dock" line, a station SUCCESS (never a #147 handback)
     private IReadOnlyList<TrajectorySample>? _autopilotPlanPath; // #148: the rehearsed INTENDED path
@@ -299,18 +307,21 @@ public partial class Map
             return;
         }
         int cost = OrbitRule.PulsesFor(deltaV.Length, _ship.Velocity.Length);
+        // #928: the autopilot flies at a tenth. The tank is charged ChargeForBurn against the raw ledger,
+        // so the whole armed journey costs exactly the ⌈raw/10⌉ the rehearsal quoted at arm time.
+        int charge = AutopilotRehearsal.ChargeForBurn(_armedSpentPulses, cost);
         int reserveFloor = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
-        if (_reactionMassPulses - cost < reserveFloor)
+        if (_reactionMassPulses - charge < reserveFloor)
         {
             AutopilotStandDown($"autopilot handed back mid-transfer to {BodyName(_armedOrbitBodyId)} — fuel plan broken (reserve floor reached before a departure burn)");
             return;
         }
         _ship = _ship with { Velocity = _ship.Velocity + deltaV };
-        _reactionMassPulses -= cost;
+        _reactionMassPulses -= charge;
         _armedSpentPulses += cost;
         _armedTransferBurnsFired++;
         StaleFutureNodes();
-        ShowPulseMessage($"Transfer burn — riding the well toward {BodyName(_armedOrbitBodyId)} ({cost} p) 🛰");
+        ShowPulseMessage($"Transfer burn — riding the well toward {BodyName(_armedOrbitBodyId)} ({charge} p) 🛰");
     }
 
     // The autopilot log — a Captain's-ledger receipt for every stand-down (newest first), projected
@@ -468,8 +479,11 @@ public partial class Map
                 AutopilotRehearsal.Rehearse(_ship, _ephemeris, _simulator, bodyId, budget, capturePath: true, schedule: schedule);
             if (!r.Deliverable)
             {
-                string why = r.BudgetExceeded || r.Pulses > budget
-                    ? $"needs ≈{r.Pulses} p (incl. insertion), tank has {_reactionMassPulses} and keeps {reserve} in reserve"
+                // #928: quote the CHARGED number — what the tank will really lose at the autopilot's
+                // tenth — never the raw Δv count. The refusal's arithmetic must be the arithmetic the
+                // flight then performs, or "It won't strand you" is a sentence about a different ship.
+                string why = r.BudgetExceeded || r.PulsesCharged > budget
+                    ? $"needs ≈{r.PulsesCharged} p (incl. insertion), tank has {_reactionMassPulses} and keeps {reserve} in reserve"
                     : "can't verify a capture from here — no clear window within range";
                 _autopilotStandDownReason = $"autopilot declines {name}: {why}. It won't strand you.";
                 ResetAutopilotBudget();
@@ -514,8 +528,8 @@ public partial class Map
                 }
             }
 
-            _armedBudgetPulses = r.Pulses;
-            _armedSpentPulses = 0;
+            _armedBudgetPulses = r.PulsesCharged; // #928: the arm line and the panel quote the tenth
+            _armedSpentPulses = 0;                // the raw ledger the tenth accumulates against
             CachePlanForAlarm(bodyId, r); // #148/#196/#219: draw the intended path AND cache its alarm pass, together
             _armedTransferSchedule = schedule;
             _armedTransferBurnsFired = 0;
@@ -549,7 +563,9 @@ public partial class Map
                 ? $"auto-dock at {BodyName(bodyId)}"
                 : $"stand into the dock envelope at {BodyName(bodyId)} for your ⚓ Dock")
             : $"park at {BodyName(bodyId)}";
-        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p; the ship will {arrival} when the window opens{trimQuote} 🛰");
+        // #928: "at the autopilot's tenth" is not decoration — it is why the quoted number is a tenth of
+        // the Δv a hand would pay for the same arrival, and it is the number the tank is really charged.
+        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p at the autopilot's tenth; the ship will {arrival} when the window opens{trimQuote} 🛰");
     }
 
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
@@ -681,39 +697,44 @@ public partial class Map
                 // Hill-aware approach (issue #136): the aim's safe periapsis and closing speed scale
                 // to the body's well, so a deep moon like Enceladus actually reaches its capture band.
                 int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel, body, obstacle, hill);
+                // #928 the tenth: the raw Δv price above is what a HAND would pay; the autopilot's own
+                // charge comes from the accumulator, so the flown journey costs exactly the ⌈raw/10⌉ the
+                // rehearsal quoted and the refusal arithmetic used.
+                int approachCharge = AutopilotRehearsal.ChargeForBurn(_armedSpentPulses, approachCost);
                 // The reserve floor (#146): the autopilot never burns the tank below the reserve it
                 // promised to keep. If an approach burn would breach it, reality has diverged from the
                 // rehearsed plan — only possible via something external (a manual burn, damage, a
                 // dock) or a harder approach than rehearsed — so hand back LOUDLY instead of bleeding
                 // the tank dry. The owner's ruling: never a silent drop.
                 int reserveFloor = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
-                if (_reactionMassPulses - approachCost < reserveFloor)
+                if (_reactionMassPulses - approachCharge < reserveFloor)
                 {
                     AutopilotStandDown($"autopilot handed back near {body.Name} — fuel plan broken (reserve floor reached; a manual burn, damage, or a harder approach than budgeted)");
                     return;
                 }
 
                 _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle, hill);
-                _reactionMassPulses -= approachCost;
+                _reactionMassPulses -= approachCharge;
                 _armedSpentPulses += approachCost;
                 _approachBurnCount++;
                 StaleFutureNodes();
-                ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCost} p) 🛰");
+                ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCharge} p) 🛰");
                 return;
 
             case OrbitRule.AutopilotAction.Insert:
                 int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
+                int insertCharge = AutopilotRehearsal.ChargeForBurn(_armedSpentPulses, cost); // #928 the tenth
                 // The insertion is the arrival — it may dip into the reserve to complete the park.
                 // Only an outright can't-afford-it (post-rehearsal, only via external divergence)
                 // stands it down.
-                if (cost > _reactionMassPulses)
+                if (insertCharge > _reactionMassPulses)
                 {
-                    AutopilotStandDown($"autopilot handed back at {body.Name} — insertion needs {cost} p, only {_reactionMassPulses} left (fuel plan broken externally)");
+                    AutopilotStandDown($"autopilot handed back at {body.Name} — insertion needs {insertCharge} p, only {_reactionMassPulses} left (fuel plan broken externally)");
                     return;
                 }
 
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
-                _reactionMassPulses -= cost;
+                _reactionMassPulses -= insertCharge;
                 _armedSpentPulses += cost;
                 // Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved
                 // one." The park is NOT a handback — the autopilot stays in command and now STATION-KEEPS
@@ -785,6 +806,10 @@ public partial class Map
             return; // still tight inside the tolerance — nothing to spend
         }
 
+        // #928: a keeping trim is NOT economized. The tenth is the price of an APPROACH — the fine
+        // trajectory a hand cannot fly — while the kept orbit's trims are quoted honestly and separately
+        // from Lab 25's per-body table ("trim ≈N p/day") and spent in full, so OrbitHold's "holds for N
+        // days" and the tank keep telling the same story (the Lab 25 law is untouched).
         int cost = OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, park);
         // (b) the tank running dry — the LOUD handback (Friday §0). Reuse the escalating degradation
         // surface as the BACKSTOP, not the defense: keeping can no longer hold, so hand back loudly and
