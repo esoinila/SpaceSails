@@ -756,20 +756,6 @@ public partial class Map
                 ex.TableMoves.Add(MoveKey(t, CanteenTable.Show + ":relevant"));
             }
 
-            // #758 · …AND WHETHER THE WEAVE LET ANY OF IT OUT. This is the sensitive beat — paper on a table
-            // in a room with a door — so it is the beat the curtain is rolled on, and NOTHING IS SAID about
-            // the answer either way. A true does not change this outcome, does not raise a card and does not
-            // touch the field book; it waits on the excursion until somebody who has no way of knowing says
-            // the cabinet's number out loud (TheBarkAtThisTop). A dogged leaf never gets as far as the die.
-            if (t.Cabinet > 0)
-            {
-                int beat = ex.CabinetBeats++;
-                if (CabinetPrivacy.Leaks(ex.Stop.Body.Id, t.Cabinet, ex.CanteenWatch, beat, CabinetStage))
-                {
-                    ex.CabinetLeaked = t.Cabinet;
-                }
-            }
-
             TableAnswered(ex, t, CanteenTable.Show, said);
         }
 
@@ -857,6 +843,44 @@ public partial class Map
             t.Outcome = CabinetPrivacy.SaidOn(to);
             _host.RequestVaultSave();
             _host.StateHasChanged();
+        }
+
+        /// <summary>
+        /// #758 · ONE SENSITIVE BEAT BEHIND THE CURTAIN — rolled, never announced.
+        ///
+        /// <para><b>WHICH BEAT, and how this came to be the right one.</b> It shipped on
+        /// <see cref="TableShow"/> — putting a paper on the table — which reads exactly like the issue's own
+        /// <i>"paper on a table in a room with a door"</i> and was <b>unreachable in a cabinet</b>: the SHOW
+        /// move only exists on the named cast's scenes (<c>CanteenTable.SceneFor</c>), a cabinet top is built
+        /// with no plate so <see cref="TryTakeTable"/> hands it <c>SittingAlone.TheTable</c> (wait and stand
+        /// and nothing else), and <c>SomebodyComes</c> refuses to bring anybody to a quiet top. So the whole
+        /// of stage one was dead code, and every guard on it was green: Core exercised
+        /// <see cref="CabinetPrivacy.Leaks"/> directly and the one client guard planted the leak by
+        /// reflection. <b>A guard that cannot tell pass from fail</b> — this repository's fifth named bug
+        /// class, found by the cloud ultrareview on #918 and not by any test in here.</para>
+        ///
+        /// <para>The beat is THE WRITE-UP now, at the [I] spread — the one thing a captain actually does at a
+        /// cabinet table, and still literally paper on a table in a room with a door. It fires from
+        /// <c>Map.TheWriteUpLands</c>, at the far end of the dig, after the entry has been accepted: one
+        /// completed dig is one beat, so a re-press on a sheet already in the book is not a second roll.</para>
+        ///
+        /// <para><b>Nothing is said either way.</b> A true does not change the write-up's outcome, raise a
+        /// card or touch the field book; it waits on the excursion until somebody who has no way of knowing
+        /// says the cabinet's number out loud (<see cref="TheBarkAtThisTop"/>). A dogged leaf never gets as
+        /// far as the die — <see cref="CabinetPrivacy.Leaks"/> answers the stage first.</para>
+        /// </summary>
+        public void ASensitiveBeatBehindTheCurtain()
+        {
+            if (_host.Surface is not { } ex || Table is not { Cabinet: > 0 } t)
+            {
+                return;
+            }
+
+            int beat = ex.CabinetBeats++;
+            if (CabinetPrivacy.Leaks(ex.Stop.Body.Id, t.Cabinet, ex.CanteenWatch, beat, CabinetStage))
+            {
+                ex.CabinetLeaked = t.Cabinet;
+            }
         }
 
         /// <summary>

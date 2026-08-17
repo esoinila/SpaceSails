@@ -321,6 +321,111 @@ public sealed class TheCabinetDrawsItsCurtainTests
             "a hall table dogged something. Whatever it shut, it is not a room the captain is in.");
     }
 
+    // ── THE LEAK, PRODUCED BY PLAYING ────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #758 · A DIG BEHIND THE CURTAIN IS THE BEAT THAT LEAKS — sat, spread, dug, overheard, with no state
+    /// planted anywhere.
+    ///
+    /// <para><b>Why this guard exists at all.</b> The leak roll shipped on <c>TableShow</c> — putting a paper
+    /// on the table — and was <b>unreachable in a cabinet</b>: the SHOW move lives only on the named cast's
+    /// scenes, a cabinet top has no plate so the sit hands it <c>SittingAlone.TheTable</c> (wait and stand),
+    /// and nobody is ever brought to a quiet top. The whole of stage one was dead code and every guard on it
+    /// was GREEN, because Core called <see cref="CabinetPrivacy.Leaks"/> directly and the one client guard
+    /// planted <c>CabinetLeaked</c> by reflection. That is this repository's fifth named bug class exactly —
+    /// a guard that could not tell pass from fail — and it was found by review rather than by any test here.
+    /// So this one touches nothing: <b>every step is a verb a captain presses</b>, and the only thing read
+    /// back is what a captain would hear.</para>
+    ///
+    /// <para><b>And it is not a test of the die.</b> The tuple is chosen by ASKING THE LAW which
+    /// (cabinet, watch) leaks on a sitting's first dig, and the answer is asserted before anything is
+    /// driven — so a build whose wiring never reaches <see cref="CabinetPrivacy.Leaks"/> fails on the
+    /// consequence rather than passing on a lucky seed.</para>
+    ///
+    /// <para><b>The RED case.</b> Put the roll back where it shipped — move
+    /// <c>ASensitiveBeatBehindTheCurtain()</c> out of <c>Map.TheWriteUpLands</c> and back into
+    /// <c>Seating.TableShow</c> — and this fails at the last assertion with the patron's ordinary bark,
+    /// which is the bug the ultrareview found, stated as a red line.</para>
+    /// </summary>
+    [Fact]
+    public void A_DIG_IN_A_CABINET_LeaksThroughTheWeave_DrivenByTheShippingVerbs()
+    {
+        // ── 1 · ASK THE LAW for a watch on which this floor's cabinet leaks on the first dig of a sitting.
+        Pages.Map? map = null;
+        long leakyWatch = -1;
+        int cabinet = 0;
+
+        for (long candidateWatch = 0; candidateWatch < 48 && map is null; candidateWatch++)
+        {
+            Pages.Map candidate = OnTheFloor(candidateWatch);
+            int sat = SitDownInACabinet(candidate);
+            if (CabinetPrivacy.Leaks(Body, sat, candidateWatch, 0, CabinetPrivacy.Stage.Curtain))
+            {
+                map = candidate;
+                leakyWatch = candidateWatch;
+                cabinet = sat;
+            }
+        }
+
+        Assert.True(map is not null,
+            "no watch in four days leaks on the first dig of a sitting in this floor's cabinet — either the "
+            + "law has been flattened to nothing or the sit no longer lands in a cabinet, and this guard "
+            + "would be asserting about a beat the game cannot have.");
+        Assert.True(CabinetPrivacy.Leaks(Body, cabinet, leakyWatch, 0, CabinetPrivacy.Stage.Curtain),
+            "the tuple this guard drives is not one the law says leaks — it would be measuring the die.");
+        Assert.Equal(CabinetPrivacy.Stage.Curtain, StageNow(map!));
+
+        // ── 2 · A SHEET IN THE SLEEVE, THE SPREAD OPEN, AND THE DIG. Every one of these is the press a
+        //       captain makes: [I] opens the spread, the row digs, and the surface tick runs the hold out.
+        var paper = new Satchel.Item(Satchel.Kind.Paper, "hive:doc:a");
+        Set(map!, "_satchel", new List<Satchel.Item> { paper });
+        Set(map!, "_processCheatSeconds", (double?)0.05);
+
+        Invoke(map!, "OpenTheSpread");
+        Invoke(map!, "WriteItUp", paper);
+        for (int frame = 0; frame < 40 && TheHold(map!) is not null; frame++)
+        {
+            Invoke(map!, "StepSurface", 0.05);
+        }
+
+        // The dig really finished — otherwise the beat never fired for a reason that has nothing to do with
+        // cabinets, and the assertion below would be red for the wrong reason.
+        Assert.True(TheHold(map!) is null, "the dig never ran out; nothing reached the far end.");
+        Assert.True(TheWrittenUpRegister(map!).Count == 1,
+            "the write-up did not land, so no sensitive beat happened and this guard is about nothing.");
+
+        // ── 3 · AND IT COMES BACK, LATER, OUT OF SOMEBODY WHO CANNOT KNOW IT. Stand up, let the shift turn,
+        //       and sit down with one of the crowd. Nothing about the leak is read directly — what is
+        //       asserted is the sentence a captain would hear.
+        Invoke(map!, "CloseTable");
+
+        long later = leakyWatch + 6 - (leakyWatch % 6) + 2;   // a heaving watch, and a later one
+        Set(map!, "_watchCheat", (long?)later);
+        Invoke(map!, "RebuildSurfaceDeck");
+
+        Assert.True(JoinAStranger(map!),
+            $"nobody in the crowd on watch {later.ToString(CultureInfo.InvariantCulture)} would take a "
+            + "captain at their table, so there was no mouth for the leak to come out of.");
+        Assert.Equal(CabinetPrivacy.BarkThatKnows(cabinet), BarkOfTheSeat(map!));
+    }
+
+    /// <summary>The processing hold on the excursion, or null when nothing is being dug — the shipping
+    /// clock, asked so the guard above can wait for the far end instead of guessing a frame count.</summary>
+    private static object? TheHold(Pages.Map map)
+    {
+        object ex = Get(map, "_surface")!;
+        return ex.GetType().GetProperty("Processing", Hidden)!.GetValue(ex);
+    }
+
+    /// <summary>What the captain has actually dug out — proof the write-up landed, so a red line below is
+    /// about the cabinet and not about a dig that never ran.</summary>
+    private static HashSet<string> TheWrittenUpRegister(Pages.Map map)
+    {
+        object ex = Get(map, "_surface")!;
+        return (HashSet<string>)ex.GetType()
+            .GetProperty("WrittenUpProperly", Hidden)!.GetValue(ex)!;
+    }
+
     /// <summary>
     /// #758 · A LEAK COMES BACK AS SOMEBODY WHO KNOWS TOO MUCH, ONCE.
     ///
@@ -330,9 +435,13 @@ public sealed class TheCabinetDrawsItsCurtainTests
     /// <see cref="RipAndBin.SeenNote"/> opened. Then it is SPENT: it is one moment, not a tone the rest of
     /// the evening takes on.</para>
     ///
-    /// <para>The unspent leak is planted directly on the excursion, which is where the roll puts it — the
-    /// roll itself is measured in Core over thousands of seeds, and driving a real leak here would make this
-    /// guard a test of the die instead of a test of the consequence.</para>
+    /// <para>The unspent leak is planted directly on the excursion, which is where the roll puts it, so this
+    /// row is about the DELIVERY and nothing else.</para>
+    ///
+    /// <para><b>It used to be the only client guard on stage one, and that was the bug.</b> A planted flag
+    /// cannot notice that nothing in the game ever sets it — which is exactly what had happened, and what
+    /// the ultrareview found. <c>A_DIG_IN_A_CABINET_LeaksThroughTheWeave_DrivenByTheShippingVerbs</c> above
+    /// now produces a real leak by playing, and this row keeps the narrower question it was always asking.</para>
     ///
     /// <para><b>The RED case.</b> Return <c>top.Line</c> unconditionally from
     /// <c>Seating.TheBarkAtThisTop</c>: the first assertion fires with the patron's ordinary bark. Leave the
