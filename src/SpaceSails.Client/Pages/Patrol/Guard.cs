@@ -2,15 +2,75 @@ using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
-// Subject: part of the patrol (#870 lane 6′b) — ONE GUARD, WALKING. The mutable class the round is made of,
-// moved off the page with the state it is: the header note lives in Map.Patrol.cs, and every field below is
-// exactly the field it was, in the order it was, with the docblock it was written with.
+// Subject: part of the patrol (#870 lane 6′d) — ONE GUARD, WALKING. The mutable class the round is made of:
+// the seven things he can be doing, named; the state that says which; and (6′d) the transitions that move him
+// between them. The header note lives in Map.Patrol.cs.
 public sealed partial class Map
 {
     /// <summary>One guard, walking. Mutable and client-side for the reason the Reevers and the sweep team
     /// are: the rules are pure in Core and the list is the client's business.</summary>
     private sealed class Guard
     {
+        /// <summary>
+        /// #870 lane 6′d · THE SEVEN THINGS ONE MAN CAN BE DOING, named.
+        ///
+        /// <para>7d turned <c>AdvancePatrol</c>'s <c>if / else if</c> chain into a list of six named arms and
+        /// pinned every frame of thirteen rounds to prove the ORDER was carried across unchanged. What it could
+        /// not do is give the STATES a name: the arms are methods, so "which one is he in" was a thing you
+        /// worked out by reading six predicates in the right order. This is that answer as a value.</para>
+        ///
+        /// <para>The members are in the CHAIN's order, top to bottom, and <see cref="DoingThisFrame"/> is the
+        /// chain — same tests, same order, one expression. The conductor switches on it, so the man's state and
+        /// the arm he is walked through cannot be two answers.</para>
+        /// </summary>
+        public enum Doing
+        {
+            /// <summary>#833 · He is walking you out. He is not on a round at all.</summary>
+            Escorting,
+
+            /// <summary>#821 · He watched the catch go over, so he is standing outside it.</summary>
+            AtTheDoor,
+
+            /// <summary>#835 · He called it in and he is coming.</summary>
+            AfterYou,
+
+            /// <summary>#821/#835 · He was crossing the floor to somebody who is behind a door now.</summary>
+            LostToADoor,
+
+            /// <summary>#793/#831 · Made, stopped, and doing something plausible about it.</summary>
+            Covering,
+
+            /// <summary>#833 · He has said hold on, and he is crossing the floor to you.</summary>
+            WalkingUp,
+
+            /// <summary>…and if nobody wants anything of him, he walks his round.</summary>
+            OnTheRound,
+        }
+
+        /// <summary>
+        /// #870 lane 6′d · WHAT THIS MAN IS DOING THIS FRAME — the chain, as one expression, in the order 7d
+        /// pinned and with the predicates 7d wrote.
+        ///
+        /// <para><b>TWO OF THE SEVEN ARE NOT HIS TO KNOW.</b> Whether he is THE escort is a fact about the
+        /// round (<c>Patrol.Escort</c> holds one guard out of the list, by reference); whether the captain is
+        /// shut into a cubicle is a fact about the floor, asked once a frame of the page. So this is a method
+        /// taking those two bits rather than a property reading eight booleans: a property could only ever have
+        /// answered four of the seven arms, which is a state machine that disagrees with its own conductor on
+        /// the three cases the feature is actually about.</para>
+        /// </summary>
+        /// <param name="heIsTheEscort">Whether the round is holding THIS man as the one walking the captain
+        /// out — <c>ReferenceEquals(g, Escort)</c>, asked by the caller because the round owns that answer.</param>
+        /// <param name="youAreBehindADoor">Whether the captain is shut into a cubicle this frame. Asked ONCE a
+        /// frame and handed down, so every arm below reads the same door.</param>
+        public Doing DoingThisFrame(bool heIsTheEscort, bool youAreBehindADoor) =>
+            heIsTheEscort ? Doing.Escorting
+            : youAreBehindADoor && CubicleLock.WaitsAtTheDoor(SawYouShutIt) ? Doing.AtTheDoor
+            : AfterYou ? Doing.AfterYou
+            : youAreBehindADoor && WalkingUp ? Doing.LostToADoor
+            : Held ? Doing.Covering
+            : WalkingUp ? Doing.WalkingUp
+            : Doing.OnTheRound;
+
         /// <summary>What is drawn over them — the ROUND's number, from Core.</summary>
         public required string DeckName { get; init; }
 

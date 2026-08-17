@@ -353,7 +353,9 @@ public sealed class ALockedCubicleBuysTimeTests
 
         // The man who saw you goes and stands at the cell's PUBLISHED step square — not a coordinate the
         // client measured for itself.
-        Assert.Contains("CubicleLock.WaitsAtTheDoor(g.SawYouShutIt)", patrol, StringComparison.Ordinal);
+        // #870 lane 6′d · RE-SPELLED, never re-asserted. The predicate that picks the door arm is on the MAN
+        // now (Guard.DoingThisFrame), where the other six are, so it has lost its receiver and nothing else.
+        Assert.Contains("CubicleLock.WaitsAtTheDoor(SawYouShutIt)", patrol, StringComparison.Ordinal);
         Assert.Contains("cell.StepX", patrol, StringComparison.Ordinal);
         Assert.Contains("CubicleLock.KnockLine", patrol, StringComparison.Ordinal);
 
@@ -420,9 +422,19 @@ public sealed class ALockedCubicleBuysTimeTests
         // you shut a door in his face" (`EveryRoundFingerprintsTheSameTests`) exists precisely because it is
         // the one case in the game where both arms want the same man, and it goes RED when these two lines
         // are swapped.
+        //
+        // #870 lane 6′d · RE-NEEDLED once more. The list is a SWITCH over the seven states, so the two lines
+        // the ordering lives on are the two arms' case labels — and the order is pinned a THIRD way now, in
+        // Guard.DoingThisFrame itself, where `Doing.AtTheDoor` is tested before `Doing.AfterYou`.
+        int picksTheDoor = patrol.IndexOf("? Doing.AtTheDoor", StringComparison.Ordinal);
+        int picksTheRun = patrol.IndexOf("? Doing.AfterYou", StringComparison.Ordinal);
+        Assert.True(picksTheDoor > 0 && picksTheRun > picksTheDoor,
+            "the man reports himself as coming at a run before he reports himself as standing at a door, so "
+            + "the switch below could never reach the door arm at all.");
+
         int waits = patrol.IndexOf(
-            "if (HeIsWaitingOutsideTheDoorHeSawYouShut(", StringComparison.Ordinal);
-        int runs = patrol.IndexOf("if (HeIsComingAfterYou(", StringComparison.Ordinal);
+            "case Guard.Doing.AtTheDoor: HeIsWaitingOutsideTheDoorHeSawYouShut(", StringComparison.Ordinal);
+        int runs = patrol.IndexOf("case Guard.Doing.AfterYou: HeIsComingAfterYou(", StringComparison.Ordinal);
         Assert.True(waits > 0 && runs > 0, "the hide and the run are not where this guard thinks they are.");
         Assert.True(waits < runs,
             "the run is taken before the wait, so a guard at a locked door would keep running at it — and "
