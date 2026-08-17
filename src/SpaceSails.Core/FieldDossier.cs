@@ -54,6 +54,14 @@ public static class FieldDossier
         "Petrosyan", "Aaltonen", "Meireles", "Zeeman", "Kowalczyk", "Iversen", "Rasmussen",
     ];
 
+    /// <summary>#741 · Every name a stranger can be given, for an AUDIT that has to walk them all — the
+    /// canon sweep that proves no thread heading ever names a person the game has not printed. Nothing in
+    /// the game iterates these; a stranger gets exactly one of each, from <see cref="Who"/>.</summary>
+    public static IReadOnlyList<string> GivenNames => Given;
+
+    /// <summary>…and the family names, for the same sweep.</summary>
+    public static IReadOnlyList<string> FamilyNames => Family;
+
     /// <summary>What they did. Every one of these is a real discipline with an ugly application, and none of
     /// them names the application — that is the whole register.</summary>
     private static readonly string[] Discipline =
@@ -316,7 +324,15 @@ public static class FieldDossier
     /// <summary>One sentence the assembly produces: what it is, the glyph the field book files it under, and
     /// the words. <paramref name="Text"/> is <b>exactly</b> what goes into the book — the card may dress it,
     /// the record never does.</summary>
-    public readonly record struct Saying(Beat Beat, string Glyph, string Text);
+    /// <param name="Subjects">
+    /// #741 v1 · WHAT THIS SENTENCE IS ABOUT, declared here because <b>here is where it is known</b>: this
+    /// file built the sentence out of a person, an employer and a door, so it can say so without anybody
+    /// downstream ever reading the prose back (<see cref="CaseSubjects"/>).
+    ///
+    /// <para>Every personal name declared is a name this same sentence PRINTS — that is the law, and the
+    /// canon sweep checks it against the words rather than trusting the promise.</para>
+    /// </param>
+    public readonly record struct Saying(Beat Beat, string Glyph, string Text, string Subjects = "");
 
     /// <summary>The first thing said over an assembled kit: a name, out of the pieces.</summary>
     public static string WhoTheyWereLine(in Person who) =>
@@ -337,14 +353,31 @@ public static class FieldDossier
         var said = new List<Saying>();
         if (HasIntroduction(bodyId, siteSalt, roomIndex, everySaying))
         {
-            said.Add(new Saying(Beat.TheIn, "🎟", IntroductionLine(InTheKit(bodyId, siteSalt, roomIndex))));
+            // #741 · The in NAMES the dead person (the phrase IS their name) and the door it opens. Both
+            // are printed in the sentence the captain reads, three lines down.
+            Introduction intro = InTheKit(bodyId, siteSalt, roomIndex);
+            said.Add(new Saying(Beat.TheIn, "🎟", IntroductionLine(intro),
+                CaseSubjects.Line(CaseSubjects.Person(who.Name), CaseSubjects.Place(intro.Where))));
         }
         if (KinKnowsSomething(bodyId, siteSalt, roomIndex, everySaying))
         {
+            // #741 · And this one names NOBODY, which is the honest answer. The family's lead is four
+            // sentences about letters, an inventory and a countersignature, and not one of them prints a
+            // name — so it declares no subject and joins no stack. A gist forced to be about something
+            // would be the extraction this file refuses to be.
             said.Add(new Saying(Beat.WhatTheFamilyKnows, "🔎", LeadHint(bodyId, siteSalt, roomIndex)));
         }
-        said.Add(new Saying(Beat.WhoIsWaiting, "📇", KinLine(who, WhoIsWaiting(bodyId, siteSalt, roomIndex))));
-        said.Add(new Saying(Beat.WhoTheyWere, "🗂", WhoTheyWereLine(who)));
+
+        NextOfKin kin = WhoIsWaiting(bodyId, siteSalt, roomIndex);
+        said.Add(new Saying(Beat.WhoIsWaiting, "📇", KinLine(who, kin),
+            CaseSubjects.Line(
+                CaseSubjects.Person(kin.Name), CaseSubjects.Person(who.Name), CaseSubjects.Place(kin.Where))));
+
+        // #741 · The employer is an OFFICE — a directorate, a contractor, an institute — and it is stamped
+        // on this sentence in the words the game prints. It is the subject that can rhyme across two moons,
+        // which is the whole reason the stack is worth a page.
+        said.Add(new Saying(Beat.WhoTheyWere, "🗂", WhoTheyWereLine(who),
+            CaseSubjects.Line(CaseSubjects.Person(who.Name), CaseSubjects.Office(who.Employer))));
 
         return InTheOrderTheyAreRead(said);
     }

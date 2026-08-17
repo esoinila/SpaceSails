@@ -43,6 +43,17 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* #841 / Lab 46 · WHAT THIS FRAME COST, ON THE GLASS. Only ever present under ?perf=1 — the probe is
+       null otherwise and this element with it. It is HTML rather than canvas text on purpose: #782's law is
+       about size and contrast, and the sweep next door can only read a rule it can find in a stylesheet, so
+       the perf line wears .perf-hud (its own opaque ground, its own real font size) instead of being a 10px
+       monospace whisper nothing could check. The reading is the rolling window, refreshed on the page's own
+       5 Hz HUD throttle; the copy that goes into the lab's table is the console block. *@
+    @if (_deckView?.Perf is { HudLine.Length: > 0 } perf)
+    {
+        <div class="perf-hud" role="status">@perf.HudLine</div>
+    }
+
     @* Start picker (2026-07-08): "why always Earth?" — a boot chooser of named start points, over
        the freshly-built world. Skips the long transit for playtesting and lets a run begin at a gas
        giant or already ashore. Suppressed when /map?start=<id> already picked one. Same registry. *@
@@ -2077,6 +2088,9 @@
                     @(_satchelPage switch
                     {
                         SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
+                        // #741 v1 · Not the tab's own word twice over: a page title is the QUESTION the page
+                        // answers, the way the compass's is ("why you are down here").
+                        SatchelPage.Threads => "🧵 WHAT YOU WROTE DOWN TWICE",
                         SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
                         // #828 · The bucket is NAMED, and it is the one the boots are at — never "a bin".
                         // Away from one the title falls back to the verb, because a page whose fixture has
@@ -2109,6 +2123,19 @@
                             title="What the ground has told you"
                             @onclick="() => _satchelPage = SatchelPage.Notes">
                         📓 NOTES
+                    </button>
+                    @* #741 v1 · THREADS, beside the book and reading the same one. Owner's issue: "a third
+                       tab — THREADS — grouping existing entries by the entities they already name… the
+                       THREAD is just the stack of what you wrote about one name, and the captain draws the
+                       line." ALWAYS drawn, like the compass: an empty page here is an answer, and a tab
+                       that appeared only once a case was forming would be missing exactly while a captain
+                       wondered whether the game did this at all. The count is the book's, not a badge. *@
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Threads ? "on" : "")"
+                            title="@SpaceSails.Core.CaseSubjects.TabHint"
+                            @onclick="() => TheSatchelTurnsTo(SatchelPage.Threads)">
+                        @SpaceSails.Core.CaseSubjects.TabLabel@(TheBookThreads() is { Count: > 0 } stacks
+                            ? $" ({stacks.Count})" : "")
                     </button>
                     @* #727 · THE THIRD POCKET. What you learned (📓) and what you owe (🗺) are two different
                        questions, and the book keeps its opinionless voice by not being asked the second one.
@@ -2366,6 +2393,74 @@
                                 nothing to say — the book does not know which, and neither do you.
                             </div>
                         }
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Threads)
+                {
+                    @* ── #741 v1 · THE THREADS ────────────────────────────────────────────────────────────
+                       Owner's issue: "nothing collects every note that mentions The Tilt's harbourmaster, or
+                       OFFICE OF WORKS… the player who wants the big picture re-reads the whole book and does
+                       the string-and-corkboard in their head — which is fine for three entries and hopeless
+                       at thirty."
+
+                       So: one heading per name the book has written down MORE THAN ONCE, and under it every
+                       entry that wrote it, oldest first. The rows are the notebook's own nodes — the same
+                       titles, the same bullets, the same red-line marks — because a second way of drawing an
+                       entry would be a second reading of one book.
+
+                       IT CONCLUDES NOTHING. No arrow, no ranking, no "these are related". The stack is the
+                       juxtaposition and the juxtaposition is the whole argument; the captain draws the line,
+                       with the same pen, and the book keeps no opinion about what it means. *@
+                    <div class="satchel-sub">@SpaceSails.Core.CaseSubjects.Blurb</div>
+
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } stackSaid)
+                    {
+                        <div class="satchel-outcome">@stackSaid</div>
+                    }
+
+                    @if (TheBookThreads() is { Count: > 0 } threads)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.CaseSubjects.SubjectThread stack in threads)
+                            {
+                                SpaceSails.Core.CaseSubjects.SubjectThread run = stack;
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Entries.Count)
+                                    </span>
+                                    @* The pen, offered where the stack is. Never disabled and never hidden
+                                       (#212/#603): pressed on your feet or at a bar top it answers with the
+                                       sentence that says what would fix it, exactly as the pen itself does. *@
+                                    <button type="button" class="satchel-filter thread-pen"
+                                            title="@SpaceSails.Core.CaseSubjects.ConnectTheStackHint"
+                                            @onclick="() => RunThePenDownTheStack(run)">
+                                        @SpaceSails.Core.CaseSubjects.ConnectTheStackLabel
+                                    </button>
+                                </div>
+                                <NotebookNodes Rows="@NotebookPage(stack.Entries)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.CaseSubjects.NothingTwiceLine</div>
                     }
                 }
                 else if (_satchelPage == SatchelPage.Bin)
@@ -3252,6 +3347,22 @@
                        than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
                        keep`, which is the only thing the game is ever allowed to call him. *@
                     <button type="button" class="btn btn-sm btn-outline-info" title="@($"Ask {keep.Name} what they've heard lately")" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                }
+                @* ── #770 · BOOK A ROOM AT THE COUNTER ─────────────────────────────────────────────────
+                   Owner's idea: the block rents its park-view suites by the watch, and the plate on their
+                   doors has said BOOK AT THE COUNTER since #816 with nowhere to do it. TWO PRICES, because
+                   the ring has two sizes of them (#775's amenity gradient at the till) — and both buttons
+                   are drawn whatever this floor happens to have on it (#212: an affordance never hides),
+                   with every refusal said out loud in the notice slot above (#603).
+
+                   The verb is the counter's, so it lives here rather than at a door: it is the same one
+                   press that already buys a glass, a round and a receiver at this desk. *@
+                @if (TheCounterRentsRooms)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@BookingHint" @onclick="() => BookARoom(false)">@SpaceSails.Core.Interior.RoomBooking.BookLabel(false)</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@BookingHint" @onclick="() => BookARoom(true)">@SpaceSails.Core.Interior.RoomBooking.BookLabel(true)</button>
                 }
                 @* #763 · THE BACK COUNTER. Drawn only where the venue admits to having one
                    (Barkeep.BackCounter) — carrying a receiver is legal everywhere and selling one over the

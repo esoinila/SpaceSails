@@ -718,6 +718,14 @@ public partial class Map
         }
         else
         {
+            // #841 / Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
+            // #905's frame ledger sweeps every field of this component into a pinned hash, and a wall-clock
+            // stamp is the one kind of reading that cannot be in it. Null unless ?perf=1 armed the probe;
+            // DeckView.Draw closes the bracket. What this catches that Draw alone cannot is the surface HUD
+            // the page BUILDS before it can call Draw at all — blips, smudges, ghosts, beacons, the swept
+            // grid — which is draw-side work by any honest reading and is not inside the conductor.
+            _deckView?.Perf?.OpenWalkFrame();
+
             // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
             // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
             // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.

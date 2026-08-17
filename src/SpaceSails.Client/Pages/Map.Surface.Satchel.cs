@@ -117,6 +117,13 @@ public partial class Map
         /// <summary>What the ground has told you.</summary>
         Notes,
 
+        /// <summary>#741 v1 · THREADS — the same book, stacked by the names it has written down more than
+        /// once. Always drawn, like the compass and unlike the spread: an empty threads page is an ANSWER
+        /// ("nothing in this book names the same thing twice, yet"), and a tab that vanished until the case
+        /// was already forming would hide the page exactly while a captain was wondering whether it
+        /// existed.</summary>
+        Threads,
+
         /// <summary>#784 · THE SPREAD — the papers laid out on the table, one dig at a time. Reachable only
         /// while seated: the tab is not drawn on your feet, and the page itself refuses out loud if you
         /// somehow arrive on it standing (<see cref="SeatedSpread"/>).</summary>
@@ -578,14 +585,29 @@ public partial class Map
     }
 
     /// <summary>#686 · The record half alone, for a line whose SAYING happens inside an open dialog — the
-    /// pulse would play under that dialog's blur, but the book must still remember.</summary>
-    private void FileNote(string text, string glyph)
+    /// pulse would play under that dialog's blur, but the book must still remember. What almost every one of
+    /// the four dozen filing sites calls, because almost every sentence in the game names nothing the game
+    /// has printed.</summary>
+    private void FileNote(string text, string glyph) => FileNoteAbout(text, glyph, "");
+
+    /// <summary>#741 v1 · The same act, by an author that KNOWS WHAT ITS SENTENCE IS ABOUT — it built the
+    /// words out of a person, an office and a door, so it says so
+    /// (<see cref="Core.CaseSubjects.Line(Core.CaseSubjects.Subject[])"/>) and nothing downstream ever reads
+    /// the prose back to find out.
+    ///
+    /// <para>A separate name rather than a third parameter on <see cref="FileNote"/>: the two-argument form
+    /// is the one four dozen sites call and several guards reach for by reflection, and a defaulted
+    /// parameter would quietly change that signature for all of them.</para></summary>
+    private void FileNoteAbout(string text, string glyph, string subjects)
     {
         if (_surface is not { } ex || string.IsNullOrWhiteSpace(text))
         {
             return;
         }
-        _fieldNotes = [.. Core.FieldNotes.Append(_fieldNotes, new Core.FieldNote(
-            text, SimTime, Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name), glyph))];
+
+        var note = new Core.FieldNote(
+            text, SimTime, Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name), glyph, subjects);
+        _fieldNotes = [.. Core.FieldNotes.Append(_fieldNotes, note)];
+        TheThreadBadgeGoesOnTheCard(note);
     }
 }

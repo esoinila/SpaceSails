@@ -235,7 +235,51 @@ public partial class Map
         _renderer!.DrawPolyline(barrel, ShipColor with { A = 200 }, 2f);
 
         _renderer!.DrawCircle(sx, sy, 4f, ShipColor, ShipColor);
+
+        // #933 — …and where she is GOING, in the frame the plan is being read in. After the dot, so the
+        // arrowhead sits on top of her rather than under her.
+        DrawVelocityArrowhead(sx, sy);
+
         _renderer!.DrawText(sx + 8, sy - 6, "Ship", ShipColor);
+    }
+
+    /// <summary>
+    /// #933 · WHICH WAY SHE IS GOING — a small arrowhead off the ship marker, in her own ink.
+    ///
+    /// <para>Owner, 2026-08-17 (playing the flight side): <i>"our ship shape on the map could indicate little
+    /// better about where it is going if it was depicted as arrow like triangle … more like add shape that
+    /// points to the direction the ship is going even when its motion is stopped during the burn parameter
+    /// selection."</i></para>
+    ///
+    /// <para><b>Drawn every map frame, paused included.</b> This sits inside <c>DrawShip</c> with no gate on
+    /// the clock, which is the whole point of the request: velocity is STATE, not motion. Standing still at
+    /// the plotting desk with the sky frozen, the captain must still be able to see which way the ship is
+    /// carrying — otherwise the one moment he most needs the answer is the one moment the map refuses it.</para>
+    ///
+    /// <para><b>The frame is the one the plan is being read in</b> (#135/#926) — the same
+    /// <c>FrameRelativeVelocity</c> the <c>v helio</c> / <c>v rel {body}</c> readout is built from, so the
+    /// shape and the number can never come to say different things. Below
+    /// <see cref="VelocityArrow.RingBelowMps"/> the dart collapses to a ring: parked, or co-moving with the
+    /// frame body, and honest about it.</para>
+    ///
+    /// <para><b>Two shapes, not one.</b> The burn's aim keeps its own picture at the node (#916) — that is
+    /// PUSHING. This is GOING, and it never swings to the burn.</para>
+    /// </summary>
+    private void DrawVelocityArrowhead(float sx, float sy)
+    {
+        Vector2d velocity = FrameRelativeVelocity(SimTime);
+        if (VelocityArrow.ShowsRing(velocity.Length))
+        {
+            _renderer!.DrawCircle(sx, sy, VelocityArrow.RingRadiusPx, null, ShipColor with { A = 200 }, 1.5f);
+            return;
+        }
+
+        // World Y is up, canvas Y is down (Camera.WorldToScreen flips it) — so the screen angle is the world
+        // angle mirrored, and the flip lives HERE, once, at the one call that crosses from one to the other.
+        double screenRad = Math.Atan2(-velocity.Y, velocity.X);
+        Span<float> head = stackalloc float[6];
+        VelocityArrow.Points(screenRad, sx, sy, head);
+        _renderer!.DrawPolygon(head, ShipColor with { A = 200 }, ShipColor);
     }
 
     /// <summary>

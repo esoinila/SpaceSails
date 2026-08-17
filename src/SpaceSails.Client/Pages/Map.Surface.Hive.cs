@@ -908,7 +908,11 @@ public partial class Map
         // The book, unchanged: the same sentences under the same glyphs in the same order they were said.
         foreach (FieldDossier.Saying said in debrief)
         {
-            FileNote(said.Text, said.Glyph);
+            // #741 v1 · …and WHAT EACH ONE IS ABOUT, straight off its author. Core composed the sentence out
+            // of a person, an employer and a door and declared them in the same record; the client copies
+            // the field across and never once reads the words back. The badge that says a stack just grew
+            // ("second entry about …") composes itself onto THIS card, inside FileNote, per #736.
+            FileNoteAbout(said.Text, said.Glyph, said.Subjects);
 
             // #585: and what the family knows is a PLACE. This is the owner's own chain closing — "if we
             // know what happened to someone we get contacts easily by contacting their loved ones, in some

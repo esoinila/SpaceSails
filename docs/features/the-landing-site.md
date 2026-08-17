@@ -704,6 +704,36 @@ law that was already true — it was watched go red against a second `List<Core.
 `Map.Surface.cs`. Core went 2 of 4 against a `Here` that read the log itself in written order; the other two
 describe brand-new API and could not be red, which is said here rather than dressed up.)*
 
+12.6 **THREADS — what the book has already written down more than once** (#741 v1). Owner: *"that is also
+the 'conspiracy red-line detective'-view in a sense, to try to understand the big picture."* The red pen was
+the first half: the captain takes it out at a table and draws a line between two titles, and the book keeps
+the line and no opinion about it. The half that was missing is the one the player was doing in their head —
+collecting every entry that names OFFICE OF WORKS, or The Tilt, or the stranger whose name is on three
+different sentences of one kit. So a fourth pocket sits beside the book (**🧵 THREADS**): one heading per
+name the book has written down at least twice, with every entry that wrote it stacked underneath in the
+order it was written. The rows are the notebook's own expanding nodes, and the pen works from them, with a
+heading-level press that runs one line down the whole stack. **A subject comes from the AUTHOR, never from
+the prose** — the gist that says *"a specialist in continuity engineering, carried out here by a directorate
+that files under Labour"* built that sentence out of a person and an office, so it declares both at writing
+time and nothing ever reads the words back; a subject grepped out of a sentence would find one office on
+Tuesday and none the day somebody reworded a card. **And never a personal name the game has not printed:** a
+stranger only becomes a heading because the very entry under it prints their name, which is how the dossier's
+oldest quiet rhyme — the in you are carrying *is* the dead person's own name, and the kin still waiting
+shares it — finally collects into one stack without a single new fact being invented. The page concludes
+nothing: no arrow, no ranking, no "these are related", because the juxtaposition is the whole argument and
+the line is still the captain's to draw. When a stack becomes a stack the card in front of the captain gains
+one line — *"second entry about OFFICE OF WORKS · SUB-REGISTRY"* — composed onto the card itself (#736's
+law) and never fired at a HUD a backdrop is standing in front of. Empty, the page says so and promises
+nothing: *"Nothing in this book names the same thing twice. Yet."*
+*(Enforced: `TheThreadsAreTheAuthorsTests` in Core — a source-shape guard that no subject is ever read out of
+a note's words, a sweep over every landable body's kits for a real spread of distinct offices, doors and
+printed strangers, the canon sweep that every personal subject is printed by its own entry, the badge landing
+on the second entry and counting in the house's words, and a pre-#741 save loading as a book with nothing
+said twice. `TheThreadsPageIsInTheSatchelTests` in the client for the tab, the page asking Core for its
+grouping and arranging nothing itself, the badge being a card line rather than a banner, and #905's ledger —
+this build adds no field to `Map`. Every one of them watched go red; the verbatim runs are in the pull
+request.)*
+
 ## 13 · The Hive — the ground under the ground
 
 A clandestine underground facility under a landing site, reached by a camouflaged lift head on the surface
