@@ -44,16 +44,18 @@ public partial class Map
             // give it a quiet receipt rather than the coin fanfare (no money changed hands).
             if (q.Kind == QuestKind.Favor)
             {
-                q.State = QuestState.TurnedIn;
                 _contacts.ApplyCredit(q.Giver, q.Giver,
                     FavorBank.RepaymentTxn(q.Reward, SimTime, $"quiet delivery — favor to {GiverDisplay(q.Giver)} repaid"));
                 _favorObligations.RemoveAll(o => string.Equals(o.ContactId, q.Giver, StringComparison.OrdinalIgnoreCase));
-                ShowPulseMessage($"The favor's square with {GiverDisplay(q.Giver)} — the debt's off the books. 📡");
+                AdvanceMission(q, QuestState.TurnedIn,
+                    $"The favor's square with {GiverDisplay(q.Giver)} — the debt's off the books. 📡");
                 continue;
             }
 
             _credits += q.Reward;            // the coin lands — but as part of the fanfare, not alone
-            q.State = QuestState.TurnedIn;
+            // #727 · the one writer, told nothing: the fanfare below IS this transition's beat, and it is a
+            // card of its own — already on top of anything a banner would have gone behind (#736).
+            AdvanceMission(q, QuestState.TurnedIn);
 
             // Book a real, saved fact: we now have a history with this task giver.
             ContactHistory history = _contacts.RecordCompletion(q.Giver, q.Giver, q.Reward, SimTime);
@@ -130,22 +132,13 @@ public partial class Map
     private Stations.Captain.QuestItem[] QuestCards() =>
         _quests.AsEnumerable().Reverse().Select(q =>
         {
-            (string label, string kind) = (q.Kind, q.State) switch
-            {
-                (QuestKind.Intel, _) => ("🕸 Tip taken", "paid"),
-                (QuestKind.Fetch, QuestState.Active) when q.SourceBodyId is { } src && IsBodyHidden(src)
-                    => ("🔭 Work the tip — scan to find her", "active"),
-                (QuestKind.Fetch, QuestState.Active) => ("▶ Fly to the roadster, prise the wallet", "active"),
-                (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
-                (QuestKind.Crack, QuestState.Active) => ($"▶ Crack hatch {q.TargetShipId} — code {q.Pin}", "active"),
-                (QuestKind.Crack, QuestState.PickedUp) => ("📦 Package lifted — take it to The Fixer", "active"),
-                (QuestKind.FetchCache, QuestState.Active) => ($"🗺 Dig at the X on {BodyName(q.SourceBodyId ?? "")}", "active"),
-                (QuestKind.FetchCache, QuestState.PickedUp) => ($"📦 Chest lifted — carry it to {q.TargetCallsign}", "active"),
-                (QuestKind.Favor, QuestState.Active) => ($"📡 Favor owed — quiet delivery to {q.TargetCallsign}", "active"),
-                (_, QuestState.Active) => ("▶ On the hook", "active"),
-                (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
-                _ => ("💰 Paid", "paid"),
-            };
+            // #727 · The status label IS this contract's current step, and it is read out of the ONE place
+            // that knows what step a contract is on — Map.Quests.Compass.CurrentStepOf. The satchel's
+            // MISSIONS pane asks the same call for the same quest, which is what makes the desk and the pane
+            // one model rather than two lists: a foot-level line down a lift shaft is this label, byte for
+            // byte, and a wording changed here changes it there in the same edit.
+            (MissionStep current, string kind) = CurrentStepOf(q);
+            string label = current.Text;
             // #175: the delivery instruction is kind-aware — a MOON haven has no ⚓ dock, you park in
             // its orbit; only a STATION haven is "berth there". Saying the right one kills the trap the
             // owner hit hunting for a Dock button that a moon never has.

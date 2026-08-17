@@ -88,6 +88,29 @@ desk that acts on it, context pre-loaded.** Receipt messages when a tip lands no
 cheat: `?tip=route` seeds a route tip so the Tips & intel rendering is reachable without a bar
 (see [haven-interior-walk.md](haven-interior-walk.md)).
 
+## The carried compass — MISSIONS in the satchel (#727)
+
+Owner, 2026-08-06: *"a mission that works outside the ship UI is something new … we should filter out
+/ minimize ship-specific stuff to appropriate ('cannot do in this UI level, but high level: go to
+Moon X') type info in the carried mission UI."* The satchel (`I`) has a third tab, **🗺 MISSIONS**,
+beside 🎒 CARRIED and 📓 NOTES — what you owe, kept apart from what you learned so the field book keeps
+its opinionless voice. The law under it is **one mission model, two projections, never two mission
+lists**: the pane renders the SAME `_quests` the captain's desk renders, and both read a contract's
+current step out of one call (`Map.Quests.Compass.CurrentStepOf`), so a foot-level line read in a
+basement is the desk's own status label byte for byte. Core (`MissionProjection.OnFoot`) does the
+fold: every step carries a **UI level** decided by its own (kind, state) pair — *ship* (burn, coast,
+clamp, aim the scope), *berth* (buy, sign, collect), *foot* (key a code, dig, carry, hand over) — and
+a step you can act on where you stand is spelled out verbatim while everything else, foot steps on
+other worlds included, collapses to one sentence: **"⛵ return to the ship — next: Luna"**. The full
+ladder stays the chair's. The pane is **read-only in v1** and renders no control at all — not a greyed
+one, not a hidden one — because a dead affordance in a satchel is the lift-that-only-went-down bug
+wearing a UI. Arriving on foot still completes the step the chair issued (the break-in's keypad and
+its back-room shelf, the cache dig, both hand-offs at the Fixer's table), and every advance in the
+client now goes through **one writer**, `AdvanceMission`, which speaks through
+`SayItWhereTheyAreLooking` — so a receipt earned with a card or the satchel in front of you lands on
+that pop-up rather than on a banner behind its backdrop (#736). Guarded by `TheCarriedCompassTests`
+(Core) and `TheCarriedMissionsPaneTests` (Client).
+
 ## Persistence
 
 Session-only, same as everything else in this build — the mission lives in a field on
