@@ -327,9 +327,27 @@ public sealed partial class Map
         /// twenty seconds has walked away by any honest reading.</summary>
         public void HeIsOneFrameFurtherIntoTheWalkUp(double dt) => WalkUpFor += dt;
 
-        /// <summary>#833 · He is not crossing the floor any more — he is at arm's length, or he is standing at
-        /// a door. The clock is deliberately NOT reset here; see <see cref="Check"/>.</summary>
-        public void HeStopsWalkingUp() => WalkingUp = false;
+        /// <summary>
+        /// #833 · He is not crossing the floor any more — he is at arm's length with a card coming up, or he is
+        /// standing at a door.
+        ///
+        /// <para>#920 · AND THE CLOCK STOPS WITH HIM. This was the one road out of the walk-up that left
+        /// <see cref="WalkUpFor"/> running: the other two zero it (<see cref="HeGivesUp"/> when he thinks better
+        /// of it, <see cref="HeCallsItIn"/> when the walk-up becomes a run), and this one — the road THROUGH the
+        /// card, which is the road the feature is for — did not. #906's sweep counted <b>1,972</b> guard-frames
+        /// of thirteen rounds carrying a walk-up clock on a man who had stopped walking up. Nothing read it
+        /// while it was stale — only the walk-up reads it, and <see cref="HeStartsWalkingUp"/> zeroes it — so
+        /// not one frame of the round is walked differently for this line; but it is not free, because #906's
+        /// transcript writes down every field of a guard and two of the thirteen digests moved on those 1,972
+        /// lines and on nothing else. That trade is worth making: a spent clock that reads as a running one is
+        /// a field waiting for the first caller who asks it an honest question, and <see cref="Check"/> now
+        /// says it can never happen.</para>
+        /// </summary>
+        public void HeStopsWalkingUp()
+        {
+            WalkingUp = false;
+            WalkUpFor = 0;
+        }
 
         /// <summary>#833 · HE THINKS BETTER OF IT and goes back to work, from wherever the walk-up left him,
         /// with the cooldown running so the floor does not simply hail you again on the next frame.</summary>
@@ -481,9 +499,9 @@ public sealed partial class Map
         // ── #870 lane 6′d · THE POSTURES THAT CANNOT COEXIST ─────────────────────────────────────
 
         /// <summary>
-        /// #870 lane 6′d · IS THIS ONE MAN? Seven pairs that may never be true together, asked of every guard
-        /// after every frame of every case in <c>EveryRoundFingerprintsTheSameTests</c> — 13 cases, 7,100
-        /// frames — and never once false.
+        /// #870 lane 6′d · IS THIS ONE MAN? Eight pairs that may never be true together (#920 added the
+        /// eighth), asked of every guard after every frame of every case in
+        /// <c>EveryRoundFingerprintsTheSameTests</c> — 13 cases, 7,100 frames — and never once false.
         ///
         /// <para>Each is a pair of postures, not a tidy-up: <c>CallingIn</c> above zero on a man who is not
         /// coming is a radio call for a run that is over; a <c>CoverAt</c> on a man who is not held is a
@@ -491,21 +509,31 @@ public sealed partial class Map
         /// the catch turn is the hide working for somebody it was never meant to work for. Every one of them
         /// would have been reachable while these were 28 public fields and eleven verbs wrote them.</para>
         ///
-        /// <h3>AND THE THREE THINGS THAT DO COEXIST, WHICH ARE NOT ON THIS LIST AND WHY</h3>
+        /// <h3>AND THE TWO THINGS THAT DO COEXIST, WHICH ARE NOT ON THIS LIST AND WHY</h3>
         ///
         /// <list type="bullet">
         /// <item><b><c>Held</c> with <c>WalkingUp</c></b> — a walk-up that a bench has stopped. The hold arm sits
         /// ABOVE the walk-up arm precisely so a made tail stops crossing the floor without forgetting that it
         /// was; the approach resumes when the captain stands up. Suspended, not contradicted.</item>
         /// <item><b><c>Standing</c> above zero with a live <c>Route</c></b> — a man who was standing out his five
-        /// seconds at a stop when something took him off the round (a door to wait at, a captain to walk out).
-        /// The stand is REMEMBERED across the detour, which is the same law: a detour is never a new state
-        /// machine.</item>
-        /// <item><b><c>WalkUpFor</c> above zero with <c>WalkingUp</c> false</b> — a spent clock. It is written to
-        /// zero by <see cref="HeStartsWalkingUp"/> and read only by the walk-up itself, so it can never be read
-        /// while stale; but it is left standing rather than swept, because the sweep would be a line of code
-        /// that exists to make a fact look tidier than it is. FILED, not fixed — the owner's call.</item>
+        /// seconds at a stop when something took him off the round. The stand is REMEMBERED across the detour,
+        /// which is the same law: a detour is never a new state machine.
+        /// <para>#920 looked at whether this one is a law too, because #906's sweep observes it ZERO times, and
+        /// it is not: it is reachable by construction. A man arrives at a stop
+        /// (<see cref="HeArrivesAtTheStop"/> gives him five seconds and no route), the captain shuts a cubicle
+        /// on him while he stands, and the wait at the door hands him a route to that door
+        /// (<c>Patrol.WaitOutsideTheCubicle</c>) on a frame where nothing has touched the stand — <c>Standing</c>
+        /// is spent only by <see cref="HeSpendsAFrameStanding"/>, which is the ROUND's arm and is not the arm he
+        /// is in. He is a man with five seconds owed him and somewhere to be. Asserting it would be an invariant
+        /// nothing has ever walked, which is a clause waiting to go red on somebody else's afternoon; the tally
+        /// in <c>TheTwoThatCoexistAndTheOneThatIsNowALaw</c> is where a case that reaches it would show
+        /// up.</para></item>
         /// </list>
+        ///
+        /// <para><b>#920 · AND THE THIRD IS NOW ONE OF THE EIGHT.</b> <c>WalkUpFor</c> above zero with
+        /// <c>WalkingUp</c> false — a spent clock — used to be the third thing on this list, tallied at 1,972
+        /// frames and filed rather than fixed. <see cref="HeStopsWalkingUp"/> zeroes it now, so the clock stops
+        /// when the walk-up does on all three roads out, and the pair is a law instead of a number.</para>
         /// </summary>
         /// <returns>The first contradiction, in a sentence, or <c>null</c> when he is one man.</returns>
         public string? Check() =>
@@ -523,6 +551,11 @@ public sealed partial class Map
                 ? "he has radio left to say and there is no run to say it for"
             : Why != PatrolBeat.Provocation.None && !AfterYou
                 ? $"he is carrying a reason ({Why}) and he is not coming after anybody"
+            // #920 · The eighth. A walk-up clock still running on a man who is not walking up: unread while
+            // stale, and a field that reads as a running clock when the walk is over is the fifth bug class
+            // sitting quietly, waiting for the first caller who asks it an honest question.
+            : WalkUpFor > 0 && !WalkingUp
+                ? $"he has been walking up for {WalkUpFor:0.###}s and he is not walking up"
             : null;
     }
 }
