@@ -25,7 +25,14 @@ namespace SpaceSails.Client.Pages;
 /// applied to it — cadence spent, seen-set filed, words logged — and then the seam raises nothing, because
 /// the caller's own card is the canvas. The collector's hail is the shape's first case: its picture has been
 /// on the BUSTED demand panel since #528, so an ordinary raise would have stacked a second modal showing the
-/// identical painting. Hosting is how a beat gets counted as told without being told twice.</item>
+/// identical painting. Hosting is how a beat gets counted as told without being told twice.
+/// <para>…and the seam checks the claim rather than taking it. Hosting hands the CANVAS to the caller and
+/// keeps the BOOKS here, which means the seam goes on writing "this was told" about a surface it no longer
+/// owns. So a hosted beat is admitted to the books only while <see cref="TheHostIsUp"/> says its card is
+/// really on the screen; a raise made without one is refused, unspent, and written into the ledger as an
+/// engine fault. #761's law is that a plot-significant moment reaches the player on the surface they are
+/// looking at — and a beat filed as told with nothing showing does not break that law loudly, it erases
+/// the evidence that it was broken.</para></item>
 /// </list>
 /// </summary>
 public sealed partial class Map
@@ -122,6 +129,23 @@ public sealed partial class Map
     /// </summary>
     private void ShowStoryBeat(StoryBeats.Beat beat, string? subject)
     {
+        // #777 follow-up · AND THE BOOKS ARE NOT COOKED. Hosting moved this beat's canvas to the caller, and
+        // with it the one thing the seam could previously guarantee on its own: that a beat it counted as
+        // TOLD had actually been put in front of somebody. Everything below this line writes the beat into
+        // the record — the cadence spends, the seen-set files, the log says it happened — and for a hosted
+        // beat every word of that is a claim about a surface this method does not own.
+        //
+        // The shipped edges do it right (both set the demand panel one statement before they knock), and
+        // three source-shape guards say so. But "the two callers that exist today are correct" is not the
+        // same law as "a hosted beat is never counted as told with nothing on the screen", and the third
+        // caller is the one nobody reviews. So the seam asks, at the only gate every route to the books
+        // passes through — RaiseStoryBeat comes here, and so does the deferred queue.
+        if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Hosted && !TheHostIsUp(beat))
+        {
+            RefuseTheHostlessRaise(beat, subject);
+            return;
+        }
+
         _beatsSpoken[SeenKey(beat, subject)] = SimTime;
 
         switch (StoryBeats.PresentationOf(beat))
@@ -148,6 +172,55 @@ public sealed partial class Map
         // sentences are ever written down.
         LogAutopilotEvent($"{StoryBeats.Title(beat)} — {StoryBeats.Caption(beat, subject)}");
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// #777 follow-up · IS THE CANVAS ACTUALLY ON THE SCREEN? The client's half of
+    /// <see cref="StoryBeats.HostCard"/>: Core names the host in prose because Core does not know what a card
+    /// is, and this is the one place that turns that sentence into a question the running game can answer.
+    ///
+    /// <para>Kept as a <c>switch</c> with no default arm on purpose, and the arm order matters less than what
+    /// is NOT here: there is no <c>_ => true</c>. A beat somebody marks
+    /// <see cref="StoryBeats.Presentation.Hosted"/> tomorrow and forgets to answer for here is refused rather
+    /// than waved through, because "I could not tell whether the player saw it" and "the player saw it" are
+    /// not the same answer, and only one of them is safe to write into the record.</para>
+    ///
+    /// <para>The hail's host is the demand panel and not merely <i>an open BUSTED encounter</i>. That
+    /// distinction is the whole of the check: the same object goes on to carry the freeze-frame, the
+    /// confiscation receipt and the clinic wake, and none of those show a collector's grapples. A raise that
+    /// landed on one of those stages would be counted as told over a picture of the captain dying.</para>
+    /// </summary>
+    private bool TheHostIsUp(StoryBeats.Beat beat) => beat switch
+    {
+        StoryBeats.Beat.CollectorHail => _busted is { Phase: BustedEncounter.Stage.Demand },
+        _ => false,
+    };
+
+    /// <summary>
+    /// #777 follow-up · A HOSTED RAISE WITH NO HOST UP, REFUSED LOUDLY.
+    ///
+    /// <para>Refused, rather than thrown: this is an engine mistake and not a player-reachable state, and a
+    /// modal seam that crashes the page is a worse bug than the one it is objecting to. What matters is that
+    /// the beat is <b>not counted</b> — the cadence stays unspent, the seen-set stays empty, and the beat can
+    /// still be told properly the next time its host really is up. #761's law is that a plot-significant
+    /// moment reaches the player on the surface they are looking at; a beat filed as told with nothing on the
+    /// screen does not break that law quietly, it deletes the evidence that it was broken.</para>
+    ///
+    /// <para>And loudly in the ledger, which is where this codebase writes things a person is meant to find:
+    /// the line names the beat, names the host Core says should have been up, and says outright that nothing
+    /// was counted. A guard asserts on that sentence rather than on the absence of a card, because an empty
+    /// screen is what a working seam and a broken one both look like — and a refusal that could only be
+    /// observed as an absence would need a field on the component, which is a thing #905's frame ledger
+    /// charges thirty re-pinned fingerprints for. The ledger already existed and is the louder surface
+    /// anyway.</para>
+    /// </summary>
+    private void RefuseTheHostlessRaise(StoryBeats.Beat beat, string? subject)
+    {
+        LogAutopilotEvent(
+            $"⚠ ENGINE — {beat} is a HOSTED story beat raised with no host on the screen"
+            + (string.IsNullOrWhiteSpace(subject) ? "" : $" (about {subject})")
+            + $". Its canvas is {StoryBeats.HostCard(beat)}; nothing was shown and NOTHING WAS COUNTED, so "
+            + "the beat can still be told when that surface is really up.");
     }
 
     /// <summary>
