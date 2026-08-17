@@ -24,8 +24,26 @@ Section D of that lab is one paragraph of honest refusal:
 > throttled and timers are clamped. A number obtained that way would have to be disowned in the same
 > paragraph that printed it.
 
-Nobody has measured it since. #841 has been open on a missing number for weeks, and both of its halves —
-viewport culling and room-granular content reveal — are lanes somebody would have to spend a day on.
+Nobody has measured it since. And #841 is an issue that asked for exactly this and closed by refusing itself
+a crew until it arrived — the owner, on the #834 wall-count flag (~270 → ~436 segments a floor):
+
+> *"If the content slows down the drawing a lot, then one solution could be to only draw the visible space to
+> the player. Like do we really need to draw furniture that are behind walls."*
+
+…and the issue's own first section, written the same evening:
+
+> **First: measure, then cull.** Nobody has yet shown the furniture SLOWS anything — the +60% wall count is a
+> flag, not a finding. … (NOT in an MCP-driven tab — hidden/driven tabs throttle rAF and their timings are
+> worthless; measure in a real foreground session or with the renderer's own frame counters). **If the frame
+> budget is fine, this issue waits.**
+>
+> … Filed from the owner's suggestion; **measurement gate first — no crew until the frame-time number
+> exists.**
+
+"Or with the renderer's own frame counters" is the door this lab walks through: the renderer had none, so it
+has some now. Both halves of #841 behind that gate — viewport culling, and room-granular content reveal —
+are lanes somebody would have to spend a day on, and neither should start before the table below has numbers
+in it.
 
 **So this lab is not a program. It is an instrument fitted to the game, and a recipe for reading it.** The
 harness is the shipping client with `?perf=1` on the URL; the laboratory is a real Chrome window, in the
@@ -226,6 +244,13 @@ time is going somewhere else (the flush, the walls, the figures) and *that* is t
 cutting the off-screen half of it is a visible win. Note that these two conditions are deliberately an **OR**:
 a floor that is slow for some other reason still deserves a look, and furniture that dominates a cheap frame
 is a trap waiting for a bigger floor.
+
+**Why the furniture passes and not the walls.** #841's second half is explicitly about CONTENTS and not
+structure — the owner's boundary is *"the furniture becomes relevant to us at close proximity … at least
+being in the same room"*, and the issue's own rule is **structure stays drawn**: walls, doorways and plates
+are the TTRPG map and the building's shape is what the plan gives you. So `DrawTheWalls` is deliberately not
+in the Y test. If the walls turn out to be the expensive pass, that is a finding for the *viewport* half (X),
+which culls structure too — and it would be worth writing down here as its own row.
 
 **And the rule's own escape clause, which matters most:** if `FlushToTheCanvas` dominates `TOTAL_Draw`, then
 **neither** half of #841 is the lane. Culling reduces the number of primitives recorded, which shortens the
