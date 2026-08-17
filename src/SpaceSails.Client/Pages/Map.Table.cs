@@ -292,8 +292,14 @@ public partial class Map
                 }
 
                 // Minutes apart, oldest first, the way an afternoon of turning rooms over reads.
+                //
+                // #741 v1 · The saying's own SUBJECTS ride across too, so the demo start boots with the
+                // THREADS page already showing the stack the whole cheat exists to demonstrate — the same
+                // dead person named in three of these six entries, which the dossier has always quietly
+                // held and nothing has ever said out loud.
                 at += 240.0;
-                book = Core.FieldNotes.Append(book, new Core.FieldNote(one.Text, at, place, one.Glyph));
+                book = Core.FieldNotes.Append(
+                    book, new Core.FieldNote(one.Text, at, place, one.Glyph, one.Subjects));
             }
         }
 

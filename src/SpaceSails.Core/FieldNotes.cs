@@ -133,7 +133,17 @@ public static class FieldNotes
 /// <summary>One thing found on the ground, kept verbatim. <paramref name="Place"/> is
 /// <see cref="FieldNotes.PlaceLabel"/>; <paramref name="Glyph"/> is the one-character hint the ledger card
 /// leads with so a long list can be skimmed.</summary>
-public readonly record struct FieldNote(string Text, double SimTime, string Place, string Glyph);
+/// <param name="Subjects">
+/// #741 v1 · WHAT THIS ENTRY IS ABOUT, <b>declared by the author that wrote it</b> and never worked out
+/// afterwards from the words — <see cref="CaseSubjects.Line(CaseSubjects.Subject[])"/> composes it and
+/// <see cref="CaseSubjects.On"/> reads it back.
+///
+/// <para>Optional, and last, so that every existing caller and every existing SAVE is untouched: a note
+/// filed before #741 (or by an author with nothing named in its sentence) carries an empty field and joins
+/// no thread, which is exactly what it always did.</para>
+/// </param>
+public readonly record struct FieldNote(
+    string Text, double SimTime, string Place, string Glyph, string Subjects = "");
 
 /// <summary>One ground you have searched, with everything you found there, newest first.</summary>
 public readonly record struct FieldFinding(

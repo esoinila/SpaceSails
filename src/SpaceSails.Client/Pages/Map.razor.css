@@ -4901,6 +4901,38 @@
     color: #7b8ca3;
 }
 
+/* #741 v1 · THE THREADS PAGE — one heading per name the book has written down more than once, with the
+   notebook's own nodes stacked under it. The heading takes .satchel-place's ink (it is the same rank of
+   thing: a grouping the book made, never a claim it is making) and adds the count and the pen. */
+.thread-head {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-top: 0.7rem;
+}
+
+.thread-head:first-child { margin-top: 0; }
+
+.thread-name {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    color: #d8b56a;
+}
+
+.thread-count {
+    font-size: 0.72rem;
+    color: #7b8ca3;
+}
+
+/* Quiet, and smaller than the reading: the pen offered at a stack must never read as the page's own
+   recommendation. It is a shortcut for the wrist, not for the judgement. */
+.satchel-filter.thread-pen {
+    margin-left: auto;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+}
+
 /* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
    universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
    the modals, pointer-events NONE so it can never eat a click during a fight. */
