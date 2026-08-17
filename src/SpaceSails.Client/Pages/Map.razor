@@ -3015,6 +3015,16 @@
             {
                 <div class="deck-bank-notice small">@note</div>
             }
+            @* #781 · THE TELL, ON THE SECOND LINE. Owner: "There should be a bar keep there (really like
+               hidden security guard)" — and the whole of him is here, in one sentence a watch, under the one
+               he greeted you with. It is never a speech and never in quotes: nobody in this room remarks on
+               it, and the game does not either. Core owns the three sentences and which one this shift wears
+               (off the FROZEN watch, never a clock); this draws it only where somebody is behind the counter,
+               which on a dead watch is nobody at all. *@
+            @if (TheKeepsTell() is { } tell)
+            {
+                <div class="deck-offer-blurb small text-secondary">@tell</div>
+            }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
             @* #306/#308/#347 The drink as a two-edged trust maneuver, OFFER-FIRST (owner 2026-07-18: "The
                person may refuse the drink here. That possibility should be determined first"). Extending the
@@ -3106,7 +3116,10 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
                             title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
-                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                    @* #781 · The tooltip names WHOEVER is behind this counter, off Core's own field, rather
+                       than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
+                       keep`, which is the only thing the game is ever allowed to call him. *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@($"Ask {keep.Name} what they've heard lately")" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
                 }
                 @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
                    (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@

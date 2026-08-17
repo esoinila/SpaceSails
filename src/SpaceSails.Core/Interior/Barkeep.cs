@@ -41,17 +41,24 @@ public sealed record Barkeep(
     public string Greeting => Welcome
         ?? $"“What'll it be? House special's {DrinkName} — {DrinkPrice} cr a glass.”";
 
-    /// <summary>A cheap tip, rotated deterministically by sim time (hourly) — flavor intel for now, the
-    /// same no-wall-clock idiom the news wire and rum lines use, so it never flickers frame to frame.</summary>
-    public string RumorAt(double simTime)
+    /// <summary>#781 · WHICH tip this hour is — the one place the hourly rotation is worked out, so a caller
+    /// that needs to know what the rumour was ABOUT (the keep's own, <see cref="TheKeep.TopicOf"/>) reads the
+    /// index the sentence itself came off rather than re-deriving it beside it. Two answers to "which rumour"
+    /// is this project's fifth bug class with a glass in its hand. −1 where there is nothing to say.</summary>
+    public int RumorIndexAt(double simTime)
     {
         if (Rumors.Count == 0)
         {
-            return "The barkeep just shrugs — quiet week for gossip.";
+            return -1;
         }
         int i = (int)((long)(simTime / 3600) % Rumors.Count);
-        return Rumors[i < 0 ? i + Rumors.Count : i];
+        return i < 0 ? i + Rumors.Count : i;
     }
+
+    /// <summary>A cheap tip, rotated deterministically by sim time (hourly) — flavor intel for now, the
+    /// same no-wall-clock idiom the news wire and rum lines use, so it never flickers frame to frame.</summary>
+    public string RumorAt(double simTime) =>
+        RumorIndexAt(simTime) is int i && i >= 0 ? Rumors[i] : "The barkeep just shrugs — quiet week for gossip.";
 
     /// <summary>Pour the house special: debit <see cref="DrinkPrice"/> if the purse covers it. Pure —
     /// returns the new purse, whether it poured, and the in-character receipt line.</summary>
