@@ -52,10 +52,7 @@ public sealed partial class Map
             // any route he had clicked, which would otherwise walk him out from under the escort.
             _host.CancelAutoWalk(false);
 
-            g.Route = planned.Route;
-            g.Standing = 0;
-            g.Retries = 0;
-            g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+            g.HeStartsWalkingYouOut(planned.Route);
             Escort = g;
             EscortCar = (sx, sy);
             EscortSeconds = 0;
@@ -79,7 +76,7 @@ public sealed partial class Map
         private void WalkTheEscort(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
         {
             EscortSeconds += dt;
-            g.RePlanIn -= dt;
+            g.HeCountsDownToARePlan(dt);
             (double sx, double sy) = EscortCar;
 
             double hx = sx - g.X, hy = sy - g.Y;
@@ -101,7 +98,7 @@ public sealed partial class Map
             {
                 if (g.Route is not { Active: true } || g.RePlanIn <= 0)
                 {
-                    g.RePlanIn = PatrolBeat.RePlanEverySeconds;
+                    g.HeWillRePlanInAWhile();
                     AutoWalk.Attempt again = AutoWalk.Plan(
                         true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(sx, sy),
                         walls, DeckPlan.AvatarRadius,
@@ -114,7 +111,7 @@ public sealed partial class Map
                         TheCutToTheLift(sx, sy);
                         return;
                     }
-                    g.Route = again.Route;
+                    g.HeTakesTheRoute(again.Route);
                 }
 
                 SpendTheStride(g, dt, walls);
@@ -199,10 +196,7 @@ public sealed partial class Map
             EscortSaidPumps = false;
             g.Vx = 0;
             g.Vy = 0;
-            g.Route = null;
-            g.Retries = 0;
-            g.SinceStop = 0;
-            g.Standing = PatrolBeat.StandSeconds;
+            g.HeIsDoneWalkingYouOut();
         }
 
         /// <summary>

@@ -122,20 +122,20 @@ public sealed partial class Map
             {
                 int leg = PatrolBeat.StartLeg(Beat.Count, i, System.Math.Max(1, heads));
                 PatrolBeat.Stop at = Beat[leg];
-                Guards.Add(new Guard
+                var man = new Guard
                 {
                     DeckName = PatrolBeat.DeckName(i),
                     Plate = PatrolBeat.PlateOf(bodyId, level, ex.CanteenWatch, i),
                     X = at.X,
                     Y = at.Y,
-                    Leg = (leg + 1) % Beat.Count,
-                    Standing = PatrolBeat.StandSeconds,
 
                     // #831 · A man is put on the floor already signing the station he is standing at, looking at
                     // it. The first thing a captain stepping off the car sees is somebody doing something.
                     Facing = at.Point is { } start ? start.Facing : 0,
-                    SignedPoint = at.Point is { } signed ? signed.Number : 0,
-                });
+                };
+                man.HeStartsHisRoundAt(
+                    (leg + 1) % Beat.Count, at.Point is { } signed ? signed.Number : 0);
+                Guards.Add(man);
             }
         }
 
@@ -206,20 +206,19 @@ public sealed partial class Map
             for (int i = 0; i < Guards.Count; i++)
             {
                 Guard g = Guards[i];
-                g.SinceStop += dt;
+                g.HeIsOneFrameFurtherFromTheStop(dt);
 
                 // #831 · One answer per frame about whether he is performing a cover act, written below by the
                 // hold and by nothing else — a man on his round is not covering for anything.
-                g.CoverPoint = 0;
+                g.HeIsCoveringNothingThisFrame();
 
                 FootTail.Mover afoot = PatrolBeat.OnTheRound(i, g.X, g.Y);
-                g.Held = FootTail.MustHold(sitting, _host.AvatarX, _host.AvatarY, in afoot, sight);
+                g.HeIsHeld(FootTail.MustHold(sitting, _host.AvatarX, _host.AvatarY, in afoot, sight));
                 if (!g.Held)
                 {
                     // #831 · The hold is over, so whatever he had decided to read is over with it. Cleared HERE,
                     // off the law's own answer, rather than in each of the branches below that walk him away.
-                    g.CoverAt = null;
-                    g.CoverFor = 0;
+                    g.HeStopsCovering();
                 }
                 TheOneThingHeIsDoingThisFrame(ex, g, i, dt, walls, sight, hide);
 
@@ -228,7 +227,7 @@ public sealed partial class Map
                 // #832 · …and it is now a THREE-rung answer, because the eye's edge is not a cliff: the far
                 // fifth of the reach is a distant figure with no round number on it, and only past the whole
                 // reach — or behind a wall — is there nothing at all.
-                g.Seen = PatrolBeat.SightingFor(_host.AvatarX, _host.AvatarY, g.X, g.Y, sight);
+                g.HeIsSeen(PatrolBeat.SightingFor(_host.AvatarX, _host.AvatarY, g.X, g.Y, sight));
                 anythingHeard |= PatrolBeat.Heard(_host.AvatarX, _host.AvatarY, g.X, g.Y, sight);
             }
 
@@ -318,7 +317,7 @@ public sealed partial class Map
             // #833 · The one guard who is not walking a round at all. He is ahead of everything else in
             // this loop because an escort in progress is not a thing a bench can stop and not a thing a
             // sighting can interrupt: the captain is at his shoulder, and there is nothing left to see.
-            g.Held = false;
+            g.HeIsHeld(false);
             WalkTheEscort(g, dt, walls);
         }
 
@@ -335,7 +334,7 @@ public sealed partial class Map
             // What he is NOT is finished — he keeps AfterYou and he keeps his reason, so opening the
             // door gives the captain back the exact rung of the ladder they ducked out of rather than a
             // softer one. IT BUYS TIME, NOT SAFETY, and this branch is where that sentence is spent.
-            g.Held = false;
+            g.HeIsHeld(false);
             WaitOutsideTheCubicle(g, dt, walls, in cell);
         }
 
@@ -351,7 +350,7 @@ public sealed partial class Map
             //
             // #821 · A run that did NOT see the catch turn carries on to where you were, which is what
             // losing somebody looks like, and #835's own cap ends it. A locked door is not a smoke bomb.
-            g.Held = false;
+            g.HeIsHeld(false);
             RunAfterTheCaptain(ex, g, dt, walls);
         }
 
@@ -369,7 +368,7 @@ public sealed partial class Map
             // in where he can see them does not get this branch at all; they get the knock, which is the
             // whole of what the door was ever worth.
             GiveUpTheHail(g, index, walkedAway: false);
-            g.Held = false;
+            g.HeIsHeld(false);
         }
 
         /// <summary>#793/#831 · THE COVER ACT. A made tail that has been stopped by a captain sitting down, doing

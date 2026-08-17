@@ -32,7 +32,7 @@ the route             = ∅
 the seat              = ∅
 the nerve             = 100
 the tracker           = ChirpState(Armed=yes, ClearSeconds=5.983333333333)
-the guards            = [Guard(DeckName="PATROL 1", Plate="◈ A NIGHT MAN DOING THE DAY MAN'S HOURS", AfterYou=no, AfterYouFor=0, CallingIn=0, Co… 754 chars, sha256 c7a7ae0be0983b38
+the guards            = [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
 the patrol clock      = 1.983333333333
 the traffic           = [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
 the hunters           = []
@@ -40,6 +40,6 @@ the ordnance          = []
 the ghost             = ∅
 the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, Cache=∅, CanteenWatch… 4750 chars, sha256 42bf3a30ac669c22
 the pulse cooldown    = -1
-sweep                 = 658 fields, sha256 98a3810c21017636146592a420cd4b4157b497e6ac717429467aaf529a957bf6
+sweep                 = 658 fields, sha256 e40ced4f4a2e8222a584d5e2bd04254f45a5a35b2720541c291cc59d3b7dad40
 walked-view pen       = 210600 calls, sha256 ed0bae530aea56e9113161727905e4cedf0bfb1c70c390547428c97aebc17f6d
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

@@ -329,7 +329,12 @@ public sealed class ALockedCubicleBuysTimeTests
         // …and it is the SAME predicate the challenge is gated on, not a second opinion about who sees what.
         string round = CodeOf(Patrol());
         Assert.Contains("PatrolBeat.Notices", round, StringComparison.Ordinal);
-        Assert.Contains("g.SawYouShutIt = true", round, StringComparison.Ordinal);
+        // #870 lane 6′d · RE-SPELLED, never re-asserted. The write moved onto the man as a named
+        // transition (Guard.cs), so the claim is asserted in the two halves it is now written in: the
+        // caller that says it happened, and the one line on the type that does it.
+        Assert.Contains("g.HeSeesYouShutTheDoor();", round, StringComparison.Ordinal);
+        Assert.Contains("public void HeSeesYouShutTheDoor() => SawYouShutIt = true;", round,
+            StringComparison.Ordinal);
         Assert.Contains("SightBlockers()", src, StringComparison.Ordinal);
     }
 
@@ -400,7 +405,11 @@ public sealed class ALockedCubicleBuysTimeTests
             "public Guard? EverybodyForgetsTheCatch()", StringComparison.Ordinal);
         Assert.True(forgets > 0, "the forgetting is not where this guard thinks it is.");
         string forgetting = patrol[forgets..patrol.IndexOf("\n        }", forgets, StringComparison.Ordinal)];
-        Assert.Contains("g.SawYouShutIt = false;", forgetting, StringComparison.Ordinal);
+        // #870 lane 6′d · RE-SPELLED, never re-asserted. The write moved onto the man as a named
+        // transition (Guard.cs), so the claim is asserted in the two halves it is now written in: the
+        // caller that says it happened, and the one line on the type that does it.
+        Assert.Contains("g.HeForgetsTheCatch();", forgetting, StringComparison.Ordinal);
+        Assert.Contains("SawYouShutIt = false;", patrol, StringComparison.Ordinal);
         Assert.Contains("foreach (Guard g in Guards)", forgetting, StringComparison.Ordinal);
 
         // #835 · …AND THE DOOR MAY NOT DOWNGRADE A RUN INTO A REQUEST FOR PAPERS. A man who had called it
