@@ -42,4 +42,4 @@ the surface           = ∅
 the pulse cooldown    = -1
 sweep                 = 658 fields, sha256 46f12b1733ad32c49f2499fe0dcc1603494c94a8f2c9e1f725b93554e8d9443f
 walked-view pen       = 0 calls, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-map-frame buffer      = 8346 floats, 24 labels, sha256 97fd611ef4d98189525bcb971e9afee7c0ff0c56135092c5dc829a5d743812f8
+map-frame buffer      = 8364 floats, 24 labels, sha256 1b2da8166dd1b327b8ded9e828a8e0e87bec61bcdd3dbf7c5a99f8cdbe1495b4

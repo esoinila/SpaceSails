@@ -85,6 +85,28 @@ press moves only what you JUDGE by — the ribbon and the numbers. The four quic
 in the NODE's frame whatever the map is drawn about, because an escape burn is Earth-prograde either
 way, so a burn's heading is byte-identical before and after the press.
 
+### Which way she is going — the arrowhead at the ship (#933)
+
+Owner, playing the flight side (2026-08-17): *"our ship shape on the map could indicate little better
+about where it is going … more like add shape that points to the direction the ship is going even when
+its motion is stopped during the burn parameter selection."*
+
+The ship marker carries a small triangle in her own ink: **the arrowhead is where she is going in the
+frame you are reading; the nose at a node is where the burn pushes**. Two shapes, two questions, both
+on screen while you plan — and the arrowhead never swings to the burn, because she is not flying that
+course until she has burned it.
+
+- It is drawn **every frame, the paused ones included**. Velocity is state, not motion: the moment you
+  most need to know which way she carries is the moment the sky is frozen for planning.
+- It is aligned to her velocity **in the plot frame** — the same `v helio` / `v rel {body}` the panel's
+  speed readout is built from, one function read twice. Switch the frame and the arrow swings. That is
+  the frame trap of the section above, drawn instead of written down.
+- **Below one metre a second in that frame it is a ring, not an arrow.** Parked at a dock, or co-moving
+  with the body whose frame you are reading in, she is not going anywhere *here* — and the direction of
+  what is left is ephemeris noise, so a dart would spin like a compass on a magnet.
+- Fixed **pixel** size at every zoom (`VelocityArrow` in Core: a 30° apex, 13 px of lead, base 5 px
+  behind the dot). It is a glyph, like the ship dot itself.
+
 ## Closest-pass warning
 
 - The plot card names your single tightest flyby along the whole planned path, in body radii, with

@@ -141,6 +141,28 @@ public partial class Map
         return distance < hill;
     }
 
+    // #135/#933 — THE SHIP'S VELOCITY IN THE FRAME THE PLAN IS BEING READ IN. One function, two readers:
+    // the "v helio" / "v rel {body}" number on the plot panel (FrameSpeedReadout, below) and the velocity
+    // ARROWHEAD drawn at the ship marker (DrawVelocityArrowhead). A second copy of this arithmetic is
+    // exactly how the drawn shape comes to disagree with the sentence beside it — this repo's third named
+    // bug class — so there is only ever one.
+    //
+    // Sun/inertial (no frame body, or no ephemeris to place one with) is the ship's own heliocentric
+    // velocity, untouched. Otherwise the frame body's velocity is the central difference of its ephemeris
+    // position across one second — the ephemeris is analytic, so a one-second secant is exact to well
+    // under a millimetre per second at any orbital scale in the scenario.
+    private Vector2d FrameRelativeVelocity(double simTime)
+    {
+        if (_ephemeris is null || _plotFrameBodyId is null)
+        {
+            return _ship.Velocity;
+        }
+        const double h = 1.0;
+        Vector2d frameVel =
+            (_ephemeris.Position(_plotFrameBodyId, simTime + h) - _ephemeris.Position(_plotFrameBodyId, simTime - h)) / (2 * h);
+        return _ship.Velocity - frameVel;
+    }
+
     // #135 — the ship's speed IN the selected frame, labelled with it, so the number on the plot
     // panel never silently disagrees with the frame chip (the documented mixed-frame trap).
     private string FrameSpeedReadout()
@@ -149,13 +171,7 @@ public partial class Map
         {
             return string.Empty;
         }
-        Vector2d frameVel = Vector2d.Zero;
-        if (_plotFrameBodyId is not null)
-        {
-            const double h = 1.0;
-            frameVel = (_ephemeris.Position(_plotFrameBodyId, SimTime + h) - _ephemeris.Position(_plotFrameBodyId, SimTime - h)) / (2 * h);
-        }
-        double relKmps = (_ship.Velocity - frameVel).Length / 1000.0;
+        double relKmps = FrameRelativeVelocity(SimTime).Length / 1000.0;
         string label = _plotFrameBodyId is null ? "v helio" : $"v rel {BodyName(_plotFrameBodyId)}";
         return $"{label}: {relKmps.ToString("N1", CultureInfo.InvariantCulture)} km/s";
     }
