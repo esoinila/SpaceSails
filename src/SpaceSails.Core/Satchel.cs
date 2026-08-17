@@ -87,6 +87,18 @@ public static class Satchel
         /// vouching for a PERSON, which is the only one of the three a guard on a round has any use for.
         /// It runs no shaft and opens no gate — it answers a man, and nothing else.</para></summary>
         Badge,
+
+        /// <summary>#763 · A PIECE OF KIT. Something you WORK, rather than something you show.
+        ///
+        /// <para>Appended, never inserted, for the third time and the same reason: the ordinal is what a
+        /// saved satchel stores.</para>
+        ///
+        /// <para>The wallet's three grammars are all about being vouched for — an office, a foreman, a site.
+        /// This is the fourth and it is the outlaw one: nobody vouches for anything and you brought a
+        /// machine. It is BULKY, so it rides in the pockets proper and costs a captain room — that is
+        /// <see cref="CompartmentOf"/>'s safe default, taken deliberately here rather than by omission,
+        /// because the honest price of carrying a tool is not carrying something else.</para></summary>
+        Tool,
     }
 
     /// <summary>One thing in the pocket.</summary>

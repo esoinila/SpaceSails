@@ -58,6 +58,12 @@ public static class CarriedObject
 
             Satchel.Kind.Relic => RelicReveal(item.Id),
 
+            // #763 · The kit that hears the buttons. Its card is not decoration — it is the SCREEN, and the
+            // sweep is written onto it by whoever raises it (<see cref="SdrScanner.Hits"/>), which is why
+            // what is composed here is the object's own story and never a picture of one.
+            Satchel.Kind.Tool when SdrScanner.IsTheKit(item)
+                => new Reveal(SdrScanner.ArtUrl, SdrScanner.CardLabel, SdrScanner.CardStory),
+
             // ── #828 · THE GLANCE: A SHEET HAS A FACE, AND LOOKING AT IT IS FREE ─────────────────────────
             //
             // Owner, naming the semantic the loop already leaned on: "the read from inventory and dig at

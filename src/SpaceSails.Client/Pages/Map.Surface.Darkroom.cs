@@ -601,6 +601,13 @@ public partial class Map
             ? $"{PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(badgeSite)}"
             : $"{PatrolBeat.BadgeGlyph} a site pass",
 
+        // #763 · The kit, named as it is named. A tool this build does not know is still a tool and says so
+        // rather than falling through to the default arm, which would print a receiver as a file on
+        // somebody — the third named bug class, in a row of a list.
+        Core.Satchel.Kind.Tool => Core.SdrScanner.IsTheKit(item)
+            ? Core.SdrScanner.ItemName
+            : "🧰 a piece of kit",
+
         _ => "🗃 a file on somebody",
     };
 }
