@@ -283,6 +283,18 @@ public partial class Map
         RendererInterop.InitCanvas(ScopeCanvasId, observeResize: false);
         _scopeView = new ScopeView(new CanvasRenderer(ScopeCanvasId));
         _deckView = new DeckView(_renderer!);
+
+        // #841 / Lab 46 · ?perf=1 ARMS THE DRAW-COST PROBE, and it is read HERE rather than into BootQuery
+        // for two reasons. It changes nothing about the world — no body, no berth, no cheat — so it has no
+        // business in the holder that pins what the parse ANSWERED; and it belongs to the one object it
+        // arms, which is built on the line above. What it costs when nobody asked for it is a null check
+        // per pass (FramePerf), and what it remembers is invisible to #905's frame ledger because it hangs
+        // off the DeckView — which that sweep already declines to walk into — rather than off this page.
+        if (new Uri(Navigation.Uri).Query.Contains("perf=1", StringComparison.OrdinalIgnoreCase))
+        {
+            _deckView.ArmThePerfProbe(Console.WriteLine);
+        }
+
         _fpView = new FirstPersonView(_renderer!);
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);

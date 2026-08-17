@@ -253,6 +253,15 @@ public static class DevStarts
             + "the cage, on the other face of the main corridor. Press E: it runs these four floors and it "
             + "does not climb out. Now walk to the other one and see how far that is (#801).",
             "/map?goodscar=1"),
+        // #841 / Lab 46 · WHAT A DRAW COSTS, ON THE ONE FLOOR THE QUESTION IS ABOUT. Lab 45 priced the SIM
+        // side of #841 at 0.36% of a frame and closed with the half it could not reach: draw cost, which has
+        // no headless path and which this repo's own law says may not be timed from an MCP-driven tab. So
+        // the game carries its own stopwatch, and this is the button that arms it — pointed at B1, because
+        // B1 is the floor that carries the offices, the glazing, the park, the desks and the cubicles, and
+        // therefore the floor whose furniture the issue proposes to cull.
+        new("⏱", "What a draw costs — the furnished floor, timed",
+            "B1 of a deep site with the frame timer ON: a line across the top of the deck says what the last 120 frames cost — the whole walked frame, the pen's 17 passes, and the flush across to the canvas — and the browser console prints the same table every two seconds in a form you can paste into Lab 46. Walk into the park, walk out to a bare corridor, and watch which number moves. READ IT IN A REAL FOREGROUND TAB: a hidden or automated tab throttles rAF and clamps the clock, and the numbers are then worth nothing (#841).",
+            "/map?secretlab=deep&land=1&floor=1&perf=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

@@ -106,6 +106,9 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?secretlab=deep&land=1&card=next"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?secretlab=deep&land=1&floor=1"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?secretlab=deep&land=1&floor=1&card=next"] = "724bfab09e6e78001d448fae522dfe45",
+            // #841 · ?perf=1 is read where the DeckView is built, not into BootQuery — it changes nothing
+            // the parse answers, and this row says exactly that.
+            ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?secretlab=deep&land=1&floor=21"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?skim=saturn"] = "a8f910fa21cce6eb4561866ee45865c4",

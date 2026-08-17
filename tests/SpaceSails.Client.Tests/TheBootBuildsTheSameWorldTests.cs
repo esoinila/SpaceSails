@@ -167,6 +167,11 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?secretlab=deep&land=1&card=next"] = "a9db3d32c9b37df1512ae11f05c4045c",
             ["/map?secretlab=deep&land=1&floor=1"] = "08b80d1baad059329592a0f40cce7b23",
             ["/map?secretlab=deep&land=1&floor=1&card=next"] = "0b8bb401cf67a9af9d86549d81b0c3d7",
+            // #841 · ?perf=1 arms a stopwatch on the DeckView and touches nothing the boot builds, so this
+            // row is — and must stay — byte-for-byte the world `?secretlab=deep&land=1&floor=1` builds two
+            // lines above. That it is IDENTICAL is the assertion: a measurement cheat that moved the world
+            // would be measuring a world nobody plays.
+            ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "08b80d1baad059329592a0f40cce7b23",
             ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "82331f7aa8c4195f57186c0577d06c59",
             ["/map?secretlab=deep&land=1&floor=21"] = "e7f82b85ff520a63dcb83034275de909",
             ["/map?skim=saturn"] = "d081c4a19a015c970e5e221106844c6c",
