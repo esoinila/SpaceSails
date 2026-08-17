@@ -32,7 +32,22 @@ public static class SurfaceSalvage
 
         /// <summary>Paperwork nobody meant to leave — the breadcrumb material.</summary>
         Papers,
+
+        /// <summary>#763 · SOMEBODY'S SDR — a case under a bunk, in a building whose last occupants were not
+        /// the ones on the roster.
+        ///
+        /// <para>The placement is the fiction. These ruins are already where the loose rounds are, and a
+        /// receiver with a transmit board wired across the back of it is exactly the object that turns up in
+        /// the same drawer as ammunition nobody signed for. It is the outlaw half of a pair: the other one is
+        /// bought over a counter (<see cref="SdrScanner"/>), so a captain who never walks into a ruin can
+        /// still get hold of one, and neither route is the only route.</para></summary>
+        Kit,
     }
+
+    /// <summary>#763 · How rare the kit is in a ruin. Fable's default for v1 and the one number to flip. It
+    /// is rolled on its OWN seed, ahead of the eight-face roll below, so the weighting of everything else is
+    /// byte for byte what it has always been and only the emptiness gives up a couple of points.</summary>
+    public const int KitOneInN = 24;
 
     /// <summary>Rounds a drawer holds. Small on purpose: this is a top-up, not a resupply, and the shelters'
     /// lockers are the real thing.</summary>
@@ -49,6 +64,16 @@ public static class SurfaceSalvage
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
+
+        // #763 · The kit first, on a seed of its own. Written this way rather than as a ninth face because
+        // a ninth face re-weights all eight of the others — every ruin in every save would hold something
+        // different from what it held yesterday, which is what ItIsDeterministic_SoARuinYouLeftIsTheRuinYouComeBackTo
+        // is actually about. This way the only thing that changes is that about one drawer in KitOneInN was
+        // something else and is now a case.
+        if (DiceRule.Roll(DiceRule.Seed($"salvage:{bodyId}:{siteSalt}:{index}:kit"), KitOneInN).Face == 1)
+        {
+            return Find.Kit;
+        }
 
         // 8-sided: four empty, two rounds, one goods, one papers. Half hold something, and the good stuff
         // is scarce enough to be worth remembering where it was.
@@ -77,8 +102,18 @@ public static class SurfaceSalvage
         Find.Rounds => "🔫 A DRAWER, HALF SHUT",
         Find.Goods => "📦 SOMEBODY'S KIT",
         Find.Papers => "🗂 PAPERS ON THE FLOOR",
+        Find.Kit => "📻 A CASE UNDER A BUNK",
         _ => "",
     };
+
+    /// <summary>#763 · The receipt for the case under the bunk. It says what the object IS and not one word
+    /// about what to do with it — the same discipline every carried thing in this game keeps (#614), and the
+    /// kit's own card is where the rest of it is written down.</summary>
+    public static string KitLine() =>
+        "📻 A hard case under the bunk frame, closed, with the foam cut to shape inside it: a wideband " +
+        "receiver, a stub aerial, and a second little board wired across the back of it by somebody who had " +
+        "done that before. The bunk above it has been slept in more recently than the roster on the wall " +
+        "allows for.";
 
     /// <summary>What an empty room says when you have crossed it for nothing. It should sting slightly and
     /// be over quickly — the walk was the cost, and pretending otherwise would be worse.</summary>

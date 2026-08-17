@@ -22,6 +22,12 @@ namespace SpaceSails.Core.Interior;
 /// <param name="SelfService">#756 · True where there is nobody behind it. Owner's canon for the Hive
 /// (#618, skeleton staff): the counter does its own serving, which is worse. A self-service counter has
 /// no round to stand and no keep to ask, so the card does not offer either.</param>
+/// <param name="BackCounter">#763 · True where there is a second counter behind the first one and the
+/// register on it is the outlaw one. Owner's own framing of the SDR kit — <i>"pirate and smuggler standard
+/// issue … a purchasable lead; the cantina hall is full of people who know a frequency"</i> — and this flag
+/// is where a bar admits to being one of those rooms. Exactly one venue carries it in v1, and it is the one
+/// the owner walked into; it is a fact about the PLACE, so a captain who has been there knows and a captain
+/// who has not does not.</param>
 public sealed record Barkeep(
     string BodyId,
     string Name,
@@ -34,7 +40,8 @@ public sealed record Barkeep(
     IReadOnlyList<Drink>? House = null,
     string? Welcome = null,
     string? DeskArtUrl = null,
-    bool SelfService = false)
+    bool SelfService = false,
+    bool BackCounter = false)
 {
     /// <summary>The barkeep's in-character welcome when you lean on the bar — or the venue's own, where
     /// the venue brought one (#756: a counter with nobody behind it cannot say "what'll it be").</summary>
@@ -100,7 +107,10 @@ public static class Barkeeps
                 "“Dockmaster's been slow stamping papers — grease him and you'll clear customs by supper.”",
                 "“Word is a cherry-red wreck's drifting sunward. Salvage boys are scared of it. Make of that what you will.”",
                 "“Most guests stay two weeks. You look like a one-drink-and-gone sort.”",
-            ]),
+            ],
+            // #763 · …and there is a second counter behind this one. Owner's own room: the salvage boys, the
+            // dockmaster's price, and the people who know a frequency all drink here.
+            BackCounter: true),
 
         // The Cinder Lounge — in Venus' clouds.
         new("cinder-roost", "Ember Vance", "THE CINDER LOUNGE",
