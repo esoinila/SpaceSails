@@ -305,10 +305,17 @@ public sealed class TheHallIsWalkableTests
                 }
 
                 // …and every cabinet's plate is on the deck, once, where Core put the door.
+                //
+                // #758 · WITH THE ONE GLYPH THAT SAYS WHICH STAGE IT IS STANDING AT. A deck built with
+                // nothing to say about the leaves draws them all as the building keeps them, which is
+                // CURTAIN — so the string to look for is Core's composed plate and not the bare one, and a
+                // renderer that stopped marking them would fail right here rather than quietly showing a
+                // captain three identical doors.
                 foreach (UndergroundComplex.Cabinet cabinet in hall.Cabinets)
                 {
+                    string plate = CabinetPrivacy.PlateFor(cabinet.Plate, CabinetPrivacy.Stage.Curtain);
                     Assert.Contains(deck.RoomLabels, l =>
-                        string.Equals(l.Text, cabinet.Plate, StringComparison.Ordinal));
+                        string.Equals(l.Text, plate, StringComparison.Ordinal));
                 }
 
                 tops += expected.Count;
