@@ -73,6 +73,41 @@ viewport there is shorter than the desktop window this failed on:
 Test 2 asserts its own premise first (the card really is taller than 700 px) so a future edit that makes
 the card short cannot leave these guards passing while proving nothing.
 
+## The readability gate (issue #782) — `EveryTextReadsTests`
+
+Owner ruling, 2026-08-08 evening, live over the counter menu that had gone dark (#780): *"All text needs
+to have good contrast from the background as a general ruling… also BIG ENOUGH FONTS — we can scroll the
+menu."*
+
+One test, one boot: `?stool=1&neighbour=1` at **390 × 700**, which puts a captain on a stool at the B1
+counter with the priced menu open, the first-ground lesson card still up and the deck's HUD around it — a
+screenful of every kind of text this game has, standing on **the one hall that wears a gen-AI painting**
+(`UndergroundComplex.CantinaHallArtUrl`, drawn onto the deck canvas at `HallArtAlpha`).
+
+For every visible text run it computes:
+
+* **the ink** — computed `color`, faded by every ancestor `opacity`;
+* **the ground it actually sits on** — background-colours *and gradient stops* composited up the ancestor
+  chain, stopping at `.map-page` because the deck canvas is a **sibling painted between** the page's own
+  fill and every overlay above it. When that stack never reaches opacity — which is the case that matters
+  — it reads **the canvas's own pixels** under the run's box with `getImageData` and composites the stack
+  over those. The hall photograph is same-origin, so the canvas is untainted and the bytes are real: this
+  is a measurement, not an estimate;
+* **the contrast** — WCAG 2.1 relative luminance, floor **4.5:1** (AA body text);
+* **the size** — computed `font-size`, floor **14 px**.
+
+Runs of pure emoji are skipped (the font paints those in its own colours, so `color` says nothing about
+them), and a run entirely past the fold of a scrolling card is reported as `offscreen` — it has no pixel
+behind it, so it has no ratio, and whether it should be off the fold is `TallCardTests`' question.
+
+The guard states both its premises out loud so it can never pass while proving nothing: the run it was
+written from read **55 text runs, 15 of them grounded on the canvas's own pixels**, and it fails if
+either number collapses.
+
+The browser-free twin — `SpaceSails.Client.Tests.EveryTextReadsTests` — sweeps every shipped stylesheet
+and every art slot in `Map.razor` for the same law, so a new picture with a new caption on it is caught
+the day it is written rather than the day somebody thinks to drive to it.
+
 ## Run it locally
 
 ```bash

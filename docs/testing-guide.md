@@ -13,6 +13,15 @@ wrong under Debug. If a script feels broken, check you're not accidentally runni
 Each script links to the matching [feature doc](features/) if you need the full behavior
 reference.
 
+**Ask this of every script below, and of every string you add to the game (owner ruling
+2026-08-08, #782): _is every new string readable where it renders, at phone size?_** — good
+contrast against what it actually sits on (including over gen-AI art and behind a modal), a font
+big enough to read on a phone, and when it does not fit, the panel **scrolls**; it never shrinks.
+Dark-on-dark is a defect anywhere it occurs. Two guards stand behind that sentence:
+`SpaceSails.Client.Tests.EveryTextReadsTests` sweeps the shipped stylesheets and every art slot in
+`Map.razor`, and `SpaceSails.UiGate.EveryTextReadsTests` boots `?stool=1` at 390 × 700 and measures
+the real contrast of every visible text run against the deck canvas's own pixels.
+
 ---
 
 ## 1. Launch + scenario select
