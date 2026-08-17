@@ -123,7 +123,10 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     {
         string body = Method("Map.Surface.Hive.cs", "private void AssembleSomebody(");
 
-        Assert.True(body.Contains("FileNote(said.Text, said.Glyph)", StringComparison.Ordinal),
+        // #741 v1 · FileNoteAbout — FileNote plus the one thing this author uniquely knows: what each
+        // sentence is ABOUT (a person, an office, a door, declared in Core beside the words). The record
+        // half is unchanged: same text, same glyph, same order, still every one of them.
+        Assert.True(body.Contains("FileNoteAbout(said.Text, said.Glyph, said.Subjects)", StringComparison.Ordinal),
             "the assembly no longer files what it says — the dossier's four sentences are readable for as " +
             "long as the card is up and then gone forever (#587/#774).");
     }

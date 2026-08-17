@@ -185,4 +185,112 @@ public partial class Map
     /// <summary>#741 · Is this the title being held, waiting for its other end?</summary>
     private bool NodeIsHeld(string id) =>
         _penHoldingId is { Length: > 0 } held && string.Equals(held, id, System.StringComparison.Ordinal);
+
+    // ── #741 v1 · THE THREADS ───────────────────────────────────────────────────────────────────────────
+    //
+    // The issue's own v1, and it is a READING of the book rather than a second store: "a third tab —
+    // THREADS — grouping existing entries by the entities they already name… the THREAD is just the stack
+    // of what you wrote about one name, and the captain draws the line."
+    //
+    // Nothing here decides what a subject is. Core's authors declared them at writing time (CaseSubjects),
+    // Core groups them, Core writes the heading and the count word. This file turns a page and routes a
+    // press, exactly as it does for the pen.
+
+    /// <summary>#741 v1 · The stacks, off the one book. Asked per draw rather than cached, like every other
+    /// projection in the notebook — a cached case is a second store, and #587's whole law is that there is
+    /// one book.</summary>
+    private IReadOnlyList<Core.CaseSubjects.SubjectThread> TheBookThreads() =>
+        Core.CaseSubjects.ThreadsOf(_fieldNotes);
+
+    /// <summary>#741 v1 · Turn to another pocket of the satchel, putting whatever end the pen was holding
+    /// DOWN — the same reason <see cref="TheNotebookTurnsTo"/> does it: half a gesture, said on a page that
+    /// no longer shows the other title, is not a sentence. The pen itself stays out.</summary>
+    private void TheSatchelTurnsTo(SatchelPage page)
+    {
+        _satchelPage = page;
+        _penHoldingId = null;
+    }
+
+    /// <summary>
+    /// #741 v1 · RUN THE PEN DOWN A STACK. One press, one line from each entry to the next, oldest to
+    /// newest — the same <see cref="Core.CaseThreads.Draw"/> the two-press gesture uses, called along the
+    /// stack the captain is looking at.
+    ///
+    /// <para>It saves the wrist and NOT the judgement: the captain chose this heading, the lines it draws
+    /// are ordinary lines, and every one of them comes off again with the ordinary two presses. Nothing is
+    /// drawn automatically — a stack sitting on the page is never connected until a hand asks for it, which
+    /// is the north star this whole feature is fenced by.</para>
+    ///
+    /// <para>The pen's own ladder is asked again at the moment of the mark, exactly as
+    /// <see cref="NoteTitlePressed"/> does, so a heading cannot walk round the gate a title obeys.</para>
+    /// </summary>
+    private void RunThePenDownTheStack(Core.CaseSubjects.SubjectThread stack)
+    {
+        if (PenRefusal is { Length: > 0 } no)
+        {
+            _satchelOutcome = no;
+            PutTheRedPenAway();
+            return;
+        }
+
+        bool anyDrawn = false;
+        for (int i = 1; i < stack.Entries.Count; i++)
+        {
+            _caseThreads =
+            [
+                .. Core.CaseThreads.Draw(
+                    _caseThreads,
+                    Core.CaseThreads.IdentityOf(stack.Entries[i - 1]),
+                    Core.CaseThreads.IdentityOf(stack.Entries[i]),
+                    out bool drawn),
+            ];
+            anyDrawn |= drawn;
+        }
+
+        _penHoldingId = null;
+        _satchelOutcome = Core.CaseThreads.PenInHandHint;
+
+        if (anyDrawn)
+        {
+            // The same quiet cue one line earns, once for the run — not once per pair, which would be the
+            // slot machine the owner ruled out arriving by arithmetic.
+            RendererInterop.PlayCue("rum");
+            RequestVaultSave();
+        }
+    }
+
+    /// <summary>
+    /// #741 v1 · "second entry about OFFICE OF WORKS" — ON THE CARD IN FRONT OF YOU, ONCE.
+    ///
+    /// <para>#736's law, and the reason this is not a banner: a line about a card's own contents belongs on
+    /// the card, in its outcome region, where a backdrop cannot blur it and where the captain is already
+    /// looking. A HUD banner would play under the dossier's own backdrop and be gone in eight seconds,
+    /// which is the exact bug (#587/#774) this notebook exists because of.</para>
+    ///
+    /// <para>With no card raised nothing is said at all. The badge is a NOTICING, and there is no beat to
+    /// notice in the middle of a corridor — the durable answer, always, is the THREADS page, which is
+    /// standing there whether or not anybody was told.</para>
+    ///
+    /// <para>Once: never appended twice to one card, so a kit that files four sentences under one raised
+    /// dossier cannot stack four copies of the same line.</para>
+    /// </summary>
+    private void TheThreadBadgeGoesOnTheCard(in Core.FieldNote note)
+    {
+        if (_viewObject is not { } card
+            || Core.CaseSubjects.NewThreadBadge(note, _fieldNotes) is not { Length: > 0 } badge)
+        {
+            return;
+        }
+
+        string already = card.Outcome ?? "";
+        if (already.Contains(badge, System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _viewObject = card with
+        {
+            Outcome = already.Length > 0 ? $"{already}\n\n🧵 {badge}" : $"🧵 {badge}",
+        };
+    }
 }

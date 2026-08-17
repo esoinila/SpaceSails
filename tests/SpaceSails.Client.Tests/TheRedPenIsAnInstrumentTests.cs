@@ -111,8 +111,21 @@ public sealed class TheRedPenIsAnInstrumentTests
             "the acknowledgment has become the prize jingle a found card gets — the owner ruled the register " +
             "out by name: \"no fanfare, no XP chime\" (#741).");
 
-        // One cue in the whole file. A second one somewhere else would be a second acknowledgment.
-        Assert.Equal(1, CountOf(Pages("Map.RedPen.cs"), "PlayCue("));
+        // #741 v1 · TWO GESTURES, ONE ACKNOWLEDGMENT. The stack run (a heading pressed on the THREADS page)
+        // is the same pen doing the same thing along a stack, so it earns the same chime — once for the run
+        // and not once per pair, which would be the slot machine arriving by arithmetic. Every cue in the
+        // file is that chime and every one of them is behind a was-it-new gate.
+        string file = Pages("Map.RedPen.cs");
+        Assert.Equal(2, CountOf(file, "PlayCue("));
+        Assert.Equal(2, CountOf(file, "PlayCue(\"rum\")"));
+
+        string run = Method(file, "private void RunThePenDownTheStack(");
+        int anyDrawn = run.IndexOf("if (anyDrawn)", StringComparison.Ordinal);
+        int runCue = run.IndexOf("PlayCue(", StringComparison.Ordinal);
+        Assert.True(anyDrawn >= 0, "the stack run no longer gates on whether any line was new (#741 v1).");
+        Assert.True(runCue > anyDrawn,
+            "the stack run's cue is outside the was-any-of-them-new branch — running the pen down a stack " +
+            "that is already fully connected would sound the acknowledgment for nothing (#741 v1).");
     }
 
     private static int CountOf(string src, string needle)
