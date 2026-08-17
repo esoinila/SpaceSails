@@ -515,18 +515,48 @@
 }
 
 .map-plot {
-    /* Wide enough that the X-Pilot node row — mode toggle, ↺ heading input ↻, pulses, percent,
-       retime, delete — lays out in full without the node list scrolling horizontally, with room
-       left for the longest time label (e.g. "365d 23h 59m"). */
-    width: 32rem;
+    /* #838 — owner: "that panel could be bigger to fit all the buttons properly." It could not fit them:
+       at 32rem the open step editor had ~28.6rem of usable width (panel − card padding − step indent −
+       editor padding) and its one row already asked for ~29.9rem (mode 2 + ↺ 2.1 + heading 8.5 + ↻ 2.1 +
+       pulses 3.75 + percent 5.5 + retime 2.1 + delete 2.1, plus seven 0.25rem gaps), so it wrapped
+       mid-row and the buttons landed wherever they fell. 38rem gives ~34.6rem: the four quick selects get
+       an even ~8.4rem each on their own row, and the free-aim row (heading 8.5 + pulses 3.75 + percent
+       5.5 + retime + delete ≈ 23rem) fits on one line with room to spare — including the longest time
+       label ("365d 23h 59m"). max-width still clamps it to the viewport on a phone (#253). */
+    width: 38rem;
     max-width: 100%;
 }
 
 .map-plot-nodes {
     /* PR-D2: only one step editor expands at a time now (accordion), but that one editor is taller than
-       an old always-inline row — give the list room so the open editor shows without immediately scrolling. */
-    max-height: 20rem;
+       an old always-inline row — give the list room so the open editor shows without immediately scrolling.
+       #838 added the quick-select row and its frame note, so the open editor is ~2 lines taller again. */
+    max-height: 24rem;
     overflow-y: auto;
+}
+
+/* #838 · the four quick selects — forward, back, up, down. A 4-column grid rather than a flex row so
+   every button is the same width and none of them ever wraps onto a line of its own: the owner presses
+   these by position, and a row that reflows is a row that mis-clicks. minmax(0,1fr) lets a narrow
+   viewport shrink them evenly instead of pushing the panel wide. */
+.map-burn-quick {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+}
+
+.map-burn-quick .btn {
+    min-width: 0;
+    white-space: nowrap;
+    padding-inline: 0.25rem;
+}
+
+/* Whose frame those four buttons speak in — small, quiet, and always under them. */
+.map-burn-frame-note {
+    font-size: 0.72rem;
+    line-height: 1.1;
+    margin-bottom: 0.3rem;
 }
 
 .map-plot-pulses {
@@ -729,10 +759,8 @@
     flex: 0 0 auto;
 }
 
-.map-plot-mode {
-    width: 2rem;
-    flex: 0 0 auto;
-}
+/* #838 — .map-plot-mode (the ±/✚ toggle) left the planner with the mode it toggled; the rule is gone
+   with it. The planner has one surface now, and it is the vector view. */
 
 /* #260 — the X-Pilot heading readout crams a signed 1-decimal degree value, its ° suffix AND the
    abs/rel toggle button into one input-group. At 5rem the number clipped exactly where the captain
