@@ -245,6 +245,15 @@ public partial class Map
         }
 
         FileNote(gist, SeatedPosture.WriteGlyph);
+
+        // #758 · …AND IF THIS TABLE IS IN A CABINET, THAT WAS A SENSITIVE BEAT. Paper on a table in a room
+        // with a door — the issue's own words — and it is HERE rather than at the satchel's SHOW move
+        // because show is a verb a cabinet's scene does not have (see Seating.ASensitiveBeatBehindTheCurtain
+        // for the whole of why, and for the guard set that could not see it). After the register accepted
+        // the entry, so a re-press on a sheet already in the book is not a second roll; nothing is said
+        // either way, which is the whole of the mechanic.
+        _seating.ASensitiveBeatBehindTheCurtain();
+
         string said = SeatedPosture.WrittenUpLine(SatchelLabel(item), gist);
         if (_seating.Table is { } t)
         {

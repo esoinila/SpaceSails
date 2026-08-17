@@ -82,7 +82,7 @@ public partial class Map
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
                 SurfaceDroidCount, FillSurfaceDroids, ex.HiveRoomsEmptied,
-                ex.CanteenWatch, ex.LocksShotOpen, ex.CubiclesShut);
+                ex.CanteenWatch, ex.LocksShotOpen, ex.CubiclesShut, ex.CabinetsDogged);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.

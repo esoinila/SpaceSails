@@ -1889,6 +1889,17 @@
                             title="@(open ? m.Label : TableMoveRefusal(m))"
                             @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
                 }
+                @* #758 · THE CURTAIN AND THE DOOR. One button, at the one seat in this game that has a leaf
+                   of its own, and it always offers the OTHER stage — a room never has to announce the state
+                   it is already standing in. Owner: "something that prevents the sound or sight catching
+                   what happens there too easily but is not a real door." The tooltip carries the cost,
+                   because the cost IS the mechanic: the whole hall watches a cabinet door close. *@
+                @if (ACabinetLeafToWork)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="@CabinetLeafHint"
+                            @onclick="WorkTheCabinetLeaf">@CabinetLeafLabel</button>
+                }
                 @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
                    refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
                    press, because that is how the gumshoe rule gets learned. Once a sheet of this sitting

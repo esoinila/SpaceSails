@@ -631,6 +631,30 @@ public partial class Map
         // no longer standing in would be the building keeping a secret nobody is behind any more.
         public HashSet<string> CubiclesShut { get; } = [];
 
+        // ── #758 · THE CURTAIN AND THE DOOR ────────────────────────────────────────────────────────────
+        //
+        // Which cabinets have had the leaf brought out of the wall and dogged (CabinetPrivacy.Key).
+        // ABSENT MEANS CURTAIN, which is the state every cabinet in the building is in until somebody
+        // decides otherwise — so a fresh excursion needs no seeding, and the deck drawn on the first frame
+        // and the strip pressed on the hundredth cannot come to two different views of one leaf.
+        public HashSet<string> CabinetsDogged { get; } = [];
+
+        // #758 · …and which of them the COUNTER has already written down. The keep's long memory is written
+        // on the transition INTO dogged and exactly once per cabinet: a captain who dogs, undogs and dogs
+        // again did one memorable thing, and a book does not un-write a line to make room for a copy of it.
+        public HashSet<string> CabinetsWitnessed { get; } = [];
+
+        // #758 · How many sensitive beats have happened in a cabinet this excursion — the beat index the leak
+        // roll is seeded on, so two files put down behind one curtain are two rolls rather than one answer
+        // said twice.
+        public int CabinetBeats { get; set; }
+
+        // #758 · …and WHICH CABINET last got out through the weave, still unspent. A leak is never announced
+        // when it happens — that is the whole of the mechanic — so it waits here until somebody who has no
+        // way of knowing says the number out loud (CabinetPrivacy.BarkThatKnows), and is spent by being said.
+        // Null is a captain nobody has overheard yet.
+        public int? CabinetLeaked { get; set; }
+
         // #821 · How many times a basin has been used this excursion, so two washes are two lines and not
         // one line said twice — the beat the pool is seeded on.
         public int WashBeats { get; set; }
