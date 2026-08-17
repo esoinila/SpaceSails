@@ -208,10 +208,13 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
     /// <para>The control is exact: ONE ship state — the shipping boot's own, co-moving with Earth — painted
     /// twice with the contactor arcing, once read in the Sun's frame (29.8 km/s: a dart) and once in Earth's
     /// (dead stop: a ring). The ship's position, her charge and her heading are byte-identical across the
-    /// two, so the plume MUST be too; only the new pass has anything to change. RED PROOF: move
-    /// <c>DrawVelocityArrowhead</c> above <c>DrawDischarge</c>, or paint it in <c>ArcHaloColor</c>, or let it
-    /// touch <c>_lastDischargeMs</c>, and the plume's marks move, multiply or reorder and this fails naming
-    /// the mark.</para>
+    /// two, so the plume MUST be too; only the new pass has anything to change.</para>
+    ///
+    /// <para>And the ORDER stands: every arc-halo mark comes before her arrowhead, because the plume leaves
+    /// her mast first and the shape that says where she is going is painted on top of the whole marker. RED
+    /// PROOF, three ways: paint the arrowhead in <c>ArcHaloColor</c> and the two lists differ; let it touch
+    /// <c>_lastDischargeMs</c> (a flashing plume is a different plume) and they differ; move
+    /// <c>DrawVelocityArrowhead</c> above <c>DrawDischarge</c> and the ordering assertion fails.</para>
     /// </summary>
     [Fact]
     public void TheDischargeOffHerMastIsUntouched()
@@ -233,6 +236,28 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         Assert.Null(FindHerTriangle(ringFrame));
 
         Assert.Equal(plume, DischargeMarks(ringFrame));
+
+        // …and her plume is laid before her arrowhead, in both frames.
+        AssertThePlumeComesFirst(dartFrame, "the dart");
+        AssertThePlumeComesFirst(ringFrame, "the ring");
+    }
+
+    /// <summary>The plume leaves her mast first; whatever the velocity pass draws goes on top of the whole
+    /// marker afterwards.</summary>
+    private static void AssertThePlumeComesFirst(float[] buffer, string what)
+    {
+        List<Mark> marks = Marks(buffer);
+        int lastPlume = marks.FindLastIndex(m => m.Stroke.R == ArcHalo.R && m.Stroke.G == ArcHalo.G
+                                                 && m.Stroke.B == ArcHalo.B);
+        int hers = marks.FindLastIndex(m => (m.Op == OpPolygon && m.Points.Length == 6 && m.Stroke == HerInk)
+                                            || (m.Op == OpCircle
+                                                && Math.Abs(m.Points[2] - VelocityArrow.RingRadiusPx) < 1e-4
+                                                && m.Stroke == (HerInk.R, HerInk.G, HerInk.B, 200f)));
+        Assert.True(lastPlume >= 0, $"no plume in {what}'s frame.");
+        Assert.True(hers >= 0, $"no velocity shape in {what}'s frame.");
+        Assert.True(lastPlume < hers,
+            $"in {what}'s frame the last discharge mark is at {lastPlume} and her velocity shape at {hers} — " +
+            "the arrowhead pass has been moved in front of Lab 43's plume.");
     }
 
     // ── The words the Guide teaches ────────────────────────────────────────────────────────────────────
