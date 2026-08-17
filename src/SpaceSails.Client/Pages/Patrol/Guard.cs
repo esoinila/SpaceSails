@@ -477,5 +477,52 @@ public sealed partial class Map
             SinceStop = 0;
             Standing = PatrolBeat.StandSeconds;
         }
+
+        // ── #870 lane 6′d · THE POSTURES THAT CANNOT COEXIST ─────────────────────────────────────
+
+        /// <summary>
+        /// #870 lane 6′d · IS THIS ONE MAN? Seven pairs that may never be true together, asked of every guard
+        /// after every frame of every case in <c>EveryRoundFingerprintsTheSameTests</c> — 13 cases, 7,100
+        /// frames — and never once false.
+        ///
+        /// <para>Each is a pair of postures, not a tidy-up: <c>CallingIn</c> above zero on a man who is not
+        /// coming is a radio call for a run that is over; a <c>CoverAt</c> on a man who is not held is a
+        /// fixture he decided to read on a frame he was walking away; a man <c>Knocking</c> who never watched
+        /// the catch turn is the hide working for somebody it was never meant to work for. Every one of them
+        /// would have been reachable while these were 28 public fields and eleven verbs wrote them.</para>
+        ///
+        /// <h3>AND THE THREE THINGS THAT DO COEXIST, WHICH ARE NOT ON THIS LIST AND WHY</h3>
+        ///
+        /// <list type="bullet">
+        /// <item><b><c>Held</c> with <c>WalkingUp</c></b> — a walk-up that a bench has stopped. The hold arm sits
+        /// ABOVE the walk-up arm precisely so a made tail stops crossing the floor without forgetting that it
+        /// was; the approach resumes when the captain stands up. Suspended, not contradicted.</item>
+        /// <item><b><c>Standing</c> above zero with a live <c>Route</c></b> — a man who was standing out his five
+        /// seconds at a stop when something took him off the round (a door to wait at, a captain to walk out).
+        /// The stand is REMEMBERED across the detour, which is the same law: a detour is never a new state
+        /// machine.</item>
+        /// <item><b><c>WalkUpFor</c> above zero with <c>WalkingUp</c> false</b> — a spent clock. It is written to
+        /// zero by <see cref="HeStartsWalkingUp"/> and read only by the walk-up itself, so it can never be read
+        /// while stale; but it is left standing rather than swept, because the sweep would be a line of code
+        /// that exists to make a fact look tidier than it is. FILED, not fixed — the owner's call.</item>
+        /// </list>
+        /// </summary>
+        /// <returns>The first contradiction, in a sentence, or <c>null</c> when he is one man.</returns>
+        public string? Check() =>
+            AfterYou && WalkingUp
+                ? "he is coming at a run AND crossing the floor to say hold on"
+            : Knocking && !SawYouShutIt
+                ? "he is knocking at a door he never watched anybody shut"
+            : Knocking && WalkingUp
+                ? "he is standing at a door AND crossing the floor to somebody"
+            : CoverPoint != 0 && !Held
+                ? $"he is signing station {CoverPoint} as a cover act and nothing is holding him"
+            : CoverAt is not null && !Held
+                ? "he has picked something to read as a cover act and nothing is holding him"
+            : CallingIn > 0 && !AfterYou
+                ? "he has radio left to say and there is no run to say it for"
+            : Why != PatrolBeat.Provocation.None && !AfterYou
+                ? $"he is carrying a reason ({Why}) and he is not coming after anybody"
+            : null;
     }
 }

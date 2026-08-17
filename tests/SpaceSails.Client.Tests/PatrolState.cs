@@ -66,6 +66,59 @@ public static class PatrolState
         ("_badgeCheat", "BadgeCheat"),
     ];
 
+    /// <summary>
+    /// #870 lane 6′d · …AND THE GUARD'S OWN TWENTY-EIGHT, in the order they are declared on him.
+    ///
+    /// <para>6′d turned twenty-three of them from public mutable FIELDS into <c>{ get; private set; }</c>
+    /// properties written only by named transitions. The five that stay settable are position and motion,
+    /// which the stepper writes every frame; <c>DeckName</c> and <c>Plate</c> stay <c>init</c>.</para>
+    ///
+    /// <para>It is written down HERE, once, for the same reason the twenty-two above are: three harnesses
+    /// read a guard's state <b>by string</b> (<c>EveryRoundFingerprintsTheSameTests</c> writes every one of
+    /// them into its pinned transcript, <c>EveryFrameLeavesTheSameFingerprintTests</c> renders them into its
+    /// ledger, <c>AStandingGuardIsStandingAtSomethingTests</c> reads the sign-in and the cover), and a name
+    /// that quietly changed would leave all three green and about nothing. <c>ThePatrolKeepsItsOwnStateTests</c>
+    /// asks the live type for every row and for the setter each one is supposed to have.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<(string Name, bool Settable)> TheGuardsTwentyEight =
+    [
+        // The two the round is minted with, and never writes again.
+        ("DeckName", false),
+        ("Plate", false),
+
+        // MOTION, not state: the stepper writes these every frame and 6′d deliberately left them open.
+        ("X", true),
+        ("Y", true),
+        ("Facing", true),
+        ("Vx", true),
+        ("Vy", true),
+
+        // …and the twenty-three a transition owns.
+        ("Leg", false),
+        ("Standing", false),
+        ("SinceStop", false),
+        ("Route", false),
+        ("Planning", false),
+        ("Retries", false),
+        ("Seen", false),
+        ("Held", false),
+        ("WalkingUp", false),
+        ("WalkUpFor", false),
+        ("RePlanIn", false),
+        ("AfterYou", false),
+        ("Why", false),
+        ("AfterYouFor", false),
+        ("CallingIn", false),
+        ("WallSide", false),
+        ("SawYouShutIt", false),
+        ("Knocking", false),
+        ("Knocked", false),
+        ("SignedPoint", false),
+        ("CoverPoint", false),
+        ("CoverAt", false),
+        ("CoverFor", false),
+    ];
+
     private static readonly Dictionary<string, string> Moved = Build();
 
     private static Dictionary<string, string> Build()
