@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
+using System.Reflection;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Tests;
@@ -121,10 +122,15 @@ public sealed class TheHeatIsBankedOnceTests
         Assert.Equal(1, Count(floor, "IllegalHeat.Bank("));
 
         // …and there is no seventh banker anywhere in the client. One seam, or the count above proves nothing.
+        // The seam's own DECLARATION is not a call — `private void BankTheCrossing(…)` in Map.IllegalHeat.cs
+        // is the door, and counting the door as somebody walking through it would put a phantom crossing in
+        // this list every time the file is read.
         var bankers = new List<string>();
         foreach ((string path, string text) in ClientFiles())
         {
-            int calls = Count(text, "IllegalHeat.Bank(") + Count(text, "BankTheCrossing(");
+            int calls = Count(text, "IllegalHeat.Bank(")
+                + Count(text, "BankTheCrossing(")
+                - Count(text, "private void BankTheCrossing(");
             if (calls > 0)
             {
                 bankers.Add($"{Path.GetFileName(path)}×{calls}");
@@ -184,18 +190,31 @@ public sealed class TheHeatIsBankedOnceTests
     }
 
     /// <summary>
-    /// #715 · <b>NO FIELD WAS INVENTED, AND NO HOST MEMBER EITHER.</b> #905's frame ledger sweeps every
-    /// instance field of the page into a pinned hash, and <c>ISeatHost</c>/<c>IPatrolHost</c> are pinned at
-    /// twenty-eight and twenty-one. The meter lives in the contacts book the page already had, and the round
-    /// is handed that book as an ARGUMENT.
+    /// #715/#905 · <b>NO FIELD WAS INVENTED, AND NO HOST MEMBER EITHER.</b> #905's frame ledger sweeps every
+    /// instance field of the page into thirty pinned hashes, and <c>IPatrolHost</c> is a RATCHET at
+    /// twenty-one (<c>ThePatrolKeepsItsOwnStateTests</c> — a lane that adds a member to it does not go in
+    /// with a passing build). Both of those hold today because the meter added nothing to either: it lives
+    /// in the contacts book the page already had, and the round is handed that book as an ARGUMENT on the two
+    /// calls that already crossed the seam.
     ///
-    /// <para><b>Proven RED</b> by giving the page an <c>_illegalHeat</c> field of its own, or the round a
-    /// <c>ContactLedger Contacts { get; }</c> on its host:</para>
+    /// <para>Asked of the TYPE rather than of the text, because the failure this is written against is a
+    /// field, and a field is a thing the runtime can be asked about: the page holds exactly one
+    /// <see cref="ContactLedger"/>, called <c>_contacts</c>, and the ship's heat stays the separate
+    /// <c>_heat</c> it always was — guard (c)'s two-holders law, read off the component itself.</para>
+    ///
+    /// <para><b>Proven RED</b> by giving the page an <c>_illegalHeat</c> ledger of its own — the obvious
+    /// shape, and the one that would have moved #905's thirty fingerprints in the same commit:</para>
     /// <code>
-    /// Assert.Equal() Failure: Values differ
-    /// Expected: 21
-    /// Actual:   22
+    /// Assert.Equal() Failure: Collections differ
+    ///                    ↓ (pos 0)
+    /// Expected: ["_contacts"]
+    /// Actual:   ["_contacts", "_illegalHeat"]
+    ///                    ↑ (pos 0)
     /// </code>
+    ///
+    /// <para>…and <b>RED the other way</b> by reaching the round through its host instead
+    /// (<c>ContactLedger Contacts { get; }</c> on <c>IPatrolHost</c>), which trips this file and #870's
+    /// ratchet together.</para>
     /// </summary>
     [Fact]
     public void TheMeterInventedNoFieldAndNoHostMember()
@@ -205,13 +224,26 @@ public sealed class TheHeatIsBankedOnceTests
         Assert.DoesNotContain("private readonly", page, StringComparison.Ordinal);
         Assert.DoesNotContain("{ get; set; }", page, StringComparison.Ordinal);
 
-        // #870 · the two host contracts, counted the way ThePatrolKeepsItsOwnStateTests counts them: the
-        // member declarations inside the interface body.
-        Assert.Equal(21, InterfaceMembers("src", "SpaceSails.Client", "Pages", "Patrol", "IPatrolHost.cs"));
-        Assert.Equal(28, InterfaceMembers("src", "SpaceSails.Client", "Pages", "Seating", "ISeatHost.cs"));
+        // THE PAGE'S OWN FIELDS. One ledger, the one that was already there, and the ship's heat still in a
+        // field of its own type — two meters, two holders, and neither of them is read off the other.
+        FieldInfo[] fields = typeof(Pages.Map)
+            .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.True(fields.Length > 100, $"the sweep found {fields.Length} fields on the page — wrong type.");
 
-        // The round holds nothing: the book crosses the seam as an argument on the two calls that already
-        // crossed it, which is why not one of #905's thirty fingerprints moves.
+        string[] ledgers = [.. fields
+            .Where(f => f.FieldType == typeof(ContactLedger))
+            .Select(f => f.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)];
+        Assert.Equal(["_contacts"], ledgers);
+        Assert.Contains(fields, f => f.Name == "_heat" && f.FieldType == typeof(HeatState));
+
+        // #870 · and the round reaches the book as an ARGUMENT, never through its host. The member count
+        // itself is ThePatrolKeepsItsOwnStateTests' ratchet; what is asked here is the thing that would have
+        // raised it.
+        string host = Read("src", "SpaceSails.Client", "Pages", "Patrol", "IPatrolHost.cs");
+        Assert.DoesNotContain("ContactLedger", host, StringComparison.Ordinal);
+        Assert.DoesNotContain("IllegalHeat", host, StringComparison.Ordinal);
+
         string floor = Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Floor.cs");
         Assert.Contains("SpawnPatrolFor(SurfaceExcursion ex, ContactLedger book)", floor, StringComparison.Ordinal);
         Assert.Contains(
@@ -219,23 +251,10 @@ public sealed class TheHeatIsBankedOnceTests
             floor, StringComparison.Ordinal);
         foreach ((string path, string text) in ClientFiles())
         {
-            if (Path.GetFileName(path).StartsWith("Patrol.", StringComparison.Ordinal)
-                || Path.GetFileName(path) == "Patrol.cs")
+            if (Path.GetFileName(path).StartsWith("Patrol.", StringComparison.Ordinal))
             {
                 Assert.DoesNotContain("ContactLedger _", text, StringComparison.Ordinal);
             }
         }
-    }
-
-    /// <summary>The member declarations inside an interface body — a line ending in <c>;</c> or in
-    /// <c>{ get; }</c>/<c>{ get; set; }</c>, at the interface's own indent.</summary>
-    private static int InterfaceMembers(params string[] parts)
-    {
-        string text = Read(parts);
-        int open = text.IndexOf("interface I", StringComparison.Ordinal);
-        Assert.True(open > 0, $"{parts[^1]} has no interface in it.");
-        string body = text[open..];
-        return Regex.Matches(body, @"^\s{8}[A-Za-z<>?\[\]\(\), \.]+\s+\w+(\(.*\)\s*;|\s*\{\s*get;.*\}|;)\s*$",
-            RegexOptions.Multiline).Count;
     }
 }
