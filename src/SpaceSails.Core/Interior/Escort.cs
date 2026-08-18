@@ -73,20 +73,34 @@ public static class Escort
     public const double DoorStandoffDu = Egress.DoorStandoffDu;
 
     /// <summary>
-    /// WHICH MOVE IS WORTH A PRIVATE ROOM — asked of the scene itself, and never of a list kept here.
+    /// WHICH MOVE IS WORTH A PRIVATE ROOM — asked of the scene itself, and never of a register kept here.
     ///
-    /// <para>The rule is the FIELD BOOK's. <see cref="Encounter.Move.Note"/> is what a move leaves in the
-    /// captain's own book, and #757 put it on the move rather than in the client precisely so that "this
-    /// sentence was worth writing down" is a fact the content file states. A move with a note is a move that
-    /// changes what the captain knows; a move without one is a chair being pulled out or a glass arriving.
-    /// So <b>the deal move is the last noted move in the scene</b> — last, because the ladder is written in
-    /// the order it is climbed and the thing somebody crossed a room to say is at the top of it.</para>
+    /// <para>A DEAL is a move whose outcome is not merely something the captain has HEARD. There are exactly
+    /// two ways a content file already says that, and both of them are said on the move rather than in a
+    /// client:</para>
     ///
-    /// <para>Read that way, this needs no register of which scenes have deals in them: the haulier's ask
-    /// (#757), the Hand's chit (#746) and the delegation's <c>Put it to them</c> (#770) are all already
-    /// marked, by the authors who wrote them, for a different reason that happens to be the same reason.
-    /// A scene with nothing noted in it — a stranger with a cup, a room you paid for and nobody came — has
-    /// no deal move and nobody in it will ever lead you anywhere.</para>
+    /// <list type="number">
+    /// <item><b>It leaves a line in the field book.</b> <see cref="Encounter.Move.Note"/> — #757 put it on
+    /// the move precisely so "this one goes in the notebook" is a fact the author states, and its own docs
+    /// draw the line this needs: <i>"Null on manners — a notebook full of manners is a notebook nobody
+    /// reads."</i> The haulier's ask about her brother (#757) is one of these.</item>
+    /// <item><b>Or it puts dice on the table.</b> <see cref="Encounter.Move.Rolled"/>, whose docs are equally
+    /// explicit that an unrolled move is a design statement and not an unfinished one: <i>"honest work
+    /// offered plainly is not a check, and neither is leaving a table politely."</i> The Hand's ask about
+    /// work — #746's papers, and the one rolled move at a canteen table — is the other.</item>
+    /// </list>
+    ///
+    /// <para><b>The last one in the scene</b>, because a ladder is written in the order it is climbed and
+    /// the thing somebody crossed a room to say is at the top of it. Leaving is never it, whatever it
+    /// carries.</para>
+    ///
+    /// <para><b>And what this deliberately does NOT catch.</b> The delegation's <c>Put it to them</c> (#770)
+    /// is neither noted nor rolled, and that is right rather than an omission: read its own line — <i>"'I'll
+    /// take that as said,' they say, which is not the same as taking it"</i> — and #770's own note that v1 is
+    /// <i>the gesture and not a relationship</i>. It is a gesture in a room you already paid for, and nobody
+    /// needs walking anywhere to make one. A scene with no deal move in it at all — a stranger with a cup,
+    /// a booked room nobody came to, a table you took alone — never leads anybody anywhere, and
+    /// <see cref="LeadsYouIn"/> refuses on that clause before any die is cast.</para>
     /// </summary>
     /// <returns>The move, or null when this scene has nothing in it worth a room.</returns>
     public static Encounter.Move? TheDealMoveIn(Encounter.Scene scene)
@@ -95,7 +109,11 @@ public static class Escort
         IReadOnlyList<Encounter.Move> moves = scene.Moves ?? [];
         foreach (Encounter.Move move in moves)
         {
-            if (move.Note is { Length: > 0 } && !string.Equals(move.Id, Encounter.Leave, StringComparison.Ordinal))
+            if (string.Equals(move.Id, Encounter.Leave, StringComparison.Ordinal))
+            {
+                continue;
+            }
+            if (move.Note is { Length: > 0 } || move.Rolled)
             {
                 deal = move;
             }
