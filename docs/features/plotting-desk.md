@@ -57,6 +57,12 @@ degrees off wherever it points now — press FORWARD, then +5° twice, and the b
 the ghost's prograde without a key being touched. The step lives once, in Core
 (`NodeFrame.NudgeDegrees`), and it is an ANGLE, which is why the buttons wear a degree sign.
 
+The **numbers step the same way** (#937 — owner, 2026-08-18: *"writing a new number there I have to
+switch to another input to see what the effect of numeric change is … the rough estimation with those
++ − buttons like the angle"*): **−5 p −1 p** either side of the burn's pulses and **−1 d −1 h** either
+side of when it fires, each press re-solving the ribbon on the spot through the same act a typed value
+takes — the buttons are the front door, the fields stay for the last decimal.
+
 The **+ / −** *factor* idiom is not gone from the game — it belongs to reflex flying: the live `+`,
 `−`, `↑`, `↓` keys that scale the ship's velocity right now. Planning and reflex are two different
 questions, and each keeps the control that answers it.
