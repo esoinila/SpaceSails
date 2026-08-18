@@ -86,6 +86,18 @@ namespace SpaceSails.Client.Tests;
 /// <para>Moving one phase of the split frame past its neighbour reddens the rows. The verbatim run is in the
 /// pull request. When a row DOES go red, <c>SPACESAILS_SWEEP_DUMP=&lt;dir&gt;</c> writes the whole swept text
 /// out so the offending field can be diffed rather than guessed at from a hash.</para>
+///
+/// <h3>#561 · THE ONE RE-PIN, AND WHAT THE DIFF HAD TO SHOW BEFORE IT WAS ALLOWED</h3>
+///
+/// <para>The nerve gauge's backing plate is measured to what it backs now, and the motion tracker's column
+/// top is ASKED of the nerve block rather than typed at 82 (<c>HudColumn</c>) — so on the five worlds that
+/// draw a gauge one rectangle is taller and, on the regolith, the fan sits 18px further down the column.
+/// Twenty-five of the thirty texts moved. In every one of them the ONLY line that changed was
+/// <c>walked-view pen</c>; its CALL COUNT is identical on both sides of the diff (210720, 470880, 35917, …
+/// all unchanged, because the same rectangle and the same disc were drawn at a different y); and the five
+/// <see cref="World.TheMapFrameInFlight"/> texts, which draw no walked view at all, are untouched. A re-pin
+/// that had moved a ledger row, a sweep row or a call count would have been a different lane's bug wearing
+/// this lane's clothes.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class EveryFrameLeavesTheSameFingerprintTests

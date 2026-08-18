@@ -595,6 +595,41 @@
     padding-inline: 0.4rem;
 }
 
+/* #937 · the number steps — a coarse and a fine press either side of the thing they move, so the field
+   reads as the middle of its own range rather than as an input with buttons bolted on one end. Owner:
+   "the rough estimation with those + − buttons like the angle", the typed field kept for the last decimal.
+
+   THE MEASUREMENT (#782's law: measure the fit, don't hope for it). #838 measured the open step editor at
+   a 32rem panel as 28.6rem usable, i.e. 3.4rem of card padding + step indent + editor padding. At the
+   38rem panel that is ~34.6rem; on a 390px phone the panel's max-width:100% clamps it to 24.375rem,
+   leaving ~20.9rem usable. Each row asks for:
+     magnitude  4 x 3.1rem (buttons) + 3.75rem (.map-plot-pulses) + 4 x 0.3rem (gaps) = 17.35rem
+     time       4 x 3.1rem (buttons) + 5.6rem (the readout)       + 4 x 0.3rem (gaps) = 19.20rem
+   Both fit inside 20.9rem, so BOTH pairs survive at 390px and nothing collapses to the fine step alone.
+   flex-wrap is the backstop, not the plan: if a future face grows past those min-widths the row breaks
+   onto a second line instead of pushing the panel past the viewport (#253). */
+.map-burn-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+}
+
+.map-burn-steps .btn {
+    min-width: 3.1rem;
+    white-space: nowrap;
+    padding-inline: 0.35rem;
+}
+
+/* When the burn fires, sat between its four time steps. The widest this can read is "365d 23h 59m". */
+.map-burn-epoch-readout {
+    min-width: 5.6rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #cfe8ff;
+}
+
 /* Whose frame those four buttons speak in — small, quiet, and always under them. #926 added the second
    half of that sentence (the frame the plan is READ in), so it is allowed to wrap onto a second line. */
 .map-burn-frame-note {

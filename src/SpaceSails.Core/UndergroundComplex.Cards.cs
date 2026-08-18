@@ -168,14 +168,18 @@ public static partial class UndergroundComplex
     ///
     /// <para>The register is #601's funding trail said as a room: a suspiciously nice company canteen on a
     /// nowhere rock is money that does not mind being SEEN feeding contractors, only being asked. Nobody in
-    /// the frame finds it strange, which is the whole horror technique of this set.</para></summary>
+    /// the frame finds it strange, which is the whole horror technique of this set.</para>
+    ///
+    /// <para>#783/#941 · The opening clause said <i>linen on the tables</i>; the owner's no-tablecloths
+    /// ruling on #759 is an ART spec — bare steel under a riveted window wall — so the prose follows the
+    /// picture and the shine is the steel's, owner-authored and lifted verbatim.</para></summary>
     public const string CantinaHallCard =
-        "Carriers' canteen, the sign says, and the room says something else: linen on the tables, brass on " +
-        "the pillars, light somebody chose. On a rock with no name on any chart, the company feeds its " +
-        "contractors like a hotel feeds guests it wants to keep — and nobody at the tables finds that " +
-        "strange, because the pay is on the nail, the coffee is real, and questions are the one thing on " +
-        "the menu that costs. Along the back wall, a row of doors. Cabinets, by arrangement. The hall is " +
-        "loud. The doors are why.";
+        "Carriers' canteen, the sign says, and the room says something else: steel tables wiped to a " +
+        "shine, brass on the pillars, light somebody chose. On a rock with no name on any chart, the " +
+        "company feeds its contractors like a hotel feeds guests it wants to keep — and nobody at the " +
+        "tables finds that strange, because the pay is on the nail, the coffee is real, and questions are " +
+        "the one thing on the menu that costs. Along the back wall, a row of doors. Cabinets, by " +
+        "arrangement. The hall is loud. The doors are why.";
 
     /// <summary>#751 · The cabinet, painted.</summary>
     public const string CabinetArtUrl = "art/b1-cabinet.jpg";

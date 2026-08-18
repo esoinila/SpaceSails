@@ -103,9 +103,25 @@ public partial class Map
         //
         // The beacon is the honest fix: the ground can carry as many violet doors as the fiction wants, and
         // the INSTRUMENT says which one is the way down.
-        if (ex.SecretLabDoorRevealed && ex.Lab is { HasLab: true } lab)
+        //
+        // #625 · AND IT POINTS AT THE HUT THAT WAS BUILT, not at the seed the hut grew from. This read
+        // lab.DoorX/DoorY — SecretLab.For's RAW spot — while the shed the captain walks to stands at
+        // SecretLab.HeadSpot, which is that spot moved clear of the shelters, the outpost and the monolith
+        // already standing on that ground. The #602 bug with a beacon instead of a lift car.
+        //
+        // THE ISSUE UNDERSTATED IT, AND THE GUARD IS WHY WE KNOW. #625 was filed as a tidy — "not wrong on
+        // screen today, because the wash is vague and the nudge is small enough to sit inside it" — and the
+        // sweep written to go with the fix disagreed on 21 of 34 body × site pairs, by up to 235 du. The
+        // reason is a seam nobody had looked straight at: the raw spot is seeded PER BODY and the clamp
+        // re-seeds PER SITE, so when it fires it does not nudge, it RELOCATES. Miranda painted the same patch
+        // of ground on all three of its sites while the hut stood somewhere else on two of them. That is #584
+        // — the map lying — and it was already shipping, precise ring and all.
+        //
+        // So it asks the same function the builder asks, and there is nothing left to keep in sync.
+        if (ex.SecretLabDoorRevealed && ex.Lab is { HasLab: true })
         {
-            Add(lab.DoorX, lab.DoorY, home: false, lab: true);
+            (double headX, double headY) = SecretLabHeadSpot(ex);
+            Add(headX, headY, home: false, lab: true);
         }
 
         return list;
@@ -138,7 +154,7 @@ public partial class Map
     private List<(double Bearing, double Range, double Spread)> BuildRumours(SurfaceExcursion ex)
     {
         var list = new List<(double, double, double)>();
-        if (ex.Lab is not { HasLab: true } lab || ex.SecretLabDoorRevealed)
+        if (ex.Lab is not { HasLab: true } || ex.SecretLabDoorRevealed)
         {
             return list;
         }
@@ -150,7 +166,14 @@ public partial class Map
             return list;   // nobody has tipped you about this one; there is nothing to be vague about
         }
 
-        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
+        // #625 · Centred on the SHED, not on the seed it grew from — the same fix as the revealed ring above,
+        // and the one the issue was actually filed about. A tip that is vague about the right ground is a tip;
+        // a tip that is vague about the wrong ground is a lie with a wide brush, and this brush is 45 du wide
+        // while the ground it was missing by ran to 235. A captain who walked a bearing off this wash on
+        // Titan's Quiet Basin arrived at empty regolith with a tank half gone and no reason to doubt the
+        // instrument, which is the exact failure #573 built the fan to prevent.
+        (double headX, double headY) = SecretLabHeadSpot(ex);
+        double dx = headX - _avatarX, dy = headY - _avatarY;
         list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), RumourSpreadDu));
         return list;
     }

@@ -459,7 +459,7 @@ public sealed class TheCantinaHallTests
     /// <code>
     /// 2 bark(s) nobody ever says:
     ///   Real coffee. On a rock like this. Somebody's writing it off against something.
-    ///   Table linen on a freight stop. I stopped asking the questions I like the answers to.
+    ///   Brass pillars on a freight stop. I stopped asking the questions I like the answers to.
     /// </code>
     /// </summary>
     [Fact]
@@ -547,7 +547,7 @@ public sealed class TheCantinaHallTests
             "Real coffee. On a rock like this. Somebody's writing it off against something.",
             CanteenRegulars.Barks[12]);
         Assert.Equal(
-            "Table linen on a freight stop. I stopped asking the questions I like the answers to.",
+            "Brass pillars on a freight stop. I stopped asking the questions I like the answers to.",
             CanteenRegulars.Barks[13]);
     }
 
@@ -943,11 +943,11 @@ public sealed class TheCantinaHallTests
     public void BothCardsAreWiredVerbatimAndNeitherEXPLAINSAnything()
     {
         Assert.Equal(
-            "Carriers' canteen, the sign says, and the room says something else: linen on the tables, "
-            + "brass on the pillars, light somebody chose. On a rock with no name on any chart, the company "
-            + "feeds its contractors like a hotel feeds guests it wants to keep — and nobody at the tables "
-            + "finds that strange, because the pay is on the nail, the coffee is real, and questions are the "
-            + "one thing on the menu that costs. Along the back wall, a row of doors. Cabinets, by "
+            "Carriers' canteen, the sign says, and the room says something else: steel tables wiped to a "
+            + "shine, brass on the pillars, light somebody chose. On a rock with no name on any chart, the "
+            + "company feeds its contractors like a hotel feeds guests it wants to keep — and nobody at the "
+            + "tables finds that strange, because the pay is on the nail, the coffee is real, and questions "
+            + "are the one thing on the menu that costs. Along the back wall, a row of doors. Cabinets, by "
             + "arrangement. The hall is loud. The doors are why.",
             UndergroundComplex.CantinaHallCard);
 

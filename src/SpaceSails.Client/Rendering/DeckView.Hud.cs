@@ -9,9 +9,13 @@ public sealed partial class DeckView
     // contacts by bearing + range, clamped to the ring when beyond it. Blips pulse faster as they close.
     private static readonly RgbaColor TrackerRing = new(120, 200, 150, 150);
 
-    // #330 · Where the left-edge instrument column begins under the SANITY plate (its base bottom ≈ 70px
-    // + a small consistent gap). The tracker's centre sits directly below this — one honest column.
-    private const double SanityColumnTop = 82.0;
+    // #330/#561 · Where the left-edge instrument column begins under the nerve block. ASKED, never typed:
+    // the block publishes its own plate bottom and HudColumn.GapPx is the air after it, so the day something
+    // else is hung under the pips the fan steps down with them. It was a literal 82.0 for two releases after
+    // #453's condition pips pushed the gauge to y=80, and the owner read the result as one instrument.
+    // The fan is only ever drawn on an excursion, where the gauge takes the corner full-size — so the
+    // SURFACE block is the one this column sits under.
+    private static double NerveColumnTop => HudColumn.Surface.ColumnTop;
     private const double TrackerDesiredRadius = 116.0;   // owner: "make the motion meter bigger" — the ~115 class
 
     private void DrawMotionTracker(int widthPx, int heightPx, double simTime, in SurfaceHud hud)
@@ -20,8 +24,8 @@ public sealed partial class DeckView
         // meter"): the excursion's star instrument, big enough to read at a glance, seated in the top-left
         // column directly beneath the SANITY plate on an opaque disc. It SHRINKS proportionally on a small
         // viewport rather than clipping, and the ship-desk chrome is hidden on-surface so nothing buries it.
-        float r = (float)MotionTracker.TrackerRadius(widthPx, heightPx, SanityColumnTop, TrackerDesiredRadius);
-        (double acx, double acy) = MotionTracker.TrackerAnchor(widthPx, heightPx, r, SanityColumnTop);
+        float r = (float)MotionTracker.TrackerRadius(widthPx, heightPx, NerveColumnTop, TrackerDesiredRadius);
+        (double acx, double acy) = MotionTracker.TrackerAnchor(widthPx, heightPx, r, NerveColumnTop);
         float cx = (float)acx, cy = (float)acy;
 
         // Sizes scale with the disc so a shrunk tracker stays legible and a big one reads across the map.
@@ -307,13 +311,23 @@ public sealed partial class DeckView
         // #380 item 2: the plate NAMES the meter — "NERVE", the diegetic name every flavor rung, band-drop,
         // and shock pulse already speaks (the #226 sanity system's on-screen face). No name, no cause, no
         // remedy was the mystery; the name lands here, the cause+remedy in the band-drop pulse (Map.Surface).
+        // #561 · The stack down the column — baseY, the bar's height, the pip size, the plate's height and
+        // where the next instrument may start — is ONE measurement, held in Core (HudColumn) and read by
+        // both the drawing here and the tracker's anchor. Only the widths are the renderer's own business.
+        HudColumn.NerveBlock block = HudColumn.For(compact);
         float w = compact ? 150f : 210f;
-        float h = compact ? 13f : 18f;
+        float h = (float)block.BarHeight;
         float labelPx = compact ? 9f : 11f;
-        float baseY = compact ? 112f : 30f;   // aboard: clear below the top-left FP toggle; surface: column head
+        float baseY = (float)block.BaseY;   // aboard: clear below the top-left FP toggle; surface: column head
         float x0 = 18f + jx, y0 = baseY + jy;
+        float inset = (float)HudColumn.PlateInsetPx;
 
-        FillRect(x0 - 8f, y0 - 20f, w + 16f, h + 42f, new RgbaColor(6, 11, 10, 205));  // the backing plate
+        // #561 · THE PLATE BACKS EVERYTHING IT WAS DRAWN TO BACK. Its height is the block's own, measured
+        // to the bottom of the condition pips plus the same inset it keeps at its left and right edges.
+        // Typed as h + 42 it ended at y=70 while #453's pips ran 70 → 80, so on the regolith five red pips
+        // sat on bare ground with no plate under them.
+        FillRect(x0 - inset, y0 - (float)HudColumn.PlateHeadPx, w + (2f * inset),
+            (float)block.PlateHeight, new RgbaColor(6, 11, 10, 205));                  // the backing plate
         _renderer.DrawText(x0, y0 - 6, "NERVE", NerveFrame, $"bold {labelPx:0}px monospace", TextAlign.Left);
 
         // #480 · TEN WHOLE PIPS, not a bar. Owner: "the sanity events should be quantized … not this float
@@ -339,8 +353,8 @@ public sealed partial class DeckView
         // and the two must never be mistaken for each other while you decide whether to run.
         if (hitsTaken >= 0)
         {
-            float py = y0 + h + 22f;
-            float pip = compact ? 7f : 10f;
+            float py = y0 + h + (float)HudColumn.PipDropPx;
+            float pip = (float)block.PipSize;
             float gap = pip * 0.55f;
             int left = Math.Max(0, CaptainCondition.MaxHits - hitsTaken);
             var spent = new RgbaColor(70, 26, 24, 220);
