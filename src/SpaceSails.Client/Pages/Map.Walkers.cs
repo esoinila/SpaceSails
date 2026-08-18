@@ -655,10 +655,11 @@ public partial class Map
     /// <summary>
     /// #731 · PLAN SOMEBODY'S WALK — the one place on this side that says who is walking.
     ///
-    /// <para>Three errands use it (a regular finishing, the visitor arriving, the visitor going), and they
-    /// hand it three different plates and three different destinations, but they are all the same kind of
+    /// <para>FIVE errands use it — a regular finishing, the visitor arriving, the visitor going, the contact
+    /// walking you into a cabinet (#731 v2), and a sweep team filing out of a wreck's airlock (#731 v2) — and
+    /// they hand it five different plates and five different destinations, but they are all the same kind of
     /// body: a PERSON, at the captain's own width, on the captain's own lattice. So the gait is claimed
-    /// exactly once here rather than three times — <c>AJambIsNotASealedDoorTests</c> counts every line in the
+    /// exactly once here rather than five times — <c>AJambIsNotASealedDoorTests</c> counts every line in the
     /// shipping source that claims <c>Gait.Person</c>, and the owner's ruling behind that count (<i>"Lets not
     /// help reevers move in any easier if possible"</i>) is easier to keep when one file says it once.</para>
     ///
@@ -668,16 +669,22 @@ public partial class Map
     /// end at the captain's own table give none, because the captain is not in the way at their own table —
     /// they are the reason for the walk. See <see cref="NpcWalk.NoPersonalSpace"/>.</para>
     ///
+    /// <para><paramref name="pace"/> is the second: a regular finishing a drink and a black-ops team working
+    /// a hull at their own clip are the same BODY at two different speeds, and the speed is the caller's
+    /// because it is a fact about the errand. Everything else — the width, the lattice, the stone, the
+    /// gait — is one law for all five.</para>
+    ///
     /// <para>Null when the floor does not connect the two ends. That is the reachability audit's own verdict
     /// and never a reason to place the figure at the far end anyway.</para>
     /// </summary>
     private static NpcWalk? OnFoot(
         string plate, NpcWalk.Bound bound, DeckReachability.Point from,
         IReadOnlyList<SurfaceCollision.Segment> walls,
-        double berth = NpcWalk.PersonalSpaceInRadii) =>
+        double berth = NpcWalk.PersonalSpaceInRadii,
+        double pace = NpcWalk.PaceDu) =>
         NpcWalk.Plan(
             plate, bound, from, walls, DeckPlan.AvatarRadius, SurfaceCollision.Gait.Person,
-            NpcWalk.PaceDu, berth);
+            pace, berth);
 
     /// <summary>#731 · She is standing at your elbow. The strip's own rule takes over from here unchanged —
     /// #865's card, off #865's flag, said by #865's scene — and this only says WHEN.

@@ -41,6 +41,21 @@ public static class InspectionTeam
 
         /// <summary>The challenge went unanswered. They are no longer sweeping a hull; they are clearing it.</summary>
         Hunting,
+
+        /// <summary>
+        /// #731 v2 · THE SWEEP IS OVER AND THEY ARE GOING BACK TO THEIR OWN BOAT.
+        ///
+        /// <para>The state this scene has never had. Until now the team was spawned, walked its route
+        /// forever, and stopped existing only because the NEXT boarding cleared the list — so a captain who
+        /// hid well enough simply never found out what happened, and the answer to <i>did they leave</i> was
+        /// that the question was never asked.</para>
+        ///
+        /// <para>It costs no nerve (see <see cref="NervePerSecond"/>): a professional walking to their own
+        /// airlock is not looking for you, and the whole point of the beat is that they never found you.
+        /// <b>Being in it is not being safe</b> — a leaver who catches a captain in their lamp still
+        /// challenges, because the sighting branch is asked before the state is.</para>
+        /// </summary>
+        Leaving,
     }
 
     /// <summary>One sweeper. Deliberately thin: a position, a heading, a state and how long it has been in it —
@@ -154,6 +169,40 @@ public static class InspectionTeam
     /// real and it costs the whole of the beat. FLAGGED for the owner's tuning.</para>
     /// </summary>
     public const double ChallengeSeconds = 3.0;
+
+    /// <summary>
+    /// #731 v2 · HOW MANY TIMES ROUND THE HULL BEFORE THEY GO.
+    ///
+    /// <para>Once. They came to look at a ship; when they have looked at all of it, they leave — and the
+    /// route already ends at their own lock, because <c>SpawnSweepTeam</c> laid it that way from the first
+    /// build (<i>"they work the ship the way anybody would who has done it before — from the far end back to
+    /// their own boat"</i>). So the departure is not a new behaviour bolted on; it is the route finally being
+    /// allowed to finish.</para>
+    ///
+    /// <para>A second lap would be a team that does not trust its own sweep, which is a different scene and
+    /// a much less frightening one: the dread in this beat is that they were thorough, they were unhurried,
+    /// and they went home without ever knowing you were aboard.</para>
+    /// </summary>
+    public const int LapsBeforeTheyGo = 1;
+
+    /// <summary>#731 v2 · How far apart they stand when they queue for the lock, in deck units.
+    ///
+    /// <para>Owner's word for the exit is <b>single file</b>, and this is what makes it one: two body-widths
+    /// (<c>DeckPlan.AvatarRadius</c> is 0.7, so a body is 1.4 across) plus a little, which is close enough
+    /// that three figures on the spine read as a QUEUE rather than as three people who happen to be walking
+    /// the same way, and far enough that nobody is standing in anybody's back. Below a body-width they would
+    /// be drawn inside one another; much above it and the file reads as a crowd drifting forward.</para>
+    /// </summary>
+    public const double FileSpacingDu = 3.0;
+
+    /// <summary>#731 v2 · How long one body takes to work the lock and be gone, in seconds.
+    ///
+    /// <para>Unhurried, which is the owner's other word for this beat. A hatch that swallowed three people in
+    /// one frame would be a despawn wearing a door; this is long enough that the captain watches them go one
+    /// at a time and short enough that the way home is not held for a whole watch. FLAGGED for the owner's
+    /// tuning.</para>
+    /// </summary>
+    public const double ThroughTheLockSeconds = 3.0;
 
     /// <summary>How long they search the place a noise came from before giving up and rejoining the route. Long
     /// enough that making a racket and walking away does not simply work, short enough that one mistake is not the
