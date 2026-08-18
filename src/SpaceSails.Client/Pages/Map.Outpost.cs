@@ -12,7 +12,7 @@ namespace SpaceSails.Client.Pages;
 // hut IS: "there could be an overrun illegal space there that was abandoned ... some story that tells the
 // player about the game universe."
 //
-// Until this, an ORDINARY landing site could not grow at all. Lab 43 measured it: Miranda, Luna, Phobos,
+// Until this, an ORDINARY landing site could not grow at all. Lab 47 measured it: Miranda, Luna, Phobos,
 // Europa and Titan alike, every site answered NEVER — DeckPlan.AppendRegion was reachable only on two of
 // the three expedition-site-* rocks. The owner had never seen a landing site expand because it could not
 // happen where he plays. This is the lane that fixes that, on every moon, using the machinery that was

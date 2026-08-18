@@ -7,7 +7,7 @@ namespace SpaceSails.Core;
 /// #563 · TERRAIN — the marks on a moon that are scenery rather than obstacles.
 ///
 /// <para>Owner: <i>"put something more interesting in the landscape."</i> A landing site is a 78 × 64 field
-/// holding between twelve and twenty-five wall segments; the rest is bare. Lab 43 measured Miranda's canon
+/// holding between twelve and twenty-five wall segments; the rest is bare. Lab 47 measured Miranda's canon
 /// ground — the monolith maze, the one with the story on it — at <b>12% of the field</b>. Everything else is
 /// floor.</para>
 ///

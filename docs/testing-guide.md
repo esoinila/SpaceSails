@@ -1434,7 +1434,7 @@ To find other sites that have one, run the lab — it prints `+ an UNLISTED band
 header:
 
 ```bash
-dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
+dotnet run --project labs/48-a-lab-about-the-lab/Lab48.csproj -c Release
 ```
 
 Both only fire under `?secretlab=1`. An ordinary landing still drops you on the open regolith at the landing band, so this can never quietly become how the game plays.
@@ -1508,7 +1508,7 @@ its arrival line and its callsign now wait behind the arrival plate instead of p
 
 Six features landed in one day and everything above predates all of them. **Their links, verified floor numbers
 and what-to-look-for live in [`testing-links-the-hive.md`](testing-links-the-hive.md)** — where every floor
-number was read out of the real generator with Lab 44 rather than assumed — and the test plan is
+number was read out of the real generator with Lab 48 rather than assumed — and the test plan is
 [`QAHandoff-TheHive.md`](QAHandoff-TheHive.md).
 
 The short version, because these are the easiest to miss:

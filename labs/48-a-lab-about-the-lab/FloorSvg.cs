@@ -3,7 +3,7 @@ using System.Text;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
-namespace SpaceSails.Labs.Lab44;
+namespace SpaceSails.Labs.Lab48;
 
 /// <summary>
 /// #589 · One floor of the Hive, drawn.

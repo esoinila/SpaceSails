@@ -46,7 +46,7 @@ number in every lesson comes from actually running that lesson's probe.
 
 The later labs left physics behind and kept the method: Lab 34 measures whether a rescue
 button is actually *clickable* when you need it, Lab 41 runs A\* over generated interiors to
-prove you can get to the back of the ship, and Lab 44 is a lab about the lab — asking not
+prove you can get to the back of the ship, and Lab 48 is a lab about the lab — asking not
 whether a room is sealed, but *why*.
 
 ## Docs

@@ -7,7 +7,7 @@ namespace SpaceSails.Labs.Lab45;
 /// — once against the plain segment list the sightline predicates are handed today, once against the
 /// <c>WallIndex</c> the very same floor already carries for the walkers.
 ///
-/// <para>Hand-rolled SVG rather than LabViz, for Lab 44's reason: <c>SpaceSails.LabViz</c> is a heliocentric
+/// <para>Hand-rolled SVG rather than LabViz, for Lab 48's reason: <c>SpaceSails.LabViz</c> is a heliocentric
 /// trajectory viewer — bodies on rails, paths in metres, an epoch — and it has no idea what a nanosecond is.
 /// A lab that bent it into a bar chart would be the wrong tool wearing the right name.</para>
 ///
