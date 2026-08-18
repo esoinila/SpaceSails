@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using SpaceSails.Core;
 
-namespace SpaceSails.Labs.Lab43;
+namespace SpaceSails.Labs.Lab47;
 
 /// <summary>
 /// Draws a landing site's generated ground as a standalone SVG.

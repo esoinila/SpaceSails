@@ -81,7 +81,9 @@ public sealed class TheOutcomeIsOnThePopUpTests
     {
         string taking = Method("Map.Kaamos.cs", "private void TakeKaamosBounceFiling(");
 
-        int card = taking.IndexOf("ShowRevealCard(", StringComparison.Ordinal);
+        // #664 · the card is raised through the ONE seam now (RaiseStoryBeat), not by hand. The law is
+        // untouched: the receipt has to be an argument of the raise that opens the card.
+        int card = taking.IndexOf("RaiseStoryBeat(", StringComparison.Ordinal);
         Assert.True(card >= 0,
             "TakeKaamosBounceFiling no longer raises the RETURNED TO SENDER card — this guard needs re-reading.");
 
@@ -100,15 +102,18 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheRaisedCardHasAnOutcomeOfItsOwnAndDrawsIt()
     {
-        string card = Pages("Map.RevealCard.cs");
+        // #664 · The record this used to read lived in Map.RevealCard.cs, the client-only twin of the story
+        // card that the fork built and the merge kept. There is one card now; the Outcome channel moved to it
+        // whole, and the claim below is the same claim about the same sentence on the same screen.
+        string card = Pages("Map.StoryCards.cs");
         Assert.Contains("string? Outcome", card, StringComparison.Ordinal);
 
-        string block = BlockOf("@if (_revealCard is { } plate)");
-        Assert.True(block.Contains("plate.Outcome", StringComparison.Ordinal),
-            "the reveal card never renders its own Outcome — an act's result is stored and then shown " +
+        string block = BlockOf("@if (_storyCard is { } told)");
+        Assert.True(block.Contains("told.Outcome", StringComparison.Ordinal),
+            "the story card never renders its own Outcome — an act's result is stored and then shown " +
             "nowhere (#736).");
         Assert.True(block.Contains("reveal-outcome", StringComparison.Ordinal),
-            "the reveal card has no styled outcome row (#736).");
+            "the story card has no styled outcome row (#736).");
     }
 
     /// <summary>THE LAW READS ITSELF. <c>SayItWhereTheyAreLooking</c> is the one place that decides which
@@ -139,8 +144,9 @@ public sealed class TheOutcomeIsOnThePopUpTests
                 "answer is stored where nobody can read it, which is worse than the pulse it replaced (#736).");
         }
 
-        // And the card, which does not take a field: it takes the record, so it dies with the card it belongs to.
-        Assert.Contains("_revealCard = card with { Outcome = line }", seam, StringComparison.Ordinal);
+        // And the card, which does not take a field: it takes the record, so it dies with the card it belongs
+        // to. #664 · that record is `_storyCard` now, the one card left standing.
+        Assert.Contains("_storyCard = (card.Beat, card.Subject, line);", seam, StringComparison.Ordinal);
     }
 
     /// <summary>Each pop-up this sweep gave an answer to draws that answer INSIDE ITS OWN BLOCK. In the file
@@ -175,12 +181,12 @@ public sealed class TheOutcomeIsOnThePopUpTests
     {
         string body = Method(file, signature);
 
-        int card = body.IndexOf("ShowRevealCard(", StringComparison.Ordinal);
+        int card = body.IndexOf("RaiseStoryBeat(", StringComparison.Ordinal);
         Assert.True(card >= 0, $"`{signature}` no longer raises a card — this guard needs re-reading.");
 
         // Searched FROM the card, so the only occurrence that can satisfy this is one inside the raise's own
         // argument list. A site that says the line first and raises the card afterwards — the shipped shape,
-        // and the exact #736 bug — has nothing after `ShowRevealCard(` to find.
+        // and the exact #736 bug — has nothing after `RaiseStoryBeat(` to find.
         int said = body.IndexOf(line, card, StringComparison.Ordinal);
         Assert.True(said > card,
             $"`{signature}` says its result somewhere other than on the card it raises — the #736 shape " +
@@ -200,7 +206,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     {
         string body = Method(file, signature);
 
-        int plate = body.IndexOf("ShowRevealCard(", StringComparison.Ordinal);
+        int plate = body.IndexOf("RaiseStoryBeat(", StringComparison.Ordinal);
         int said = body.IndexOf("SayItWhereTheyAreLooking(", StringComparison.Ordinal);
         Assert.True(plate >= 0, $"`{signature}` no longer raises a plate — this guard needs re-reading.");
         Assert.True(said > plate,

@@ -87,7 +87,7 @@ public static class SurfaceLayout
     ///
     /// <para>It lived as constants in the client's <c>MoonSurface</c>, and every test and lab that needed it
     /// kept its own hand-copied duplicate. So when the field grew sixteenfold, the client shipped a
-    /// 310 x 260 du world while <c>SurfaceReachabilityTests</c> and Lab 43 went on auditing and drawing the
+    /// 310 x 260 du world while <c>SurfaceReachabilityTests</c> and Lab 47 went on auditing and drawing the
     /// old 78 x 64 one — and passed, and printed confident numbers about a world that no longer existed.</para>
     ///
     /// <para>That is the same drift this project keeps paying for, one level up from geometry: a test that
@@ -301,7 +301,7 @@ public static class SurfaceLayout
         // #563 · THE CANON GROUND GETS BUILDINGS TOO. Owner, standing on it: "no real buildings and
         // one-thick walls still" — because site 0 is AUTHORED and routes here, bypassing the seeded
         // generator where the structures live. So the flagship ground, the one carrying the story and the
-        // one every captain lands on by default, was the only one that never got the new content: Lab 43
+        // one every captain lands on by default, was the only one that never got the new content: Lab 47
         // measured it at 12 wall segments over 12% of the field, the emptiest site on the moon.
         //
         // The maze itself is untouched — it is canon and stays exactly as authored. These stand OUT in the

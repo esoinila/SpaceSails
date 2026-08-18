@@ -390,7 +390,9 @@ public sealed class CoSeatingIsAStripTests
     {
         yield return ("nothing pending", NothingPending, _ => { });
         yield return ("a story card raised on the sit frame", NothingPending,
-            m => Invoke(m, "RaiseStoryBeat", StoryBeats.Beat.CrewDeputation, null));
+            // #664 · the seam's third parameter is #736's outcome; reflection does not fill optional
+            // arguments, and a crew deputation settles nothing arithmetical, so it goes in as null.
+            m => Invoke(m, "RaiseStoryBeat", StoryBeats.Beat.CrewDeputation, null, null));
         yield return ("the room's first-entry cards unspent", _ => { }, _ => { });
         yield return ("the room's first-entry cards already spent", NothingPending, _ => { });
     }

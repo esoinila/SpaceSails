@@ -12,7 +12,7 @@ namespace SpaceSails.Client.Pages;
 // hut IS: "there could be an overrun illegal space there that was abandoned ... some story that tells the
 // player about the game universe."
 //
-// Until this, an ORDINARY landing site could not grow at all. Lab 43 measured it: Miranda, Luna, Phobos,
+// Until this, an ORDINARY landing site could not grow at all. Lab 47 measured it: Miranda, Luna, Phobos,
 // Europa and Titan alike, every site answered NEVER — DeckPlan.AppendRegion was reachable only on two of
 // the three expedition-site-* rocks. The owner had never seen a landing site expand because it could not
 // happen where he plays. This is the lane that fixes that, on every moon, using the machinery that was
@@ -305,10 +305,14 @@ public partial class Map
         // #736 · The plate carries EffectsLine as its outcome, because EffectsLine is the whole of what makes
         // one hut different from another and the picture is deliberately the same in all four. Filed above
         // and read here: the book keeps it, and the card the press raised says it where the eye already is.
-        ShowRevealCard(
-            SurfaceOutpost.EffectsPlate.Title,
-            SurfaceOutpost.EffectsPlate.ArtFile,
-            SurfaceOutpost.EffectsPlate.Caption,
+        //
+        // #664 · ONCE PER HUT, which is what the subject is for. The picture is deliberately the same in all
+        // four covers, so a per-beat cadence would have had to choose between showing every hut the identical
+        // frame and showing exactly one hut ever — and the second is worse, because EffectsLine is a
+        // DIFFERENT person's last hour each time and it rides this card. The subject is the site, not the
+        // body: two huts on one moon are two people.
+        RaiseStoryBeat(StoryBeats.Beat.OutpostEffectsRead,
+            $"{ex.Stop.Body.Id}#{ex.Site.LayoutSalt}",
             outcome: SurfaceOutpost.EffectsLine(cover));
 
         // Reading somebody's last effects on a floor they did not walk off costs a little nerve. Small: the

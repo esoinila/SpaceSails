@@ -97,7 +97,12 @@ public partial class Map
         //
         // #736 · And the sentence that names the DECISION ("force it open — or walk away") rides the card,
         // because the card comes up on the same sweep and the decision is the thing the captain has to read.
-        ShowRevealCard(SecretLab.DoorPlate.Title, SecretLab.DoorPlate.ArtFile, SecretLab.DoorPlate.Caption,
+        //
+        // #664 · ONCE PER MOON. There is one lab per body, so this cannot repeat on the same subject anyway —
+        // what the cadence buys is the guarantee that the NEXT moon's buried door is still a moment, which is
+        // exactly what a once-ever card would have taken away. Deferrable: the ground is quiet when a
+        // detector finds this, and if it is not, the decision it names will keep.
+        RaiseStoryBeat(StoryBeats.Beat.SecretLabDoorFound, ex.Stop.Body.Id,
             outcome: "📡 The detector SHRIEKS and holds — not a coin, not scrap: a SEALED DOOR, buried flush " +
                 "with the regolith where no door has any right to be. Someone hid this. Force it open ([E] " +
                 "at the door) — or walk away and pretend you never found it.");
@@ -459,10 +464,13 @@ public partial class Map
             // #736 · The die, the count and the order to RUN ride the card. The house law is that the die is
             // SHOWN; a d20 shown under a backdrop's blur is a die nobody can argue with, which is the exact
             // thing showing it exists to prevent.
-            ShowRevealCard(
-                SecretLab.TheyStandPlate.Title,
-                SecretLab.TheyStandPlate.ArtFile,
-                SecretLab.TheyStandPlate.Caption,
+            //
+            // #664 · AND IT IS THE CLEAREST `DeferrableWhileInDanger = false` IN THE GAME. The statement above
+            // this comment is SpawnReevers — so CaptainIsInDanger() is true at the instant of the raise, every
+            // single time, and a deferrable card here would not "wait for a calmer moment", it would wait for
+            // the pack to be dead and then tell the captain to RUN. Once per moon, because there is one lab
+            // per body and the next moon's is a fresh roll with a different die on it.
+            RaiseStoryBeat(StoryBeats.Beat.TheDormantThingWakes, ex.Stop.Body.Id,
                 outcome: $"🖥 {coreLogText}   ▪   {dice} — and behind you the dormant thing's eyes come open. " +
                     $"{roll.PackSize} of them, standing off their benches. It salvages YOU. Get to the tube — RUN.");
         }

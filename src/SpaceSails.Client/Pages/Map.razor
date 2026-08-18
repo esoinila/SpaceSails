@@ -1392,6 +1392,16 @@
                          onerror="this.style.display='none'" />
                 }
                 <div class="view-object-caption">@toldCopy.Caption</div>
+                @* #736 (arrived with #664, from the deleted Map.RevealCard.cs) · WHAT THE ACT ACTUALLY DID, on
+                   the card the act raised. Owner, at the Gilt-Eye: the 350 cr and the kept receipt — "the two
+                   facts the player acts on" — were pulsing to the HUD under this backdrop while the caption in
+                   front carried neither. The caption is the fiction; this row is the arithmetic, and the
+                   card's own subtree is the one layer the backdrop cannot blur (#680/#686's law, third
+                   organ). *@
+                @if (told.Outcome is { Length: > 0 } toldOutcome)
+                {
+                    <div class="reveal-outcome">@toldOutcome</div>
+                }
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseStoryCard)">…go on</button>
             </div>
         </div>
@@ -1525,32 +1535,11 @@
         </div>
     }
 
-    @* #528 · THE STORY PLATE — the vented-room card with the wreck taken out of it, so any beat in the
-       game can be given the same level of service instead of a pulse line that fades in a second and a
-       half. Same markup, same onerror-hide, same discipline: the image is the EVIDENCE and naming what it
-       means is still the captain's job. The text comes from Core (KaamosLore.PlateFor is the first
-       tenant), never from a literal here. *@
-    @if (_revealCard is { } plate)
-    {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseRevealCard)">
-            <div class="view-object" @onclick:stopPropagation="true">
-                <div class="view-object-title">@plate.Title</div>
-                <img class="view-object-img" src="@plate.Art" alt="@plate.Title" onerror="this.style.display='none'" />
-                <div class="view-object-caption">@plate.Caption</div>
-                @* #736 · WHAT THE ACT ACTUALLY DID, on the card the act raised. Owner, at the Gilt-Eye: the
-                   350 cr and the kept receipt — "the two facts the player acts on" — were pulsing to the HUD
-                   under this backdrop while the caption in front carried neither. The caption is the fiction;
-                   this row is the arithmetic, and the card's own subtree is the one layer the backdrop cannot
-                   blur (#680/#686's law, third organ). *@
-                @if (plate.Outcome is { Length: > 0 } plateOutcome)
-                {
-                    <div class="reveal-outcome">@plateOutcome</div>
-                }
-                <button type="button" class="view-object-close" title="Look away"
-                        @onclick="() => Dismiss(CloseRevealCard)">Look away</button>
-            </div>
-        </div>
-    }
+    @* #664 · THE SECOND REVEAL CARD USED TO BE HERE, and it is gone. The fork answered #528 twice on the
+       same day; the merge (#633) kept both and named the duplication rather than picking a winner inside a
+       conflict-bearing merge. The winner is the one above: same markup, same onerror-hide, same discipline —
+       and, unlike this one, a CADENCE and a DEFERRAL, which is the half of the owner's sentence ("as long as
+       it does not block the playing too much or be too repetitive") a client-only card could never keep. *@
 
     @* #488 · THE TWO ROADS. Standing at a derelict's cargo, having read her: file the accident report for a
        finder's fee and a contact, or strip her and say nothing for everything today. The cause you put your

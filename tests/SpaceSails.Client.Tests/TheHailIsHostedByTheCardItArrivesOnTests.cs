@@ -267,8 +267,11 @@ public sealed class TheHailIsHostedByTheCardItArrivesOnTests
                      ("_storyCard", "a hosted beat's canvas is a card its caller already raised, so anything this "
                                     + "arm puts on the screen is the second modal, showing the same painting as the first"),
                      ("_storyPlate", "a plate riding the edge of the host is the same duplication, moved to the corner"),
-                     ("PlayCue", "the host arrives with its own cue; a second one is a stacked modal in the one "
-                                 + "channel the player cannot close"),
+                     // #664 · widened from `PlayCue` to `Cue`, because the seam's chime is routed through
+                     // `PlayTheBeatsCue` now (Core decides which noise, or none) and a guard that only knew
+                     // the old spelling would have waved the new one through this arm.
+                     ("Cue", "the host arrives with its own cue; a second one is a stacked modal in the one "
+                             + "channel the player cannot close"),
                  })
         {
             Assert.True(!hosted.Contains(forbidden, StringComparison.Ordinal),
@@ -277,7 +280,9 @@ public sealed class TheHailIsHostedByTheCardItArrivesOnTests
 
         // The other two arms DO raise something. Without this the test above would pass on a seam that had
         // stopped showing anything to anybody.
-        Assert.Contains("_storyCard = (beat, subject);", body, StringComparison.Ordinal);
+        // #664 · the card arm carries #736's outcome now, arrived with the eleven moments that came off the
+        // deleted reveal card. The claim is unchanged: the OTHER two arms really do put something up.
+        Assert.Contains("_storyCard = (beat, subject, outcome);", body, StringComparison.Ordinal);
         Assert.Contains("_storyPlate = (beat, subject,", body, StringComparison.Ordinal);
     }
 

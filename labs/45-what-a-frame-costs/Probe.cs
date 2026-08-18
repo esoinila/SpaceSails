@@ -21,7 +21,7 @@ using SpaceSails.Labs.Lab45;
 // The client assembly is browser-targeted, so everything this lab touches carries
 // [SupportedOSPlatform("browser")] and CA1416 objects to a console app calling it. The annotation is a
 // COMPILE-TIME contract with no runtime effect — none of this code path does JS interop, it reads geometry
-// and does arithmetic — and Lab 44 and tests/SpaceSails.Client.Tests already run the same types on the
+// and does arithmetic — and Lab 48 and tests/SpaceSails.Client.Tests already run the same types on the
 // desktop runtime for the same reason.
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("browser")]
 

@@ -1,8 +1,8 @@
 ﻿# Test links — the Hive, floor by floor
 
 *Companion to [`testing-guide.md`](testing-guide.md) Appendix A, narrowed to one building. Every link here
-boots straight into the situation, and **every floor number below was read out of the real generator** (Lab 44,
-`dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -- --body <id>`) rather than assumed — a
+boots straight into the situation, and **every floor number below was read out of the real generator** (Lab 48,
+`dotnet run --project labs/48-a-lab-about-the-lab/Lab48.csproj -- --body <id>`) rather than assumed — a
 document full of confident URLs that land on the wrong floor is worse than no document (§13.19's own lesson,
 one head along).*
 

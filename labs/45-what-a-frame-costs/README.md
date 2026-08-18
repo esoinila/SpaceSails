@@ -360,5 +360,5 @@ goes away — after it, wall count does not appear anywhere in the sim's cost mo
 - `src/SpaceSails.Core/ReeverChase.cs` — the step that costs 0.11 µs and does not care about walls.
 - Lab 10 (`labs/10-fast-enough-for-ten-thousand-x`) — the other stopwatch lab, and the same lesson
   about where arithmetic runs mattering more than the arithmetic.
-- Lab 44 (`labs/44-a-lab-about-the-lab`) — the other lab that references the *client* on purpose,
+- Lab 48 (`labs/48-a-lab-about-the-lab`) — the other lab that references the *client* on purpose,
   for the same reason: Core's geometry and the client's collision field are not the same object.

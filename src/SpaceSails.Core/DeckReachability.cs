@@ -118,7 +118,7 @@ public static class DeckReachability
     ///
     /// <para><see cref="Path"/> answers "can I get there" and hands back a route, which is what a red test
     /// wants. This answers the question a PICTURE wants: wash the floor with everywhere you can stand, and a
-    /// sealed room shows up as an island nobody coloured in. That is the whole of Lab 44, and it is the
+    /// sealed room shows up as an island nobody coloured in. That is the whole of Lab 48, and it is the
     /// difference between knowing a room is unreachable and seeing which wall did it.</para>
     ///
     /// <para>Same lattice, same standability predicate and the same no-corner-cutting rule as the walk, so a

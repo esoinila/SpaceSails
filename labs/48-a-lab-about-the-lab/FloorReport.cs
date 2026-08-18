@@ -1,7 +1,7 @@
 ﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
-namespace SpaceSails.Labs.Lab44;
+namespace SpaceSails.Labs.Lab48;
 
 /// <summary>
 /// #589 · What one floor of the Hive is, and how much of it the captain can actually get to.
