@@ -615,4 +615,66 @@ public sealed class YouCanTakeATableAloneTests
         Assert.Equal(SittingAlone.WaitingArtUrl, SittingAlone.ArtFor(false));
         Assert.Equal(SittingAlone.RestingArtUrl, SittingAlone.ArtFor(true));
     }
+
+    /// <summary>
+    /// #783/#759 · NOTHING ON A TABLE IN THIS HALL IS CLOTH.
+    ///
+    /// <para>Owner's no-tablecloths ruling on #759 is an ART spec — "shotcrete-spec, no tablecloths", steel
+    /// tables under a riveted window wall — and #778's emptied-hall line said <i>"The linen is clean on every
+    /// table you can see, and it has been clean a while"</i>. The picture and the sentence were describing two
+    /// different buildings, and the sentence was the one that shipped into the player's hands.</para>
+    ///
+    /// <para><b>Driven, not read.</b> The forbidden words are checked against what
+    /// <see cref="SittingAlone.NobodyCame"/> actually HANDS BACK over every watch the hall has and a run of
+    /// beats, as well as against the <see cref="SittingAlone.AllProse"/> list — because a canon grep over a
+    /// list is only as honest as the list's reachability, and this one proves the pool it is grepping is a
+    /// pool the room can produce.</para>
+    ///
+    /// <para><b>Proven RED</b> by restoring the #778 line into <c>NobodyCameQuiet</c>: the sweep hands it
+    /// back on the 0.30 and 0.15 watches and the assert fails with
+    /// <i>Assert.DoesNotContain() Failure: Sub-string found · found: "linen"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void NOTHING_ON_A_TABLE_IN_THIS_HALL_IsCloth()
+    {
+        string[] forbidden = ["linen", "tablecloth", "table cloth", "napkin", "napery"];
+
+        // What the room can actually say to a captain who sits and waits. Every watch the fill bill has, a
+        // run of beats past the length of every pool, and both sides of the cabinet door.
+        var reachable = new List<string>();
+        for (long watch = 0; watch < CanteenRegulars.WatchFill.Count; watch++)
+        {
+            for (int beat = 0; beat < 8; beat++)
+            {
+                reachable.Add(SittingAlone.NobodyCame(watch, beat));
+                reachable.Add(SittingAlone.NobodyCame(watch, beat, quiet: true));
+            }
+        }
+
+        // ── ANTI-VACUOUS ──────────────────────────────────────────────────────────────────────────────
+        //
+        // A grep that never reaches the emptied hall would stay green with the linen line sitting in it. So
+        // the sweep must be shown to have walked ALL THREE pools, and to have produced every single line of
+        // the quiet one — the pool the slip was in.
+        Assert.Contains(SittingAlone.NobodyCameBusy, line => reachable.Contains(line));
+        Assert.Contains(SittingAlone.NobodyCameCabinet, line => reachable.Contains(line));
+        foreach (string quiet in SittingAlone.NobodyCameQuiet)
+        {
+            Assert.Contains(quiet, reachable);
+        }
+
+        foreach (string line in reachable.Concat(SittingAlone.AllProse()))
+        {
+            foreach (string word in forbidden)
+            {
+                Assert.DoesNotContain(word, line, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        // And the owner-authored replacement itself, verbatim, so a later tidy cannot paraphrase the ruling
+        // back out of the room.
+        Assert.Contains(
+            "Nobody comes. Every table you can see is wiped steel, and it has been wiped a while.",
+            SittingAlone.NobodyCameQuiet);
+    }
 }

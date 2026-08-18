@@ -358,7 +358,11 @@ public static class SittingAlone
     [
         "A while goes by. Eighty chairs, and the loudest thing in the room is the machine at the back " +
         "thinking about somebody's card.",
-        "Nobody comes. The linen is clean on every table you can see, and it has been clean a while.",
+        // #783 · Wiped steel, not linen. The line was written for a canteen this game does not have: the
+        // no-tablecloths ruling on #759 says a mining hall's tables are bare metal, and a sentence that hands
+        // the player linen is the art and the prose describing two different buildings. Same beat, same
+        // rhythm, right world — owner-authored, lifted verbatim.
+        "Nobody comes. Every table you can see is wiped steel, and it has been wiped a while.",
         "You wait. The room is not empty so much as emptied, which is a different thing, and there is " +
         "nobody in here to ask about it.",
         "A while goes by. Somewhere behind the counter a fridge cycles, stops, and starts again.",
