@@ -344,7 +344,7 @@ public partial class Map
         SurfaceExcursion ex, UndergroundComplex.Amenity a, bool quietOnly = false)
     {
         foreach (CanteenRegulars.TableSeat top in
-            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
         {
             if (!top.Taken && (!quietOnly || top.Quiet))
             {

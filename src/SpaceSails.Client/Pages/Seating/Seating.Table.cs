@@ -75,7 +75,7 @@ public partial class Map
             foreach (UndergroundComplex.Amenity a in floor.Amenities)
             {
                 foreach (CanteenRegulars.TableSeat top in
-                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
                 {
                     if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
                     {
@@ -194,7 +194,7 @@ public partial class Map
             foreach (UndergroundComplex.Amenity a in floor.Amenities)
             {
                 foreach (CanteenRegulars.TableSeat top in
-                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
                 {
                     if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
                     {
@@ -660,6 +660,36 @@ public partial class Map
                 return;
             }
 
+            // #731 · AND SHE WALKS. Owner: "Now it is possible to have NPC ask to sit down at our table and
+            // offer a quest! This is the classic TTRPG event." The beat has decided somebody comes; WHERE FROM
+            // and HOW is the walker's, and it is a door that does not open for the captain and a route across
+            // the real floor. The card is raised when she gets here (TheVisitorHasArrived) — the same card off
+            // the same flag. The walk is the ceremony, not a second event.
+            //
+            // A floor with no such door, or no way through, has no provenance to offer, and she arrives the
+            // way she always has. That is the honest fallback and never a body placed at the far end of a walk
+            // nobody could walk.
+            if (_host.WalkSomebodyToYourTable(ex, t.Index))
+            {
+                return;
+            }
+
+            SomebodyTakesTheChair(ex, t);
+        }
+
+        /// <summary>#731 · She has crossed the room and is standing at the table. The strip's rule is #865's
+        /// and is untouched: somebody came to you, therefore the card.
+        ///
+        /// <para>The sitting is CHECKED rather than assumed. A captain who stood up, took their leave, or
+        /// walked to another top while she was on her feet has ended the scene she was walking into, and the
+        /// right answer is that nothing happens — never a card raised over a chair nobody is in.</para>
+        /// </summary>
+        public void TheVisitorHasArrived(SurfaceExcursion ex, int tableIndex)
+        {
+            if (Table is not { Bench: false, TheyCameToYou: false } t || t.Index != tableIndex)
+            {
+                return;
+            }
             SomebodyTakesTheChair(ex, t);
         }
 
@@ -718,6 +748,16 @@ public partial class Map
         /// a picture of boots up on a chair she has just got out of.</para></summary>
         private void BackToYourOwnTable(SurfaceExcursion ex, TableTalk t)
         {
+            // #731 · AND SHE GOES — on her own legs, back through the door she came out of. Owner: "If they go
+            // behind a door that is locked to us, we use that as 'I guess that concludes the conversation'
+            // point in the plot / situation." This is the TRIGGERED departure the issue proposed, and it is
+            // the same walker the shift uses for ambience; the trigger is simply that the scene is over.
+            //
+            // FIRST, while she is still the person at this table: the walk starts from the chair she crossed
+            // the room to, and the lines below are what happens to the PANEL after she has stood up. Nothing
+            // is said about any of it — the room delivers the full stop by parting for her a second time.
+            _host.WalkTheVisitorOut(ex, t.Index);
+
             t.Solo = true;
             // #865 · …and the card goes with her. The frame comes back down to the strip the captain was sitting
             // in before she arrived, which is the same one occupation of one table it always was.

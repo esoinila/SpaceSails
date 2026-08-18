@@ -419,6 +419,14 @@ public sealed class CoSeatingIsAStripTests
     ///
     /// <para>It is driven through the shipping wait beat with #757's own cheat forcing the approach, so the
     /// scene that comes up is the one a captain would get.</para>
+    ///
+    /// <para><b>#731 · AND SHE WALKS THERE NOW, so the guard waits for her.</b> The rule below is untouched
+    /// and is the whole point of this row: somebody who comes to YOU raises the card. What changed is the
+    /// sentence in front of it — the beat no longer makes her true where she stands, it sends her out of a
+    /// door that does not open for the captain and across the real floor, and the card comes up on the frame
+    /// she reaches the chair. So the frames between are SPENT, in the shipping surface tick, and then the same
+    /// three assertions are made. A guard that still asked on the press frame would be asserting that the walk
+    /// does not exist.</para>
     /// </summary>
     [Fact]
     public void SOMEBODY_WHO_COMES_TO_YOU_StillGetsTheCard()
@@ -431,6 +439,15 @@ public sealed class CoSeatingIsAStripTests
         // #757's own force-the-approach cheat: WHETHER, never who or what.
         Set(map, "_approachCheat", (bool?)true);
         Invoke(map, "TableMove", SittingAlone.Wait);
+
+        // #731 · …and now she crosses the room. Whether she WALKS at all, over what, and with what said about
+        // it, is TheExitIsTheFullStopTests' business; this row only needs her to have arrived before it asks
+        // #865's question. A floor with no locked door to come out of has no walk to spend and the loop is a
+        // no-op, which is the same honest fallback the arrival itself takes.
+        for (int frame = 0; frame < 4000 && !(bool)Get(map, "SeatedIsAConversation")!; frame++)
+        {
+            Invoke(map, "StepSurface", 0.1);
+        }
 
         Assert.True((bool)Get(map, "SeatedIsAConversation")!,
             "somebody crossed the hall, took the chair opposite and got a HUD strip. Her face is the point " +

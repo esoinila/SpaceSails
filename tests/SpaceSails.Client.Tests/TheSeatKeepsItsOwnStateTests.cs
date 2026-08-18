@@ -310,11 +310,24 @@ public sealed class TheSeatKeepsItsOwnStateTests
     /// <para>Taking a member off is a good day — lower the number in the same commit and say in the PR body
     /// which one went. RAISING it is a lane of its own, because it is the chair asking the page for something
     /// new, and that is a design decision rather than a build error.</para>
+    ///
+    /// <para><b>#731 · 28 → 30, and the lane that argued for it.</b> Owner, 2026-08-06: <i>"Now it is possible
+    /// to have NPC ask to sit down at our table and offer a quest! This is the classic TTRPG event."</i> and
+    /// <i>"If they go behind a door that is locked to us, we use that as 'I guess that concludes the
+    /// conversation' point."</i> The visitor at a table stops being an assignment and becomes a WALK, in both
+    /// directions — so the chair asks the page for exactly two new things, and they are the pair:
+    /// <c>WalkSomebodyToYourTable</c> and <c>WalkTheVisitorOut</c>.</para>
+    ///
+    /// <para>They are ANSWERS and not machinery, which is what this docblock warns about: each is a
+    /// <c>bool</c> meaning <i>she could be walked</i>, and the chair does not learn what a door, a lattice or
+    /// a collision field is. The seat could not own them — a route is planned over the deck the PAGE holds
+    /// and stepped in the page's own frame — and the alternative was handing the chair the deck plan, which
+    /// is the trade this ratchet exists to refuse.</para>
     /// </summary>
     [Fact]
     public void TheSeatNeedsExactlyThisManyThingsFromThePage()
     {
-        const int TheRatchet = 28;
+        const int TheRatchet = 30;
 
         List<string> members = HostMembers();
 

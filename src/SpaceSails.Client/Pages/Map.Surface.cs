@@ -236,16 +236,22 @@ public partial class Map
     /// both are wrong now, which is precisely why the sum lives here and every caller reads it.
     ///
     /// <para>The bands, in buffer order: the crew (3), the pack (<see cref="ReeverEngineCeiling"/>), the repo
-    /// crew (<see cref="MaxCollectors"/>), the sweep team (<c>InspectionTeam.TeamSize</c>), and #804's
-    /// rounds (<see cref="PatrolBand"/>). <see cref="FillSurfaceDroids"/> writes them at exactly these
-    /// offsets.</para></summary>
+    /// crew (<see cref="MaxCollectors"/>), the sweep team (<c>InspectionTeam.TeamSize</c>), #804's
+    /// rounds (<see cref="PatrolBand"/>), and #731's walkers (<see cref="WalkerBand"/>).
+    /// <see cref="FillSurfaceDroids"/> writes them at exactly these offsets.</para></summary>
     private const int SurfaceDroidCount =
-        3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize + PatrolBand;
+        3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize + PatrolBand + WalkerBand;
 
     /// <summary>#804 · Where the rounds' slots start. Stated as the sum of every band before it, so a fifth
     /// filler cannot quietly overwrite a fourth — which is precisely the bug #633 paid for.</summary>
     private const int PatrolFirstSlot =
         3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize;
+
+    /// <summary>#731 · …and where the walkers' slots start: after the rounds, by the same arithmetic and for
+    /// the same reason. A guard and a regular finishing a drink are two different kinds of person and never
+    /// share a slot.</summary>
+    private const int WalkerFirstSlot =
+        3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize + PatrolBand;
 
     private sealed class Reever
     {
@@ -760,6 +766,43 @@ public partial class Map
         // figure on screen and the person the game answers about be two different people. That is bug class
         // three with a face on it, and a watch chosen once cannot drift into it.
         public long CanteenWatch { get; set; }
+
+        // ── #731 · THE PEOPLE WHO ARE ON THEIR FEET ───────────────────────────────────────────────────
+        //
+        // Owner, 2026-08-06: "The NPCs but not reevers could also use the A* if we want to show them leaving
+        // a scene etc. If they go behind a door that is locked to us, we use that as 'I guess that concludes
+        // the conversation' point in the plot / situation." And the limitation it fixes, in the same breath:
+        // "Like on the bar now they have to wait for us to leave before they can sit up… or leave the bar."
+        //
+        // EXCURSION-SCOPED, and on the excursion rather than on the component for the reason every Hive flag
+        // above is: a walk belongs to the trip you are on, and a captain who rides back up and comes down
+        // again walks into a room whose shift is being dealt fresh. Nothing here is a second rota — the shift
+        // still says who was in the room; these two say who is no longer in their chair, and where their
+        // legs currently are.
+        //
+        // Walkers are LIVE OBJECTS and deliberately not saved: a route half-walked is not a fact about the
+        // world, it is a fact about a frame. StoodUp is the fact, and it is the one the deck reads.
+        public List<Walker> Walkers { get; } = [];
+
+        // Which tops have already had somebody get up from them this watch — the deck's own draw gate, handed
+        // to CanteenRegulars.Tables so a body crossing the floor is never also drawn sitting down.
+        public HashSet<int> HallStoodUp { get; } = [];
+
+        // Which of this watch's scheduled departures have already been dealt out, by table ordinal, so a
+        // schedule that is re-read every frame cannot send the same person out of the room twice.
+        public HashSet<int> HallDeparted { get; } = [];
+
+        // …and the shift's OWN list of who goes and when, worked out once when a watch begins on this floor.
+        // Egress.Departures needs the whole floor plan, and UndergroundComplex.Build generates a building
+        // from scratch on every call; asking it sixty times a second for an answer the frozen watch has
+        // already fixed is Lab 45's lesson with a body walking through it. NULL means "this shift has not
+        // been asked yet" — an EMPTY list is an answer (nobody goes), and the two are not spelled the same.
+        public IReadOnlyList<Egress.Move>? HallSchedule { get; set; }
+
+        // Which watch and floor the sets above belong to. A shift turning over, or a lift ride, empties
+        // them — the room forgetting, which is the same rule the table state upstairs already runs under.
+        public long WalkersWatch { get; set; } = long.MinValue;
+        public int WalkersFloor { get; set; } = int.MinValue;
 
         // ── #746 · WHAT HAS HAPPENED AT WHICH TABLE, THIS WATCH ───────────────────────────────────────
         //

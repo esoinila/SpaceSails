@@ -166,6 +166,41 @@ public partial class Map
         /// the pan.</summary>
         bool CubicleIsShut(string key);
 
+        /// <summary>
+        /// #731 · SEND SOMEBODY ACROSS THE ROOM TO THIS TABLE, on real legs, out of a door that does not open
+        /// for the captain.
+        ///
+        /// <para>Owner, 2026-08-06: <i>"In the space bars there are lot of cases where we can have npcs arrive
+        /// at bar from locked place or go to a locked place. Now it is possible to have NPC ask to sit down at
+        /// our table and offer a quest! This is the classic TTRPG event."</i> The walk IS the ceremony — no
+        /// banner and no blip; the room announces her by parting for her — so the arrival is a route planned
+        /// over the captain's own lattice and stepped by the captain's own collision, and the card comes up
+        /// when she gets there rather than on the frame the beat was spent.</para>
+        ///
+        /// <para><b>False means she could not be walked</b> — no locked door on this floor, no standing place
+        /// at one, or no way through — and the caller must then do the arrival the way it has always been
+        /// done. A refusal here is never a reason to place a body at the far end of a walk that could not be
+        /// walked.</para>
+        /// </summary>
+        bool WalkSomebodyToYourTable(SurfaceExcursion ex, int tableIndex);
+
+        /// <summary>
+        /// #731 · …AND THE OTHER HALF OF THE SENTENCE: she is finished, so she goes, and she goes back through
+        /// the door she came out of.
+        ///
+        /// <para>Owner, 2026-08-06: <i>"If they go behind a door that is locked to us, we use that as 'I guess
+        /// that concludes the conversation' point in the plot / situation."</i> This is the TRIGGERED half of
+        /// the issue's own proposal — <i>scheduled for ambience, triggered for plot beats; both through one
+        /// walker</i> — and the trigger is the scene ending. Nothing is said about it: the panel goes back to
+        /// being the captain's own table, and the room delivers the full stop by walking her out of it.</para>
+        ///
+        /// <para>The door is <see cref="Core.Interior.Egress.ArrivalDoor"/>'s, the SAME one her provenance was
+        /// dealt from this watch, so she does not walk out of the building through a door she was never behind.
+        /// False when she cannot be walked — no locked door, no standing place, no way through — and the
+        /// caller does exactly what it always did, which is nothing.</para>
+        /// </summary>
+        bool WalkTheVisitorOut(SurfaceExcursion ex, int tableIndex);
+
         // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
         //
         // #693's rule: a scene nobody can reach on demand is a scene that ships broken. Four of these are the

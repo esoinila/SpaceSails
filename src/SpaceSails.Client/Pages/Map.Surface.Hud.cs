@@ -83,6 +83,9 @@ public partial class Map
         // #804 · …and the rounds, in the band after the sweepers. Their filler applies the sightline gate
         // itself: a guard the captain cannot see is parked off-map exactly as an unseen Old One is.
         FillPatrolDroids(buffer, PatrolFirstSlot);
+        // #731 · …and the people who are leaving, or who have come out of a door to sit at your table. Their
+        // own band after the rounds, drawn with the ordinary NPC pen because they are ordinary people.
+        FillWalkerDroids(buffer, WalkerFirstSlot);
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
