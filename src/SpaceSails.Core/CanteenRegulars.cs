@@ -676,7 +676,10 @@ public static class CanteenRegulars
         "You get used to the hum. Then one day it stops and you find out you liked it.",
         "Keep your name simple here. They'll shorten it anyway.",
         "Real coffee. On a rock like this. Somebody's writing it off against something.",
-        "Table linen on a freight stop. I stopped asking the questions I like the answers to.",
+        // #783/#941 · This one said "Table linen on a freight stop"; the owner's no-tablecloths ruling on
+        // #759 is an ART spec — the hall's tables are bare steel — so the fancy register points at what is
+        // actually in the picture, the brass, and the prose follows the picture. Owner-authored, verbatim.
+        "Brass pillars on a freight stop. I stopped asking the questions I like the answers to.",
     ];
 
     /// <summary>#751 · Every stranger plate and every bark, for the canon grep — the same discipline the
