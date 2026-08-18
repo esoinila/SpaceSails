@@ -348,9 +348,11 @@ public partial class Map
         // and everything else on this list is behind it. Its answer rides the card record itself, so it
         // cannot outlive the card it belongs to.
         //
-        // #664 · The card this used to find was `_revealCard`, the client-only twin the reunification merge
-        // kept on purpose. There is one card now — the StoryBeats one, which carries the same outcome field
-        // and, unlike its twin, a cadence and a deferral.
+        // #664 · The card this used to find was the one out of the deleted Map.RevealCard.cs, the client-only
+        // twin the reunification merge kept on purpose. There is one card now — the StoryBeats one, which
+        // carries the same outcome field and, unlike its twin, a cadence and a deferral. (The dead field's
+        // NAME is not written here on purpose: `ThereIsOnlyOneRevealCardSystemLeft` sweeps for it, and a
+        // guard that had to learn the difference between a call and a comment would be the weaker guard.)
         if (_storyCard is { } card)
         {
             _storyCard = (card.Beat, card.Subject, line);

@@ -15,6 +15,58 @@ public sealed class StoryBeatsTests
 {
     private static readonly StoryBeats.Beat[] All = Enum.GetValues<StoryBeats.Beat>();
 
+    /// <summary>
+    /// #664 · THE BEATS WHOSE PICTURE IS CHOSEN BY THEIR SUBJECT, read off the seam rather than listed here.
+    /// A KAAMOS or NEBULA shard's plate is picked by the fragment the captain just assembled, so asking one
+    /// of them what it looks like <i>in general</i> is asking a question the world does not have an answer
+    /// to: it resolves to nothing at all, which is the honest degrade and not a hole in the prose.
+    ///
+    /// <para>The three sweeps below therefore ask <see cref="StoryBeats.Canvases"/> and hand a real key out
+    /// of the arc's own pool, rather than taking the empty string for an answer. That is strictly MORE than
+    /// the one-picture-per-beat sweep they did before — the whole authored pool now has to be painted and
+    /// spelled, so a twelfth KAAMOS plate means painting it or being told.</para>
+    /// </summary>
+    private static readonly StoryBeats.Beat[] KeyedBySubject =
+        [.. All.Where(b => string.IsNullOrWhiteSpace(StoryBeats.ArtFile(b)))];
+
+    /// <summary>A subject that reaches a real plate. The two arc keys come out of the arcs' own pools and are
+    /// never typed in here — a shard id invented for a test is a world that cannot tell pass from fail.</summary>
+    private static string ASubjectFor(StoryBeats.Beat beat) => beat switch
+    {
+        StoryBeats.Beat.KaamosShardFound => KaamosLore.AllPlates.First().Key,
+        StoryBeats.Beat.NebulaShardFound => NebulaLore.AllPlates.First().Key,
+        _ => "THE QUIET SISTER",
+    };
+
+    /// <summary>
+    /// AND EXACTLY TWO BEATS ANSWER "NOTHING" WITHOUT A SUBJECT — the same whole-list discipline this file
+    /// keeps for the cadences, and for the same reason: a third one appearing should require editing this
+    /// test and saying why, because the alternative is a beat that quietly went captionless and was excused
+    /// by an exemption its neighbours earned.
+    ///
+    /// <para>It is also the anti-vacuous half of the three sweeps below. If this list ever swallowed the
+    /// whole enum, every one of them would be sweeping a pool nobody has to paint.</para>
+    /// </summary>
+    [Fact]
+    public void OnlyTheTwoArcShardsAreKeyedByTheirSubject()
+    {
+        Assert.Equal(
+            [
+                StoryBeats.Beat.KaamosShardFound,
+                StoryBeats.Beat.NebulaShardFound,
+            ],
+            KeyedBySubject);
+
+        // …and each of them names a POOL rather than one picture, which is what makes it keyed rather than
+        // merely unpainted. A pool of one would be a fixed beat wearing the exemption.
+        foreach (StoryBeats.Beat beat in KeyedBySubject)
+        {
+            Assert.True(StoryBeats.Canvases(beat).Count() > 1,
+                        $"{beat} resolves to no canvas without a subject and names only one with — that is an "
+                        + "unpainted beat, not a keyed one.");
+        }
+    }
+
     /// <summary>Every beat has a picture, a title and a caption. A beat that reaches the player half-dressed is
     /// worse than one that never fires.</summary>
     [Fact]
@@ -22,9 +74,16 @@ public sealed class StoryBeatsTests
     {
         foreach (StoryBeats.Beat beat in All)
         {
-            Assert.False(string.IsNullOrWhiteSpace(StoryBeats.ArtFile(beat)), $"{beat} has no art file");
-            Assert.False(string.IsNullOrWhiteSpace(StoryBeats.Title(beat)), $"{beat} has no title");
-            Assert.False(string.IsNullOrWhiteSpace(StoryBeats.Caption(beat)), $"{beat} has no caption");
+            string subject = ASubjectFor(beat);
+
+            Assert.NotEmpty(StoryBeats.Canvases(beat));
+            foreach (string art in StoryBeats.Canvases(beat))
+            {
+                Assert.False(string.IsNullOrWhiteSpace(art), $"{beat} has no art file");
+            }
+
+            Assert.False(string.IsNullOrWhiteSpace(StoryBeats.Title(beat, subject)), $"{beat} has no title");
+            Assert.False(string.IsNullOrWhiteSpace(StoryBeats.Caption(beat, subject)), $"{beat} has no caption");
         }
     }
 
@@ -35,25 +94,44 @@ public sealed class StoryBeatsTests
     {
         foreach (StoryBeats.Beat beat in All)
         {
-            string art = StoryBeats.ArtFile(beat);
-            Assert.StartsWith("art/", art, StringComparison.Ordinal);
-            Assert.EndsWith(".jpg", art, StringComparison.Ordinal);
+            Assert.NotEmpty(StoryBeats.Canvases(beat));
+            foreach (string art in StoryBeats.Canvases(beat))
+            {
+                Assert.StartsWith("art/", art, StringComparison.Ordinal);
+                Assert.EndsWith(".jpg", art, StringComparison.Ordinal);
+            }
         }
     }
 
     /// <summary>Captions read whole with or without a subject — the caller may not have a name to give, and the
-    /// prose must never come out with a hole in it.</summary>
+    /// prose must never come out with a hole in it.
+    ///
+    /// <para>#664 · The bare caption is now asserted WHOLE OR NOTHING rather than merely brace-free, which the
+    /// old sweep never said at all: a fixed beat must read complete with no subject, and a subject-keyed one
+    /// must come out empty rather than as half a sentence about a shard nobody found.</para></summary>
     [Fact]
     public void CaptionsReadWholeWithoutASubject()
     {
         foreach (StoryBeats.Beat beat in All)
         {
             string bare = StoryBeats.Caption(beat);
-            string named = StoryBeats.Caption(beat, "THE QUIET SISTER");
+            string named = StoryBeats.Caption(beat, ASubjectFor(beat));
 
             Assert.DoesNotContain("{", bare, StringComparison.Ordinal);
             Assert.DoesNotContain("  ", bare, StringComparison.Ordinal);
             Assert.False(string.IsNullOrWhiteSpace(named));
+
+            if (KeyedBySubject.Contains(beat))
+            {
+                Assert.True(bare.Length == 0,
+                            $"{beat}'s plate is chosen by its subject, so with none it must resolve to nothing "
+                            + "at all — a partial line here is a card about a shard the captain never found.");
+            }
+            else
+            {
+                Assert.False(string.IsNullOrWhiteSpace(bare),
+                             $"{beat} has no caption without a subject, and its caller may not have one to give.");
+            }
         }
     }
 
@@ -94,6 +172,12 @@ public sealed class StoryBeatsTests
     /// editing this test and saying why. Each of these is once-in-a-run by its own physics — a collector
     /// actually catching you, the crew meeting without you, an arc breaking, and (#524) finding a hull still
     /// burning, which is one cause in ten and guarded to one card per boarding by the wreck itself.</para>
+    ///
+    /// <para>#664 · And the fifth, which is the edit-and-say-why this list was written to demand.
+    /// <c>CollectorsSetDown</c> is the ONLY WARNING THE PLAYER GETS — after it the only information in the
+    /// world is a tracker fan — and it is rare by its own nature twice over: a heat threshold has to be
+    /// crossed, and at most one boat lands per excursion. A warning rationed for being repetitive is not a
+    /// warning, so it is the one adopted beat that keeps EveryTime.</para>
     /// </summary>
     [Fact]
     public void OnlyRareMomentsFireEveryTime()
@@ -106,6 +190,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.CrewMeeting,
                 StoryBeats.Beat.ArcNewsBreaks,
                 StoryBeats.Beat.FireAboard,
+                StoryBeats.Beat.CollectorsSetDown,
             ],
             everyTime);
     }
@@ -116,6 +201,14 @@ public sealed class StoryBeatsTests
     /// down — the beat is about a PLACE rather than about the captain. <c>OnceEver</c> would have shown one berth's
     /// gangway and silently swallowed every other berth in the system; <c>EveryTime</c> would have made docking at
     /// a place you live at annoying. So: each berth's establishing shot, once, for that berth.
+    ///
+    /// <para>#664 · Five more, and every one of them passes the same test the tube did: it is about a PLACE
+    /// or a THING and not about the captain. A second KAAMOS or NEBULA shard is a different painting and
+    /// different words; a second moon's buried door is a different moon; a second hut's last effects are
+    /// somebody else's; and the cradles nearest the door are a different lab's. <c>OnceEver</c> on any of
+    /// them would show one and silently swallow every other one in the game, which is precisely the failure
+    /// #541 widened the seen-key to stop — and it is worth saying that the arcs' two are the strongest case
+    /// of all, because for them the PICTURE is chosen by the subject too.</para>
     /// </summary>
     [Fact]
     public void OnlyBeatsAboutAPlaceFireOncePerSubject()
@@ -128,6 +221,11 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.BerthGreatPort,
                 StoryBeats.Beat.BerthWorkingBerth,
                 StoryBeats.Beat.BerthOutpost,
+                StoryBeats.Beat.KaamosShardFound,
+                StoryBeats.Beat.NebulaShardFound,
+                StoryBeats.Beat.OutpostEffectsRead,
+                StoryBeats.Beat.SecretLabDoorFound,
+                StoryBeats.Beat.TheDormantThingWakes,
             ],
             perSubject);
     }
