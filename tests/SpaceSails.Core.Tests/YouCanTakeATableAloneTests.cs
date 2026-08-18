@@ -630,14 +630,22 @@ public sealed class YouCanTakeATableAloneTests
     /// list is only as honest as the list's reachability, and this one proves the pool it is grepping is a
     /// pool the room can produce.</para>
     ///
-    /// <para><b>Proven RED</b> by restoring the #778 line into <c>NobodyCameQuiet</c>: the sweep hands it
-    /// back on the 0.30 and 0.15 watches and the assert fails with
-    /// <i>Assert.DoesNotContain() Failure: Sub-string found · found: "linen"</i>.</para>
+    /// <para>#941 · WIDENED, because the first sweep was aimed at ONE pool and two other lines in the same
+    /// hall still handed the player cloth: <see cref="UndergroundComplex.CantinaHallCard"/> opened on
+    /// <i>"linen on the tables"</i>, and bark thirteen of <see cref="CanteenRegulars.Barks"/> was <i>"Table
+    /// linen on a freight stop."</i> A canon sweep that covers the pool the last slip was found in is a
+    /// guard shaped like its own bug report, so this one now walks every line the hall can say: the entry
+    /// card, every bark, every stranger plate, and the waiting prose.</para>
+    ///
+    /// <para><b>Proven RED</b> by restoring either old line — the #778 line into <c>NobodyCameQuiet</c>, the
+    /// <i>linen on the tables</i> clause into the card, or the <i>Table linen</i> bark into the pool: the
+    /// assert fails with <i>Assert.DoesNotContain() Failure: Sub-string found · found: "linen"</i>.</para>
     /// </summary>
     [Fact]
     public void NOTHING_ON_A_TABLE_IN_THIS_HALL_IsCloth()
     {
-        string[] forbidden = ["linen", "tablecloth", "table cloth", "napkin", "napery"];
+        string[] forbidden =
+            ["linen", "tablecloth", "table cloth", "cloth on the table", "napkin", "napery"];
 
         // What the room can actually say to a captain who sits and waits. Every watch the fill bill has, a
         // run of beats past the length of every pool, and both sides of the cabinet door.
@@ -663,7 +671,29 @@ public sealed class YouCanTakeATableAloneTests
             Assert.Contains(quiet, reachable);
         }
 
-        foreach (string line in reachable.Concat(SittingAlone.AllProse()))
+        // ── #941 · THE REST OF THE HALL'S VOICE ───────────────────────────────────────────────────────
+        //
+        // The entry card the room opens with, and every line a stranger in it can say. Both slips this
+        // sweep was widened for lived here, not in the waiting pool above.
+        var swept = reachable
+            .Concat(SittingAlone.AllProse())
+            .Concat([UndergroundComplex.CantinaHallCard])
+            .Concat(CanteenRegulars.AllStrangerProse())
+            .ToList();
+
+        // ── ANTI-VACUOUS, part two ────────────────────────────────────────────────────────────────────
+        //
+        // A sweep handed an empty card or an empty pool would grep nothing and stay green forever, so say
+        // out loud that the card is THE card and that every bark the hall draws from went through.
+        Assert.Contains("Carriers' canteen", UndergroundComplex.CantinaHallCard, StringComparison.Ordinal);
+        Assert.Contains(UndergroundComplex.CantinaHallCard, swept);
+        Assert.True(CanteenRegulars.Barks.Count >= 14,
+            $"only {CanteenRegulars.Barks.Count} barks in the pool — the hall lost its voice.");
+        int barksSwept = CanteenRegulars.Barks.Count(swept.Contains);
+        Assert.True(barksSwept == CanteenRegulars.Barks.Count,
+            $"the sweep only read {barksSwept} of {CanteenRegulars.Barks.Count} barks.");
+
+        foreach (string line in swept)
         {
             foreach (string word in forbidden)
             {
@@ -671,10 +701,17 @@ public sealed class YouCanTakeATableAloneTests
             }
         }
 
-        // And the owner-authored replacement itself, verbatim, so a later tidy cannot paraphrase the ruling
-        // back out of the room.
+        // And the owner-authored replacements themselves, verbatim, so a later tidy cannot paraphrase the
+        // ruling back out of the room.
         Assert.Contains(
             "Nobody comes. Every table you can see is wiped steel, and it has been wiped a while.",
             SittingAlone.NobodyCameQuiet);
+        Assert.Contains(
+            "steel tables wiped to a shine, brass on the pillars, light somebody chose.",
+            UndergroundComplex.CantinaHallCard,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Brass pillars on a freight stop. I stopped asking the questions I like the answers to.",
+            CanteenRegulars.Barks);
     }
 }
