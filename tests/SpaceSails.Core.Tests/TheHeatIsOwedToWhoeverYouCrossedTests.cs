@@ -10,9 +10,9 @@ namespace SpaceSails.Core.Tests;
 /// be targeted at the entity we crossed … so not like the Casinos that distribute cheaters lists in Vegas"</i>
 /// and <i>"we need to get out and let the heat of discovery to the site cool down"</i>.
 ///
-/// <para>Four laws, each watched going RED before it was allowed to go green, with the failure written on the
-/// guard verbatim. A guard nobody has seen fail proves the shape of a symptom rather than a law (#587's
-/// lesson, paid for twice in this repository).</para>
+/// <para>Six guards, each watched going RED before it was allowed to go green, with the failure written on
+/// the guard verbatim — copied out of the run, not out of an expectation. A guard nobody has seen fail proves
+/// the shape of a symptom rather than a law (#587's lesson, paid for twice in this repository).</para>
 ///
 /// <para>The sweep is generated site ids rather than the named moons, for <c>TheStandingTravelsTests</c>'
 /// reason: what is under audit is a rule about OUTFITS, and a handful of rocks cannot be relied on to supply
@@ -69,19 +69,21 @@ public sealed class TheHeatIsOwedToWhoeverYouCrossedTests
     /// leaked would fail here rather than in a playtest.
     ///
     /// <para><b>Proven RED</b> by keying the charge to the body instead of the outfit
-    /// (<c>new HeatCharge(bodyId, WeightOf(why))</c>) — the sibling site of the same company goes cold:</para>
+    /// (<c>new HeatCharge(bodyId, WeightOf(why))</c>) — the rock is charged, so the company that owns it, and
+    /// every site of theirs, stays cold:</para>
     /// <code>
-    /// Assert.True() Failure
-    /// sweep-site-8 is cold, and it is a MERIDIAN WORKS COMPANY site exactly like sweep-site-3.
+    /// Assert.Equal() Failure: Values differ
+    /// Expected: 4
+    /// Actual:   0
     /// </code>
     ///
-    /// <para>…and <b>RED the other way</b> by making the bank a shared list — the Vegas one — (<c>foreach
-    /// (var op in SiteOperator.All) book.ApplyHeat(LedgerId(op.Id), …)</c>):</para>
+    /// <para>…and <b>RED the other way</b> by making the bank a shared list — the Vegas one — (<c>foreach (var
+    /// op in SiteOperator.All) if (op.Id != charge.OperatorId) book.ApplyHeat(LedgerId(op.Id), …)</c>), which
+    /// leaves the crossed outfit's own total right and burns a stranger:</para>
     /// <code>
     /// Assert.Equal() Failure: Values differ
     /// Expected: 0
     /// Actual:   4
-    /// sweep-site-1 answers to ARGENT PROVISIONING LTD, who were never crossed and were never told.
     /// </code>
     /// </summary>
     [Fact]
@@ -147,11 +149,10 @@ public sealed class TheHeatIsOwedToWhoeverYouCrossedTests
     /// outfit's net has nothing to say to that ship's name; at a stranger's site the same wallet, the same
     /// band and the same total open the gate over the air.
     ///
-    /// <para><b>Proven RED</b> by reading the heat clause off a body-keyed total (the Vegas shape again —
-    /// one number for the world):</para>
+    /// <para><b>Proven RED</b> by the same shared list — the Vegas shape, one crossing told to everybody —
+    /// which stops a stranger's net answering a ship that never went near them:</para>
     /// <code>
-    /// Assert.True() Failure
-    /// the send was refused at sweep-site-1, whose outfit has never heard of this ship.
+    /// the send was refused at sweep-site-3, whose outfit has never heard of this ship.
     /// </code>
     /// </summary>
     [Fact]
@@ -190,18 +191,17 @@ public sealed class TheHeatIsOwedToWhoeverYouCrossedTests
     /// #715 · <b>"WE NEED TO GET OUT AND LET THE HEAT OF DISCOVERY COOL DOWN."</b> Standing on their ground
     /// cools nothing, for any length of time; the same hours spent anywhere else cool it point by point.
     ///
-    /// <para><b>Proven RED</b> by cooling on-site (dropping the underfoot clause from <c>Cool</c>):</para>
+    /// <para><b>Proven RED</b> by cooling on-site (dropping the underfoot clause from <c>Cool</c>) — a
+    /// hundred hours under their own lights then cools the whole of it away:</para>
     /// <code>
     /// Assert.Equal() Failure: Values differ
     /// Expected: 4
     /// Actual:   0
-    /// a hundred hours under their own lights cooled the outfit's memory of you.
     /// </code>
     ///
     /// <para>…and <b>RED the other way</b> by never cooling at all (returning at the top of <c>Cool</c>):</para>
     /// <code>
-    /// Assert.True() Failure
-    /// four hours away from them cooled nothing — the meter is a ratchet.
+    /// an hour away from them cooled nothing — the meter is a ratchet.
     /// </code>
     /// </summary>
     [Fact]
@@ -249,11 +249,11 @@ public sealed class TheHeatIsOwedToWhoeverYouCrossedTests
     /// <b>they cool on different clocks in different places</b>: the ship's cools wherever you are, and this
     /// one does not cool at all where you are standing.
     ///
-    /// <para><b>Proven RED</b> by aliasing them (<c>HeatAt</c> returning the ship's level):</para>
+    /// <para><b>Proven RED</b> by aliasing their CLOCKS — letting the outfit's memory decay on the ship's own
+    /// rule, which cools wherever you happen to be (the underfoot clause dropped from <c>Cool</c>). Sixty days
+    /// standing in their own lobby then forgets the whole of it, for no reason but that the law forgot the
+    /// hull in the same sixty days:</para>
     /// <code>
-    /// Assert.Equal() Failure: Values differ
-    /// Expected: 4
-    /// Actual:   0
     /// the outfit forgot you because the LAW did.
     /// </code>
     /// </summary>
@@ -306,7 +306,6 @@ public sealed class TheHeatIsOwedToWhoeverYouCrossedTests
     ///
     /// <para><b>Proven RED</b> by giving a crossing no weight (<c>Crossing.RefusedPress =&gt; 0</c>):</para>
     /// <code>
-    /// Assert.True() Failure
     /// RefusedPress costs nothing — a crossing nobody is charged for is not a crossing.
     /// </code>
     /// </summary>
@@ -363,7 +362,6 @@ public sealed class TheHeatIsOwedToWhoeverYouCrossedTests
     ///
     /// <para><b>Proven RED</b> by leaving the badge out of the predicate:</para>
     /// <code>
-    /// Assert.True() Failure
     /// the gate refused a captain carrying this site's own pass — that is a lockout, not pressure.
     /// </code>
     /// </summary>

@@ -79,7 +79,6 @@ public sealed class TheHeatIsBankedOnceTests
     /// Assert.Equal() Failure: Values differ
     /// Expected: 1
     /// Actual:   0
-    /// the SDR press publishes a charge that nothing banks — #929's own gap, re-opened.
     /// </code>
     ///
     /// <para>…and <b>RED the other way</b> by double-banking (adding a second
@@ -88,7 +87,6 @@ public sealed class TheHeatIsBankedOnceTests
     /// Assert.Equal() Failure: Values differ
     /// Expected: 1
     /// Actual:   2
-    /// the refused send is charged twice for one press.
     /// </code>
     /// </summary>
     [Fact]
@@ -152,6 +150,7 @@ public sealed class TheHeatIsBankedOnceTests
     /// the line then shows at every site of every company:</para>
     /// <code>
     /// Assert.Contains() Failure: Sub-string not found
+    /// String:    "\n\n       It does not say WHOSE memory it "···
     /// Not found: "TheyRememberYouHere)"
     /// </code>
     ///
@@ -159,6 +158,7 @@ public sealed class TheHeatIsBankedOnceTests
     /// over the flight deck:</para>
     /// <code>
     /// Assert.Contains() Failure: Sub-string not found
+    /// String:    ".\n\n       It does not say WHOSE memory it"···
     /// Not found: "_surface is not null"
     /// </code>
     /// </summary>
@@ -206,10 +206,9 @@ public sealed class TheHeatIsBankedOnceTests
     /// shape, and the one that would have moved #905's thirty fingerprints in the same commit:</para>
     /// <code>
     /// Assert.Equal() Failure: Collections differ
-    ///                    ↓ (pos 0)
     /// Expected: ["_contacts"]
     /// Actual:   ["_contacts", "_illegalHeat"]
-    ///                    ↑ (pos 0)
+    ///                         ↑ (pos 1)
     /// </code>
     ///
     /// <para>…and <b>RED the other way</b> by reaching the round through its host instead

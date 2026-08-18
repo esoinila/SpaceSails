@@ -389,7 +389,16 @@ public class VaultSerializerTests
 
     /// <summary>#715 · A voyage saved BEFORE the illegal-heat meter existed has contact rows with no heat
     /// fields at all. They must read back as <b>nobody remembers you</b> — zero owed, no clock running — and
-    /// not as a captain who is already burned with every outfit in the game on the frame they resume.</summary>
+    /// not as a captain who is already burned with every outfit in the game on the frame they resume.
+    ///
+    /// <para><b>Proven RED</b> by breaking the fallback — giving <c>ContactRecord.HeatOwed</c> a non-zero
+    /// initialiser, which is what any "sensible default" on a save-shape field does to every file already
+    /// written:</para>
+    /// <code>
+    /// Assert.Equal() Failure: Values differ
+    /// Expected: 0
+    /// Actual:   3
+    /// </code></summary>
     [Fact]
     public void Contacts_LegacyFileWithNoHeatFields_ReadsAsNobodyRemembersYou()
     {
