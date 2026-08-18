@@ -184,6 +184,23 @@ public partial class Map
         /// </summary>
         bool WalkSomebodyToYourTable(SurfaceExcursion ex, int tableIndex);
 
+        /// <summary>
+        /// #731 · …AND THE OTHER HALF OF THE SENTENCE: she is finished, so she goes, and she goes back through
+        /// the door she came out of.
+        ///
+        /// <para>Owner, 2026-08-06: <i>"If they go behind a door that is locked to us, we use that as 'I guess
+        /// that concludes the conversation' point in the plot / situation."</i> This is the TRIGGERED half of
+        /// the issue's own proposal — <i>scheduled for ambience, triggered for plot beats; both through one
+        /// walker</i> — and the trigger is the scene ending. Nothing is said about it: the panel goes back to
+        /// being the captain's own table, and the room delivers the full stop by walking her out of it.</para>
+        ///
+        /// <para>The door is <see cref="Core.Interior.Egress.ArrivalDoor"/>'s, the SAME one her provenance was
+        /// dealt from this watch, so she does not walk out of the building through a door she was never behind.
+        /// False when she cannot be walked — no locked door, no standing place, no way through — and the
+        /// caller does exactly what it always did, which is nothing.</para>
+        /// </summary>
+        bool WalkTheVisitorOut(SurfaceExcursion ex, int tableIndex);
+
         // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
         //
         // #693's rule: a scene nobody can reach on demand is a scene that ships broken. Four of these are the

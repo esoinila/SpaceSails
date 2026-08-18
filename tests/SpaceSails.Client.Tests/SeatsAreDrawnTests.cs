@@ -532,7 +532,12 @@ public sealed class SeatsAreDrawnTests
         // [E] press asks, which is #709's law and the reason a drawn room and a pressed room are one room.
         string hive = Source("Rendering", "HiveInterior.cs");
         Assert.Contains("TheStools.Taken(bodyId, level, s, canteenWatch)", hive, StringComparison.Ordinal);
-        Assert.Contains("CanteenRegulars.Tables(bodyId, level, a, canteenWatch)", hive, StringComparison.Ordinal);
+        // #731 · …and WHO HAS ALREADY STOOD UP AND WALKED OFF rides down in the same call. A regular
+        // crossing the hall on real legs must not ALSO be drawn in the chair they left, and the one place
+        // that can be made true is the one function that answers who is sitting where. The pen learns
+        // nothing by it: it is still handed `top.Taken` and still only decides which glyph that is.
+        Assert.Contains(
+            "CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp)", hive, StringComparison.Ordinal);
         Assert.Contains("top.Seats, top.Taken, top.Talking, top.Heads", hive, StringComparison.Ordinal);
         Assert.Contains("counter.StoolRow", hive, StringComparison.Ordinal);
 

@@ -792,7 +792,14 @@ public partial class Map
         // schedule that is re-read every frame cannot send the same person out of the room twice.
         public HashSet<int> HallDeparted { get; } = [];
 
-        // Which watch and floor the two sets above belong to. A shift turning over, or a lift ride, empties
+        // …and the shift's OWN list of who goes and when, worked out once when a watch begins on this floor.
+        // Egress.Departures needs the whole floor plan, and UndergroundComplex.Build generates a building
+        // from scratch on every call; asking it sixty times a second for an answer the frozen watch has
+        // already fixed is Lab 45's lesson with a body walking through it. NULL means "this shift has not
+        // been asked yet" — an EMPTY list is an answer (nobody goes), and the two are not spelled the same.
+        public IReadOnlyList<Egress.Move>? HallSchedule { get; set; }
+
+        // Which watch and floor the sets above belong to. A shift turning over, or a lift ride, empties
         // them — the room forgetting, which is the same rule the table state upstairs already runs under.
         public long WalkersWatch { get; set; } = long.MinValue;
         public int WalkersFloor { get; set; } = int.MinValue;

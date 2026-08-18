@@ -130,6 +130,10 @@ public partial class Map : Map.ISeatHost
     bool ISeatHost.WalkSomebodyToYourTable(SurfaceExcursion ex, int tableIndex) =>
         WalkSomebodyToYourTable(ex, tableIndex);
 
+    /// <inheritdoc/>
+    bool ISeatHost.WalkTheVisitorOut(SurfaceExcursion ex, int tableIndex) =>
+        WalkTheVisitorOut(ex, tableIndex);
+
     // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>

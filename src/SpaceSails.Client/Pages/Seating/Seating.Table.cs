@@ -748,6 +748,16 @@ public partial class Map
         /// a picture of boots up on a chair she has just got out of.</para></summary>
         private void BackToYourOwnTable(SurfaceExcursion ex, TableTalk t)
         {
+            // #731 · AND SHE GOES — on her own legs, back through the door she came out of. Owner: "If they go
+            // behind a door that is locked to us, we use that as 'I guess that concludes the conversation'
+            // point in the plot / situation." This is the TRIGGERED departure the issue proposed, and it is
+            // the same walker the shift uses for ambience; the trigger is simply that the scene is over.
+            //
+            // FIRST, while she is still the person at this table: the walk starts from the chair she crossed
+            // the room to, and the lines below are what happens to the PANEL after she has stood up. Nothing
+            // is said about any of it — the room delivers the full stop by parting for her a second time.
+            _host.WalkTheVisitorOut(ex, t.Index);
+
             t.Solo = true;
             // #865 · …and the card goes with her. The frame comes back down to the strip the captain was sitting
             // in before she arrived, which is the same one occupation of one table it always was.

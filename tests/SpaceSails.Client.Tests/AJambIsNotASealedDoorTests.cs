@@ -322,9 +322,32 @@ public sealed class AJambIsNotASealedDoorTests
         // he takes to get to one are a slide, not a plan. It is the SAME body that already holds three of
         // these claims, walking two paces at the same gait for the same reason, and it is the third and last
         // of them in the round's own files. Nothing an Old One steps through was touched.
-        Assert.Equal(5, claims.Count);
+        // #731 · AND THE SIXTH AND SEVENTH ARE THE PEOPLE ON NOBODY'S PAYROLL — this guard forcing its
+        // ruling and getting one for the fourth time.
+        //
+        // Owner, 2026-08-06, in the same breath as the feature: "The NPCs **but not reevers** could also use
+        // the A* if we want to show them leaving a scene etc." So a regular finishing a drink and walking out
+        // through a staff door is a PERSON crossing a floor, and the whole beat depends on them walking it
+        // the way the captain would — same lattice, same collision, same funnel — or it is a cartoon played
+        // over the top of the simulation.
+        //
+        // The claim is +3 and the accounting is deliberate:
+        //
+        //   · NpcWalk.cs holds TWO of them, and one is the opposite of a claim. `if (gait != Gait.Person)
+        //     throw` is the never-Reevers rule written where it cannot be forgotten — this file is the only
+        //     mover in the repo that REFUSES a gait — and the other is the sub-step it spends through
+        //     SurfaceCollision.Slide, which is the whole reason the class exists.
+        //   · Map.Walkers.cs holds exactly ONE, in `OnFoot`, the single planner all three of the client's
+        //     errands go through (a regular leaving, the visitor arriving, the visitor going). Three call
+        //     sites naming the gait three times would be three chances to name a different one.
+        //
+        // ReeverChase.cs and ReeverPack.cs are unchanged and are still checked line by line above. Nothing an
+        // Old One steps through was touched by any of this, and NpcWalk cannot be handed one at all.
+        Assert.Equal(8, claims.Count);
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
+        Assert.Equal(2, claims.FindAll(c => c.StartsWith("NpcWalk.cs:", StringComparison.Ordinal)).Count);
+        Assert.Single(claims.FindAll(c => c.StartsWith("Map.Walkers.cs:", StringComparison.Ordinal)));
 
         // Three times, and every one of them a contract guard: the round's own stride, #835's run, and #831's
         // two paces to the wall he has decided to read.

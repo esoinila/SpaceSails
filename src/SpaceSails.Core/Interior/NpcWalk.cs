@@ -47,7 +47,12 @@ namespace SpaceSails.Core.Interior;
 /// to leave is a thing a player can do on purpose, and the answer must never be that they walk through you.
 /// The captain is not a wall — the collision has never known about the body of the avatar — so the yield is
 /// this class's own, and it is a REFUSAL TO STEP rather than a push: the route stays live, the walk resumes
-/// the moment the doorway clears, and no frame ever ends with the two of them inside one another.</item>
+/// the moment the doorway clears, and no frame ever ends with the two of them inside one another.
+///
+/// <para><b>Unless the captain is the errand.</b> Somebody who has crossed a room to sit down at your table
+/// is not obstructed by you being at it, and the first build of this deadlocked every arrival on its last
+/// stride for exactly that reason. So the berth is the caller's to set — see
+/// <see cref="NoPersonalSpace"/>.</para></item>
 ///
 /// <item><b>The ground has the last word.</b> If the stepper refuses a move the plan expected to make, the
 /// walk <see cref="AutoWalk.Snag"/>s and stops, exactly as the captain's own does. A body grinding against a
@@ -82,6 +87,22 @@ public sealed class NpcWalk
     /// away from a captain standing harmlessly beside its route; smaller is an overlap.</summary>
     public const double PersonalSpaceInRadii = 2.0;
 
+    /// <summary>…and NONE, for the walk whose whole errand is the captain.
+    ///
+    /// <para>The yield above is a rule about being IN THE WAY, and it is right for the beat it was written
+    /// for: a regular crossing a hall to a staff door has no business with the captain, so a captain standing
+    /// in that door is an obstruction and being looked at is the content. <b>Somebody who has crossed the room
+    /// to sit down at your table is the opposite case.</b> They are not blocked by you; they have come for
+    /// you, and a body that stops a metre short of the chair it is walking to and stares forever is not
+    /// politeness, it is a deadlock — which is exactly what the first build of this did, at 1.45 du, on the
+    /// last stride of every arrival, because the captain was sitting in the next chair.</para>
+    ///
+    /// <para>So a walk that begins or ends at the captain's own table is planned with this instead. Nothing
+    /// else in the game yields to the avatar either — the collision has never known about the captain's body,
+    /// and a captain may already stand on a seated regular — so this is the ordinary law, and
+    /// <see cref="PersonalSpaceInRadii"/> is the exception the doorway beat earns.</para></summary>
+    public const double NoPersonalSpace = 0.0;
+
     /// <summary>Below this, a step is nothing and a frame's budget is spent. The guard's round pays for this
     /// number in its own comment (#832 — a motion tracker went silent for an evening on <c>&gt; 0</c>), and
     /// it is spelled the same way here on purpose.</summary>
@@ -110,8 +131,8 @@ public sealed class NpcWalk
         Snagged,
     }
 
-    /// <summary>Where a walker is going and what stands there — the door it is bound for, carried as the
-    /// PLATE the building painted on it rather than as a flag somebody set.
+    /// <summary>Where a walker is going, and the door this walk is about — carried as the PLATE the building
+    /// painted on it rather than as a flag somebody set.
     ///
     /// <para>That distinction is the whole of law two on #731. "This door refuses the captain" written as a
     /// <c>bool</c> beside the walker is a field a test can type in and a world that cannot tell pass from
@@ -120,19 +141,29 @@ public sealed class NpcWalk
     /// that builds one of these for a departure, will not accept anything but a
     /// <see cref="UndergroundComplex.LockedDoor"/>, so a public door cannot be handed to it at all.</para>
     /// </summary>
-    /// <param name="Sign">The plate, verbatim. Empty when the walk ends at a chair rather than at a door.</param>
-    /// <param name="X">Where the walk ends — a standing place, not the leaf itself.</param>
+    /// <para><b>A walk's door is not always the place it ends.</b> A departure ends AT one; an arrival ends at
+    /// a chair and carries the plate of the one it CAME OUT OF, because that plate is the whole cold open —
+    /// the captain is meant to look at the person opposite them and, if they were watching, know which door
+    /// in this building opened for her. So the sign is the door this walk is ABOUT, and the coordinates are
+    /// where it ends; a walk with no door in it at all (none ships today) simply has neither.</para>
+    /// </summary>
+    /// <param name="Sign">The plate, verbatim — the door this walk is about, whichever end of it that is.
+    /// Empty only for a walk with no door in its story.</param>
+    /// <param name="X">Where the walk ENDS: a standing place in front of a leaf, or a chair. Never the leaf
+    /// itself, which is stone.</param>
     public readonly record struct Bound(string Sign, double X, double Y)
     {
-        /// <summary>Does this walk end at a door with a plate on it, rather than at a seat?</summary>
+        /// <summary>Is there a door in this walk's story — one it is bound for, or one it came out of?
+        /// </summary>
         public bool IsADoor => Sign.Length > 0;
     }
 
     private readonly AutoWalk _route;
     private readonly double _radius;
+    private readonly double _keepOut;
 
     private NpcWalk(string plate, AutoWalk route, Bound bound, double x, double y, double facing,
-        double radius, double pace)
+        double radius, double pace, double keepOutInRadii)
     {
         Plate = plate;
         _route = route;
@@ -142,6 +173,7 @@ public sealed class NpcWalk
         Facing = facing;
         _radius = radius;
         Pace = pace;
+        _keepOut = radius * keepOutInRadii;
     }
 
     /// <summary>Whose figure this is — the plate the deck draws over their head and the room already knows
@@ -192,6 +224,10 @@ public sealed class NpcWalk
     /// <param name="gait">Who is walking. <see cref="SurfaceCollision.Gait.Person"/> or nothing at all —
     /// see law one in the class docs.</param>
     /// <param name="pace">Deck units per second; <see cref="PaceDu"/> unless a caller has a reason.</param>
+    /// <param name="keepOutInRadii">How wide a berth this walk gives the captain, in body radii.
+    /// <see cref="PersonalSpaceInRadii"/> for anybody going about their own business, and
+    /// <see cref="NoPersonalSpace"/> for a walk whose errand IS the captain — see that constant for why
+    /// the polite answer is the wrong one at somebody's own table.</param>
     /// <exception cref="ArgumentException">The gait was not a person's. Never Reevers.</exception>
     public static NpcWalk? Plan(
         string plate,
@@ -200,7 +236,8 @@ public sealed class NpcWalk
         IReadOnlyList<SurfaceCollision.Segment> walls,
         double radius,
         SurfaceCollision.Gait gait,
-        double pace = PaceDu)
+        double pace = PaceDu,
+        double keepOutInRadii = PersonalSpaceInRadii)
     {
         ArgumentNullException.ThrowIfNull(plate);
         ArgumentNullException.ThrowIfNull(walls);
@@ -218,6 +255,11 @@ public sealed class NpcWalk
         {
             throw new ArgumentOutOfRangeException(nameof(pace), pace, "A walking pace is positive and finite.");
         }
+        if (!(keepOutInRadii >= 0) || double.IsInfinity(keepOutInRadii))
+        {
+            throw new ArgumentOutOfRangeException(nameof(keepOutInRadii), keepOutInRadii,
+                "A berth is nought or wider, and finite.");
+        }
 
         var to = new DeckReachability.Point(bound.X, bound.Y);
         AutoWalk.Attempt attempt = AutoWalk.Plan(
@@ -228,7 +270,7 @@ public sealed class NpcWalk
         }
 
         double facing = Math.Atan2(to.Y - from.Y, to.X - from.X);
-        return new NpcWalk(plate, route, bound, from.X, from.Y, facing, radius, pace);
+        return new NpcWalk(plate, route, bound, from.X, from.Y, facing, radius, pace, keepOutInRadii);
     }
 
     /// <summary>
@@ -256,7 +298,7 @@ public sealed class NpcWalk
             return false;
         }
 
-        double keepOut = _radius * PersonalSpaceInRadii;
+        double keepOut = _keepOut;
         double budget = Pace * dt;
         double startX = X, startY = Y;
         bool yielded = false;
