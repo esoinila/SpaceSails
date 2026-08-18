@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -381,18 +381,30 @@ public sealed class EveryFrameHashesTheSameTests
     // out of it, and every other row in this table is byte-identical. That is the whole of the change, and
     // it is what a re-pin is allowed to look like.
 
+    // ── #561 · THE FOURTEEN FRAMES WITH A NERVE GAUGE IN THEM WERE RE-PINNED, AND THE COUNTS PROVE WHY ──
+    //
+    // The gauge's backing plate is measured to what it backs now (HudColumn) instead of typed at h + 42, so
+    // it is drawn 18px taller on the regolith and 15px taller aboard; and the motion tracker's column top is
+    // ASKED of the nerve block instead of typed at 82, so on the surface frames the whole fan steps 18px
+    // down the column. Both are the SAME rectangle and the SAME disc, at a different y.
+    //
+    // Every one of the fourteen kept its call count to the mark — 335 / 346 / 350 / 350 / 344 / 348 / 346 /
+    // 350 / 128 / 1607 / 3771 / 3881 / 266 / 4364, unchanged — and the fourteen are exactly the cases whose
+    // State carries ShowNerve. Nothing was added to a frame, taken out of one, or moved in one; every other
+    // row in this table is byte-identical. That is what a re-pin is allowed to look like.
+
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
-        ["ship · under way"] = (335, "84f477c2696097c1d9f85a65a9a5969d549d108741bc97113a1897553440ec4c"),
+        ["ship · under way"] = (335, "a5ec18cbb2789fb4bec03529b05f8823907bfe4d4f272953ab9a693baf5f9661"),
         ["ship · docked, the shuttle away and the machine stalling"] = (308, "af920816b92c1be3ad51dbaed0da98c66be8afba53bf88d59019325d56a44d85"),
         ["ship · hatches dogged, seated at the table"] = (309, "580fc08e861399765b2791b5d4bfbfe1c2d9eba77a850ba1af032100af727564"),
-        ["haven · the-space-bar"] = (346, "40fa9ce0068ad55d780febb3fd948fe3b799f1c0ca0baf880fd553899464371e"),
-        ["haven · cinder-roost"] = (350, "d50505ed61f142e79c2846fd35710cabdfb1f538326a68604d22dbad4a37c036"),
-        ["haven · ringside-exchange"] = (350, "4851d548022be2d57c0e6ce09d16b9d68223f997951d4c5026741635f312abc5"),
-        ["haven · the-tilt"] = (344, "34207d0f92537af1e4c259473323ae11a7915a169b6c32d86c7872f44e2455ad"),
-        ["haven · selene-gate"] = (348, "6ed52f7a714ce0849eee6efe4cd51faddb7413a5a53f2a61fddd8603aaaf9909"),
-        ["haven · red-eye"] = (346, "b16f67dbb88f45a585b1bc47ec6ddcb965e199505b6c9d8aec79fed2d0550842"),
-        ["haven · the-deep"] = (350, "43c9a94c0ee1d22dc1bb2212c9951306fb1c5029126a98212b55efc4ad55059c"),
+        ["haven · the-space-bar"] = (346, "b210647c7075d53e802298af8965b4243d6b1e92e2756259ce284a59ba6ebcba"),
+        ["haven · cinder-roost"] = (350, "d95ef9208f65b381e30116730885a885a7fca2f6dd57c9071c4eee05307542df"),
+        ["haven · ringside-exchange"] = (350, "0186f7f5e05bc0bb736e7d6e76dbcb16fba7ff3af49a71a612a73f9a7a5c739a"),
+        ["haven · the-tilt"] = (344, "ca35ede7477e2320257a525b5e0fe19e4a0fcb09410c0ae57bc76b8cc2f49cf1"),
+        ["haven · selene-gate"] = (348, "607d7d4ef01f17db5454cfca2b4b817a46085a348b0a3fac3f5de2b30d924365"),
+        ["haven · red-eye"] = (346, "0cfe842530a2454f9a011966712abefb6b4b790fae8a80762f19ffed7d1ca9b7"),
+        ["haven · the-deep"] = (350, "0ea55cf117fdf40f917e7dc942689baa80ccbac546e3fbcffbfdf807a2b983be"),
         ["wreck · HullBreach"] = (592, "a6861bad89c60f79b415fdbe913c809cfba6f6d832c8ee1a689764f37019f482"),
         ["luna B1"] = (1591, "55c45b3b3650a18f23d2ff98d6db568fb2ed3c6faed37bbc5b4dacecd8f4cf7f"),
         ["luna B2"] = (426, "2a74f1342bd3e2eeced21aac071fc9b844481a9e6abb26823b31389b599901d8"),
@@ -407,15 +419,15 @@ public sealed class EveryFrameHashesTheSameTests
         ["luna B11"] = (289, "54e471c8a79a250ad4bdccd6fe12c8633b9038661df32585f582240f158fd74f"),
         ["luna B12"] = (309, "50a2f7952d013e4ef93a399e73d438d3461c8e80821db7bb1c745fd51ab31542"),
         ["luna B13"] = (421, "219604d9c664bd15c413eb683a09473a980a281ddfa76d83e4b4c323d798b6a8"),
-        ["luna B1 · the lamps are all there is"] = (128, "7116fa86b505d015afd4218dce97075de9237b309a0b617a2eb441248e4af643"),
-        ["luna B1 · sat down at a desk"] = (1607, "5e584fa821b815ccc8be8fc5b44a4047e4777ca4ddbeba562bfcff47127c763b"),
+        ["luna B1 · the lamps are all there is"] = (128, "6bf12197a27d80f4cb6dff0be44a4ae0069e18d822be3a0bd45961f70179f2f4"),
+        ["luna B1 · sat down at a desk"] = (1607, "afb8b5ed5188082e849a04bcebf270fc8756604ba308ba9444fdcaed38f7b77c"),
         ["luna B1 · the round is out, and the buzzer went"] = (1617, "977fb55d912c173ff908179ddbba53c5e3a447fee1efef982cf6df4e51f7c4a7"),
         ["phobos B1"] = (1563, "9ed4a1c5c39f66a72397ef1d4d63eb8474b5cb3c8f5c37b2aad3cd46c5519e60"),
         ["titan B1"] = (1512, "b860421213c683108ee326a18794b6cb9ebc993940bbb81c4a15c7693ae92929"),
-        ["surface · luna site 0"] = (3771, "6405eda6ad8f3486a553cce6f7b5fa95afe7c0dd4d346721e5a84db3544c5941"),
-        ["surface · luna site 0, the whole excursion"] = (3881, "e9e22a17582dffa7d4f6a9041d421d89a12b04b54ea6d231c45dc14f467c1c3c"),
-        ["surface · luna site 0, dark, and the fan hears something"] = (266, "d3ea7f061938e922b2128a6620dd755fef86f998bd474e140e6db30f46a7a25a"),
-        ["surface · titan site 0, a derelict's instruments (none)"] = (4364, "734c0557356b6bdae5c2fcccce2866fbdc25db91973235a118bffd32682a41d3"),
+        ["surface · luna site 0"] = (3771, "913e8cf419535ceab539ba9449c608945e286b73a86287722aecc9dd13ae05bc"),
+        ["surface · luna site 0, the whole excursion"] = (3881, "76071a20eaa354567e5f8ed54dd1a68b2c2f5f034a829f93d4efbefb3ce96b83"),
+        ["surface · luna site 0, dark, and the fan hears something"] = (266, "eae9225f5d0de7b6c3b0aab9d67aee71cd9cd1ecc83bf8767ed410ed60c2a2eb"),
+        ["surface · titan site 0, a derelict's instruments (none)"] = (4364, "0e42d5e5bc5ad3ca51b30c30b122f56002822d14949e90853c78914c3cd5330e"),
     };
 
     /// <summary>
