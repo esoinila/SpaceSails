@@ -140,17 +140,45 @@ public partial class Map
         {
             Walker w = ex.Walkers[i];
 
-            // #731 v2 · SHE IS AT THE DOOR, AND SHE IS WAITING FOR YOU. The one errand whose walk ending is
-            // the START of the beat rather than the end of it: she does not step out of the world when the
-            // route runs out, she stands in the opening and looks back across the hall, and the game says
-            // nothing whatsoever about it. Whether the scene resumes is the captain's legs' business.
-            if (w.For == Errand.LeadingYouIn && w.Walk.State == NpcWalk.Doing.Arrived)
+            // ── #731 v2 · THE ERRAND WHOSE ARRIVAL IS THE BEGINNING ──────────────────────────────────
+            //
+            // The other two walks END when the route runs out: the figure comes off the floor and, for an
+            // arrival, the card goes up. An escort's does the opposite. She reaches the doorway and STAYS
+            // in it, looking back across the hall at you, and the game says nothing whatsoever about it —
+            // whether the scene resumes is the captain's legs' business.
+            //
+            // AND THE ARRIVING FRAME IS PART OF THAT. The first build of this checked "arrived" only BEFORE
+            // the step, so the very frame the route ran out fell through to the ordinary ending and took her
+            // off the floor: the walk was perfect, the wait lasted zero frames, and the doorway was empty by
+            // the time the captain could have looked at it. Watched go red as `the doorway is empty after 0
+            // frame(s) of waiting`.
+            if (w.For == Errand.LeadingYouIn)
             {
-                if (SheHasWaitedLongEnough(ex, w, walls, i))
+                if (w.Walk.State != NpcWalk.Doing.Arrived)
+                {
+                    w.Walk.Step(dt, walls, _avatarX, _avatarY);
+                    if (w.Walk.Afoot)
+                    {
+                        continue;
+                    }
+                    if (w.Walk.State != NpcWalk.Doing.Arrived)
+                    {
+                        // The ground refused her somewhere between your table and the booth. There is nobody
+                        // at that door now, so there is nobody to follow — and a conversation left parked for
+                        // a woman who is not there is exactly the state this repo has named a bug class after.
+                        ex.Walkers.RemoveAt(i);
+                        ForgetTheEscort(ex);
+                        anybodyLanded = true;
+                        continue;
+                    }
+                    anybodyLanded = true;
+                }
+                else if (SheHasWaitedLongEnough(ex, w, walls, i))
                 {
                     anybodyLanded = true;
                     continue;
                 }
+
                 w.Walk.LookTowards(_avatarX, _avatarY);
                 continue;
             }
@@ -166,13 +194,6 @@ public partial class Map
             if (w.For == Errand.Arriving && w.Walk.State == NpcWalk.Doing.Arrived)
             {
                 SomebodyHasReachedYourTable(ex, w);
-            }
-            if (w.For == Errand.LeadingYouIn)
-            {
-                // The ground refused her somewhere between your table and the booth. There is nobody at that
-                // door now, so there is nobody to follow — and a conversation left parked for a woman who is
-                // not there is exactly the sort of state this repo has named a bug class after.
-                ForgetTheEscort(ex);
             }
         }
 
