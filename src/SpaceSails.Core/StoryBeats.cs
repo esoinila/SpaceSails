@@ -64,6 +64,54 @@ public static class StoryBeats
 
         /// <summary>#541 · Collar to collar: no tube at all, and nobody who was expecting a ship.</summary>
         BerthOutpost,
+
+        // ── #664 · THE ELEVEN THE OTHER SYSTEM WAS RAISING ──────────────────────────────────────────────
+        //
+        // The fork answered #528 twice, on the same day, from opposite ends. This branch built the CARD and
+        // raised it by hand — ShowRevealCard(title, art, caption), no cadence, no deferral, always modal —
+        // and `main` built this file. The reunification merge (#633) kept both and said so out loud; #664 is
+        // where a winner is picked, and the winner is the one that can say NO.
+        //
+        // Each of these was already a moment somebody had written words and painted a canvas for, in Core,
+        // beside the rule that decides it happened (ArchiveNode.PurgedPlate, KaamosLore.PlateFor, and so on).
+        // What they gain here is the half the client-only card could never have: a CADENCE, so the owner's
+        // "or be too repetitive" is answerable, and a DEFERRAL, so no card of theirs is ever the reason
+        // somebody died behind it. What they do NOT gain is new text — see PlateOf, which is the whole of
+        // where their words come from.
+
+        /// <summary>#664 · The purge handle goes over, and a column of somebody's pattern stops being warm.</summary>
+        ArchivePurged,
+
+        /// <summary>#664 · The one warm card in a dread-heavy set: a stranger stands you the cognac.</summary>
+        StrangerStandsADrink,
+
+        /// <summary>#664 · A KAAMOS shard that turns the arc — the subject is the fragment id, and the arc's
+        /// own pool decides which painting and which words (<c>KaamosLore.PlateFor</c>).</summary>
+        KaamosShardFound,
+
+        /// <summary>#664 · RETURNED TO SENDER — the ice-moon berth takes a filing and bounces it.</summary>
+        KaamosFilingBounced,
+
+        /// <summary>#664 · A NEBULA shard that arrives at a bare bar table (<c>NebulaLore.PlateFor</c>).</summary>
+        NebulaShardFound,
+
+        /// <summary>#664 · Somebody's last effects, on the floor of a sealed hut on an airless moon.</summary>
+        OutpostEffectsRead,
+
+        /// <summary>#664 · The detector shrieks and holds: a sealed door, buried flush with the regolith.</summary>
+        SecretLabDoorFound,
+
+        /// <summary>#664 · The Hive's loudest moment — the cradles nearest the door are open.</summary>
+        TheDormantThingWakes,
+
+        /// <summary>#664 · A shelter is a pressure vessel, not a sanctuary, and they have settled in to wait.</summary>
+        ShelterIsNotSanctuary,
+
+        /// <summary>#664 · A boat you did not call sets down between you and the way home.</summary>
+        CollectorsSetDown,
+
+        /// <summary>#664 · The sealed hatch comes off its dogs — and it opens both ways.</summary>
+        SealedDoorReleased,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -129,6 +177,32 @@ public static class StoryBeats
         Beat.ChargeLetGo => Cadence.Cooled,
         // #541: one gangway per berth. Each place gets its establishing shot exactly once.
         Beat.BerthGreatPort or Beat.BerthWorkingBerth or Beat.BerthOutpost => Cadence.OncePerSubject,
+
+        // ── #664 · the eleven, and why each one is the cadence it is ────────────────────────────────────
+        //
+        // ONCE EVER, because the picture, the caption and the arithmetic are byte-identical every time it
+        // fires, so a second showing adds a dismissal and nothing else. The purge handle is the one
+        // irreversible act in the game and the card is its milestone; the bounced filing is the first thing
+        // the KAAMOS arc ever says to most captains; and the shelter plate is a RULE OF THE WORLD — its own
+        // caller files the line at PulseRank.Beat and calls it "a rule of the world learned once".
+        Beat.ArchivePurged or Beat.KaamosFilingBounced or Beat.ShelterIsNotSanctuary => Cadence.OnceEver,
+
+        // COOLED, because the moment is real every time and the CARD is not. A stranger standing you a drink
+        // is worth a picture the first time each evening and wallpaper by the third; a captain throwing three
+        // sealed hatches in one hull in one minute has already been told what is behind them.
+        Beat.StrangerStandsADrink or Beat.SealedDoorReleased => Cadence.Cooled,
+
+        // ONCE PER SUBJECT — #541's cadence, and every one of these is about a PLACE or a THING rather than
+        // about the captain. A second KAAMOS shard is a different painting and different words; a second
+        // moon's buried door is a different moon. OnceEver would show one and silently swallow the rest,
+        // which is the exact failure the arrival tube was written to stop.
+        Beat.KaamosShardFound or Beat.NebulaShardFound or Beat.OutpostEffectsRead
+            or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes => Cadence.OncePerSubject,
+
+        // …and CollectorsSetDown falls through to EveryTime with the grapples, deliberately. It is the only
+        // warning the player gets — after it the only information in the world is a tracker fan — and it is
+        // rare by its own nature (a heat threshold, and at most one landing per excursion), which is the
+        // clause EveryTime is reserved for. A warning suppressed for being repetitive is not a warning.
         _ => Cadence.EveryTime,                    // a collector's grapples, a crew meeting, an arc breaking
     };
 
@@ -138,6 +212,13 @@ public static class StoryBeats
     {
         Beat.SailHoled => 6 * 60.0,
         Beat.ChargeLetGo => 10 * 60.0,
+
+        // #664 · A stranger's cognac is a whole bar visit apart; a sealed hatch is long enough that the three
+        // doors of one sweep give one card and not three, and short enough that the NEXT hull is a fresh
+        // fright. FLAGGED for the owner's tuning, like the two above.
+        Beat.StrangerStandsADrink => 15 * 60.0,
+        Beat.SealedDoorReleased => 5 * 60.0,
+
         _ => 0.0,
     };
 
@@ -155,6 +236,12 @@ public static class StoryBeats
         // #777: the grapples arrive AS the BUSTED demand panel, which has been showing this beat's painting
         // since #528. A card here would be a second modal over the first, with the same picture on it.
         Beat.CollectorHail => Presentation.Hosted,
+
+        // #664 · All eleven of the adopted moments fall through to CARD, and that is not an oversight: every
+        // one of them was already a full-screen modal under the other system, and every one of them is a
+        // moment where the world has just stopped for the captain anyway — a handle pulled, a shard laid on
+        // a table, a hatch coming off its dogs. What changes is not whether they take the screen; it is
+        // WHEN, and how often.
         _ => Presentation.Card,                      // the deputation, the meeting, the news
     };
 
@@ -185,9 +272,26 @@ public static class StoryBeats
     /// <para>#777 · A HOSTED beat never defers either, and for a second reason on top of the first: there is
     /// nothing to hold. Its surface is a card the caller is raising right now, so "later" would mean showing
     /// the words after the picture they belong to has gone.</para>
+    /// <para>#664 · AND FOUR OF THE ADOPTED ELEVEN SAY NO FOR THE SAME TWO REASONS THE HAIL DOES. Three of
+    /// them RAISE the danger one statement before they knock — the pack comes off its benches, the pack comes
+    /// out of the hatch, the collectors are already walking — so <c>CaptainIsInDanger()</c> is true at the
+    /// instant of the raise and a deferrable card there does not wait for a calmer moment: it waits for the
+    /// fight to end and then explains a thing that is already over. And two of them ARE the warning: the
+    /// shelter card is the only sentence in the game that says a pressure vessel will not save you, and the
+    /// arrival card is, in its own caller's words, <i>"THE ONLY WARNING THE PLAYER GETS"</i>. A warning held
+    /// back until it is safe to read is not a warning, it is a receipt.</para>
+    /// <para>#865's sit-beat hold is a different rule and still covers all eleven: that arm asks nothing
+    /// about deferrability, because it is a beat and a half of screen owed to a press the player just made.</para>
     public static bool DeferrableWhileInDanger(Beat beat) => beat switch
     {
         Beat.CollectorHail => false,   // this IS the danger; it cannot wait for a better time
+
+        // #664 · the pack is standing off its benches / coming through the hatch as this is raised
+        Beat.TheDormantThingWakes or Beat.SealedDoorReleased => false,
+
+        // #664 · the warning, which is worth nothing after the thing it warns about
+        Beat.ShelterIsNotSanctuary or Beat.CollectorsSetDown => false,
+
         _ => PresentationOf(beat) == Presentation.Card,
     };
 
@@ -195,11 +299,85 @@ public static class StoryBeats
     /// gone before it becomes furniture.</summary>
     public const double PlateSeconds = 7.0;
 
+    /// <summary>
+    /// #664 · THE NOISE THE SURFACE MAKES, decided here for the same reason the picture and the cadence are.
+    ///
+    /// <para>The seam used to chime <c>"reveal"</c> for every card and plate it raised, which was right while
+    /// every beat in the file was raised by the seam alone. The eleven moments adopted from the deleted
+    /// reveal-card system are not: each of them is a press or an event that <b>already makes its own
+    /// noise</b>, chosen by the moment — <c>"board"</c> for a find, <c>"alarm"</c> for a hatch coming off its
+    /// dogs and a pack coming through it — and the old card was deliberately silent so as not to flatten
+    /// three different moments into one chime. Layering a second cue over that is the stacked-card mistake in
+    /// the one channel the player cannot close, which is the argument
+    /// <see cref="Presentation.Hosted"/> already makes in this file.</para>
+    ///
+    /// <para>So: an empty string means <i>the act that raised this beat has already been heard</i>, and it is
+    /// a statement about the moment rather than a client's opinion about the seam — which is why it lives
+    /// here beside the cadence and not in an argument the caller passes.</para>
+    /// </summary>
+    public static string Cue(Beat beat) => beat switch
+    {
+        Beat.ArchivePurged or Beat.StrangerStandsADrink or Beat.KaamosShardFound or Beat.KaamosFilingBounced
+            or Beat.NebulaShardFound or Beat.OutpostEffectsRead or Beat.SecretLabDoorFound
+            or Beat.TheDormantThingWakes or Beat.ShelterIsNotSanctuary or Beat.CollectorsSetDown
+            or Beat.SealedDoorReleased => "",
+        _ => "reveal",
+    };
+
     // ── What each one shows and says ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #664 · THE ELEVEN ADOPTED BEATS DO NOT GET NEW WORDS, THEY GET A DOOR. Every one of them already had a
+    /// <see cref="RevealPlate"/> in Core — a title, a painting and a caption — written beside the rule that
+    /// decides the moment happened, because that was #634's law before this file existed. Copying those
+    /// strings into the three switches below would have made a second source of truth for the same sentence,
+    /// which is the drift this project keeps paying for; so the switches ASK, and this is the one place that
+    /// knows which plate belongs to which beat.
+    ///
+    /// <para>Two of them are keyed by <paramref name="subject"/> rather than fixed, and that is the shape the
+    /// old card had that a per-beat table could not: a KAAMOS or NEBULA shard's plate is chosen by the
+    /// fragment the captain just assembled, so the picture cannot be shown for a shard nobody found. With no
+    /// subject they resolve to nothing at all, which is honest — there is no such thing as "the KAAMOS card"
+    /// in general. <see cref="Canvases"/> is how a sweep asks what the whole pool can name.</para>
+    /// </summary>
+    private static RevealPlate? PlateOf(Beat beat, string? subject) => beat switch
+    {
+        Beat.ArchivePurged => ArchiveNode.PurgedPlate,
+        Beat.StrangerStandsADrink => StrangerBond.CognacPlate,
+        Beat.KaamosShardFound => KaamosLore.PlateFor(subject ?? ""),
+        Beat.KaamosFilingBounced => KaamosLore.BouncePlate,
+        Beat.NebulaShardFound => NebulaLore.PlateFor(subject ?? ""),
+        Beat.OutpostEffectsRead => SurfaceOutpost.EffectsPlate,
+        Beat.SecretLabDoorFound => SecretLab.DoorPlate,
+        Beat.TheDormantThingWakes => SecretLab.TheyStandPlate,
+        Beat.ShelterIsNotSanctuary => CollectorLanding.SiegePlate,
+        Beat.CollectorsSetDown => CollectorLanding.ArrivalPlate,
+        Beat.SealedDoorReleased => NestPlates.Released,
+        _ => null,
+    };
+
+    /// <summary>
+    /// #664 · EVERY CANVAS THIS BEAT CAN NAME — one for a fixed beat, the whole authored pool for one whose
+    /// picture is chosen by its subject.
+    ///
+    /// <para><c>StoryArtPresentTests</c> used to sweep <see cref="ArtFile(Beat)"/>, which was the whole truth
+    /// while every beat had exactly one painting. It is not any more: a subjectless <c>KaamosShardFound</c>
+    /// has no canvas, and a sweep that took the empty string for an answer would have quietly stopped
+    /// guarding the two arcs the moment they arrived. This is what the sweep asks instead, so adding a
+    /// twelfth plate to a pool still means painting it or being told.</para>
+    /// </summary>
+    public static IEnumerable<string> Canvases(Beat beat) => beat switch
+    {
+        Beat.KaamosShardFound => KaamosLore.AllPlates.Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
+        Beat.NebulaShardFound => NebulaLore.AllPlates.Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
+        _ => [ArtFile(beat)],
+    };
 
     /// <summary>The painting for this beat. Named here so the manifest and the code cannot drift; a file that
     /// has not been painted yet simply does not render, and the words carry it.</summary>
-    public static string ArtFile(Beat beat) => beat switch
+    /// <param name="subject">#664 · Which one this instance is about, for the beats whose canvas is chosen by
+    /// it. Ignored by every beat that has one painting.</param>
+    public static string ArtFile(Beat beat, string? subject = null) => beat switch
     {
         Beat.FirstShotFired => "art/first-shot.jpg",
         Beat.SailHoled => "art/sail-holed.jpg",
@@ -213,12 +391,13 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
-        _ => "",
+        _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
 
     /// <summary>The title: it names the place and the verb, never the outcome. "WHAT THE VACUUM LEFT", not
     /// "salvage complete".</summary>
-    public static string Title(Beat beat) => beat switch
+    /// <param name="subject">#664 · The room, the shard, the place — for the beats whose stamp names it.</param>
+    public static string Title(Beat beat, string? subject = null) => beat switch
     {
         Beat.FirstShotFired => "🔫 THE FIRST ROUND YOU EVER FIRED",
         Beat.SailHoled => "🎯 HER SAIL IS GONE",
@@ -231,7 +410,15 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.Title(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
-        _ => "",
+
+        // #664 · The one adopted beat whose stamp names its subject: "🕷 DEEP HOLD — IT OPENS BOTH WAYS". The
+        // two halves are joined in NestPlates so they cannot drift apart in two files, exactly as the after-
+        // card's are; with no compartment named it falls back to the bare stamp rather than inventing a room.
+        Beat.SealedDoorReleased => string.IsNullOrWhiteSpace(subject)
+            ? NestPlates.Released.Title
+            : NestPlates.ReleasedTitle(subject!),
+
+        _ => PlateOf(beat, subject)?.Title ?? "",
     };
 
     /// <summary>
@@ -293,7 +480,10 @@ public static class StoryBeats
                 "The light of it comes down the spine ahead of the heat, and every hatch anybody left open is a " +
                 "road it already knows.",
 
-            _ => "",
+            // #664 · The adopted eleven read their caption off the same Core plate their title and their
+            // painting come from. Not one word of these was retyped here: `KaamosLore.PlateFor` and the nine
+            // named constants beside it are still the only place they are written down.
+            _ => PlateOf(beat, subject)?.Caption ?? "",
         };
     }
 }

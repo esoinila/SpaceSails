@@ -347,9 +347,13 @@ public partial class Map
         // A raised card is the most modal thing in the game — it stops the world and waits to be dismissed,
         // and everything else on this list is behind it. Its answer rides the card record itself, so it
         // cannot outlive the card it belongs to.
-        if (_revealCard is { } card)
+        //
+        // #664 · The card this used to find was `_revealCard`, the client-only twin the reunification merge
+        // kept on purpose. There is one card now — the StoryBeats one, which carries the same outcome field
+        // and, unlike its twin, a cadence and a deferral.
+        if (_storyCard is { } card)
         {
-            _revealCard = card with { Outcome = line };
+            _storyCard = (card.Beat, card.Subject, line);
             return;
         }
         if (_showSatchel)
@@ -557,7 +561,7 @@ public partial class Map
     /// <summary>#768 · Is something in front of the captain that a pulse would play UNDER? The two full-screen
     /// cards, asked of the world as it now stands rather than predicted from the conditions that raise
     /// them — a copy of those conditions is a second rule to keep in step, and this one cannot be wrong.</summary>
-    private bool ACardStopsTheWorld => _viewObject is not null || _revealCard is not null;
+    private bool ACardStopsTheWorld => _viewObject is not null || _storyCard is not null;
 
     /// <summary>#768 · The end of an event that had things to say: if nothing is in front of the captain the
     /// held winner is simply pulsed, here and now, exactly as it always was. If a card IS up, it stays held
@@ -572,7 +576,7 @@ public partial class Map
     }
 
     /// <summary>#768 · The card is gone — say what it was standing on. Called from every road out of a card,
-    /// which is why all of them go through CloseViewObject / CloseRevealCard and none of them clear the field
+    /// which is why all of them go through CloseViewObject / CloseStoryCard and none of them clear the field
     /// by hand. A released line takes its ordinary dwell and may be outranked afterwards like any other: a
     /// held line is a line that has not been said yet, never a line with special powers.</summary>
     private void ReleaseHeldSayings()

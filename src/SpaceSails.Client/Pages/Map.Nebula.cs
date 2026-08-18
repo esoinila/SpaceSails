@@ -63,9 +63,16 @@ public partial class Map
         // other four (the glitch on the resurrection card, the poster's grey line, the collector's writ, the
         // clinic's second page) arrive INSIDE a host card that already has a picture, so they get none —
         // stacking a card on a card is not service, it is noise. Core owns the words (NebulaLore.PlateFor).
-        if (NebulaLore.PlateFor(fragmentId) is { } plate)
+        //
+        // #664 · A beat, with the fragment id as its subject — same shape as arc 1 one file over, and once
+        // per subject for the same reason: the adjuster and the small print are two different paintings about
+        // two different things. Note what did NOT change: the four shards that arrive inside a host card
+        // still raise nothing at all. #777's HOSTED presentation is the seam's answer for a beat whose canvas
+        // is somebody else's card, and it is deliberately not reached for here — those four have no beat of
+        // their own to be hosted; they are pages of a card the arc already opened.
+        if (NebulaLore.PlateFor(fragmentId) is not null)
         {
-            ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
+            RaiseStoryBeat(StoryBeats.Beat.NebulaShardFound, fragmentId);
         }
 
         // #736 · …and the found line goes onto whichever of those two things is now in front of the captain:

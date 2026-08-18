@@ -118,10 +118,13 @@ public partial class Map
                 // reason to stay in the room stayed in it. A game that only ever hands out a picture for the
                 // bad news teaches the player that a picture IS bad news, which is a tell of a different
                 // kind. Only on the outcome that actually MADE something — the same gate the memory rides.
-                ShowRevealCard(
-                    StrangerBond.CognacPlate.Title,
-                    StrangerBond.CognacPlate.ArtFile,
-                    StrangerBond.CognacPlate.Caption);
+                //
+                // #664 · COOLED, and the subject is the person who bought it. The moment is real every time
+                // and the CARD is not: the painting and the words are the same two tumblers whoever stood
+                // them, so it is worth a picture the first time in an evening and wallpaper by the third.
+                // The subject rides along for the ledger line rather than for the cadence — a cooled beat
+                // files under itself, so a different stranger cannot re-arm it.
+                RaiseStoryBeat(StoryBeats.Beat.StrangerStandsADrink, display);
                 break;
         }
 
