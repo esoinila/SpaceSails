@@ -110,10 +110,13 @@ public partial class Map
                 // #528 · AND THE PICTURE DOES THE SAME JOB THE LINE DOES: it shows them SETTLED, not
                 // attacking. Nothing in this frame is a fight. The clock is your tank, and what makes it
                 // horrible is how comfortable everyone else looks.
-                ShowRevealCard(
-                    CollectorLanding.SiegePlate.Title,
-                    CollectorLanding.SiegePlate.ArtFile,
-                    CollectorLanding.SiegePlate.Caption);
+                //
+                // #664 · ONCE EVER, and NOT DEFERRABLE — and the two decisions are the same decision, taken
+                // from the line above: this is "a rule of the world learned once", and a rule you are told
+                // once has to be told BEFORE the thing it is about. A deferrable card here waits until
+                // nothing is trying to kill the captain, which on this ground means until after they have
+                // been taken inside the shelter they thought was safe, at which point the card is a receipt.
+                RaiseStoryBeat(StoryBeats.Beat.ShelterIsNotSanctuary, ex.CollectorCallsign);
                 ReleaseHeldSayingsUnlessACardStopsTheWorld();   // #768 — it does; the shelter line waits
             }
 
@@ -172,10 +175,14 @@ public partial class Map
         // in the world is a tracker fan. A sentence that fades in a second and a half is not a warning.
         // Core owns the words — and the caption is ClosingLine, which was written, reviewed and shipped and
         // then referenced by nothing at all until now.
-        ShowRevealCard(
-            CollectorLanding.ArrivalPlate.Title,
-            CollectorLanding.ArrivalPlate.ArtFile,
-            CollectorLanding.ArrivalPlate.Caption);
+        //
+        // #664 · The one beat of the eleven that keeps EVERY TIME, and the sentence above is the reason. A
+        // cadence exists to stop a card becoming wallpaper; a warning that is suppressed for being repetitive
+        // is not wallpaper, it is a warning the player did not get — and after this card the only information
+        // in the world really is a tracker fan. It is rare by its own nature (a heat threshold, and at most
+        // one landing per excursion), which is the clause EveryTime is reserved for. Not deferrable for the
+        // same reason: the collectors are walking as it is raised.
+        RaiseStoryBeat(StoryBeats.Beat.CollectorsSetDown, ex.CollectorCallsign);
         ReleaseHeldSayingsUnlessACardStopsTheWorld();   // #768 — it does, so the two lines wait for the ✕
 
         // It is a fright, and a specific one: the ground just stopped being only about the Old Ones.

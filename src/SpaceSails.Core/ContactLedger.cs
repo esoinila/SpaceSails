@@ -147,13 +147,38 @@ public readonly record struct ContactHistory(
             ? this
             : this with { KnownFavorite = drinkId };
 
+    /// <summary>#715 — WHAT THIS ENTITY REMEMBERS ABOUT BEING CROSSED. Illegal heat, owed to an outfit and
+    /// to nobody else (<see cref="IllegalHeat"/>): a card refused at their gate, a send refused over their
+    /// air, a round that walked you off their floor. Additive and SAVED like the rest of the book, defaulting
+    /// to zero on every pre-existing construction — an old vault loads with nothing owed to anybody, which is
+    /// the truth about a captain who has not yet crossed a soul.
+    ///
+    /// <para>It is deliberately NOT <see cref="Goodwill"/> with a minus sign on it. Goodwill is a person you
+    /// stood a round; this is a company that has your ship's name written down. One number made to mean both
+    /// would be the two-meters-that-must-agree bug this house keeps a table of.</para></summary>
+    public int HeatOwed { get; init; }
+
+    /// <summary>#715 — when the heat above was last touched: charged by a crossing, or cooled by an hour
+    /// spent off their ground. It is the cooling clock, and it is why a captain who stays put stops cooling
+    /// (<see cref="IllegalHeat.Cool"/>).</summary>
+    public double HeatStampSimTime { get; init; }
+
+    /// <summary>#715 — book heat against this entity (or, with a negative delta, cool it) and stamp when.
+    /// Never below zero: a book owing a negative grudge would be an outfit that liked you better for having
+    /// been refused, which is nobody.</summary>
+    public ContactHistory WithHeat(int delta, double simTime) => this with
+    {
+        HeatOwed = Math.Max(0, HeatOwed + delta),
+        HeatStampSimTime = simTime,
+    };
+
     /// <summary>True once we've learned what this contact drinks.</summary>
     public bool FavoriteKnown => !string.IsNullOrEmpty(KnownFavorite);
 
     /// <summary>True once there is any history to read — an honest job done, a hull we robbed, coin
-    /// in the air (banked with them or owed to them), a round stood them (goodwill), a tell slipped, or
-    /// their favourite learned.</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown;
+    /// in the air (banked with them or owed to them), a round stood them (goodwill), a tell slipped,
+    /// their favourite learned, or (#715) an outfit that remembers being crossed.</summary>
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown || HeatOwed > 0;
 }
 
 /// <summary>
@@ -254,6 +279,24 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithKnownFavorite(drinkId);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>#715 — the ONE mutation the illegal-heat meter performs: move an entity's heat by a signed
+    /// delta and stamp when, creating their record on first crossing. Books no coin and no goodwill — an
+    /// outfit that remembers being crossed is a relationship, and this is the book relationships live in.
+    /// Returns the updated history so the caller can read the new standing back.
+    ///
+    /// <para>The delta is applied even when it is zero, because the STAMP is half of what this call is for:
+    /// <see cref="IllegalHeat.Cool"/> advances the clock of the outfit whose ground you are standing on
+    /// without banking a thing.</para></summary>
+    public ContactHistory ApplyHeat(string contactId, string displayName, int delta, double simTime)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithHeat(delta, simTime);
         _byId[contactId] = updated;
         return updated;
     }

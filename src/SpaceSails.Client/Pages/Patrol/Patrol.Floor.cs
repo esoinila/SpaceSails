@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -39,7 +39,10 @@ public sealed partial class Map
         /// Called from the lift ride — the one place a floor changes — and never from the deck rebuild, which
         /// happens every time a room is searched and would restart the round under a captain who was timing it.
         /// </summary>
-        public void SpawnPatrolFor(SurfaceExcursion ex)
+        /// <param name="ex">The excursion, for the site and the frozen watch.</param>
+        /// <param name="book">#715 · The contacts ledger, handed in rather than reached for — the round reads
+        /// one number out of it (what the outfit that runs this site remembers) and stores nothing.</param>
+        public void SpawnPatrolFor(SurfaceExcursion ex, ContactLedger book)
         {
             Guards.Clear();
             Beat.Clear();
@@ -88,7 +91,17 @@ public sealed partial class Map
             if (Watch != ex.CanteenWatch)
             {
                 Watch = ex.CanteenWatch;
-                EscortsThisWatch = 0;
+
+                // #715 · …AND IT DOES NOT ALWAYS START AT ZERO. An outfit that remembers this captain starts
+                // the watch with escorts already against them (IllegalHeat.StartingRung), which is exactly
+                // what "they are warier here" means in the vocabulary this building already has: the same
+                // man, the same mild procedure, arriving at the end of its patience sooner. There is no
+                // second ladder — the round keeps the one it had, and heat starts you further up it.
+                //
+                // It is asked at the turn of the watch and nowhere else, for the reason the rest of this
+                // block is: a shift's memory turns over with the shift. Crossing somebody at 03:00 does not
+                // retroactively make the 22:00 round warier, and heat banked mid-watch lands on the next one.
+                EscortsThisWatch = IllegalHeat.StartingRung(IllegalHeat.HeatAtSite(book, bodyId));
                 WalkedAwayThisWatch = 0;
             }
 
@@ -143,7 +156,12 @@ public sealed partial class Map
 
         /// <summary>Walk them, decide what each side can know about the other, and let a sighting raise the
         /// card. Called once a frame from <c>StepSurface</c>.</summary>
-        public void AdvancePatrol(double dtRealSeconds)
+        /// <param name="dtRealSeconds">The frame.</param>
+        /// <param name="book">#715 · The contacts ledger, handed in rather than reached for: the two crossings
+        /// a round can be — the walk off the floor, and the walk to the sky — are banked against this site's
+        /// outfit from inside this method, which is the ONE frame both of them are decided on.</param>
+        /// <param name="simTime">Now, for the stamp a charge carries — the clock the cooling runs on.</param>
+        public void AdvancePatrol(double dtRealSeconds, ContactLedger book, double simTime)
         {
             // #835 · …and the one clause that runs where nothing else here does. The KICKED OUT plate is painted
             // on the SURFACE, which is the one place this file has no guards, no beat and no floor — so its clock
@@ -169,6 +187,13 @@ public sealed partial class Map
             if (EscortDue is { } due && _host.ViewObject is null)
             {
                 EscortDue = null;
+
+                // #715 · ONE CROSSING, BANKED ONCE, HERE. Both roads to an escort meet on this line — the
+                // challenge your wallet could not answer (#804) and the man who ran you down and has your arm
+                // (#835) — and both are the same thirty seconds from the outfit's point of view: somebody on
+                // their rota wrote your face down. Banking it at the two places EscortDue is ARMED would be
+                // one crossing charged twice on the road that goes through both.
+                TheHeatOfBeingWalkedOut(ex, book, simTime, IllegalHeat.Crossing.TheEscort);
                 BeginTheWalkBack(due, walls);
             }
 
@@ -178,6 +203,7 @@ public sealed partial class Map
             if (KickOutRideDue && _host.ViewObject is null)
             {
                 KickOutRideDue = false;
+                TheHeatOfBeingWalkedOut(ex, book, simTime, IllegalHeat.Crossing.TheKickOut);
                 TheKickOut(ex);
                 return;
             }
@@ -383,6 +409,24 @@ public sealed partial class Map
             //
             // #831 · …and it stops AT SOMETHING. The rule is untouched; the picture is not a statue.
             TheCoverAct(g, dt, walls, sight);
+        }
+
+        /// <summary>
+        /// #715 · <b>WHAT THE ROUND JUST COST YOU, AND WHO IS OWED IT.</b>
+        ///
+        /// <para>The round's own two crossings, banked against the outfit that runs the ground the captain is
+        /// standing on and against nobody else. It goes through <see cref="IllegalHeat.Bank"/> like every
+        /// other crossing in the game — the lift panel's, the remote's, the scanner's — so there is one place
+        /// where a charge becomes a memory and no second spelling of it to go looking for.</para>
+        ///
+        /// <para>The vault is asked to save for the same reason the escort already asks: a line has gone into
+        /// somebody's book, and a book that only survived until the tab was closed would not be a memory.</para>
+        /// </summary>
+        private void TheHeatOfBeingWalkedOut(
+            SurfaceExcursion ex, ContactLedger book, double simTime, IllegalHeat.Crossing why)
+        {
+            IllegalHeat.Bank(book, IllegalHeat.Charge(ex.Stop.Body.Id, why), simTime);
+            _host.RequestVaultSave();
         }
 
         /// <summary>#833 · THE APPROACH. He has said hold on, and he is walking over to say the rest of it to

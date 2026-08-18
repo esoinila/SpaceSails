@@ -87,7 +87,11 @@ public partial class Map
                 // own book (#715) rather than out of a field on this component. Null on every floor nobody
                 // has booked a room on, which is every floor of every site until somebody asks at the
                 // counter — so #905's thirty pinned fingerprints see exactly what they saw before.
-                TheRoomYouHold(ex));
+                TheRoomYouHold(ex),
+                // #731 · …and who has already stood up and walked off this watch. One body, one place: a
+                // regular crossing the hall on real legs must not ALSO be drawn in the chair they left, and
+                // the one function that can be made to agree about it is the one that seats them.
+                ex.HallStoodUp);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
@@ -361,6 +365,10 @@ public partial class Map
         // descent and what walks the restricted floors instead is somebody on a payroll. Stepped AFTER the
         // clear, deliberately — a guard is not a contact of the same kind and never shares a list with one.
         AdvancePatrol(dtRealSeconds);
+        // #731 · …and the people who are not on anybody's payroll: a regular finishing and leaving through a
+        // door the captain's own TRY is refused at, and the one who comes out of one to sit at your table.
+        // After the round, deliberately — a walker is not a guard and never shares a list with one.
+        AdvanceWalkers(dtRealSeconds);
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
         // #370/#394: an away site runs NO endless tide (owner: "not a continuous endless stream like on
         // Miranda"). The expedition's beats may rouse a LIMITED pack; the deflection rock runs the pack OFF

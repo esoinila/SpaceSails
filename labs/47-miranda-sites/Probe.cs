@@ -1,4 +1,4 @@
-﻿// Lab 43 · What is actually ON Miranda's landing sites?
+﻿// Lab 47 · What is actually ON Miranda's landing sites?
 //
 // The owner, playtesting 2026-07-31: "the map is kind of boring... no door or enclosed places",
 // "I have never seen the landing site area expand yet... we should test it", "There should be huts
@@ -10,7 +10,7 @@
 //   3. CAN a landing site ever expand here? (The append-a-region machinery exists — SecretLab and
 //      ExpeditionRegions — so the question is only whether Miranda can ever roll into it.)
 using SpaceSails.Core;
-using SpaceSails.Labs.Lab43;
+using SpaceSails.Labs.Lab47;
 
 // --svg writes one picture per site under labviz/ — the only way to LOOK at a landing site without the
 // game, since a descent will not render in an automated browser tab (rAF is throttled when the tab counts

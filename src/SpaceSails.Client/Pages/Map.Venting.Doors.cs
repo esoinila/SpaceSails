@@ -61,7 +61,14 @@ public sealed partial class Map
         // #736 · …and the line that says WHICH hatch and that it opens both ways rides the plate. The press
         // that throws this door is on the valve board, so before this the answer went to a pulse behind two
         // layers of blur — the board's and then the card's.
-        ShowRevealCard(NestPlates.ReleasedTitle(name), NestPlates.Released.ArtFile, NestPlates.Released.Caption,
+        //
+        // #664 · The compartment is the SUBJECT, which is how the stamp goes on saying "🕷 DEEP HOLD — IT
+        // OPENS BOTH WAYS" with the two halves still joined in NestPlates rather than here. COOLED rather
+        // than once-per-room: throwing three doors on one sweep is one fright, not three, and the next hull
+        // is a fresh one. NOT DEFERRABLE — the loop above this comment has already put the pack on the deck,
+        // so CaptainIsInDanger() is true at the raise and holding the card would mean explaining the open
+        // hatch after whatever came out of it has been dealt with.
+        RaiseStoryBeat(StoryBeats.Beat.SealedDoorReleased, name,
             outcome: $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last " +
                 "crew shut in there has been waiting on the other side of it, and it does not need a second " +
                 "invitation.");

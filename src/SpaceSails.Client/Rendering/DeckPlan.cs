@@ -355,8 +355,20 @@ public sealed class DeckPlan
     /// a merge.</para>
     ///
     /// <para>#804 · And two more for the ROUNDS on the Hive's restricted floors — a fifth kind of figure,
-    /// and the first the underground has ever had. All FIVE bands: 3 + 24 + 4 + 3 + 2 = 36.</para></summary>
-    public const int MaxDroids = 36;
+    /// and the first the underground has ever had. All FIVE bands: 3 + 24 + 4 + 3 + 2 = 36.</para>
+    ///
+    /// <para>#731 · And two more again for the WALKERS — the people who are not on anybody's payroll: a
+    /// regular finishing a drink and going, and the one who comes out of a door to sit at your table
+    /// (<c>Egress.MostAtOnce</c>). SIX bands: 3 + 24 + 4 + 3 + 2 + 2 = 38.</para>
+    ///
+    /// <para><b>And this time it DID throw</b>, which is worth writing down beside the paragraph above that
+    /// says it would not. <c>Map.Surface.SurfaceDroidCount</c> grew to 38 and this stayed at 36, and
+    /// <c>DeckView.DrawTheFigures</c> walked <c>plan.DroidCount</c> over a 36-long buffer: fifteen frame
+    /// fingerprints went red with an <c>IndexOutOfRangeException</c> on the regolith, in a chair and on a Hive
+    /// floor alike. The mirrored constant is the same bug it has always been; what changed since #633 is that
+    /// the renderer now trusts the plan's own count instead of its buffer's length, so the silent version of
+    /// it has become the loud one.</para></summary>
+    public const int MaxDroids = 38;
 
     /// <summary>One figure on the deck that is not the captain.
     ///

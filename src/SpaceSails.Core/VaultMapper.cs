@@ -36,6 +36,11 @@ public static class VaultMapper
                 Goodwill = h.Goodwill,
                 KnownTells = h.KnownTells.ToList(),
                 KnownFavorite = h.KnownFavorite,
+                // #715 — the outfit's own memory of being crossed, saved for the reason the ship's heat is
+                // (Vault's own header): a restart that cleansed it would be a heat-cleanse exploit with a
+                // company on the other end of it.
+                HeatOwed = h.HeatOwed,
+                HeatStampSimTime = h.HeatStampSimTime,
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
                     .ToList(),
@@ -69,6 +74,10 @@ public static class VaultMapper
                 Goodwill = r.Goodwill,
                 KnownTells = r.KnownTells.ToImmutableArray(),
                 KnownFavorite = r.KnownFavorite ?? string.Empty,
+                // #715 — absent on any vault written before the meter existed, which reads as 0/0: nothing
+                // owed to anybody, and no clock running.
+                HeatOwed = r.HeatOwed,
+                HeatStampSimTime = r.HeatStampSimTime,
                 Transactions = txns,
             };
             ledger.Load(history);

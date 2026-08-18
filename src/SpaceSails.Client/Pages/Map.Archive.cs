@@ -273,11 +273,13 @@ public sealed partial class Map
         // #736 · …and the sentence that says WHAT THE HANDLE DID rides the plate, because the plate goes up
         // on this same press and everything under it is behind a blur. A picture of a room going quiet, with
         // the line that says the room went quiet dimmed out behind it, is half a beat.
-        ShowRevealCard(
-            ArchiveNode.PurgedPlate.Title,
-            ArchiveNode.PurgedPlate.ArtFile,
-            ArchiveNode.PurgedPlate.Caption,
-            outcome: "⏻ " + ArchiveNode.PurgeLine);
+        //
+        // #664 · …and it knocks on the ONE door now. The words have not moved — they are still
+        // ArchiveNode.PurgedPlate — but the moment has a CADENCE at last: once ever, because the picture, the
+        // caption and the line are byte-identical on every column a captain will ever pull, so a second
+        // showing is a dismissal and nothing else. Deferrable, because nothing here is urgent: if something
+        // is trying to kill the captain, a card about a compartment going quiet can wait for the ✕.
+        RaiseStoryBeat(StoryBeats.Beat.ArchivePurged, outcome: "⏻ " + ArchiveNode.PurgeLine);
         RebuildWreckDeck();   // the legend still reads, and now it reads "pulled"
         RequestVaultSave();
     }

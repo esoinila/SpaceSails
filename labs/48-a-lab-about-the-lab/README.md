@@ -1,4 +1,4 @@
-# Lab 44 — A lab about the lab
+# Lab 48 — A lab about the lab
 
 > *"The underground layer checking in CI might be a case for lab in itself (lab about lab)"* 😄
 > — owner, 2026-08-01
@@ -29,13 +29,13 @@ So: something to look at.
 
 ```bash
 # every floor of every clandestine site — the CI-friendly table
-dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
+dotnet run --project labs/48-a-lab-about-the-lab/Lab48.csproj -c Release
 
 # one body, every floor, with a picture per floor into labviz/
-dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release -- --body luna --svg
+dotnet run --project labs/48-a-lab-about-the-lab/Lab48.csproj -c Release -- --body luna --svg
 
 # one floor. --floor takes a DEPTH, the same way the game's own ?secretlab=1&land=1&floor=N cheat does
-dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release -- --body luna --floor 4 --svg
+dotnet run --project labs/48-a-lab-about-the-lab/Lab48.csproj -c Release -- --body luna --floor 4 --svg
 ```
 
 | flag | what it does |

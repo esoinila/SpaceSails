@@ -165,12 +165,19 @@ public static class CanteenRegulars
     /// <param name="amenity">The room, as Core carved it (#707) — its tables are the seats.</param>
     /// <param name="watch">Which shift this is — <see cref="Interior.PatronRota.WatchIndex"/> of the sim
     /// clock, and deliberately a WATCH rather than a raw time. See the class docs.</param>
+    /// <param name="stoodUp">#731 · The tops whose person has GOT UP AND WALKED OFF this watch, by table
+    /// ordinal. See <see cref="Tables"/> for why this exists and why it is not a second rota.</param>
     public static IReadOnlyList<Seated> Sitting(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0,
+        IReadOnlySet<int>? stoodUp = null)
     {
         var sat = new List<Seated>();
         foreach ((int table, int who) in Seating(bodyId, level, amenity, watch))
         {
+            if (stoodUp?.Contains(table) == true)
+            {
+                continue;
+            }
             (double tx, double ty) = amenity.Tables[table];
             sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
         }
@@ -396,8 +403,23 @@ public static class CanteenRegulars
     /// <param name="level">The floor.</param>
     /// <param name="amenity">The room, as Core carved it (#707/#751).</param>
     /// <param name="watch">The shift, frozen when the floor was drawn.</param>
+    /// <param name="stoodUp">
+    /// #731 · WHO HAS ALREADY GOT UP AND WALKED OFF, by table ordinal.
+    ///
+    /// <para>Owner, 2026-08-06: <i>"on the bar now they have to wait for us to leave before they can sit
+    /// up… or leave the bar."</i> A walker (<see cref="Interior.NpcWalk"/>) crossing the room on real legs
+    /// is one body, and a body cannot be in two places — so the moment somebody stands, their chair has to
+    /// come back empty HERE, in the one function that answers who is sitting where, or the drawn room and
+    /// the pressed room disagree about a person who is visibly walking past both of them. That is this
+    /// repo's third named bug class and it would arrive wearing the feature that caused it.</para>
+    ///
+    /// <para>It is deliberately NOT a second rota and it decides nothing: the shift still deals who was
+    /// there, and this only says which of them is no longer in the chair. Excursion-scoped and watch-scoped
+    /// in the caller, like every other thing the Hive remembers about a shift.</para>
+    /// </param>
     public static IReadOnlyList<TableSeat> Tables(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0,
+        IReadOnlySet<int>? stoodUp = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -416,7 +438,12 @@ public static class CanteenRegulars
             (double tx, double ty) = amenity.Tables[i];
             int seats = i < bill.Count ? bill[i] : SeatCounts[0];
 
-            if (who.TryGetValue(i, out int cast))
+            if (stoodUp?.Contains(i) == true)
+            {
+                // They stood up. The top is a top with nobody at it, which is exactly what it is.
+                tops.Add(new TableSeat(i, tx, ty, seats, null, null));
+            }
+            else if (who.TryGetValue(i, out int cast))
             {
                 // #792 · A named regular is ONE PERSON at a top, every one of the ten, which is the whole
                 // premise of #757's ask-to-join: there is a chair, and somebody to ask. So they are never

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using SpaceSails.Core;
 
@@ -87,7 +87,15 @@ public sealed class TheRemoteSendsOnStandingTests
     {
         string send = TheSend();
 
-        Assert.Contains("RemoteSend.Send(ex.Stop.Body.Id, ex.Floor, _satchel)", send, StringComparison.Ordinal);
+        // #715 · …and the fourth argument is the outfit's own memory of this captain, which is the one thing
+        // the page is allowed to look up and hand over. It still decides nothing: whether that memory changes
+        // the answer is Core's clause (IllegalHeat.TheNetStopsAnswering), not a branch on this page.
+        Assert.Contains("RemoteSend.Send(ex.Stop.Body.Id, ex.Floor, _satchel, ", send, StringComparison.Ordinal);
+        Assert.Contains("IllegalHeat.HeatAtSite(_contacts, ex.Stop.Body.Id)", send, StringComparison.Ordinal);
+
+        // #715 · …and what the send COST is banked, through the one call every crossing in the game goes
+        // through. #929 published this charge and banked it nowhere; that wire is what this issue was.
+        Assert.Contains("BankTheCrossing(sent.Charge)", send, StringComparison.Ordinal);
 
         // #736 · The answer lands on the pop-up that is up — the remote's own outcome line — and not on the
         // pulse, which renders under this modal's backdrop blur (in the DOM, not on the screen).

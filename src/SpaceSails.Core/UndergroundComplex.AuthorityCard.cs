@@ -555,8 +555,12 @@ public static partial class UndergroundComplex
     /// <param name="bodyId">The site.</param>
     /// <param name="standingLevel">The floor the car is on; the gate is the one under this car's band.</param>
     /// <param name="carried">The satchel. Anything that is not an authority is not in the wallet.</param>
+    /// <param name="heatAtThisOperator">#715 · What the outfit that runs this site remembers about this
+    /// captain (<see cref="IllegalHeat.HeatAtSite"/>). Zero — a captain nobody has anything on — is the
+    /// default and the old behaviour exactly, so every caller and every guard written before the meter
+    /// existed still asks the question it always asked.</param>
     public static GateRead TheGateReads(
-        string bodyId, int standingLevel, IReadOnlyList<Satchel.Item>? carried)
+        string bodyId, int standingLevel, IReadOnlyList<Satchel.Item>? carried, int heatAtThisOperator = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -572,9 +576,47 @@ public static partial class UndergroundComplex
         AuthorityCard? presented =
             read.Read is { } item && AuthorityCard.TryParse(item.Id, out AuthorityCard c) ? c : null;
 
+        // ── #715 · AND THEN THE OTHER QUESTION, WHICH A COLD GATE NEVER ASKS ────────────────────────────
+        //
+        // Owner's ruling: the cost of heat is PRESSURE and never a lockout. This is the mildest shape that
+        // has teeth — the card is still read, still correct, and still not enough on its own: an outfit that
+        // remembers you wants the pass with your face on it as well, on the FIRST press, where a gate that
+        // has never heard of you does not ask at any press.
+        //
+        // It is not a lock. The site's own pass opens it (#804 — the gig is having gone down), and so does
+        // walking away for a few hours, because this meter cools in absence and in nothing else. And it is
+        // owed to ONE outfit: the identical card at the identical band of a company that has heard nothing
+        // opens on the first press, which is exactly the difference the issue asks the player to notice.
+        if (read.Outcome.Worked && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator))
+        {
+            return new(
+                false, IllegalHeat.TheGateWantsAFaceLine, presented, GateReadLabel,
+                presented is { } held ? AuthorityCardArtUrl(held) : AuthorityCardFallbackArtUrl);
+        }
+
         return new(
             read.Outcome.Worked, read.Outcome.Line, presented, GateReadLabel,
             presented is { } shown ? AuthorityCardArtUrl(shown) : AuthorityCardFallbackArtUrl);
+    }
+
+    /// <summary>
+    /// #715 · <b>DOES THIS SITE'S GATE WANT A FACE WITH THE PAPER?</b> The one predicate, read by the PANEL
+    /// (<see cref="LiftPanel"/> — which button is drawn, and whether it opens) and by the READ
+    /// (<see cref="TheGateReads"/> — what the card says when it does not). Two callers of one question, never
+    /// two questions: a panel that refused while the card said the gate opened is this house's third named
+    /// bug class, and it would land in the one system whose register is entirely procedure.
+    ///
+    /// <para><b>Never at the head office.</b> There is no gate there to ask anything, and that absence is the
+    /// rank difference (#411) rather than an oversight — a parent undertaking that started checking passes
+    /// would be a branch office with a bigger sign on it.</para>
+    /// </summary>
+    public static bool TheGateWantsAFaceHere(
+        string bodyId, IReadOnlyList<Satchel.Item>? carried, int heatAtThisOperator)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return !IsHeadOffice(bodyId)
+            && IllegalHeat.TheGateWantsAFace(heatAtThisOperator)
+            && !PatrolBeat.BadgeHeld(bodyId, carried);
     }
 
     /// <summary>#684 · The same read, the other way it can end — told at the ARRIVAL rather than at the

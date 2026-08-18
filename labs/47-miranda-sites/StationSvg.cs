@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using SpaceSails.Core;
 
-namespace SpaceSails.Labs.Lab43;
+namespace SpaceSails.Labs.Lab47;
 
 /// <summary>
 /// #531 · Draws a dead station's plan — modules, tubes, and which of those tubes will not let you through.

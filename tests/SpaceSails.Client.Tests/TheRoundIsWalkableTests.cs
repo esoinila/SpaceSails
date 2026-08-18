@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Tests;
 
@@ -387,9 +389,27 @@ public sealed class TheRoundIsWalkableTests
             "3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids", rebuild, StringComparison.Ordinal);
 
         // …and the buffer the renderer sizes to is big enough for the sum of every band.
+        //
+        // #731 · ASKED OF THE FRAME'S OWN NUMBER NOW, not of a sum written out again here. This clause used
+        // to enumerate the bands by hand — 3 + 24 + 4 + team + round — so when a SIXTH band was added
+        // (the walkers) it went on comparing the buffer against five of them and passed, and
+        // DeckView.DrawTheFigures walked plan.DroidCount straight off the end of a 36-long array. Fifteen
+        // frame fingerprints caught it with an IndexOutOfRangeException; this row, whose whole job it was,
+        // did not. A guard that mirrors the constant it is guarding is the constant, twice.
+        int bands = (int)typeof(Pages.Map)
+            .GetField("SurfaceDroidCount", BindingFlags.NonPublic | BindingFlags.Static)!
+            .GetRawConstantValue()!;
         Assert.True(
-            DeckPlan.MaxDroids >= 3 + 24 + 4 + InspectionTeam.TeamSize + PatrolBeat.MostOnAFloor,
-            $"MaxDroids is {DeckPlan.MaxDroids}, which is short of the five bands.");
+            DeckPlan.MaxDroids >= bands,
+            $"MaxDroids is {DeckPlan.MaxDroids} and the surface frame writes {bands} figures into it. The "
+            + "renderer's buffer is short of a whole band — add the band's size to MaxDroids in the same "
+            + "commit that adds the band.");
+
+        // …and the sum is really the bands, so a SurfaceDroidCount that had been quietly zeroed could not
+        // make the clause above pass by being small.
+        Assert.True(
+            bands >= 3 + 24 + 4 + InspectionTeam.TeamSize + PatrolBeat.MostOnAFloor + Egress.MostAtOnce,
+            $"the surface frame claims to write {bands} figures, which is short of the six bands it has.");
     }
 
     /// <summary>The round is built where a FLOOR changes and nowhere else. Building it in the deck rebuild

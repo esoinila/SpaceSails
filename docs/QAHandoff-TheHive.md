@@ -9,7 +9,7 @@ bug classes, proven-RED guards, canon and the environment traps applies here unc
 list first.**
 
 Every URL below is in [`testing-links-the-hive.md`](testing-links-the-hive.md), where the floor numbers were
-read out of the real generator with Lab 44 rather than assumed.
+read out of the real generator with Lab 48 rather than assumed.
 
 ---
 
