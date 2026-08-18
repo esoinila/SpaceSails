@@ -5363,11 +5363,6 @@
                                                         title="@(_burnAngleAbsolute ? "Reading absolute world heading — click for course-relative (the angle off the track)" : "Reading course-relative angle (0 ahead, +90 starboard, −90 port) — click for absolute world heading")"
                                                         @onclick="() => _burnAngleAbsolute = !_burnAngleAbsolute">@(_burnAngleAbsolute ? "abs" : "rel")</button>
                                             </div>
-                                            @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
-                                            <input type="number" class="form-control form-control-sm map-plot-pulses"
-                                                   min="1" max="@MaxNodePulses" value="@node.Pulses"
-                                                   title="Pulses this burn spends"
-                                                   @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
                                             @* Text (not number) input so the 4-decimal padding actually shows —
                                                browsers strip trailing zeros from type=number. Owner: at least
                                                ".0000" must be visible for fine thrust trims. *@
@@ -5382,6 +5377,53 @@
                                                     @onclick="() => RetimeToScrub(node)">@@</button>
                                             <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
                                                     @onclick="() => DeleteNode(node)">&times;</button>
+                                        </div>
+                                        @* #937 · NUDGE THE NUMBERS TOO. Owner (2026-08-18, flying the scrub): "we
+                                           could have the small + / − symbols also on the thrust amount number dialog
+                                           for iterating the scrub panel. Now writing a new number there I have to
+                                           switch to another input to see what the effect of numeric change is."
+                                           And the ruling the same sitting: "only the fine / ultra-fine tuning would
+                                           be the captain entering the numeric value to the field, but the rough
+                                           estimation with those + − buttons like the angle." So the buttons are the
+                                           front door and the field is the exception — the two typed fields stay
+                                           exactly where they were, and each press re-solves the ribbon on the spot
+                                           through the SAME act the typed value takes (ApplyPulses / the epoch
+                                           clamp), never a second solve path. Every face carries its UNIT (p, h, d),
+                                           because #916's law is that a bare ± means reflex flying and lives on the
+                                           live keys, not here. *@
+                                        <div class="map-burn-steps" role="group" aria-label="Step this burn's size in pulses">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
+                                                    @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
+                                                    @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
+                                            @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
+                                            <input type="number" class="form-control form-control-sm map-plot-pulses"
+                                                   min="@MinNodePulses" max="@MaxNodePulses" value="@node.Pulses"
+                                                   title="Pulses this burn spends — type here for the exact number; the buttons beside it are the rough shaping"
+                                                   @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(1, false)"
+                                                    @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(1, true)"
+                                                    @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
+                                        </div>
+                                        <div class="map-burn-steps" role="group" aria-label="Step this burn's time along the course">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(-1, true)"
+                                                    @onclick="() => NudgeNodeEpoch(node, -1, true)">@NodeFrame.NudgeEpochLabel(-1, true)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(-1, false)"
+                                                    @onclick="() => NudgeNodeEpoch(node, -1, false)">@NodeFrame.NudgeEpochLabel(-1, false)</button>
+                                            <span class="map-burn-epoch-readout text-nowrap" title="When this burn fires">@FormatSimTime(node.SimTime)</span>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(1, false)"
+                                                    @onclick="() => NudgeNodeEpoch(node, 1, false)">@NodeFrame.NudgeEpochLabel(1, false)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(1, true)"
+                                                    @onclick="() => NudgeNodeEpoch(node, 1, true)">@NodeFrame.NudgeEpochLabel(1, true)</button>
                                         </div>
                                     </div>
                                 }

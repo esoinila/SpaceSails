@@ -104,7 +104,7 @@ public partial class Map
     {
         // Never refuse over the scrub sitting in the past (owner: the control must never be
         // in a position that blocks the action) — clamp to one minute out and proceed.
-        double t = Math.Max(Math.Floor(ScrubTime), Math.Floor(_ship.SimTime) + 60);
+        double t = Math.Max(Math.Floor(ScrubTime), NodeEpochFloor());
         if (PlannedPulseTotal() + 1 > _reactionMassPulses)
         {
             ShowPulseMessage("Not enough reaction mass");
@@ -255,11 +255,20 @@ public partial class Map
 
     private void SetPulses(PlanNode node, ChangeEventArgs e)
     {
-        if (!int.TryParse(e.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
+        if (int.TryParse(e.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
         {
-            return;
+            ApplyPulses(node, value);
         }
+    }
 
+    // #937 · THE ONE PLACE A BURN'S MAGNITUDE CHANGES. Owner (2026-08-18): "Now writing a new number there
+    // I have to switch to another input to see what the effect of numeric change is." The answer is nudge
+    // buttons that re-solve under the press — and the way to keep a button and a typed number telling the
+    // truth about the same burn is to give them ONE act, not two. The typed field parses and calls here;
+    // a nudge steps in Core and calls here; the clamp, the reaction-mass budget and the re-solve are
+    // written once, so a button can never reach a magnitude the field would have refused.
+    private void ApplyPulses(PlanNode node, int value)
+    {
         value = Math.Clamp(value, MinNodePulses, MaxNodePulses);
         if (value == node.Pulses)
         {
@@ -283,11 +292,32 @@ public partial class Map
         ReprojectTrajectory();
     }
 
+    // #937 · one press on a magnitude button: Core picks the step (1 pulse fine, 5 coarse) and clamps it
+    // into the field's own bounds, then the SAME act the typed field uses applies it. No second solve path.
+    private void NudgeNodePulses(PlanNode node, int sign, bool coarse) =>
+        ApplyPulses(node, NodeFrame.NudgeMagnitude(node.Pulses, sign, coarse, MinNodePulses, MaxNodePulses));
+
+    // #937 · one press on a time button: an hour, or a day, along the course. Never earlier than the floor
+    // every other node-timing path in this file already honours (one minute out from now) — so the control
+    // clamps rather than refusing, and the captain can lean on it. Re-sorting is how a node that overtakes
+    // its neighbour is handled: a burn dragged past another burn is a legal plan, just a re-ordered one.
+    private void NudgeNodeEpoch(PlanNode node, int sign, bool coarse)
+    {
+        node.SimTime = NodeFrame.NudgeEpoch(node.SimTime, sign, coarse, NodeEpochFloor());
+        SortNodes();
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    // The earliest instant a plotted node may sit at: one minute out from now. AddBurnAtScrub, the retime
+    // button and the epoch nudges all read it here, so there is one floor rather than three copies of it.
+    private double NodeEpochFloor() => Math.Floor(_ship.SimTime) + 60;
+
     // Re-time to the scrub time. Un-stales the node (plan §4: re-timing repairs it).
     private void RetimeToScrub(PlanNode node)
     {
         // Same clamp as AddBurnAtScrub: a past scrub re-times to one minute out, never errors.
-        double t = Math.Max(Math.Floor(ScrubTime), Math.Floor(_ship.SimTime) + 60);
+        double t = Math.Max(Math.Floor(ScrubTime), NodeEpochFloor());
 
         // If it was stale/executed it re-enters the budget; check it fits.
         int othersTotal = PlannedPulseTotal();

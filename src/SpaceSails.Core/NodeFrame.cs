@@ -215,6 +215,104 @@ public static class NodeFrame
     private static string NudgeAmount =>
         NudgeDegrees.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// #937 · THE NUMBERS GET THE SAME FRONT DOOR. Owner (2026-08-18, flying the scrub): <i>"we could have
+    /// the small + / − symbols also on the thrust amount number dialog for iterating the scrub panel. Now
+    /// writing a new number there I have to switch to another input to see what the effect of numeric
+    /// change is. So for all those scrub burns the ±5° type iteration buttons would be useful with some
+    /// comparable increment."</i> And the ruling the same sitting: <i>"only the fine / ultra-fine tuning
+    /// would be the captain entering the numeric value to the field, but the rough estimation with those
+    /// + − buttons like the angle."</i>
+    ///
+    /// <para>So the buttons are the FRONT DOOR for shaping a burn and the typed field is the exception,
+    /// for the last decimal. Which means the steps have to be chosen the way <see cref="NudgeDegrees"/>
+    /// was: big enough that one press visibly MOVES the ribbon, small enough that four or five presses
+    /// still walk the field end to end rather than slamming into its stops.</para>
+    ///
+    /// <h3>Why one pulse and five pulses</h3>
+    /// <para>A burn's magnitude is counted in PULSES — the plan's own unit, the same one the reaction-mass
+    /// budget is spent in — and the planner's field runs 1..20 pulses. One pulse is the field's own
+    /// resolution and the finest press there is. Five is the coarse step because it is a QUARTER of that
+    /// range: four presses cross the whole field, which is the same bargain 5° strikes against a 90°
+    /// quarter turn. Ten would have been half the range — two presses from either stop to the other — and
+    /// that is the jump the owner did not ask for.</para>
+    ///
+    /// <h3>Why one hour and one day</h3>
+    /// <para>The node's epoch is the other number a scrub burn is shaped by, and its natural units are the
+    /// scrub slider's own: the slider steps in whole hours, so an hour is the finest move the plot clock
+    /// can even show. A day is the coarse step because a typical inner-system transfer is measured in
+    /// hundreds of days — a day's shift walks the ghost visibly along the course without throwing the
+    /// arrival past the window you are aiming at.</para>
+    /// </summary>
+    public const int NudgePulsesFine = 1;
+
+    /// <inheritdoc cref="NudgePulsesFine"/>
+    public const int NudgePulsesCoarse = 5;
+
+    /// <inheritdoc cref="NudgePulsesFine"/>
+    public const double NudgeTimeFineSeconds = 3600.0;
+
+    /// <inheritdoc cref="NudgePulsesFine"/>
+    public const double NudgeTimeCoarseSeconds = 86400.0;
+
+    /// <summary>Step a burn's magnitude by one press. <paramref name="sign"/> is +1 or −1;
+    /// <paramref name="coarse"/> picks the five-pulse step over the one-pulse step. The result is clamped
+    /// into the field's own bounds and NEVER below zero whatever bounds a caller hands in — a burn that
+    /// spends negative reaction mass is not a burn, and a button that can produce one would let the mouse
+    /// reach a state the typed field refuses.</summary>
+    public static int NudgeMagnitude(int pulses, int sign, bool coarse, int min, int max)
+    {
+        int step = coarse ? NudgePulsesCoarse : NudgePulsesFine;
+        int floor = Math.Max(0, min);
+        int ceiling = Math.Max(floor, max);
+        return Math.Clamp(pulses + (sign >= 0 ? step : -step), floor, ceiling);
+    }
+
+    /// <summary>Step a node's epoch by one press — an hour, or a day. The result is never earlier than
+    /// <paramref name="floorSimTime"/>, which is the caller's "no sooner than this": the plan's own
+    /// one-minute-out clamp, or the node ahead of it. Nudging back from the floor is a no-op rather than
+    /// an error, because a control the captain can push into a refusal is a control that blocks him.</summary>
+    public static double NudgeEpoch(double simTime, int sign, bool coarse, double floorSimTime)
+    {
+        double step = coarse ? NudgeTimeCoarseSeconds : NudgeTimeFineSeconds;
+        return Math.Max(floorSimTime, simTime + (sign >= 0 ? step : -step));
+    }
+
+    /// <summary>A magnitude button's face — the unit is ON it (<c>+1 p</c>, <c>−5 p</c>), never a bare
+    /// plus-or-minus glyph. #916's law that the reflex-flying ± idiom stays out of this panel holds: these
+    /// say what they spend, in pulses, so nobody can read them as the factor control that left.</summary>
+    public static string NudgeMagnitudeLabel(int sign, bool coarse) =>
+        (sign >= 0 ? "+" : "−") + (coarse ? NudgePulsesCoarse : NudgePulsesFine) + " p";
+
+    /// <summary>What a magnitude button promises: the burn gets bigger or smaller by that many pulses and
+    /// the plotted course re-solves under the press — which is the whole complaint, that a typed number
+    /// showed nothing until the focus moved.</summary>
+    public static string NudgeMagnitudeHint(int sign, bool coarse)
+    {
+        int step = coarse ? NudgePulsesCoarse : NudgePulsesFine;
+        string word = step == 1 ? "pulse" : "pulses";
+        return sign >= 0
+            ? $"Spend {step} more {word} on this burn — the course re-solves as you press"
+            : $"Spend {step} fewer {word} on this burn — the course re-solves as you press";
+    }
+
+    /// <summary>An epoch button's face, unit and all: <c>+1 h</c>, <c>−1 d</c>. Derived from the step
+    /// constants rather than typed, so moving a step moves its face with it.</summary>
+    public static string NudgeEpochLabel(int sign, bool coarse) =>
+        (sign >= 0 ? "+" : "−") + EpochAmount(coarse);
+
+    /// <summary>What an epoch button promises: the node slides along the course by that much, and the
+    /// ribbon is re-projected under the press.</summary>
+    public static string NudgeEpochHint(int sign, bool coarse) =>
+        sign >= 0
+            ? $"Fire this burn {EpochAmount(coarse)} later — the course re-solves as you press"
+            : $"Fire this burn {EpochAmount(coarse)} earlier — the course re-solves as you press";
+
+    private static string EpochAmount(bool coarse) =>
+        coarse
+            ? (NudgeTimeCoarseSeconds / 86400.0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " d"
+            : (NudgeTimeFineSeconds / 3600.0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " h";
+
     /// <summary>Whether a stored heading still points along a quick select's direction, within
     /// <paramref name="toleranceDegrees"/>. Used to light the button that matches — and to let it go dark
     /// the moment the node is re-timed and the ghost's frame has moved under it.</summary>
