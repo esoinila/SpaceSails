@@ -202,7 +202,16 @@ public sealed class TheExitIsTheFullStopTests
     /// <para><b>The RED case.</b> Give the walker the straight line and let it spend the frame without the
     /// stepper — <c>AutoWalk.Along([to])</c> in <see cref="NpcWalk.Plan"/> and <c>(X + dx, Y + dy)</c> in
     /// place of <see cref="SurfaceCollision.Slide"/>, which is the "it's only an NPC, let it pass" shortcut
-    /// the class docs forbid by name. The verbatim run is in the pull request.</para>
+    /// the class docs forbid by name. All 312 walks go red on (1). The verbatim run is in the pull
+    /// request.</para>
+    ///
+    /// <para><b>And what the green does NOT say, written down so nobody believes more than it does.</b>
+    /// Taking the stepper out ON ITS OWN leaves this guard green, and that was checked rather than assumed.
+    /// The reason is the lattice: <see cref="DeckReachability"/> plans under a no-corner-cutting rule, so a
+    /// body that follows an A* route exactly never enters stone whether or not anything is enforcing it.
+    /// Clause (2) is therefore a BACKSTOP — it fires when the plan and the body PART, which is what a route
+    /// that is not the lattice's does, and what a future mover pushing a walker off its own path would do.
+    /// Clause (1) is what carries this guard, and it is the one the RED above reddens.</para>
     /// </summary>
     [Fact]
     public void THE_WALKER_PlansOverTheCaptainsLatticeAndNeverClipsAWall()
@@ -489,13 +498,16 @@ public sealed class TheExitIsTheFullStopTests
             }
         }
 
+        // THE FINDING FIRST, and the anti-vacuity count after it. The other way round, a build that clips
+        // through every captain reports "nobody was ever blocked" — which is true, and is the least useful
+        // sentence available about it.
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} blocked doorway(s) were a clip rather than a beat:"
+            + Environment.NewLine + string.Join(Environment.NewLine, wrong.Take(20)));
         Assert.True(blocked >= 20,
             $"only {blocked} departure(s) were ever actually blocked by a captain standing on their door — "
             + "this guard would be a green number never asked of the world.");
         Assert.Equal(blocked, resumed);
-        Assert.True(wrong.Count == 0,
-            $"{wrong.Count} blocked doorway(s) were a clip rather than a beat:"
-            + Environment.NewLine + string.Join(Environment.NewLine, wrong.Take(20)));
     }
 
     // ── (d) THE SHIFT DECIDES, AND NOTHING ELSE DOES ─────────────────────────────────────────────────
