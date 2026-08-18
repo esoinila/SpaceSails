@@ -119,6 +119,22 @@ public sealed class TheHeatIsBankedOnceTests
         Assert.Equal(1, Count(floor, "TheHeatOfBeingWalkedOut(ex, book, simTime, IllegalHeat.Crossing.TheKickOut)"));
         Assert.Equal(1, Count(floor, "IllegalHeat.Bank("));
 
+        // #618 · …and the round's THIRD, which is the only crossing in the game that is not about the captain
+        // being LOOKED at: a gun going off within earshot of one of their men, on their floor. It is banked in
+        // Patrol.Run.cs rather than beside the other two because it is decided by a different question on a
+        // different frame — whether anybody HEARD it — and it is banked ABOVE the gates that decide whether
+        // anybody is free to walk over, because a man who is at that second escorting somebody heard it too.
+        string run = Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Run.cs");
+        Assert.Equal(1, Count(run, "IllegalHeat.Crossing.ShotOnTheirFloor"));
+        Assert.Equal(1, Count(run, "IllegalHeat.Bank("));
+
+        int spent = run.IndexOf("ShotsAnswered = GunfireHeard.Count(", StringComparison.Ordinal);
+        int heard = run.IndexOf("IllegalHeat.Bank(", StringComparison.Ordinal);
+        Assert.True(
+            spent >= 0 && heard > spent,
+            "the shot's charge is banked before the cursor is spent — one bang would then be re-heard and " +
+            "re-banked on every frame after it.");
+
         // …and there is no seventh banker anywhere in the client. One seam, or the count above proves nothing.
         // The seam's own DECLARATION is not a call — `private void BankTheCrossing(…)` in Map.IllegalHeat.cs
         // is the door, and counting the door as somebody walking through it would put a phantom crossing in
@@ -137,7 +153,7 @@ public sealed class TheHeatIsBankedOnceTests
         bankers.Sort(StringComparer.Ordinal);
         Assert.Equal(
             ["Map.Combat.Remote.cs×1", "Map.IllegalHeat.cs×1", "Map.Scan.cs×1", "Map.Surface.Hive.cs×1",
-             "Patrol.Floor.cs×1"],
+             "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
             bankers);
     }
 

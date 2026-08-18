@@ -108,7 +108,20 @@ public sealed class TheBootBuildsTheSameWorldTests
             // and the fix was NOT to hide from the sweep. A guard that sees more of the world is doing its
             // job; a keyword chosen to keep it from noticing is this repo's fifth named bug class wearing
             // a tidy hat. Nothing about what the boot DOES moved: the same query writes the same two values.
-            ["/map?badge=1"] = "9ed41beed06f05f4953e229ac0522f4b",
+            //
+            // #618 · RE-PINNED A THIRD TIME, THE SAME TWO ROWS, THE SAME KIND OF REASON — and the reason it
+            // is still only these two is the reason the note above gives: they are the only URLs where the
+            // boot writes patrol state at all. The round grew three members for a shot being heard
+            // (LookingIntoIt, TheNoise, ShotsAnswered) and this sweep renders the whole object, so they show
+            // up inside the one `_patrol = Patrol(…)` line. Dumped from both trees with
+            // SPACESAILS_BOOT_FINGERPRINT_DUMP and compared line by line: both dumps are 1,825 lines, exactly
+            // TWO of them differ, both are `_patrol`, and in neither was anything REMOVED or CHANGED — the
+            // whole difference is
+            //     …KickedOutPlateFor=0,  LookingIntoIt=∅,  PaperInHand=∅, …
+            //     …RoundsCheat=1,  ShotsAnswered=0,  ShownBook=[],  TheNoise=(0, 0), …
+            // every one at its default, because a boot has not fired anything. Nothing about what the boot
+            // DOES moved: the same query writes the same values it always did.
+            ["/map?badge=1"] = "a9be5729e3525fee08b45b42df990ac1",
             ["/map?bond=1"] = "83b81e054ef64191bc072e525b73d708",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "6b04d611d0a8dc6f5393e2429bee73f7",
             ["/map?converge=1"] = "7c57c271ad96f80a9837c04eb9c57a09",
@@ -157,7 +170,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?parkback=1"] = "32c620164d7721c54b5cfbfea4db5314",
             ["/map?parkwalk=1"] = "391b4e1fc0ebffc1bd23acfc937807d1",
             // #870 lane 6′b · RE-PINNED — see the note above `?badge=1`; same one reason.
-            ["/map?patrol=2"] = "c4068182fb112458831f59176d36a264",   // #870 lane 6′c · see ?badge=1 above
+            ["/map?patrol=2"] = "6616fae2bb8038c408f86ed88416d1ad",   // #618 · see ?badge=1 above
             ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "824d8eef375c328e5f21669cc4e15be7",
             ["/map?ringoffice=1"] = "d71eed78f500fc4fc0778de0a263b216",
             ["/map?rip=1"] = "aac0ccce431e0dc68ca9fe6156d6b183",

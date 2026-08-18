@@ -18,6 +18,15 @@ public sealed partial class Map
         /// of them raises a card: he ARRIVES at <see cref="PatrolBeat.CardReachDu"/>, or the captain walks out
         /// past <see cref="PatrolBeat.GivesUpBeyondDu"/>, or the floor refuses him a route to where you are
         /// standing. The last two put him back on his round with the cooldown running.</para>
+        ///
+        /// <para><b>#618 · …AND SOMETIMES HE IS NOT WALKING TO A PERSON AT ALL.</b> A man who heard a gun go off
+        /// is walking to the PLACE it came from (<see cref="Patrol.LookingIntoIt"/>), and that is the only
+        /// difference: the same transition, the same A*, the same stride, the same clock, the same one arm of the
+        /// conductor. Three lines below read a destination instead of the avatar, and each of the three ways out
+        /// asks which walk this is — because arriving at a door is not a read, a place cannot walk away from you,
+        /// and a man who has looked at a hole in a hasp has nothing to say about it
+        /// (<see cref="TheNoiseWasNothing"/>). A second walker would have been a second set of edge cases in the
+        /// one method on this floor that has already been worth three issues of them.</para>
         /// </summary>
         private void WalkUpToTheCaptain(
             SurfaceExcursion ex, Guard g, int index, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
@@ -25,14 +34,28 @@ public sealed partial class Map
             g.HeIsOneFrameFurtherIntoTheWalkUp(dt);
             g.HeCountsDownToARePlan(dt);
 
+            // #618 · WHERE HE IS WALKING TO, asked once and spent three times below.
+            bool toTheNoise = ReferenceEquals(g, LookingIntoIt);
+            double toX = toTheNoise ? TheNoise.X : _host.AvatarX;
+            double toY = toTheNoise ? TheNoise.Y : _host.AvatarY;
+
             // THE READ HAPPENS HERE AND NOWHERE ELSE. Face to face, at card distance — which is the whole of
             // #833's first half, and the reason this clause is above everything else in the method.
-            if (PatrolBeat.AtCardReach(g.X, g.Y, _host.AvatarX, _host.AvatarY))
+            if (PatrolBeat.AtCardReach(g.X, g.Y, toX, toY))
             {
                 g.Vx = 0;
                 g.Vy = 0;
                 g.HeDropsHisRoute();
-                g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
+                g.Facing = System.Math.Atan2(toY - g.Y, toX - g.X);
+
+                // #618 · He is standing where the gun went off. There is a plate with a hole in it and nobody
+                // beside it — a captain still standing there was seen on the way over and this is a hail by now
+                // — so he looks at it and goes back to work, and nothing anywhere says a word about it.
+                if (toTheNoise)
+                {
+                    TheNoiseWasNothing(g);
+                    return;
+                }
 
                 // …unless something else is already in front of the captain. He simply stands there at arm's
                 // length until it comes down: a challenge behind a backdrop is a challenge nobody read (#777).
@@ -48,8 +71,19 @@ public sealed partial class Map
             // its own tell. The FIRST one in a watch still ends exactly as it always has, with a man stopping
             // where he is and writing something short. It is doing it twice that <see cref="GiveUpTheHail"/> now
             // has an answer for, and that answer is a whole rung further up the ladder.
-            if (!PatrolBeat.StillComing(g.WalkUpFor, g.X, g.Y, _host.AvatarX, _host.AvatarY))
+            //
+            // #618 · A PLACE DOES NOT WALK OFF, so the walk to a bang is bounded by its clock and by nothing
+            // else. StillComing would have given up on the first frame of every one of them: a shot carries
+            // thirty-four deck units and a hail is abandoned past thirteen.
+            if (toTheNoise
+                ? !PatrolBeat.StillLookingIntoIt(g.WalkUpFor)
+                : !PatrolBeat.StillComing(g.WalkUpFor, g.X, g.Y, toX, toY))
             {
+                if (toTheNoise)
+                {
+                    TheNoiseWasNothing(g);
+                    return;
+                }
                 GiveUpTheHail(g, index, walkedAway: true);
                 return;
             }
@@ -58,11 +92,11 @@ public sealed partial class Map
             {
                 g.HeWillRePlanInAWhile();
                 AutoWalk.Attempt planned = AutoWalk.Plan(
-                    true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(_host.AvatarX, _host.AvatarY),
+                    true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(toX, toY),
                     walls, DeckPlan.AvatarRadius,
                     PatrolBeat.LatticeFor(
                         new PatrolBeat.Stop(g.X, g.Y, "here"),
-                        new PatrolBeat.Stop(_host.AvatarX, _host.AvatarY, "you"),
+                        new PatrolBeat.Stop(toX, toY, toTheNoise ? "the noise" : "you"),
                         MoonSurface.ExpeditionField()));
 
                 if (planned.Route is null)
@@ -71,6 +105,14 @@ public sealed partial class Map
                     // is not a challenge, it is a man deciding it is not worth the detour. #835 · And it is NOT
                     // walking away: the captain did nothing, so it may never be counted as the second time he
                     // did it. The ground refused him, and the ground is not the captain's fault.
+                    //
+                    // #618 · …and a bang behind a door the floor will not route him through is the same refusal
+                    // by the same ground, minus the sentence: nobody hailed anybody, so there is nothing to say.
+                    if (toTheNoise)
+                    {
+                        TheNoiseWasNothing(g);
+                        return;
+                    }
                     GiveUpTheHail(g, index, walkedAway: false);
                     return;
                 }

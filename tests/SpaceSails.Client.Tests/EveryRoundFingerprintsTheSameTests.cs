@@ -297,7 +297,49 @@ public sealed class EveryRoundFingerprintsTheSameTests
             Invoke(map, "TheHail", g);
             return (map, ex);
         }, null, 200),
+
+        // ── #618 · A GUN GOES OFF, AND SOMEBODY WALKS OVER TO LOOK ─────────────────────────────────
+        //
+        // THE FOURTEENTH, and it is a NEW case rather than a re-pin: the thirteen above are byte-identical on
+        // this lane (no field was added to Guard, which is why #618's three live on the round), and this row
+        // is the only place a shot is ever fired in this file. Its digest was taken on the NEW code and could
+        // not have been taken anywhere else — there was nothing to walk to before it.
+        //
+        // The captain is NOWHERE for the whole four hundred frames, which is the whole point: this walks the
+        // arm nobody could reach before, from a man leaving his round for a place, through the walk, to the
+        // frame he looks at it and goes back to work — with no person in it anywhere. If the walk-up ever
+        // starts reading the avatar on this road, this hash moves and the man at -9999 is the reason.
+        new("a gun goes off down the corridor and somebody walks over", () =>
+        {
+            (Pages.Map map, object ex) = OnAPatrolledFloor(ThePatrolledFloor, 2);
+            Nowhere(map);
+            FireDownHisOwnCorridor(map, ex);
+            return (map, ex);
+        }, null, 400),
     ];
+
+    /// <summary>#618 · FIRE ONE, exactly the way the shipped trigger does — a <c>GunfireHeard.Shot</c>
+    /// appended to the excursion's own ledger through Core's own <c>File</c>, which is the single line
+    /// <c>Map.Combat.Remote.cs</c> publishes with — at a spot on the first guard's own next leg, so the place
+    /// it came from is somewhere his legs can take him on a route the floor really publishes rather than a
+    /// coordinate this file measured into a wall. <see cref="StandInHisWay"/>'s geometry, one errand
+    /// along.</summary>
+    private static void FireDownHisOwnCorridor(Pages.Map map, object ex)
+    {
+        object g = FirstGuard(map);
+        var beat = (List<PatrolBeat.Stop>)Get(map, "_patrolBeat")!;
+        PatrolBeat.Stop at = beat[(int)Get(g, "Leg")!];
+        double gx = (double)Get(g, "X")!, gy = (double)Get(g, "Y")!;
+        double dx = at.X - gx, dy = at.Y - gy;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        Assert.True(len > InTheWayDu, "the next stop is closer than the reach this file fires the shot at.");
+
+        PropertyInfo shots = ex.GetType().GetProperty("ShotsHeard", Hidden)!;
+        var log = (IReadOnlyList<GunfireHeard.Shot>)shots.GetValue(ex)!;
+        shots.SetValue(ex, GunfireHeard.File(log, new GunfireHeard.Shot(
+            "K-77", "LONG STORAGE",
+            gx + (dx / len * InTheWayDu), gy + (dy / len * InTheWayDu), 100, 6)).ToList());
+    }
 
     /// <summary>Nine hundred metres from anywhere: out of the eye, out of earshot, out of the round's
     /// business entirely. The droid filler's own off-deck coordinate.</summary>
@@ -406,6 +448,18 @@ public sealed class EveryRoundFingerprintsTheSameTests
         ["you duck into a cubicle and nobody saw a thing"] = "4599ddbf4a51a9bf29c26029e818d4ca861f46c3bc933f92da882459b82dbe8e",
         ["he called it in, and then you shut a door in his face"] = "23cb583bbfd91ae873af33f5eef7fef73a71a3615086d87d791a5d4ff6ca5890",
         ["you duck in while he is already walking over"] = "653e6acf180cdf9cebe314f4cd9da594faccac2c588998fb93518b60836a9ab0",
+
+        // #618 · THE FOURTEENTH, and the ONLY digest in this file taken on new code — stated here rather than
+        // left for somebody to work out from a git blame. It could not have been taken anywhere else: before
+        // this lane there was nothing on this ground for a man to walk to, and the thirteen above are
+        // byte-identical on it (no field was added to Guard, which is exactly why #618's three fields live on
+        // the round instead of on the man).
+        //
+        // ANTI-VACUOUS, measured rather than argued: with the shot commented out of the staging and nothing
+        // else changed, the same four hundred frames hash to
+        // e75f975023f12182859b00c33b7647935431e65f328beeb98b897585145912ea. The bang is what this row is about.
+        ["a gun goes off down the corridor and somebody walks over"] =
+            "10ceb4b993182fc97c1f58a73f83133925ff7c7ab38a1510ecb1b365046fa128",
     };
 
 

@@ -34,9 +34,12 @@ namespace SpaceSails.Core;
 /// <h3>What it costs</h3>
 /// <para>Rounds, and NOISE. The rounds are the tether the whole ammunition lane runs on (#562), and the
 /// noise is the part that makes this a decision: a gun going off indoors is heard by everything with ears
-/// and the world writes it down (<see cref="GunfireHeard"/>). Nothing in this build reacts to that fact
-/// beyond the pack's own ear — pricing it is the guards' lane — but the fact is recorded from the first
-/// shot, so nothing has to be re-derived later from a screen that has since scrolled.</para>
+/// and the world writes it down (<see cref="GunfireHeard"/>). #618 · <b>And it is priced now.</b> The pack's
+/// own ear was always rung; the guards' lane is what has arrived — a shot within earshot of a man on a
+/// patrolled floor takes him off his round to come and look at where it came from, and costs a rung of that
+/// site's own outfit's memory (<see cref="IllegalHeat.Crossing.ShotOnTheirFloor"/>). Neither of those reaches
+/// back into this file: the fact was recorded from the first shot, so nothing had to be re-derived later from
+/// a screen that has since scrolled, and pricing it needed no new record.</para>
 /// </summary>
 public static class ShootTheLock
 {
