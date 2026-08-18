@@ -117,6 +117,9 @@ public sealed class InspectionTeamTests
     [InlineData(InspectionTeam.Awareness.Sweeping)]
     [InlineData(InspectionTeam.Awareness.Investigating)]
     [InlineData(InspectionTeam.Awareness.Hunting)]
+    // #731 v2 · …including the one that walks them off the ship. A team going home is the safest thing in
+    // this scene and a state that timed out into a kill would be the least readable trap in the game.
+    [InlineData(InspectionTeam.Awareness.Leaving)]
     public void NoOtherStateTimesOutIntoKillingAnybody(InspectionTeam.Awareness state) =>
         Assert.False(InspectionTeam.ChallengeExpired(Sweeper(state: state, seconds: 9_999)));
 
@@ -160,6 +163,9 @@ public sealed class InspectionTeamTests
     public void FearIsPricedInTheOrderItActuallyArrives()
     {
         Assert.Equal(0, InspectionTeam.NervePerSecond(InspectionTeam.Awareness.Sweeping));
+        // #731 v2 · …and a team WALKING OUT costs nothing either. They are not looking for you any more, and
+        // the whole read of that beat is that nothing about it is aimed at the captain.
+        Assert.Equal(0, InspectionTeam.NervePerSecond(InspectionTeam.Awareness.Leaving));
         Assert.True(InspectionTeam.NervePerSecond(InspectionTeam.Awareness.Investigating)
                     < InspectionTeam.NervePerSecond(InspectionTeam.Awareness.Hunting));
         Assert.True(InspectionTeam.NervePerSecond(InspectionTeam.Awareness.Hunting)
