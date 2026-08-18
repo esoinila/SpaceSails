@@ -41,5 +41,5 @@ the ghost             = ∅
 the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 4823 chars, sha256 e2f2af4308b9c530
 the pulse cooldown    = -1
 sweep                 = 658 fields, sha256 60b1419f551231c666569d64bb31aa98fef2a822252255bec12c1b8a166aed89
-walked-view pen       = 421207 calls, sha256 4fb24c75380a30f20d4aa7ded792046e3a1884cca51e9340f61b7bc71c55ea98
+walked-view pen       = 421207 calls, sha256 e17ac24adac786c32408101594485ba2fd02f41105cb2c08b50b20c1fd86a82a
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

@@ -69,7 +69,10 @@ public class MotionTrackerTests
     // ── #330 · the left-edge instrument column: the tracker seats under the SANITY plate, big, and
     //    stays fully on-screen (shrinking rather than clipping on a small viewport). ──
 
-    private const double ColumnTop = 82.0;   // the SANITY plate's bottom + gap, as DeckView uses
+    // #561 · ASKED, not typed. This was a second copy of DeckView's own 82.0 and it went stale alongside it:
+    // #453 hung condition pips under the nerve plate and neither number moved. The block publishes its own
+    // bottom now, so the test drives the tracker with the column the game drives it with.
+    private static double ColumnTop => HudColumn.Surface.ColumnTop;
 
     [Fact]
     public void TrackerAnchor_SeatsInTheLeftColumn_BelowTheSanityPlate()

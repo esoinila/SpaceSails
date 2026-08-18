@@ -41,5 +41,5 @@ the ghost             = ∅
 the surface           = ∅
 the pulse cooldown    = -1
 sweep                 = 658 fields, sha256 b7456bc33ad47044017eb5e29dc800963d9314edadb2f322d835773e37806201
-walked-view pen       = 36045 calls, sha256 3c5332f6d6fd50aa7fb9ee234429f55721fc228f834486abc7787980653b9980
+walked-view pen       = 36045 calls, sha256 df959ec02892a32a90b835627496759023bbc59ba98d10f74c86ae9433d9e37f
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
