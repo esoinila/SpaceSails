@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace SpaceSails.Core.Tests;
@@ -385,6 +385,61 @@ public class VaultSerializerTests
 
         Assert.False(loaded.Tampered);
         Assert.Equal(CacheLedger.WatchNotStarted, loaded.Caches!.LastCheckedPeriod);
+    }
+
+    /// <summary>#715 · A voyage saved BEFORE the illegal-heat meter existed has contact rows with no heat
+    /// fields at all. They must read back as <b>nobody remembers you</b> — zero owed, no clock running — and
+    /// not as a captain who is already burned with every outfit in the game on the frame they resume.</summary>
+    [Fact]
+    public void Contacts_LegacyFileWithNoHeatFields_ReadsAsNobodyRemembersYou()
+    {
+        string json = VaultSerializer.Save(FullVault());
+        JsonObject root = (JsonObject)JsonNode.Parse(json)!;
+        JsonObject contacts = (JsonObject)((JsonObject)root["sections"]!)["contacts"]!;
+        JsonArray rows = (JsonArray)contacts["contacts"]!;
+        Assert.NotEmpty(rows);
+        foreach (JsonNode? row in rows)
+        {
+            JsonObject r = (JsonObject)row!;
+            r.Remove("heatOwed");            // the old shape: neither field ever existed
+            r.Remove("heatStampSimTime");
+        }
+        RestampChecksum(root);
+
+        Vault loaded = VaultSerializer.Load(root.ToJsonString());
+
+        Assert.False(loaded.Tampered);
+        var ledger = new ContactLedger();
+        VaultMapper.Apply(loaded.Contacts, ledger);
+        Assert.NotEmpty(ledger.Entries);
+        foreach (ContactHistory h in ledger.Entries.Values)
+        {
+            Assert.Equal(0, h.HeatOwed);
+            Assert.Equal(0.0, h.HeatStampSimTime);
+        }
+        foreach (SiteOperator.Operator op in SiteOperator.All)
+        {
+            Assert.Equal(0, IllegalHeat.HeatAt(ledger, op.Id));
+        }
+    }
+
+    /// <summary>#715 · …and a heat that WAS banked survives the round trip, for the reason the ship's does
+    /// (this file's own header): a restart that cleansed it would be a heat-cleanse exploit with a company on
+    /// the other end of it.</summary>
+    [Fact]
+    public void Contacts_IllegalHeat_RoundTrips()
+    {
+        var written = new ContactLedger();
+        written.ApplyHeat(IllegalHeat.LedgerId("meridian"), "MERIDIAN WORKS COMPANY", 5, 1234.5);
+
+        var read = new ContactLedger();
+        VaultMapper.Apply(
+            VaultSerializer.Load(
+                VaultSerializer.Save(new Vault { Contacts = VaultMapper.ToSection(written) })).Contacts,
+            read);
+
+        Assert.Equal(5, IllegalHeat.HeatAt(read, "meridian"));
+        Assert.Equal(1234.5, read.For(IllegalHeat.LedgerId("meridian")).HeatStampSimTime);
     }
 
     [Fact]
