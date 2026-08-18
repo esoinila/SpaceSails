@@ -4363,6 +4363,22 @@
         </div>
     }
 
+    @* #715 · THEY REMEMBER YOU HERE — the whole presentation of the illegal-heat meter, and it names nobody.
+
+       Owner's rulings: heat is owed to the ENTITY you crossed, never to the world, and there is no HEAT: 62%
+       banner (§13.8, the issue's own canon section). So this is one line, in the corner the captain chip
+       vacates the moment a captain goes down a hole, and it is drawn at the sites of the outfit that
+       remembers this captain AND NOWHERE ELSE — not aboard, not at a haven, and not at another company's
+       identical door however hot the captain is elsewhere.
+
+       It does not say WHOSE memory it is. That is the feature: a player who walks into a site they have never
+       visited and reads this line has just learned who owns it, which is the payoff #715 asks for. Naming the
+       company here would have done the inference for them. *@
+    @if (_worldReady && _surface is not null && !_showStartPicker && !_showSaveDrawer && TheyRememberYouHere)
+    {
+        <div class="heat-remembered">@SpaceSails.Core.IllegalHeat.TheyRememberYouHere</div>
+    }
+
     @* M24: planet click menu — set the body as THE destination so orbit assist tracks it.
        M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)

@@ -95,7 +95,10 @@ public static class RemoteSend
     /// <param name="level">The floor they are on; the gate is the one under this car's band, exactly as the
     /// panel derives it (#677 — the next shaft that EXISTS, never <c>band + 1</c>).</param>
     /// <param name="carried">The satchel. Anything that is not an authority is not in the wallet.</param>
-    public static Sent Send(string bodyId, int level, IReadOnlyList<Satchel.Item>? carried)
+    /// <param name="heatAtThisOperator">#715 · What this site's outfit remembers about this captain
+    /// (<see cref="IllegalHeat.HeatAtSite"/>). Zero is the default and the old behaviour exactly.</param>
+    public static Sent Send(
+        string bodyId, int level, IReadOnlyList<Satchel.Item>? carried, int heatAtThisOperator = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -109,17 +112,33 @@ public static class RemoteSend
             return new Sent(false, NothingBelowLine, null, UndergroundComplex.NothingOwed);
         }
 
-        if (UndergroundComplex.StandingFor(carried, gate) is { } standing)
-        {
-            return new Sent(true, AcceptedLine(standing, gate), gate.Id, UndergroundComplex.NothingOwed);
-        }
-
         // Nothing in the wallet at all is not a refusal — see NothingToSendLine. Counted here rather than
         // asked of the matrix, because the matrix answers an empty wallet with what a GATE says to somebody
         // standing in front of it, and nobody is standing in front of anything.
+        //
+        // #715 · It is asked ABOVE the heat clause on purpose: a handset with nothing in it addressed nobody,
+        // and an outfit cannot have stopped answering a message that was never sent.
         if (Satchel.OfKind(carried, Satchel.Kind.Authority).Count == 0)
         {
             return new Sent(false, NothingToSendLine, null, UndergroundComplex.NothingOwed);
+        }
+
+        // ── #715 · THEY HAVE STOPPED ANSWERING THAT SHIP ────────────────────────────────────────────────
+        //
+        // The one effect in this feature that takes a verb away, and it is above the standing read because
+        // that is what has happened: nobody at the far end read the wallet. A company with this much of your
+        // ship's name on a page does not process its requests and then decline them; it stops processing
+        // them. The charge is the same charge any refused send books (#929), owed to the same outfit.
+        if (IllegalHeat.TheNetStopsAnswering(heatAtThisOperator))
+        {
+            return new Sent(
+                false, RefusedPreamble + IllegalHeat.TheNetWillNotAnswerLine, null,
+                IllegalHeat.Charge(bodyId, IllegalHeat.Crossing.RefusedSend));
+        }
+
+        if (UndergroundComplex.StandingFor(carried, gate) is { } standing)
+        {
+            return new Sent(true, AcceptedLine(standing, gate), gate.Id, UndergroundComplex.NothingOwed);
         }
 
         // #684 · The reason is the MATRIX'S reason, verbatim. The whole wallet went out in one burst — the

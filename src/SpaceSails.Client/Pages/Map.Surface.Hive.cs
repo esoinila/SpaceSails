@@ -67,7 +67,11 @@ public partial class Map
     /// (<c>CanteenTable.Cover</c>) — asked of the same pocket the player can open and look in.</para></summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
         _surface is { } ex
-            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, _liftCar, AuthorityCardIds(), _satchel)
+            ? UndergroundComplex.LiftPanel(
+                ex.Stop.Body.Id, ex.Floor, _liftCar, AuthorityCardIds(), _satchel,
+                // #715 · …and what this site's outfit remembers, which is what decides whether the gate is
+                // content with the paper or wants the face as well.
+                IllegalHeat.HeatAtSite(_contacts, ex.Stop.Body.Id))
             : [];
 
     /// <summary>#801 · Which of the two cars the open panel belongs to — set by the press that opened it,
@@ -105,13 +109,25 @@ public partial class Map
             // of its own (UndergroundComplex.WrongCardLine, deleted), so the sharpest refusals in the game —
             // another shaft of THIS site, named, versus somebody else's building, named (#679/#683) — had no
             // client caller and nobody ever read them. One source, and this is a caller of it.
-            UndergroundComplex.GateRead read =
-                UndergroundComplex.TheGateReads(ex.Stop.Body.Id, ex.Floor, _satchel);
+            //
+            // #715 · …and the read is asked WITH what this outfit remembers. Past the meter's middle rung the
+            // panel wants a face with the paper — the site's own pass, on the FIRST press — which is what
+            // "the doors that were open are watched now" means in the vocabulary this building already has.
+            // At any other outfit's identical gate the identical card opens, and that difference is the whole
+            // of what the captain is meant to learn from it.
+            UndergroundComplex.GateRead read = UndergroundComplex.TheGateReads(
+                ex.Stop.Body.Id, ex.Floor, _satchel, IllegalHeat.HeatAtSite(_contacts, ex.Stop.Body.Id));
             int refusedBand = UndergroundComplex.BandOf(stop.Level);
             if (ex.HiveShaftsRefused.Add(refusedBand))
             {
                 _liftOutcome = read.Line;
                 FileNote(read.Line, "🔒");
+
+                // #715 · ONE CROSSING, ONE BANK. It rides the same latch the note and the card ride — once
+                // per shaft per excursion — because pressing one refusing gate eleven times is one refusal
+                // that somebody wrote down, and eleven charges for it would be this feature's fourth guard
+                // going red on its own game.
+                BankTheCrossing(UndergroundComplex.RefusedAtTheGate(ex.Stop.Body.Id));
 
                 // #684 · …and it is TOLD. Owner: the read's outcome must be raised as a story card in the
                 // house idiom, carrying the matrix's own line. It goes up OVER the panel — the view-object

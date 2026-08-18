@@ -152,15 +152,18 @@ public partial class Map
             return;
         }
 
-        RemoteSend.Sent sent = RemoteSend.Send(ex.Stop.Body.Id, ex.Floor, _satchel);
+        // #715 · The outfit's own memory goes IN, and what the send costs comes back out. Above the meter's
+        // top rung the net has nothing to say to this ship's name at all, which is the one effect in that
+        // feature that takes a verb away — and it is owed to this outfit and to nobody else.
+        RemoteSend.Sent sent =
+            RemoteSend.Send(ex.Stop.Body.Id, ex.Floor, _satchel, IllegalHeat.HeatAtSite(_contacts, ex.Stop.Body.Id));
         _remoteOutcome = sent.Line;
 
-        // The book keeps it whatever the screen does (#693). It is also the only record of what a refusal
-        // cost: #715's meter is not built, so the charge Core hands back has nowhere to be banked yet — and a
-        // client inventing a heat total to put it in would be a second source for a number that does not
-        // exist. What the captain gets today is what every other beat down here gives them: a line in the
-        // field book saying who was addressed and what came back.
+        // The book keeps it whatever the screen does (#693) — a line saying who was addressed and what came
+        // back. And #715's meter is built now, so the charge Core publishes is BANKED rather than filed and
+        // forgotten: one call, against the outfit named on the charge, never against the moon.
         FileNote(sent.Line, sent.Worked ? "📡" : "🔒");
+        BankTheCrossing(sent.Charge);
 
         RendererInterop.PlayCue("board");
         StateHasChanged();

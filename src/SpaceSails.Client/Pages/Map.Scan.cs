@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -106,9 +106,9 @@ public sealed partial class Map
 
     /// <summary>#763 · PRESS. The first active act — asked of Core, answered in Core's own words, filed.
     ///
-    /// <para>#715 · The charge Core publishes is written into the book with the sentence that earned it. The
-    /// meter itself is still #715's to land, exactly as #929 left it: one number to wire, and no second
-    /// spelling of it anywhere to go looking for.</para></summary>
+    /// <para>#715 · The charge Core publishes is written into the book with the sentence that earned it —
+    /// and BANKED against the outfit whose hardware it was, through the one call every crossing in the game
+    /// goes through. This was the number #929 left one wire short.</para></summary>
     private void PressTheHit(SdrScanner.Hit hit)
     {
         if (_surface is not { } ex)
@@ -118,6 +118,7 @@ public sealed partial class Map
 
         SdrScanner.Pressed pressed = SdrScanner.Press(ex.Stop.Body.Id, ex.Floor, hit);
         SayWhereTheyAreLookingAndFile(pressed.Line, pressed.Worked ? SdrScanner.Glyph : "🔒");
+        BankTheCrossing(pressed.Charge);
 
         RendererInterop.PlayCue("board");
         StateHasChanged();
