@@ -21,8 +21,9 @@ namespace SpaceSails.Client.Tests;
 /// standing on; and <b>a method that holds always releases</b> — a hold with no release is a sentence lost
 /// forever, which is a worse bug than the one this fixes.</para>
 ///
-/// <para><b>Red proof.</b> Revert Map.Surface.cs / Map.Deck.cs / Map.RevealCard.cs to the shipped versions
-/// and every test here goes red, naming the call site.</para>
+/// <para><b>Red proof.</b> Revert Map.Surface.cs / Map.Deck.cs / Map.StoryCards.cs (which was
+/// Map.RevealCard.cs until #664 deleted the second card) to the shipped versions and every test here goes
+/// red, naming the call site.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheArrivalHoldsItsLineForTheCardTests
@@ -140,23 +141,27 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // Esc, Enter, E again, the backdrop and the Close button all end in these two methods — so the
         // release hangs there and nowhere else. Any code that clears the field BY HAND is a road out of the
         // card that swallows the held line, which is the shipped bug wearing a new hat.
+        // #664 · The second card is gone. Map.RevealCard.cs was the client-only twin of the story card, kept
+        // by the reunification merge and deleted by #664 after its eleven call sites became StoryBeats; the
+        // #768 duty came with it, so `CloseStoryCard` in Map.StoryCards.cs is the road that frees the held
+        // lines now. Same law, one fewer door.
         string deck = Pages("Map.Deck.Fixtures.cs");
-        string reveal = Pages("Map.RevealCard.cs");
+        string story = Pages("Map.StoryCards.cs");
 
         Assert.True(Between(deck, "private void CloseViewObject(", "private void KnockOnHatch(")
                 .Contains("ReleaseHeldSayings(", StringComparison.Ordinal),
             "CloseViewObject does not free the held sayings — the arrival's card comes down on silence (#768).");
-        Assert.True(Between(reveal, "private void CloseRevealCard(", "/// <summary>Raise the card.")
+        Assert.True(Between(story, "private void CloseStoryCard(", "/// <summary>What a card or plate")
                 .Contains("ReleaseHeldSayings(", StringComparison.Ordinal),
-            "CloseRevealCard does not free the held sayings (#768).");
+            "CloseStoryCard does not free the held sayings (#768).");
 
         foreach (string file in Directory.EnumerateFiles(
                      Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
         {
-            foreach (string field in new[] { "_viewObject", "_revealCard" })
+            foreach (string field in new[] { "_viewObject", "_storyCard" })
             {
                 int by = File.ReadAllText(file).Split($"{field} = null").Length - 1;
-                string owner = field == "_viewObject" ? "Map.Deck.Fixtures.cs" : "Map.RevealCard.cs";
+                string owner = field == "_viewObject" ? "Map.Deck.Fixtures.cs" : "Map.StoryCards.cs";
                 int allowed = Path.GetFileName(file) == owner ? 1 : 0;   // the Close method itself
                 Assert.True(by <= allowed,
                     $"{Path.GetFileName(file)} clears {field} by hand — that is a road out of the card that " +

@@ -2158,7 +2158,7 @@ pressed"* sweep could not reach it either: nothing was pressed.
 
 The client half is three clauses: `RideTheLiftTo` holds instead of pulsing; it releases **after** the last card
 it can raise, because that is the only point at which "is something in front of the captain?" can be asked of
-the world rather than predicted from a copy of the conditions; and `CloseViewObject` / `CloseRevealCard` free
+the world rather than predicted from a copy of the conditions; and `CloseViewObject` / `CloseStoryCard` free
 what the card was standing on. Every road out of a card — Esc, Enter, `E` again, the backdrop, the button —
 already went through those two methods, and now nothing anywhere clears the field by hand.
 

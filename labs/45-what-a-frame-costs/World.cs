@@ -65,7 +65,7 @@ internal sealed class World
 
     internal SurfaceLayout.Field Envelope { get; }
 
-    /// <summary>Everywhere the captain can stand, flooded from the lift — Lab 44's wash, reused here to
+    /// <summary>Everywhere the captain can stand, flooded from the lift — Lab 48's wash, reused here to
     /// place Reevers and captains on ground that really exists instead of on coordinates I liked.</summary>
     internal IReadOnlyList<DeckReachability.Point> Standable { get; }
 

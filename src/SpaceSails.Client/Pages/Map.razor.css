@@ -1,4 +1,4 @@
-/* Canvas/HUD layer only — everything else in the app stays plain Razor + Bootstrap. */
+﻿/* Canvas/HUD layer only — everything else in the app stays plain Razor + Bootstrap. */
 
 .map-page {
     position: fixed;
@@ -2420,6 +2420,29 @@
 
 .captain-chip .captain-mono {
     font-size: 0.95rem;
+}
+
+/* #715 — THEY REMEMBER YOU HERE. The whole presentation of the illegal-heat meter: one quiet line in the
+   bottom-left corner the captain chip vacates on a surface excursion, drawn only at a site whose OPERATOR has
+   a memory of this captain. No bar, no percentage, no company name — §13.8's inference horror is a condition
+   of the meter existing at all (#715's own canon section), and the sentence has to read as a thing somebody
+   noticed rather than as an instrument. Sits in the same z-band as the chip, so any card that opens over the
+   corner wins. */
+.heat-remembered {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    max-width: 18rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.4rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    color: rgba(255, 205, 150, 0.85);
+    background: rgba(20, 12, 6, 0.55);
+    border: 1px solid rgba(255, 170, 90, 0.22);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    z-index: calc(var(--z-map-chrome) + 5);
+    pointer-events: none;
 }
 
 /* #312 — the import consent's label, read from the FILE's contents (never the filename). */

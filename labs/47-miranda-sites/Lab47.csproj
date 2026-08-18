@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>SpaceSails.Labs.Lab43</RootNamespace>
+    <RootNamespace>SpaceSails.Labs.Lab47</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

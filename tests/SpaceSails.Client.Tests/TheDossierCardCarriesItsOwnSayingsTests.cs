@@ -171,20 +171,24 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
 
     /// <summary>The seam knows about the object card, and knows it is ON TOP. Both full-screen cards are
     /// drawn with the same backdrop class, so DOM order decides, and the object card is written after the
-    /// reveal card in Map.razor — which the outpost's effects console reaches for real, raising the plate and
-    /// the dossier on one press.</summary>
+    /// story card in Map.razor — which the outpost's effects console reaches for real, raising the plate and
+    /// the dossier on one press.
+    ///
+    /// <para>#664 · The card on the other side of this comparison used to be <c>_revealCard</c>, the
+    /// client-only twin the fork built. It is <c>_storyCard</c> now — same backdrop class, same DOM-order
+    /// rule, same z-order claim, one fewer card.</para></summary>
     [Fact]
-    public void TheSeamAnswersOnTheObjectCardBeforeTheRevealCardBecauseItIsInFront()
+    public void TheSeamAnswersOnTheObjectCardBeforeTheStoryCardBecauseItIsInFront()
     {
         string seam = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
 
         int viewObject = seam.IndexOf("if (_viewObject is", StringComparison.Ordinal);
-        int revealCard = seam.IndexOf("if (_revealCard is", StringComparison.Ordinal);
+        int revealCard = seam.IndexOf("if (_storyCard is", StringComparison.Ordinal);
         Assert.True(viewObject >= 0,
             "the seam does not know the object card exists — every answer given while one is up plays " +
             "behind its backdrop (#774/#736).");
         Assert.True(revealCard > viewObject,
-            "the seam answers on the reveal card first, and the object card is drawn in front of it — the " +
+            "the seam answers on the story card first, and the object card is drawn in front of it — the " +
             "answer would land on the card the captain cannot see (#774).");
 
         // And it APPENDS. A slot has one winner; a region has room for all of them, which is the difference
@@ -197,7 +201,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
 
         string razor = Pages("Map.razor");
         Assert.True(razor.IndexOf("@if (_viewObject is { } vo)", StringComparison.Ordinal)
-            > razor.IndexOf("@if (_revealCard is { } plate)", StringComparison.Ordinal),
+            > razor.IndexOf("@if (_storyCard is { } told)", StringComparison.Ordinal),
             "the two cards have swapped places in Map.razor, so the seam's z-order is now upside down — " +
             "same backdrop class means the LATER block is the one in front (#774).");
     }

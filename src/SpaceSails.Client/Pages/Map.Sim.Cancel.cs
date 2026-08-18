@@ -29,12 +29,14 @@ public partial class Map
     // Returns true when it consumed the key by closing something.
     private bool TryDismissTopOverlay()
     {
-        // #528: the story plate is the most modal thing there is — it opens without being asked for, over
+        // #528: the story card is the most modal thing there is — it opens without being asked for, over
         // whatever the captain was already doing (a bar menu, a counter, a dig). Esc takes it FIRST, or the
-        // key would peel the card underneath it and leave the picture sitting there.
-        if (_revealCard is not null) { CloseRevealCard(); return true; }
-        // #633 · The StoryBeats CARD is modal too, and Esc has to reach it. The PLATE (the edge flash) is
-        // deliberately NOT listed: it steals nothing and retires itself, so there is nothing for Esc to take.
+        // key would peel the card underneath it and leave the picture sitting there. The PLATE (the edge
+        // flash) is deliberately NOT listed: it steals nothing and retires itself, so there is nothing for
+        // Esc to take.
+        //
+        // #664 · There were TWO lines here, the reveal card's and the story card's, because the fork built
+        // the same card twice. There is one card now and one line.
         if (_storyCard is not null) { CloseStoryCard(); return true; }
         // #735 · The told-once cards — the convergence reveal and the first-ground family (the lesson, the
         // map-just-grew card, the tube rearm, the low-air warning). Every one of them already dismisses on
@@ -164,7 +166,6 @@ public partial class Map
         // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
         // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
         // on purpose, and its absence is the feature.
-        if (_revealCard is not null) { CloseRevealCard(); return true; }
         if (_storyCard is not null) { CloseStoryCard(); return true; }
         if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
         if (_groundLessonOpen) { CloseGroundLesson(); return true; }

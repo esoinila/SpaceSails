@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -108,11 +108,19 @@ public sealed partial class Map
     private bool TheRoundHasEyesOnYou(IReadOnlyList<SurfaceCollision.Segment> sight) =>
         _patrol.TheRoundHasEyesOnYou(sight);
 
+    // #715 · THE ROUND IS HANDED THE BOOK, NOT A HOST MEMBER. The illegal-heat meter lives in `_contacts`
+    // and the round needs it twice — to know where a watch's patience starts at an outfit that remembers this
+    // captain, and to bank the two crossings a round can be. Both come in as an ARGUMENT on the two calls
+    // that already cross this seam, so `IPatrolHost` keeps its twenty-one members and the round keeps its
+    // twenty-two fields: nothing new was stored anywhere, which is why #905's thirty fingerprints do not
+    // move.
+
     /// <inheritdoc cref="Patrol.SpawnPatrolFor"/>
-    private void SpawnPatrolFor(SurfaceExcursion ex) => _patrol.SpawnPatrolFor(ex);
+    private void SpawnPatrolFor(SurfaceExcursion ex) => _patrol.SpawnPatrolFor(ex, _contacts);
 
     /// <inheritdoc cref="Patrol.AdvancePatrol"/>
-    private void AdvancePatrol(double dtRealSeconds) => _patrol.AdvancePatrol(dtRealSeconds);
+    private void AdvancePatrol(double dtRealSeconds) =>
+        _patrol.AdvancePatrol(dtRealSeconds, _contacts, SimTime);
 
     // ── #870 lane 6′b · THE FIFTEEN FORWARDERS, AND WHEN THEY GO ────────────────────────────
     //

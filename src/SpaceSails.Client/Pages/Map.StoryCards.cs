@@ -49,11 +49,23 @@ public sealed partial class Map
     private readonly Dictionary<(StoryBeats.Beat Beat, string? Subject), double> _beatsSpoken = [];
 
     /// <summary>A card waiting for a calmer moment. One at a time on purpose: a queue that can stack is a queue
-    /// that will eventually empty itself into the player's face all at once.</summary>
-    private (StoryBeats.Beat Beat, string? Subject)? _deferredBeat;
+    /// that will eventually empty itself into the player's face all at once.
+    ///
+    /// <para>#664 · It holds the OUTCOME too. A deferred card that arrived without its arithmetic would be the
+    /// #736 bug back with a delay on it — the caption would land and the 350 cr, the die and the pack count
+    /// would not.</para></summary>
+    private (StoryBeats.Beat Beat, string? Subject, string? Outcome)? _deferredBeat;
 
-    /// <summary>The card currently taking the screen, if any.</summary>
-    private (StoryBeats.Beat Beat, string? Subject)? _storyCard;
+    /// <summary>
+    /// The card currently taking the screen, if any.
+    ///
+    /// <para>#664 · <c>Outcome</c> is #736's channel, arrived here from the deleted <c>Map.RevealCard.cs</c>:
+    /// what the ACT that raised the card actually DID — the coin that moved, the die that was rolled, the
+    /// decision the captain now has to make. The caption is fiction and the outcome is arithmetic, and until
+    /// #736 the arithmetic was pulsed to the HUD <i>under this card's own backdrop</i>: in the DOM and not on
+    /// the screen. Null on a card raised by something that settled nothing, which is most of them.</para>
+    /// </summary>
+    private (StoryBeats.Beat Beat, string? Subject, string? Outcome)? _storyCard;
 
     /// <summary>The plate riding the edge, and when it goes away.</summary>
     private (StoryBeats.Beat Beat, string? Subject, double UntilSimTime)? _storyPlate;
@@ -63,7 +75,10 @@ public sealed partial class Map
     /// discipline cannot be argued with locally.
     /// </summary>
     /// <param name="subject">A ship's name, a haven, a headline. Optional; every caption reads whole without it.</param>
-    private void RaiseStoryBeat(StoryBeats.Beat beat, string? subject = null)
+    /// <param name="outcome">#736 · What the act that raised this beat actually settled — the credits, the die,
+    /// the decision. It rides the card's own subtree, which is the one layer the backdrop cannot blur, rather
+    /// than pulsing to a HUD the card is standing on top of. Null for a beat that settled nothing.</param>
+    private void RaiseStoryBeat(StoryBeats.Beat beat, string? subject = null, string? outcome = null)
     {
         if (!BeatMaySpeak(beat, subject))
         {
@@ -85,11 +100,11 @@ public sealed partial class Map
             && (TheSitBeatIsSettling
                 || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger())))
         {
-            _deferredBeat ??= (beat, subject);
+            _deferredBeat ??= (beat, subject, outcome);
             return;
         }
 
-        ShowStoryBeat(beat, subject);
+        ShowStoryBeat(beat, subject, outcome);
     }
 
     /// <summary>Whether this beat is allowed to speak right now, by Core's cadence rules and nothing else.</summary>
@@ -127,7 +142,7 @@ public sealed partial class Map
     /// have shipped as a full-screen modal by default. Here it matches no arm and shows nothing, which is
     /// the safe way to be wrong.</para>
     /// </summary>
-    private void ShowStoryBeat(StoryBeats.Beat beat, string? subject)
+    private void ShowStoryBeat(StoryBeats.Beat beat, string? subject, string? outcome = null)
     {
         // #777 follow-up · AND THE BOOKS ARE NOT COOKED. Hosting moved this beat's canvas to the caller, and
         // with it the one thing the seam could previously guarantee on its own: that a beat it counted as
@@ -150,14 +165,19 @@ public sealed partial class Map
 
         switch (StoryBeats.PresentationOf(beat))
         {
+            // #664 · The cue comes from Core now (StoryBeats.Cue), and the empty one is load-bearing: eleven
+            // of these moments are a press that has already made its own noise — "board" for a find, "alarm"
+            // for a hatch coming off its dogs — and a "reveal" chime layered over that is the stacked card
+            // again, in the one channel the player cannot close. The eight beats that raise their own surface
+            // out of nowhere still chime, exactly as before.
             case StoryBeats.Presentation.Plate:
                 _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
-                RendererInterop.PlayCue("reveal");
+                PlayTheBeatsCue(beat);
                 break;
 
             case StoryBeats.Presentation.Card:
-                _storyCard = (beat, subject);
-                RendererInterop.PlayCue("reveal");
+                _storyCard = (beat, subject, outcome);
+                PlayTheBeatsCue(beat);
                 break;
 
             case StoryBeats.Presentation.Hosted:
@@ -170,8 +190,19 @@ public sealed partial class Map
 
         // The log keeps the words even when the picture has gone, because a card is the only place some of these
         // sentences are ever written down.
-        LogAutopilotEvent($"{StoryBeats.Title(beat)} — {StoryBeats.Caption(beat, subject)}");
+        LogAutopilotEvent($"{StoryBeats.Title(beat, subject)} — {StoryBeats.Caption(beat, subject)}");
         StateHasChanged();
+    }
+
+    /// <summary>#664 · Make whatever noise Core says this beat's own surface makes, and nothing when Core says
+    /// the moment has already been heard. Not a null check the caller could forget: the seam asks every
+    /// time.</summary>
+    private static void PlayTheBeatsCue(StoryBeats.Beat beat)
+    {
+        if (StoryBeats.Cue(beat) is { Length: > 0 } cue)
+        {
+            RendererInterop.PlayCue(cue);
+        }
     }
 
     /// <summary>
@@ -254,16 +285,27 @@ public sealed partial class Map
             && _storyCard is null && _busted is null)
         {
             _deferredBeat = null;
-            ShowStoryBeat(waiting.Beat, waiting.Subject);
+            ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
         }
     }
 
     /// <summary>Put the card away. Focus is NOT touched here: every mouse dismissal routes through
     /// <c>Dismiss(...)</c>, which owns handing the keyboard back — the #470 seam, and the reason nine cards used
-    /// to leave the deck keys dead.</summary>
-    private void CloseStoryCard() => _storyCard = null;
+    /// to leave the deck keys dead.
+    ///
+    /// <para>#768 (arrived here with #664) · …and the sayings this card was standing on are freed as it goes.
+    /// An event that raises a card HOLDS its ranked lines rather than pulsing them under the backdrop, so the
+    /// ✕ is where they are finally said. Every road out of the card comes through here — Esc, Enter, the
+    /// backdrop, the button — which is why nothing anywhere clears <c>_storyCard</c> by hand.</para></summary>
+    private void CloseStoryCard()
+    {
+        _storyCard = null;
+        ReleaseHeldSayings();
+    }
 
-    /// <summary>What a card or plate is showing, resolved for the razor in one place.</summary>
+    /// <summary>What a card or plate is showing, resolved for the razor in one place. The subject reaches all
+    /// three now (#664): two of the arcs choose their painting by the shard the captain just assembled, and a
+    /// released hatch puts the room's name in its own stamp.</summary>
     private (string Title, string Art, string Caption) StoryBeatCopy(StoryBeats.Beat beat, string? subject) =>
-        (StoryBeats.Title(beat), StoryBeats.ArtFile(beat), StoryBeats.Caption(beat, subject));
+        (StoryBeats.Title(beat, subject), StoryBeats.ArtFile(beat, subject), StoryBeats.Caption(beat, subject));
 }

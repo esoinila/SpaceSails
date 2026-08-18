@@ -74,9 +74,14 @@ public sealed class TheHostedBeatIsCountedOnlyWhenItsHostIsUpTests
     /// <summary>The shipped catch: warp yanked, the panel opened, the hail raised.</summary>
     private static void TheCollectorCatchesYou(Pages.Map map) => Call(map, "ApplyHunterCatch", AGrudge());
 
-    /// <summary>The one door. Called exactly as a feature calls it.</summary>
+    /// <summary>The one door. Called exactly as a feature calls it.
+    ///
+    /// <para>#664 gave the seam a third parameter — #736's OUTCOME, arrived with the eleven moments that came
+    /// off the deleted reveal card. Reflection does not fill optional arguments, so the null is written out
+    /// rather than left off; and a HOSTED beat has no outcome by construction, because the card that would
+    /// carry it belongs to somebody else.</para></summary>
     private static void Raise(Pages.Map map, StoryBeats.Beat beat, string? subject) =>
-        Call(map, "RaiseStoryBeat", beat, subject);
+        Call(map, "RaiseStoryBeat", beat, subject, null);
 
     private static object? Field(Pages.Map map, string name) =>
         (typeof(Pages.Map).GetField(name, Hidden)

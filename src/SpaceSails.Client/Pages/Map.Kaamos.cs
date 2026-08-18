@@ -79,9 +79,17 @@ public partial class Map
         // shard is actually assembled so it can never be shown for a shard nobody found. The other shards
         // (a line on a plaque, a log in a drawer, a coordinate bought over a counter) stay prose on
         // purpose: over-carding cheapens the ones that are not. Core owns the words (KaamosLore.PlateFor).
-        if (KaamosLore.PlateFor(fragmentId) is { } plate)
+        //
+        // #664 · It is a beat now, and the FRAGMENT ID is the subject — which is the whole reason StoryBeats
+        // grew a subject-aware ArtFile and Title. The plate is still chosen by KaamosLore.PlateFor and still
+        // asked at the single seam where a shard is actually assembled, so a picture can never be shown for a
+        // shard nobody found; the `is { }` test stays because a beat raised for a shard with no plate would
+        // be a card with no picture and no words. ONCE PER SUBJECT: a second KAAMOS shard is a different
+        // painting about a different thing, and OnceEver here would have shown the first and silently
+        // swallowed the rest — the exact failure #541 widened the seen-key to stop.
+        if (KaamosLore.PlateFor(fragmentId) is not null)
         {
-            ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
+            RaiseStoryBeat(StoryBeats.Beat.KaamosShardFound, fragmentId);
         }
 
         SayItWhereTheyAreLooking(found);
@@ -214,8 +222,12 @@ public partial class Map
         // and it was missing because it was pulsed to a HUD this card is standing on top of.
         //
         // The receipt rides the card itself now, so it cannot be raised without it.
-        ShowRevealCard(KaamosLore.BouncePlate.Title, KaamosLore.BouncePlate.ArtFile, KaamosLore.BouncePlate.Caption,
-            outcome: KaamosLore.BounceReceipt(fee));
+        //
+        // #664 · ONCE EVER. `MarkBerthFilingBounced` already refuses a second bounce on the same thread, and
+        // the plate, the caption and the receipt are the same fixed fee every time — so the cadence is not
+        // guarding against a repeat that can happen, it is stating what this card IS: the first thing the
+        // KAAMOS arc ever says to most captains, and the only time it says it.
+        RaiseStoryBeat(StoryBeats.Beat.KaamosFilingBounced, outcome: KaamosLore.BounceReceipt(fee));
 
         // Durable, and in somebody's voice — the ledger's 👂 section keeps it where the captain will meet it
         // again a week later, which is when a front door has to still be standing open.

@@ -228,9 +228,9 @@ public static class DeathNarration
         // down the card: `death-reevers.jpg` is boot prints in regolith with a chest and an Earth in the
         // sky, and it was being shown under a sentence that reads "No dust to leave a mark in — just a
         // corridor". `death-joined.jpg` is a crowd of Old Ones on a moon, shown under "deep inside {body}".
-        // And the third one, Suffocated, resolved to `death-suffocated.jpg`, WHICH THE GAME DOES NOT SHIP —
-        // a broken image on a death card, invisible until #621 made the tank able to run out in there at
-        // all. The place decides the picture; the derelict finally has one.
+        // And the third one, Suffocated, resolved to `death-suffocated.jpg`, WHICH THE GAME DID NOT SHIP
+        // UNTIL #915 — a broken image on a death card, invisible until #621 made the tank able to run out in
+        // there at all. The place decides the picture; the derelict finally has one.
         if (place == DeathPlace.Derelict)
         {
             // #636 gave the derelict a card of its own and then handed all four of its causes the SAME one,
@@ -275,13 +275,20 @@ public static class DeathNarration
         DeathCause.Joined => "death-joined.jpg",
         DeathCause.Void => "death-void.jpg",
 
-        // #621 · This said `death-suffocated.jpg` for a year and THE GAME HAS NEVER SHIPPED THAT FILE. It
-        // was not caught because a suffocation can only happen away from her deck and every away place —
-        // ground, hull, Hive — is answered above before it ever reaches here, except one: a derelict, where
-        // the tank could not run out (see AwayTeamSide). The name was a promise nothing had to keep.
-        // The placeless answer is the away team's card, because a suffocation with no place named is a
-        // captain out of their ship on the ground; the placed overload is the one the card actually calls.
-        DeathCause.Suffocated => "death-landing-party.jpg",
+        // #621 · This said `death-suffocated.jpg` for a year and THE GAME HAD NEVER SHIPPED THAT FILE, so it
+        // was pointed at the away team's card instead — honest, because a suffocation with no place named is
+        // a captain out of their ship on the ground, and invisible either way, since every away place the
+        // tank can run out in is answered above before it ever reaches here.
+        //
+        // #664 · AND THEN #915 PAINTED IT. The borrow was the right call for exactly as long as there was
+        // nothing to borrow from; the canvas that shipped is this slot's own — "a suit slumped seated
+        // against anonymous grey plating, visor dark, a glove fallen open beside a chest gauge whose needle
+        // sits at the bottom of its arc… no window, no landscape, no doorway: a suffocation with no place
+        // named at all." A red-shirt on regolith under that sentence is the picture disagreeing with the
+        // sim again, one file later, and this time with the right file sitting unreferenced in the folder.
+        // The PLACED overload is untouched: on the ground it is still the away-team card, because there the
+        // place IS named and the ground is what is in the frame.
+        DeathCause.Suffocated => "death-suffocated.jpg",
 
         // It said `busted-ship-explosion.jpg` for one commit, on the grounds that a scuttling IS a hull
         // coming apart, and `EveryCause_HasItsOwnArt` caught it in CI: that frame is the captain's own ship

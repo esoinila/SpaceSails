@@ -412,7 +412,7 @@ public sealed class TheUnlistedBandTests
         // If this ever goes red: run the lab, which prints "+ an UNLISTED band to Bn" per site, pick another
         // id, and change both this test and Map.Sim's SecretLabDeepCheatBodyId.
         //
-        //   dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
+        //   dotnet run --project labs/48-a-lab-about-the-lab/Lab48.csproj -c Release
         const string CheatRock = "secret-lab-site-unlisted";
 
         Assert.True(UndergroundComplex.HasUnlistedBand(CheatRock),

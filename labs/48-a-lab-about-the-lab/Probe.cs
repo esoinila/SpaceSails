@@ -1,4 +1,4 @@
-// Lab 44 · A lab about the lab — can you actually walk the floor we drew you?
+// Lab 48 · A lab about the lab — can you actually walk the floor we drew you?
 //
 // Owner, 2026-08-01: "The underground layer checking in CI might be a case for lab in itself (lab about
 // lab)" 😄
@@ -14,7 +14,7 @@
 // It is also a CI-friendly table on its own: rooms reachable / rooms total, per floor, per body.
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
-using SpaceSails.Labs.Lab44;
+using SpaceSails.Labs.Lab48;
 
 // The client assembly is browser-targeted, so everything this lab touches carries
 // [SupportedOSPlatform("browser")] and CA1416 objects to a console app calling it. The annotation is a

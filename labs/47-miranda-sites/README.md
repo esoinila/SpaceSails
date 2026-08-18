@@ -1,4 +1,4 @@
-# Lab 43 — What is actually ON a landing site?
+# Lab 47 — What is actually ON a landing site?
 
 **Question (owner, playtesting Miranda 2026-07-31):** *"the map is kind of boring... no door or
 enclosed places"* — and *"I have never seen the landing site area expand yet... we should test it."*
@@ -10,7 +10,7 @@ as hidden, so `?land=1` hangs mid-descent).
 ## Run
 
 ```
-dotnet run --project labs/43-miranda-sites/Lab43.csproj -c Release
+dotnet run --project labs/47-miranda-sites/Lab47.csproj -c Release
 ```
 
 ## What it found (2026-07-31, main @ 1b59843)

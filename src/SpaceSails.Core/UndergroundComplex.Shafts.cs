@@ -326,10 +326,12 @@ public static partial class UndergroundComplex
     /// and is read here rather than re-derived: a second spelling of "has cover" is the thing that drifts
     /// from what the player is carrying. Null is simply an empty satchel, so every older caller is unchanged.
     /// </param>
+    /// <param name="heatAtThisOperator">#715 · What the outfit running this site remembers about this captain
+    /// (<see cref="IllegalHeat.HeatAtSite"/>). Zero is the default and the old panel exactly.</param>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, IReadOnlyCollection<string> heldCardIds,
-        IReadOnlyList<Satchel.Item>? carried = null) =>
-        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried);
+        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0) =>
+        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator);
 
     /// <summary>
     /// #801 · The same panel, asked of a CAR rather than of a building.
@@ -349,7 +351,7 @@ public static partial class UndergroundComplex
     /// </summary>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, ShaftKind car, IReadOnlyCollection<string> heldCardIds,
-        IReadOnlyList<Satchel.Item>? carried = null)
+        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
@@ -443,14 +445,31 @@ public static partial class UndergroundComplex
         bool chitOpens = !holdsIt
             && BandOf(Math.Min(level, -1)) == 0
             && CanteenTable.Cover.Held(carried);
-        bool opens = holdsIt || chitOpens;
+        bool papered = holdsIt || chitOpens;
+
+        // ── #715 · AND THE OTHER QUESTION, WHICH A COLD GATE NEVER ASKS ─────────────────────────────────
+        //
+        // An outfit that remembers this captain wants the pass with their face on it as well as the paper,
+        // and it wants it on the FIRST press. The row is drawn either way (#212) and it says which of the two
+        // things is missing, which is the whole difference between this and a lockout: the site's own pass
+        // opens it, and so does a few hours spent anywhere else, because this meter cools in absence.
+        //
+        // ONE PREDICATE, and the read at the card asks the same one (TheGateWantsAFaceHere) — a panel that
+        // refused while the story card said the gate opened would be the sim and the sentence describing two
+        // different buildings.
+        bool wantsAFace = papered && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator);
+        bool opens = papered && !wantsAFace;
 
         stops.Add(new(
             BandTop(next),
-            opens ? "↓ THE OTHER SHAFT" : "↓ THE OTHER SHAFT — SEALED",
+            opens ? "↓ THE OTHER SHAFT"
+                : wantsAFace ? "↓ THE OTHER SHAFT — ID CHECK"
+                : "↓ THE OTHER SHAFT — SEALED",
             HoldsPressure(bodyId, BandTop(next)),
             IsCurrent: false,
-            opens ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
+            opens ? null
+                : wantsAFace ? IllegalHeat.TheGateWantsAFaceLine
+                : "This car does not go lower. The shaft that does is on this floor, and its " +
                 "gate wants an authority this building has not issued in a long time.",
             // #689 · …and when the wallet has the answer in it, the row says so BEFORE the ride. Owner, after
             // playing the whole loop: "It was locked until I got it ... there was no story point about it
@@ -465,9 +484,13 @@ public static partial class UndergroundComplex
             // #760 · …and it names the card the gate ACTUALLY reads, which on a standing is a card issued
             // somewhere else. A row that printed this site's own designation over a card from the next moon
             // would be the sentence reporting a world the sim is not running.
-            carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
+            // #715 · …and it names nothing when the gate is asking for a face: the paper in the wallet did
+            // not open this door, and a row printing the card that would have opened it is a row telling the
+            // captain the read went the other way.
+            wantsAFace ? null
+                : carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
                 : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
-            OpenedByChit: chitOpens));
+            OpenedByChit: chitOpens && !wantsAFace));
         return stops;
     }
 
