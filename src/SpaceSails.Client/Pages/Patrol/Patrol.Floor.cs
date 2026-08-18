@@ -82,6 +82,15 @@ public sealed partial class Map
             WalkedPastSaid = false;
             ex.CubiclesShut.Clear();
 
+            // #618 · …and so does the errand a bang bought. The men who heard it are a floor away, and the SHOT
+            // LEDGER is brought up to date rather than the errand simply being dropped: the ledger belongs to the
+            // whole excursion, and a shot fired on B3 carries B3's coordinates — which would be perfectly in
+            // range of somebody standing in the same place two levels down. Bringing the cursor up is the whole
+            // of "a shot on another floor is not heard here", and it is one line rather than a floor stamped onto
+            // every shot that would then have to agree with the floor the round thinks it is on.
+            LookingIntoIt = null;
+            ShotsAnswered = GunfireHeard.Count(ex.ShotsHeard);
+
             string bodyId = ex.Stop.Body.Id;
             int level = ex.Floor;
 
@@ -265,6 +274,17 @@ public sealed partial class Map
                 _host.ShowPulseMessage(PatrolBeat.HeardLine);
                 _host.LogAutopilotEvent(PatrolBeat.HeardLine);
             }
+
+            // #618 · …AND WHETHER A GUN WENT OFF ON THIS FLOOR SINCE THE LAST FRAME. Asked here, once, after the
+            // men have been walked and before anybody may be hailed: a shot heard this frame hands one man the
+            // errand, and the hail below then finds him already crossing the floor and leaves him to it — which
+            // is the same "one man at a time" rule every other road through this method obeys.
+            TheRoundHearsAShot(ex, book, simTime);
+
+            // …and the one road back out of it: he comes round the corner and there you are. Above the hail
+            // rather than inside it, because a man already walking over does not get hailed BY this loop — the
+            // errand is what turns into an approach, and #833's ladder runs from there unchanged.
+            TheNoiseTurnsIntoAPerson(sight);
 
             // #821 · A SHUT DOOR IS NOT A DISGUISE, IT IS A WALL. Nobody new registers the captain while it is
             // over — not because the door hides them, but because there is a partition between the two of them

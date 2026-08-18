@@ -340,7 +340,12 @@ public partial class Map
 
         // THE NOISE. Two things happen and they are deliberately different: the pack's ear is rung the way
         // every other loud act on this ground rings it (a PLACE to walk to, #456), and the FACT is filed —
-        // who fired, at what, where, when, how many. Nothing in this build reads the ledger; #804 prices it.
+        // who fired, at what, where, when, how many.
+        //
+        // #618 · AND THE ROUND READS THAT LEDGER NOW. This line is the whole of the publication: nothing new
+        // is pressed, nothing new is drawn, and this method gained no call. The round asks the excursion once
+        // a frame (Patrol.TheRoundHearsAShot), so the man who was standing thirty du away starts walking over
+        // on the next one — and if he sees the captain on the way, it is the same hail it has always been.
         MakeNoise(target.X, target.Y, ReeverHearing.Noise.Gunfire);
         var shot = new GunfireHeard.Shot(
             gun.Unit, target.Sign, target.X, target.Y, SimTime, order.RoundsSpent);

@@ -225,10 +225,13 @@ public sealed partial class Map
         /// ordinary verb rather than something anybody has ruled on. The day a door-force lands down here it
         /// hangs off this same call and needs nothing else.</para>
         ///
-        /// <para><b>SEEN, not heard.</b> <c>GunfireHeard</c> already keeps the noise ledger and deliberately does
-        /// not react to it; a man who came running at a bang three corridors away would be the floor-wide hunt
-        /// this feature does not have. This asks the one question <see cref="PatrolBeat.Notices"/> answers — his
-        /// eye, his own short reach, over the same walls everything else on this floor sees through.</para>
+        /// <para><b>SEEN, not heard — and #618 did not change that, it built the OTHER half beside it.</b> A man
+        /// who came RUNNING at a bang three corridors away would still be the floor-wide hunt this feature does
+        /// not have, and there is still no road from a noise to a radio call: <see cref="TheRoundHearsAShot"/>
+        /// walks somebody over to look, and <see cref="PatrolBeat.EarnsIt"/> refuses its provocation at this
+        /// method's own gate. This one asks the question <see cref="PatrolBeat.Notices"/> answers — his eye, his
+        /// own short reach, over the same walls everything else on this floor sees through — and it is what buys
+        /// the run.</para>
         ///
         /// <para>The car's four-second grace is deliberately not asked. That grace exists so that stepping out of
         /// a lift into somebody's face is a beat rather than an instant; a gun going off is not somebody standing
@@ -268,6 +271,159 @@ public sealed partial class Map
                 TheRadioCall(g, why, i);
                 return;
             }
+        }
+
+        // ── #618 · …AND THE ONE THAT COMES IN THROUGH THE EAR ─────────────────────────────────────────────
+        //
+        // Owner's ruling, 2026-08-05, and the last thread of #618 left hanging when the rest of it landed as
+        // #804/#833/#835/#836/#715: "they come if we make a big noise like start to use the special ammo to open
+        // a locked door. I guess we can flee but they will follow."
+        //
+        // FOUR THINGS ABOUT IT, and they are what keep it a beat rather than an alarm:
+        //
+        //   1. HE DOES NOT KNOW IT WAS YOU. He heard a bang and he is walking to the place it came from. There
+        //      is no radio call on this road (PatrolBeat.EarnsIt refuses the provocation at TheRadioCall's own
+        //      gate), no run, and no card. If he finds out who fired it, he finds out by SEEING you, on the
+        //      identical ladder as every other man on every other floor — TheNoiseTurnsIntoAPerson hands him
+        //      straight to #833's hail and nothing about the approach after that is any different.
+        //   2. NOTHING IS SAID. No banner, no "SECURITY ALERTED", not one line of pulse or log on either end of
+        //      it. The guard simply comes; that is #603's inference horror and it is the whole of the register.
+        //      The one sentence a captain ever gets about the noise is the one they already got, from their own
+        //      gun, the first time they fired it indoors (GunfireHeard.WhatItCostLine — "Nothing has come yet.
+        //      That is not the same as nothing having heard it.") — and this lane is what finally makes it true.
+        //   3. NOBODY HEARS IT AND NOTHING HAPPENS. An empty floor, the FOUND band, or a shot out past the
+        //      range: no walk, and no heat. Not a special case — there is nobody on the rota to be the register.
+        //   4. THE RANGE IS THE ONE THAT WAS ALREADY THERE. GunfireHeard.EarshotDu is
+        //      ReeverHearing.RangeOf(Noise.Gunfire), and its WithinEarshot has carried a doc comment since #803
+        //      saying it is "the question #804 will ask of every patrol on the floor". This is that question,
+        //      asked. No second acoustics, and no wall term: the ear on this ground has never had one.
+
+        /// <summary>
+        /// #618 · <b>A GUN GOES OFF, AND SOMEBODY ON THE ROTA HEARD IT.</b>
+        ///
+        /// <para>Asked once a frame off the excursion's own append-only ledger — the client does not publish
+        /// anything new and <c>Map.Combat.Remote.cs</c> did not gain a line: the shot was already filed there
+        /// (<c>GunfireHeard.File</c>) the moment the trigger was pressed, and the round picks it up on the next
+        /// frame the way it picks up everything else.</para>
+        ///
+        /// <para><b>The cursor moves first, and unconditionally.</b> Every road out of this method has already
+        /// spent the shot, so a bang is answered at most once whatever the floor happens to be doing — which is
+        /// the property the heat guard is about, and it is arithmetic here rather than a clause somewhere
+        /// downstream.</para>
+        ///
+        /// <para><b>Hearing it and going to look at it are two different questions.</b> The outfit's memory is
+        /// owed the moment one of their men hears a gun on their floor, whether or not he is free to walk over —
+        /// a man who is at that second walking a captain to the car heard it just as well. So the crossing is
+        /// banked on the ear, and the errand is handed out only if there is somebody to hand it to.</para>
+        /// </summary>
+        private void TheRoundHearsAShot(SurfaceExcursion ex, ContactLedger book, double simTime)
+        {
+            if (GunfireHeard.SinceLastHeard(ex.ShotsHeard, ShotsAnswered) is not { } shot)
+            {
+                return;
+            }
+            ShotsAnswered = GunfireHeard.Count(ex.ShotsHeard);
+
+            var ears = new List<(double X, double Y)>(Guards.Count);
+            foreach (Guard man in Guards)
+            {
+                ears.Add((man.X, man.Y));
+            }
+
+            int who = GunfireHeard.NearestEar(shot, ears);
+            if (who < 0)
+            {
+                return;   // nobody was close enough. No register covers it, so nothing is owed and nobody comes.
+            }
+
+            // …AND IT IS OWED TO WHOEVER RUNS THIS GROUND. Through IllegalHeat.Bank like every other crossing in
+            // the game, off the body the captain is standing on, so the operator is looked up in the one place
+            // that knows it (#715) and never re-derived here.
+            IllegalHeat.Bank(
+                book, IllegalHeat.Charge(ex.Stop.Body.Id, IllegalHeat.Crossing.ShotOnTheirFloor), simTime);
+            _host.RequestVaultSave();
+
+            // Not while somebody is already walking you out, already coming, or already crossing the floor to
+            // you: two men doing one job is #777's stacked card with legs, and a man who is being hailed does
+            // not need the round to also be investigating him.
+            if (Escort is not null || EscortDue is not null || KickOutRideDue || LookingIntoIt is not null)
+            {
+                return;
+            }
+            foreach (Guard man in Guards)
+            {
+                if (man.AfterYou || man.WalkingUp)
+                {
+                    return;
+                }
+            }
+
+            Guard g = Guards[who];
+            LookingIntoIt = g;
+            TheNoise = (shot.X, shot.Y);
+
+            // #833's own transition, unchanged and unwrapped: a walk to a bang is a walk-up with a place at the
+            // end of it. There is no new posture on the man and nothing new for the pen to draw — the round is
+            // suspended and resumes from wherever the walk leaves him, which is what a detour is.
+            g.HeStartsWalkingUp();
+            g.Vx = 0;
+            g.Vy = 0;
+            g.Facing = System.Math.Atan2(shot.Y - g.Y, shot.X - g.X);
+        }
+
+        /// <summary>
+        /// #618 · <b>HE COMES ROUND THE CORNER AND THERE YOU ARE.</b> The one road from a noise to a person, and
+        /// it is <see cref="PatrolBeat.Notices"/> — his own eye, his own short reach, the identical predicate the
+        /// hail has always been gated on, including the grace off the car.
+        ///
+        /// <para>What he does about it is <see cref="TheHail"/> and nothing else: he says the one short line and
+        /// keeps walking, and from that frame he is crossing the floor to a captain rather than to a door. The
+        /// whole of #833's ladder is then in front of the player exactly as it would have been if he had simply
+        /// looked up — which is the point. A captain who fires a gun and then stands in the corridor is caught by
+        /// the same rule as a captain who stands in a corridor.</para>
+        ///
+        /// <para>It also collects the errand when the walk-up ends any other way. Every road out of a walk-up
+        /// (the card, the give-up, the door, the radio) leaves the man not walking up, and a reference kept past
+        /// that would be an errand pointing at somebody who is signing a watchclock station.</para>
+        /// </summary>
+        private void TheNoiseTurnsIntoAPerson(IReadOnlyList<SurfaceCollision.Segment> sight)
+        {
+            if (LookingIntoIt is not { } g)
+            {
+                return;
+            }
+
+            if (!g.WalkingUp)
+            {
+                LookingIntoIt = null;   // whatever ended his walk-up ended the errand with it
+                return;
+            }
+
+            if (!PatrolBeat.CanBeNoticed(FloorSeconds)
+                || !PatrolBeat.Notices(g.X, g.Y, _host.AvatarX, _host.AvatarY, sight))
+            {
+                return;
+            }
+
+            LookingIntoIt = null;
+            TheHail(g);
+        }
+
+        /// <summary>#618 · <b>IT WAS NOTHING, AND HE SAYS NOTHING ABOUT IT.</b> The three ends of a walk to a
+        /// bang — he got there, the clock ran out, or the floor would not give him a route — and all three leave
+        /// the same man behind: back on his round from where he stands, with the cooldown running.
+        ///
+        /// <para>Deliberately NOT <see cref="GiveUpTheHail"/>, and the difference is one sentence. That method
+        /// pulses <see cref="PatrolBeat.WalkedAwayLine"/> — a man watching somebody go down a corridor — which is
+        /// a description of a thing that did not happen here, and the walk-away counter it can spend belongs to
+        /// hails the captain walked off. Nobody walked off anything. He looked, and there was a door with a hole
+        /// in it and nobody standing by it, and men on rotas do not narrate that.</para></summary>
+        private void TheNoiseWasNothing(Guard g)
+        {
+            LookingIntoIt = null;
+            g.HeGivesUp();
+            g.Vx = 0;
+            g.Vy = 0;
         }
 
         // ── #835 · THE TOP RUNG: BACK TO THE SKY ──────────────────────────────────────────────────────────

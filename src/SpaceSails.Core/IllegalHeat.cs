@@ -71,14 +71,21 @@ public static class IllegalHeat
     // ── THE CROSSINGS, AND WHAT EACH COSTS ──────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #715 · <b>THE WHOLE LIST OF WAYS TO BURN SOMEBODY.</b> Five, and every one of them is a moment where a
-    /// captain asked an outfit's own machinery or an outfit's own man for something and was told no to their
-    /// face.
+    /// #715 · <b>THE WHOLE LIST OF WAYS TO BURN SOMEBODY.</b> Six, and every one of them is a moment where an
+    /// outfit's own machinery or an outfit's own man found out about the captain on the outfit's own ground.
     ///
     /// <para><b>What is deliberately NOT here.</b> Being caught in a cabinet with a dogged door is not a
     /// crossing: nobody read anything, nobody refused anything, and the memory of that belongs to a different
-    /// holder entirely (the counter's book, #770). Nor is a shot fired, a lock blown or a room emptied —
-    /// those are the LAW's business and the ship's heat is where they land.</para>
+    /// holder entirely (the counter's book, #770). Nor is a lock blown or a room emptied — those are the LAW's
+    /// business and the ship's heat is where they land.</para>
+    ///
+    /// <para><b>#618 · …and a shot is BOTH, split exactly where the split is honest.</b> Firing a gun is the
+    /// law's business and always was. A gun going off inside thirty-four deck units of a man on THEIR rota,
+    /// on THEIR floor, is additionally something that outfit finds out — not by inference and not by a report,
+    /// but because somebody they pay heard it and walked over. That is the same shape as every other row here
+    /// (a person was there, and a line went into a book), and it is why the shot only ever costs anything
+    /// where somebody was standing to hear it: on an empty floor, or out past the range, no register covers
+    /// it and nothing is owed.</para>
     /// </summary>
     public enum Crossing
     {
@@ -107,6 +114,16 @@ public static class IllegalHeat
         /// pass back on the way. The dearest thing on the list, because it is the only one where the outfit
         /// stops treating you as a problem for this floor and starts treating you as a problem.</summary>
         TheKickOut,
+
+        /// <summary>#618 · A gun went off on a floor they have somebody on, close enough for him to hear it,
+        /// and he left his round to go and look. Owner's own trigger, 2026-08-05: <i>"they come if we make a
+        /// big noise like start to use the special ammo to open a locked door."</i>
+        ///
+        /// <para>Dearer than the escort and cheaper than the ejection, and it sits there on the reasoning
+        /// this table is built on: an escort is a man writing your face down, an ejection is a man deciding
+        /// you are a problem, and a bang on a working floor is between the two — nobody has your name, and
+        /// nobody is going to forget the evening either.</para></summary>
+        ShotOnTheirFloor,
     }
 
     /// <summary>What one crossing costs. Small numbers on purpose: the pressure in this meter comes from
@@ -117,6 +134,7 @@ public static class IllegalHeat
         Crossing.RefusedSend => UndergroundComplex.RefusedCardHeat,
         Crossing.RefusedPress => UndergroundComplex.RefusedCardHeat,
         Crossing.TheEscort => 2,
+        Crossing.ShotOnTheirFloor => 3,
         Crossing.TheKickOut => 4,
         _ => 0,
     };
