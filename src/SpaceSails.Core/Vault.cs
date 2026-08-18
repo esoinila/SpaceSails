@@ -157,6 +157,12 @@ public sealed record ContactRecord
     public IReadOnlyList<string> KnownTells { get; init; } = [];
     /// <summary>#5 SundayMorningWind — the favourite drink id we've learned for this contact. Empty until known.</summary>
     public string KnownFavorite { get; init; } = "";
+    /// <summary>#715 — illegal heat this entity holds against us (an outfit we crossed). Defaults 0, so a
+    /// vault written before the meter existed loads as a captain nobody remembers.</summary>
+    public int HeatOwed { get; init; }
+    /// <summary>#715 — when that heat was last charged or cooled. Only meaningful while
+    /// <see cref="HeatOwed"/> is above zero, which is why a defaulted 0 costs an old file nothing.</summary>
+    public double HeatStampSimTime { get; init; }
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 

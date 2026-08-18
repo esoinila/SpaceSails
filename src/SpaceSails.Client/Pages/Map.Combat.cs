@@ -495,6 +495,16 @@ public partial class Map
 
         _heat = EncounterRule.DecayHeat(_heat, SimTime, hidden);
 
+        // #715 · …and the OTHER heat, which is a DIFFERENT NUMBER WITH A DIFFERENT HOLDER. The line above
+        // is what the law thinks of a hull; this is what one company thinks of a captain, and the two are
+        // never read off each other — the guard next door raises either one and proves the other did not
+        // move. It cools in ABSENCE and in nothing else (the owner's own word: "get out"), so the outfit
+        // whose ground is underfoot is handed in and is the one outfit this call does not cool.
+        //
+        // It creates nothing: a captain who has never crossed anybody has an empty book after ten
+        // thousand frames, which is what keeps #905's fingerprints where they were.
+        IllegalHeat.Cool(_contacts, TheOutfitUnderfoot, SimTime);
+
         // PR-BUSTED (ruling §5.1): when heat fully cools, the stolen cargo launders — the evidence
         // leaves the books. And at each UPWARD heat crossing the parrot names the confiscation exposure
         // (owner: "Heat two, captain — they'll take a third of the purse if they catch us!"), riding the
