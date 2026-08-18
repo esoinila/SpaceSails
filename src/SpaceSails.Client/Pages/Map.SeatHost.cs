@@ -126,6 +126,10 @@ public partial class Map : Map.ISeatHost
     /// <inheritdoc/>
     bool ISeatHost.CubicleIsShut(string key) => CubicleIsShut(key);
 
+    /// <inheritdoc/>
+    bool ISeatHost.WalkSomebodyToYourTable(SurfaceExcursion ex, int tableIndex) =>
+        WalkSomebodyToYourTable(ex, tableIndex);
+
     // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>

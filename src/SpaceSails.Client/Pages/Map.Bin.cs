@@ -348,7 +348,7 @@ public sealed partial class Map
             UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
         {
             foreach (CanteenRegulars.TableSeat top in
-                CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+                CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
             {
                 overlooked |= top.Taken
                     && PatrolBeat.EyesOn(top.X, top.Y, _avatarX, _avatarY, RipAndBin.OverlookedDu, sight);

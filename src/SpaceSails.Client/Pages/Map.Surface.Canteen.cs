@@ -335,7 +335,7 @@ public partial class Map
         foreach (UndergroundComplex.Amenity a in floor.Amenities)
         {
             foreach (CanteenRegulars.Seated who in
-                CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+                CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
             {
                 if (Math.Abs(who.X - spot.X) < 0.5 && Math.Abs(who.Y - spot.Y) < 0.5)
                 {

@@ -166,6 +166,24 @@ public partial class Map
         /// the pan.</summary>
         bool CubicleIsShut(string key);
 
+        /// <summary>
+        /// #731 · SEND SOMEBODY ACROSS THE ROOM TO THIS TABLE, on real legs, out of a door that does not open
+        /// for the captain.
+        ///
+        /// <para>Owner, 2026-08-06: <i>"In the space bars there are lot of cases where we can have npcs arrive
+        /// at bar from locked place or go to a locked place. Now it is possible to have NPC ask to sit down at
+        /// our table and offer a quest! This is the classic TTRPG event."</i> The walk IS the ceremony — no
+        /// banner and no blip; the room announces her by parting for her — so the arrival is a route planned
+        /// over the captain's own lattice and stepped by the captain's own collision, and the card comes up
+        /// when she gets there rather than on the frame the beat was spent.</para>
+        ///
+        /// <para><b>False means she could not be walked</b> — no locked door on this floor, no standing place
+        /// at one, or no way through — and the caller must then do the arrival the way it has always been
+        /// done. A refusal here is never a reason to place a body at the far end of a walk that could not be
+        /// walked.</para>
+        /// </summary>
+        bool WalkSomebodyToYourTable(SurfaceExcursion ex, int tableIndex);
+
         // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
         //
         // #693's rule: a scene nobody can reach on demand is a scene that ships broken. Four of these are the
