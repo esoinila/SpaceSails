@@ -83,13 +83,13 @@ public class TheDeathCardOffersTheShelfTests
         // The button is wired to a method that exists, and that method opens the SAME drawer the captain's
         // desk opens — one save surface, two doors, which is #310's law and the whole point of reusing it.
         MethodInfo door = Method("OpenLogbookFromDeath");
-        string body = MethodBody("Map.Vault.cs", "OpenLogbookFromDeath");
+        string body = MethodBody("OpenLogbookFromDeath");
         Assert.Contains("OpenSaveDrawer", body, StringComparison.Ordinal);
         Assert.NotNull(Method("OpenSaveDrawer"));
 
         // OpenSaveDrawer is what raises the flag the surface renders on, and it refreshes the shelf first so
         // the death-screen list is not a stale one from before the run that just ended.
-        string open = MethodBody("Map.Vault.cs", "OpenSaveDrawer");
+        string open = MethodBody("OpenSaveDrawer");
         Assert.Contains("_showSaveDrawer = true", open, StringComparison.Ordinal);
         Assert.Contains("RefreshSlotList", open, StringComparison.Ordinal);
         Assert.Equal("Void", door.ReturnType.Name);
@@ -118,7 +118,7 @@ public class TheDeathCardOffersTheShelfTests
         // Boarding a banked moment from the death card must actually get you out of the death: the card
         // belongs to a timeline the captain just walked out of. Without this the save loads UNDER a freeze
         // frame that is still holding, and closing the drawer puts the corpse back on the screen.
-        string body = MethodBody("Map.Vault.cs", "LoadSlot");
+        string body = MethodBody("LoadSlot");
         Assert.Contains("_busted = null", body, StringComparison.Ordinal);
     }
 
@@ -142,7 +142,7 @@ public class TheDeathCardOffersTheShelfTests
 
         // Both doors land on the one Core write, and it is the registry's Rename — not a second copy of the
         // act with its own arithmetic, which is how two doors quietly stop agreeing.
-        Assert.Contains("Threads.Rename(", MethodBody("Map.Vault.cs", "RenameCaptain"), StringComparison.Ordinal);
+        Assert.Contains("Threads.Rename(", MethodBody("RenameCaptain"), StringComparison.Ordinal);
         Assert.NotNull(typeof(GameThreadRegistry).GetMethod(nameof(GameThreadRegistry.Rename)));
     }
 
@@ -152,14 +152,14 @@ public class TheDeathCardOffersTheShelfTests
         // A rename that only repaints the chip is a lie the next reload exposes. Renaming the LIVE universe
         // requests an autosave, so the rolling save (and every export after it) carries the new name; and
         // BuildVault stamps the name into the payload rather than leaving it on the registry row alone.
-        Assert.Contains("RequestVaultSave", MethodBody("Map.Vault.cs", "RenameCaptain"), StringComparison.Ordinal);
+        Assert.Contains("RequestVaultSave", MethodBody("RenameCaptain"), StringComparison.Ordinal);
 
-        string build = MethodBody("Map.Vault.cs", "BuildVault");
+        string build = MethodBody("BuildVault");
         Assert.Contains("Logbook = new LogbookSection", build, StringComparison.Ordinal);
         Assert.Contains("CaptainName = ActiveCaptainName", build, StringComparison.Ordinal);
 
         // And the label mirrors the payload rather than gathering the strings a second time — one truth.
-        string meta = MethodBody("Map.Vault.cs", "BuildSlotMeta");
+        string meta = MethodBody("BuildSlotMeta");
         Assert.Contains("vault.Logbook?.CaptainName", meta, StringComparison.Ordinal);
         Assert.Contains("vault.Logbook?.Title", meta, StringComparison.Ordinal);
         Assert.Contains("vault.Logbook?.Note", meta, StringComparison.Ordinal);
@@ -185,7 +185,7 @@ public class TheDeathCardOffersTheShelfTests
 
         // The three gestures are three arms of ONE commit, so a title typed into the sheet cannot reach the
         // slot by one route and the file by another.
-        string commit = MethodBody("Map.Vault.cs", "CommitBankPrompt");
+        string commit = MethodBody("CommitBankPrompt");
         Assert.Contains("SaveToSlot(slot, title, note)", commit, StringComparison.Ordinal);
         Assert.Contains("ExportVault(title, note)", commit, StringComparison.Ordinal);
         Assert.Contains(".Retitle(slot, title, note)", commit, StringComparison.Ordinal);
@@ -217,23 +217,25 @@ public class TheDeathCardOffersTheShelfTests
         => typeof(Map).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
            ?? throw new InvalidOperationException($"Map has no method '{name}' — the razor wires one that does not exist.");
 
-    /// <summary>The source text of one method in a Map partial, from its signature to the matching brace.</summary>
-    private static string MethodBody(string file, string method)
+    /// <summary>The source text of one method on <see cref="Map"/>, from its signature to the matching
+    /// brace — found across the page's partials rather than in a named one, so moving a method between
+    /// Map.Vault.cs and Map.Logbook.cs (as #948 did, to stay under the 1500-line line) cannot quietly turn
+    /// a guard green by making it read a file the method is no longer in.</summary>
+    private static string MethodBody(string method)
     {
-        string src = File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string[] partials = Directory.GetFiles(dir, "Map.*.cs", SearchOption.TopDirectoryOnly);
+        string src = partials.FirstOrDefault(f => Declares(File.ReadAllText(f), method)) is { } hit
+            ? File.ReadAllText(hit)
+            : throw new InvalidOperationException($"no Map partial declares '{method}'");
         // The DECLARATION, not a call inside somebody else's expression body. The character class
         // deliberately excludes "=" and "(", because on this file's first run
         // `private Task ContinueFromSave() => LoadSlot(Slots.Newest()?.Id);` matched as LoadSlot's own
         // signature — and since an expression body has no brace, the reader then walked on and handed back
         // the NEXT method's body entirely. A guard reading the wrong method is a guard that cannot fail.
-        Match sig = Regex.Match(
-            src,
-            @"^\s*(?:private|internal|public|protected)[\w\s<>,\?\[\]\.]*\s" + Regex.Escape(method) + @"\s*\(",
-            RegexOptions.Multiline);
-        Assert.True(sig.Success, $"no method '{method}' found in {file}");
-
+        Match sig = Declaration(src, method);
         int open = src.IndexOf('{', sig.Index + sig.Length);
-        Assert.True(open > 0, $"'{method}' in {file} has no body");
+        Assert.True(open > 0, $"'{method}' has no braced body");
 
         int depth = 0;
         for (int i = open; i < src.Length; i++)
@@ -245,8 +247,15 @@ public class TheDeathCardOffersTheShelfTests
             }
         }
 
-        throw new InvalidOperationException($"unbalanced braces reading '{method}' from {file}");
+        throw new InvalidOperationException($"unbalanced braces reading '{method}'");
     }
+
+    private static bool Declares(string src, string method) => Declaration(src, method).Success;
+
+    private static Match Declaration(string src, string method) => Regex.Match(
+        src,
+        @"^\s*(?:private|internal|public|protected)[\w\s<>,\?\[\]\.]*\s" + Regex.Escape(method) + @"\s*\(",
+        RegexOptions.Multiline);
 
     private static string BustedSwitch(string razor)
         => Between(razor, "@if (_busted is { } bust", "@* #422 — THE CONVERGENCE.");
