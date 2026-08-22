@@ -1,5 +1,6 @@
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
@@ -55,6 +56,24 @@ public sealed partial class Map
         /// <summary>Whether they have said their line for the state they are in. Keeps a challenge from
         /// re-announcing itself sixty times a second.</summary>
         public bool Announced;
+
+        /// <summary>#731 v2 · Which leg of the route they STARTED on. The three of them are staggered a third
+        /// of the way round the hull from each other, so "back where I began" is the only spelling of
+        /// <i>a lap</i> that means the same thing for all three.</summary>
+        public int StartLeg;
+
+        /// <summary>#731 v2 · How many times round the hull they have been. At
+        /// <see cref="InspectionTeam.LapsBeforeTheyGo"/> they go home.</summary>
+        public int Laps;
+
+        /// <summary>#731 v2 · Their walk to the lock, planned over the captain's own lattice by the same
+        /// <c>NpcWalk</c> the canteen's people are walked with (#731). Null on every other state — a body
+        /// sweeping a hull is following a checklist, and a body going home is following a route.</summary>
+        public NpcWalk? Walk;
+
+        /// <summary>#731 v2 · How long they have been standing at the head of the file working the hatch.
+        /// At <see cref="InspectionTeam.ThroughTheLockSeconds"/> they are through it and gone.</summary>
+        public double AtTheLock;
     }
 
     private readonly List<Sweeper> _sweepers = [];
@@ -124,6 +143,7 @@ public sealed partial class Map
                 Y = 0,
                 Facing = 0,
                 RouteLeg = leg,
+                StartLeg = leg,
                 GoalX = _sweepRoute.Count > 0 ? _sweepRoute[leg].X : 0,
                 GoalY = _sweepRoute.Count > 0 ? _sweepRoute[leg].Y : 0,
             });
@@ -159,8 +179,11 @@ public sealed partial class Map
         IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
 
-        foreach (Sweeper s in _sweepers)
+        List<Sweeper>? gone = null;
+
+        for (int i = _sweepers.Count - 1; i >= 0; i--)
         {
+            Sweeper s = _sweepers[i];
             s.StateSeconds += dt;
 
             InspectionTeam.Member member = new(s.Callsign, s.X, s.Y, s.Facing, s.State, s.StateSeconds);
@@ -229,6 +252,13 @@ public sealed partial class Map
                     }
                     break;
 
+                case InspectionTeam.Awareness.Leaving:
+                    if (TheyFileOutThroughTheLock(s, dt, walls))
+                    {
+                        (gone ??= []).Add(s);
+                    }
+                    break;
+
                 default:
                     WalkTheRoute(s, dt, walls);
                     break;
@@ -244,6 +274,117 @@ public sealed partial class Map
                     : "somebody professional is looking for you");
             }
         }
+
+        if (gone is not null)
+        {
+            foreach (Sweeper who in gone)
+            {
+                _sweepers.Remove(who);
+            }
+        }
+
+        // -- #731 v2 - AND THE DOOR IS THEIRS WHILE THEY ARE IN IT --------------------------------------
+        //
+        // The lock has always been a CREW-ONLY hatch. WreckLayout.HeldAtLock is the rule the pack has been
+        // held by since the wreck shipped, and it lives in Core precisely so the promise is pinned by a test
+        // rather than by a comment. The away team on the far side of it are crew; while they are filing
+        // through it, the captain is not.
+        //
+        // NOT ONE WORD IS SAID. Three professionals queueing at your way home, one at a time, unhurried, is
+        // the most legible sentence this scene has, and a line explaining it would be the game saying out
+        // loud the thing it has just spent a minute showing.
+        if (TheyAreHoldingTheLock && WreckLayout.PastTheLock(_avatarX, DeckPlan.AvatarRadius))
+        {
+            _avatarX = WreckLayout.HeldAtLock(_avatarX, DeckPlan.AvatarRadius);
+        }
+    }
+
+    /// <summary>#731 v2 - Is anybody working the hatch right now? Read by the frame above and by nothing
+    /// else: this is not a HUD flag, and there is no line hanging off it.</summary>
+    private bool TheyAreHoldingTheLock =>
+        _sweepers.Exists(s => s.State == InspectionTeam.Awareness.Leaving);
+
+    /// <summary>
+    /// #731 v2 - <b>THE SWEEP TEAM WALKS OUT THROUGH THE AIRLOCK: SINGLE FILE, UNHURRIED, AND THEN GONE.</b>
+    ///
+    /// <para>#731's third first customer, and the one the walker's own file has been promising since v1
+    /// (<c>Map.Walkers.cs</c>: <i>"the day a sweep team walks out of an airlock (#731 v2) it will mean
+    /// something else again"</i>). Until now they did not leave abstractly - <b>they did not leave at all.</b>
+    /// The team was spawned, walked a route forever, and stopped existing only because the NEXT boarding
+    /// cleared the list; a captain who hid well enough never found out what happened.</para>
+    ///
+    /// <h3>Why it is the walker and not the sweep loop</h3>
+    ///
+    /// <para>The sweep loop is a straight-line <see cref="SurfaceCollision.Slide"/> at a goal - right for a
+    /// checklist walked between compartments that all hang off one spine, and wrong for a body that has to
+    /// get from wherever it happens to be standing to one particular doorway without grinding along a
+    /// bulkhead on the way. So the exit is planned by <see cref="NpcWalk"/>, over the captain's own lattice,
+    /// through the one <c>OnFoot</c> every walk on this side goes through - no second planner and no second
+    /// gait claim. It is unhurried by construction: <see cref="NpcWalk.PaceDu"/> is slower than
+    /// <see cref="InspectionTeam.SweepSpeed"/>, which is the point. They are not in a hurry; they are
+    /// finished.</para>
+    ///
+    /// <h3>Single file</h3>
+    ///
+    /// <para>Their goal is a place in a QUEUE rather than a place at the door: one standoff off the lock for
+    /// whoever is at the head of it, and <see cref="InspectionTeam.FileSpacingDu"/> further back for every
+    /// body ahead of them. When the head goes through, everybody's rank drops and the file steps forward - on
+    /// the floor, on the lattice, re-planned rather than nudged. The rank is read off the list's own order,
+    /// so it is the same every frame and on every machine.</para>
+    ///
+    /// <h3>And the wreck's door is a coordinate, not a plate</h3>
+    ///
+    /// <para>On a Hive floor the door somebody leaves through is an <c>UndergroundComplex.LockedDoor</c> with
+    /// a sign painted on it, and #731 v1's guard matches the walk's plate back to the building's locked list.
+    /// <b>A wreck has neither type nor plate.</b> What it has is <see cref="WreckLayout.ShuttleLockX"/> and
+    /// the crew-only rule stated as two functions in Core. So this walk carries no sign at all - this lane
+    /// paints nothing on a bulkhead nobody has ever labelled - and the guard asks the LAW instead: the file
+    /// stands on the lock's own standoff line, and the captain is held at it while they do.</para>
+    /// </summary>
+    /// <returns>True when this body is through the hatch and should come off the deck.</returns>
+    private bool TheyFileOutThroughTheLock(
+        Sweeper s, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        int rank = 0;
+        foreach (Sweeper other in _sweepers)
+        {
+            if (ReferenceEquals(other, s))
+            {
+                break;
+            }
+            if (other.State == InspectionTeam.Awareness.Leaving)
+            {
+                rank++;
+            }
+        }
+
+        double gx = WreckLayout.ShuttleLockX - Egress.DoorStandoffDu - (rank * InspectionTeam.FileSpacingDu);
+        if (s.Walk is null || System.Math.Abs(s.Walk.For.X - gx) > 1e-9)
+        {
+            s.Walk = OnFoot(
+                s.Callsign, new NpcWalk.Bound("", gx, 0),
+                new DeckReachability.Point(s.X, s.Y), walls);
+            s.AtTheLock = 0;
+        }
+
+        if (s.Walk is { } walk)
+        {
+            walk.Step(dt, walls, _avatarX, _avatarY);
+            StepTheBodyTo(s, walk, dt);
+            if (walk.Afoot)
+            {
+                return false;
+            }
+        }
+
+        // At the head of the file, working the hatch. Anybody behind them stands and waits their turn, which
+        // is what a queue is.
+        if (rank > 0)
+        {
+            return false;
+        }
+        s.AtTheLock += dt;
+        return s.AtTheLock >= InspectionTeam.ThroughTheLockSeconds;
     }
 
     /// <summary>Move to a fresh state and reset its clock. One place, so a state change can never keep an old
@@ -253,6 +394,9 @@ public sealed partial class Map
         s.State = next;
         s.StateSeconds = 0;
         s.Announced = false;
+        // #731 v2 · …and the route dies with the state. A walk planned for the round is not a walk the hunt
+        // may spend, and a stale route is the shape a body teleporting across a compartment hides in.
+        s.Walk = null;
     }
 
     /// <summary>Work the patrol. On arriving at a waypoint, take the next one — and say so occasionally, because
@@ -264,12 +408,50 @@ public sealed partial class Map
             return;
         }
 
-        WalkToward(s, s.GoalX, s.GoalY, InspectionTeam.SweepSpeed, dt, walls);
-
-        double dx = s.GoalX - s.X, dy = s.GoalY - s.Y;
-        if ((dx * dx) + (dy * dy) > 1.5 * 1.5)
+        // ── #731 v2 · AND THE ROUTE IS WALKED ON THE LATTICE, WHICH IS WHAT THIS FILE ALWAYS CLAIMED ──
+        //
+        // The comment on WalkToward has said since #724 that these are the other side of the reever line —
+        // "a thing that moves sensibly down here is somebody on a payroll… SO THE BLACK-OPS TEAM FINDS
+        // DOORWAYS" — and underneath it the round was a STRAIGHT LINE sliding off whatever it hit. A sentence
+        // and a sim disagreeing about the same body, which is this repository's third named bug class, and it
+        // was invisible for as long as nothing depended on the route ever FINISHING.
+        //
+        // #731 v2 depends on it: they go home when they have seen the whole hull. Two of the three never got
+        // there — they ground against a bulkhead a compartment short and stayed there for fifty minutes of
+        // ship time, which the guard printed as `SWEEP-3 Sweeping at (-1.5,-6.0) leg 6/6 laps 0`.
+        //
+        // So the round is planned now, by the same NpcWalk the canteen's people are walked with, at the
+        // sweep's own pace. The hunt and the search keep the straight line on purpose: a professional walking
+        // at a noise they just heard goes AT it, and the honest failure of that is a body that gets stuck on
+        // a corner for the twelve seconds it searches and then rejoins its round.
+        if (s.Walk is null || s.Walk.For.X != s.GoalX || s.Walk.For.Y != s.GoalY)
         {
-            return;
+            s.Walk = OnFoot(
+                s.Callsign, new NpcWalk.Bound("", s.GoalX, s.GoalY),
+                new DeckReachability.Point(s.X, s.Y), walls, NpcWalk.PersonalSpaceInRadii,
+                InspectionTeam.SweepSpeed);
+        }
+
+        if (s.Walk is { } leg)
+        {
+            leg.Step(dt, walls, _avatarX, _avatarY);
+            StepTheBodyTo(s, leg, dt);
+            if (leg.Afoot)
+            {
+                return;
+            }
+            s.Walk = null;
+        }
+        else
+        {
+            // No way through at all — the floor's own verdict. Fall back to the straight line rather than
+            // standing still, so a hull the lattice cannot cross is still swept badly instead of not at all.
+            WalkToward(s, s.GoalX, s.GoalY, InspectionTeam.SweepSpeed, dt, walls);
+            double dx = s.GoalX - s.X, dy = s.GoalY - s.Y;
+            if ((dx * dx) + (dy * dy) > 1.5 * 1.5)
+            {
+                return;
+            }
         }
 
         s.RouteLeg = (s.RouteLeg + 1) % _sweepRoute.Count;
@@ -279,6 +461,21 @@ public sealed partial class Map
         if (s.RouteLeg == 0)
         {
             LogAutopilotEvent(InspectionTeam.SweepingLine(s.Callsign));
+        }
+
+        // ── #731 v2 · AND WHEN THEY HAVE SEEN ALL OF IT, THEY GO ────────────────────────────────────────
+        //
+        // Back where they began is a LAP, and it is the only spelling that means the same thing for all
+        // three: they are staggered a third of the way round the hull from each other, so leg zero is a
+        // different fraction of a sweep for each of them. Nothing is said about the change — a team that
+        // announced its own departure would be telling the captain the one thing this whole beat is for.
+        if (s.RouteLeg == s.StartLeg && ++s.Laps >= InspectionTeam.LapsBeforeTheyGo)
+        {
+            EnterState(s, InspectionTeam.Awareness.Leaving);
+            // …and the way home is planned on the frame they DECIDE, not on the frame after it. A body that
+            // is leaving and has no route for one frame is a body the deck could draw taking a step it never
+            // planned, and it is the shape a despawn hides in.
+            _ = TheyFileOutThroughTheLock(s, 0, walls);
         }
     }
 
@@ -330,6 +527,23 @@ public sealed partial class Map
 
         s.X = nx;
         s.Y = ny;
+    }
+
+    /// <summary>#731 v2 · Put the body where its walk has got to, and point it the way it actually moved.
+    /// The motion fan reads <c>Vx/Vy</c> and the lamp reads <c>Facing</c>, so a walked leg has to leave both
+    /// of them saying the same thing a slid one does — one place, so the two movers cannot come to two
+    /// different accounts of one stride.</summary>
+    private static void StepTheBodyTo(Sweeper s, NpcWalk walk, double dt)
+    {
+        double mx = walk.X - s.X, my = walk.Y - s.Y;
+        s.Vx = dt > 0 ? mx / dt : 0;
+        s.Vy = dt > 0 ? my / dt : 0;
+        if ((mx * mx) + (my * my) > 1e-8)
+        {
+            s.Facing = System.Math.Atan2(my, mx);
+        }
+        s.X = walk.X;
+        s.Y = walk.Y;
     }
 
     private static void FaceToward(Sweeper s, double x, double y) =>

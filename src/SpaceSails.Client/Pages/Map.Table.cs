@@ -561,8 +561,14 @@ public partial class Map
         /// different facts and the bug was reading one for the other. The excursion's set is what the ROOM
         /// remembers for the watch — a round stood, an ask fumbled, a file put down — and it must outlive
         /// standing up. This one is the CONVERSATION, and it dies with the panel: you cannot answer an offer
-        /// that was made before you left the table, because the man made it to somebody who then stood up.</para></summary>
-        public HashSet<string> Said { get; } = [];
+        /// that was made before you left the table, because the man made it to somebody who then stood up.</para>
+        ///
+        /// <para>#731 v2 · <c>init</c>, and only init: a sitting may be OPENED with things already said in it
+        /// — the conversation she stood up in the middle of, carried across the hall and resumed in a booth —
+        /// and that has to happen in the initializer, because the one construction method is the whole of
+        /// #870 lane 6d's law. It is still never reassigned after that; the set is added to and cleared in
+        /// place, and this accessor cannot be reached again.</para></summary>
+        public HashSet<string> Said { get; init; } = [];
     }
 
     // ── #743/#746 · THE MESS, WITH THE CHIT IN YOUR HAND ──────────────────────────────────────────────

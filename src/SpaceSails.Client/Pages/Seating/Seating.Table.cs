@@ -206,6 +206,16 @@ public partial class Map
                         return false;   // somebody is there after all: that is #746's press, not this one.
                     }
 
+                    // #731 v2 · …UNLESS SOMEBODY IS HOLDING THIS DOOR OPEN FOR YOU, in which case sitting down
+                    // is not taking a free table, it is FOLLOWING HER IN, and the conversation she stood up in
+                    // the middle of picks up where it stopped. One branch, and everything that forks below it
+                    // is a VALUE on the one record — #870 lane 6d's rule, and TakeThisSeat is still the only
+                    // construction site there is.
+                    if (SheLedYouHere(ex, top))
+                    {
+                        return true;
+                    }
+
                     // #783 · WHICH REGISTER THIS SIT IS IN, decided once, by Core, off the room and the glass.
                     // Owner: "with a bought drink in hand, or on a quiet watch, the sit becomes the other thing."
                     // #783/#784 · ONE reading of the counter's pour, and it is #784's — Map.Seated.cs owns the
@@ -255,6 +265,125 @@ public partial class Map
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// #731 v2 · <b>YOU FOLLOWED HER IN, AND THE DOOR SHUTS BEHIND YOU.</b>
+        ///
+        /// <para><b>Owner, 2026-08-06:</b> <i>"Also it is dramatic telling when our contact wants us to follow
+        /// them into kabinetti :-D"</i> Nobody said "follow me", nothing pulsed, no card came up and no arrow
+        /// pointed at anything. She stood up in the middle of a sentence, crossed the hall, and stood in a
+        /// doorway looking at you; you walked over and sat down. <b>That is the whole beat, and this method is
+        /// the only thing in the game that knows it happened.</b></para>
+        ///
+        /// <h3>The same conversation, in a room with no ears in it</h3>
+        ///
+        /// <para>It is not a new sitting with a new stranger. Her plate, her scene, and — the point of the
+        /// whole walk — <b>what has already been said to her</b> come back off the excursion, so the deal move
+        /// she got up before making is on offer at this table and is the SAME move: #757's third rung, said
+        /// where #751 has already ruled the counter has no eyes. She is the one who would not say it in a hall
+        /// with eighty people in it, and now she does not have to.</para>
+        ///
+        /// <h3>The door is HERS</h3>
+        ///
+        /// <para><see cref="CabinetPrivacy.EscortsStage"/> shipped ahead of this lane saying exactly this —
+        /// <i>"#731's walkers are the ones who will call this"</i> — and it is seeded on WHO she is and
+        /// nothing else, so the frightened one dogs the leaf every single time and the casual one leaves the
+        /// weave. A captain who meets both learns which of them is afraid without either of them saying a
+        /// word, and it costs one line of code and no dialogue at all. #758's default is the curtain, and
+        /// dogging it is the choice.</para>
+        ///
+        /// <para><b>And the panel's first line is the room's, not this lane's.</b> The opening sentence is
+        /// <see cref="CabinetPrivacy.SaidOn"/> — #758's own already-shipped description of a curtain being
+        /// pulled or a leaf coming out of a wall. Not one word is authored here, and nothing anywhere says
+        /// why you are in a cabinet. The room says what it did; the game says nothing.</para>
+        /// </summary>
+        /// <returns>False — meaning "this is an ordinary free top" — whenever nobody is holding this door: no
+        /// escort, a different booth, or a walk still crossing the hall, which is a captain who got there
+        /// first and is simply early.</returns>
+        private bool SheLedYouHere(SurfaceExcursion ex, in CanteenRegulars.TableSeat top)
+        {
+            if (ex.EscortCabinetTop != top.Index || top.Cabinet <= 0)
+            {
+                return false;
+            }
+
+            // She has to BE there. A route still being walked is not an open door, and a scene resumed over a
+            // woman who is halfway across the hall would be the panel and the floor disagreeing about where
+            // somebody is standing — this repository's third named bug class, in a booth.
+            Walker? her = null;
+            foreach (Walker w in ex.Walkers)
+            {
+                if (w.For == Errand.LeadingYouIn && w.Table == top.Index
+                    && w.Walk.State == Core.Interior.NpcWalk.Doing.Arrived)
+                {
+                    her = w;
+                    break;
+                }
+            }
+            if (her is null)
+            {
+                return false;
+            }
+
+            string who = ex.EscortWho;
+            List<string> alreadySaid = [.. ex.EscortSaid];
+
+            // The leaf, or the weave — her call, and the hall watches whichever it is.
+            CabinetPrivacy.Stage stage = CabinetPrivacy.EscortsStage(who);
+            string leaf = CabinetPrivacy.Key(ex.Floor, top.Cabinet);
+            if (stage == CabinetPrivacy.Stage.Door)
+            {
+                ex.CabinetsDogged.Add(leaf);
+            }
+            else
+            {
+                ex.CabinetsDogged.Remove(leaf);
+            }
+
+            ex.Walkers.Remove(her);
+            ForgetTheEscort(ex);
+
+            // #820 · the same snap every seat in the game sits a captain with. Done AFTER the leaf is set, so
+            // the deck it rebuilds draws the door the way she left it.
+            (double X, double Y)? chair = top.ChairYouTake(_host.AvatarX, _host.AvatarY);
+            if (chair is { } sit)
+            {
+                _host.SitCaptainOn(sit.X, sit.Y);
+            }
+
+            bool drink = _host.APourInFrontOfYou;
+
+            // #870 lane 6d · THE SEVENTH CONSTRUCTION SITE, AND IT GOES THROUGH THE ONE METHOD LIKE THE OTHER
+            // SIX. The reveal cue and the draw live in `TakeThisSeat` and nowhere else, so the record is built
+            // in the argument — a sitting assembled into a local and handed over afterwards is exactly what
+            // `ThereIsOnePlaceASittingIsOpened` exists to refuse. What was already said to her rides in on the
+            // initializer too — `TableTalk.Said` is init-settable for exactly this — so the conversation is
+            // whole the first time anything reads the seat, cue and draw included.
+            TakeThisSeat(new TableTalk
+            {
+                Key = TableKey(ex, top.Index),
+                Index = top.Index,
+                StepOff = chair,
+                Who = CanteenTable.Who.None,
+                Plate = who,
+                Scene = SittingAlone.TheVisitor(),
+                Seats = top.Seats,
+                // Two chairs are spoken for now: yours and hers.
+                Free = Math.Max(0, top.Seats - 2),
+                Quiet = top.Quiet,
+                Cabinet = top.Cabinet,
+                Solo = false,
+                // #865 · SHE CAME TO YOU. The walk moved the table and it did not move who approached whom —
+                // a captain who follows somebody into a room they were led to is still the one who was asked.
+                TheyCameToYou = true,
+                Relaxed = SittingAlone.SitReadsAsRelaxed(drink, ex.CanteenWatch),
+                DrinkInHand = drink,
+                Joined = true,
+                Outcome = CabinetPrivacy.SaidOn(stage),
+                Said = [.. alreadySaid],
+            });
+            return true;
         }
 
         /// <summary>Stand up. Free, always, and it is the only way the panel shuts — the backdrop click and the
@@ -1016,6 +1145,64 @@ public partial class Map
             // #680 · Said HERE, in the one layer the backdrop cannot blur.
             t.Outcome = said.Line;
             _host.RequestVaultSave();
+            _host.StateHasChanged();
+
+            // #731 v2 · …AND THIS IS THE MOMENT SHE MIGHT STAND UP. Last, deliberately: the line she has just
+            // said stays on the panel while she crosses the hall, which is exactly what somebody leaving in
+            // the middle of a conversation leaves behind them.
+            SheMightLeadYouIn(ex, t);
+        }
+
+        /// <summary>
+        /// #731 v2 · <b>FOLLOW ME.</b>
+        ///
+        /// <para><b>Owner, 2026-08-06, on #751's cabinets:</b> <i>"Also it is dramatic telling when our
+        /// contact wants us to follow them into kabinetti :-D"</i></para>
+        ///
+        /// <para><b>WHEN.</b> The moment the thing she crossed the room to say becomes sayable and has not
+        /// been said — asked of the SCENE'S OWN STATE and of nothing else. <see cref="Core.Interior.Escort.TheDealMoveIn"/>
+        /// finds the move the field book would keep (#757 put that mark on the move for a different reason
+        /// which turns out to be this one), <see cref="TableMoveAvailable"/> says whether it is on offer this
+        /// second, and <c>t.Said</c> says whether it has already been spent. A counterpart with nothing worth
+        /// writing down never does this, because there would be nothing to take you anywhere FOR.</para>
+        ///
+        /// <para><b>WHO.</b> <see cref="Core.Interior.Escort.LeadsYouIn"/>, seeded on the shift and the top, so one evening
+        /// always goes the same way and most of the time she simply tells you where she is sitting. A contact
+        /// who ALWAYS walks you into a booth is a corridor with a cutscene in it.</para>
+        ///
+        /// <para><b>WHAT HAPPENS TO THE PANEL.</b> Exactly what happens when anybody stops sitting opposite
+        /// you: the card comes down to the strip and the table is your own again. <b>The outcome line she
+        /// left is not touched</b> — the last thing she said is the last thing that happened, and wiping it
+        /// would be the state change talking over the scene (<see cref="BackToYourOwnTable"/>'s own rule).
+        /// Not one word is added anywhere. She is simply on her feet, and there is a doorway across the hall
+        /// with somebody standing in it looking at you.</para>
+        /// </summary>
+        private void SheMightLeadYouIn(SurfaceExcursion ex, TableTalk t)
+        {
+            if (!t.TheyCameToYou
+                || Core.Interior.Escort.TheDealMoveIn(t.Scene) is not { } deal
+                || t.Said.Contains(deal.Id)
+                || !TableMoveAvailable(ex, t, deal))
+            {
+                return;
+            }
+
+            // The conversation is handed over BEFORE the table is reset, because the reset clears the very set
+            // that has to survive the walk.
+            if (!_host.WalkTheVisitorIntoACabinet(ex, t.Index, t.Scene, t.Said))
+            {
+                return;
+            }
+
+            t.Solo = true;
+            t.TheyCameToYou = false;
+            t.DrinkInHand = _host.APourInFrontOfYou;
+            t.Relaxed = SittingAlone.SitReadsAsRelaxed(t.DrinkInHand, ex.CanteenWatch);
+            t.Plate = SittingAlone.OwnTablePlate;
+            t.Scene = SittingAlone.TheTable(t.Relaxed, t.DrinkInHand);
+            t.Said.Clear();
+            t.Showing = false;
+            t.Free = Math.Min(t.Seats, t.Free + 1);
             _host.StateHasChanged();
         }
 
