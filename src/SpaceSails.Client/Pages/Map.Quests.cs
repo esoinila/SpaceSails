@@ -113,7 +113,10 @@ public partial class Map
         // Third — use a haven (cool the heat your piracy earned)
         "Captain's desk (0): order Lay low at a haven",
         "Reach the haven — orbit a moon, or coast in slow and clamp its ⚓ dock",
-        "Lie low — let the heat cool until the hunter breaks off",
+        // #962: say which clock this step is watching. It reads the HEAT gauge — and the owner learned the
+        // hard way that a cooled gauge is not what calls a collector off ("we have zero heat and are docked
+        // at haven ... why is this still hunting us?"). Her own card carries the break-off clock.
+        "Lie low until the heat cools to nothing (her contract has its own clock — read her card)",
     ];
 
     // The tutorials are independent tracks over ranges of TutorialSteps — the Captain's Tutorials tab

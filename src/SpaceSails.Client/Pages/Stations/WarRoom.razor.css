@@ -191,6 +191,14 @@
     margin-right: 0.4rem;
 }
 
+/* #962: the terms of a collector's contract, under her row — smaller than the row itself and indented
+   under it, because they answer a question the row raised rather than being another contact. */
+.war-room-hunter-terms {
+    font-size: 0.82em;
+    line-height: 1.35;
+    padding-left: 1.1rem;
+}
+
 .war-room-contact-list {
     flex: 1 1 auto;
     overflow-y: auto;

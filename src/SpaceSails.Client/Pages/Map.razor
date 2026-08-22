@@ -5729,6 +5729,20 @@
                 <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
             }
             <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
+            @* #962 · THE TERMS OF HER CONTRACT, on the card the captain is already reading. Owner, docked
+               at a haven with the heat gauge at zero and a collector still closing: "So we have zero heat
+               and are docked at haven ... why is this still hunting us?" Every sentence here is composed
+               in EncounterRule beside the rule it describes, so the card and the sim quote one number. *@
+            @if (dossier.Terms is { } terms)
+            {
+                <div class="border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="text-warning">@terms.Warrant</div>
+                    <div class="fw-bold mt-1">She stands down when:</div>
+                    <div>@terms.Hiding</div>
+                    <div class="text-secondary">@terms.Nerve</div>
+                    <div class="text-secondary">@terms.Sail</div>
+                </div>
+            }
             @if (dossier.IsPrey)
             {
                 @* The autosteal criterion box (owner): both must be green before shuttles launch. *@

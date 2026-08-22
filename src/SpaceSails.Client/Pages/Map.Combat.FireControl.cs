@@ -26,7 +26,11 @@ public partial class Map
         : null;
 
     // ---- M28 (Sunday PR-C): the Norden moment — gun-deck fire control ----
-    private const double MaxMuzzleSpeed = 8000;      // the mass driver's top charge, m/s
+    // #961: the mass driver's top charge, m/s — CORE's number, not a copy of it. The gun deck, the
+    // dossier's "driver reach" and EncounterRule's weapon envelope all descend from that one constant now;
+    // they used to be three numbers that merely happened to be typed near each other, and two of them
+    // disagreed by 3.5× on the card the owner was reading.
+    private const double MaxMuzzleSpeed = OrdnanceRule.MassDriverMuzzleSpeedMps;
     private const int SlugPulseCost = 2;             // reaction mass per shot
     private const int MissilePulseCost = 5;
     private const double FireLockLeadSeconds = 60;   // solution locks T-60 s — the Norden beat
