@@ -5575,6 +5575,13 @@
                                         {
                                             <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
                                         }
+                                        @* #969: the finished trip, in one line — "3 burns · arrive in 9 mo — the autopilot
+                                           will orbit Mars (≈3 p) · nothing more needed". This is the owner's own sentence
+                                           read back to him once the plan-time arm is accepted. *@
+                                        @if (ArrivePlanCompleteLine() is { } _aplan)
+                                        {
+                                            <div class="small mb-1 text-success">@_aplan</div>
+                                        }
                                         <button type="button" class="btn btn-sm w-100 mb-1 @(_aarmed ? (_disarmConfirmBodyId == _ar.BodyId ? "btn-warning" : "btn-outline-warning") : _avalid ? "btn-success" : "btn-outline-secondary")"
                                                 disabled="@NavLockedByDock"
                                                 title="@(NavLockedByDock ? DockNavLockTip : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
@@ -5586,6 +5593,10 @@
                                             else if (_aarmed)
                                             {
                                                 <text>🛰 Disarm the arrival at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else if (ArriveIsAThen(_ar))
+                                            {
+                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip from here</text>
                                             }
                                             else
                                             {
@@ -5599,9 +5610,18 @@
                                                     title="Take the arrival off the end of the plan" @onclick="RemoveArriveStep">✖ remove</button>
                                         </div>
                                         <div class="text-secondary small mt-1">
-                                            The plan ends here. @(_avalid
-                                                ? "Arm it and the ship finishes the trip by itself."
-                                                : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
+                                            @if (_aarmed && ArmedArrivalStillAhead)
+                                            {
+                                                <text>The plan is complete. The autopilot takes her at the pass — nothing more is needed unless something interferes.</text>
+                                            }
+                                            else
+                                            {
+                                                <text>
+                                                    The plan ends here. @(_avalid
+                                                        ? "Arm it now and the ship finishes the trip by itself — burns first, arrival last."
+                                                        : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
+                                                </text>
+                                            }
                                         </div>
                                     </div>
                                 }

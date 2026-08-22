@@ -206,7 +206,13 @@ public partial class Map
         if (_arrive is { } arrive)
         {
             ArrivalStepRule.ArrivalCheck? check = ArriveCheck();
-            string label = check is { } c
+            // #969: an arrival ARMED AT PLAN TIME is the last step of a finished trip, and the banner says
+            // so in those words — "🛰 arrive Mars — the autopilot inserts", "in 9 mo". The ✓/✗ verdict stays
+            // the row's business; up here the captain who is nowhere near the Nav desk wants to read WHO
+            // finishes the trip, and that nothing is owed until then.
+            string label = ArriveCoversArmed && ArmedArrivalStillAhead
+                ? ArrivalStepRule.ArmedThenLabel(arrive.Kind, BodyName(arrive.BodyId))
+                : check is { } c
                 ? (c.Valid
                     ? $"{(arrive.Kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} {ArrivalStepRule.Verb(arrive.Kind)} at {BodyName(arrive.BodyId)} ✓"
                     : ArrivalStepRule.Verdict(c))

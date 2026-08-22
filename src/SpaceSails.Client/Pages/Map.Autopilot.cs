@@ -31,14 +31,23 @@ public partial class Map
 
     // The autopilot is FLYING THE APPROACH (vs merely armed and waiting for the window) when it is armed
     // AND already within capture range — the same gate OrbitStatusLine reports as "flying the approach".
+    // #969: …and never while a PLAN-TIME arm is still waiting for its pass. Mars's capture range is five
+    // Hill radii wide, so a ship that has not left Earth can already be "in range" of the encounter it is
+    // nine months from — and the banner would have claimed the autopilot was flying an approach through the
+    // whole cruise while it was, correctly, doing nothing at all.
     private bool AutopilotFlyingApproach =>
-        _armedOrbitBodyId is not null && !_orbitKept && OrbitInfo() is { Armed: true, InCaptureRange: true };
+        _armedOrbitBodyId is not null && !_orbitKept && !ArmedArrivalStillAhead
+        && OrbitInfo() is { Armed: true, InCaptureRange: true };
 
     // The armed insertion's time when the plotted destination pass pins it; null = "at window" (unknown).
+    // #969: a plan-time arm always knows its own moment — the pass it was rehearsed FOR — so it falls back
+    // to that when the destination pass isn't the one talking (the projection is rebuilt on a cadence; the
+    // pinned epoch never blinks).
     private double? ArmedInsertionSimTime =>
         _armedOrbitBodyId is not null && _destinationPass is { } dp
             && dp.BodyId == _armedOrbitBodyId && dp.SimTime > SimTime
-            ? dp.SimTime : null;
+            ? dp.SimTime
+            : _armedArrivalPassSimTime is { } armedPass && armedPass > SimTime ? armedPass : null;
 
     private void ToggleInsertionEditor()
     {
@@ -143,6 +152,23 @@ public partial class Map
     // ---- M22: planned insertion — "it is part of flight planning" (owner) ----
     private string? _armedOrbitBodyId;
 
+    // ---- #969 — ARMED *THEN*, NOT ONLY *NOW*. Owner ruling 2026-08-23: "I want dock / orbit option as
+    // normal part, a step in the plan. Say three burns and one autopilot to finish the trip to Mars. After
+    // that no, absolutely no steps needed if the ship is not interfered with."
+    //
+    // This ONE nullable is the whole difference between the two arms, and it is deliberately the smallest
+    // thing that can tell them apart (no forked autopilot): the sim-time of the PASS the arm's promise was
+    // rehearsed for. Null = the historic NOW arm — the ship is at the door and the loop below has the
+    // controls from this instant. Set = a plan-time promise about a moment that has not come round yet, so
+    // CheckArmedInsertion keeps its hands off entirely (ArrivalStepRule.ArrivalPromiseIsStillAhead) while
+    // the captain's plotted burns fly her, and clears itself the instant the pass — or the body — arrives.
+    // From then on it IS an ordinary armed arrival and the unchanged insertion/dock path finishes the trip.
+    private double? _armedArrivalPassSimTime;
+
+    /// <summary>#969: the arm on the board is a plan-time promise whose pass has not come round yet — the
+    /// autopilot is armed, and correctly doing nothing.</summary>
+    private bool ArmedArrivalStillAhead => _armedArrivalPassSimTime is not null;
+
     // #136 convergence watchdog: an armed approach that fires burns without ever beating its
     // closest-ever distance is going nowhere (bad geometry, or the old empty-window fuel trap).
     // Track burns and the best distance so the tick executor can stand the autopilot down and
@@ -236,6 +262,7 @@ public partial class Map
     {
         _armedBudgetPulses = 0;
         _armedSpentPulses = 0;
+        _armedArrivalPassSimTime = null; // #969: the plan-time promise dies with the arm that made it
         _autopilotPlanPath = null;
         _autopilotPlanClosestPass = null; // #196: plan gone — the alarm returns to the ballistic course
         _armedTransferSchedule = null;
@@ -652,6 +679,39 @@ public partial class Map
         return Math.Clamp(3 * toPass, 5 * 86400.0, AutopilotRehearsal.DefaultMaxHorizonSeconds);
     }
 
+    // #969 — THE PROMISE COMES ROUND. The plan-time arm held its hands off for the whole cruise; this is the
+    // one frame where it takes the controls. Two things happen and only two: the hold is released (so the
+    // arm is from here on an ordinary armed arrival, indistinguishable from one pressed at the door), and
+    // the #148/#196/#219 pair — the drawn INTENDED path and the collision alarm's plan pass — is filled in
+    // from a rehearsal flown at the ship's REAL state, because only now is there an approach to draw.
+    //
+    // What deliberately does NOT happen: a refusal. The promise was settled at plan time, and #147's ruling
+    // ("dropping from autopilot should never happen when there was nothing external to cause it") forbids
+    // discovering a change of mind at the far end of a nine-month coast. If the fresh rehearsal cannot be
+    // promised, the pair simply stays null — the ballistic ribbon and the ballistic alarm keep the watch, the
+    // arrive row's own ✓/✗ has been speaking the whole way, and the loop below flies what it can with the
+    // reserve floor underneath it, exactly as it would for any other arm.
+    private void OpenTheArrivalWindow(CelestialBody body)
+    {
+        _armedArrivalPassSimTime = null;
+        ResetApproachTracking(); // the convergence watchdog starts counting from the arrival, not the plot
+        if (_ephemeris is not null && _simulator is not null)
+        {
+            int budget = Math.Max(0, _reactionMassPulses - AutopilotRehearsal.ReservePulses(ReactionMassCapacity));
+            AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+                _ship, _ephemeris, _simulator, body.Id, budget, capturePath: true,
+                schedule: _armedTransferSchedule);
+            if (r.Deliverable)
+            {
+                CachePlanForAlarm(body.Id, r);
+            }
+        }
+
+        string verb = IsDockableHaven(body) ? "brings her in to dock" : "flies the insertion";
+        LogAutopilotEvent($"the plan's arrival at {body.Name} has come round — the autopilot has the ship and {verb}");
+        ShowPulseMessage($"🛰 {body.Name} — the arrival step is live; the autopilot {verb}.");
+    }
+
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
     // approach the owner asked for — an approach burn, tidal trim burns as needed, and the
     // insertion once safely deep in the Hill sphere. Every burn is Δv-priced in pulses.
@@ -701,6 +761,25 @@ public partial class Map
                 OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, keptPark)
                     <= _reactionMassPulses;
             return;
+        }
+
+        // #969 THE HOLD — an arm made at PLAN TIME is a promise about a pass that has not come round yet.
+        // Until it does, the autopilot touches NOTHING: the captain's own plotted burns are flying the ship,
+        // and every line below would be the autopilot flying its own approach instead of the plan (and the
+        // convergence watchdog would stand it down for "not converging" on a trip that has not begun). The
+        // hold lifts at the pass epoch OR the moment the ship is honestly near the body, whichever comes
+        // first — after which this is an ordinary armed arrival and the unchanged insertion/dock path below
+        // finishes the trip with no further input. That is the owner's "absolutely no steps needed".
+        double distanceToTarget = (_ship.Position - bodyPos).Length;
+        if (ArrivalStepRule.ArrivalPromiseIsStillAhead(
+                _armedArrivalPassSimTime, SimTime, distanceToTarget, ArrivalNearRange(body, hill)))
+        {
+            return; // coast the plan — the arrival is still ahead
+        }
+
+        if (_armedArrivalPassSimTime is not null)
+        {
+            OpenTheArrivalWindow(body); // the promise has come round: the loop below has the ship now
         }
 
         // #155 the last mile: a μ=0 station is never orbited — its capture is the dock envelope (DockRule),
