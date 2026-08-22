@@ -758,8 +758,23 @@ public partial class Map
         }
     }
 
+    // #954 — the nearest reading, with the flicker taken out of it. It used to take the literal minimum
+    // every frame, which is why the HUD (and the scope's AUTO lock, which reads the same field) alternated
+    // between Mars and The Rusty Roadstead twice per two-hour station orbit: from 0.16 AU the two ARE the
+    // same distance, and "closest" was re-decided on a hair. Now the incumbent keeps the slot until a
+    // challenger beats it by a real margin (NearestRule.Unseats) — and the pair that used to trade places
+    // is named together, "Mars › The Rusty Roadstead", by UpdateNearestNeighbourhood below.
     private void UpdateNearestBody()
     {
+        // The incumbent, re-read from the live ephemeris (it may have been hidden or charted since).
+        CelestialBody? incumbent = _nearestBody is { } held && !IsBodyHidden(held.Id)
+            ? _ephemeris!.Bodies.FirstOrDefault(b => b.Id == held.Id)
+            : null;
+        double incumbentDistSq = incumbent is null
+            ? double.MaxValue
+            : (_ship.Position - _ephemeris!.Position(incumbent.Id, SimTime)).LengthSquared;
+
+        CelestialBody? challenger = null;
         double minDistanceSq = double.MaxValue;
         foreach (var body in _ephemeris!.Bodies)
         {
@@ -769,19 +784,106 @@ public partial class Map
             if (distSq < minDistanceSq)
             {
                 minDistanceSq = distSq;
-                _nearestBody = body;
-                _nearestBodyPosition = bodyPos;
+                challenger = body;
             }
         }
 
+        // With no incumbent the closest takes the slot outright; otherwise it has to earn it.
+        _nearestBody = incumbent is null || (challenger is not null
+            && NearestRule.UnseatsSquared(incumbentDistSq, minDistanceSq))
+            ? challenger ?? incumbent
+            : incumbent;
+
         if (_nearestBody is not null)
         {
+            _nearestBodyPosition = _ephemeris.Position(_nearestBody.Id, SimTime);
             // Same numeric derivative as the ship's initial state — can't disagree with the ephemeris.
             const double h = 1.0;
             _nearestBodyVelocity = (_ephemeris.Position(_nearestBody.Id, SimTime + h)
                                   - _ephemeris.Position(_nearestBody.Id, SimTime - h)) / (2 * h);
         }
+
+        UpdateNearestNeighbourhood();
     }
+
+    // #954 · The hierarchy the single "Nearest" slot could not hold. Owner: "present the hierarchy — Mars is
+    // closest and it contains (in its Hill sphere) The Rusty Roadstead." Two shapes qualify, and they are
+    // deliberately the SAME readout, so whichever of the pair happens to hold the slot the line reads alike:
+    //   (a) the nearest thing itself orbits a body that orbits something else — a moon or a station, never
+    //       the nonsense "Sun › Mars"; and
+    //   (b) the nearest thing IS a planet, and one of its own dockable havens is in the same breath (inside
+    //       the hysteresis band) — the very body the readout used to flip to every orbit.
+    private void UpdateNearestNeighbourhood()
+    {
+        _nearestParentName = null;
+        _nearestChildName = null;
+        _nearestHaven = null;
+
+        if (_ephemeris is null || _nearestBody is not { } near)
+        {
+            return;
+        }
+
+        if (IsDockableHaven(near))
+        {
+            _nearestHaven = near;
+        }
+
+        // (a) A satellite of a satellite-bearing body: Phobos and the Roadstead qualify, Mars does not
+        // (its parent is the sun, which orbits nothing — "Sun › Mars" is not a neighbourhood).
+        CelestialBody? parent = near.ParentId is { } pid
+            ? _ephemeris.Bodies.FirstOrDefault(b => b.Id == pid)
+            : null;
+        if (parent is { ParentId: not null })
+        {
+            _nearestParentName = parent.Name;
+            _nearestChildName = near.Name;
+            return;
+        }
+
+        // (b) The planet holds the slot — look for the haven riding beside it, close enough that neither
+        // could unseat the other. That is exactly the pair whose swap the owner watched flicker.
+        double nearDistSq = (_ship.Position - _nearestBodyPosition).LengthSquared;
+        CelestialBody? haven = null;
+        double havenDistSq = double.MaxValue;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (body.ParentId != near.Id || IsBodyHidden(body.Id) || !IsDockableHaven(body))
+            {
+                continue;
+            }
+
+            double d = (_ship.Position - _ephemeris.Position(body.Id, SimTime)).LengthSquared;
+            if (d < havenDistSq)
+            {
+                (havenDistSq, haven) = (d, body);
+            }
+        }
+
+        if (haven is not null && NearestRule.InTheSameBreathSquared(nearDistSq, havenDistSq))
+        {
+            _nearestParentName = near.Name;
+            _nearestChildName = haven.Name;
+            _nearestHaven = haven;
+        }
+    }
+
+    // The neighbourhood the nearest reading belongs to: the containing body's name and the thing inside it,
+    // or nulls when the nearest is just itself. Read by the HUD line and by the scope's AUTO sub-line.
+    private string? _nearestParentName;
+    private string? _nearestChildName;
+
+    // The dockable haven this neighbourhood offers — the nearest body itself when IT is the haven, else the
+    // one riding beside it. The ⚓ affordance hint follows this, so it no longer blinks out on the frames
+    // the planet held the slot.
+    private CelestialBody? _nearestHaven;
+
+    // The one line the "Nearest:" readout speaks — "Mars › The Rusty Roadstead" when there is a hierarchy
+    // to present, the plain name when there is not.
+    private string NearestReadoutName() =>
+        _nearestParentName is { } p && _nearestChildName is { } c
+            ? NearestRule.Hierarchy(p, c)
+            : _nearestBody?.Name ?? "";
 
     private void UpdateEffectiveWarp()
     {

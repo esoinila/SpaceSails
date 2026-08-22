@@ -23,6 +23,23 @@ public partial class Map
     // through the existing live drag consequence; this records the captain's chosen method for the log/UI.
     private string? _aerobrakeArmedBodyId;
 
+    // #962 · The quote the arm was FILED with — the trade the captain actually accepted. The arrival-brake
+    // card used to re-read AerobrakeMenuQuote, which is keyed to whichever body menu is open and is therefore
+    // null the moment that menu closes; the card then spoke the null's defaults and offered to commit the
+    // ship to "0 passes (≈0 p saved)". The filed quote does not evaporate, so it is what the ask speaks.
+    private Aerobrake.Quote? _aerobrakeArmedQuote;
+
+    // The armed aerobrake's offer, but ONLY when it is a real trade (#962: at least one pass flown and at
+    // least one pulse saved — an aerobrake that saves nothing is not an offer, it is a form to sign for
+    // nothing). Null hands the arrival brake back to the propulsive path, which is what an armless — or
+    // worthless — arm should always have done.
+    private Aerobrake.Quote? ArmedAerobrakeOffer() =>
+        _aerobrakeArmedBodyId is not null
+        && _aerobrakeArmedQuote is { } armed
+        && ArrivalBrake.AerobrakeWorthOffering(armed.PassesNeeded, armed.PulsesSaved)
+            ? armed
+            : null;
+
     // ===== #305 THE DICE TRAY + the flown-pass episodes ==========================================
 
     // The dice event currently shown in the tray (null = closed). THE shared tray state seam: any
@@ -179,12 +196,15 @@ public partial class Map
         if (_aerobrakeArmedBodyId == bodyId)
         {
             _aerobrakeArmedBodyId = null;
+            _aerobrakeArmedQuote = null;
             ShowPulseMessage($"🪂 aerobrake at {body.Name} disarmed — back to a propulsive arrival");
             return;
         }
 
         Aerobrake.Quote? quoted = AerobrakeQuoteFor(body);
-        if (quoted is not { } quote || !quote.Offered)
+        if (quoted is not { } quote
+            || !quote.Offered
+            || !ArrivalBrake.AerobrakeWorthOffering(quote.PassesNeeded, quote.PulsesSaved))
         {
             ShowPulseMessage(quoted is { } refused ? Aerobrake.Refusal(body.Name, refused) : $"🪂 no aerobrake at {body.Name}");
             return;
@@ -192,6 +212,7 @@ public partial class Map
 
         SetDestination(bodyId);
         _aerobrakeArmedBodyId = bodyId;
+        _aerobrakeArmedQuote = quote; // #962: file the trade, so the arrival card speaks it and not a null
         ShowPulseMessage(Aerobrake.MenuAction(body.Name, quote));
         LogAutopilotEvent(Aerobrake.ArmStep(body.Name, quote));
         LogAutopilotEvent("🪂 " + Aerobrake.Trade(body.Name, quote));
