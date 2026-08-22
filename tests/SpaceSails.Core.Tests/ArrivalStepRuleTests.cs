@@ -20,6 +20,7 @@ namespace SpaceSails.Core.Tests;
 public class ArrivalStepRuleTests
 {
     private const double Hill = 6.0e8;   // a roomy planet-ish Hill radius; capture range floors at 3e9 anyway
+    private const double Day = 86400.0;
 
     private static ArrivalStepRule.ArrivalCheck Orbit(double distance, double relSpeed) =>
         ArrivalStepRule.Check(ArrivalStepRule.ArrivalKind.Orbit, "Mars", distance, relSpeed, Hill);
@@ -262,5 +263,72 @@ public class ArrivalStepRuleTests
         Assert.Equal(
             (3.6).ToString("F2", CultureInfo.InvariantCulture) + " M km",
             ArrivalStepRule.FormatDistance(3.6e9));
+    }
+
+    // ===== #969 — THE ARRIVAL ARMED *THEN*, NOT ONLY *NOW* =====
+    //
+    // Owner ruling 2026-08-23: "Say three burns and one autopilot to finish the trip to Mars. After that
+    // no, absolutely no steps needed if the ship is not interfered with." Two predicates carry that: which
+    // arm to make, and how long the armed autopilot must keep its hands off. They are ONE law on purpose —
+    // an arm that thought the arrival was months away while the flight thought it was now would fire
+    // approach burns straight through the captain's plan.
+
+    [Fact]
+    public void AN_ARRIVAL_IS_A_THEN_WhenThePassIsAheadAndTheShipIsNotYetNear()
+    {
+        const double near = 5.42e9;  // five Mars Hill radii — the floor-free capture range
+
+        // Three burns and nine months out: the owner's case.
+        Assert.True(ArrivalStepRule.ArrivalIsAThen(passSimTime: 292 * Day, simTime: 0, distanceNow: 1.6e11, nearRange: near));
+
+        // Already at the door — the historic NOW arm, unchanged.
+        Assert.False(ArrivalStepRule.ArrivalIsAThen(292 * Day, 0, distanceNow: 1e9, nearRange: near));
+
+        // The pass is behind us: there is no "then" left to promise.
+        Assert.False(ArrivalStepRule.ArrivalIsAThen(passSimTime: 10, simTime: 20, distanceNow: 1.6e11, nearRange: near));
+    }
+
+    [Fact]
+    public void THE_HOLD_LiftsAtThePassOrAtTheDoor_WhicheverComesFirst()
+    {
+        const double near = 5.42e9;
+
+        // Mid-cruise: armed, and correctly doing nothing.
+        Assert.True(ArrivalStepRule.ArrivalPromiseIsStillAhead(292 * Day, simTime: 100 * Day, distanceNow: 9e10, nearRange: near));
+
+        // The epoch arrives — the loop takes the ship.
+        Assert.False(ArrivalStepRule.ArrivalPromiseIsStillAhead(292 * Day, simTime: 292 * Day, distanceNow: 9e10, nearRange: near));
+
+        // …or she runs early and is honestly near the body first. The projection is only a projection, so
+        // the geometry gets the final word (this is the half that stops a hold outliving the encounter).
+        Assert.False(ArrivalStepRule.ArrivalPromiseIsStillAhead(292 * Day, simTime: 280 * Day, distanceNow: 1e9, nearRange: near));
+
+        // A NOW arm pins no epoch, so it is NEVER held: the tick after arming, the autopilot has the ship.
+        Assert.False(ArrivalStepRule.ArrivalPromiseIsStillAhead(null, simTime: 0, distanceNow: 1.6e11, nearRange: near));
+    }
+
+    [Fact]
+    public void THE_FINISHED_PLAN_ReadsTheOwnersOwnSentenceBack()
+    {
+        string line = ArrivalStepRule.PlanIsComplete(
+            burnsAhead: 3, ArrivalStepRule.ArrivalKind.Orbit, "Mars", "9 mo", chargedPulses: 3);
+
+        Assert.Contains("3 burns", line, StringComparison.Ordinal);
+        Assert.Contains("orbit Mars", line, StringComparison.Ordinal);
+        Assert.Contains("9 mo", line, StringComparison.Ordinal);
+        Assert.Contains("3 p", line, StringComparison.Ordinal);
+        Assert.Contains("nothing more needed", line, StringComparison.Ordinal);
+
+        // One burn is one burn, not "1 burns" — the plural is counted, not assumed.
+        Assert.Contains("1 burn ", ArrivalStepRule.PlanIsComplete(1, ArrivalStepRule.ArrivalKind.Dock, "The Rusty Roadstead", "3 d", 6), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void THE_ARMED_THEN_LABEL_SaysWhoFinishesTheTrip()
+    {
+        Assert.Equal("🛰 arrive Mars — the autopilot inserts",
+            ArrivalStepRule.ArmedThenLabel(ArrivalStepRule.ArrivalKind.Orbit, "Mars"));
+        Assert.Equal("⚓ arrive at The Rusty Roadstead — the autopilot docks",
+            ArrivalStepRule.ArmedThenLabel(ArrivalStepRule.ArrivalKind.Dock, "The Rusty Roadstead"));
     }
 }
