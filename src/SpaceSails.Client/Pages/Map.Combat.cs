@@ -179,7 +179,10 @@ public partial class Map
         int amount = compliance == ComplianceState.Stubborn ? 2 : 1;
         _heat = EncounterRule.RaiseHeat(_heat, amount, SimTime);
         PushNewsEvent(NewsWire.NewsEventKind.RobberyCommitted, npc.Ship.Callsign);
-        SpawnHunterForHeatEvent();
+        // #962: the hull we just took is the WRIT. This method had that name in hand and threw it away at
+        // the spawn call, which is why "why is this still hunting us" had no answer on any screen — a
+        // collector could name herself and nothing else. She carries the job now.
+        SpawnHunterForHeatEvent(npc.Ship.Callsign);
         ShowPulseMessage(compliance == ComplianceState.Stubborn
             ? "Her muscle's already inbound. Heat rising fast."
             : "Word travels. Heat rising.");
@@ -188,7 +191,7 @@ public partial class Map
     // One hunter per heat event, fitting out at the nearest policed body (Earth/Mars-like —
     // never a haven). A pure outer-reaches scenario with nothing policed in range simply sends
     // no muscle — there's no cavalry to call.
-    private void SpawnHunterForHeatEvent()
+    private void SpawnHunterForHeatEvent(string? warrant = null)
     {
         if (_ephemeris is null)
         {
@@ -207,7 +210,7 @@ public partial class Map
 
         string callsign = HunterCallsigns[_hunterSeq % HunterCallsigns.Length];
         string id = $"hunter-{_hunterSeq++}";
-        _hunters.Add(EncounterRule.SpawnHunter(id, callsign, origin.Id, originPosition, originVelocity, SimTime));
+        _hunters.Add(EncounterRule.SpawnHunter(id, callsign, origin.Id, originPosition, originVelocity, SimTime, warrant));
         PushNewsEvent(NewsWire.NewsEventKind.HunterDispatched, callsign, origin.Name);
         // #380 item 5 (owner ruling 2026-07-19: "new players are left mystified") — the robbery bought
         // this hunter, but the fit-out delay meant muscle appeared days later with no causal link. This
@@ -593,8 +596,25 @@ public partial class Map
         }
     }
 
+    private static readonly RgbaColor DriverReachColor = new(120, 210, 255, 170);
+
+    /// <summary>
+    /// #962 · TWO CIRCLES, BOTH LABELLED, SO THE CAPTAIN KNOWS WHEN TO REACT. Owner: <i>"The debt collector
+    /// catch distance / speed distance is not shown on the maps in any way. We don't know how much we should
+    /// react and when visually now."</i>
+    ///
+    /// <para>Her CATCH ENVELOPE rides with her; our DRIVER REACH rides with us; and after #961's ruling the
+    /// second is always the larger of the two, which is the fact the picture has to make obvious — the moment
+    /// she crosses our ring we can answer, and she cannot lay a hand on us until she crosses hers. The catch
+    /// ring was already drawn, unlabelled, which the war room's own Gemini playtest had already flagged once
+    /// on a different circle: <i>"unlabeled ring — is it weapon range?"</i></para>
+    ///
+    /// <para>Our reach ring is drawn only while a collector is actually on the map — a permanent circle round
+    /// the ship would be furniture, and this is meant to be read.</para>
+    /// </summary>
     private void DrawHunters()
     {
+        bool anyOnTheMap = false;
         foreach (HunterState hunter in _hunters)
         {
             (float sx, float sy) = _camera.WorldToScreen(hunter.State.Position);
@@ -602,11 +622,33 @@ public partial class Map
             _renderer!.DrawText(sx + 8, sy - 6, $"🐺 {hunter.Callsign}", HunterColor);
 
             double distance = (hunter.State.Position - _ship.Position).Length;
-            if (distance <= EncounterRule.WeaponRangeMeters * 3)
+            if (distance > EncounterRule.WeaponRangeMeters * 3)
             {
-                float ringPx = (float)Math.Clamp(EncounterRule.CatchRadiusMeters / _camera.MetersPerPixel, 4, 200);
-                _renderer!.DrawCircle(sx, sy, ringPx, null, HunterColor, 1.5f);
+                continue;
             }
+
+            anyOnTheMap = true;
+            float catchPx = (float)Math.Clamp(EncounterRule.CatchRadiusMeters / _camera.MetersPerPixel, 4, 200);
+            _renderer!.DrawCircle(sx, sy, catchPx, null, HunterColor, 1.5f);
+            if (catchPx > 22)
+            {
+                _renderer!.DrawText(sx, sy - catchPx - 4, $"catch {FormatDistance(EncounterRule.CatchRadiusMeters)}",
+                    HunterColor, "10px monospace", TextAlign.Center);
+            }
+        }
+
+        if (!anyOnTheMap)
+        {
+            return;
+        }
+
+        (float px, float py) = _camera.WorldToScreen(_ship.Position);
+        float reachPx = (float)Math.Clamp(EncounterRule.WeaponRangeMeters / _camera.MetersPerPixel, 4, 600);
+        _renderer!.DrawCircle(px, py, reachPx, null, DriverReachColor, 1.2f);
+        if (reachPx > 26)
+        {
+            _renderer!.DrawText(px, py - reachPx - 4, $"driver reach {FormatDistance(EncounterRule.WeaponRangeMeters)}",
+                DriverReachColor, "10px monospace", TextAlign.Center);
         }
     }
 
@@ -710,7 +752,11 @@ public partial class Map
         var hunters = new List<SpaceSails.Client.Pages.Stations.WarRoom.HunterContact>(_hunters.Count);
         foreach (HunterState hunter in _hunters)
         {
-            hunters.Add(new SpaceSails.Client.Pages.Stations.WarRoom.HunterContact(hunter.Id, hunter.Callsign, hunter.State));
+            // #962: the war room states the same terms the dossier does, off the same Core sentences —
+            // it is the other desk a captain is staring at while a collector closes.
+            HuntTerms terms = TermsOfTheHunt(hunter);
+            hunters.Add(new SpaceSails.Client.Pages.Stations.WarRoom.HunterContact(
+                hunter.Id, hunter.Callsign, hunter.State, terms.Warrant, terms.Hiding, terms.Nerve));
         }
 
         return hunters;

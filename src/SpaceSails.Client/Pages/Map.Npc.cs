@@ -392,7 +392,15 @@ public partial class Map
         string Name, string Detail, string StatusLine,
         double Distance, double RelSpeed, double Closing,
         double? TrackQuality, bool InDriverReach, string FireLine,
-        bool IsPrey, int BoardReady);
+        bool IsPrey, int BoardReady,
+        // #962: a hunter's card carries the terms of her contract — who bought it and what ends it, with
+        // the clocks running. Null on traffic, which has no contract to state.
+        HuntTerms? Terms = null);
+
+    /// <summary>What the collector's own card says about how this ends. Every sentence is built in Core,
+    /// beside the rule it describes, so a card and a sim can never quote different numbers at each other
+    /// (#962, and this repo's fifth named bug class).</summary>
+    private readonly record struct HuntTerms(string Warrant, string Hiding, string Nerve, string Sail);
 
     private DossierInfo? DossierFor(string id)
     {
@@ -400,6 +408,7 @@ public partial class Map
         string name, detail;
         string statusLine;
         bool isPrey = false;
+        HuntTerms? terms = null;
         if (FindNpc(id) is { Active: true, Arrived: false } npc)
         {
             isPrey = true;
@@ -439,6 +448,7 @@ public partial class Map
             position = h.State.Position;
             velocity = h.State.Velocity;
             statusLine = h.BrokenOff ? "broke off the hunt" : "⚠ hunting US";
+            terms = TermsOfTheHunt(h);
         }
 
         double distance = (position - _ship.Position).Length;
@@ -452,11 +462,15 @@ public partial class Map
             quality = track.EffectiveQuality(SimTime);
         }
 
-        // The driver's practical reach: max charge times the longest aim lead the gun deck offers.
-        double reach = MaxMuzzleSpeed * 86400;
+        // #962 · ONE REACH, AND IT IS THE ONE THE SIM ENFORCES. This line used to quote muzzle × one day
+        // (691,200 km) while EncounterRule.InWeaponRange gated every warning shot at 200,000 km — a card
+        // and a sim disagreeing by three and a half times, on the card the owner had open while he asked
+        // what was happening. Both read EncounterRule.WeaponRangeMeters now, and #961's faster driver is
+        // what makes that one number cover her catch envelope at last.
+        double reach = EncounterRule.WeaponRangeMeters;
         bool inReach = distance <= reach;
         string fireLine = inReach
-            ? "🎖 inside the driver's reach — a firing solution is on the table (war room)"
+            ? $"🎖 inside the driver's reach ({FormatDistance(reach)}) — a firing solution is on the table (war room)"
             : $"driver reach ≈ {FormatDistance(reach)} — close {FormatDistance(distance - reach)} more for a firing solution";
 
         // The HONEST autosteal criteria (owner: "the box should say the requirements — close enough
@@ -472,7 +486,33 @@ public partial class Map
             boardReady = within && slow ? 2 : within ? 1 : 0;
         }
 
-        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady);
+        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, terms);
+    }
+
+    /// <summary>
+    /// #962 · WHAT ENDS THIS HUNT, WITH THE CLOCKS RUNNING. Owner, docked at a haven with the heat gauge
+    /// reading zero and a collector still inbound: <i>"So we have zero heat and are docked at haven … why is
+    /// this still hunting us?"</i>
+    ///
+    /// <para>The rules that answer him were all in EncounterRule already, and not one of them was ever said
+    /// to his face. The contract is bought ONCE — by a robbery, over a named hull — and it does not care what
+    /// the heat gauge does afterwards; that is the whole answer to "zero heat, why?". Hiding two unbroken
+    /// days at a haven is what makes her lose the scent, and his clock WAS running, he just could not see it.
+    /// Warning shots erode her nerve until she voids the contract. A holed sail ends it outright.</para>
+    ///
+    /// <para>Every sentence is composed in Core beside the rule it describes, so the card cannot drift from
+    /// the sim. All this method does is hand Core the two live numbers only the page can know: whether the
+    /// haven clock is running, and how long it has run.</para>
+    /// </summary>
+    private HuntTerms TermsOfTheHunt(HunterState hunter)
+    {
+        bool hidingNow = !double.IsNaN(_hiddenAtHavenSinceSimTime);
+        double hiddenFor = hidingNow ? Math.Max(0, SimTime - _hiddenAtHavenSinceSimTime) : 0;
+        return new HuntTerms(
+            EncounterRule.WarrantLine(hunter),
+            EncounterRule.HidingTerm(hiddenFor, hidingNow),
+            EncounterRule.NerveTerm(hunter, _heat.Level),
+            EncounterRule.SailTerm);
     }
 
     // ---- M5: traffic, sensors, prediction ----

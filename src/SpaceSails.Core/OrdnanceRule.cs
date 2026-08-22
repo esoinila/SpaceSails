@@ -24,13 +24,38 @@ public sealed record OrdnanceRound(
 
 public static class OrdnanceRule
 {
+    /// <summary>
+    /// #961 · THE GUN IS THE LENGTH OF THE SHIP. Owner: <i>"Our shots should behave more like that famous
+    /// nuclear test man hole cover that flew into space … Suppose we trigger some kind of fusion pellet
+    /// behind the projectile and it is a kind of miniature manhole cover. Let's make our bullet little less
+    /// slow. Our gun could be the length of the whole ship so there is time to accelerate."</i>
+    ///
+    /// <para>Taken literally, because his reference is a real measurement. The cover is Pascal-B (Operation
+    /// Plumbbob, 27 August 1957): a four-inch steel plate capping a test shaft, driven off by the blast
+    /// beneath it and caught on exactly ONE frame of a camera running at 1,000 fps — which puts it at no
+    /// less than ~66 km/s, six times Earth escape velocity. It was never found.</para>
+    ///
+    /// <para>So the driver throws at 66 km/s, and the barrel is the ship's own spine — call it 150 m, with
+    /// fusion pellets firing in sequence behind the sabot. The gradient that implies is
+    /// a = v²/2L = (6.6·10⁴)² / 300 ≈ 1.5·10⁷ m/s², about 1.5 million g, held for 4.5 ms in the tube. A
+    /// solid slug takes that; nothing with a crew inside it could, which is exactly why the driver throws
+    /// rocks and the boarding shuttles have to fly themselves across.</para>
+    ///
+    /// <para>The 8 km/s this replaced made a shot to the far edge of the boarding envelope a SEVENTEEN HOUR
+    /// flight, which is the whole of the owner's other complaint (#962): <i>"It is like being outside of
+    /// bullets range but still getting lassoed."</i> At 66 km/s the same shot lands in a little over two
+    /// hours, and <see cref="EncounterRule.WeaponRangeMeters"/> — derived from this number — finally covers
+    /// every envelope a collector can lay hands on us inside.</para>
+    /// </summary>
+    public const double MassDriverMuzzleSpeedMps = 66_000;
+
     /// <summary>A slug evaporates this long after launch — the self-cleaning sky. Two days,
     /// not six hours: there is no drag, and the owner's ruling (2026-07-05) is that a long
     /// ballistic shot is a legitimate action, so the slug's leash is gameplay cleanup only.</summary>
     public const double SlugLifetimeSeconds = 48 * 3600;
 
-    /// <summary>The missile is the CROSS-SYSTEM round: consumables sized for SEASONS, because
-    /// an 8 km/s muzzle doesn't beat orbital mechanics — an inner-system transfer takes months
+    /// <summary>The missile is the CROSS-SYSTEM round: consumables sized for SEASONS, because even a
+    /// 66 km/s muzzle doesn't beat orbital mechanics — an inner-system transfer takes months
     /// (Earth→Venus Hohmann ≈ 146 d), and the missile's whole point is minimal guidance for
     /// small course tunings at the far end of such a shot. Its ΔV budget stays tiny — this
     /// extends patience, not agility.</summary>
