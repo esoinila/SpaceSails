@@ -141,7 +141,7 @@ public partial class Map
     // enum is the single source of truth for "which editor is open" (docs/WednesdayPlan/GeminiUINotes.md
     // "selection single-source-of-truth"); for a burn, the identity of the open node is _selectedPlanNode,
     // which a ribbon-node click and a list click both resolve to — map and list are two views of one plan.
-    private enum FlightEditorKind { None, Burn, Sling, Skim, Insertion }
+    private enum FlightEditorKind { None, Burn, Sling, Skim, Insertion, Arrive }
     private FlightEditorKind _openEditor = FlightEditorKind.None;
 
     // PR-G · the sling — the plotting-desk panel that bends the track off a close planetary pass

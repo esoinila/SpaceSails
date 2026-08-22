@@ -551,6 +551,14 @@
        label ("365d 23h 59m"). max-width still clamps it to the viewport on a phone (#253). */
     width: 38rem;
     max-width: 100%;
+    /* #950 — "UI at scrub planning is clipped from below … I cannot remove the insertion step." The panel
+       is an in-flow block under the pilot banner and simply grew past the bottom of the window, taking its
+       last controls with it. Cap it to what is left of the viewport and let it scroll: no control the
+       captain needs may live below the fold. The step list keeps its own inner scroll (.map-plot-nodes) so
+       a long plan still pages inside a panel whose head and compose row stay put. */
+    max-height: calc(100vh - 14rem);
+    min-height: 12rem;
+    overflow-y: auto;
 }
 
 .map-plot-nodes {
@@ -954,6 +962,20 @@
 
 .map-plan-step-active {
     animation: pilot-banner-pulse 1.8s ease-in-out infinite;
+}
+
+/* #952 · the arrive step's INVALID state — the plan does not end safely. Red pip and a red "why" line
+   under the row, carrying the numbers (distance and relative speed against the real thresholds). Not a
+   FlightStepState: "stale" means struck out and will not fire, which is a different and softer thing than
+   "this plan ends nowhere". */
+.map-plan-step-invalid .map-plan-step-pip {
+    background: #ff6b6b;
+    box-shadow: 0 0 6px rgba(255, 107, 107, 0.7);
+}
+
+.map-arrive-why {
+    margin-left: 1.25rem;
+    line-height: 1.25;
 }
 
 /* PR-D2 · the flight-plan accordion. Each step is a glanceable clickable line; opening it reveals its
