@@ -201,6 +201,37 @@ public partial class Map
         /// </summary>
         bool WalkTheVisitorOut(SurfaceExcursion ex, int tableIndex);
 
+        /// <summary>
+        /// #731 v2 · …AND THE THIRD THING A WALK CAN MEAN: <b>follow me.</b>
+        ///
+        /// <para>Owner, 2026-08-06, on #751's cabinets: <i>"Also it is dramatic telling when our contact
+        /// wants us to follow them into kabinetti :-D"</i> She stands up in the middle of what she was
+        /// saying, crosses the loud hall on the captain's own lattice, and stops in the opening of a free
+        /// booth looking back at you. <b>Nothing is said about it</b> — the walk is the telling, and whether
+        /// the scene resumes is the captain's legs' business.</para>
+        ///
+        /// <para><b>THE RATCHET MOVED 30 → 31, AND THIS IS THE ARGUMENT.</b> Everything else this beat needs
+        /// the chair already has: whether she is waiting (<c>Surface.EscortCabinetTop</c>), what was said to
+        /// her (<c>Surface.EscortSaid</c>) and taking her off the floor when you sit down
+        /// (<c>Surface.Walkers</c>) are all reachable through <see cref="Surface"/>, and the seat does all
+        /// three itself. What a chair cannot do is PLAN A WALK — that wants the deck's collision field, the
+        /// building's own booths and the frame that steps bodies, none of which a seat has any business
+        /// holding. So this is ONE member, in the same shape as its two neighbours: an ANSWER (could she be
+        /// walked), never the machinery under it. The alternative was handing a chair a lattice.</para>
+        ///
+        /// <para><b>False means she stays</b> — no booth on this floor, none free, no way through, or this
+        /// contact simply is not one who does it — and the scene carries on at the table it is already at,
+        /// which is what it has always done. A refusal here is never a reason to move a conversation into a
+        /// room nobody walked to.</para>
+        /// </summary>
+        /// <param name="scene">Her scene, so Core can ask whether there is anything in it worth a private
+        /// room (<c>Escort.TheDealMoveIn</c>) — the answer comes off the table scene's own state and never
+        /// off a register kept beside it.</param>
+        /// <param name="said">What has been said to her so far, parked for the length of the walk and handed
+        /// back at the new table. That is what makes the deal move at the cabinet the SAME deal move.</param>
+        bool WalkTheVisitorIntoACabinet(
+            SurfaceExcursion ex, int tableIndex, Encounter.Scene scene, IReadOnlySet<string> said);
+
         // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
         //
         // #693's rule: a scene nobody can reach on demand is a scene that ships broken. Four of these are the

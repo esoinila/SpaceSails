@@ -274,6 +274,23 @@ public sealed class NpcWalk
     }
 
     /// <summary>
+    /// #731 v2 · SHE HAS GOT THERE, AND SHE IS LOOKING BACK AT YOU.
+    ///
+    /// <para>The wait-and-look is already law three's own posture — a walker blocked in a doorway turns and
+    /// faces the captain, because being looked at is the content — and the escort beat needs the same posture
+    /// for the opposite reason: she is not waiting for you to get out of the way, she is waiting for you to
+    /// come. <i>"It is dramatic telling when our contact wants us to follow them into kabinetti."</i> A body
+    /// standing in a doorway looking back across a loud hall at you says the whole thing, and no line has
+    /// to.</para>
+    ///
+    /// <para>The ONLY writer of <see cref="Facing"/> outside a step, and it is deliberately not a step: it
+    /// moves nothing, spends no budget, asks the stone nothing and cannot change <see cref="State"/>. A walk
+    /// that has <see cref="Doing.Arrived"/> is over; what its body does with its head afterwards is the
+    /// caller's beat and not the route's.</para>
+    /// </summary>
+    public void LookTowards(double x, double y) => Facing = Math.Atan2(y - Y, x - X);
+
+    /// <summary>
     /// One frame of somebody walking away, or somebody walking in.
     ///
     /// <para>The shape is the guard's stride and the captain's click-walk, because it is the same shape:

@@ -804,6 +804,49 @@ public partial class Map
         public long WalkersWatch { get; set; } = long.MinValue;
         public int WalkersFloor { get; set; } = int.MinValue;
 
+        // ── #731 v2 · SOMEBODY IS HOLDING A CABINET DOOR OPEN FOR YOU ─────────────────────────────────
+        //
+        // Owner, 2026-08-06, on #751's cabinets: "Also it is dramatic telling when our contact wants us to
+        // follow them into kabinetti :-D"
+        //
+        // The scene she was in is over at YOUR table and has not begun at hers: she is on her feet, crossing
+        // the hall, and whether it resumes is the captain's legs' business. So the conversation has to be put
+        // down somewhere for the length of a walk, and this is that somewhere — six facts, all of them the
+        // minimum needed to pick the same conversation back up in a different room.
+        //
+        // EXCURSION-SCOPED and cleared by the shift turning over, exactly as the walkers beside them are: a
+        // captain who rides up and comes back down walks into a hall whose evening is being dealt fresh, and
+        // a woman waiting at a door for a conversation nobody remembers is a bug with a face on it.
+        //
+        // Deliberately NOT on the walker. The walker is a body crossing a floor and knows nothing about bars
+        // or quests (that is NpcWalk's own first law); what a particular walk MEANS is this side's business,
+        // and the conversation must outlive the walk by exactly one frame — the frame the captain sits down.
+
+        // Which top she is holding the door of, or −1 when nobody is. A CABINET's top, by Core's own ordinal.
+        public int EscortCabinetTop { get; set; } = -1;
+
+        // …and which cabinet that is, as the plate beside its door reads — for #758's stage, which is hers to
+        // decide (CabinetPrivacy.EscortsStage) and not the captain's.
+        public int EscortCabinet { get; set; }
+
+        // The top she got up FROM, so her provenance door is still the one Egress dealt her out of when she
+        // gives up waiting and leaves through it.
+        public int EscortFromTable { get; set; } = -1;
+
+        // Her plate, as the hall knows her. Carried rather than assumed, because the day a second contact
+        // does this the resumed panel must say the right name over the right face.
+        public string EscortWho { get; set; } = "";
+
+        // WHAT HAS ALREADY BEEN SAID TO HER. The sitting's own memory (TableTalk.Said), put down for the
+        // length of the walk and handed back at the new table — which is what makes the deal move she stood
+        // up before making the SAME deal move when you sit down opposite her again.
+        public HashSet<string> EscortSaid { get; } = [];
+
+        // When she stood up, in surface seconds. Escort.PatienceSeconds is measured from here: a captain who
+        // never follows is answered by her going, through a door that does not open for them (#731 v1's
+        // triggered departure), and never by a statue in a doorway for the rest of the shift.
+        public double EscortSince { get; set; } = double.NaN;
+
         // ── #746 · WHAT HAS HAPPENED AT WHICH TABLE, THIS WATCH ───────────────────────────────────────
         //
         // Owner, 2026-08-06: "asking to sit is missing... offer-a-drink needs to matter."

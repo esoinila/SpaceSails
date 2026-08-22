@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -323,11 +324,28 @@ public sealed class TheSeatKeepsItsOwnStateTests
     /// a collision field is. The seat could not own them — a route is planned over the deck the PAGE holds
     /// and stepped in the page's own frame — and the alternative was handing the chair the deck plan, which
     /// is the trade this ratchet exists to refuse.</para>
+    ///
+    /// <para><b>#731 v2 · 30 → 31, and the lane that argued for it.</b> Owner, 2026-08-06, on #751's
+    /// cabinets: <i>"Also it is dramatic telling when our contact wants us to follow them into kabinetti
+    /// :-D"</i> The third thing a walk can mean is <b>follow me</b>, and the member is
+    /// <c>WalkTheVisitorIntoACabinet</c>.</para>
+    ///
+    /// <para>It is the same shape as its two neighbours — a <c>bool</c> meaning <i>she could be walked</i> —
+    /// and it is ONE member rather than four. Everything else that beat needs, the chair does itself through
+    /// <see cref="Map.ISeatHost.Surface"/>: whether somebody is holding a door open, what was already said to
+    /// her, and taking her off the floor when the captain sits down are all facts on the excursion. What a
+    /// chair cannot do is PLAN A WALK, which wants the deck's collision field, the building's own booths and
+    /// the frame that steps bodies. The alternative was handing a chair a lattice.</para>
+    ///
+    /// <para><b>AND THIS ROW DID NOT NOTICE IT AT FIRST.</b> The member's signature wraps, and
+    /// <see cref="HostMembers"/> read the file a LINE at a time into two anchored regexes — so the count
+    /// stayed at 30 while a thirty-first member sat on the interface. See
+    /// <see cref="DeclarationsIn"/>.</para>
     /// </summary>
     [Fact]
     public void TheSeatNeedsExactlyThisManyThingsFromThePage()
     {
-        const int TheRatchet = 30;
+        const int TheRatchet = 31;
 
         List<string> members = HostMembers();
 
@@ -477,14 +495,8 @@ public sealed class TheSeatKeepsItsOwnStateTests
     {
         var found = new List<string>();
         string path = Path.Combine(ClientRoot, TheHostFile.Replace('/', Path.DirectorySeparatorChar));
-        foreach (string raw in File.ReadAllLines(path))
+        foreach (string line in DeclarationsIn(path))
         {
-            string line = raw.Trim();
-            if (line.Length == 0 || line.StartsWith("//", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
             Match verb = Regex.Match(line, @"^[\w?<>,.\[\]]+(?:\s+[\w?<>,.\[\]]+)*\s+(\w+)\(.*\);$");
             if (verb.Success)
             {
@@ -499,6 +511,43 @@ public sealed class TheSeatKeepsItsOwnStateTests
             }
         }
         return found;
+    }
+
+    /// <summary>
+    /// #731 v2 · THE DECLARATIONS IN A FILE, ONE PER LINE — however many lines the author spread them over.
+    ///
+    /// <para>This used to be <c>File.ReadAllLines</c> straight into the two regexes above, and both of those
+    /// are anchored (<c>^…;$</c>), so <b>a member whose signature wrapped was invisible to the ratchet.</b>
+    /// #731 v2 added one that did — four parameters, past the line length this repo writes to — and the
+    /// count did not move: a guard whose whole job is to notice a member arriving, silently not noticing
+    /// one. That is this repository's fifth named bug class (a world that cannot tell pass from fail) with a
+    /// ratchet on it, and it was found by adding a member ON PURPOSE and watching the number stay still.</para>
+    ///
+    /// <para>So comments and blanks are dropped and everything else is glued together until it TERMINATES —
+    /// at a semicolon, at a brace-closed accessor list, or at an opening brace (a type or a block, which is
+    /// not a member and simply flushes). The regexes are unchanged; they are now given whole
+    /// declarations.</para>
+    /// </summary>
+    private static IEnumerable<string> DeclarationsIn(string path)
+    {
+        var buffer = new StringBuilder();
+        foreach (string raw in File.ReadAllLines(path))
+        {
+            string line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("//", StringComparison.Ordinal)
+                || line.StartsWith("*", StringComparison.Ordinal)
+                || line.StartsWith("/*", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            buffer.Append(buffer.Length > 0 ? " " : "").Append(line);
+            if (line.EndsWith(';') || line.EndsWith('}') || line.EndsWith('{'))
+            {
+                yield return buffer.ToString();
+                buffer.Clear();
+            }
+        }
     }
 
     /// <summary>Every field the PAGE keeps, by name, read off every client partial that is not the seat's
