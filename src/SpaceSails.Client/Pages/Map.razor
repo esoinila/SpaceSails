@@ -5130,22 +5130,11 @@
                             Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
                             @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
                         </div>
-                        @if (_armablePass is { } ap && PassIsOrbitable(ap) is { } est)
-                        {
-                            <div class="small mb-1">
-                                <button type="button" class="btn btn-sm py-0 @(_armedOrbitBodyId == ap.BodyId ? "btn-success" : "btn-outline-info")"
-                                        title="Arm the autopilot to insert into orbit at this pass"
-                                        @onclick="() => ToggleArmedInsertion(ap.BodyId)">
-                                    🛰 @(_armedOrbitBodyId == ap.BodyId
-                                        ? $"Insertion ARMED — will orbit {ap.BodyName} (≈{est} p)"
-                                        : $"Insert at {ap.BodyName} pass — {FormatDistance(ap.Distance)} (≈{est} p)")
-                                </button>
-                            </div>
-                        }
-                    }
-                    else if (_armedOrbitBodyId is not null)
-                    {
-                        <div class="small mb-1 text-info">🛰 Insertion armed: @_armedOrbitBodyId</div>
+                        @* #950/#952: the old "✈ Insert at X pass" chip stood HERE, above the plan, and armed
+                           whatever body happened to be nearest — which, parked at Earth, offered to orbit
+                           EARTH while the captain was plotting Mars. It is gone. The arrival is now a STEP at
+                           the end of the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md PR-D1), added
+                           by the compose buttons below and armed from inside its own row. One fact, one UI. *@
                     }
                 </div>
                 @* PR-D2 · the flight plan OWNS the step editors (docs/WednesdayPlan/UnifiedNavListNotes.md,
@@ -5195,6 +5184,25 @@
                     {
                         <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Skim ? "btn-danger" : "btn-outline-danger")"
                                 title="Open the skim solver for this atmosphere pass" @onclick="ToggleSkimPanel">🔥 Add skim @kp.BodyName</button>
+                    }
+                    @* #952/#955 THE CHERRY ON TOP — the plan can finally END somewhere. The owner: "the cherry
+                       on top of the cake is missing when I cannot add the step to the end of the plan to orbit
+                       Mars here. It feels incomplete." These sit beside "+ Add burn at scrub" because that is
+                       where he looked for them, and each NAMES the body it would add so the step is never a
+                       surprise (#950). An arrival that does not currently work is still addable — its row says
+                       in numbers how far the course is from ending safely, and the ±p / ±d / ±h buttons are how
+                       the captain closes the gap. *@
+                    @if (ArriveCandidate(ArrivalStepRule.ArrivalKind.Orbit) is not null)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Arrive && _arrive?.Kind == ArrivalStepRule.ArrivalKind.Orbit ? "btn-info" : "btn-outline-info")"
+                                title="End the plan here: insert into orbit at the pass nearest the scrub"
+                                @onclick="() => AddArriveAtScrub(ArrivalStepRule.ArrivalKind.Orbit)">@ArriveButtonLabel(ArrivalStepRule.ArrivalKind.Orbit)</button>
+                    }
+                    @if (ArriveCandidate(ArrivalStepRule.ArrivalKind.Dock) is not null)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Arrive && _arrive?.Kind == ArrivalStepRule.ArrivalKind.Dock ? "btn-warning" : "btn-outline-warning")"
+                                title="End the plan here: coast into the dock envelope and clamp on at the haven nearest the scrub"
+                                @onclick="() => AddArriveAtScrub(ArrivalStepRule.ArrivalKind.Dock)">@ArriveButtonLabel(ArrivalStepRule.ArrivalKind.Dock)</button>
                     }
                     <span class="ms-auto text-nowrap">Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
                 </div>
@@ -5292,9 +5300,9 @@
                     </button>
                 }
 
-                @if (_planNodes.Count == 0 && _armedOrbitBodyId is null)
+                @if (_planNodes.Count == 0 && _armedOrbitBodyId is null && _arrive is null)
                 {
-                    <div class="text-secondary">No maneuver nodes. Scrub to a future time and add a burn.</div>
+                    <div class="text-secondary">No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.</div>
                 }
                 else
                 {
@@ -5457,11 +5465,31 @@
                                 }
                             </div>
                         }
+                        @* #957 — THE AUTOPILOT'S OWN BURNS ARE STEPS. Owner, after it finally accepted the
+                           Roadstead: "it accepted the autopilot but it does [not] add it as navigation step to
+                           the list." The armed transfer schedule (the #146 in-well arc, and the braking step
+                           laid instead of a refusal) fires impulses at fixed epochs; before this they had no
+                           list presence at all, so part of the plan the ship was flying was invisible. Read
+                           only — the autopilot owns them; disarming is how you take them back. *@
+                        @foreach (TransferPlanner.BurnStep _sched in ScheduledAutopilotBurns())
+                        {
+                            <div class="mb-1 map-plan-step map-plan-step-armed">
+                                <div class="map-plan-step-line" title="The autopilot fires this burn itself, at its own epoch — disarm the arrival to take it back">
+                                    <span class="map-plan-step-pip" title="Armed" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">·</span>
+                                    <span class="flex-grow-1">@ScheduledBurnGlanceLine(_sched)</span>
+                                    <span class="text-secondary small text-nowrap">@FormatSimTime(_sched.SimTime)</span>
+                                    <span class="badge bg-secondary">AUTOPILOT</span>
+                                </div>
+                            </div>
+                        }
                         @* PR-D2: armed auto-orbit is the terminal step. Collapsed it names the body + state
                            (ARMED → ACTIVE while the autopilot flies the approach); expanded it gains its own
                            disarm control, so the insertion's button lives in its step like every other. The
-                           docked-guard (NavLockedByDock) still gates arming/disarming. *@
-                        @if (_armedOrbitBodyId is not null)
+                           docked-guard (NavLockedByDock) still gates arming/disarming. #952: when the ARRIVE
+                           step below names the same body, that row IS this fact (with the pass and the ✓/✗
+                           bit on it) — so this one stands down rather than say it twice. *@
+                        @if (_armedOrbitBodyId is not null && !ArriveCoversArmed)
                         {
                             string _armedId = _armedOrbitBodyId;
                             FlightStepState _is = FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach);
@@ -5502,12 +5530,100 @@
                                 @if (_insOpen)
                                 {
                                     <div class="map-plan-step-edit">
-                                        <button type="button" class="btn btn-sm btn-outline-warning w-100"
+                                        @* #950 ROOT CAUSE — "the disarm auto-insertion button does nothing here."
+                                           It was doing exactly what #179 asks: the FIRST click only arms a
+                                           four-second confirm and says so in a pulse toast. On a Nav panel
+                                           clipped from below the toast was never seen and the button's own face
+                                           never changed, so a correct double-confirm read as a dead control.
+                                           The orbit panel already showed the pending state on the button
+                                           (Map.razor "Disarm? click again"); this row now does the same, and
+                                           says it IN the step's sub-panel where the finger already is. *@
+                                        <button type="button" class="btn btn-sm w-100 @(_disarmConfirmBodyId == _armedId ? "btn-warning" : "btn-outline-warning")"
                                                 disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : "Stand the autopilot down and fly the ship by hand")"
                                                 @onclick="() => ToggleArmedInsertion(_armedId)">
-                                            🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : HarborClassOf(_armedId) == HarborClass.Dock ? "Disarm the dock approach to" : "Disarm auto-orbit at") @BodyName(_armedId)
+                                            @if (_disarmConfirmBodyId == _armedId)
+                                            {
+                                                <text>🛰 Click again to confirm — @(_orbitKept ? "hand the ship back from" : "disarm at") @BodyName(_armedId)</text>
+                                            }
+                                            else
+                                            {
+                                                <text>🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : HarborClassOf(_armedId) == HarborClass.Dock ? "Disarm the dock approach to" : "Disarm auto-orbit at") @BodyName(_armedId)</text>
+                                            }
                                         </button>
                                         <div class="text-secondary small mt-1">@(_orbitKept ? "The autopilot is HOLDING this orbit with trims. Release it and you fly by hand — it takes a confirming second click (#179)." : $"Target: {BodyName(_armedId)} — set from the navigation-target panel below; disarm here, then arm a different body.")</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        @* #952/#955 — THE ARRIVE STEP. The plan's last row, and the owner's "cherry on top":
+                           visually identical to the burn rows above it (pip · caret · glance line · time),
+                           with the valid/invalid bit as a badge and, when it is ✗, the whole sentence in
+                           numbers underneath. PR-D1 of UnifiedNavListNotes.md: the sub-panel of a step is
+                           WHERE the related buttons live, so Arm / Disarm / scrub-to-it / remove are all
+                           inside this row and nowhere else. *@
+                        @if (_arrive is { } _ar)
+                        {
+                            ArrivalStepRule.ArrivalCheck? _ac = ArriveCheck();
+                            bool _avalid = _ac?.Valid ?? false;
+                            bool _aarmed = ArriveCoversArmed;
+                            bool _aactive = _aarmed && AutopilotFlyingApproach;
+                            bool _aopen = _openEditor == FlightEditorKind.Arrive;
+                            string _astate = _aarmed ? (_aactive ? "active" : "armed") : "planned";
+                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_aopen ? "collapse" : "manage") the arrival that ends this plan"
+                                     @onclick="ToggleArriveEditor">
+                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : "does NOT end safely")" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_aopen ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">@ArriveGlanceLine(_ar)</span>
+                                    @if (ArrivePassFor(_ar.BodyId) is { } _ap2)
+                                    {
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
+                                    }
+                                    <span class="badge @(_avalid ? "bg-success" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "…") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : "INVALID")</span>
+                                </div>
+                                @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
+                                   speed against the real thresholds (Core ArrivalStepRule reads them off
+                                   OrbitRule / DockRule, so the sentence and the sim cannot disagree). *@
+                                @if (_ac is { } _acx && !_acx.Valid)
+                                {
+                                    <div class="map-arrive-why text-danger small">@ArrivalStepRule.Verdict(_acx)</div>
+                                }
+                                @if (_aopen)
+                                {
+                                    <div class="map-plan-step-edit">
+                                        @if (_ac is { } _ace)
+                                        {
+                                            <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
+                                        }
+                                        <button type="button" class="btn btn-sm w-100 mb-1 @(_aarmed ? (_disarmConfirmBodyId == _ar.BodyId ? "btn-warning" : "btn-outline-warning") : _avalid ? "btn-success" : "btn-outline-secondary")"
+                                                disabled="@NavLockedByDock"
+                                                title="@(NavLockedByDock ? DockNavLockTip : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
+                                                @onclick="ArmArriveStep">
+                                            @if (_aarmed && _disarmConfirmBodyId == _ar.BodyId)
+                                            {
+                                                <text>🛰 Click again to confirm — disarm at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else if (_aarmed)
+                                            {
+                                                <text>🛰 Disarm the arrival at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else
+                                            {
+                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId)</text>
+                                            }
+                                        </button>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-info flex-grow-1"
+                                                    title="Jump the scrub clock to this arrival's own pass" @onclick="ScrubToArrive">scrub to it</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    title="Take the arrival off the end of the plan" @onclick="RemoveArriveStep">✖ remove</button>
+                                        </div>
+                                        <div class="text-secondary small mt-1">
+                                            The plan ends here. @(_avalid
+                                                ? "Arm it and the ship finishes the trip by itself."
+                                                : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
+                                        </div>
                                     </div>
                                 }
                             </div>
@@ -5607,6 +5723,27 @@
                     }
                 </div>
             }
+        </div>
+    }
+
+    @* #952 — THE WAKE-UP CALL. Owner: "if we ruin it mid flight it would say so in the list and as a
+       pop-up that we no longer have safely ending flight plan but will need input at some point. That
+       nobody is flying the ship moment is important — say our pirate captain is asleep, there needs to be
+       a visual wake-up call about the ship going off the plan." Fires ONCE on the valid → invalid
+       transition (ArrivalStepRule.ShouldWarn owns that law and is unit-tested), never frame after frame,
+       and re-arms only by the plan ending safely again. It reuses the rescue offer's modal shell so it
+       lands in the established modal z-band rather than inventing another one. *@
+    @if (_arriveAlarm is { } _planBreak && !_arriveAlarmDismissed)
+    {
+        <div class="rescue-backdrop" @onclick="DismissArriveAlarm">
+            <div class="rescue-card" @onclick:stopPropagation="true">
+                <div class="rescue-hail">⚠ THE FLIGHT PLAN NO LONGER ENDS SAFELY</div>
+                <div class="rescue-quote">"She's off the plan, captain. Nothing at the far end of this course but the dark."</div>
+                <div class="rescue-terms">
+                    <div class="rescue-fee">@_planBreak</div>
+                </div>
+                <button type="button" class="btn btn-warning mt-2" @onclick="DismissArriveAlarm">I have the ship</button>
+            </div>
         </div>
     }
 

@@ -66,6 +66,15 @@ public partial class Map
             _destinationBodyId = null;
         }
 
+        // #952 · the ARRIVE step ends with the voyage it ended. #962 taught this hook that a berth is an
+        // arrival too (ClampOntoHaven, the shuttle hop, and the cast-off at the other end), and the same
+        // sentence applies to the plan's terminal row: the trip it planned is behind us, so it comes off
+        // the board rather than standing there ✓ VALID over a place we are already tied up at.
+        if (_arrive is { } arrived && arrived.BodyId == bodyId)
+        {
+            ClearArriveStep();
+        }
+
         if (_mission.Kind == MissionKind.FlyTo && _mission.DestinationBodyId == bodyId)
         {
             _mission = ShipMission.Default;
