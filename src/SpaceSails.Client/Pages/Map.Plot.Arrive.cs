@@ -232,6 +232,20 @@ public partial class Map
 
     private void RemoveArriveStep()
     {
+        ClearArriveStep();
+        ShowPulseMessage("Arrival step removed — the plan no longer ends anywhere.");
+    }
+
+    /// <summary>
+    /// Take the arrival off the end of the plan, silently. Used by the row's ✖ remove (which speaks for
+    /// itself) and by <c>ArrivedAt</c> — #962's "the voyage is over, the orders complete" hook, which the
+    /// berth lane wired to the clamp and the cast-off as well as the orbital insert. A step whose voyage is
+    /// FINISHED must come off the board: left standing it is a terminal step that will never fire again,
+    /// and clamped on at its own berth it would even read ✓ VALID forever (distance ≈ 0, rel ≈ 0) — a green
+    /// badge over a trip that is already behind you.
+    /// </summary>
+    private void ClearArriveStep()
+    {
         _arrive = null;
         _arriveAlarm = null;
         _arriveAlarmDismissed = false;
@@ -239,7 +253,6 @@ public partial class Map
         {
             _openEditor = FlightEditorKind.None;
         }
-        ShowPulseMessage("Arrival step removed — the plan no longer ends anywhere.");
     }
 
     private void ToggleArriveEditor()
