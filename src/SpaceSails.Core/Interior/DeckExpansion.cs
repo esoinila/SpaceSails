@@ -1,4 +1,4 @@
-﻿namespace SpaceSails.Core.Interior;
+namespace SpaceSails.Core.Interior;
 
 // Geometry primitives for a runtime-appended wing (Wednesday plan §3 PR-F / Tuesday vision §6,
 // "Doors that grow the world"). Deliberately mirror the client's DeckPlan.Wall / .Door /

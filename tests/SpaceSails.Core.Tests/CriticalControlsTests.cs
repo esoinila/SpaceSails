@@ -1,4 +1,4 @@
-﻿namespace SpaceSails.Core.Tests;
+namespace SpaceSails.Core.Tests;
 
 using SpaceSails.Core;
 using static SpaceSails.Core.OverlayLayout;

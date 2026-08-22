@@ -1,4 +1,4 @@
-﻿namespace SpaceSails.Client.Rendering;
+namespace SpaceSails.Client.Rendering;
 
 /// <summary>
 /// Screen-space 2D drawing surface. The renderer is deliberately dumb: it knows nothing about

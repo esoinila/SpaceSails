@@ -1,4 +1,4 @@
-﻿namespace SpaceSails.Core;
+namespace SpaceSails.Core;
 
 /// <summary>
 /// The HUD's z-index scale, as ONE source of truth (#299). Lab 34 (#293) proved the rescue lifeline is
