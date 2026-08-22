@@ -75,8 +75,19 @@ public class CrashNoteTests
         CrashNote written = CrashNote.From("frame tick", ex, whenUtcTicks: 638_000_000_000_000_000);
 
         Assert.True(CrashNote.TryParse(written.ToStorage(), out CrashNote read));
-        Assert.Equal(written, read);
+
+        // Compared part by part, not with Assert.Equal(written, read): a record's generated equality
+        // compares the Frames list by REFERENCE, so two notes carrying identical frames are never equal
+        // and the assertion would be green on a parser that dropped every frame.
+        Assert.Equal(written.Source, read.Source);
+        Assert.Equal(written.TypeName, read.TypeName);
+        Assert.Equal(written.Message, read.Message);
+        Assert.Equal(written.WhenUtcTicks, read.WhenUtcTicks);
+        Assert.Equal(written.Frames, read.Frames);              // element-wise, which is the point
         Assert.Equal(written.Describe(), read.Describe());
+
+        // …and writing it again produces the same bytes, so the note survives any number of voyages.
+        Assert.Equal(written.ToStorage(), read.ToStorage());
     }
 
     /// <summary>A message with a newline in it used to be able to cut the note in half on the way back —
