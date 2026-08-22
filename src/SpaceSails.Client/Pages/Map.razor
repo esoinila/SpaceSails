@@ -5832,7 +5832,7 @@
                 @* #963 — MINIMISE, not close. A closed window needs a switch somewhere else to reopen it (which
                    is exactly the toolbar button the owner sent away); a minimised one leaves its own way back. *@
                 <button type="button" class="btn btn-sm btn-outline-light py-0 map-scope-min" aria-label="Minimise the scope"
-                        title="Minimise the scope into a tile — click the tile to bring it back" @onclick="ToggleScopeMinimized">▁</button>
+                        title="Minimise the scope into a tile — click the tile to bring it back" @onclick="ToggleScopeMinimized">–</button>
             </div>
             <div class="card-body p-1">
                 <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
@@ -5845,7 +5845,7 @@
     <div class="map-scope-tile @(_scopeMinimized && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
         <button type="button" class="btn btn-sm btn-outline-info"
                 title="Open the scope wide — the telescope is on @ScopeTileTargetName()"
-                @onclick="ToggleScopeMinimized">🔭 @ScopeTileTargetName() ▔</button>
+                @onclick="ToggleScopeMinimized">🔭 @ScopeTileTargetName()</button>
     </div>
 
     @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
@@ -5873,7 +5873,7 @@
                     <button type="button" class="btn btn-sm btn-outline-light py-0 map-dossier-min"
                             aria-label="@(_dossierMinimized ? "Open the dossier" : "Minimise the dossier")"
                             title="@(_dossierMinimized ? "Open the dossier back up" : "Minimise the dossier into a tile — click it to bring it back")"
-                            @onclick="ToggleDossierMinimized">@(_dossierMinimized ? "▔" : "▁")</button>
+                            @onclick="ToggleDossierMinimized">@(_dossierMinimized ? "▣" : "–")</button>
                     <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier" title="Close the target dossier"
                             @onclick="() => Dismiss(CloseDossier)"></button>
                 </span>
