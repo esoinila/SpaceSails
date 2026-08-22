@@ -16,7 +16,7 @@
 | 1 — renderer raster keystone + The Space Bar cantina backdrop | ✅ **Done** — shipped on branch `feature/3d-deck-renovation`, **PR #90**, verified in-browser |
 | 2 — Galley *desk* HTML bar | ✅ **Done** — `the-space-bar-desk.jpg` backdrop behind the Galley panel, verified in-browser |
 | 3 — cabin bunks + a space-toilet HEAD 🚽 | ✅ **Done** — `cabin-bunk.jpg` ×3 + `space-head.jpg`; starboard block re-carved into 3 cabins + a HEAD; gag `[E]` quip via a new deck-mode pulse toast; verified in-browser (walked in, fired the gag, first-person clean) |
-| 4 — first-person wall texturing | ✅ **Done** — `DrawImageSlice` source-rect primitive + `wall-bulkhead.jpg`; raycaster walls are textured; verified in-browser (walls, windows keep sky, solar map unaffected) |
+| 4 — first-person wall texturing | ✅ **Done**, then **removed with the view** (#958) — `DrawImageSlice` source-rect primitive + `wall-bulkhead.jpg`; the raycaster's walls were textured and verified in-browser. The primitive stays in `IRenderer`; the texture went with its only caller |
 | Deferred — walk the *raided* ship's interior | ⬜ separate new feature |
 
 Unrelated in-flight work: **PR #89** (Debt Collector targetable/deterrable/sun-dodgeable +
@@ -132,7 +132,7 @@ is deck units x∈[4,18], y∈[3,10]; `P(dx,dy) = (ox + dx*scale, oy - dy*scale)
   multiplies by `naturalWidth/Height` and clamps `sw` to ≥ 1 texel). Opcode `OP_IMAGE_SLICE = 5`
   across `IRenderer` / `CanvasRenderer` / `renderer.js`. Touches the shared interop every view uses —
   **verified the solar map and top-down deck still render** after.
-- **Texture:** `art/wall-bulkhead.jpg` (Grok, 1:1, "seamless tileable riveted bulkhead").
+- **Texture:** `art/wall-bulkhead.jpg` (Grok, 1:1, "seamless tileable riveted bulkhead") — deleted with the raycaster in #958; recoverable from history if a wall ever wants it again.
 - **`FirstPersonView.cs`:** each column samples a thin vertical strip (`WallSliverFrac`) of the
   bulkhead at `u = frac(along / WallTextureSpanDu)` (repeat every **3.5 du**), stretched to the
   column's floor-to-ceiling height, then dimmed by distance with a black overlay strip (replaces the
