@@ -479,16 +479,48 @@ public partial class Map
                 AutopilotRehearsal.Rehearse(_ship, _ephemeris, _simulator, bodyId, budget, capturePath: true, schedule: schedule);
             if (!r.Deliverable)
             {
-                // #928: quote the CHARGED number — what the tank will really lose at the autopilot's
-                // tenth — never the raw Δv count. The refusal's arithmetic must be the arithmetic the
-                // flight then performs, or "It won't strand you" is a sentence about a different ship.
-                string why = r.BudgetExceeded || r.PulsesCharged > budget
-                    ? $"needs ≈{r.PulsesCharged} p (incl. insertion), tank has {_reactionMassPulses} and keeps {reserve} in reserve"
-                    : "can't verify a capture from here — no clear window within range";
-                _autopilotStandDownReason = $"autopilot declines {name}: {why}. It won't strand you.";
-                ResetAutopilotBudget();
-                ShowPulseMessage($"🛰 {_autopilotStandDownReason}");
-                return; // NOT armed — the whole point of the promise
+                // #957 — DON'T COMPLAIN, BRAKE. Owner, having flown right up to The Rusty Roadstead and been
+                // refused: "It should just add the necessary braking step on the plot path and not complain.
+                // … nobody will ever play the 'let's fly next to it really quiet so autopilot will agree'."
+                // So before the refusal stands, ask whether ONE braking burn — priced at the same tenth,
+                // bought out of the same tank-minus-reserve budget, and PROVEN by re-flying the whole journey
+                // through AutopilotRehearsal with it — turns the refusal into a promise. If it does, the burn
+                // becomes a step the plan shows (Map.Plot.FlightPlan.ScheduledAutopilotBurns) and the arm
+                // proceeds on the rehearsal that INCLUDES it, so nothing downstream is quoting a flight that
+                // was never flown. A brake is only tried when no transfer schedule already rides this arm.
+                CaptureBrake.Solution? braked = schedule is null && !r.BudgetExceeded
+                    ? CaptureBrake.Solve(_ship, _ephemeris, _simulator, bodyId, budget,
+                        burnEpoch: null, maxHorizonSeconds: BrakeSearchHorizon(bodyId), capturePath: true)
+                    : null;
+
+                if (braked is { } brake)
+                {
+                    schedule = brake.Schedule;
+                    transferSummary = CaptureBrake.StepLine(brake, name);
+                    plannerNote = null;
+                    r = brake.Rehearsal;
+                    ShowPulseMessage(CaptureBrake.AddedText(brake, name));
+                }
+                else
+                {
+                    // #928: quote the CHARGED number — what the tank will really lose at the autopilot's
+                    // tenth — never the raw Δv count. The refusal's arithmetic must be the arithmetic the
+                    // flight then performs, or "It won't strand you" is a sentence about a different ship.
+                    // #957: and when the refusal is NOT about money, the why clause now carries the geometry
+                    // — where the ship is, how fast, and against which thresholds — through the very same
+                    // Core formatter the arrive step's ✗ row speaks with, plus the course's own closest pass
+                    // so the captain has a moment to scrub to. "Can't verify a capture from here" survives
+                    // only as the last-resort clause for a body with no arrival geometry to quote at all.
+                    string why = r.BudgetExceeded || r.PulsesCharged > budget
+                        ? $"needs ≈{r.PulsesCharged} p (incl. insertion), tank has {_reactionMassPulses} and keeps {reserve} in reserve"
+                        : ArrivalCheckNow(bodyId) is { } snapshot
+                            ? ArrivalStepRule.RefusalWhy(snapshot, NearestWindowNote(bodyId))
+                            : "can't verify a capture from here — no clear window within range";
+                    _autopilotStandDownReason = $"autopilot declines {name}: {why}. It won't strand you.";
+                    ResetAutopilotBudget();
+                    ShowPulseMessage($"🛰 {_autopilotStandDownReason}");
+                    return; // NOT armed — the whole point of the promise
+                }
             }
 
             // #267 surface clearance: a rehearsal can be Deliverable (reaches a bound park within budget)
@@ -554,6 +586,7 @@ public partial class Map
         _armedOrbitBodyId = bodyId;
         ResetApproachTracking(); // every arm starts convergence tracking clean
         _destinationBodyId = bodyId; // arming says "this is where we're going"
+        EnsureArriveStepFor(bodyId);  // #957: …and the plan list SAYS so — the arrival is a step, always
         string trimQuote = _keepTrimPulsesPerDay > 0 ? $"; then holds the orbit, trim ≈{_keepTrimPulsesPerDay} p/day" : "";
         // #204: the arm-time quote names the final step. A μ=0 station ends at the ⚓ berth, not a park —
         // for an honest errand the autopilot auto-docks; a hostile-flagged run stands into the envelope
@@ -566,6 +599,57 @@ public partial class Map
         // #928: "at the autopilot's tenth" is not decoration — it is why the quoted number is a tenth of
         // the Δv a hand would pay for the same arrival, and it is the number the tank is really charged.
         ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p at the autopilot's tenth; the ship will {arrival} when the window opens{trimQuote} 🛰");
+    }
+
+    // #957 — the ship's arrival geometry RIGHT NOW, judged by the same Core law the arrive step's row is
+    // judged by (ArrivalStepRule reads its thresholds off OrbitRule / DockRule). This is what turns "can't
+    // verify a capture from here — no clear window within range" into a sentence with numbers in it: how
+    // far out, how fast, and against which limits. Null for a body with no parent (the sun).
+    private ArrivalStepRule.ArrivalCheck? ArrivalCheckNow(string bodyId)
+    {
+        if (_ephemeris is null
+            || BodyById(bodyId) is not { ParentId: not null } body
+            || BodyById(body.ParentId) is not { } parent)
+        {
+            return null;
+        }
+
+        Vector2d bodyPos = _ephemeris.Position(bodyId, SimTime);
+        Vector2d bodyVel = TransferMath.BodyVelocity(_ephemeris, bodyId, SimTime);
+        ArrivalStepRule.ArrivalKind kind = IsDockableHaven(body)
+            ? ArrivalStepRule.ArrivalKind.Dock
+            : ArrivalStepRule.ArrivalKind.Orbit;
+        return ArrivalStepRule.Check(
+            kind, body.Name,
+            (_ship.Position - bodyPos).Length,
+            (_ship.Velocity - bodyVel).Length,
+            OrbitRule.HillRadius(body, parent.Mu));
+    }
+
+    // #957 — "how far off is the nearest usable window". The plotted course already knows where it comes
+    // nearest this body; say it, so a refusal points at a moment the captain can scrub to rather than at a
+    // shrug. Empty when the course has no future pass by it (nothing honest to name).
+    private string NearestWindowNote(string bodyId)
+    {
+        if (ArrivePassFor(bodyId) is not { } pass || pass.SimTime <= SimTime)
+        {
+            return string.Empty;
+        }
+        return $"; this course's own closest pass by {BodyName(bodyId)} is {FormatDistance(pass.Distance)} at {FormatSimTime(pass.SimTime)}";
+    }
+
+    // #957 — how far each candidate correction is flown before it is given up on. This runs on a button in
+    // WASM and every candidate is a real rehearsed flight, so the search is bounded by the encounter's own
+    // clock: a few times the plotted time-to-pass, floored at five days so a near encounter still gets a
+    // fair look and capped at the rehearsal's own horizon. A candidate that would only pay off months later
+    // is not the answer to "I am right next to it, dock" — and a shortened horizon can only MISS a
+    // solution, never invent one (CaptureBrake believes nothing it has not flown).
+    private double BrakeSearchHorizon(string bodyId)
+    {
+        double toPass = ArrivePassFor(bodyId) is { } pass && pass.SimTime > SimTime
+            ? pass.SimTime - SimTime
+            : 0;
+        return Math.Clamp(3 * toPass, 5 * 86400.0, AutopilotRehearsal.DefaultMaxHorizonSeconds);
     }
 
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
