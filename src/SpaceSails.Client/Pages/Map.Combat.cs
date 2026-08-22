@@ -610,6 +610,84 @@ public partial class Map
         }
     }
 
+    private static readonly RgbaColor ReticleColor = new(255, 70, 70);
+    private static readonly RgbaColor TrackBracketColor = new(150, 255, 210, 200);
+
+    /// <summary>
+    /// #962 · THE TARGET IS A PLACE ON THE SKY, NOT A BOX IN THE CORNER. Owner, with the Debt Collector's
+    /// dossier open: <i>"There is no visual indicator that we have targeted the debt collector in any way.
+    /// Just the disconnected box. There should be a marker on our tracked targets also in nav map... red X
+    /// aim reticle maybe?"</i>
+    ///
+    /// <para>Two marks, because there are two different claims to make. The RED X is the tactical target —
+    /// the one contact the dossier is open on, the one fire control is solving for — and it is deliberately
+    /// the loudest thing on the map. The small green brackets are everything the telescope is holding
+    /// custody of: the Sensors desk kept that list as names in a ledger, with nothing on the sky to say
+    /// where any of those names actually is.</para>
+    ///
+    /// <para>Both read positions through <see cref="ContactPosition"/>, which walks traffic AND hired
+    /// muscle — the reticle must not repeat the bug that made 📡 sharpen fix a dead button, where a
+    /// hunter's id resolved to nothing because the lookup only knew about <c>_npcStates</c>.</para>
+    /// </summary>
+    private void DrawTargetReticle()
+    {
+        if (_renderer is null)
+        {
+            return;
+        }
+
+        if (_trackingPost is not null)
+        {
+            foreach (TrackedTarget entry in _trackingPost.Entries)
+            {
+                if (entry.ShipId == TacticalTargetId || ContactPosition(entry.ShipId) is not { } held)
+                {
+                    continue; // the reticle below says it louder; an id we can't place gets no mark at all
+                }
+
+                (float bx, float by) = _camera.WorldToScreen(held);
+                DrawBracket(bx, by, 8f, TrackBracketColor);
+            }
+        }
+
+        if (TacticalTargetId is not { } id || ContactPosition(id) is not { } position)
+        {
+            return;
+        }
+
+        (float sx, float sy) = _camera.WorldToScreen(position);
+        // A slow breath, so the reticle reads as LIVE rather than as another painted glyph.
+        byte pulse = (byte)(190 + 60 * Math.Sin(_frameNowMs / 320.0));
+        RgbaColor ink = ReticleColor with { A = pulse };
+
+        const float inner = 5f, outer = 14f;
+        const float diagonal = 0.70710678f; // the X's arms, at 45° off the axes
+        ReadOnlySpan<(float X, float Y)> arms = [(1, 1), (1, -1), (-1, 1), (-1, -1)];
+        foreach ((float dx, float dy) in arms)
+        {
+            _renderer.DrawPolyline(
+                [sx + dx * diagonal * inner, sy + dy * diagonal * inner,
+                 sx + dx * diagonal * outer, sy + dy * diagonal * outer],
+                ink, 2f);
+        }
+
+        _renderer.DrawCircle(sx, sy, inner + 1.5f, null, ink, 1.2f);
+        _renderer.DrawText(sx, sy + outer + 12, $"🎯 {ContactCallsign(id)}", ink, "11px monospace", TextAlign.Center);
+    }
+
+    /// <summary>A custody bracket: four corners of a box, drawn open — the telescope is holding this
+    /// contact, which is a weaker claim than the reticle's and is drawn as one.</summary>
+    private void DrawBracket(float x, float y, float half, RgbaColor color)
+    {
+        float arm = half * 0.55f;
+        ReadOnlySpan<(float X, float Y)> corners = [(-1, -1), (1, -1), (-1, 1), (1, 1)];
+        foreach ((float cx, float cy) in corners)
+        {
+            float px = x + cx * half, py = y + cy * half;
+            _renderer!.DrawPolyline([px - cx * arm, py, px, py, px, py - cy * arm], color, 1.2f);
+        }
+    }
+
     // Thin, read-only projections for the war-room — it never sees Map.razor's private NpcState
     // or HunterState, only the NpcShip/live-state pairs it needs to render (mirrors TrackingCandidates()).
     private IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.Contact> WarRoomContacts()
