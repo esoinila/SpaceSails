@@ -87,6 +87,12 @@ public partial class Map
         {
             _camera.CenterOn(_ship.Position);
         }
+        else if (FollowedDestinationPosition() is { } followed)
+        {
+            // #956 · the camera rides the NAV DESTINATION. Mutually exclusive with Follow Ship (above), so a
+            // frame can only ever be told to centre on one thing.
+            _camera.CenterOn(followed);
+        }
 
         if (TheShuttleRunOwnsThisFrame(dtRealSeconds, highResTimestampMs))
         {
@@ -553,8 +559,10 @@ public partial class Map
         DrawStreams();
         if (LayerVisible("routes.lanes"))
         {
-            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes): lanes default ON
-            // for the sensors chief and OFF everywhere else, and every desk can change its mind.
+            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes). #953: OFF by default on
+            // EVERY desk, the sensors chief included. The owner opened his onto a sky "covered in faint
+            // lines with no intersection" — "It must always be much more filtered and off by default. This
+            // is just ugly here by default." One checkbox still brings them back, per desk.
             DrawTradeCorridors();
         }
         DrawShipTrajectory();
@@ -637,7 +645,7 @@ public partial class Map
     /// the map frame — one call, so the two can never come to draw two different scopes.</summary>
     private void DrawTheScopeInsetIfItIsUp()
     {
-        if (_showScope && _scopeView is not null)
+        if (!_scopeMinimized && _scopeView is not null)
         {
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }

@@ -1030,6 +1030,7 @@ public partial class Map
         if (world is { } target)
         {
             FollowShip = false;         // centring must stick — follow-ship would snap back to the ship next frame
+            _followDest = false;        // …and so would follow-destination (#956)
             _camera.CenterOn(target);
         }
 

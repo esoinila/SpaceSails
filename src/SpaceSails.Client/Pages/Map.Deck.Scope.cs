@@ -30,9 +30,57 @@ public partial class Map
     private const string ScopeCanvasId = "scope-canvas";
     private const int ScopeSizePx = 280;
     private ScopeView? _scopeView;
-    private bool _showScope = true;
+    // #963 · THE SCOPE'S SWITCH LIVES ON THE SCOPE. The Nav toolbar used to carry a "Scope" toggle, and the
+    // owner asked why: "Why have the scope enable/disable button competing for attention at the top of the
+    // screen — that functionality should stay at the scope position." So the toolbar button is gone and the
+    // window minimises into a button-sized tile in its own corner, which is also what stops the toolbar from
+    // drowning out Plot — "the heart of the navigation process" — and the Add-burn keys beside it.
+    //
+    // Remembered for the session (a field, like FollowShip): a captain who tucks the scope away expects it to
+    // stay tucked away until he says otherwise.
+    private bool _scopeMinimized;
 
-    private void ToggleScope() => _showScope = !_showScope;
+    private void ToggleScopeMinimized() => _scopeMinimized = !_scopeMinimized;
+
+    /// <summary>What the minimised tile names, so the tile is an instrument and not a mystery button: the same
+    /// priority <see cref="PickScopeTarget"/> resolves — a manual pick, then a selected contact, then the
+    /// navigation destination, then whatever is nearest. Read-only on purpose: the tile renders outside the
+    /// frame, and PickScopeTarget writes the scope's lock label as a side effect.</summary>
+    private string ScopeTileTargetName()
+    {
+        foreach (string? id in new[] { _scopeManualId, _selectedTargetId, _destinationBodyId })
+        {
+            if (id is not null && ScopeSubjectName(id) is { } named)
+            {
+                return named;
+            }
+        }
+
+        return _nearestBody?.Name ?? "the sky";
+    }
+
+    /// <summary>The name behind a scope-subject id — a contact's callsign or a body's name — or null when the
+    /// id names nothing that is still out there.</summary>
+    private string? ScopeSubjectName(string id)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == id)
+            {
+                return npc.Active && !npc.Arrived && npc.CurrentlyObserved ? npc.Ship.Callsign : null;
+            }
+        }
+
+        foreach (CelestialBody b in _ephemeris?.Bodies ?? [])
+        {
+            if (b.Id == id)
+            {
+                return IsBodyHidden(b.Id) ? null : b.Name;
+            }
+        }
+
+        return null;
+    }
 
     private string? _scopeManualId; // null = AUTO
 
