@@ -305,9 +305,8 @@ public sealed partial class DeckView
         float jy = (float)(Math.Cos(simTime * 0.017) * tremor * tremor * 2.0);
 
         // #324/#330 (owner: "let's make sanity visible :-D … even on the ship bar also"): a plainly-labelled
-        // top-left gauge on its own dark plate. Full-size on the regolith where the FP toggle steps aside;
-        // COMPACT aboard/ashore, tucked below the deck chrome (the top-left first-person toggle) so it
-        // whispers without colliding.
+        // top-left gauge on its own dark plate. Full-size on the regolith, where it owns the corner outright;
+        // COMPACT aboard/ashore, tucked below the deck chrome so it whispers without colliding.
         // #380 item 2: the plate NAMES the meter — "NERVE", the diegetic name every flavor rung, band-drop,
         // and shock pulse already speaks (the #226 sanity system's on-screen face). No name, no cause, no
         // remedy was the mystery; the name lands here, the cause+remedy in the band-drop pulse (Map.Surface).
@@ -318,7 +317,7 @@ public sealed partial class DeckView
         float w = compact ? 150f : 210f;
         float h = (float)block.BarHeight;
         float labelPx = compact ? 9f : 11f;
-        float baseY = (float)block.BaseY;   // aboard: clear below the top-left FP toggle; surface: column head
+        float baseY = (float)block.BaseY;   // aboard: clear below the top-left deck chrome; surface: column head
         float x0 = 18f + jx, y0 = baseY + jy;
         float inset = (float)HudColumn.PlateInsetPx;
 
@@ -405,8 +404,8 @@ public sealed partial class DeckView
         // the gauge and it landed straight on top of the motion tracker's fan — unreadable, and it buried
         // the one instrument you actually steer by. Down here it shares the column with nothing, and the
         // reading order still runs newest-nearest-the-eye.
-        // The bottom margin clears the keybar AND the first-person toggle that sits in this same corner —
-        // at 46 the last ledger line printed straight through the button.
+        // The bottom margin clears the keybar AND whatever deck control sits in this same corner (the
+        // captain's remote today) — at 46 the last ledger line printed straight through the button.
         const float BottomClearance = 78f;
         float lineH = px + 2f;
         int rows = (ledger?.Count ?? 0) + (ledger is { Count: > 0 } ? 1 : 0) + (hasFlash ? 1 : 0);

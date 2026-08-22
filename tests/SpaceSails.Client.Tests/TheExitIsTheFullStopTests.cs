@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -95,7 +95,6 @@ public sealed class TheExitIsTheFullStopTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
 
         Invoke(map, "RebuildSurfaceDeck");
         return map;

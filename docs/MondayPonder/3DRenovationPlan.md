@@ -1,5 +1,10 @@
 # 3D / ship-interior renovation plan
 
+> **#958 — the walk-in view is gone.** This document is the record of a plan as it was written and
+> built, so it still names `FirstPersonView` / the `F` key throughout. That renderer and that key were
+> removed on the owner's ruling ("an unnecessary hindrance to development. Nobody ever uses it"); the
+> top-down deck plan is the only walked view. Read every mention of it below as history.
+
 > **Start-fresh handoff.** This doc is self-contained: a new session can resume from the
 > **Status** and **How to resume** sections without prior context. Last updated 2026-07-06.
 

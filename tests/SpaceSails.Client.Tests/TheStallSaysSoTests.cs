@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -379,7 +379,6 @@ public sealed class TheStallSaysSoTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         // #875 · #729's ?autowalk=1 was set here once, because click-to-walk did not exist off it. The owner
         // ruled the click always-on; the flag is a retired no-op alias, and this bench boots the shipping
         // control rather than a switched-on one.

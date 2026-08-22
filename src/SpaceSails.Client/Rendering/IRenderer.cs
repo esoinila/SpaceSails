@@ -1,4 +1,4 @@
-namespace SpaceSails.Client.Rendering;
+﻿namespace SpaceSails.Client.Rendering;
 
 /// <summary>
 /// Screen-space 2D drawing surface. The renderer is deliberately dumb: it knows nothing about
@@ -47,7 +47,7 @@ public interface IRenderer
 
     /// <summary>Blits a registered image (see <see cref="RegisterImage"/>) into a screen-space rect,
     /// scaled to fill it, at <paramref name="alpha"/> (0..1). An unknown or not-yet-loaded id draws
-    /// nothing. Used for interior room backdrops and, later, first-person wall textures — drawn
+    /// nothing. Used for interior room backdrops — drawn
     /// BEFORE the vector overlays so consoles, avatar, and HUD stay legible on top.</summary>
     void DrawImage(int imageId, float xPx, float yPx, float widthPx, float heightPx, float alpha = 1f);
 

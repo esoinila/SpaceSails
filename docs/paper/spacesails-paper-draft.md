@@ -89,7 +89,7 @@ the failures taught the game.
   plotting table, orbit-assist autopilot), Sensors (telescope ledger, passive watch, the
   eyes race), War room (tactical circle, intercept clock, fire control), Trade, Comms
   (departures board, dark web), Galley (news feed, rum), Deck (walkable interior with a
-  raycast first-person view whose windows show the real ephemeris sky).
+  top-down deck plan you walk between consoles).
 - Design rules that survived playtesting: a desk's own topic owns ~70% of the screen; every
   other station rides along as a one-line "chip"; chips are current-objective summaries,
   never stat dumps; the captain's chip leads everywhere.

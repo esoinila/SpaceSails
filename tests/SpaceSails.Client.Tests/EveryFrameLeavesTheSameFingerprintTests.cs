@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -453,7 +453,6 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         // field typed to the sealed CanvasRenderer); every walked view paints into the recording one.
         Set(map, "_renderer", new CanvasRenderer("fingerprint-canvas"));
         Set(map, "_deckView", new DeckView(pen));
-        Set(map, "_fpView", new FirstPersonView(pen));
 
         Invoke(map, "ReprojectTrajectory");
 
@@ -461,7 +460,6 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         {
             case World.HerOwnDeckInFlight:
                 Set(map, "_deckMode", true);
-                Set(map, "_fpMode", false);
                 Set(map, "Warp", 1000);      // so the near-body caps and the adaptive quanta are both live
                 break;
 
@@ -481,13 +479,11 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
             case World.TheMapFrameInFlight:
                 Set(map, "_deckMode", false);
-                Set(map, "_fpMode", false);
                 Set(map, "Warp", 100);
                 break;
 
             case World.TheElectricUniverse:
                 Set(map, "_deckMode", true);
-                Set(map, "_fpMode", false);
                 Set(map, "Warp", 1000);
                 // The contactor RUNNING is the whole point of this world. Every other world here is a
                 // Newtonian scenario, where AdvanceChargeSystems is one early return — so without this the
@@ -522,7 +518,6 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         Invoke(map, "RebuildSurfaceDeck");
 
         // The round, laid the one way the game ever lays it — off the lift ride, never off a deck
@@ -673,8 +668,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         // The world and its integrators — constant for the whole run, and enormous.
         nameof(ICelestialEphemeris), "CircularOrbitEphemeris", nameof(Simulator),
         // The pen and the views — fingerprinted separately, as the pen.
-        nameof(CanvasRenderer), nameof(DeckView), nameof(FirstPersonView), nameof(ShuttleFlightView),
-        nameof(ScopeView),
+        nameof(CanvasRenderer), nameof(DeckView), nameof(ShuttleFlightView), nameof(ScopeView),
         // Browser/framework plumbing that has no state of the frame's in it.
         "HttpClient", "NavigationManager", "IJSRuntime", "ElementReference",
         "CancellationTokenSource", "CancellationToken",

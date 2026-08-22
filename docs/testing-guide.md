@@ -200,7 +200,7 @@ enabled/disabled incorrectly relative to your credits.
 
 ---
 
-## 10. Deck walk, rum wobble, first person
+## 10. Deck walk, rum wobble
 
 *(See [deck-view.md](features/deck-view.md).)*
 
@@ -213,12 +213,12 @@ enabled/disabled incorrectly relative to your credits.
    movement direction visibly wobbles for about 25 seconds.
 5. Confirm you can still walk and interact normally during the wobble (it's cosmetic, not a
    lockout).
-6. Press `F`. Confirm the view switches to first-person, with a real sky visible through the
-   windows (sun and planets at their correct positions/sizes).
-7. Press `Q`. Confirm you're returned to the helm view (map/plot), not just the deck plan.
+6. Press `Q`. Confirm you're returned to the helm view (map/plot), not just the deck plan.
+7. Press `F`. Confirm **nothing happens** — the walk-in view it opened was removed (#958) and the
+   key was deliberately left unbound rather than remapped.
 
 **Broken looks like:** no wobble after 3 rapid tots, wobble blocking interaction entirely, or `F`
-not producing a real (ephemeris-matched) sky.
+doing something.
 
 ---
 

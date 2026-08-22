@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -202,7 +202,6 @@ public sealed class TheKitIsWorkedFromThePocketTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         Set(map, "_satchel", new List<Satchel.Item> { SdrScanner.TheKit });
 
         // Standing a pace out of the cage, which is where a captain steps out of the car.

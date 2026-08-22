@@ -15,8 +15,7 @@ to the matching desk.
   through.
 - `E` interacts with the nearest console once you're close enough; it highlights and shows an
   `[E]` prompt when you're in range.
-- `F` switches to first-person mode (see below); `Q` returns you to the helm from anywhere on
-  the deck or from first-person.
+- `Q` returns you to the helm from anywhere on the deck.
 
 ## The consoles
 
@@ -63,12 +62,12 @@ The Galley desk (`6`, see [station-desks.md](station-desks.md)) and the CANTINA 
 doors into the exact same rum ledger, so the tot count and wobble state stay in sync no matter
 which one you use to get there.
 
-## First person
+## The walk-in view, removed (#958)
 
-`F` from the deck plan switches to a first-person walk through the same corridors. The windows
-show the real sky — the sun grows visibly larger the closer you are to it, and every planet sits
-exactly where the ephemeris says it should. `Q` returns to the helm from here too, and `F` again
-returns to the top-down deck plan.
+`F` once opened a raycast walk through the same corridors, with the real ephemeris sky in the
+windows. The owner ruled it out — "it should be removed as an unnecessary hindrance to
+development. Nobody ever uses it." The top-down deck plan is the only walked view now, and `F`
+is deliberately unbound rather than quietly remapped.
 
 See also: [plotting-desk.md](plotting-desk.md), [scope.md](scope.md),
 [boarding-run.md](boarding-run.md), [electric-sky.md](electric-sky.md).

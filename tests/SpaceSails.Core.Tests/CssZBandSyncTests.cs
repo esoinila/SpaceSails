@@ -1,4 +1,4 @@
-namespace SpaceSails.Core.Tests;
+﻿namespace SpaceSails.Core.Tests;
 
 using System.Text.RegularExpressions;
 using SpaceSails.Core;
@@ -89,7 +89,6 @@ public class CssZBandSyncTests
         { ".map-hud", OverlayBands.MapHud },
         { ".map-topstack", OverlayBands.MapTopstack },
         { ".parrot-perch", OverlayBands.ParrotPerch },
-        { ".deck-view-toggle", OverlayBands.DeckViewToggle },
         { ".map-layers", OverlayBands.MapLayers },
         { ".map-loading", OverlayBands.MapLoading },
         { ".deck-pulse-toast", OverlayBands.DeckPulseToast },

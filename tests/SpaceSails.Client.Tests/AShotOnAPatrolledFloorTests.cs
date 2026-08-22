@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -80,7 +80,6 @@ public sealed class AShotOnAPatrolledFloorTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         Set(map, "_patrolCheat", (int?)heads);
 
         Invoke(map, "RebuildSurfaceDeck");

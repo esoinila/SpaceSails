@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -347,7 +347,6 @@ public sealed class TheSweepTeamWalksOutTests
         Set(map, "_wreck", wreck);
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         Set(map, "_weaponsTight", true);   // so the spawn's one warning line is not owed
 
         Invoke(map, "RebuildSurfaceDeck");

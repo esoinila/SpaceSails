@@ -19,7 +19,7 @@ in the Galley fills the screen with galley stuff (news etc.) plus summaries of t
 | 4 | `4` | **Trade** | Local space contacts, drone-transfer console, dock market, cargo manifest, prices | the active deal, else credits+cargo |
 | 5 | `5` | **Comms** | Dark web market, departures board (big), tight-beam console, laser ranging, news wire | freshest intel / "no whispers" |
 | 6 | `6` | **Galley** | News feed (world events, plunder rumors, price gossip), the rum locker, crew flavor | tots poured / wobble |
-| 7 | `7` | **Deck** | Walk the ship (existing deck/first-person). Bridge seats = sit at a console → that desk opens | — |
+| 7 | `7` | **Deck** | Walk the ship (the top-down deck plan). Bridge seats = sit at a console → that desk opens | — |
 | 0 | `0` | **Captain** | Select the SHIP'S GOAL (the mission) | the mission — echoed on every desk's chip strip |
 
 ## Rules

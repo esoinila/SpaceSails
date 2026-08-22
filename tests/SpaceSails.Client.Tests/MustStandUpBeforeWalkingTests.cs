@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -93,7 +93,6 @@ public sealed class MustStandUpBeforeWalkingTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         // #875 · NOTHING LEFT TO SWITCH ON. This bench used to set #729's ?autowalk=1 flag right here,
         // because click-to-walk did not exist off it. The owner ruled the click always-on ("the two should
         // be linked as alternative UI methods for walking"), the flag retired to a no-op alias, and a bench
