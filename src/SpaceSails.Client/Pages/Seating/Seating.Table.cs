@@ -353,7 +353,14 @@ public partial class Map
             }
 
             bool drink = _host.APourInFrontOfYou;
-            var resumed = new TableTalk
+
+            // #870 lane 6d · THE SEVENTH CONSTRUCTION SITE, AND IT GOES THROUGH THE ONE METHOD LIKE THE OTHER
+            // SIX. The reveal cue and the draw live in `TakeThisSeat` and nowhere else, so the record is built
+            // in the argument — a sitting assembled into a local and handed over afterwards is exactly what
+            // `ThereIsOnePlaceASittingIsOpened` exists to refuse. What was already said to her rides in on the
+            // initializer too — `TableTalk.Said` is init-settable for exactly this — so the conversation is
+            // whole the first time anything reads the seat, cue and draw included.
+            TakeThisSeat(new TableTalk
             {
                 Key = TableKey(ex, top.Index),
                 Index = top.Index,
@@ -374,13 +381,8 @@ public partial class Map
                 DrinkInHand = drink,
                 Joined = true,
                 Outcome = CabinetPrivacy.SaidOn(stage),
-            };
-            foreach (string move in alreadySaid)
-            {
-                resumed.Said.Add(move);
-            }
-
-            TakeThisSeat(resumed);
+                Said = [.. alreadySaid],
+            });
             return true;
         }
 
