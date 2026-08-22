@@ -367,8 +367,10 @@ never appearing on the traffic board, or laser ranging not marking the target aw
 
 *(See [war-room.md](features/war-room.md).)*
 
-1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range (2×10⁸ m —
-   tighter than the boarding capture envelope). Press `3` (or click **3 War room** in the station
+1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range
+   (7.128×10⁸ m — the mass driver's 66 km/s over a three-hour engagement horizon, and WIDER
+   than both the boarding capture envelope and a hunter's catch radius, per the owner's
+   #961/#962 ruling). Press `3` (or click **3 War room** in the station
    tab bar) to open the War room desk — full-screen as of PR-13, the tactical circle filling the
    left ~60% of the screen with a range-scale selector above it and the heat gauge blown up large
    in its bottom-left corner.

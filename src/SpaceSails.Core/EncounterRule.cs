@@ -24,7 +24,12 @@ public readonly record struct HeatState(int Level, double RaisedAtSimTime)
 }
 
 /// <summary>Hired muscle: one per heat event, fitting out at a policed body before it flies. A
-/// simple deterministic pursuit — dumb, relentless, sufficient for v1 (owner's framing).</summary>
+/// simple deterministic pursuit — dumb, relentless, sufficient for v1 (owner's framing).
+/// <para><paramref name="Warrant"/> is #962's provenance: the callsign of the hull the contract was written
+/// over. Owner, docked at a haven with the heat gauge at zero and a collector still inbound: <i>"So we have
+/// zero heat and are docked at haven … why is this still hunting us?"</i> — a question a callsign alone
+/// cannot answer, and the robbery that bought the collector had that name in hand and threw it away. Null
+/// for the tutorial and cheat spawns, which were bought by nobody.</para></summary>
 public readonly record struct HunterState(
     string Id,
     string Callsign,
@@ -35,7 +40,8 @@ public readonly record struct HunterState(
     bool CaughtPlayer,
     bool BrokenOff,
     int WarningShotsTaken = 0,
-    double PeeledUntilSimTime = double.NegativeInfinity);
+    double PeeledUntilSimTime = double.NegativeInfinity,
+    string? Warrant = null);
 
 /// <summary>
 /// The gun deck (vision ¶18): warning shots, compliance, threats, bribery and the HEAT a robbery
@@ -48,9 +54,38 @@ public readonly record struct HunterState(
 /// </summary>
 public static class EncounterRule
 {
-    /// <summary>Guns speak before shuttles fly: weapons reach less than half of CaptureRule's
-    /// 5e8 m boarding envelope.</summary>
-    public const double WeaponRangeMeters = 2e8;
+    /// <summary>The gun deck's horizon: a shot fired now has to LAND inside this flight time or the
+    /// solution is aiming at a guess. Three hours is this ship's doctrine — long enough for a mass-driver
+    /// slug to cross a whole encounter, short enough that the target's own drift cannot have rewritten the
+    /// geometry the solution was cut from.</summary>
+    public const double EngagementFlightSeconds = 3 * 3600;
+
+    /// <summary>
+    /// #961/#962 · THE LASSO CANNOT REACH FURTHER THAN THE GUN. Owner, watching a collector close on him
+    /// from outside any firing solution he could compute: <i>"If we don't have a firing solution then they
+    /// cannot board us / catch us either. It is like being outside of bullets range but still getting
+    /// lassoed. So the bullets need to fly faster."</i>
+    ///
+    /// <para>He is right, and the comment that stood here said the opposite ON PURPOSE — <i>"guns speak
+    /// before shuttles fly: weapons reach less than half of CaptureRule's 5e8 m boarding envelope"</i>.
+    /// 2·10⁸ m of reach against a 3·10⁸ m <see cref="CatchRadiusMeters"/> and a 5·10⁸ m
+    /// <see cref="CaptureRule.CaptureRadiusMeters"/>: every range at which a hunter could lay hands on the
+    /// captain was a range at which he could not answer. That is not tension, it is a cutscene.</para>
+    ///
+    /// <para>Reversed by the owner's ruling. Reach is DERIVED now —
+    /// <see cref="OrdnanceRule.MassDriverMuzzleSpeedMps"/> × <see cref="EngagementFlightSeconds"/>, 66 km/s
+    /// for three hours = 712,800 km — and it covers both envelopes with room to spare. The two sides of that
+    /// inequality come from deliberately independent places: the muzzle from #961's physics, the envelopes
+    /// from the shuttle and pursuit rules. Nothing makes them agree except the Core guard that pins the law
+    /// — which is the point, since deriving one from the other would leave the guard asserting a
+    /// tautology.</para>
+    ///
+    /// <para>It is also the ONE number the dossier quotes now. The card used to quote muzzle × one day
+    /// (691,200 km) while <see cref="InWeaponRange"/> enforced 200,000 km — a sentence and a sim disagreeing
+    /// by three and a half times, on the very card the owner was reading while he asked what was going on.
+    /// That is this repo's own named bug class, and it was live.</para>
+    /// </summary>
+    public const double WeaponRangeMeters = OrdnanceRule.MassDriverMuzzleSpeedMps * EngagementFlightSeconds;
 
     /// <summary>A compliant/bribed target heaves to: boarding shuttles cross in half the time
     /// <see cref="CaptureRule.RequiredSecondsFor"/> would otherwise demand.</summary>
@@ -216,9 +251,10 @@ public static class EncounterRule
     /// <summary>One hunter, fitting out at the nearest policed body — parked there (riding the
     /// body's own orbital velocity) until <see cref="HunterFittingOutDays"/> pass.</summary>
     public static HunterState SpawnHunter(string id, string callsign, string originBodyId,
-        Vector2d originPosition, Vector2d originVelocity, double simTime) =>
+        Vector2d originPosition, Vector2d originVelocity, double simTime, string? warrant = null) =>
         new(id, callsign, originBodyId, simTime, simTime + HunterFittingOutDays * DaySeconds,
-            new ShipState(originPosition, originVelocity, simTime), CaughtPlayer: false, BrokenOff: false);
+            new ShipState(originPosition, originVelocity, simTime), CaughtPlayer: false, BrokenOff: false,
+            Warrant: warrant);
 
     /// <summary>Nearest planet inside <see cref="PolicedThresholdMeters"/> that isn't a haven —
     /// where hired muscle comes from (Earth/Mars in Sol; central, policed space generally). Null
@@ -415,6 +451,68 @@ public static class EncounterRule
         !hunter.CaughtPlayer && !hunter.BrokenOff && hiddenDurationSeconds >= BreakOffHiddenDays * DaySeconds
             ? hunter with { BrokenOff = true }
             : hunter;
+
+    // ── #962 · WHAT ENDS THE HUNT, SAID OUT LOUD, WITH THE LIVE NUMBER ────────────────────────────────
+    //
+    // Owner, docked at a haven with the heat gauge reading zero and a collector still inbound: "So we have
+    // zero heat and are docked at haven ... why is this still hunting us?" The rules that would have
+    // answered him were all RIGHT HERE and none of them was ever said to his face: the contract is bought
+    // once and does not care what the heat gauge says afterwards; hiding two unbroken days at a haven is
+    // what makes her lose the scent; warning shots erode her nerve until she voids it; a holed sail ends
+    // it outright. He was reading a dossier that told him her callsign, her range, and nothing he could act
+    // on.
+    //
+    // These live in EncounterRule, beside ApplyBreakOff and WarnOff, ON PURPOSE. This repo has a named bug
+    // class for a sentence that reports one thing while the sim does another, and the only structural
+    // defence is that the sentence and the rule read the SAME constant in the same file — so the countdown
+    // below reaches zero on exactly the tick ApplyBreakOff fires, and the shot count below reaches zero on
+    // exactly the shot WarnOff voids the contract on. Both agreements are swept in EncounterRuleTests.
+
+    /// <summary>Who bought this contract. A collector is hired over ONE job — the hull you took — and where
+    /// that name is known it is named, because "why is this still hunting us" is not a question a callsign
+    /// can answer. The unattributed case says the true thing too: nobody the captain has ever met.</summary>
+    public static string WarrantLine(HunterState hunter) =>
+        hunter.Warrant is { Length: > 0 } hull
+            ? $"⚖ writ served over the {hull} job — underwriters, not the law. Heat cools; a contract does not."
+            : "⚖ writ served by underwriters you never met — recovery of an insured asset. Heat cools; a contract does not.";
+
+    /// <summary>The hiding clause, with the clock running. <paramref name="hiddenDurationSeconds"/> is the
+    /// caller's continuous haven-hiding clock — the same value it hands <see cref="ApplyBreakOff"/> — and
+    /// <paramref name="hiddenNow"/> says whether that clock is running at all, because a clock that is not
+    /// running is the single most useful thing a captain can be told while a collector closes.</summary>
+    public static string HidingTerm(double hiddenDurationSeconds, bool hiddenNow)
+    {
+        // Invariant throughout: determinism is law in Core, and a decimal comma in a Finnish browser
+        // would make this sentence differ from the one a test read.
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        string window = BreakOffHiddenDays.ToString("0.#", invariant);
+        if (!hiddenNow)
+        {
+            return $"🏴 she loses the scent after {window} d hidden at a haven — the clock is NOT running";
+        }
+
+        double remaining = BreakOffHiddenDays * DaySeconds - hiddenDurationSeconds;
+        return remaining <= 0
+            ? "🏴 she has lost the scent — the haven kept you"
+            : $"🏴 she loses the scent after {window} d hidden at a haven — "
+              + $"{(remaining / DaySeconds).ToString("0.0", invariant)} d to go";
+    }
+
+    /// <summary>The nerve clause, counted down to the shot that actually voids the contract — the same
+    /// arithmetic <see cref="WarnOff"/> does, off the same <see cref="NerveThreshold"/>.</summary>
+    public static string NerveTerm(HunterState hunter, int playerHeat)
+    {
+        int remaining = NerveThreshold(hunter.Id, playerHeat) - hunter.WarningShotsTaken;
+        return remaining <= 0
+            ? "🎖 she has had enough already — the contract is void"
+            : remaining == 1
+                ? "🎖 …or ONE more warning shot near her voids the contract"
+                : $"🎖 …or {remaining} more warning shots near her void the contract";
+    }
+
+    /// <summary>The third door, which needs no number: hole her sail and she is out of the chase for good.
+    /// Said here so the card carries every way out, not the two that happen to have clocks.</summary>
+    public const string SailTerm = "🎯 …or hole her sail — a holed collector breaks off for good";
 
     /// <summary>Deterministic per-collector disposition: does this one prize the good life over
     /// the fee? Such a collector voids the contract at the very first warning shot. Rarer as heat

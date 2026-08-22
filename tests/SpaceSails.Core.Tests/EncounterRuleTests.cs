@@ -18,17 +18,177 @@ public class EncounterRuleTests
 
     // ---- weapon envelope ----
 
+    /// <summary>
+    /// #961/#962 · THE LASSO CANNOT REACH FURTHER THAN THE GUN — the owner's ruling, as a law.
+    ///
+    /// <para>This test used to assert the OPPOSITE, deliberately: <c>WeaponRangeMeters &lt;
+    /// CaptureRule.CaptureRadiusMeters</c>, "guns speak before shuttles fly". Playing a whole Debt Collector
+    /// chase is what killed that design — <i>"If we don't have a firing solution then they cannot board us /
+    /// catch us either. It is like being outside of bullets range but still getting lassoed. So the bullets
+    /// need to fly faster."</i> Every range at which a collector could lay hands on the captain was a range
+    /// at which he could not answer, which is not tension, it is a cutscene.</para>
+    ///
+    /// <para>The inequality is worth having as a guard because its two sides are computed from independent
+    /// places on purpose: reach descends from #961's mass driver (muzzle speed × the gun deck's engagement
+    /// horizon), while the envelopes belong to the shuttle rule and the pursuit rule. Nothing but this
+    /// assertion ties them together — so slow the driver back down, or widen a shuttle's operating range,
+    /// and the fault surfaces here instead of in a playtest.</para>
+    /// </summary>
     [Fact]
-    public void InWeaponRange_ShorterThanBoardingEnvelope()
+    public void TheCatchAndBoardingEnvelopesNeverOutreachTheGun()
     {
-        Assert.True(EncounterRule.WeaponRangeMeters < CaptureRule.CaptureRadiusMeters);
+        Assert.True(EncounterRule.CatchRadiusMeters <= EncounterRule.WeaponRangeMeters,
+            $"a collector catches at {EncounterRule.CatchRadiusMeters:N0} m but the driver only reaches " +
+            $"{EncounterRule.WeaponRangeMeters:N0} m — she can lasso us from outside our own guns.");
+        Assert.True(CaptureRule.CaptureRadiusMeters <= EncounterRule.WeaponRangeMeters,
+            $"boarding shuttles fly from {CaptureRule.CaptureRadiusMeters:N0} m but the driver only reaches " +
+            $"{EncounterRule.WeaponRangeMeters:N0} m — she can board us from outside our own guns.");
 
+        // …and reach IS the gun, not a number somebody typed next to it. The dossier quotes this constant,
+        // so a muzzle that changes must move the sentence the captain reads with it (#962's named bug class:
+        // the card said 691,200 km of "driver reach" while InWeaponRange enforced 200,000 km).
+        Assert.Equal(
+            OrdnanceRule.MassDriverMuzzleSpeedMps * EncounterRule.EngagementFlightSeconds,
+            EncounterRule.WeaponRangeMeters);
+    }
+
+    [Fact]
+    public void InWeaponRange_MeasuresTheDriversOwnReach()
+    {
         var player = new ShipState(Vector2d.Zero, Vector2d.Zero, 0);
-        var close = new ShipState(new Vector2d(1e8, 0), Vector2d.Zero, 0);
-        var far = new ShipState(new Vector2d(3e8, 0), Vector2d.Zero, 0);
+        var close = new ShipState(new Vector2d(EncounterRule.WeaponRangeMeters * 0.9, 0), Vector2d.Zero, 0);
+        var far = new ShipState(new Vector2d(EncounterRule.WeaponRangeMeters * 1.1, 0), Vector2d.Zero, 0);
 
         Assert.True(EncounterRule.InWeaponRange(player, close));
         Assert.False(EncounterRule.InWeaponRange(player, far));
+
+        // The owner's case, stated as geometry: a collector sitting exactly on her own catch envelope is
+        // inside the guns. She never gets a free grab.
+        var atHerCatchEnvelope = new ShipState(new Vector2d(EncounterRule.CatchRadiusMeters, 0), Vector2d.Zero, 0);
+        Assert.True(EncounterRule.InWeaponRange(player, atHerCatchEnvelope));
+    }
+
+    // ---- #962 · the sentence and the rule are the same arithmetic ----
+
+    /// <summary>
+    /// THE COUNTDOWN REACHES ZERO ON EXACTLY THE TICK THE RULE FIRES. Owner, docked at a haven with the heat
+    /// gauge at zero and a collector still inbound: <i>"So we have zero heat and are docked at haven … why is
+    /// this still hunting us?"</i> The answer was in <see cref="EncounterRule.ApplyBreakOff"/> the whole time
+    /// and was never said to him.
+    ///
+    /// <para>Saying it is only worth anything if the sentence cannot drift from the rule, which is this
+    /// repo's fifth named bug class in its purest form — a card that quotes one number while the sim keeps
+    /// another. So the two are swept against each other across the whole clock: the moment
+    /// <see cref="EncounterRule.HidingTerm"/> stops promising time remaining is the moment
+    /// <see cref="EncounterRule.ApplyBreakOff"/> flips the hunter, tick for tick.</para>
+    ///
+    /// <para>Red proof: change <c>BreakOffHiddenDays</c> in the sentence only (hard-code "2 d" while the
+    /// rule reads 3) and this reddens at the crossing.</para>
+    /// </summary>
+    [Fact]
+    public void TheHidingSentenceCountsDownToTheExactTickTheHunterBreaksOff()
+    {
+        HunterState hunter = EncounterRule.SpawnHunter(
+            "hunter-terms", "Debt Collector", "earth", Vector2d.Zero, Vector2d.Zero, 0);
+
+        double window = EncounterRule.BreakOffHiddenDays * 86400;
+        bool everBroken = false, everPromised = false;
+        for (int step = 0; step <= 200; step++)
+        {
+            double hidden = window * step / 100.0; // sweeps from 0 to twice the window, through the crossing
+            bool ruleBreaksOff = EncounterRule.ApplyBreakOff(hunter, hidden).BrokenOff;
+            string said = EncounterRule.HidingTerm(hidden, hiddenNow: true);
+            bool sentenceSaysDone = said.Contains("has lost the scent", StringComparison.Ordinal);
+
+            Assert.True(ruleBreaksOff == sentenceSaysDone,
+                $"at {hidden / 86400:0.000} d hidden the rule says brokenOff={ruleBreaksOff} but the card says \"{said}\".");
+            everBroken |= ruleBreaksOff;
+            everPromised |= !ruleBreaksOff;
+        }
+
+        // …and the sweep actually crossed. Two functions that both always said "no" would agree perfectly.
+        Assert.True(everBroken && everPromised, "the sweep never crossed the break-off threshold at all.");
+    }
+
+    /// <summary>A clock that is NOT running has to say so. Flying free with a collector inbound, the honest
+    /// sentence is not "1.4 d to go" — it is that nothing is counting.</summary>
+    [Fact]
+    public void TheHidingSentenceSaysWhenTheClockIsNotRunningAtAll()
+    {
+        string said = EncounterRule.HidingTerm(hiddenDurationSeconds: 0, hiddenNow: false);
+
+        Assert.Contains("NOT running", said, StringComparison.Ordinal);
+        Assert.DoesNotContain("to go", said, StringComparison.Ordinal);
+    }
+
+    /// <summary>…AND THE SHOT COUNT IS THE SHOT COUNT. <see cref="EncounterRule.NerveTerm"/> promises a
+    /// number of warning shots; firing exactly that many through <see cref="EncounterRule.WarnOff"/> voids
+    /// the contract, and one fewer does not. Swept over a spread of ids so both dispositions
+    /// (<see cref="EncounterRule.PrefersTheGoodLife"/> and the professional) are covered.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void TheNerveSentenceCountsTheShotsThatActuallyVoidTheContract(int heat)
+    {
+        for (int n = 0; n < 40; n++)
+        {
+            HunterState hunter = EncounterRule.SpawnHunter(
+                $"hunter-{n}", "Debt Collector", "earth", Vector2d.Zero, Vector2d.Zero, 0);
+
+            int promised = ShotsThePromiseNames(EncounterRule.NerveTerm(hunter, heat));
+
+            HunterState oneShort = hunter;
+            for (int shot = 0; shot < promised - 1; shot++)
+            {
+                oneShort = EncounterRule.WarnOff(oneShort, heat, shot * 3600.0);
+            }
+
+            Assert.False(oneShort.BrokenOff,
+                $"hunter-{n} at heat {heat}: the card promised {promised} shots but {promised - 1} already voided it.");
+            Assert.True(EncounterRule.WarnOff(oneShort, heat, promised * 3600.0).BrokenOff,
+                $"hunter-{n} at heat {heat}: the card promised {promised} shots and the {promised}th did not void it.");
+        }
+    }
+
+    /// <summary>The count the card actually shows a captain, read back off the card — "ONE more" or
+    /// "N more". Parsed rather than recomputed, so a sentence that says a different number than it means
+    /// fails here instead of passing on the arithmetic behind it.</summary>
+    private static int ShotsThePromiseNames(string said)
+    {
+        if (said.Contains("ONE more", StringComparison.Ordinal))
+        {
+            return 1;
+        }
+
+        string[] words = said.Split(' ');
+        for (int i = 0; i < words.Length - 1; i++)
+        {
+            if (words[i + 1] == "more" && int.TryParse(words[i], out int n))
+            {
+                return n;
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"the nerve sentence names no shot count at all: \"{said}\"");
+    }
+
+    /// <summary>The warrant names the job, when the job is known. The robbery that buys a collector has the
+    /// robbed hull in hand — it used to throw that name away at the spawn call.</summary>
+    [Fact]
+    public void TheWarrantNamesTheJobThatBoughtHer()
+    {
+        HunterState overAJob = EncounterRule.SpawnHunter(
+            "h1", "Debt Collector", "earth", Vector2d.Zero, Vector2d.Zero, 0, warrant: "CARDINAL DRIFT");
+        HunterState overNothing = EncounterRule.SpawnHunter(
+            "h2", "Debt Collector", "earth", Vector2d.Zero, Vector2d.Zero, 0);
+
+        Assert.Contains("CARDINAL DRIFT", EncounterRule.WarrantLine(overAJob), StringComparison.Ordinal);
+        Assert.Contains("never met", EncounterRule.WarrantLine(overNothing), StringComparison.Ordinal);
+
+        // Both say the thing the heat gauge cannot: a contract is bought once and does not cool.
+        Assert.Contains("Heat cools; a contract does not", EncounterRule.WarrantLine(overAJob), StringComparison.Ordinal);
+        Assert.Contains("Heat cools; a contract does not", EncounterRule.WarrantLine(overNothing), StringComparison.Ordinal);
     }
 
     // ---- compliance ----

@@ -1291,9 +1291,11 @@
 
     private string WedgePolygonPoints()
     {
-        double bearingDeg = _activeJob?.CenterBearingRad * 180.0 / Math.PI ?? _centerBearingDeg;
-        double arcDeg = _activeJob?.ArcWidthRad * 180.0 / Math.PI ?? _arcWidthDeg;
-        double bearingRad = _activeJob?.CenterBearingRad ?? bearingDeg * Math.PI / 180.0;
+        // #962: one telescope, one aim — the rosette wedge reads the same CurrentScan the heading line
+        // does, so a SCHEDULED pass (not just a manual sweep) visibly swings the drawn wedge too.
+        ScanJob? look = CurrentScan?.Job ?? _activeJob;
+        double bearingRad = look?.CenterBearingRad ?? _centerBearingDeg * Math.PI / 180.0;
+        double arcDeg = look?.ArcWidthRad * 180.0 / Math.PI ?? _arcWidthDeg;
         double halfArc = (arcDeg * Math.PI / 180.0) / 2;
 
         double centerLocal = ToLocalAngle(bearingRad);
@@ -1348,12 +1350,38 @@
         return RosettePoint(localAngle, 0.55);
     }
 
+    /// <summary>
+    /// #962 · THE READOUT NAMES THE LOOK THE INSTRUMENT IS ACTUALLY TAKING. Owner, after ordering the
+    /// scope onto the collector: <i>"why is our scan looking at our destination when I press sharpen fix
+    /// on the debt collector. It is like our telescope pirate is high on drugs."</i>
+    ///
+    /// <para>Half of that was a dead button (Map.Npc.TrackShipFromMenu, which bailed on every hunter id) —
+    /// but the other half was this readout lying on its own account, and that is the repo's own named bug
+    /// class: the sim doing one thing while a SENTENCE reports another. <c>_centerBearingDeg</c> is written
+    /// by exactly one thing in the whole codebase — the manual Bearing slider. Every queued pass aims the
+    /// instrument through <see cref="JobFor"/> into a different variable entirely, so whatever the telescope
+    /// was truly looking at, this line went on quoting the slider's last resting place.</para>
+    ///
+    /// <para>So the aim is read from <see cref="CurrentScan"/> — the ONE answer the wedge overlay already
+    /// draws from (one telescope, one truth) — and the line names the job being served, so "looking 146°
+    /// off the bow" can be checked against "🎯 Debt Collector" in the same breath. The slider is the
+    /// fallback only when nothing is queued and nothing is sweeping: the one case where it IS the aim.</para>
+    /// </summary>
+    private double LookBearingDeg()
+    {
+        double rad = CurrentScan is { } scan ? scan.Job.CenterBearingRad : _centerBearingDeg * Math.PI / 180.0;
+        double deg = rad * 180.0 / Math.PI % 360;
+        return deg < 0 ? deg + 360 : deg;
+    }
+
     // M27: are we looking ahead or astern? The scope aim vs the velocity vector, in words.
     private string HeadingLine()
     {
+        double scopeDeg = LookBearingDeg();
+        string job = CurrentScan is { } scan ? $" · {scan.Label}" : "";
         if (ShipVelocity.LengthSquared == 0)
         {
-            return $"scope {(int)_centerBearingDeg}° · ship adrift";
+            return $"scope {(int)scopeDeg}° · ship adrift{job}";
         }
 
         double progradeDeg = TrackingStation.Bearing(ShipVelocity) * 180.0 / Math.PI;
@@ -1362,12 +1390,12 @@
             progradeDeg += 360;
         }
 
-        double off = Math.Abs(_centerBearingDeg - progradeDeg) % 360;
+        double off = Math.Abs(scopeDeg - progradeDeg) % 360;
         if (off > 180)
         {
             off = 360 - off;
         }
 
-        return $"scope {(int)_centerBearingDeg}° · prograde {(int)progradeDeg}° — looking {(int)off}° off the bow ({(off <= 90 ? "ahead" : "astern")})";
+        return $"scope {(int)scopeDeg}° · prograde {(int)progradeDeg}° — looking {(int)off}° off the bow ({(off <= 90 ? "ahead" : "astern")}){job}";
     }
 }

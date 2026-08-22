@@ -593,6 +593,7 @@ public partial class Map
         DrawNpcs();           // #402 follow-up: DEPOT name labels enqueue here, so the flush must follow it
         FlushNavLabels();     // #402: resolve overlapping body/threat/depot labels — priority wins, depots yield
         DrawHunters();
+        DrawTargetReticle(); // #962: the red X on the tactical target, brackets on every held track
         DrawOrdnance();
         DrawPyramids();
         DrawShuttleRange();
