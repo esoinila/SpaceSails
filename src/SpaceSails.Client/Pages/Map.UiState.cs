@@ -687,7 +687,6 @@ public partial class Map
             case 'S': OpenShipMenuFor(pick.Id, x, y); break;
             case 'H': MarkHunterOfInterest(pick.Id); break;
             case 'B': OpenBodyMenuFor(pick.Id, x, y); break;
-            case 'C': OpenCorridorMenuFor(pick.Id, x, y); break;
             default: OpenSkyMenu(x, y); break;
         }
     }
@@ -721,26 +720,6 @@ public partial class Map
         _bodyMenuY = clientY;
         ComputeAerobrakeQuote(body); // #290: price the aerobrake once on open (it flies drag — never per render)
         StateHasChanged(); // pointer events don't auto-render (IHandleEvent) — show the menu now
-    }
-
-    private void OpenCorridorMenuFor(string corridorKey, double clientX, double clientY)
-    {
-        // CorridorRegion is a struct: search explicitly rather than FirstOrDefault, whose
-        // "not found" is a degenerate default lane, not null.
-        foreach (CorridorRegion lane in _mapCorridors)
-        {
-            if (CorridorKey(lane) != corridorKey)
-            {
-                continue;
-            }
-
-            _corridorMenuLane = lane;
-            _selectedCorridorKey = corridorKey;
-            _corridorMenuX = clientX; // #253: raw anchor; ClampMenu offsets + flips at render
-            _corridorMenuY = clientY;
-            StateHasChanged();
-            return;
-        }
     }
 
     // ---- Map layers (owner: "filter what is being shown… they clutter the view a lot";
@@ -1060,40 +1039,18 @@ public partial class Map
     // On the Sensors desk every click answers with scan options: ships (fixed or not), planets,
     // trade lanes, and empty sky all open scan-contextual menus that enqueue telescope work.
 
-    private CorridorRegion? _corridorMenuLane;
-    private double _corridorMenuX, _corridorMenuY;
+    // #953 — the LANE is no longer one of the things a click can mean. _corridorMenuLane, its anchor,
+    // CloseCorridorMenu and the CorridorAt hit-test went with the per-lane menu (owner's ruling: "the
+    // routes as a whole should not even be selectable, since they just colour the page"). Its two sweep
+    // actions live in the open-sky menu below, under the lane that menu already names.
     private Vector2d? _skyMenuWorld;
     private double _skyMenuX, _skyMenuY, _skyMenuRadius;
     private bool _suppressClickMenu;
-
-    private void CloseCorridorMenu()
-    {
-        _corridorMenuLane = null;
-        _selectedCorridorKey = null;
-        StateHasChanged();
-    }
 
     private void CloseSkyMenu()
     {
         _skyMenuWorld = null;
         StateHasChanged();
-    }
-
-    private CorridorRegion? CorridorAt(double clientX, double clientY)
-    {
-        Vector2d world = _camera.ScreenToWorld(clientX, clientY);
-        CorridorRegion? best = null;
-        double bestDistance = double.MaxValue;
-        foreach (CorridorRegion lane in _mapCorridors)
-        {
-            double d = lane.DistanceTo(world);
-            if (d <= lane.Radius && d < bestDistance)
-            {
-                (bestDistance, best) = (d, lane);
-            }
-        }
-
-        return best;
     }
 
     private void OpenSkyMenu(double clientX, double clientY)

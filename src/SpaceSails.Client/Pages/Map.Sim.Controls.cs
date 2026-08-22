@@ -105,7 +105,7 @@ public partial class Map
 
         // A click that only dismisses an open menu must not immediately open the next one.
         _suppressClickMenu = _bodyMenuBody is not null || _shipMenuId is not null
-            || _corridorMenuLane is not null || _skyMenuWorld is not null || _pickMenu is not null;
+            || _skyMenuWorld is not null || _pickMenu is not null;
 
         if (_bodyMenuBody is not null)
         {
@@ -115,11 +115,6 @@ public partial class Map
         if (_shipMenuId is not null)
         {
             CloseShipMenu(); // same rule for the contact menu
-        }
-
-        if (_corridorMenuLane is not null)
-        {
-            CloseCorridorMenu();
         }
 
         if (_skyMenuWorld is not null)

@@ -4537,34 +4537,9 @@
 
     @* PR-C: the trade-lane menu — the corridor the owner drew by hand, now a clickable region.
        Replaces the tracking post's "— manual aim —" dropdown: the lane IS the control. *@
-    @if (_activeDesk == ShipDesk.Sensors && _corridorMenuLane is { } menuLane)
-    {
-        @* #253: a sweep-cost line plus the two sweep actions. *@
-        var corridorAt = ClampMenu(_corridorMenuX, _corridorMenuY, 3);
-        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(corridorAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(corridorAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold me-2">📦 @menuLane.Name</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this lane's menu"
-                        @onclick="CloseCorridorMenu"></button>
-            </div>
-            <div class="text-secondary mb-1">
-                @{ ScanJob laneJob = TradeCorridors.SweepJobFor(menuLane, _ship.Position); }
-                sweep arc @((int)(laneJob.ArcWidthRad * 180 / Math.PI))° from here ·
-                @SweepCostText(laneJob)
-            </div>
-            <div class="d-grid gap-1">
-                <button type="button" class="btn btn-sm btn-info" title="Sweep this trade lane once, right now"
-                        @onclick="() => SweepCorridorFromMenu(menuLane, standing: false)">
-                    📡 Sweep this lane now
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-info" title="Keep re-sweeping this lane every carousel round"
-                        @onclick="() => SweepCorridorFromMenu(menuLane, standing: true)">
-                    🔁 Standing lane watch — re-sweep every carousel round
-                </button>
-            </div>
-        </div>
-    }
+    @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
+       as a whole should not even be selectable, since they just colour the page in that option"). Its two
+       actions — sweep once, standing watch — live in the open-sky menu above, under the lane it names. *@
 
     @* PR-C: the open-sky menu — even empty space answers. What a scan here would take, and the
        guideline hint when the spot sits near a known lane. *@
@@ -4590,10 +4565,18 @@
                 </button>
                 @if (NearLaneFor(skyPoint) is { } nearLane)
                 {
+                    @* #953 — BOTH lane sweeps live here now. The whole corridor used to be a click target of
+                       its own, with a menu carrying these two buttons; the owner's ruling took the corridor
+                       off the picker ("the routes as a whole should not even be selectable, since they just
+                       colour the page"), so the actions moved to the one place a lane was already named. *@
                     <div class="text-info">near the @nearLane.Name</div>
                     <button type="button" class="btn btn-sm btn-outline-info" title="Sweep the nearby trade lane instead"
                             @onclick="() => SweepCorridorFromMenu(nearLane, standing: false)">
                         📡 Sweep the @nearLane.PairName lane instead
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Keep re-sweeping the nearby lane every carousel round"
+                            @onclick="() => SweepCorridorFromMenu(nearLane, standing: true)">
+                        🔁 Standing watch on the @nearLane.PairName lane
                     </button>
                 }
             </div>
