@@ -1,0 +1,73 @@
+namespace SpaceSails.Core;
+
+/// <summary>
+/// #954 — 🎯 NEAREST DOES NOT FLICKER, AND IT SPEAKS THE HIERARCHY.
+///
+/// <para>The bug, in the owner's words: "Nearest flickers between Mars and The Rusty Roadstead every
+/// orbit." Both readouts were true. The Roadstead is a station on a 12,000 km, two-hour rail around Mars;
+/// from a quarter of an AU away the two are the same distance to four decimal places, and which of them is
+/// the literal closest swaps twice per station orbit — several times a second at warp. A readout that
+/// re-decides an unchanged truth is noise, and the same noise drove the scope's AUTO lock, which picks the
+/// nearest body: the picture in the video box ping-ponged with it.</para>
+///
+/// <para><b>The law is two rules, and they are the same rule twice.</b> (1) <see cref="Unseats"/> —
+/// a challenger takes the "nearest" slot only when it is closer by a real margin, not by a hair; the
+/// incumbent keeps it otherwise. That is plain hysteresis, and it is what stops the swap. (2) Its
+/// complement, <see cref="InTheSameBreath"/> — two things neither of which can unseat the other are, for a
+/// captain's purposes, in the same place, and the honest readout names them TOGETHER rather than picking a
+/// winner: "Mars › The Rusty Roadstead". That is the owner's ask — "present the hierarchy, Mars is closest
+/// and it contains (in its Hill sphere) The Rusty Roadstead" — and it is why the flicker was never simply a
+/// display bug: the readout had one slot for a fact that needs two.</para>
+///
+/// <para>Pure and deterministic: distances in, a verdict out. No clock, no state — the caller holds the
+/// incumbent, which is the only memory the law needs.</para>
+/// </summary>
+public static class NearestRule
+{
+    /// <summary>
+    /// How much closer a challenger must be, as a fraction of the incumbent's distance, before it takes the
+    /// "nearest" slot. Sized off the case that broke: a station 12,000 km out from Mars, seen from 0.16 AU
+    /// (2.4e10 m), swings the two distances apart by 0.05% — three orders of magnitude inside this band, so
+    /// the pair never trades places at cruise range. A genuine change of neighbourhood — Mars giving way to
+    /// Jupiter as the ship crosses — clears 3% long before anyone would call the readout wrong.
+    /// </summary>
+    public const double SwapFraction = 0.03;
+
+    /// <summary>
+    /// Does <paramref name="challengerDistance"/> unseat the current nearest at
+    /// <paramref name="incumbentDistance"/>? Only when it is closer by more than <see cref="SwapFraction"/>
+    /// of the incumbent's distance. A challenger that is merely, fractionally closer does NOT — that is the
+    /// whole of the anti-flicker law. (With no incumbent, the caller takes the challenger outright; this
+    /// answers only the contest between two live candidates.)
+    /// </summary>
+    public static bool Unseats(double incumbentDistance, double challengerDistance) =>
+        challengerDistance < incumbentDistance * (1.0 - SwapFraction);
+
+    /// <summary>Squared-distance form, so the per-frame sweep never takes a square root it doesn't need.
+    /// Exactly <see cref="Unseats"/> with both sides squared.</summary>
+    public static bool UnseatsSquared(double incumbentDistanceSquared, double challengerDistanceSquared) =>
+        challengerDistanceSquared < incumbentDistanceSquared * ((1.0 - SwapFraction) * (1.0 - SwapFraction));
+
+    /// <summary>
+    /// Are these two at the same distance <i>as far as the captain is concerned</i> — neither able to unseat
+    /// the other? This is the hierarchy trigger: a planet and a station in its Hill sphere that sit inside
+    /// each other's band are one place with two names, and the readout says so instead of choosing.
+    /// </summary>
+    public static bool InTheSameBreath(double aDistance, double bDistance) =>
+        !Unseats(aDistance, bDistance) && !Unseats(bDistance, aDistance);
+
+    /// <summary>Squared-distance form of <see cref="InTheSameBreath"/>.</summary>
+    public static bool InTheSameBreathSquared(double aDistanceSquared, double bDistanceSquared) =>
+        !UnseatsSquared(aDistanceSquared, bDistanceSquared) && !UnseatsSquared(bDistanceSquared, aDistanceSquared);
+
+    /// <summary>
+    /// The one line for a nearest reading that has a parent and a child: "Mars › The Rusty Roadstead". The
+    /// chevron is doing real work — it says the second thing is <i>inside</i> the first's Hill sphere, which
+    /// is exactly the fact the flickering single-slot readout could not hold.
+    /// </summary>
+    public static string Hierarchy(string parentName, string childName) => $"{parentName} › {childName}";
+
+    /// <summary>The scope's honest sub-line for a hierarchical lock: the box is pointed at the child, and
+    /// this says whose sphere the child is in — without renaming the thing actually drawn.</summary>
+    public static string OrbitsNote(string parentName) => $"orbits {parentName}";
+}

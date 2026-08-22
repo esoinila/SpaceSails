@@ -123,8 +123,15 @@ public partial class Map
 
         if (_nearestBody is CelestialBody body)
         {
+            // #954: AUTO reads the (now hysteresis-held) nearest body, so the box no longer ping-pongs
+            // between a planet and the station in its Hill sphere every station orbit. Where there IS a
+            // hierarchy, the sub-line says whose sphere we are in — the box still names, and still draws,
+            // the object actually locked, so the words and the picture can never disagree.
+            string? note = _nearestParentName is { } parentName && _nearestChildName == body.Name
+                ? NearestRule.OrbitsNote(parentName)
+                : null;
             return new ScopeView.Target(
-                ScopeView.TargetKind.Body, body.Name, null,
+                ScopeView.TargetKind.Body, body.Name, note,
                 _nearestBodyPosition, _nearestBodyVelocity,
                 body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
                 IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
