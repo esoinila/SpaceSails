@@ -3,9 +3,10 @@ namespace SpaceSails.Core.Tests;
 /// <summary>
 /// QA gates for #304 — 🛬 THE ARRIVAL BRAKE ASKS. Owner ruling (2026-07-18): "let's have it ask, it is
 /// hard to remember in the heat of the moment otherwise." The pure timing law lives in
-/// <see cref="ArrivalBrake"/> so it unit-tests without a browser: ask at window-open, re-raise on snooze
-/// while the window remains, fire exactly once (the double-fire / double-bill guard), decline is stateless,
-/// and the fire math sheds to the clamp window (or pro-rata on a short tank). Plus the in-voice wording.
+/// <see cref="ArrivalBrake"/> so it unit-tests without a browser: ask at window-open, HOLD means held
+/// (#962), fire exactly once (the double-fire / double-bill guard), decline is stateless, and the fire math
+/// sheds to the clamp window (or pro-rata on a short tank). Plus the window predicate — a clamped ship is
+/// never arriving (#962) — the worthless-aerobrake gate, and the in-voice wording.
 /// </summary>
 public class ArrivalBrakeTests
 {
@@ -15,7 +16,7 @@ public class ArrivalBrakeTests
     public void Advance_RaisesTheAsk_TheFrameTheWindowOpens()
     {
         // A dormant gate with the window open → the ask is raised (never silently skipped).
-        ArrivalBrake.Gate gate = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, windowOpen: true, nowMs: 1_000);
+        ArrivalBrake.Gate gate = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, windowOpen: true);
         Assert.True(gate.Asking);
         Assert.False(gate.HasFired);
     }
@@ -24,7 +25,7 @@ public class ArrivalBrakeTests
     public void Advance_WithNoWindow_StaysClosed()
     {
         // No brake owed → nothing raised. (And a spent gate resets when the window shuts — see below.)
-        ArrivalBrake.Gate gate = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, windowOpen: false, nowMs: 1_000);
+        ArrivalBrake.Gate gate = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, windowOpen: false);
         Assert.False(gate.Asking);
         Assert.Equal(ArrivalBrake.Phase.Dormant, gate.State);
     }
@@ -33,45 +34,54 @@ public class ArrivalBrakeTests
     public void Advance_HoldsTheAskUp_WhileTheWindowRemains()
     {
         // An open ask is not re-created or dismissed frame to frame — it stays up awaiting the captain.
-        ArrivalBrake.Gate asking = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true, 0);
-        ArrivalBrake.Gate next = ArrivalBrake.Advance(asking, windowOpen: true, nowMs: 16);
+        ArrivalBrake.Gate asking = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true);
+        ArrivalBrake.Gate next = ArrivalBrake.Advance(asking, windowOpen: true);
         Assert.True(next.Asking);
     }
 
     [Fact]
-    public void Snooze_HidesTheAsk_ThenReRaisesAfterTheInterval_WhileTheWindowRemains()
+    public void Hold_HidesTheAsk_AndNeverReRaisesIt_ForThisArrival()
     {
-        ArrivalBrake.Gate asking = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true, 0);
+        // #962 REGRESSION. Owner, of his own screenshot: "the jupiter brake re-appears after I click I'll
+        // fly by hand." Hold is an ANSWER, not a snooze. Nothing fires, and no amount of frames with the
+        // window still open brings the card back.
+        ArrivalBrake.Gate asking = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true);
+        ArrivalBrake.Gate held = ArrivalBrake.Hold(asking);
 
-        // The captain waves it off: the ask hides, nothing fires.
-        ArrivalBrake.Gate snoozed = ArrivalBrake.Snooze(asking, nowMs: 1_000);
-        Assert.False(snoozed.Asking);
-        Assert.False(snoozed.HasFired);
-        Assert.Equal(ArrivalBrake.Phase.Snoozed, snoozed.State);
+        Assert.False(held.Asking);
+        Assert.False(held.HasFired);
+        Assert.True(held.IsHeld);
+        Assert.Equal(ArrivalBrake.Phase.Held, held.State);
 
-        // Still snoozed just before the deadline — the window is open but the nag interval hasn't elapsed.
-        ArrivalBrake.Gate stillSnoozed = ArrivalBrake.Advance(snoozed, windowOpen: true, nowMs: 1_000 + ArrivalBrake.SnoozeReraiseMs - 1);
-        Assert.False(stillSnoozed.Asking);
+        // Ten thousand frames later, the window still open: still held, still silent.
+        ArrivalBrake.Gate gate = held;
+        for (int frame = 0; frame < 10_000; frame++)
+        {
+            gate = ArrivalBrake.Advance(gate, windowOpen: true);
+            Assert.False(gate.Asking);
+        }
 
-        // Past the deadline, window still open → the ask re-raises (never silently skipped).
-        ArrivalBrake.Gate reRaised = ArrivalBrake.Advance(snoozed, windowOpen: true, nowMs: 1_000 + ArrivalBrake.SnoozeReraiseMs);
-        Assert.True(reRaised.Asking);
+        Assert.True(gate.IsHeld);
     }
 
     [Fact]
-    public void Snooze_WhenTheWindowShutsBeforeReRaise_ResetsRatherThanReRaising()
+    public void Hold_ThenTheWindowShuts_LetsTheNEXTArrivalAskAfresh()
     {
-        // The captain declined and then sheds by hand (or docks): the window shuts, the gate resets — a later
-        // arrival asks afresh, this one is not re-raised into a shut window.
-        ArrivalBrake.Gate snoozed = ArrivalBrake.Snooze(ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true, 0), 1_000);
-        ArrivalBrake.Gate closed = ArrivalBrake.Advance(snoozed, windowOpen: false, nowMs: 99_999);
+        // Held is terminal for THIS arrival only: the window shutting (braked, clamped on, wandered clear)
+        // resets the gate, and the next hot arrival gets its question.
+        ArrivalBrake.Gate held = ArrivalBrake.Hold(ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true));
+
+        ArrivalBrake.Gate closed = ArrivalBrake.Advance(held, windowOpen: false);
         Assert.Equal(ArrivalBrake.Gate.Closed, closed);
+
+        ArrivalBrake.Gate nextArrival = ArrivalBrake.Advance(closed, windowOpen: true);
+        Assert.True(nextArrival.Asking);
     }
 
     [Fact]
     public void Fire_MarksFiredOnce_AndIsIdempotent_NoDoubleFire()
     {
-        ArrivalBrake.Gate asking = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true, 0);
+        ArrivalBrake.Gate asking = ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true);
 
         ArrivalBrake.Gate fired = ArrivalBrake.Fire(asking);
         Assert.True(fired.HasFired);
@@ -85,16 +95,83 @@ public class ArrivalBrakeTests
     [Fact]
     public void Advance_KeepsAFiredGateFired_WhileTheWindowLingers_ThenResetsWhenItShuts()
     {
-        ArrivalBrake.Gate fired = ArrivalBrake.Fire(ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true, 0));
+        ArrivalBrake.Gate fired = ArrivalBrake.Fire(ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, true));
 
         // While the window is (briefly) still open post-fire, the gate stays Fired — it never re-asks.
-        ArrivalBrake.Gate lingering = ArrivalBrake.Advance(fired, windowOpen: true, nowMs: 50);
+        ArrivalBrake.Gate lingering = ArrivalBrake.Advance(fired, windowOpen: true);
         Assert.True(lingering.HasFired);
         Assert.False(lingering.Asking);
 
         // Once the speed is shed and the window shuts, the gate resets for any future arrival.
-        ArrivalBrake.Gate shut = ArrivalBrake.Advance(fired, windowOpen: false, nowMs: 60);
+        ArrivalBrake.Gate shut = ArrivalBrake.Advance(fired, windowOpen: false);
         Assert.Equal(ArrivalBrake.Gate.Closed, shut);
+    }
+
+    // ===== #962 · The WINDOW: a clamped ship is not arriving =====
+
+    // The Red Eye's geometry, as the owner met it: a berth well inside Jupiter's Hill sphere (5.3e10 m),
+    // 3 km off the station, riding the station's own rail — which is fast relative to JUPITER.
+    private const double RedEyeDistanceFromJupiter = 7.0e8;
+    private const double JupiterHillRadius = 5.3e10;
+    private const double BerthSpeedRelativeToJupiter = 13_000.0; // a Jovian orbit is hot by clamp-window standards
+
+    [Fact]
+    public void WindowOpen_WhileClamped_IsShut_EvenInsideTheHillSphereAtOrbitalSpeed()
+    {
+        // #962 REGRESSION. Owner, over a screenshot of the ship clamped at The Red Eye with a Jupiter
+        // aerobrake card up: "This pop-up still shows when we are docked?" A berth is not an arrival — the
+        // station holds her, and the burn the card offers would do nothing but fight the clamp.
+        Assert.False(ArrivalBrake.WindowOpen(
+            clamped: true, crossingTheVoid: false,
+            distance: RedEyeDistanceFromJupiter, vicinityRadius: JupiterHillRadius,
+            relativeSpeed: BerthSpeedRelativeToJupiter, clampWindowSpeed: LongHaul.InsertionTargetSpeed));
+    }
+
+    [Fact]
+    public void WindowOpen_SameGeometryButFlying_IsOpen()
+    {
+        // The guard is the CLAMP and nothing else — cast off in the exact same place, at the exact same
+        // speed, and the brake is genuinely owed again. (Prove the clamp test above can fail.)
+        Assert.True(ArrivalBrake.WindowOpen(
+            clamped: false, crossingTheVoid: false,
+            distance: RedEyeDistanceFromJupiter, vicinityRadius: JupiterHillRadius,
+            relativeSpeed: BerthSpeedRelativeToJupiter, clampWindowSpeed: LongHaul.InsertionTargetSpeed));
+    }
+
+    [Fact]
+    public void WindowOpen_MidJump_OrFarOut_OrAlreadySlow_IsShut()
+    {
+        // Crossing the void: the arrival world is not there yet.
+        Assert.False(ArrivalBrake.WindowOpen(false, true, 1.0, JupiterHillRadius, 30_000, LongHaul.InsertionTargetSpeed));
+
+        // Outside the vicinity: nothing to insert into.
+        Assert.False(ArrivalBrake.WindowOpen(false, false, JupiterHillRadius * 2, JupiterHillRadius, 30_000, LongHaul.InsertionTargetSpeed));
+
+        // Already inside the clamp window: the brake is not owed, so it is not asked for.
+        Assert.False(ArrivalBrake.WindowOpen(
+            false, false, RedEyeDistanceFromJupiter, JupiterHillRadius,
+            LongHaul.InsertionTargetSpeed, LongHaul.InsertionTargetSpeed));
+    }
+
+    // ===== #962 · An aerobrake that saves nothing is not an offer =====
+
+    [Fact]
+    public void AerobrakeWorthOffering_RefusesTheZeroPassZeroSavedNonOffer()
+    {
+        // #962 REGRESSION, straight off the owner's screenshot: "the aerobrake commits the ship to 0 passes
+        // (≈0 p saved) — commit the pass?" That is a form to sign in exchange for nothing.
+        Assert.False(ArrivalBrake.AerobrakeWorthOffering(passes: 0, pulsesSaved: 0));
+        Assert.False(ArrivalBrake.AerobrakeWorthOffering(passes: 4, pulsesSaved: 0));   // passes for no saving
+        Assert.False(ArrivalBrake.AerobrakeWorthOffering(passes: 0, pulsesSaved: 11));  // saving for no pass
+        Assert.False(ArrivalBrake.AerobrakeWorthOffering(passes: -1, pulsesSaved: -1));
+    }
+
+    [Fact]
+    public void AerobrakeWorthOffering_AcceptsARealTrade()
+    {
+        // The quote the owner SHOULD have been shown — a real campaign for a real saving.
+        Assert.True(ArrivalBrake.AerobrakeWorthOffering(passes: 6, pulsesSaved: 11));
+        Assert.True(ArrivalBrake.AerobrakeWorthOffering(passes: 1, pulsesSaved: 1));
     }
 
     // ===== The fire math: shed to the clamp window, pay what the tank holds =====

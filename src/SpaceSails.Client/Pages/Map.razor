@@ -4952,7 +4952,9 @@
                 </div>
             }
             <div>
-                Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestBody is { } nb && IsDockableHaven(nb) && _dockedHavenId is null)
+                @* #954: one line for a fact that needs two — the neighbourhood and the thing in it, and the
+                   ⚓ hint follows the neighbourhood's haven rather than blinking with the nearest slot. *@
+                Nearest: @NearestReadoutName() (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestHaven is not null && _dockedHavenId is null)
                 {
                     <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
                 }
