@@ -92,6 +92,13 @@ public partial class Map
         {
             if (npc.Active && !npc.Arrived && npc.CurrentlyObserved) ids.Add(npc.Ship.Id);
         }
+        // #962: hired muscle rides the carousel too. A hunter was absent from this list AND from
+        // ResolveScopeTarget, so the one contact a captain most wants in the video box was the one
+        // thing the scope could not be pointed at, by any route.
+        foreach (HunterState hunter in _hunters)
+        {
+            ids.Add(hunter.Id);
+        }
         foreach (CelestialBody b in _ephemeris!.Bodies)
         {
             if (IsBodyHidden(b.Id)) continue; // hidden bodies never ride the scope carousel (PR-A)
@@ -124,7 +131,13 @@ public partial class Map
         // M29: a deliberately SELECTED contact outranks the destination while the selection
         // lives (owner: "target selection should work even when the ship is on course to
         // orbit") — deselect and the DEST lock returns.
-        if (_selectedTargetId is not null && ResolveScopeTarget(_selectedTargetId) is { } picked)
+        // #962: …and so does the TARGET OF INTEREST, which is how a hunter becomes the dossier's
+        // subject in the first place (a map click on a collector marks interest, never selection).
+        // Without this the owner could open the Debt Collector's book, press every button on it,
+        // and still watch the video box show his destination: "it is like our telescope pirate is
+        // high on drugs". TacticalTargetId is the same id the dossier renders, so the book and the
+        // box are now looking at one contact.
+        if (TacticalTargetId is { } tactical && ResolveScopeTarget(tactical) is { } picked)
         {
             if (_scopeView is not null) _scopeView.LockLabel = "◆ TRACK";
             return picked;
@@ -200,6 +213,19 @@ public partial class Map
                     npc.State.Position, npc.State.Velocity,
                     0, NpcColor, InPlasmaAt(npc.State.Position),
                     IsDepot: npc.Ship.DepotBodyId is not null);
+            }
+        }
+
+        // #962: hired muscle is a legitimate thing to put in the video box — she is a contact whose
+        // state the gun deck already reads exactly, so there is no optical-truth gate to pass.
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == id)
+            {
+                return new ScopeView.Target(
+                    ScopeView.TargetKind.Freighter, hunter.Callsign, "hired muscle 🐺",
+                    hunter.State.Position, hunter.State.Velocity,
+                    0, HunterColor, InPlasmaAt(hunter.State.Position));
             }
         }
 

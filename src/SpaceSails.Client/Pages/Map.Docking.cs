@@ -635,6 +635,7 @@ public partial class Map
         _nearestBodyPosition = destPos;
         _nearestBodyVelocity = _ship.Velocity;              // the berth rides the destination's drift
         _armedOrbitBodyId = null;                           // a berth disarms any pending auto-insert
+        ArrivedAt(dest.Id);                                 // #962: a shuttle hop is an arrival too — see ClampOntoHaven
         _autopilotStandDownReason = null; _dockReadyStatus = null;
         ResetAutopilotBudget();
         _matchLedger = _matchLedger.Abort();                // #268: a shuttle hop abandons any match tab, uncharged
@@ -847,6 +848,17 @@ public partial class Map
         HoldAtDock();                                        // and HoldAtDock keeps it pinned every tick
         StaleFutureNodes();                                  // a berth cancels any pending burns
         _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
+        // #962 · A BERTH IS AN ARRIVAL. Owner, a leg later and long gone from the place: "Now why does this
+        // rustys roadshed show as any kind of navigation target here still? I left that place already. Why
+        // can it not be dismissed / deleted from the screen now. It is just on the way here?"
+        //
+        // ArrivedAt is the "the voyage is over, the orders complete" hook — and it was wired to ORBITAL
+        // INSERTION only (Map.Autopilot's armed insert and manual EnterOrbit). A dock haven is mass-less:
+        // you clamp onto it, you never insert, so no arrival at any station in the game had ever completed
+        // its own voyage. The DEST lock survived the clamp, survived the undock, and rode out of the berth
+        // with the ship — for the rest of the session, with no reachable way to clear it while docked.
+        // The clamp is the arrival; say so here, next to the auto-insert it already stands down.
+        ArrivedAt(dock.Id);                                  // (no-ops unless this berth WAS the destination)
         _autopilotStandDownReason = null; _dockReadyStatus = null; ResetAutopilotBudget(); // a berth is a fresh start — clear any handback/dock-ready surface
         _dockAffordance = DockAffordance.Hidden; _dockLatched = false;
         SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
@@ -891,6 +903,10 @@ public partial class Map
         }
 
         string name = _nearestBody?.Name ?? "the dock";
+        // #962: casting off cannot leave the berth you are casting off FROM as your navigation target.
+        // ClampOntoHaven already retires the destination on arrival; this is the same statement said at
+        // the other end, and it heals a session that clamped on before that fix existed.
+        ArrivedAt(_dockedHavenId);
         _dockedHavenId = null;
         ShowPulseMessage($"Clamps released — pushing off from {name}. 🚀");
         RequestVaultSave(); // #225: undock resumes at the nearest haven; persist the new resume basis

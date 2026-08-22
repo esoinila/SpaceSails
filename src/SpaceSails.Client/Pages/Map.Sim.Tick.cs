@@ -378,12 +378,19 @@ public partial class Map
             _destinationPass = null;
             _slingablePass = null;
             _skimmablePass = null;
+            _passes = [];
             if (_ephemeris is not null)
             {
                 double bestArmable = double.MaxValue;
                 double bestSling = double.MaxValue;
                 double bestSkim = double.MaxValue;
-                foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(_samples, _ephemeris))
+                // #952: the pass list is KEPT this time round, not just folded into four fields. The arrive
+                // step re-picks its candidate against the LIVE scrub (Map.Plot.Arrive) and re-judges its
+                // valid/invalid bit off the same list, so dragging the scrub costs a lookup over a handful
+                // of bodies instead of another 8000-sample scan.
+                IReadOnlyList<ClosestApproach.Pass> passes = ClosestApproach.Passes(_samples, _ephemeris);
+                _passes = passes;
+                foreach (ClosestApproach.Pass pass in passes)
                 {
                     if (_closestPass is null || pass.Severity < _closestPass.Value.Severity)
                     {
@@ -433,6 +440,9 @@ public partial class Map
 
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
             UpdateCourseOpportunities(); // M29: what does this course conveniently brush by?
+            // #952: does the plan still END SAFELY? Judged on the freshly rebuilt passes, so a mid-flight
+            // edit or a missed burn flips the arrive row to ✗ and wakes the captain once.
+            RefreshArriveValidity();
         }
     }
 
@@ -591,6 +601,7 @@ public partial class Map
         DrawNpcs();           // #402 follow-up: DEPOT name labels enqueue here, so the flush must follow it
         FlushNavLabels();     // #402: resolve overlapping body/threat/depot labels — priority wins, depots yield
         DrawHunters();
+        DrawTargetReticle(); // #962: the red X on the tactical target, brackets on every held track
         DrawOrdnance();
         DrawPyramids();
         DrawShuttleRange();

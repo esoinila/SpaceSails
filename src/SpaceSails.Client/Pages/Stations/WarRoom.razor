@@ -75,11 +75,21 @@
                         @RingLabelMarkup(MaxRadiusPx, $"view {FormatRange(_viewRangeMeters)}")
                         @if (WeaponRingPx > 18)
                         {
-                            @RingLabelMarkup(WeaponRingPx, $"weapon {FormatRange(EncounterRule.WeaponRangeMeters)}")
+                            @RingLabelMarkup(WeaponRingPx, $"driver reach {FormatRange(EncounterRule.WeaponRangeMeters)}")
                         }
+                        @* #962: her catch envelope, LABELLED — the owner had no way to read when to react
+                           ("the debt collector catch distance ... is not shown on the maps in any way"), and
+                           the war room's own blind playtest had already caught an unlabelled ring once. *@
                         @foreach (RenderHunter h in renderHunters)
                         {
                             <circle cx="@Fmt(h.X)" cy="@Fmt(h.Y)" r="@Fmt(MetersToPx(EncounterRule.CatchRadiusMeters))" class="war-room-hunter-ring" />
+                        }
+                        @if (renderHunters.Count > 0 && MetersToPx(EncounterRule.CatchRadiusMeters) > 12)
+                        {
+                            foreach (RenderHunter h in renderHunters)
+                            {
+                                @HunterRingLabelMarkup(h.X, h.Y - MetersToPx(EncounterRule.CatchRadiusMeters))
+                            }
                         }
                         @foreach (RenderHunter h in renderHunters)
                         {
@@ -430,6 +440,16 @@
                                             title="Target of interest — fire control &amp; a warning shot to break its nerve"
                                             @onclick="() => OnSetInterest.InvokeAsync(h.Id)">🎯</button>
                                 </div>
+                                @* #962: the terms of her contract, on the desk the gunner is standing at.
+                                   Owner, docked at a haven with zero heat and a collector still inbound:
+                                   "why is this still hunting us?" Composed in EncounterRule beside the
+                                   rules they describe, so this desk and the dossier agree by construction. *@
+                                @if (h.Warrant.Length > 0)
+                                {
+                                    <div class="war-room-hunter-terms text-warning">@h.Warrant</div>
+                                    <div class="war-room-hunter-terms">@h.HidingTerm</div>
+                                    <div class="war-room-hunter-terms text-secondary">@h.NerveTerm</div>
+                                }
                             }
                         </div>
                     }
@@ -534,7 +554,11 @@
 
     /// <summary>Hired muscle, hunting. Map.razor's HunterState roster, thinned to what the
     /// display needs.</summary>
-    public readonly record struct HunterContact(string Id, string Callsign, ShipState State);
+    public readonly record struct HunterContact(
+        string Id, string Callsign, ShipState State,
+        // #962: what her contract says — composed in EncounterRule beside the rules they describe, so this
+        // desk and the dossier card cannot quote different numbers at the captain.
+        string Warrant = "", string HidingTerm = "", string NerveTerm = "");
 
     /// <summary>M27: a tracking-post ledger entry, thinned for the war room — the sensor room
     /// screens the data, this desk consumes it.</summary>
@@ -548,7 +572,7 @@
 
     /// <summary>A hunter, ready to draw: screen position, bearing, distance, closing speed and
     /// whether it's close enough (within 2x weapon range) to earn a threat line on the circle.</summary>
-    private readonly record struct RenderHunter(string Id, string Callsign, double Distance, double BearingDeg, double ClosingSpeed, double X, double Y, bool ThreatLine);
+    private readonly record struct RenderHunter(string Id, string Callsign, double Distance, double BearingDeg, double ClosingSpeed, double X, double Y, bool ThreatLine, string Warrant, string HidingTerm, string NerveTerm);
 
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
@@ -572,7 +596,7 @@
     // M28: gun-deck fire control — Map.razor owns the state, this desk renders the drama.
     [Parameter] public double FireAimOffsetSeconds { get; set; } = 3600;
     [Parameter] public double MaxAimOffsetSeconds { get; set; } = 86400;
-    [Parameter] public double MaxMuzzleSpeedMps { get; set; } = 8000;
+    [Parameter] public double MaxMuzzleSpeedMps { get; set; } = OrdnanceRule.MassDriverMuzzleSpeedMps;
     [Parameter] public double? InterestDistanceMeters { get; set; }
     [Parameter] public OrdnanceKind FireKind { get; set; }
     [Parameter] public FireControl.Solution? FireSolution { get; set; }
@@ -708,7 +732,8 @@
             double closingSpeed = ClosingSpeedMps(rel, distance, h.State.Velocity);
             (double x, double y) = ScreenPoint(h.State.Position);
             bool threatLine = distance <= EncounterRule.WeaponRangeMeters * 2;
-            list.Add(new RenderHunter(h.Id, h.Callsign, distance, bearingDeg, closingSpeed, x, y, threatLine));
+            list.Add(new RenderHunter(h.Id, h.Callsign, distance, bearingDeg, closingSpeed, x, y, threatLine,
+                h.Warrant, h.HidingTerm, h.NerveTerm));
         }
 
         list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
@@ -874,6 +899,14 @@
     /// stylesheet class would silently not match and the label renders at giant default size.</summary>
     private static Microsoft.AspNetCore.Components.MarkupString RingLabelMarkup(double radiusPx, string label) =>
         new($"<text x=\"100\" y=\"{Fmt(100 - radiusPx + 7)}\" text-anchor=\"middle\" style=\"font-size:6px;fill:rgba(180,200,220,0.55)\">{System.Net.WebUtility.HtmlEncode(label)}</text>");
+
+    /// <summary>#962 · the collector's catch envelope, named where it is drawn. Same inline-style
+    /// workaround as <see cref="RingLabelMarkup"/>, but centred on HER rather than on us — the owner had
+    /// nothing on any map telling him "the debt collector catch distance", so nothing told him when to
+    /// react.</summary>
+    private static Microsoft.AspNetCore.Components.MarkupString HunterRingLabelMarkup(double x, double y) =>
+        new($"<text x=\"{Fmt(x)}\" y=\"{Fmt(y + 6)}\" text-anchor=\"middle\" style=\"font-size:6px;fill:rgba(255,120,120,0.75)\">"
+            + $"{System.Net.WebUtility.HtmlEncode($"catch {FormatRange(EncounterRule.CatchRadiusMeters)}")}</text>");
 
     private static string Fmt(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
 
