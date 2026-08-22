@@ -713,60 +713,50 @@ public partial class Map
     }
 
 
-    // The one walked-view paint — first person or the top-down deck — for whatever plan is welded on
-    // right now. Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once
-    // under the still-up door (WarmFirstSurfaceFrameAsync): the cold DeckView.Draw of the enlarged
-    // regolith is the last synchronous block that tripped Chrome's page-unresponsive dialog, and paying
-    // it there — off the rAF loop, on its own yield — leaves the live loop warm.
+    // The one walked-view paint — the top-down deck — for whatever plan is welded on right now.
+    // Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once under the
+    // still-up door (WarmFirstSurfaceFrameAsync): the cold DeckView.Draw of the enlarged regolith is
+    // the last synchronous block that tripped Chrome's page-unresponsive dialog, and paying it there
+    // — off the rAF loop, on its own yield — leaves the live loop warm.
     private void DrawWalkFrame()
     {
-        if (_fpMode)
-        {
-            BuildSkyBodies();
-            double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
-            _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
-                _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
-        }
-        else
-        {
-            // #841 / Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
-            // #905's frame ledger sweeps every field of this component into a pinned hash, and a wall-clock
-            // stamp is the one kind of reading that cannot be in it. Null unless ?perf=1 armed the probe;
-            // DeckView.Draw closes the bracket. What this catches that Draw alone cannot is the surface HUD
-            // the page BUILDS before it can call Draw at all — blips, smudges, ghosts, beacons, the swept
-            // grid — which is draw-side work by any honest reading and is not inside the conductor.
-            _deckView?.Perf?.OpenWalkFrame();
+        // #841 / Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
+        // #905's frame ledger sweeps every field of this component into a pinned hash, and a wall-clock
+        // stamp is the one kind of reading that cannot be in it. Null unless ?perf=1 armed the probe;
+        // DeckView.Draw closes the bracket. What this catches that Draw alone cannot is the surface HUD
+        // the page BUILDS before it can call Draw at all — blips, smudges, ghosts, beacons, the swept
+        // grid — which is draw-side work by any honest reading and is not inside the conductor.
+        _deckView?.Perf?.OpenWalkFrame();
 
-            // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
-            // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
-            // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.
-            (double sdx, double sdy) = ShudderShakeOffset();
-            _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
-                _avatarX, _avatarY, _avatarHeading,
-                _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
-                Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
-                // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
-                // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
-                // stays gauge-free by construction.)
-                Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
-                ShowNerve: true, NerveCompact: _surface is null,
-                // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
-                // off an excursion there is nothing to count, so they leave the corner entirely.
-                HitsTaken: _surface?.HitsTaken ?? -1,
-                // #480: the gauge never moves anonymously — the flash names the pip that just went, the
-                // ledger keeps the last few so "what broke me?" has an answer after the fact.
-                NerveFlash: LiveNerveFlash,
-                NerveLedger: NerveLedgerLines,
-                // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
-                // for itself (the #591 one-reach lesson).
-                Dark: DarkHere(),
-                // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
-                // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
-                Seated: CaptainIsSeated,
-                // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
-                StallBanner: TheStallBanner()),
-                _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
-        }
+        // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
+        // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
+        // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.
+        (double sdx, double sdy) = ShudderShakeOffset();
+        _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+            _avatarX, _avatarY, _avatarHeading,
+            _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
+            Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
+            // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
+            // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
+            // stays gauge-free by construction.)
+            Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
+            ShowNerve: true, NerveCompact: _surface is null,
+            // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
+            // off an excursion there is nothing to count, so they leave the corner entirely.
+            HitsTaken: _surface?.HitsTaken ?? -1,
+            // #480: the gauge never moves anonymously — the flash names the pip that just went, the
+            // ledger keeps the last few so "what broke me?" has an answer after the fact.
+            NerveFlash: LiveNerveFlash,
+            NerveLedger: NerveLedgerLines,
+            // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
+            // for itself (the #591 one-reach lesson).
+            Dark: DarkHere(),
+            // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
+            // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
+            Seated: CaptainIsSeated,
+            // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
+            StallBanner: TheStallBanner()),
+            _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
     }
 
     // #954 — the nearest reading, with the flicker taken out of it. It used to take the literal minimum

@@ -78,7 +78,6 @@ public sealed class TheBookedRoomIsAStripTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         Set(map, "_credits", APurse);
         if (watch is { } pinned)
         {

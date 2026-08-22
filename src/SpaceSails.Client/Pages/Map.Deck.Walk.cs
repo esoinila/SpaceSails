@@ -72,11 +72,10 @@ public partial class Map
     /// else: a grip that answered this question for itself would be free to disagree with the other one,
     /// and that disagreement is the whole of #875.
     ///
-    /// <para>It is deliberately NOT a question about the VIEW. First person has legs too (tank controls),
-    /// the ship's own deck has legs, and a seat is a COST rather than a refusal — #847's press buys the
-    /// stand and then walks, by either grip. The only thing in this game that takes the legs away is
-    /// somebody else walking you off his floor (#833's escort), and the only precondition is that there is
-    /// a deck under them at all.</para></summary>
+    /// <para>It is deliberately NOT a question about the VIEW. The ship's own deck has legs, the regolith
+    /// has legs, a haven bar has legs, and a seat is a COST rather than a refusal — #847's press buys the stand and then walks, by
+    /// either grip. The only thing in this game that takes the legs away is somebody else walking you off
+    /// his floor (#833's escort), and the only precondition is that there is a deck under them at all.</para></summary>
     private bool TheCaptainsLegsAreTheirOwn => _deckMode && !CaptainIsUnderEscort;
 
     /// <summary>#875 · …and when they are not the captain's own, the words that say so — from ONE place, so
@@ -86,13 +85,15 @@ public partial class Map
 
     /// <summary>#875 · Is the canvas under this pointer a FLOOR? The click grip's one extra question, and it
     /// is about the VIEW rather than about the walk: on the map that canvas is the ecliptic (hit-testing a
-    /// deck click against planets that are not on screen would open a body menu over a moon floor), and in
-    /// first person there is no floor drawn to point at at all — the keys are tank controls there and a
-    /// finger has nothing to aim at. It is the ONLY term that separates the two grips, and it can never
-    /// refuse a walk: whether those legs are the captain's is <see cref="TheCaptainsLegsAreTheirOwn"/>,
+    /// deck click against planets that are not on screen would open a body menu over a moon floor). It can
+    /// never refuse a walk: whether those legs are the captain's is <see cref="TheCaptainsLegsAreTheirOwn"/>,
     /// asked inside <see cref="ClickToWalkAt"/> so a held click can SAY so instead of being swallowed by a
-    /// pointer branch.</summary>
-    private bool ADeckClickIsAPlaceOnTheFloor => _deckMode && !_fpMode;
+    /// pointer branch.
+    ///
+    /// <para>#958 · It used to carry a second term for the walk-in view, which drew no floor to point at.
+    /// That view is gone on the owner's ruling, so the deck plan is the only canvas a finger can aim at and
+    /// the question is one term again.</para></summary>
+    private bool ADeckClickIsAPlaceOnTheFloor => _deckMode;
 
     /// <summary>Drop the route. <paramref name="tellThem"/> only when the captain did it on purpose — a
     /// route dropped because the floor changed under it needs no receipt.</summary>
@@ -287,9 +288,6 @@ public partial class Map
                 // line, whichever grip the hand is on.
                 AcknowledgeHeldControls();
                 return true;
-            case "f" or "F":
-                ToggleFirstPerson();
-                return true;
             case "q" or "Q":
                 SwitchDesk(ShipDesk.Nav); // the deck is continuous now — Q always steps up to the helm
                 return true;
@@ -393,24 +391,6 @@ public partial class Map
         double wobble = (_lastTimestampMs ?? 0) < _wobbleUntilMs
             ? Math.Sin((_lastTimestampMs ?? 0) * 0.004) * 0.9 * dt
             : 0;
-
-        if (_fpMode)
-        {
-            _avatarHeading += wobble;
-            // Tank controls: A/D turn, W/S walk along the view direction.
-            const double turnRate = 2.6; // rad/s
-            if (_deckKeys.Contains("a")) _avatarHeading += turnRate * dt;
-            if (_deckKeys.Contains("d")) _avatarHeading -= turnRate * dt;
-            double walk = (_deckKeys.Contains("w") ? 1 : 0) - (_deckKeys.Contains("s") ? 1 : 0);
-            if (walk != 0)
-            {
-                double step = CurrentWalkSpeed * dt * walk;
-                (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY,
-                    Math.Cos(_avatarHeading) * step, Math.Sin(_avatarHeading) * step);
-                RefreshAshore();
-            }
-            return;
-        }
 
         // ── #729 · THE ROUTE, WALKED THROUGH THE SAME LEGS ──
         //

@@ -115,7 +115,6 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
 
         if (pour)
         {

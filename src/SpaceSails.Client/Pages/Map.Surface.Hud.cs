@@ -695,7 +695,6 @@ public partial class Map
                 ? (_soundQuietly ? "✊ K — stop knocking" : "📡 K — stop sounding")
                 : (_soundQuietly ? "✊ K — knock (quiet)" : "📡 K — sound the plating (loud)"));
 
-            aboard.Add("F — first person");
             aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
             return string.Join(" ∙ ", aboard);
         }
@@ -752,7 +751,6 @@ public partial class Map
         {
             parts.Add($"🎒 I — items ({_satchel.Count})");
         }
-        parts.Add("F — first person");
         parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
         return string.Join(" ∙ ", parts);
     }
