@@ -176,13 +176,19 @@ public partial class Map
         return shipId;
     }
 
-    private Vector2d? ContactPosition(string shipId)
+    private Vector2d? ContactPosition(string shipId) => ContactState(shipId)?.Position;
+
+    /// <summary>A contact's live physical state by id — traffic OR hired muscle. The dossier, the
+    /// telescope ledger and the map reticle all need the same answer for the same id, and a hunter
+    /// is never in <c>_npcStates</c> (see <see cref="TrackShipFromMenu"/>), so the lookup has to walk
+    /// both rosters or it silently knows nothing about the one ship that is hunting us.</summary>
+    private ShipState? ContactState(string shipId)
     {
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Ship.Id == shipId)
             {
-                return npc.State.Position;
+                return npc.State;
             }
         }
 
@@ -190,33 +196,60 @@ public partial class Map
         {
             if (hunter.Id == shipId)
             {
-                return hunter.State.Position;
+                return hunter.State;
             }
         }
 
         return null;
     }
 
+    /// <summary>
+    /// #962 · PUT THE SCOPE ON HER. Owner, pressing 📡 sharpen fix on the Debt Collector's dossier and
+    /// watching nothing at all happen: <i>"I click sharpen fix but the sensors do nothing useful … It says
+    /// we are not tracking the debt collector and we should ... but really HOW??????"</i>
+    ///
+    /// <para>He was pressing a dead button. This method resolved its subject through <c>FindNpc</c>, which
+    /// walks <c>_npcStates</c> only — a hunter lives in <c>_hunters</c>, so every collector id fell out of
+    /// the very first guard and returned in silence: no ledger entry, no queued pass, not even a pulse
+    /// saying why. (The same NPC-shaped assumption had already been caught once, in the click picker —
+    /// Map.UiState.cs's "a hunter isn't in _npcStates, so it was never in this list" note. It was fixed
+    /// there and not here.)</para>
+    ///
+    /// <para>So the subject is resolved the way the DOSSIER resolves it — by contact, across both rosters —
+    /// and the button now does both halves of what its own tooltip promises: her fix goes on the telescope
+    /// ledger, AND a <see cref="SensorTask.TrackUpdate"/> jumps to the front of the carousel so the very
+    /// next thing the instrument looks at is her, and the "Sensor tasks" list says so out loud. Owner:
+    /// <i>"Scanning the debt collector should show on the task list as the only job now."</i> Queueing the
+    /// pass is the half that survives a full ledger — the scope still swings, we just can't hold custody.</para>
+    /// </summary>
     private void TrackShipFromMenu(string id)
     {
-        NpcState? npc = FindNpc(id);
-        if (npc is null || _trackingPost is null)
+        if (_trackingPost is null)
         {
             return;
         }
 
-        if (!npc.CurrentlyObserved)
+        // Traffic has to have been SEEN before we have anything honest to enter (optical truth, M27).
+        // A hunter is a contact the gun deck already reads exactly — the dossier quotes her state
+        // straight off _hunters — so there is no observation gate to fail for her.
+        if (FindNpc(id) is { CurrentlyObserved: false })
         {
             ShowPulseMessage("No live contact — the telescope needs a sweep fix or laser ranging first");
+            CloseShipMenu();
+            return;
         }
-        else if (_trackingPost.ApplyObservation(new Observation(id, SimTime, npc.State.Position, npc.State.Velocity)))
+
+        if (ContactState(id) is not { } state)
         {
-            ShowPulseMessage($"{npc.Ship.Callsign} on the telescope ledger — fix sharpened 📡");
+            return; // neither traffic nor muscle: nothing out there to point at
         }
-        else
-        {
-            ShowPulseMessage("Telescopes full — drop a track on the Sensors desk first");
-        }
+
+        string callsign = ContactCallsign(id);
+        bool held = _trackingPost.ApplyObservation(new Observation(id, SimTime, state.Position, state.Velocity));
+        _trackingPost.EnqueueAndPrioritize(SensorTask.TrackUpdate(id, callsign));
+        ShowPulseMessage(held
+            ? $"{callsign} on the telescope ledger — the scope swings onto her next 📡"
+            : $"Telescopes full — {callsign} is the next look, but we can't hold custody; drop a track on the Sensors desk");
 
         CloseShipMenu();
     }
