@@ -412,10 +412,23 @@ public sealed class EveryFrameHashesTheSameTests
     // hive or park row moved at all — the rest of this table is byte-identical across both lanes. Had a
     // count moved by anything but six here, it would be a different lane's bug wearing this lane's clothes.
 
+    // ── #986 F2 · FOUR ROWS RE-PINNED, EACH BY EXACTLY ONE CALL ──────────────────────────────────────
+    //
+    // #327's orbit line and #825's stall banner are drawn on a backing plate now (SpaceSails.Core.CommsBand),
+    // the way every other line the #324 visibility law protects already was. A plate is ONE FillRect, so a row
+    // that prints something in that top-centre band gains exactly one call and nothing else: 308→309,
+    // 3881→3882, 266→267, 4364→4365. The arithmetic is the proof — and so is the shape of the rest of this
+    // table, because a frame with nothing to say up there draws no plate and did not move: not one haven, not
+    // one wreck, not one B-floor, not "surface · luna site 0" (3771, which carries no orbit line). The four
+    // that moved are the docked ship with the machine stalling and the three excursions that are calling home.
+    // Had a fifth row moved, or any of these moved by two, it would be a different bug wearing this one's
+    // clothes. (The companion texts under Fingerprints/ moved on the same day and in the same single row —
+    // `walked-view pen`, one more call per frame that draws a band — 17 of the 30, no ledger row, no sweep row.)
+
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
         ["ship · under way"] = (335, "e943fa59228f59c49c0efebc3eda6579bda13f1abc0e3e48e16a6f1358630be5"),
-        ["ship · docked, the shuttle away and the machine stalling"] = (308, "a8bec38425f92452c72de535eac14f855c4df214cbbf3301fe105fbe546bf62a"),
+        ["ship · docked, the shuttle away and the machine stalling"] = (309, "d5a908ca869086d4f0b39738da1b4a261c68f0b5e1421fbcd0a98d9ac7671cef"),
         ["ship · hatches dogged, seated at the table"] = (309, "9096ac57873a26df8ac1d3cf7740960a7e98900a29493ded9004887eda0da6f8"),
         ["haven · the-space-bar"] = (358, "19ca5c6d71b008ef030af25f59ee0faaeb0f7ec87d45453fd1c2c77eb3d8e30a"),
         ["haven · cinder-roost"] = (362, "77c60458ce301e2eb6445dd24be3c8584712fd689804e843b48ac5e5a5d14314"),
@@ -444,9 +457,9 @@ public sealed class EveryFrameHashesTheSameTests
         ["phobos B1"] = (1563, "879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c"),
         ["titan B1"] = (1512, "3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a"),
         ["surface · luna site 0"] = (3771, "cca27dc80c1977748f3dffea0712055de0839d5bd146e6f7df06c6318d10ed50"),
-        ["surface · luna site 0, the whole excursion"] = (3881, "76071a20eaa354567e5f8ed54dd1a68b2c2f5f034a829f93d4efbefb3ce96b83"),
-        ["surface · luna site 0, dark, and the fan hears something"] = (266, "eae9225f5d0de7b6c3b0aab9d67aee71cd9cd1ecc83bf8767ed410ed60c2a2eb"),
-        ["surface · titan site 0, a derelict's instruments (none)"] = (4364, "0e42d5e5bc5ad3ca51b30c30b122f56002822d14949e90853c78914c3cd5330e"),
+        ["surface · luna site 0, the whole excursion"] = (3882, "6f55115196410b6e21672692a024e51b55ff3c0ced9011955084a72af72ba85d"),
+        ["surface · luna site 0, dark, and the fan hears something"] = (267, "e6ea3770ba1385435a1913b10a4457860b3099bf5bb9d71648c9a5f0d14d49fd"),
+        ["surface · titan site 0, a derelict's instruments (none)"] = (4365, "9d80d64a15359410f466d62482a3c7f2c474cc918e940fb9359903affc0446a8"),
     };
 
     /// <summary>
