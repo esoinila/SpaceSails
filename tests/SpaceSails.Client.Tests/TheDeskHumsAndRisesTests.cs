@@ -117,7 +117,6 @@ public sealed class TheDeskHumsAndRisesTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
 
         Invoke(map, "RebuildSurfaceDeck");
         return map;

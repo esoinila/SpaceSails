@@ -17,18 +17,16 @@ using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
-// Map.Deck — the walkabout: deck mode and first person, the avatar and doors/hatches, the
-// scope, the rum ledger and the view-objects you lean into. Split from Map.razor per #251.
+// Map.Deck — the walkabout: deck mode, the avatar and doors/hatches, the scope, the rum ledger
+// and the view-objects you lean into. Split from Map.razor per #251.
 public partial class Map
 {
 
     // M11 — the telescope (worldbuilding notes §5)
     // M12 — deck view (walk your ship)
     private bool _deckMode;
-    private bool _fpMode;
     private double _deckPanX, _deckPanY;
     private DeckView? _deckView;
-    private FirstPersonView? _fpView;
     private double _avatarX = DeckPlan.Ship.SpawnX, _avatarY = DeckPlan.Ship.SpawnY, _avatarHeading; // 0 = facing the bow glass
 
     // The active deck (go-ashore, 2026-07-07; walk-through tube, 2026-07-08). The bare ship by
@@ -57,49 +55,11 @@ public partial class Map
         }
     }
 
-    private readonly List<FirstPersonView.SkyBody> _skyBodies = [];
-
     private void ToggleDeck()
     {
         _deckMode = !_deckMode;
         _deckKeys.Clear();
         CancelAutoWalk(false);
-    }
-
-    // Sky lights for the first-person windows, from the REAL ephemeris: world angle from the
-    // ship to each body, angular radius from its physical size and live distance — the sun
-    // blazes bigger the closer you fly.
-    private void BuildSkyBodies()
-    {
-        _skyBodies.Clear();
-        foreach (CelestialBody body in _ephemeris!.Bodies)
-        {
-            if (IsBodyHidden(body.Id)) continue; // no sky-dot for an uncharted body in the windows (PR-A)
-            Vector2d offset = _ephemeris.Position(body.Id, SimTime) - _ship.Position;
-            double distance = offset.Length;
-            if (distance <= body.BodyRadius)
-            {
-                continue;
-            }
-
-            _skyBodies.Add(new FirstPersonView.SkyBody(
-                Math.Atan2(offset.Y, offset.X),
-                Math.Asin(Math.Clamp(body.BodyRadius / distance, 0, 1)),
-                BodyColor(body.Id),
-                body.Id == "sun"));
-        }
-    }
-
-    private string LocationHint() => _deckPlan.Location(_avatarX, _avatarY);
-
-    /// <summary>Flip between the top-down deck plan and first-person walk (the F key and the on-screen
-    /// deck-view-toggle button both land here). Clears held movement keys so a key isn't "stuck down"
-    /// across the mode switch.</summary>
-    private void ToggleFirstPerson()
-    {
-        _fpMode = !_fpMode;
-        _deckKeys.Clear();
-        CancelAutoWalk(false); // #729: first person is tank controls and has no floor to click on
     }
 
     // Go-ashore (2026-07-07; the walk-through tube, 2026-07-08). Docking now welds the ship to the

@@ -47,8 +47,8 @@
     z-index: 6;
 }
 
-/* Console quip toast while walking the deck / in first person (the Nav HUD that hosts pulse
-   messages is hidden then). Centred near the top, clear of the desk tab bar. */
+/* Console quip toast while walking the deck (the Nav HUD that hosts pulse messages is hidden
+   then). Centred near the top, clear of the desk tab bar. */
 .deck-pulse-toast {
     position: absolute;
     top: 6rem;
@@ -1690,22 +1690,12 @@
 }
 
 /* Map-picking PR: the 🗺 Layers control — below the desk switcher, out of every panel's way. */
-/* First-person ⇄ deck-plan toggle button — top-left, clear of the centred desk tabs and Layers. */
-.deck-view-toggle {
-    position: absolute;
-    top: 3.2rem;
-    left: 0.75rem;
-    z-index: calc(var(--z-map-chrome) + 30);
-}
-
-/* #324: on a surface excursion the enlarged SANITY gauge owns the top-left corner (owner: "let's make
-   sanity visible"), so the first-person toggle steps down and to the right of it — nothing buries the
-   gauge, and the toggle stays plainly pressable (#212 affordances-never-hide). */
-.deck-view-toggle.on-surface {
-    top: auto;
-    bottom: 2.4rem;
-    left: 0.75rem;
-}
+/* #958 · A deck-view toggle button sat at top 3.2rem / left 0.75rem, stepping down to bottom 2.4rem on
+   a surface excursion. It went with the mode it opened. The RULE it was placed by outlived it and is worth
+   keeping written down here, because the next control to reach for this corner needs it: on a surface
+   excursion the enlarged SANITY gauge owns the top-left (#324, owner: "let's make sanity visible"), so a
+   deck control steps down and out of its way — nothing buries the gauge, and nothing hides an affordance
+   (#212). `.captains-remote-btn` below is placed by exactly this rule. */
 
 /* Round-2 audit fix 4: the Layers control was dead-center at top 3.2rem, stacking on top of the
    centered pilot-in-command banner (top 3.0rem) — the "top-center cyan control" collision. Tuck it
@@ -5160,15 +5150,15 @@
 /* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
    is live, because the order it carries is the one whose absence gets a captain shot.
 
-   IT SITS BOTTOM-LEFT, ABOVE THE FIRST-PERSON TOGGLE, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it:
-   "look at the sanity and health meters now overlap" — and they did, because I put this at top 3.2rem, which is
-   directly on the nerve readout AND on the five condition pips beneath it. Both meters, buried by a button.
+   IT SITS BOTTOM-LEFT, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it: "look at the sanity and health
+   meters now overlap" — and they did, because I put this at top 3.2rem, which is directly on the nerve readout
+   AND on the five condition pips beneath it. Both meters, buried by a button.
 
-   The rule was already written down forty lines up, for the first-person toggle: "on a surface excursion the
-   enlarged SANITY gauge owns the top-left corner … nothing buries the gauge, and the toggle stays plainly
-   pressable (#212 affordances-never-hide)". The toggle steps down and to the right for exactly this reason. I
-   added a control to that corner without reading the rule that corner already had — so this now follows the
-   same precedent it should have followed first time: same column as the toggle, one row above it. */
+   The rule was already written down forty lines up (and is still there, now that the deck-view toggle it was
+   first written for has gone): on a surface excursion the enlarged SANITY gauge owns the top-left corner, so a
+   deck control steps down and to the right — nothing buries the gauge, and the control stays plainly pressable
+   (#212 affordances-never-hide). I added a control to that corner without reading the rule that corner already
+   had; this now follows the precedent it should have followed first time. */
 .captains-remote-btn {
     position: absolute;
     left: 0.75rem;

@@ -70,7 +70,7 @@ public class CriticalControlsTests
         HashSet<int> bandValues =
         [
             OverlayBands.MapDestPanel, OverlayBands.DeskLayer, OverlayBands.MapBodyMenu, OverlayBands.MapDossier,
-            OverlayBands.MapHud, OverlayBands.MapTopstack, OverlayBands.ParrotPerch, OverlayBands.DeckViewToggle,
+            OverlayBands.MapHud, OverlayBands.MapTopstack, OverlayBands.ParrotPerch,
             OverlayBands.MapLayers, OverlayBands.MapLoading, OverlayBands.DeckPulseToast, OverlayBands.DeckOfferCard,
             OverlayBands.DeckShuttleCard, OverlayBands.StartPickerBackdrop, OverlayBands.ViewObjectBackdrop,
             OverlayBands.PinBackdrop, OverlayBands.MapAdrift, OverlayBands.RescueBackdrop,

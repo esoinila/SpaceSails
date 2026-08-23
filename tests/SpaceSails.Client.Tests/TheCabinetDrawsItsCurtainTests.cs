@@ -525,7 +525,6 @@ public sealed class TheCabinetDrawsItsCurtainTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
 
         // #917 · WHICH SHIFT THE ROOM IS DRAWN ON, through the game's own pin (`_watchCheat`) and set BEFORE
         // the rebuild, because the rebuild is what freezes the watch onto the excursion. A watch written

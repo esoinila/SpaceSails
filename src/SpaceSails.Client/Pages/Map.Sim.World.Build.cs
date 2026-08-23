@@ -301,7 +301,6 @@ public partial class Map
             _deckView.ArmThePerfProbe(Console.WriteLine);
         }
 
-        _fpView = new FirstPersonView(_renderer!);
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
         _renderLoopRunning = true;

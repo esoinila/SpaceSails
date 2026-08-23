@@ -5,8 +5,8 @@ namespace SpaceSails.Client.Rendering;
 /// <summary>
 /// Top-down deck plan view (M12, rebuilt on <see cref="DeckPlan"/> in M13): the tactical map
 /// of your own ship. Windows draw teal, droids patrol, cargo racks mirror the hold, and the
-/// shuttle sits in its cradle unless it's away boarding. First-person is the immersive twin
-/// (<see cref="FirstPersonView"/>); both render the same plan.
+/// shuttle sits in its cradle unless it's away boarding. Since #958 it is the ONLY walked view —
+/// the raycast twin that shared this plan went with the owner's ruling.
 /// </summary>
 public sealed partial class DeckView
 {
