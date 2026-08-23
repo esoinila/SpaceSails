@@ -85,9 +85,15 @@ public sealed partial class Map
     /// walk out is the room's: <c>StepAnApproach</c> sees the gate go false and walks her to the counter.</summary>
     private bool _walkInAnswered;
 
-    /// <summary>#973 L5b · Which walk-ins the SPREAD has found out, by job id. <b>L3 writes this</b>; until it
-    /// does the set is empty and every setup card says nothing, which is the shipped behaviour and the
-    /// correct one — the player may simply go.</summary>
+    /// <summary>#973 L5b · Which walk-ins the SPREAD has found out, by job id. Written by the reconcile
+    /// below; empty until it fires, and until then every setup card says nothing, which is the shipped
+    /// behaviour and the correct one — the player may simply go.
+    ///
+    /// <para><b>FLAGGED: it does not survive a save.</b> Every other book in this arc has a vault section
+    /// (<c>OldCrewSection.Explained</c>, <c>HeldMemoriesSection</c>, <c>FilingSection</c>) and this set has
+    /// none, so a captain who works the setup out, saves and comes back finds the card quiet again. It wants
+    /// one row in the vault and a re-pin of what that costs; it is not smuggled in here, because a schema
+    /// change is a lane and this one is already carrying eight.</para></summary>
     private readonly HashSet<string> _walkInSetupsRevealed = new(StringComparer.Ordinal);
 
     // ── THE VISIT ──────────────────────────────────────────────────────────────────────────────────────
