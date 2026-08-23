@@ -545,6 +545,10 @@ public partial class Map
         {
             MoveAvatar(dtRealSeconds);
             StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
+            // #973 L0 · …and the docked bar's own metabolism, which StepSurface can never reach: it returns on
+            // the first line when there is no excursion, and a berth has none. This is the room the owner
+            // drinks in finally having people who move in it.
+            AdvanceBarWalkers(dtRealSeconds);
             AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
             AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
             DrawWalkFrame();
