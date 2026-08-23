@@ -199,3 +199,23 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+/* #963 follow-up — the crash net's own page (App.razor's ErrorBoundary). Global rather than scoped
+   because App.razor renders outside any page's scope, and it must paint even when the game did not. */
+.voyage-error {
+    max-width: 60rem;
+    margin: 3rem auto;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 170, 120, 0.5);
+    border-radius: 0.5rem;
+    background: #10141f;
+    color: #e6ecff;
+}
+
+.voyage-error-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #060912;
+    border-radius: 0.4rem;
+    padding: 0.75rem;
+    color: #ffd9b0;
+}

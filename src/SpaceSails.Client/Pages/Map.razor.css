@@ -825,6 +825,21 @@
     pointer-events: auto;
 }
 
+/* #963 — the minimised scope: a button-sized tile in the corner the window vacated, so the switch that
+   used to shout from the top of the screen now lives exactly where the instrument is. */
+.map-scope-tile {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    pointer-events: auto;
+}
+
+.map-scope-min {
+    line-height: 1;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+}
+
 .map-scope-canvas {
     width: 280px;
     height: 280px;
@@ -1052,6 +1067,23 @@
     pointer-events: auto;
     z-index: calc(var(--z-map-chrome) + 2);
     border: 1px solid rgba(120, 220, 255, 0.5);
+    /* #960: CAPPED so the dossier stacked above it (.map-dossier-raised) sits at a KNOWN offset rather than
+       one CSS would have to measure. A long plan scrolls inside its own box instead of growing under the
+       card that is riding on top of it. */
+    max-height: 17rem;
+    overflow-y: auto;
+}
+
+/* #962/#963 — THE KEYS OF NAVIGATION, DRESSED AS KEYS. Owner: "Here the smallest button is the most
+   important one… Plot should stand out among the buttons here. It is the heart of the navigation process."
+   A solid fill already separates Plot and + Add burn from the outline buttons around them; this is the rest
+   of the difference — a size up and a little weight, without leaving the toolbar's own rhythm. */
+.map-key-action {
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+    box-shadow: 0 0 0 1px rgba(255, 220, 150, 0.35), 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
 /* M24: planet click menu — anchored at the click point, above the canvas. */
@@ -1539,6 +1571,31 @@
     border: 1px solid rgba(150, 255, 210, 0.45);
     width: 30rem;
     max-width: calc(100% - 1.5rem);
+}
+
+/* #960 — WINDOWS AT THE BOTTOM CENTRE TAKE TURNS. The target dossier and the navigation-target panel both
+   want this spot, and in the owner's screenshot the dossier lay across the nav panel's text and buttons.
+   The nav panel keeps the floor (it is the one with the arm-the-arrival button); the dossier rides above it,
+   clear of the capped panel below. Declared AFTER .map-dossier on purpose — same specificity, later wins. */
+.map-dossier-raised {
+    bottom: 18.25rem;
+    max-height: min(26rem, calc(100vh - 24rem));
+    overflow-y: auto;
+}
+
+/* …and either way the card can be tucked into a tile of its own (owner: "option to minimize a window into
+   a sugarcube tile and back would avoid the moving-windows can of worms"). No dragging. */
+.map-dossier-tile {
+    width: auto;
+    max-width: 22rem;
+    overflow: visible;
+    max-height: none;
+}
+
+.map-dossier-min {
+    line-height: 1;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
 }
 
 /* M29: the sensors chief works the SKY — the desk layer's empty space passes pointer events

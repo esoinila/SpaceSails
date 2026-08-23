@@ -86,14 +86,13 @@ public partial class Map
     // flash on a tracked ship the moment its scheduled custody pass runs.
 
     private static readonly RgbaColor CorridorFillColor = new(80, 200, 220, 14);
-    private static readonly RgbaColor CorridorSelectedFillColor = new(80, 200, 220, 42);
     private static readonly RgbaColor CorridorEdgeColor = new(80, 200, 220, 60);
     private static readonly RgbaColor CorridorLabelColor = new(140, 210, 220, 150);
     private IReadOnlyList<CorridorRegion> _mapCorridors = [];
     private double _mapCorridorsBuiltAt = double.NegativeInfinity;
-    private string? _selectedCorridorKey; // the lane whose menu is open, drawn brighter
-
-    internal static string CorridorKey(CorridorRegion lane) => $"{lane.AId}:{lane.BId}";
+    // #953 — there is no selected lane any more, and so no brighter state: the owner's ruling took the
+    // whole corridor off the click picker ("they just colour the page"). What is left is the drawn lane,
+    // which is off by default on every desk now (MapLayerTree.DefaultHidden).
 
     private void DrawTradeCorridors()
     {
@@ -124,9 +123,7 @@ public partial class Map
             (quad[4], quad[5]) = _camera.WorldToScreen(lane.B - perp * lane.Radius);
             (quad[6], quad[7]) = _camera.WorldToScreen(lane.A - perp * lane.Radius);
 
-            bool selected = _selectedCorridorKey == CorridorKey(lane);
-            _renderer!.DrawPolygon(quad, selected ? CorridorSelectedFillColor : CorridorFillColor,
-                CorridorEdgeColor, selected ? 1.6f : 1f);
+            _renderer!.DrawPolygon(quad, CorridorFillColor, CorridorEdgeColor, 1f);
 
             (float mx, float my) = _camera.WorldToScreen(lane.Midpoint);
             _renderer.DrawText(mx, my - 6, lane.Name, CorridorLabelColor, "11px sans-serif", TextAlign.Center);

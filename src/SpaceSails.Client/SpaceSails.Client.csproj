@@ -50,6 +50,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.9" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- #963 follow-up — the black box's own guard has to be able to call the rAF door it guards
+       (RendererInterop.Tick, which is [JSExport] internal). A test that reasons about a copy of that
+       wiring proves nothing; this lets the audit ask the shipping one. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="SpaceSails.Client.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\SpaceSails.Core\SpaceSails.Core.csproj" />
     <ProjectReference Include="..\SpaceSails.Contracts\SpaceSails.Contracts.csproj" />

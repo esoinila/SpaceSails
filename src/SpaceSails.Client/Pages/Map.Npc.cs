@@ -320,7 +320,6 @@ public partial class Map
         ShowPulseMessage(_trackingPost.EnqueueTask(task)
             ? (standing ? $"🔁 Standing watch on the {lane.Name}" : $"📡 Sweeping the {lane.Name}")
             : $"The {lane.Name} is already on the queue");
-        CloseCorridorMenu();
         CloseSkyMenu();
     }
 
