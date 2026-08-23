@@ -184,7 +184,9 @@ public partial class Map
     /// <summary>The universe her berth was picked for; never a thread id, so the first read always seeds.</summary>
     private string _reachSeededFor = " ";
 
-    /// <summary>Where this universe tied her up, or null in a world with no dockable berth at all.</summary>
+    /// <summary>Where this universe tied her up; empty once this lane has ASKED and found nowhere to tie a
+    /// hull up at all, and null before it has asked. The three states are distinct on purpose — "not yet"
+    /// and "not in this world" are different answers, and only one of them is worth asking again.</summary>
     private string? _reachBerthId;
 
     /// <summary>
@@ -194,14 +196,26 @@ public partial class Map
     private string? TheReachBodyId(string? threadId)
     {
         EnsureTheOldShipIsBerthed();
-        return string.Equals(threadId ?? "", _reachSeededFor, StringComparison.Ordinal) ? _reachBerthId : null;
+        return string.Equals(threadId ?? "", _reachSeededFor, StringComparison.Ordinal)
+            && _reachBerthId is { Length: > 0 } berth
+            ? berth
+            : null;
     }
 
-    /// <summary>Her id in this world: the hull a shipped scenario already gave the old name to, if any, and
-    /// otherwise the one this lane berthed. Asked rather than assumed, so a scenario that grows its own REACH
-    /// later does not end up with two of her.</summary>
+    /// <summary>Her id in this world: the hull this lane berthed, and failing that the one a shipped scenario
+    /// already gave the old name to. Asked rather than assumed, so a scenario that grows its own REACH later
+    /// does not end up with two of her — and asked in that order, because the cheap question (one string
+    /// compare against a constant) answers it on every sweep after the first.</summary>
     private string? TheReachShipId()
     {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (TheOldShip.IsHer(npc.Ship.Id))
+            {
+                return npc.Ship.Id;
+            }
+        }
+
         foreach (NpcState npc in _npcStates)
         {
             if (CarriesTheOldName(npc.Ship.Id))
@@ -236,20 +250,35 @@ public partial class Map
     ///
     /// <para>If the world ALREADY floats her — a scenario that grows its own hull with the old name on its
     /// record — nothing is seeded and she is simply found. Two REACHes would be worse than none.</para>
+    ///
+    /// <para>The guard asks TWO questions and not one: is this the universe she was berthed for, AND is she
+    /// still in the roster? A flag alone would be wrong the day something rebuilds the traffic without
+    /// changing the universe's id, and she would be gone for the rest of the session with nothing to say so.
+    /// She is a depot by construction, so the two paths that DO cull the roster — the long-haul jump and the
+    /// void re-seed — already keep her.</para>
     /// </summary>
     private void EnsureTheOldShipIsBerthed()
     {
-        string thread = _activeThreadId ?? "";
-        if (string.Equals(_reachSeededFor, thread, StringComparison.Ordinal) || _ephemeris is null)
+        if (_ephemeris is null)
         {
             return;
         }
 
-        _reachSeededFor = thread;
-        _reachBerthId = null;
+        string thread = _activeThreadId ?? "";
+        bool sameUniverse = string.Equals(_reachSeededFor, thread, StringComparison.Ordinal);
+        if (sameUniverse && (TheReachShipId() is not null || _reachBerthId is ""))
+        {
+            return;   // she is afloat here, or this world had nowhere to tie a hull up and we already asked
+        }
 
-        // A universe switch leaves the last world's hull in the roster; she belongs to the world we left.
-        _npcStates = [.. _npcStates.Where(n => !TheOldShip.IsHer(n.Ship.Id))];
+        if (!sameUniverse)
+        {
+            // A universe switch leaves the last world's hull in the roster; she belongs to the world we left.
+            _npcStates = [.. _npcStates.Where(n => !TheOldShip.IsHer(n.Ship.Id))];
+            _reachSeededFor = thread;
+            _reachBerthId = null;
+        }
+
         if (thread.Length == 0)
         {
             _reachSeededFor = " ";   // no universe yet — ask again when there is one
@@ -258,14 +287,24 @@ public partial class Map
 
         if (TheReachShipId() is { } already)
         {
-            // The scenario carries her. Her berth is wherever she is parked, if she is parked at all.
-            _reachBerthId = _npcStates.FirstOrDefault(n => n.Ship.Id == already)?.Ship.DepotBodyId;
+            // The scenario floats her itself. Nothing is seeded — two REACHes would be worse than none —
+            // and her berth is wherever that world tied her up.
+            foreach (NpcState npc in _npcStates)
+            {
+                if (string.Equals(npc.Ship.Id, already, StringComparison.Ordinal))
+                {
+                    _reachBerthId = npc.Ship.DepotBodyId ?? "";
+                    break;
+                }
+            }
+
             return;
         }
 
         if (TheOldShip.BerthFor(thread, OldCrew.BerthsOf(_ephemeris)) is not { } berth)
         {
-            return;   // a world with nowhere to tie a hull up; she is not in this one
+            _reachBerthId = "";      // asked, and this world has nowhere to tie a hull up
+            return;
         }
 
         _reachBerthId = berth;
