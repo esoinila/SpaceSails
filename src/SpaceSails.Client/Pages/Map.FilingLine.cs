@@ -159,6 +159,11 @@ public partial class Map
                 : new Flashback.Alteration(FilingLine.Detail.None, "", "");
 
         bool wrong = lie.Which != FilingLine.Detail.None;
+        // …and whether the moved detail is NEW. A page re-greyed by a later rebirth and won back again is
+        // still carrying the lie an earlier captain took the pip for, and the row must go on saying so — but
+        // charging the sanity seam a second time for the same falsehood would turn one wrong page into a
+        // recurring tax on every death, which is the repeat-tax #480 ruled against in the nerve's own lane.
+        bool freshLie = wrong && !standing.WasAltered;
         _filingBook = FilingLine.Put(_filingBook, new FilingLine.Page(
             entryId,
             wrong ? FilingLine.PageState.CameBackWrong : FilingLine.PageState.CameBack,
@@ -167,7 +172,7 @@ public partial class Map
         Flashback.Outcome told = wrong ? Flashback.Outcome.CameBackWrong : Flashback.Outcome.CameBack;
         ShowPulseMessage(Flashback.Toast(told));
 
-        if (wrong)
+        if (freshLie)
         {
             // #226's sanity seam, and the only nerve this lane spends: a memory that is not how you remember
             // it costs a pip, filed under its own name so "what broke you?" can say so afterwards.

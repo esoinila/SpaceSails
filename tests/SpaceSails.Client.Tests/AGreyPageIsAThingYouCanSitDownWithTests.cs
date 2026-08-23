@@ -192,10 +192,12 @@ public sealed class AGreyPageIsAThingYouCanSitDownWithTests
 
         Assert.Equal(1, CountOf(file, @"ApplyNerveShock\("));
 
-        int guard = body.IndexOf("if (wrong)", StringComparison.Ordinal);
+        int guard = body.IndexOf("if (freshLie)", StringComparison.Ordinal);
         int shock = body.IndexOf("ApplyNerveShock(", StringComparison.Ordinal);
         Assert.True(guard >= 0 && shock > guard,
-                    "the pip is spent inside the `wrong` arm and nowhere else.");
+                    "the pip is spent inside the fresh-lie arm and nowhere else — a page re-greyed by a later "
+                    + "rebirth still carries an earlier captain's moved detail, and charging for it again "
+                    + "would make one wrong page a tax on every death.");
 
         Assert.Contains("Flashback.WrongPageNervePips", body, StringComparison.Ordinal);
         Assert.Contains("Flashback.WrongPageNerveLabel", body, StringComparison.Ordinal);
