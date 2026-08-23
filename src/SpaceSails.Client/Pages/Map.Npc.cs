@@ -252,6 +252,11 @@ public partial class Map
             : $"Telescopes full — {callsign} is the next look, but we can't hold custody; drop a track on the Sensors desk");
 
         CloseShipMenu();
+
+        // #973 L4 · …and if the hull the scope just swung onto is the one he would not sign the manifest for,
+        // the boat deck comes back. Said AFTER the ledger's own receipt, so the instrument reports first and
+        // the memory is the line the captain is left holding.
+        TheOldShipIsSeen(id);
     }
 
     /// <summary>What a scan would cost in telescope time — shown before the player commits.</summary>
@@ -598,6 +603,11 @@ public partial class Map
     // non-arrived NPC is either currently visible or falls back to its dim last-seen marker.
     private void SweepSensors()
     {
+        // #973 L4 · …and the one hull this world has to grow for itself is berthed before the scope looks at
+        // anything. Lazy off the universe's id (see EnsureTheOldShipIsBerthed) and a single string compare
+        // once she is there, so the sweep pays nothing for her after the first pass.
+        EnsureTheOldShipIsBerthed();
+
         foreach (NpcState npc in _npcStates)
         {
             bool wasObserved = npc.CurrentlyObserved;

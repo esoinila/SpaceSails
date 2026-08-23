@@ -923,6 +923,7 @@ public partial class Map
                 _keepNextCheckTime = SimTime + OrbitKeeping.TrimCadenceFraction * OrbitRule.LocalOrbitPeriod(park, body.Mu);
                 _keepTrimsFired = 0;
                 ArrivedAt(body.Id);
+                TheArrivalIsRemembered(body.Id);   // #973 L4: a place can finish a page you don't remember writing
                 StaleFutureNodes();
                 double parkedRadius = (_ship.Position - bodyPos).Length;
                 string holds = $"🛰 AUTOPILOT HOLDS THE ORBIT — {body.Name}, {FormatDistance(parkedRadius)}, trim ≈{_keepTrimPulsesPerDay} p/day";
@@ -1167,6 +1168,7 @@ public partial class Map
         StaleFutureNodes();
         CompleteBoundCargoRunQuests(); // a parcel bound for this moon haven delivers on the park (#175)
         ShowPulseMessage($"Orbital insertion — bound to {oi.Body.Name} 🛰");
+        TheArrivalIsRemembered(oi.Body.Id);   // #973 L4: …and the place may finish a grey page, said after the receipt
         RendererInterop.PlayCue("board");
     }
 
