@@ -275,6 +275,11 @@ public sealed class TheRepNeverRemembersYourFaceTests
     [Fact]
     public void HeNeverReadsTheWrongNameInTheFirstThreeMeetings()
     {
+        // Pinned as a NUMBER as well as read as a constant: a sweep bounded by the very constant it is
+        // guarding is vacuous the moment somebody lowers it — the loop below would simply run zero times
+        // and the test would go green on a rep who bleeds at the first hello.
+        Assert.Equal(3, NebulaRep.MeetingsBeforeTheBleed);
+
         for (int t = 0; t < 60; t++)
         {
             string threadId = $"{Thread}-{t}";
