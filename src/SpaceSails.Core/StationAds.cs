@@ -162,6 +162,37 @@ public static class StationAds
     public const string PosterAgainToast =
         "You have read this before. You have read this before that, too.";
 
+    /// <summary>What a look at the PIRATE INSURANCE poster is worth this time.</summary>
+    public enum PosterLook
+    {
+        /// <summary>Nothing this lane has to say — a first-life captain, or a wall this captain has already
+        /// stopped at. The poster's own two reads (the sell, then the grey line) are untouched either way.</summary>
+        NothingToSay = 0,
+
+        /// <summary>The afternoon is not in the book, and the wall is the other door to it: the SIGNING sheet
+        /// is filed from here, with the reborn line and the plate, exactly as the rep files it.</summary>
+        FilesTheAfternoon = 1,
+
+        /// <summary>The afternoon is already filed. All the wall has left is the one sentence.</summary>
+        SaysTheSentence = 2,
+    }
+
+    /// <summary>
+    /// THE POSTER'S THIRD READ, as a rule rather than a habit. Two gates, and the order of them is the design:
+    /// a REBIRTH (the joke only lands on a man who has been through the clinic, because until then the
+    /// afternoon on the wall is simply an afternoon he was at), and ONCE PER LIFE (there is no page here and
+    /// so no <see cref="FilingLine.PageState.Refused"/> latch — the caller keeps the life it last spoke in).
+    /// </summary>
+    /// <param name="retiredCaptains">How many of himself this captain has buried.</param>
+    /// <param name="lastLifeLookedAt">Which life this lane last spoke in at a poster, or 0 for none.</param>
+    /// <param name="life">Which life the captain is on, counting from one.</param>
+    /// <param name="afternoonAlreadyFiled">Is the signing sheet already in the black book?</param>
+    public static PosterLook LookAfterARebirth(
+        int retiredCaptains, int lastLifeLookedAt, int life, bool afternoonAlreadyFiled) =>
+        retiredCaptains <= 0 || lastLifeLookedAt == life
+            ? PosterLook.NothingToSay
+            : afternoonAlreadyFiled ? PosterLook.SaysTheSentence : PosterLook.FilesTheAfternoon;
+
     // ── §4 · YOU HAVE BEEN HERE ──────────────────────────────────────────────────────────────────────
 
     /// <summary>Arriving somewhere a page you don't remember writing already names.</summary>
@@ -207,5 +238,39 @@ public static class StationAds
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// WHICH PAGES THIS PLACE FINISHES, in the ledger's own order. Three fences, and each closes a different
+    /// way of getting it wrong:
+    ///
+    /// <list type="bullet">
+    ///   <item>only a GREY page — a page the captain already remembers is not one a place can give back;</item>
+    ///   <item>never a page that came back WRONG (<see cref="FilingLine.Page.WasAltered"/>) — the lie stands
+    ///   until the SPREAD lays it beside a document and catches it, and a corridor that quietly straightened a
+    ///   moved detail would do the one piece of detective work the black book exists for;</item>
+    ///   <item>and the page has to NAME the place, in words the captain reading the row would read too.</item>
+    /// </list>
+    ///
+    /// <para>Once per page is not a fence here: the caller writes the page back un-grey, so the first fence
+    /// is the latch on every arrival after this one.</para>
+    /// </summary>
+    public static IReadOnlyList<string> PagesFinishedBy(
+        IEnumerable<LedgerPage> pages, IReadOnlyList<FilingLine.Page> book, string? placeName)
+    {
+        ArgumentNullException.ThrowIfNull(pages);
+        ArgumentNullException.ThrowIfNull(book);
+
+        var finished = new List<string>();
+        foreach (LedgerPage page in pages)
+        {
+            FilingLine.Page standing = FilingLine.Standing(book, page.Id);
+            if (standing.IsGrey && !standing.WasAltered && NamesThePlace(page, placeName))
+            {
+                finished.Add(page.Id);
+            }
+        }
+
+        return finished;
     }
 }

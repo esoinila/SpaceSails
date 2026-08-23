@@ -41,14 +41,17 @@ public partial class Map
     /// </summary>
     private void ThePosterAfterARebirth()
     {
-        if (RetiredCaptainCount == 0 || _posterReadInLife == CaptainsLife)
+        StationAds.PosterLook look = StationAds.LookAfterARebirth(
+            RetiredCaptainCount, _posterReadInLife, CaptainsLife,
+            HeldMemory.Find(_heldMemories, NebulaRep.SigningMemoryId) is not null);
+        if (look == StationAds.PosterLook.NothingToSay)
         {
             return;
         }
 
         _posterReadInLife = CaptainsLife;
 
-        if (HeldMemory.Find(_heldMemories, NebulaRep.SigningMemoryId) is not null)
+        if (look == StationAds.PosterLook.SaysTheSentence)
         {
             // The afternoon is already filed. The wall has nothing to give him but the sentence.
             ShowPulseMessage(StationAds.PosterAgainToast);
@@ -146,27 +149,18 @@ public partial class Map
             return;
         }
 
-        string place = BodyName(bodyId);
-        string? firstFinished = null;
-        int finished = 0;
-
-        foreach (LedgerPage page in LedgerPagesForFiling())
-        {
-            FilingLine.Page standing = FilingLine.Standing(_filingBook, page.Id);
-            if (!standing.IsGrey || standing.WasAltered || !StationAds.NamesThePlace(page, place))
-            {
-                continue;
-            }
-
-            _filingBook = FilingLine.Put(
-                _filingBook, standing with { State = FilingLine.PageState.CameBack });
-            firstFinished ??= page.Id;
-            finished++;
-        }
-
-        if (firstFinished is null)
+        IReadOnlyList<string> finished =
+            StationAds.PagesFinishedBy(LedgerPagesForFiling(), _filingBook, BodyName(bodyId));
+        if (finished.Count == 0)
         {
             return;
+        }
+
+        foreach (string id in finished)
+        {
+            _filingBook = FilingLine.Put(
+                _filingBook,
+                FilingLine.Standing(_filingBook, id) with { State = FilingLine.PageState.CameBack });
         }
 
         // Both sentences are said, in the order Fable wrote them — and the SECOND is the one left standing on
@@ -176,9 +170,11 @@ public partial class Map
         LogAutopilotEvent($"{FilingLine.Mark} {StationAds.BeenHereToast}");
         ShowPulseMessage(StationAds.PlaceFinishesToast);
         LogAutopilotEvent($"{FilingLine.Mark} {StationAds.PlaceFinishesToast}"
-            + (finished > 1 ? $"  ({finished.ToString(System.Globalization.CultureInfo.InvariantCulture)} pages)" : ""));
+            + (finished.Count > 1
+                ? $"  ({finished.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)} pages)"
+                : ""));
 
-        RaiseStoryBeat(StoryBeats.Beat.Flashback, firstFinished);
+        RaiseStoryBeat(StoryBeats.Beat.Flashback, finished[0]);
         RequestVaultSave();
         StateHasChanged();
     }
