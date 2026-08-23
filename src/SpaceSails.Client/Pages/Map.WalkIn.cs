@@ -145,7 +145,12 @@ public sealed partial class Map
             return;
         }
 
-        if (_walkInAskedThisVisit || _barAfoot.Count >= WalkerBand
+        // …AND SHE IS SENT ONCE, NOT ONCE A FRAME. `_walkInAskedThisVisit` is set when she ARRIVES, which is
+        // hundreds of frames after she sets off — so the plan gate has to be her BODY, not her ask. FOUND BY
+        // LOOKING: the strip read "seats 4, 0 chairs free" at a top with one woman standing at it, because
+        // three of her had crossed the floor and every one of them had taken a chair on the way in. This
+        // repository's third named bug class (the drawn room and the walked room disagreeing), in a bar.
+        if (_walkInAskedThisVisit || TheWalkInAfoot() is not null || _barAfoot.Count >= WalkerBand
             || !TheCaptainIsSittingAloneInTheBar())
         {
             return;

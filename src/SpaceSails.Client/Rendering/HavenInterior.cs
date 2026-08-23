@@ -277,6 +277,13 @@ public static class HavenInterior
         IReadOnlyList<DeckReachability.Point> Fixtures,
         IReadOnlyList<DeckReachability.Point> Tops);
 
+    /// <summary>#973 L5b · What this berth's bar is CALLED — THE STORMWATCH BAR, THE EARTHRISE, THE DEEP END.
+    /// The same string the deck's own location strip reads off the spec, published because the strip's company
+    /// clause needs it: a top in a station bar that announced itself as a canteen table was the sentence and
+    /// the room disagreeing, and it was found by looking.</summary>
+    public static string? BarNameOf(string bodyId) =>
+        System.Array.Find(Specs, s => s.BodyId == bodyId) is { } spec ? spec.BarName : null;
+
     /// <summary>#973 L5b · How many a bar top seats. The room's own number, stated once — the sitting says it
     /// in chairs ("one of them is yours now"), and a second count anywhere would be the panel and the picture
     /// disagreeing about how alone the captain is.</summary>

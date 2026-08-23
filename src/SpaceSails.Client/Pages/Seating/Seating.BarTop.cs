@@ -71,7 +71,14 @@ public partial class Map
             // say "cold glass" on a beat the short rest had already called dry.
             bool drink = _host.APourInFrontOfYou;
             bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, top.Watch);
-            Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink);
+            // …AND IT SAYS WHERE IT IS. The strip's company clause is built out of the scene's own Setting,
+            // and a canteen's is a constant three hundred thousand kilometres from this room: a woman standing
+            // at a top in The Stormwatch Bar was announced as being at "a table in the upper canteen". One
+            // substitution on the shipped scene, so every other word of it is the one the canteen top gets.
+            Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink) with
+            {
+                Setting = SittingAlone.BarSetting(top.Room),
+            };
 
             // #820 · the snap, at the room's own published place beside this top. Never measured here.
             _host.SitCaptainOn(top.ChairX, top.ChairY);

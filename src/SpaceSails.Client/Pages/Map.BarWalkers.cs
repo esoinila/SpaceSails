@@ -582,7 +582,8 @@ public partial class Map
             }
 
             return new BarTopUnderfoot(
-                i, $"bar:{bar.BodyId}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y, HavenInterior.BarTopSeats);
+                i, $"bar:{bar.BodyId}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y, HavenInterior.BarTopSeats,
+                HavenInterior.BarNameOf(bar.BodyId) ?? "");
         }
 
         return null;

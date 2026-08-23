@@ -76,8 +76,10 @@ public partial class Map
     /// (<c>HavenInterior.BesideATop</c>), never a coordinate the seat measured (§13.15).</param>
     /// <param name="ChairY"><inheritdoc cref="ChairX"/></param>
     /// <param name="Seats">How many the top seats — the room's own number.</param>
+    /// <param name="Room">What this bar is called, for the one clause that says where the captain is sitting.
+    /// A canteen's setting is a constant; a berth's is per-station, so it travels with the answer.</param>
     private readonly record struct BarTopUnderfoot(
-        int Index, string Key, long Watch, double ChairX, double ChairY, int Seats);
+        int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Room);
 
     /// <inheritdoc cref="ISeatHost"/>
     private interface ISeatHost
