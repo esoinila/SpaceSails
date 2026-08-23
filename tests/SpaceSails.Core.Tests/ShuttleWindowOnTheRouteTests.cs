@@ -324,6 +324,14 @@ public class ShuttleWindowOnTheRouteTests
         string waiting = RouteShuttleWindow.RemoteLine(nowSimTime: 1.2e5, returnBySimTime: null, reopenSeconds: 9_000);
         Assert.Contains("NO RETURN WINDOW", waiting, StringComparison.Ordinal);
         Assert.Contains("next window in 2 h 30 m", waiting, StringComparison.Ordinal);
+
+        // Nothing is flying on, but the window itself is running out — the line says which clock is which.
+        string closing = RouteShuttleWindow.RemoteLine(
+            nowSimTime: 1.2e5, returnBySimTime: null, reopenSeconds: null, secondsLeftInRange: 3 * 3600);
+        Assert.Equal("🛸 WINDOW CLOSES IN 3 h 00 m", closing);
+
+        // …and an open window with no reopening to name does not mutter "no next window" at the captain.
+        Assert.DoesNotContain("no next window", closing, StringComparison.Ordinal);
     }
 
     [Fact]

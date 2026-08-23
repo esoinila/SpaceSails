@@ -159,15 +159,34 @@ public static class RouteShuttleWindow
         return string.Create(CultureInfo.InvariantCulture, $"{hours / 24} d {hours % 24:00} h");
     }
 
-    /// <summary>The captain's remote's own line, and the away-site HUD's: what a captain standing on a rock
-    /// needs in one sentence. <paramref name="returnBySimTime"/> null = there is no ride to catch (nothing
-    /// is flying on); <paramref name="reopenSeconds"/> null = nothing brings the window back.</summary>
-    public static string RemoteLine(double nowSimTime, double? returnBySimTime, double? reopenSeconds)
+    /// <summary>
+    /// The captain's remote's own line, and the away-site HUD's — ONE builder, so a captain who checks the
+    /// handset and then looks at the HUD can never be shown two different numbers for one window.
+    ///
+    /// <para>Three things a captain standing on a rock can need, in priority order: a ship that is flying on
+    /// without him (<paramref name="returnBySimTime"/> — the hard deadline), a window that is merely running
+    /// out (<paramref name="secondsLeftInRange"/>, finite), or nothing at all. Then, if the window is shut,
+    /// how long the wait is (<paramref name="reopenSeconds"/>) — or that there is no wait, only the dark.</para>
+    /// </summary>
+    public static string RemoteLine(
+        double nowSimTime, double? returnBySimTime, double? reopenSeconds,
+        double secondsLeftInRange = double.PositiveInfinity)
     {
-        string returnBy = returnBySimTime is { } by
+        string head = returnBySimTime is { } by
             ? $"RETURN BY {Stamp(by)} ({In(by - nowSimTime)})"
+            : !double.IsPositiveInfinity(secondsLeftInRange)
+            ? $"WINDOW CLOSES IN {In(secondsLeftInRange)}"
             : "NO RETURN WINDOW";
+
+        // The wait only belongs on the line when there is one. An OPEN window with no reopening to name is
+        // simply open; saying "no next window" under it would read as a warning about nothing.
+        bool shut = reopenSeconds is not null || (returnBySimTime is null && double.IsPositiveInfinity(secondsLeftInRange));
+        if (!shut)
+        {
+            return $"🛸 {head}";
+        }
+
         string next = reopenSeconds is { } r ? $"next window in {In(r)}" : "no next window";
-        return $"🛸 {returnBy} · {next}";
+        return $"🛸 {head} · {next}";
     }
 }
