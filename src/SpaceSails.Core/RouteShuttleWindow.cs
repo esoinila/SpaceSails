@@ -178,15 +178,17 @@ public static class RouteShuttleWindow
             ? $"WINDOW CLOSES IN {In(secondsLeftInRange)}"
             : "NO RETURN WINDOW";
 
-        // The wait only belongs on the line when there is one. An OPEN window with no reopening to name is
-        // simply open; saying "no next window" under it would read as a warning about nothing.
-        bool shut = reopenSeconds is not null || (returnBySimTime is null && double.IsPositiveInfinity(secondsLeftInRange));
-        if (!shut)
+        // The tail says whether there is a SECOND chance. It earns its place when there is a wait to name,
+        // and when the captain is under a hard deadline (a RETURN BY is worth much more when you also know
+        // nothing comes round again). It is left off only where it would be chatter: a window that is merely
+        // running out, with nothing flying on — there, "no next window" answers a question nobody asked.
+        if (reopenSeconds is { } r)
         {
-            return $"🛸 {head}";
+            return $"🛸 {head} · next window in {In(r)}";
         }
 
-        string next = reopenSeconds is { } r ? $"next window in {In(r)}" : "no next window";
-        return $"🛸 {head} · {next}";
+        return returnBySimTime is null && !double.IsPositiveInfinity(secondsLeftInRange)
+            ? $"🛸 {head}"
+            : $"🛸 {head} · no next window";
     }
 }
