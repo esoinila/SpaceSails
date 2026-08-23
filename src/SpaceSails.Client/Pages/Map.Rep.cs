@@ -44,6 +44,11 @@ public sealed partial class Map
     /// <summary>Whether the rota has him working THIS visit at all.</summary>
     private bool _repWorkingHere;
 
+    /// <summary>#973 L2 dev cheat (<c>/map?rep=1</c>, <c>/map?rep=0</c>): force him on or off this ground.
+    /// Null is the shipped rota. It forces WHETHER and never WHO or WHAT — the pitch, the prices, the
+    /// rarity of the bleed and the once-per-life page are all the ones a captain gets.</summary>
+    private bool? _repCheat;
+
     /// <summary>Remember-you-said-no, and only until the doors shut.</summary>
     private NebulaRepVisit _repMemory = NebulaRepVisit.Fresh;
 
@@ -121,7 +126,8 @@ public sealed partial class Map
 
         _repVisitIndex++;
         _repMemory = _repMemory.AtVisit(_repVisitIndex);
-        _repWorkingHere = NebulaRep.IsWorkingThisStation(_activeThreadId ?? "", bodyId, _repVisitIndex);
+        _repWorkingHere = _repCheat
+            ?? NebulaRep.IsWorkingThisStation(_activeThreadId ?? "", bodyId, _repVisitIndex);
     }
 
     // ── One frame of his working day ───────────────────────────────────────────────────────────────────

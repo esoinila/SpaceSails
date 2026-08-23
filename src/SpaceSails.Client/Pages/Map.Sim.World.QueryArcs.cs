@@ -22,7 +22,7 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
     /// <c>?roll=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
@@ -42,6 +42,25 @@ public partial class Map
             // than no cheat at all.
             string candidate = Uri.UnescapeDataString(pair["approach=".Length..]).ToLowerInvariant();
             _approachCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("rep=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #973 L2 dev cheat: /map?rep=1 puts Harlan Fess on this ground whatever his rota says;
+            // /map?rep=0 keeps him off it.
+            //
+            // Same argument as ?approach= above, and it is the stronger case of the two: his presence is
+            // "at most one place in three, never two visits running", so without a lever the whole
+            // feature — the walk in, the pitch, the flashback, the withdrawal — is reachable only by
+            // docking somewhere three or four times and hoping. It forces WHETHER and never WHO or WHAT:
+            // the tier line, the buttons, the rarity of the bleed and the once-per-life page are all the
+            // ones a captain gets.
+            string candidate = Uri.UnescapeDataString(pair["rep=".Length..]).ToLowerInvariant();
+            _repCheat = candidate switch
             {
                 "1" or "true" or "yes" or "now" => true,
                 "0" or "false" or "no" or "never" => false,

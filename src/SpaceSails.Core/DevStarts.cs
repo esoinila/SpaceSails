@@ -282,6 +282,18 @@ public static class DevStarts
         new("🪑🕳", "…and the watch where nobody comes",
             "The same table on the small watch with the approach forced OFF. Sit as long as you like: an eighty-seat hall answers, in words, that nothing is going to happen. That is the beat, not a bug — and on a watch this quiet the sit is the RESTING one, boots up on the spare chair (#757, #783).",
             "/map?tablescene=free&watch=5&approach=0"),
+        // #973 L2 · THE SALESMAN, ON DEMAND. Same argument as the two rows above and a stronger case of it:
+        // his rota is "at most one place in three, never two visits running", so without a lever the whole
+        // beat — the walk in from a door, the pitch for the tier you hold, the signing flashback on his own
+        // card, the withdrawal to the counter — is reachable only by luck. Sit down alone and wait.
+        new("🧾🚶", "The insurance man who never learns your face",
+            "B1's canteen with HARLAN FESS of Nebula Mutual working the room. He walks in from a door, "
+            + "drifts between the counter and the tops, and the moment you are sitting alone at a top he "
+            + "crosses the floor and STANDS at it — he was not invited. He has your name on the file and no "
+            + "idea he has ever met you. Press \"I already have a policy\" for the day you signed; tell him "
+            + "not today and he is at the bar for the rest of the visit, and delighted to meet you at the "
+            + "next one (#973 L2).",
+            "/map?tablescene=free&rep=1&approach=0"),
         // #784 · THE WHOLE PHASE-TWO LOOP IN THIRTY SECONDS. Owner's own ask, filing the demo: "we probably
         // need a start point where we have things in our inventory we can process (when our HUD UI state is
         // sitting down with enough privacy)." Everything the seated build is about — the docked frame, the
