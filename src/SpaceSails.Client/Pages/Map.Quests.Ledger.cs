@@ -177,7 +177,9 @@ public partial class Map
                 ? "🕸 route tip"
                 : q.Kind == QuestKind.Favor
                     ? $"📡 clears {q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr favor"
-                    : plain[3];
+                    : plain.Count > 0
+                        ? plain[3]
+                        : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
             (IReadOnlyList<Stations.Captain.QuestStep> steps, bool showScope) = FetchStagePlan(q);
             return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope, nextAction, plain);
         }).ToArray();

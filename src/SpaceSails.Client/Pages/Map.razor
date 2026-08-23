@@ -3050,16 +3050,25 @@
                it just stops being the only thing on the card that says what the job is. The SAME block, from
                the SAME call, renders on the Captain's ledger row after acceptance. *@
             @{ IReadOnlyList<string> _offerPlain = JobPlainBlock(offer); }
-            <div class="job-plain">
-                <div class="job-plain-verb">@_offerPlain[0]</div>
-                <div class="job-plain-takes">@_offerPlain[1]</div>
-                <div class="job-plain-effort">@_offerPlain[2]</div>
-            </div>
+            @if (_offerPlain.Count > 0)
+            {
+                <div class="job-plain">
+                    <div class="job-plain-verb">@_offerPlain[0]</div>
+                    <div class="job-plain-takes">@_offerPlain[1]</div>
+                    <div class="job-plain-effort">@_offerPlain[2]</div>
+                </div>
+            }
             <div class="deck-offer-blurb">@offer.Blurb</div>
             @* The pay keeps its own prominent slot on the card, and keeps the house's voice when there is
-               no coin in it — but when there IS, the line is Core's, so the size word travels with it. *@
+               no coin in it — but when there IS and the offer is a real contract, the line is Core's, so
+               the size word travels with it. An offer that is a door rather than a job (the KAAMOS
+               returned filing) keeps the plain fee it always had. *@
             <div class="deck-offer-reward">
-                @(offer.Reward > 0 ? _offerPlain[3] : "On the house — the tip's the payoff 🕸")
+                @(offer.Reward <= 0
+                    ? "On the house — the tip's the payoff 🕸"
+                    : _offerPlain.Count > 0
+                        ? _offerPlain[3]
+                        : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")
             </div>
             <div class="deck-offer-actions">
                 <button type="button" class="btn btn-sm btn-warning" title="Take the stranger's offer — it lands in your logbook" @onclick="AcceptOffer">@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")</button>

@@ -1,3 +1,4 @@
+using System;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -19,8 +20,29 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
     /// <summary>The four plain lines for a job — offered or in hand, the SAME call, because the owner's
-    /// ask was that the card say the same thing before and after accepting.</summary>
-    private IReadOnlyList<string> JobPlainBlock(Quest q) => JobTerms.PlainBlock(JobFactsFor(q));
+    /// ask was that the card say the same thing before and after accepting. Empty for the handful of
+    /// table offers that are not contracts at all (see <see cref="IsLedgerlessOffer"/>); both surfaces
+    /// render nothing rather than a promise.</summary>
+    private IReadOnlyList<string> JobPlainBlock(Quest q) =>
+        IsLedgerlessOffer(q) ? [] : JobTerms.PlainBlock(JobFactsFor(q));
+
+    /// <summary>
+    /// AN OFFER THAT IS A DOOR, NOT A JOB — and the reason the block has an off switch.
+    /// </summary>
+    /// <remarks>
+    /// Caught by playing the very card #959 was filed about. The KAAMOS returned-filing docket
+    /// (Map.Kaamos.MakeKaamosBounceOffer) is minted as a <c>CargoRun</c> because that is the shape the
+    /// table card knows how to slide across — but it carries NO destination body, adds NO quest to the
+    /// ledger, and asks the captain for nothing except his hull number. Its own comment says so: <i>"No
+    /// quest is added — there is nothing to go and do, which is the point."</i>
+    /// <para>Handed to <see cref="JobTerms"/> it produced a sentence that was false in three ways at
+    /// once: <c>DELIVER — Ringside Exchange</c>, <c>Takes: berth … with the parcel aboard</c>, and
+    /// <c>Distance: not measured from here</c> — a delivery, to a place, that could not be found. A block
+    /// whose whole purpose is to say what a job takes must be silent about a thing that is not a job;
+    /// the pitch and the fee stand on their own, exactly as they did before #959.</para>
+    /// </remarks>
+    private static bool IsLedgerlessOffer(Quest q) =>
+        string.Equals(q.Id, KaamosBounceOfferId, StringComparison.Ordinal);
 
     /// <summary>Measure this job against the live world. Every number below is asked of the sim; the only
     /// literals are names and natures, which are facts about what a thing IS, not about where it is.</summary>

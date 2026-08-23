@@ -154,7 +154,7 @@ public sealed class TheJobCardSaysWhatItTakesTests
     public void TheLedgersPurseLineIsCoresPayLine()
     {
         string ledger = CodeOnly(Source("Pages", "Map.Quests.Ledger.cs"));
-        Assert.Contains(": plain[3];", ledger, StringComparison.Ordinal);
+        Assert.Contains("? plain[3]", ledger, StringComparison.Ordinal);
         Assert.Contains("route tip", ledger, StringComparison.Ordinal);
         Assert.Contains("cr favor", ledger, StringComparison.Ordinal);
     }
@@ -177,6 +177,33 @@ public sealed class TheJobCardSaysWhatItTakesTests
     {
         string flat = Flat(CodeOnly(Source("Pages", "Map.razor")));
         Assert.Contains("JobTerms.SizeWord(party.PaidCredits, _credits - party.PaidCredits)", flat, StringComparison.Ordinal);
+    }
+
+    // ── LAW 3b · AN OFFER THAT IS NOT A JOB SAYS NOTHING, RATHER THAN SOMETHING FALSE ──────────────
+
+    /// <summary>
+    /// FOUND BY PLAYING IT, at the very bar the owner filed #959 from. The KAAMOS returned-filing docket
+    /// is minted as a <c>CargoRun</c> — the shape the table card knows how to slide across — but it has
+    /// no destination body and adds no quest: its own comment reads <i>"No quest is added — there is
+    /// nothing to go and do, which is the point."</i> Fed to the block it produced a sentence false in
+    /// three ways at once: <c>DELIVER — Ringside Exchange</c>, <c>Takes: berth … with the parcel
+    /// aboard</c>, and <c>Distance: not measured from here</c>.
+    /// <para>So the block has an off switch, and both surfaces render NOTHING rather than a promise. RED
+    /// PROOF: drop the <c>IsLedgerlessOffer</c> arm and the docket claims a delivery again; drop either
+    /// surface's count guard and the card throws on an empty block.</para>
+    /// </summary>
+    [Fact]
+    public void AnOfferThatIsADoorRatherThanAJobWearsNoBlockAtAll()
+    {
+        string terms = CodeOnly(Source("Pages", "Map.Quests.Terms.cs"));
+        Assert.Contains("IsLedgerlessOffer(q) ? [] : JobTerms.PlainBlock(", terms, StringComparison.Ordinal);
+        Assert.Contains("KaamosBounceOfferId", terms, StringComparison.Ordinal);
+
+        // Both surfaces must actually HONOUR the empty block rather than indexing into it.
+        Assert.Contains("_offerPlain.Count > 0", CodeOnly(Source("Pages", "Map.razor")), StringComparison.Ordinal);
+        Assert.Contains("q.Plain is { Count: > 0 }",
+            CodeOnly(Source("Pages", "Stations", "Captain.razor")), StringComparison.Ordinal);
+        Assert.Contains("plain.Count > 0", CodeOnly(Source("Pages", "Map.Quests.Ledger.cs")), StringComparison.Ordinal);
     }
 
     // ── LAW 4 · A CLASS WITH NO RULE IS INVISIBLE TEXT ─────────────────────────────────────────────
