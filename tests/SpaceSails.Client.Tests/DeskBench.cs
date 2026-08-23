@@ -48,6 +48,17 @@ namespace SpaceSails.Client.Tests;
 /// render raises is reported. A filter that hid them all would be this repo's fifth named bug class: a guard
 /// that cannot tell pass from fail.</para>
 ///
+/// <para><b>The one world this bench cannot reach, measured rather than guessed.</b> The rAF loop starts
+/// INSIDE the gate (<c>RendererInterop.StartLoop</c>), so in a browser several sim ticks have already run by
+/// the time the post-gate stages fire; here, none have. That only matters to one thing —
+/// <c>?land=1</c> with no <c>?dock=</c>, where <c>ShuttleDestinationsInRange()</c> is read synchronously at
+/// <c>SimTime</c> 0 and comes back empty ("nothing landable in shuttle reach from this berth"). Checked in a
+/// real Chromium on the dev server with localStorage cleared: <c>/map?found=1&amp;land=1</c> DOES land there,
+/// so this is the bench's horizon and not a bug in the cheat. It is why every world in
+/// <see cref="EveryDeskBootsTests"/>'s matrix names its berth, and why
+/// <see cref="EveryDeskBootsTests.EveryWorldInTheMatrixIsTheWorldItClaims"/> exists at all: a row that had
+/// quietly ended at the front door would run eight desk checks against a start picker and pass.</para>
+///
 /// <para><b>On BL0006.</b> <c>Microsoft.AspNetCore.Components.RenderTree</c> is warned against for application
 /// code because its shape may change between releases. This is a test whose entire subject is what the render
 /// tree CONTAINS; there is no supported API that answers "what attribute names did this component emit", and
