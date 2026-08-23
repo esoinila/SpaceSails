@@ -152,13 +152,10 @@ public static class SeatedSpread
     // two siblings). What is written here is only the affordance around them: what the section is called,
     // and what a row's press does.
 
-    // FABLE: line needed — the blurb over the reconcile rows, in the register of SpreadBlurb above: what
-    //   laying two papers together IS, in the captain's own voice, stopping before it says what any of it
-    //   means. The standing-in sentence below is deliberately the plainest true statement of the act and
-    //   nothing more, so nobody mistakes it for authored prose.
-    /// <summary>What the reconcile section says over its rows. STANDING IN — see the marker above.</summary>
+    /// <summary>#973 L5b · What the reconcile section says over its rows. Fable's line, verbatim — the
+    /// marker L3 left here is answered and gone.</summary>
     public const string LayThemTogetherBlurb =
-        "Lay two of them together and see whether they are talking about the same world.";
+        "Two sheets on the table at a time. See whether they were written about the same world.";
 
     /// <summary>What a row's press does, said on the row.</summary>
     public const string LayItWord = "🗂 lay it";
