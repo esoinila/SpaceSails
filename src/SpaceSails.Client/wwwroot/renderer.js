@@ -417,6 +417,33 @@ export function vaultWrite(key, json) {
     }
 }
 
+/** Put text on the clipboard — the [copy] behind the Captain's crash note. Best-effort: a browser that
+ *  denies clipboard access (or an insecure origin) falls back to a hidden textarea + execCommand, and if
+ *  that fails too we simply report false rather than throwing into the game. */
+export function copyText(text) {
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch {
+        // fall through to the old way
+    }
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+    } catch {
+        return false;
+    }
+}
+
 /** Forget the vault (used by a fresh start that abandons the save). */
 export function vaultClear(key) {
     try {

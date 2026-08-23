@@ -17,6 +17,26 @@
 }
 
 <div class="captain-desk text-light">
+    @* #963 follow-up · THE BLACK BOX, WHERE A CAPTAIN WILL FIND IT. Owner's playtest ended twice at
+       Blazor's textless "An unhandled error has occurred. Reload." — the console had the real text and
+       the console died with the tab. The note survives in localStorage now, so the desk is still holding
+       it after the reload: the sentence, and a button that puts it on the clipboard for the issue. *@
+    @if (LastError is { } crash)
+    {
+        <div class="captain-crash" role="alert">
+            <div class="captain-crash-head">⚠ The last voyage ended in an error.</div>
+            <pre class="captain-crash-text">@crash.DescribeFully()</pre>
+            <div class="captain-crash-actions">
+                <button type="button" class="btn btn-sm btn-warning"
+                        title="Put the whole note on the clipboard — paste it straight into an issue"
+                        @onclick="() => OnCopyError.InvokeAsync()">📋 @(ErrorCopied ? "copied" : "copy")</button>
+                <button type="button" class="btn btn-sm btn-outline-light"
+                        title="Filed and dealt with — clear the note from the log"
+                        @onclick="() => OnDismissError.InvokeAsync()">✕ clear</button>
+            </div>
+        </div>
+    }
+
     @* M26: two displays (owner) — the orders catalog, and a status board: every station's chip
        writ large, the whole ship at a glance from the captain's chair. *@
     <div class="captain-view-toggle">
@@ -581,6 +601,15 @@
     [Parameter, EditorRequired] public ShipMission CurrentMission { get; set; } = ShipMission.Default;
     [Parameter, EditorRequired] public MissionOptions Options { get; set; } = new([], [], [], [], []);
     [Parameter] public EventCallback<ShipMission> OnSelectMission { get; set; }
+
+    /// <summary>#963 follow-up — what killed the last voyage, if anything did. Null on a clean run.</summary>
+    [Parameter] public SpaceSails.Core.CrashNote? LastError { get; set; }
+
+    /// <summary>True once the note has been copied, so the button can say it took.</summary>
+    [Parameter] public bool ErrorCopied { get; set; }
+
+    [Parameter] public EventCallback OnCopyError { get; set; }
+    [Parameter] public EventCallback OnDismissError { get; set; }
     [Parameter] public IReadOnlyList<DeskChips.ChipData> StatusChips { get; set; } = [];
     [Parameter] public EventCallback<ShipDesk> OnGoToDesk { get; set; }
     [Parameter] public bool ShotAuthorized { get; set; }

@@ -70,9 +70,11 @@
             <div class="col-md-7">
                 <h2 class="h5" id="step-2">2. Press Plot</h2>
                 <p>
-                    <strong>Plot</strong> sits on the Nav toolbar (or press <kbd>E</kbd> at the NAV POST
-                    console inside the ship). The sim <em>pauses</em>. Nothing you do on this table costs
-                    fuel or time until you leave it — it is a scratchpad, not the helm.
+                    <strong>🗺 Plot</strong> is the loud amber button on the Nav toolbar — it is the
+                    heart of the whole desk, so it is dressed as such (or press <kbd>E</kbd> at the NAV
+                    POST console inside the ship). The sim <em>pauses</em>. Nothing you do on this table
+                    costs fuel or time until you leave it — it is a scratchpad, not the helm. The small
+                    <strong>?</strong> a little further along the row brings you back to this page.
                 </p>
             </div>
             <div class="col-md-5">@SketchToolbar()</div>
@@ -258,15 +260,17 @@
         <path d="M78 58 Q150 30 214 46" fill="none" stroke="{Dim}" stroke-width="1" stroke-dasharray="3 4"/>
         """);
 
-    private MarkupString SketchToolbar() => Frame("The Nav toolbar, with the Plot button on it",
+    private MarkupString SketchToolbar() => Frame("The Nav toolbar, with the amber Plot button standing out on it",
         $"""
         <rect x="14" y="42" width="292" height="36" rx="6" fill="#11151b"/>
-        {Pill(24, 51, 46, "Plot", Info)}
-        {Pill(78, 51, 52, "Scope", Dim)}
-        {Pill(138, 51, 22, "?", Dim)}
-        <text x="176" y="64" fill="{Dim}" font-size="10" font-family="monospace">warp  1×</text>
+        {Pill(24, 51, 52, "Follow", Dim)}
+        {Pill(82, 51, 24, "&#128269;+", Dim)}
+        <rect x="114" y="49" width="64" height="22" rx="4" fill="{Warn}"/>
+        <text x="146" y="64" fill="#11151b" font-size="11" font-family="monospace" text-anchor="middle">&#128506; Plot</text>
+        {Pill(186, 51, 22, "?", Dim)}
+        <text x="216" y="64" fill="{Dim}" font-size="10" font-family="monospace">warp  1×</text>
         <text x="24" y="30" fill="{Ink}" font-size="11">Nav desk toolbar</text>
-        <text x="24" y="98" fill="{Dim}" font-size="10">press Plot — the sim pauses</text>
+        <text x="24" y="98" fill="{Dim}" font-size="10">Plot is the loud one — press it and the sim pauses</text>
         """);
 
     private MarkupString SketchScrub() => Frame("The Scrub slider with its handle dragged to the right",
