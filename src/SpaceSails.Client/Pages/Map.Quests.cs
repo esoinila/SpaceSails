@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -156,7 +156,8 @@ public partial class Map
     // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache }
+    // #973 L5b · WalkIn is the woman's favour: a FIND with two berths in it and no coin at either end.
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
@@ -168,7 +169,7 @@ public partial class Map
     // TargetShipId and its access code in Pin.
     private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
         string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null,
-        string? SourceBodyId = null, string? Pin = null)
+        string? SourceBodyId = null, string? Pin = null, HeldMemory.Theory? Theory = null)
     {
         public QuestState State { get; set; } = QuestState.Active;
     }

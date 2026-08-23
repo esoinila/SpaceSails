@@ -163,6 +163,18 @@ public static class WalkIn
         : "— since somebody last asked me for something and meant it.";
 
     /// <summary>
+    /// #973 L5b · THE CAPTION ON THE FLASHBACK PLATE WHEN THE SUBJECT IS <c>since</c>, or null for every
+    /// other memory in the game.
+    ///
+    /// <para>The plate raised at the job's first site is the ordinary <c>Beat.Flashback</c> — same bleached
+    /// painting, same ⟂ stamp, because that is exactly what this page IS: one the captain does not remember
+    /// writing. What it may not share is the SIGNING's caption, so the subject picks the sentence, the way a
+    /// shard's subject already picks its plate.</para>
+    /// </summary>
+    public static string? FlashbackCaption(string? subject) =>
+        string.Equals(subject, SinceSubject, StringComparison.Ordinal) ? Unfinished : null;
+
+    /// <summary>
     /// #973 L5b · <b>DOES THE SENTENCE END YET?</b> — the predicate L3 spends and this file owns.
     ///
     /// <para>Ruling 18: the line does not finish until the job or the note finishes it. Both halves are

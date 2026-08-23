@@ -1,4 +1,4 @@
-﻿@page "/map"
+@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -1548,6 +1548,40 @@
                         var repMove = repOffer.Move;
                         <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheRep(repMove))">@repOffer.Label</button>
                     }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L5b · THE WALK-IN. She came in through a leaf that does not open for you, crossed the floor on
+       the real A*, and is standing at the top the captain took for himself. She is not sitting: she said
+       she would not stay.
+
+       EVERYTHING SHE SAYS COMES OUT OF CORE (WalkIn), including the two buttons. Nothing here is typed
+       twice and nothing here is authored — the file that holds her words is the file the ledger row, the
+       note in the book and the plate over her head all read.
+
+       AND THE BEAT IS HOSTED ON THIS PANEL. StoryBeats.Beat.WalkIn is Presentation.Hosted with this card
+       named as its canvas, so the seam spends her cadence, files the seen-set and writes her entrance into
+       the ledger while THIS is the picture on the screen. A plate raised alongside would be the stacked
+       card #777 named — the same woman, twice, on one screen.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_walkInCard is { } sheAsks)
+    {
+        <div class="view-object-backdrop rep-backdrop">
+            <div class="view-object rep-card" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.WalkIn.Name(sheAsks)</div>
+                <img class="view-object-img rep-portrait"
+                     src="@SpaceSails.Core.WalkIn.PortraitArt(sheAsks)"
+                     alt="@SpaceSails.Core.WalkIn.Name(sheAsks)" onerror="this.style.display='none'" />
+                <div class="view-object-caption rep-pitch">@SpaceSails.Core.WalkIn.AtTheTable(sheAsks)</div>
+                <div class="rep-said">@SpaceSails.Core.WalkIn.TheStory(sheAsks)</div>
+                <div class="rep-offers">
+                    <button type="button" class="rep-offer"
+                            @onclick="() => Dismiss(() => AnswerTheWalkIn(true))">@SpaceSails.Core.WalkIn.Yes</button>
+                    <button type="button" class="rep-offer"
+                            @onclick="() => Dismiss(() => AnswerTheWalkIn(false))">@SpaceSails.Core.WalkIn.No</button>
                 </div>
             </div>
         </div>

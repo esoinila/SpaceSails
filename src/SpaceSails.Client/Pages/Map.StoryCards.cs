@@ -225,6 +225,11 @@ public sealed partial class Map
     {
         StoryBeats.Beat.CollectorHail => _busted is { Phase: BustedEncounter.Stage.Demand },
 
+        // #973 L5b · her card, and not merely "somebody is walking across the bar": the beat is her ENTRANCE
+        // arriving at the table, and the surface that carries its painting is the panel with her portrait on
+        // it. A raise while she was still mid-stride would be counted as told over an empty chair.
+        StoryBeats.Beat.WalkIn => _walkInCard is not null,
+
         _ => false,
     };
 

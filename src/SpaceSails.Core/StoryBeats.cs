@@ -537,6 +537,11 @@ public static class StoryBeats
 
             // #973 · The caption for EVERY flashback plate — the signing one included (#973 L2). Fable's
             // line, verbatim; the FABLE marker L1 left here is answered and gone.
+            // #973 L5b · …except the one whose subject is `since`, which is a page about a WOMAN and not
+            // about a desk. Chosen by the subject, the way a shard's plate already is, and null for every
+            // other memory — so the signing's sentence stays the sentence for all of them.
+            Beat.Flashback when WalkIn.FlashbackCaption(subject) is { } sinceLine => sinceLine,
+
             Beat.Flashback =>
                 "Bleached to the bone. A pen on a steel desk, every scratch in it sharp; behind it the room, " +
                 "the chair, the one at the far side of the desk, all gone to white. Only the thing that was " +
