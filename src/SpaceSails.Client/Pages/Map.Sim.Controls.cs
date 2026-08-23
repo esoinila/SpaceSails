@@ -170,8 +170,8 @@ public partial class Map
         }
 
         // In the top-down deck view the drag moves the DECK plan (its bow hides under the HUD
-        // panel otherwise); in first person and on the map it pans the camera as before.
-        if (_deckMode && !_fpMode)
+        // panel otherwise); on the map it pans the camera as before.
+        if (_deckMode)
         {
             _deckPanX += dx;
             _deckPanY += dy;

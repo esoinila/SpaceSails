@@ -3,15 +3,14 @@
 namespace SpaceSails.Client.Rendering;
 
 /// <summary>
-/// A walkable interior — the single source of truth for every interior view (top-down,
-/// first-person, and any future isometric mode). Deck units (du), origin midships, +X bow,
-/// +Y port.
+/// A walkable interior — the single source of truth for every interior view (the top-down deck
+/// plan, and any future isometric mode). Deck units (du), origin midships, +X bow, +Y port.
 ///
 /// Once a hardcoded static ship singleton; **now a selectable plan** (go-ashore, 2026-07-07):
-/// the two renderers and the avatar loop take a <see cref="DeckPlan"/> by reference, so the
+/// the renderer and the avatar loop take a <see cref="DeckPlan"/> by reference, so the
 /// ship is one plan (<see cref="Ship"/>) and a haven interior (see <c>HavenInterior</c>) is
-/// another. Everything downstream — collision, raycasting, console interaction, sky windows —
-/// works unchanged against whichever plan is active.
+/// another. Everything downstream — collision, console interaction, the room labels — works
+/// unchanged against whichever plan is active.
 ///
 /// The ship, bow to stern: bridge (helm + nav post) → cantina with a panoramic hull window
 /// (port) / three cabins + a space HEAD 🚽 (starboard) → midship corridor → shuttle bay (port,
@@ -255,7 +254,7 @@ public sealed class DeckPlan
     }
 
     /// <summary>A room backdrop image: top-left at (X, Y) in deck units, W×H deck units, drawn
-    /// under the vector overlay. The top-down renderer walks these; first-person textures walls.</summary>
+    /// under the vector overlay. The top-down renderer walks these.</summary>
     public readonly record struct Backdrop(string Url, float X, float Y, float W, float H, float Alpha);
 
     /// <summary>
@@ -720,7 +719,8 @@ public sealed class DeckPlan
     /// <summary>Fill <paramref name="buffer"/>[0..DroidCount) with this plan's droids at sim time.</summary>
     public void FillDroids(double simTime, Droid[] buffer) => _fillDroids(simTime, buffer);
 
-    /// <summary>The room label for a deck position — the first-person HUD's location line.</summary>
+    /// <summary>The room label for a deck position — the name a room says when you are asked where
+    /// you are (the ashore/boot guards read it, and the generators hand it down per wing).</summary>
     public string Location(double x, double y) => _location(x, y);
 
     // --- Collision ---
@@ -735,7 +735,7 @@ public sealed class DeckPlan
     ///
     /// <para>#724 · <see cref="SurfaceCollision.Gait.Person"/> is stated here, ONCE, and it is the only
     /// place in the game the captain's body is stepped. Everything they do on foot arrives through this
-    /// method — the WASD walk, first person's tank controls, and (#738) every sub-step of a clicked AutoWalk
+    /// method — the WASD walk and (#738) every sub-step of a clicked AutoWalk
     /// route — so the funnel is theirs on all three without any of the three having to know it exists. The
     /// Old Ones step through the same primitive and hand it <see cref="SurfaceCollision.Gait.Stagger"/>, per
     /// the owner's ruling. The difference between the boots and the shamble is this one word.</para>

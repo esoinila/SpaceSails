@@ -216,7 +216,9 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             // It is also the gate, proven where a player would meet it: with nothing authorized there is
             // no way to open a compartment to space, whatever is selected.
             await _page.Locator("button.desk-tab", new() { HasTextString = "Deck" }).ClickAsync();
-            await _page.Locator(".deck-view-toggle").WaitForAsync(
+            // #958 · the deck-view toggle used to be the marker that the desk had switched; it went with the
+            // walk-in view. The tab going info-blue is the same page saying the same thing.
+            await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Deck" }).WaitForAsync(
                 new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
             Record("desk switch: the Deck tab puts the captain on her own deck");
 

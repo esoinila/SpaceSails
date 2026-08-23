@@ -1264,8 +1264,8 @@ public sealed partial class DeckView
         string bottomHint = surface is { KeyHints: { Length: > 0 } hints }
             ? hints
             : state.Docked
-                ? "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ F — first person ∙ Q — helm"
-                : "WASD / arrows — move ∙ E — interact ∙ F — first person ∙ Q — back to the helm";
+                ? "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ Q — helm"
+                : "WASD / arrows — move ∙ E — interact ∙ Q — back to the helm";
         _renderer.DrawText(ox, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
         // #440: the standing prompt rides just ABOVE the keybar, bright and a size up — the same eyeline the

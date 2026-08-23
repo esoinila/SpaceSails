@@ -113,7 +113,7 @@ public partial class Map
         }
 
         // Desk switching (StationDesks.md rule 3): number keys 1-7 always win, even mid-deck-walk
-        // (7 re-enters/toggles deck, 1-6 leave it) — checked before HandleDeckKey so WASD/E/F/Q
+        // (7 re-enters/toggles deck, 1-6 leave it) — checked before HandleDeckKey so WASD/E/Q
         // never shadow them, and before the pulse switch below so digits never fire a burn.
         // Inputs/sliders already stop propagation on their own keydown (see the plot panel's
         // range/number fields), so typing into them never reaches this handler at all.

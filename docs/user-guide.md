@@ -354,9 +354,7 @@ and (if it's also a far trading post) intel, and repair — no questions asked.
 - Press `7` or click **7 Deck** — top-down plan of your pirate sail. Walk with
 `WASD`/arrows, interact with `E`, drag the map if the bow hides
 behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.
-- `F` — **first person**. Walk the corridors; the windows show the
-real sky — the sun blazes bigger the closer you sail, and the planets are where the
-ephemeris says they are. `Q` returns to the helm (and the Nav desk).
+- `Q` returns to the helm (and the Nav desk) from anywhere on the deck.
 - Consoles are **bridge seats**: sit at one and press `E` to open its desk. **HELM** and
   **NAV POST** open Nav (the nav post also lights up the plotting table); **SCOPE** opens
   Sensors; **CANTINA** opens the Galley (rum — mind the third tot); **COMMS SEAT** opens

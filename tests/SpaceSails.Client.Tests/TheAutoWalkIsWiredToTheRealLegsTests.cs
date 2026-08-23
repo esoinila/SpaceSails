@@ -113,8 +113,10 @@ public sealed class TheAutoWalkIsWiredToTheRealLegsTests
         }
 
         // And the two questions are still two questions, each asking exactly what it is named for.
+        // #958 · The view question used to carry a second term for the walk-in view (which drew no floor to
+        // point at); that view is gone on the owner's ruling, so the canvas question is _deckMode alone.
         Assert.Matches(
-            new Regex(@"ADeckClickIsAPlaceOnTheFloor\s*=>\s*_deckMode\s*&&\s*!_fpMode\s*;"), MapDeck());
+            new Regex(@"ADeckClickIsAPlaceOnTheFloor\s*=>\s*_deckMode\s*;"), MapDeck());
         Assert.Matches(
             new Regex(@"TheCaptainsLegsAreTheirOwn\s*=>\s*_deckMode\s*&&\s*!CaptainIsUnderEscort\s*;"),
             MapDeck());

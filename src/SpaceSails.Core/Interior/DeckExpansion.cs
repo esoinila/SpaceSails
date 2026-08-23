@@ -7,7 +7,7 @@ namespace SpaceSails.Core.Interior;
 // lives here in Core where it is pure and unit-tested. Deck units, matching DeckPlan.
 
 /// <summary>A wall segment of an appended wing. <c>IsHull</c> walls read as station skin in the
-/// first-person raycaster; interior partitions set it false.</summary>
+/// walked view's wall pass; interior partitions set it false.</summary>
 public readonly record struct WingWall(float X1, float Y1, float X2, float Y2, bool IsWindow = false, bool IsHull = true);
 
 /// <summary>A door across a wing threshold. A wing's connecting door is always <c>Locked=false</c>
