@@ -126,7 +126,25 @@ public static class OldCrewScene
             return OldCrew.BestFriendId;
         }
 
-        return OldCrew.Find(seeded, "maren") is not null ? "maren" : "";
+        if (OldCrew.Find(seeded, "maren") is not null)
+        {
+            return "maren";
+        }
+
+        // Neither of the two the bible names was cast. Somebody still kept it — a photograph that nobody in
+        // the world is holding is a beat that silently never fires, and a beat that fires in three seedings
+        // out of four is worse than one that fires in all of them. The signer is the last resort rather than
+        // the first: the man who signed handing you a picture of the four of you is a different scene, and it
+        // should not be the ordinary one.
+        foreach (OldCrew.Seeded s in seeded)
+        {
+            if (s.Id != OldCrew.SignerId)
+            {
+                return s.Id;
+            }
+        }
+
+        return seeded.Count > 0 ? seeded[0].Id : "";
     }
 
     /// <summary>How often the dead man is the fourth face instead of one of the living four — one seeding in

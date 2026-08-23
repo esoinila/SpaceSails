@@ -554,6 +554,20 @@ public partial class Map
             found.Add((giver, GiverDisplay(giver)));
         }
 
+        // #973 L5a · …AND THE PEOPLE WHO KNEW THE FACE. An old shipmate posted at this berth is in the room
+        // whether or not the deck plan drew them a console: they are at a claims desk, a registrar's, a
+        // customs post, a clinic counter or behind these very taps, and the captain came here to see them.
+        // They join the same list the fixers do, so the drink, the offer moment and the two doorways are the
+        // shipped ones rather than a second flow beside them.
+        foreach (Core.OldCrew.Seeded s in OldCrewHere)
+        {
+            string id = Core.OldCrew.LedgerId(s.Id);
+            if (seen.Add(id))
+            {
+                found.Add((id, GiverDisplay(id)));
+            }
+        }
+
         return found;
     }
 
@@ -603,7 +617,11 @@ public partial class Map
         // it gladly; a wary one (you're running heat / hot cargo) may pass. Standing them their usual is a
         // small honest edge (+1 "their usual"). Nothing debited on a refusal.
         ulong offerSeed = DiceRule.Seed($"drink-offer:{giver}", (long)SimTime);
-        DrinkOfferResult offered = ContactDrink.OfferDrink(offerSeed, goodwillBefore, holdingSecret, offeringFavorite);
+        // #973 L5a · the three named modifiers, read off the room the captain is actually standing in and
+        // handed to BOTH rolls, so the offer and the glass can never disagree about who else is here.
+        ContactDrink.TheRoom room = TheRoomFor(giver);
+        DrinkOfferResult offered = ContactDrink.OfferDrink(
+            offerSeed, goodwillBefore, holdingSecret, offeringFavorite, room);
         if (!offered.Accepted)
         {
             _barNotice = $"🚫 {RefusalLine(display, holdingSecret)}  🎲 {offered.Describe()}";
@@ -621,7 +639,11 @@ public partial class Map
         _contacts.RecordKnownFavorite(giver, giver, favorite.Id);
 
         ulong seed = DiceRule.Seed($"drink:{giver}", (long)SimTime);
-        DrinkParley parley = ContactDrink.Roll(seed, goodwillBefore, holdingSecret, offeringFavorite);
+        DrinkParley parley = ContactDrink.Roll(seed, goodwillBefore, holdingSecret, offeringFavorite, room);
+
+        // …and the man who signed writes the meeting down. Once per visit, owed to this port's authority and
+        // to nobody else's book (#715), whoever the glass was actually for.
+        TheSignerReports();
 
         _contacts.AddGoodwill(giver, giver, parley.GoodwillDelta);
 
@@ -650,12 +672,16 @@ public partial class Map
                 break;
 
             case DrinkOutcome.OpensUp:
+                // #973 L5a · with an old shipmate a good roll is not only intel: they slip a SHEET into the
+                // book — a held memory marked theirs and tagged by what they were to the captain.
+                SlipASheet(giver, display);
                 // LeadFor already names the drink they took, so no separate "takes the …" here.
                 line = $"🍷 {Core.DrinkTell.LeadFor(chosen, display)} {OpenIntelLine(giver, channel)}{learn}";
                 Overhear(line, giver); // durable — intel you paid for doesn't auto-vanish (#212, owner)
                 break;
 
             case DrinkOutcome.BusinessUnlock:
+                SlipASheet(giver, display);
                 Quest? offer = MakeContactOffer(giver);
                 if (offer is not null)
                 {

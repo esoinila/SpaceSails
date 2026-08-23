@@ -58,7 +58,7 @@ public partial class Map
         {
             if (tip.EntryId is { Length: > 0 } id && tip.SimTime is { } at)
             {
-                pages.Add(new LedgerPage(id, at, tip.Title, tip.Lines, tip.Provenance ?? ""));
+                pages.Add(new LedgerPage(id, at, tip.Title, tip.Lines, tip.Provenance ?? "", tip.Filed));
             }
         }
 

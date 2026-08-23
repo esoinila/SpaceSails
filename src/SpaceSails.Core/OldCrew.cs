@@ -322,6 +322,41 @@ public static class OldCrew
             seeded.Add(new Seeded(id, AsBond(who.Role), partner, kind, ""));
         }
 
+        return Symmetrical(seeded);
+    }
+
+    /// <summary>
+    /// THE CLASSIC IS A FACT ABOUT TWO PEOPLE, so it is written on both of them. The forced seeding writes
+    /// both ends already; a free roll can land one end of it by luck (his bond comes up <i>the fling ·
+    /// Ilse</i> and hers is pointed elsewhere), and a book that said <i>now with Ilse</i> on his page and
+    /// something else entirely on hers would be the sim doing one thing while a SENTENCE reported another —
+    /// which is a named bug class in this house, not a rough edge.
+    /// </summary>
+    private static IReadOnlyList<Seeded> Symmetrical(List<Seeded> seeded)
+    {
+        bool classic = false;
+        foreach (Seeded s in seeded)
+        {
+            classic |= s.IsTheClassic;
+        }
+
+        if (!classic)
+        {
+            return seeded;
+        }
+
+        for (int i = 0; i < seeded.Count; i++)
+        {
+            if (seeded[i].Id == BestFriendId)
+            {
+                seeded[i] = seeded[i] with { BondToId = FlingId, Bond = BondKind.TheFling };
+            }
+            else if (seeded[i].Id == FlingId)
+            {
+                seeded[i] = seeded[i] with { BondToId = BestFriendId, Bond = BondKind.TheBestFriend };
+            }
+        }
+
         return seeded;
     }
 
@@ -416,28 +451,32 @@ public static class OldCrew
         }
 
         var posted = new List<Seeded>();
-        string friendsBerth = "";
+        string herBerth = "";
         foreach (Seeded s in seeded)
         {
             Shipmate who = ById(s.Id)!.Value;
             IReadOnlyList<Berth> choices = BerthsFor(who.Posting, berths);
             string at = choices[
                 (int)(DiceRule.Seed($"oldcrew|post|{threadId}|{s.Id}") % (ulong)choices.Count)].Id;
-            if (s.Id == BestFriendId)
+            if (s.Id == FlingId)
             {
-                friendsBerth = at;
+                herBerth = at;
             }
 
             posted.Add(s with { StationId = at });
         }
 
-        if (friendsBerth.Length > 0)
+        // …and HE is the one who moved. A registrar's office exists at a great port as readily as anywhere
+        // else, while a Nebula claims desk does not exist at a working berth at all — so moving her to him
+        // would have broken the one posting rule the world actually asserts, and moving him to her breaks
+        // nothing. The fiction is the better way round too: she took the desk, and he followed.
+        if (herBerth.Length > 0)
         {
             for (int i = 0; i < posted.Count; i++)
             {
-                if (posted[i].Id == FlingId && posted[i].IsTheClassic)
+                if (posted[i].Id == BestFriendId && posted[i].IsTheClassic)
                 {
-                    posted[i] = posted[i] with { StationId = friendsBerth };
+                    posted[i] = posted[i] with { StationId = herBerth };
                 }
             }
         }
@@ -448,6 +487,76 @@ public static class OldCrew
     /// <summary>The whole seeding in the one order it is allowed to happen in: bonds, then postings.</summary>
     public static IReadOnlyList<Seeded> Seed(string threadId, IReadOnlyList<Berth> berths) =>
         Post(threadId, Bonds(threadId), berths);
+
+    // ── §4 · THE SIGNER REPORTS ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>What one meeting with the man who signed costs, in heat owed to the port authority of the
+    /// station he works at. One unit: he does not denounce you, he files. FLAGGED for the owner's tuning.</summary>
+    public const int SignerReportUnits = 1;
+
+    /// <summary>
+    /// #715's charge for a meeting the signer was in the room for. It is owed to the authority of THAT
+    /// station and to nobody else, which is the whole of the #715 law: a customs man who reports you has
+    /// told his own port, and a port that told the others would be admitting what it keeps in its basement.
+    ///
+    /// <para>Built through <see cref="SiteOperator.Of"/> and handed to <see cref="IllegalHeat.Bank"/> like
+    /// every other crossing — no second banking path, no second key.</para>
+    /// </summary>
+    public static UndergroundComplex.HeatCharge SignerReport(string stationId)
+    {
+        ArgumentNullException.ThrowIfNull(stationId);
+        return new UndergroundComplex.HeatCharge(SiteOperator.Of(stationId).Id, SignerReportUnits);
+    }
+
+    /// <summary>Is the man who signed at this berth? The question the drink's modifier and the report both
+    /// ask, asked once so they cannot disagree about the room they are in.</summary>
+    public static bool SignerIsAt(IReadOnlyList<Seeded> seeded, string? stationId) =>
+        IsAt(seeded, SignerId, stationId);
+
+    /// <summary>Is she at this berth?</summary>
+    public static bool FlingIsAt(IReadOnlyList<Seeded> seeded, string? stationId) =>
+        IsAt(seeded, FlingId, stationId);
+
+    /// <summary>Is this shipmate posted at this berth right now?</summary>
+    public static bool IsAt(IReadOnlyList<Seeded> seeded, string shipmateId, string? stationId)
+    {
+        ArgumentNullException.ThrowIfNull(seeded);
+        if (string.IsNullOrEmpty(stationId))
+        {
+            return false;
+        }
+
+        return Find(seeded, shipmateId) is { } s && string.Equals(s.StationId, stationId, StringComparison.Ordinal);
+    }
+
+    /// <summary>Every shipmate posted at this berth, in pool order — who the captain can walk in on.</summary>
+    public static IReadOnlyList<Seeded> At(IReadOnlyList<Seeded> seeded, string? stationId)
+    {
+        ArgumentNullException.ThrowIfNull(seeded);
+        if (string.IsNullOrEmpty(stationId))
+        {
+            return [];
+        }
+
+        var here = new List<Seeded>();
+        foreach (Seeded s in seeded)
+        {
+            if (string.Equals(s.StationId, stationId, StringComparison.Ordinal))
+            {
+                here.Add(s);
+            }
+        }
+
+        return here;
+    }
+
+    /// <summary>#973 L5a · <b>THE DOOR YOU STAND OUTSIDE OF.</b> True when the black book already says the
+    /// best friend is with the fling AND both of them are at this berth — the moment the owner's addendum 2
+    /// is about, and the only moment the knock costs a nerve pip.</summary>
+    public static bool KnockingCostsNerve(IReadOnlyList<Seeded> seeded, string? stationId) =>
+        Find(seeded, BestFriendId) is { IsTheClassic: true }
+        && IsAt(seeded, BestFriendId, stationId)
+        && IsAt(seeded, FlingId, stationId);
 
     /// <summary>The seeded row for one shipmate id, or null when this thread did not cast them.</summary>
     public static Seeded? Find(IReadOnlyList<Seeded> seeded, string? id)
@@ -462,5 +571,36 @@ public static class OldCrew
         }
 
         return null;
+    }
+
+    // ── §5 · WHAT THE VAULT CARRIES ──────────────────────────────────────────────────────────────────
+
+    /// <summary>One seeded row, as the file stores it: the FACT (who, bound how to whom, posted where) and
+    /// never a word of the prose the book prints about it.</summary>
+    public static string Stored(Seeded s) =>
+        $"{s.Id}|{(int)s.ToCaptain}|{s.BondToId}|{(int)s.Bond}|{s.StationId}";
+
+    /// <summary>Read one back. A row this build cannot parse — an id retired from the pool, an enum from a
+    /// future build — is dropped rather than thrown over, and a seeding that comes back short is re-rolled
+    /// from the thread id, which costs nothing because the roll is deterministic.</summary>
+    public static bool TryParse(string? stored, out Seeded seeded)
+    {
+        seeded = default;
+        if (string.IsNullOrEmpty(stored))
+        {
+            return false;
+        }
+
+        string[] p = stored.Split('|', 5);
+        if (p.Length != 5
+            || ById(p[0]) is null
+            || !int.TryParse(p[1], out int toCaptain) || !Enum.IsDefined((BondKind)toCaptain)
+            || !int.TryParse(p[3], out int bond) || !Enum.IsDefined((BondKind)bond))
+        {
+            return false;
+        }
+
+        seeded = new Seeded(p[0], (BondKind)toCaptain, p[2], (BondKind)bond, p[4]);
+        return true;
     }
 }

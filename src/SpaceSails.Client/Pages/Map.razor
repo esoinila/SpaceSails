@@ -6553,6 +6553,7 @@
                                                               Tips="LedgerTipsAsRemembered()" OnScopeTip="PointScopeFromLedger"
                                                               OnReadGreyPage="ReadTheGreyPage"
                                                               GreyPageMark="@FilingLine.Mark" GreyPageLabel="@FilingLine.Label"
+                                                              Crossings="CrossingRows()" CrossingsHeading="@CaptainCrossings.Heading"
                                                               Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
@@ -7117,6 +7118,42 @@
         </div>
     }
 
+    @* #973 L5a · "YOU LOOK DIFFERENT." The first meeting after a rebirth with somebody who knew the old
+       face. Their line, the captain's three answers, and — once he has said one — what they say back. It
+       earns a modal for the reason the vented room does: the captain is standing still at a table, and this
+       is the one moment in the game that is about his own face. *@
+    @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTheFaceScene)">
+            <div class="convergence-card old-crew-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">🪞 @faceWho.Name.ToUpperInvariant()</div>
+                <div class="old-crew-history small text-secondary">@OldCrewHistoryLine(faceGiver)</div>
+                <div class="convergence-head">“@OldCrewScene.Opening(faceWho.Id)”</div>
+                @if (_faceSceneReply is null)
+                {
+                    <div class="old-crew-answers">
+                        @foreach (OldCrewScene.Answer answer in Enum.GetValues<OldCrewScene.Answer>())
+                        {
+                            OldCrewScene.Answer a = answer;
+                            <button type="button" class="btn btn-light old-crew-answer"
+                                    title="@OldCrewScene.Said(a)"
+                                    @onclick="() => AnswerTheFace(a)">
+                                <span class="old-crew-answer-label">[@OldCrewScene.Button(a)]</span>
+                                <span class="old-crew-answer-said">“@OldCrewScene.Said(a)”</span>
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="old-crew-reply">“@_faceSceneReply”</div>
+                    <button type="button" class="btn btn-light convergence-close"
+                            @onclick="() => Dismiss(CloseTheFaceScene)">Leave it there</button>
+                }
+            </div>
+        </div>
+    }
+
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
         @if (_parrotSquawk is not null)
@@ -7141,8 +7178,26 @@
         @{
             Core.Drink? knownFav = KnownFavoriteDrink(giver);
             bool poursUsual = BarPoursFavorite(giver);
+            string sharedHistory = OldCrewHistoryLine(giver);
         }
-        @if (_pendingContactDrink == giver)
+        @* #973 L5a · The bond, readable BEFORE the captain walks in — the whole of the Fail Forward
+           adoption: the player, like a player at that table, knows what is between these people before the
+           scene rather than after it. *@
+        @if (sharedHistory.Length > 0)
+        {
+            <div class="old-crew-history small text-secondary">@display — @sharedHistory</div>
+        }
+        @if (TheyWouldNoticeTheFace(giver))
+        {
+            @* …and they are looking at the face before they are looking at the glass. Nothing else about
+               this person is available until the captain has said one of the three things. *@
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-outline-light"
+                        title="@($"{display} is looking at a face they have never seen before")"
+                        @onclick="@(() => OpenTheFaceScene(giver))">🪞 @display is looking at you</button>
+            </div>
+        }
+        else if (_pendingContactDrink == giver)
         {
             <div class="deck-offer-actions">
                 <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>

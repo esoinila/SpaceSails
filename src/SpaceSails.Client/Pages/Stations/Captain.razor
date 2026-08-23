@@ -509,6 +509,21 @@
                     }
                 </div>
 
+                @* #973 L5a · THE CROSSINGS (the-captains-character.md §3), and it is a MAP rather than a
+                   METER by construction: one row per line crossed, no total, no tier, no score. The section
+                   hides itself until the captain has crossed something, because an empty ledger of what a
+                   man has done is a sentence about him that is not true yet. *@
+                @if (Crossings.Count > 0)
+                {
+                    <div class="captain-ledger-section-label text-info fw-bold small mt-3">@CrossingsHeading</div>
+                    <div class="captain-group-cards">
+                        @foreach (string row in Crossings)
+                        {
+                            <div class="captain-card captain-ledger-tip"><div class="fw-bold">@row</div></div>
+                        }
+                    </div>
+                }
+
                 @* #223: the buried-treasure maps — every chest we know of, ours and any rival's whose
                    map we hold. Viewable any time: click a map to throw the full-screen card back up. *@
                 <div class="captain-ledger-section-label text-info fw-bold small mt-3">🗺 Treasure maps</div>
@@ -807,10 +822,14 @@
     /// have no date at all — the standing note, the two arc readouts — which is why those can never grey.
     /// <paramref name="Grey"/> is Map's answer for this captain: a page they don't remember writing, drawn
     /// with the mark and open to being read at.</para></summary>
+    /// <para>#973 L5a · <paramref name="Filed"/> is the one exemption the filing line has: a page the
+    /// SERVICE filed comes back whatever the policy did. Exactly one row in the game carries it (the
+    /// summer-party page), and it carries it because that is what the world says about that page — the desk
+    /// never decides it.</para>
     public sealed record LedgerTip(
         string Title, IReadOnlyList<string> Lines, string? Provenance,
         string? ScopeTipId, bool ShowDarkWeb, string? DossierShipId,
-        string? EntryId = null, double? SimTime = null, bool Grey = false);
+        string? EntryId = null, double? SimTime = null, bool Grey = false, bool Filed = false);
 
     /// <summary>#973 L1 · The captain sits down with a page they don't remember writing. Map rolls it once
     /// on the shared dice — it comes back, it comes back wrong, or nothing — and never again this life.</summary>
@@ -822,6 +841,15 @@
 
     /// <summary>#973 L1 · What the mark means, spelled out on the row (<c>FilingLine.Label</c>).</summary>
     [Parameter] public string GreyPageLabel { get; set; } = "";
+
+    /// <summary>#973 L5a · The captain's crossings, oldest first, already rendered as rows by Map
+    /// (<c>CaptainCrossings.Row</c>). Rows rather than records because this desk renders and never derives —
+    /// and because the one thing that must never appear here is a number summarising them.</summary>
+    [Parameter] public IReadOnlyList<string> Crossings { get; set; } = [];
+
+    /// <summary>#973 L5a · The section's heading (<c>CaptainCrossings.Heading</c>), passed in rather than
+    /// typed here so the words have one home.</summary>
+    [Parameter] public string CrossingsHeading { get; set; } = "";
 
     /// <summary>#223: the ledger's 🗺 treasure-maps section. Every buried chest we know of, ours and
     /// any rival's whose map we hold — clicking one throws its full-screen card back up (OnViewMap).</summary>
