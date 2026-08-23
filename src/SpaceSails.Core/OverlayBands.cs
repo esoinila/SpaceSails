@@ -68,9 +68,6 @@ public static class OverlayBands
     /// <summary><c>.parrot-perch</c> — the comms parrot perch.</summary>
     public const int ParrotPerch = MapChrome + 16;   // 26
 
-    /// <summary><c>.deck-view-toggle</c> — the deck/map view switch.</summary>
-    public const int DeckViewToggle = MapChrome + 30; // 40
-
     /// <summary><c>.map-layers</c> — the layers control.</summary>
     public const int MapLayers = MapChrome + 30;     // 40
 

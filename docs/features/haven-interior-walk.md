@@ -1,5 +1,10 @@
 # Going ashore — the first indoor walk into a haven
 
+> **#958 — the walk-in view is gone.** This document is the record of a plan as it was written and
+> built, so it still names `FirstPersonView` / the `F` key throughout. That renderer and that key were
+> removed on the owner's ruling ("an unnecessary hindrance to development. Nobody ever uses it"); the
+> top-down deck plan is the only walked view. Read every mention of it below as history.
+
 Kickoff plan for the next session. Short on purpose: enough to start building the *smallest
 walkable thing* and grow it.
 

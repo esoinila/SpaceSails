@@ -1690,12 +1690,11 @@ reason to put the lights out at all. A **deployed sentry** is drawn over the dar
 own: it sees what it sees, fires when it fires, and its counter is readable across a black floor. You can see
 a light in an unlit hall; what you cannot see is what it is lighting.
 
-**Three calls, each overrulable in one line.** The cone does **not** stop at bulkheads yet (a raycast per wall
-per frame, for a floor that today only exists behind a cheat — filed, not forgotten). **First person (F) is
-out of scope and stays as it is**: it is a raycaster whose field of view is `HalfFov = 0.62` rad, 71°, which
-is the lamp's 70° to within a degree — it already shows almost exactly what the headlights light, and making
-it dark would be a job about *falloff with distance*, not about a cone. And the **ordinary floors are
-untouched**, which is not a promise but a guard.
+**Two calls, each overrulable in one line.** The cone does **not** stop at bulkheads yet (a raycast per wall
+per frame, for a floor that today only exists behind a cheat — filed, not forgotten). And the **ordinary
+floors are untouched**, which is not a promise but a guard. (A third call was here: the walk-in view was
+declared out of scope because its 71° field of view already showed almost exactly what the headlights lit.
+#958 removed that view outright, so the call is moot.)
 
 *(Enforced. Client: `TheHeadlightsAreTheWholeOfTheSeeingTests` drives the REAL `DeckView.Draw` on a real
 `HiveInterior.FloorDeck` through a recording renderer and asks whether the ink ever lands outside the light —

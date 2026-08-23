@@ -3120,7 +3120,7 @@
         </div>
     }
 
-    @* Deck / first-person pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
+    @* Deck pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
     @if (_deckMode && _pulse.Message is not null)
@@ -4036,16 +4036,10 @@
        the Nav toolbar and, like the #169 Luna lesson, presumed onboarding it shouldn't own — the tutorial
        flow (#160) will carry that. The lessons stay reachable at the Captain's desk (0) → Tutorials. *@
 
-    @* First-person ⇄ deck-plan toggle. The F key does this, but it isn't discoverable, so give it a
-       visible button while you're aboard (top-down or first person). Mirrors HandleDeckKey's 'f'. *@
-    @if (_deckMode)
-    {
-        <button type="button" class="deck-view-toggle btn btn-sm btn-outline-info @(_surface is not null ? "on-surface" : "")"
-                title="@(_fpMode ? "Back to the top-down deck plan" : "Step into first person and walk the ship")"
-                @onclick="ToggleFirstPerson">
-            @(_fpMode ? "🗺 Deck plan (F)" : "🧍 First person (F)")
-        </button>
-    }
+    @* #958 · The walked-view toggle button stood here, and the F key behind it. Both went with the mode
+       they opened, on the owner's ruling ("an unnecessary hindrance to development. Nobody ever uses it").
+       The walked view is the top-down deck plan and nothing else now; F is free, and deliberately left
+       doing nothing rather than quietly remapped onto something else. *@
 
     @* #488 · THE CLOCKS, WHERE YOU CAN SEE THEM WHILE YOU FIGHT. Owner: "I love that pressure waiting in a
        hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
@@ -4431,7 +4425,7 @@
        in the bottom-left corner while ABOARD. The hover title carries the captain's name (owner: "the hint
        text could show that on hover"). Kept below the deck/dock cards in the z-band so it never covers a
        control (it yields to any card that opens over the corner); hidden on a surface excursion, where the
-       SANITY gauge and the first-person toggle own the left column (#324). *@
+       SANITY gauge owns the left column (#324). *@
     @if (_worldReady && _surface is null && !_showStartPicker && !_showSaveDrawer && ActiveThreadInfo is { } capThread)
     {
         (string CaptainName, int AvatarIndex) chipCap = SpaceSails.Core.Captains.For(capThread);
