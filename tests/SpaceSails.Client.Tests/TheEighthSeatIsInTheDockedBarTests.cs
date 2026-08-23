@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -373,9 +374,9 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
     /// lines that hang this section off them are read where they are written.</para>
     ///
     /// <para><b>Proven RED</b> by reverting the vault row — commenting out
-    /// <c>AddSection(sections, SecWalkIn, vault.WalkIn)</c> in <see cref="VaultSerializer"/>: the knowing
-    /// never reaches the bytes, the reloaded page answers null, and this fails on the card. Which is the bug,
-    /// exactly as a captain meets it.</para>
+    /// <c>AddSection(sections, SecWalkIn, vault.WalkIn)</c> in <see cref="VaultSerializer"/>. The job id is
+    /// then nowhere in the written JSON, and with that assert lifted too the reloaded page comes back with an
+    /// EMPTY set and a silent card. Which is the bug, exactly as a captain meets it.</para>
     /// </summary>
     [Fact]
     public void ARevealedSetupSurvivesTheVault()
@@ -399,27 +400,83 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
         Invoke(map, "RevealTheWalkInSetup", jobId);
         Assert.Equal(WalkIn.SetupCardLine(true, true), Invoke(map, "WalkInCardWarning", job));
 
-        // …through the file itself, bytes and all. The two sections this scene owns are built by the page's
-        // own builders — the whole of `BuildVault` cannot run on a bench, because the logbook page reads the
-        // captain's name out of the BROWSER's slot store and there is no browser here.
-        var written = new Vault
-        {
-            Quests = (QuestsSection?)Invoke(map, "BuildQuestsSection"),
-            WalkIn = (WalkInSection?)Invoke(map, "BuildWalkInSection"),
-            Resume = new ResumeSection { HavenId = TheRedEye, HavenName = "The Red Eye", WasDocked = true },
-        };
-        Vault back = VaultSerializer.Load(VaultSerializer.Save(written));
+        // …AND THROUGH THE FILE ITSELF, bytes and all: the page's own builder, the serializer's real JSON
+        // (checksum, canonicalization, per-section harvest), and the page's own reader on the far side.
+        var written = new Vault { WalkIn = (WalkInSection?)Invoke(map, "BuildWalkInSection") };
+        Assert.NotNull(written.WalkIn);
 
+        string json = VaultSerializer.Save(written);
+        Assert.Contains(jobId, json, StringComparison.Ordinal);
+
+        Vault back = VaultSerializer.Load(json);
+        Assert.False(back.Tampered, "the walk-in section broke the checksum it is folded into.");
+
+        // A SECOND page, ashore at the same berth in the same universe, carrying the same job — and knowing
+        // nothing about it, until the file tells it.
         Pages.Map reloaded = AshoreAt(TheRedEye);
         Set(reloaded, "_activeThreadId", setupThread);
-        Invoke(reloaded, "ApplyVault", back);
+        Quests(reloaded).Add(job);
+        Assert.Null(Invoke(reloaded, "WalkInCardWarning", job));
 
-        object reloadedJob = Quests(reloaded).Cast<object>()
-            .Single(q => string.Equals((string)Get(q, "Id")!, jobId, StringComparison.Ordinal));
+        Invoke(reloaded, "RestoreWalkInSection", back.WalkIn);
 
         Assert.Contains(jobId, (IEnumerable<string>)Field(reloaded, "_walkInSetupsRevealed")!);
-        Assert.Equal(WalkIn.SetupCardLine(true, true),
-                     Invoke(reloaded, "WalkInCardWarning", reloadedJob));
+        Assert.Equal(WalkIn.SetupCardLine(true, true), Invoke(reloaded, "WalkInCardWarning", job));
+
+        // …and the two lines that hang the section off the save and the load, read where they are written.
+        string vaultSource = File.ReadAllText(
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Vault.cs"));
+        Assert.Contains("WalkIn = BuildWalkInSection(),", vaultSource, StringComparison.Ordinal);
+        Assert.Contains("RestoreWalkInSection(vault.WalkIn);", vaultSource, StringComparison.Ordinal);
+    }
+
+    /// <summary>An OLD FILE LOADS CLEAN. A save written before this row existed simply lacks the section, and
+    /// a page that reads it wakes with nothing revealed — which is the truth about a captain who never laid
+    /// the two papers side by side, and never a crash, a warning, or a card that says a thing he does not
+    /// know.</summary>
+    [Fact]
+    public void ASaveFromBeforeTheRowLoadsWithNothingRevealed()
+    {
+        // What the file looked like the day before this row shipped: no walk-in section at all.
+        Vault old = VaultSerializer.Load(VaultSerializer.Save(new Vault
+        {
+            Resume = new ResumeSection { HavenId = TheRedEye, HavenName = "The Red Eye", WasDocked = true },
+        }));
+
+        Assert.Null(old.WalkIn);
+        Assert.Empty(old.Warnings);
+
+        Pages.Map map = SheIsAtTheTable();
+        WalkIn.Who who = WhoCame(map);
+        Invoke(map, "AnswerTheWalkIn", true);
+        object job = Quests(map).Cast<object>().Single();
+
+        Set(map, "_activeThreadId", AThreadWhereSheIsASetup(who));
+        Invoke(map, "RevealTheWalkInSetup", (string)Get(job, "Id")!);
+        Assert.NotNull(Invoke(map, "WalkInCardWarning", job));
+
+        // Loading that older life over this one is a LOAD, not a merge: the knowing goes with it.
+        Invoke(map, "RestoreWalkInSection", old.WalkIn);
+        Assert.Empty((IEnumerable<string>)Field(map, "_walkInSetupsRevealed")!);
+        Assert.Null(Invoke(map, "WalkInCardWarning", job));
+    }
+
+    /// <summary>The repo root, found by climbing to the solution file — the same climb the sibling client
+    /// guards make.</summary>
+    private static string RepoRoot()
+    {
+        DirectoryInfo? at = new(AppContext.BaseDirectory);
+        while (at is not null)
+        {
+            if (at.GetFiles("*.sln").Length > 0 || at.GetFiles("*.slnx").Length > 0)
+            {
+                return at.FullName;
+            }
+
+            at = at.Parent;
+        }
+
+        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 
     /// <summary>A thread id whose one-in-three roll makes THIS woman's errand a setup. Searched rather than
