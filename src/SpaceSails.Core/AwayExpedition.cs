@@ -267,20 +267,38 @@ public static class ExpeditionWindow
     /// synodic period, an armed plan scans what is left of its span, a loose contract scans its budget).</para>
     /// </summary>
     public static WindowStatus Classify(
-        double distanceMeters, double rangeRateMps, double criticalSeconds, double? secondsUntilReopen)
+        double distanceMeters, double rangeRateMps, double criticalSeconds, double? secondsUntilReopen) =>
+        ClassifyClock(
+            distanceMeters, TimeLeftInRangeSeconds(distanceMeters, rangeRateMps),
+            criticalSeconds, secondsUntilReopen);
+
+    /// <summary>
+    /// The same law, read off a clock the caller has ALREADY measured rather than off a range-rate this
+    /// method extrapolates in a straight line.
+    ///
+    /// <para>#955 NAV-2, found by opening the shuttle board and looking at it: clamped to The Red Eye with
+    /// Ganymede a quarter of a hop away, the row read <b>"window closes in 986 d 18 h"</b>. Nothing was
+    /// broken — <see cref="TimeLeftInRangeSeconds"/> is a straight-line extrapolation, the berth and the moon
+    /// were near their closest approach, and at closest approach the range-rate is momentarily ZERO. Divide a
+    /// real gap by a rate that is about to change sign and you get a lifetime. A drifting rock (#370's own
+    /// case) really does recede in a straight line, so the extrapolation was honest there; a moon on a rail
+    /// does not, and its close time has to be MEASURED the same way the reopening is — by walking the actual
+    /// geometry (<see cref="SecondsUntilClose"/>).</para>
+    /// </summary>
+    public static WindowStatus ClassifyClock(
+        double distanceMeters, double secondsLeftInRange, double criticalSeconds, double? secondsUntilReopen)
     {
         if (distanceMeters >= RangeMeters)
         {
             return secondsUntilReopen is not null ? WindowStatus.Closed : WindowStatus.Lost;
         }
 
-        double left = TimeLeftInRangeSeconds(distanceMeters, rangeRateMps);
-        if (double.IsPositiveInfinity(left))
+        if (double.IsPositiveInfinity(secondsLeftInRange))
         {
             return WindowStatus.Holding;
         }
 
-        return left <= criticalSeconds ? WindowStatus.Critical : WindowStatus.Ticking;
+        return secondsLeftInRange <= criticalSeconds ? WindowStatus.Critical : WindowStatus.Ticking;
     }
 
     // ── #955 NAV-2 · THE REOPENING: a bounded forward scan of the real geometry ──
@@ -318,7 +336,27 @@ public static class ExpeditionWindow
     /// to <see cref="ReopenPrecisionSeconds"/>.
     /// </summary>
     public static double? SecondsUntilReopen(
-        System.Func<double, double> separationAfterSeconds, double horizonSeconds)
+        System.Func<double, double> separationAfterSeconds, double horizonSeconds) =>
+        SecondsUntilCrossing(separationAfterSeconds, horizonSeconds, wantInRange: true);
+
+    /// <summary>
+    /// The mirror: seconds until the gap next grows PAST <see cref="RangeMeters"/>, or null when it stays
+    /// inside for the whole horizon (a window that holds — <see cref="WindowStatus.Holding"/>). Already out
+    /// of range now ⇒ 0. This is what a periodic geometry needs instead of
+    /// <see cref="TimeLeftInRangeSeconds"/>: see <see cref="ClassifyClock"/> for the 986-day reading that
+    /// made it necessary.
+    /// </summary>
+    public static double? SecondsUntilClose(
+        System.Func<double, double> separationAfterSeconds, double horizonSeconds) =>
+        SecondsUntilCrossing(separationAfterSeconds, horizonSeconds, wantInRange: false);
+
+    /// <summary>The one scan both directions ride: march the caller's geometry forward at
+    /// <see cref="ReopenScanStepSeconds"/> (widened if the horizon needs more than
+    /// <see cref="MaxReopenScanSamples"/> strides) until the reach test flips to
+    /// <paramref name="wantInRange"/>, then bisect the bracketing pair to
+    /// <see cref="ReopenPrecisionSeconds"/>. Null when it never flips inside the horizon.</summary>
+    private static double? SecondsUntilCrossing(
+        System.Func<double, double> separationAfterSeconds, double horizonSeconds, bool wantInRange)
     {
         System.ArgumentNullException.ThrowIfNull(separationAfterSeconds);
         double horizon = System.Math.Min(System.Math.Max(0.0, horizonSeconds), MaxReopenHorizonSeconds);
@@ -327,9 +365,9 @@ public static class ExpeditionWindow
             return null;
         }
 
-        if (separationAfterSeconds(0.0) <= RangeMeters)
+        if (InReach(separationAfterSeconds(0.0)) == wantInRange)
         {
-            return 0.0;   // it is not closed at all — the caller asked a question with an easy answer
+            return 0.0;   // it is already the way the caller asked about — an easy question
         }
 
         double step = System.Math.Max(ReopenScanStepSeconds, horizon / MaxReopenScanSamples);
@@ -338,36 +376,40 @@ public static class ExpeditionWindow
         {
             bool last = t >= horizon;
             double at = last ? horizon : t;
-            if (separationAfterSeconds(at) <= RangeMeters)
+            if (InReach(separationAfterSeconds(at)) == wantInRange)
             {
-                return Bisect(separationAfterSeconds, previous, at);
+                return Bisect(separationAfterSeconds, previous, at, wantInRange);
             }
             previous = at;
             if (last)
             {
-                return null;   // no reopening inside the horizon — this one really is Lost
+                return null;   // it never flips inside the horizon
             }
         }
     }
 
-    /// <summary>Pin the crossing between an out-of-range <paramref name="outside"/> and an in-range
-    /// <paramref name="inside"/> to <see cref="ReopenPrecisionSeconds"/>. Pure bisection — the separation
-    /// function is monotone enough across one stride that nothing cleverer earns its keep.</summary>
-    private static double Bisect(System.Func<double, double> separationAfterSeconds, double outside, double inside)
+    private static bool InReach(double separationMeters) => separationMeters <= RangeMeters;
+
+    /// <summary>Pin the crossing between <paramref name="before"/> (the old state) and
+    /// <paramref name="after"/> (the state the caller asked for) to
+    /// <see cref="ReopenPrecisionSeconds"/>. Pure bisection — the separation function is monotone enough
+    /// across one stride that nothing cleverer earns its keep.</summary>
+    private static double Bisect(
+        System.Func<double, double> separationAfterSeconds, double before, double after, bool wantInRange)
     {
-        while (inside - outside > ReopenPrecisionSeconds)
+        while (after - before > ReopenPrecisionSeconds)
         {
-            double mid = outside + ((inside - outside) * 0.5);
-            if (separationAfterSeconds(mid) <= RangeMeters)
+            double mid = before + ((after - before) * 0.5);
+            if (InReach(separationAfterSeconds(mid)) == wantInRange)
             {
-                inside = mid;
+                after = mid;
             }
             else
             {
-                outside = mid;
+                before = mid;
             }
         }
-        return inside;
+        return after;
     }
 
     /// <summary>

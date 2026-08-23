@@ -73,6 +73,63 @@ public class ShuttleWindowOnTheRouteTests
         Assert.Equal(0.0, ExpeditionWindow.SecondsUntilReopen(_ => 1.0, horizonSeconds: 5_000));
     }
 
+    /// <summary>
+    /// THE 986-DAY READING. Found by opening the shuttle board at The Red Eye and looking: with Ganymede a
+    /// quarter of a hop away the row said "window closes in 986 d 18 h". Nothing had thrown — the berth and
+    /// the moon were near closest approach, where the range-rate is momentarily ZERO, and
+    /// <see cref="ExpeditionWindow.TimeLeftInRangeSeconds"/> is a straight line divided by that rate. A
+    /// drifting rock really does recede in a straight line; a moon on a rail does not. This pins the measured
+    /// answer against the extrapolated one on the real geometry.
+    /// </summary>
+    [Fact]
+    public void SecondsUntilClose_MeasuresTheGeometry_WhereTheRangeRateWouldLie()
+    {
+        ICelestialEphemeris eph = Sol();
+
+        // t=0 in the shipping scenario: The Red Eye and Ganymede share an initial phase, so they are at
+        // their closest and the rate through the line between them is ~nothing.
+        double distance = Separation(eph, 0);
+        double rate = Separation(eph, 1.0) - distance;
+        Assert.True(distance < ExpeditionWindow.RangeMeters, "the bench wants them in reach at t=0");
+        double extrapolated = ExpeditionWindow.TimeLeftInRangeSeconds(distance, rate);
+
+        double? measured = ExpeditionWindow.SecondsUntilClose(
+            dt => Separation(eph, dt), ExpeditionWindow.MaxReopenHorizonSeconds);
+        Assert.NotNull(measured);
+
+        // The window really shuts inside a few days — and the straight line said years.
+        Assert.InRange(measured!.Value, 3_600.0, 10.0 * 86400.0);
+        Assert.True(extrapolated > 30.0 * 86400.0,
+            $"the bench's whole point is that the extrapolation is wild here; it read {extrapolated / 86400:F0} d");
+
+        // The measured instant is the crossing, to the second: out of reach just after, in reach just before.
+        Assert.True(Separation(eph, measured.Value) >= ExpeditionWindow.RangeMeters);
+        Assert.True(Separation(eph, measured.Value - 60.0) < ExpeditionWindow.RangeMeters);
+
+        // A pair that never leaves reach has no close time at all — that is a window that HOLDS.
+        Assert.Null(ExpeditionWindow.SecondsUntilClose(_ => 1.0, ExpeditionWindow.MaxReopenHorizonSeconds));
+
+        // And out of reach already is an easy question, answered with zero rather than a scan.
+        Assert.Equal(0.0, ExpeditionWindow.SecondsUntilClose(
+            _ => 2 * ExpeditionWindow.RangeMeters, ExpeditionWindow.MaxReopenHorizonSeconds));
+    }
+
+    [Fact]
+    public void ClassifyClock_ReadsTheSameLawOffAMeasuredClock()
+    {
+        double half = 0.5 * ExpeditionWindow.RangeMeters;
+        double critical = ExpeditionWindow.DefaultCriticalSeconds;
+
+        Assert.Equal(WindowStatus.Holding,
+            ExpeditionWindow.ClassifyClock(half, double.PositiveInfinity, critical, null));
+        Assert.Equal(WindowStatus.Ticking, ExpeditionWindow.ClassifyClock(half, 10_000, critical, null));
+        Assert.Equal(WindowStatus.Critical, ExpeditionWindow.ClassifyClock(half, critical - 1, critical, null));
+        Assert.Equal(WindowStatus.Closed,
+            ExpeditionWindow.ClassifyClock(2 * ExpeditionWindow.RangeMeters, 0, critical, 900));
+        Assert.Equal(WindowStatus.Lost,
+            ExpeditionWindow.ClassifyClock(2 * ExpeditionWindow.RangeMeters, 0, critical, null));
+    }
+
     [Fact]
     public void SynodicPeriod_IsTheHonestHorizonForABerthAndAMoon()
     {
