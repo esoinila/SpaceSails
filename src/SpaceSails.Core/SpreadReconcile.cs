@@ -166,17 +166,65 @@ public static class SpreadReconcile
     public const int MostConfidence = 5;
 
     /// <summary>
-    /// LAY THEM TOGETHER. The order of the three questions is the design and not an accident:
+    /// #973 · <b>AN AUTHORED REVEAL — the hook a lane with two specific papers in mind plugs into.</b>
     ///
-    /// <para>A DISAGREEMENT is asked first, because it is the only one of the three that has physical
-    /// evidence behind it — a hidden original the captain has never seen, kept by #974 for this table — and a
-    /// pair that both names a person AND catches a lie about them is a pair whose lie is the interesting
-    /// half. Then AGREEMENT, which is a shared name (or, for two pages that are not anyone's, a shared tag —
-    /// the only kind of agreement a memory naming nobody can have). Anything left is a memory the book cannot
-    /// answer, which is a lead and never a failure.</para>
+    /// <para>The three verdicts below are GENERAL rules about any two papers. A lane sometimes knows
+    /// something particular instead: that <i>these</i> two, laid together, finish a sentence somebody left
+    /// unfinished, or say out loud that two hands are one hand. That is not a rule about paper, it is a fact
+    /// about a story, and it cannot be derived from names and numbers — so it arrives as a function and is
+    /// asked FIRST, before any of the general rules get a chance to call it an ordinary agreement.</para>
+    ///
+    /// <para>Return null for a pair this lane has nothing authored about, which is almost every pair; return
+    /// a <see cref="Result"/> (built with <see cref="Reveals"/>) for the ones it does. #973 L5b's walk-in
+    /// is the first caller: her note beside the fleet-day page or the job's first slip, and her note beside
+    /// any money-tagged old-crew slip.</para>
     /// </summary>
-    public static Result Lay(Paper a, Paper b)
+    public delegate Result? Reveal(Paper a, Paper b);
+
+    /// <summary>
+    /// Build a reveal's answer without having to fill in the counting. The money/love tally is the SPREAD's
+    /// second question and belongs to the table rather than to whoever wrote the line, so it is computed
+    /// here from the two papers and never passed in.
+    /// </summary>
+    /// <param name="verdict">Which of the three this reveal reads as. <see cref="Verdict.Disagree"/> for a
+    /// reveal that corrects a sheet; <see cref="Verdict.Agree"/> for one that corroborates.</param>
+    /// <param name="line">What the table says. The reveal's own authored words, not one of the three below.</param>
+    /// <param name="a">The first paper laid.</param>
+    /// <param name="b">The second.</param>
+    /// <param name="correctedId">The sheet this reveal marks <i>corrected</i>, or empty.</param>
+    /// <param name="corroborated">The sheets this reveal warms, or empty.</param>
+    /// <param name="leadId">The sheet this reveal leaves waiting on THREADS, or empty.</param>
+    public static Result Reveals(
+        Verdict verdict,
+        string line,
+        Paper a,
+        Paper b,
+        string correctedId = "",
+        IReadOnlyList<string>? corroborated = null,
+        string leadId = "")
     {
+        (int money, int love) = Tally(a, b);
+        return new Result(verdict, line, correctedId, "", corroborated ?? [], leadId, money, love);
+    }
+
+    /// <summary>
+    /// LAY THEM TOGETHER. The order of the questions is the design and not an accident:
+    ///
+    /// <para>An AUTHORED REVEAL first, because it knows something about these two papers that no general
+    /// rule can derive. Then a DISAGREEMENT, because it is the only one of the three general answers with
+    /// physical evidence behind it — a hidden original the captain has never seen, kept by #974 for this
+    /// table — and a pair that both names a person AND catches a lie about them is a pair whose lie is the
+    /// interesting half. Then AGREEMENT, which is a shared name (or, for two pages that are not anyone's, a
+    /// shared tag — the only kind of agreement a memory naming nobody can have). Anything left is a memory
+    /// the book cannot answer, which is a lead and never a failure.</para>
+    /// </summary>
+    public static Result Lay(Paper a, Paper b, Reveal? reveal = null)
+    {
+        if (reveal?.Invoke(a, b) is { } authored)
+        {
+            return authored;
+        }
+
         (int money, int love) = Tally(a, b);
 
         if (TheLie(a, b) is { } lie)

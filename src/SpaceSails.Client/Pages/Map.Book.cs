@@ -135,7 +135,7 @@ public partial class Map
             return;
         }
 
-        SpreadReconcile.Result result = SpreadReconcile.Lay(_laid[^2], _laid[^1]);
+        SpreadReconcile.Result result = SpreadReconcile.Lay(_laid[^2], _laid[^1], AnAuthoredRevealFor);
         _reconciled = result;
         ApplyTheReconcile(result);
 
@@ -148,6 +148,26 @@ public partial class Map
         RequestVaultSave();
         StateHasChanged();
     }
+
+    /// <summary>
+    /// #973 · <b>THE AUTHORED REVEALS — the one seam a lane with two specific papers in mind plugs into.</b>
+    /// Asked before any of the three general verdicts (<see cref="SpreadReconcile.Lay"/>), because a fact
+    /// about a story cannot be derived from names and numbers.
+    ///
+    /// <para>Empty today, and deliberately a named method rather than a missing argument: #973 L5b's walk-in
+    /// is the first lane with something to put here — <i>her note beside the fleet-day page or the job's
+    /// first slip</i> (which finishes a line somebody left unfinished) and <i>her note beside any
+    /// money-tagged old-crew slip</i> (which says out loud that two hands are one hand, and marks her note
+    /// corrected). Both are built with <see cref="SpreadReconcile.Reveals"/>, which does the money/love
+    /// counting so the reveal only has to carry its own words. The mark her note wears —
+    /// <see cref="HeldMemory.Mark.Hers"/> — is already in the enum and needs nothing from that lane.</para>
+    ///
+    /// <para>A reveal that does not apply returns null and the table answers as it always does, so an empty
+    /// hook and a missing hook are the same behaviour — which is what makes this safe to ship ahead of the
+    /// lane that fills it.</para>
+    /// </summary>
+    private SpreadReconcile.Result? AnAuthoredRevealFor(SpreadReconcile.Paper a, SpreadReconcile.Paper b) =>
+        null;
 
     /// <summary>
     /// WHAT THE VERDICT DOES TO THE TWO BOOKS. Every one of the three writes something, because a table that

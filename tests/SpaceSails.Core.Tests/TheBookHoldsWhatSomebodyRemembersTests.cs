@@ -235,6 +235,48 @@ public sealed class TheBookHoldsWhatSomebodyRemembersTests
         Assert.Equal(waiting.Threads.Count, waiting.Naming(SpreadReconcile.NotAnyonesYet).Threads.Count);
     }
 
+    /// <summary>
+    /// #973 · <b>THE AUTHORED-REVEAL HOOK.</b> A lane that knows something about two SPECIFIC papers gets to
+    /// say so before any general rule calls the pair an ordinary agreement — and a hook that returns null
+    /// leaves the table behaving exactly as it does without one, which is what makes it safe to ship ahead
+    /// of the lane that fills it (#973 L5b's walk-in is the first caller).
+    /// </summary>
+    [Fact]
+    public void AnAuthoredRevealIsAskedFirstAndAnEmptyHookChangesNothing()
+    {
+        var hers = new HeldMemory.Sheet(
+            "her-note", HeldMemory.Mark.Hers, HeldMemory.Theory.Love, "…", ["Ilse Marrow"], 4 * Day);
+        var slip = new HeldMemory.Sheet(
+            HeldMemory.SlipId("corwin"), HeldMemory.Mark.His, HeldMemory.Theory.Money,
+            OldCrewScene.Slip(OldCrew.SignerId), ["Ilse Marrow"], 5 * Day);
+
+        SpreadReconcile.Paper a = SpreadReconcile.Paper.Of(hers, "her note");
+        SpreadReconcile.Paper b = SpreadReconcile.Paper.Of(slip, "a slip");
+
+        // No hook, and a hook with nothing to say about this pair, are the same table.
+        SpreadReconcile.Result plain = SpreadReconcile.Lay(a, b);
+        SpreadReconcile.Result quiet = SpreadReconcile.Lay(a, b, (_, _) => null);
+        Assert.Equal(SpreadReconcile.Verdict.Agree, plain.Verdict);
+        Assert.Equal(plain.Verdict, quiet.Verdict);
+        Assert.Equal(plain.Line, quiet.Line);
+
+        // …and a reveal WINS over the general rules — including over the agreement this pair would
+        // otherwise have been, which is the whole reason it is asked first.
+        const string authored = "Her hand and the desk's hand are the same hand.";
+        SpreadReconcile.Result revealed = SpreadReconcile.Lay(a, b, (x, y) =>
+            SpreadReconcile.Reveals(SpreadReconcile.Verdict.Disagree, authored, x, y, correctedId: x.Id));
+
+        Assert.Equal(SpreadReconcile.Verdict.Disagree, revealed.Verdict);
+        Assert.Equal(authored, revealed.Line);
+        Assert.Equal("her-note", revealed.CorrectedId);
+
+        // The second question is the TABLE's and is counted for the reveal too, so an authored line never
+        // has to carry the arithmetic.
+        Assert.Equal(1, revealed.Money);
+        Assert.Equal(1, revealed.Love);
+        Assert.Contains(SpreadReconcile.TheSecondQuestion, revealed.SecondQuestion, StringComparison.Ordinal);
+    }
+
     /// <summary>The three verdicts are three different sentences, and every one of them is Fable's.</summary>
     [Fact]
     public void TheThreeVerdictsAreThree()

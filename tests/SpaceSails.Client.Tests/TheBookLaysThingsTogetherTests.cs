@@ -121,7 +121,7 @@ public sealed class TheBookLaysThingsTogetherTests
     {
         string body = Method(Pages("Map.Book.cs"), "private void LayItOnTheSpread(SpreadReconcile.Paper paper)");
 
-        Assert.Contains("SpreadReconcile.Lay(_laid[^2], _laid[^1])", body, StringComparison.Ordinal);
+        Assert.Contains("SpreadReconcile.Lay(_laid[^2], _laid[^1], AnAuthoredRevealFor)", body, StringComparison.Ordinal);
         Assert.Contains("ApplyTheReconcile(result)", body, StringComparison.Ordinal);
         Assert.Contains("SpreadReconcile.TheBleedAssembles(_laid)", body, StringComparison.Ordinal);
         Assert.Contains("_satchelOutcome = result.Line", body, StringComparison.Ordinal);
@@ -150,6 +150,24 @@ public sealed class TheBookLaysThingsTogetherTests
         // …and an AGREEMENT warms the memories rather than the ledger.
         Assert.Contains("Warmer(SpreadReconcile.MostConfidence)", apply, StringComparison.Ordinal);
         Assert.Contains("Naming(SpreadReconcile.NotAnyonesYet)", apply, StringComparison.Ordinal);
+    }
+
+    /// <summary>#973 · The authored-reveal hook exists, is wired into the one lay seam, and is a NAMED method
+    /// rather than a missing argument — so #973 L5b's walk-in has a place to put its two cases without
+    /// touching the lay path or the three general verdicts.</summary>
+    [Fact]
+    public void TheAuthoredRevealHookIsWiredAndNamedForTheLaneThatFillsIt()
+    {
+        string source = Pages("Map.Book.cs");
+
+        Assert.Contains(
+            "private SpreadReconcile.Result? AnAuthoredRevealFor(SpreadReconcile.Paper a, SpreadReconcile.Paper b)",
+            source, StringComparison.Ordinal);
+        Assert.Contains("SpreadReconcile.Lay(_laid[^2], _laid[^1], AnAuthoredRevealFor)", source, StringComparison.Ordinal);
+
+        // …and the mark her note wears is already in the enum, so the lane that fills the hook adds nothing
+        // to the book's vocabulary.
+        Assert.Equal("hers", HeldMemory.Label(HeldMemory.Mark.Hers));
     }
 
     /// <summary>A grey page cannot be laid on the table. You cannot compare a page nobody has read, and a
