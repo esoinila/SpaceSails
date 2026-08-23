@@ -6561,15 +6561,15 @@
                                                RestockPricePerRound and went wrong the moment the
                                                ammo was re-priced — which is now.
 
-                                               This comment sits ABOVE the tag, not between its attributes,
+                                               This note sits ABOVE the tag, not between its attributes,
                                                because Razor does NOT treat a comment inside a START TAG as
-                                               a comment: it compiles the whole `@* … *@` run into an
-                                               ATTRIBUTE NAME, and the browser answers
-                                               `InvalidCharacterError: Failed to execute 'setAttribute'` —
+                                               a comment: it compiles the whole run into an ATTRIBUTE NAME,
+                                               and the browser answers
+                                               "InvalidCharacterError: Failed to execute 'setAttribute'" —
                                                which kills the render, so the Trade desk showed
                                                "An unhandled error has occurred. Reload." and nothing else.
-                                               A comment goes above a tag or after its `>`; never inside it.
-                                               TheRazorCommentIsNotAnAttributeTests is that law. *@
+                                               A note goes above a tag or after its closing bracket; never
+                                               inside it. TheRazorCommentIsNotAnAttributeTests is that law. *@
                                             <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2 sentry-rearm-btn"
                                                     disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
                                                     title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
