@@ -636,6 +636,7 @@ public partial class Map
         _nearestBodyVelocity = _ship.Velocity;              // the berth rides the destination's drift
         _armedOrbitBodyId = null;                           // a berth disarms any pending auto-insert
         ArrivedAt(dest.Id);                                 // #962: a shuttle hop is an arrival too — see ClampOntoHaven
+        TheArrivalIsRemembered(dest.Id);                    // #973 L4: …and a place can finish a grey page
         _autopilotStandDownReason = null; _dockReadyStatus = null;
         ResetAutopilotBudget();
         _matchLedger = _matchLedger.Abort();                // #268: a shuttle hop abandons any match tab, uncharged
@@ -879,6 +880,11 @@ public partial class Map
         // first — this is scene-setting, and it goes through the one story-beat door like everything else. Once per
         // berth, ever, which is what taught that seam the OncePerSubject cadence.
         RaiseStoryBeat(ArrivalTube.BeatFor(ArrivalTube.TierFor(_ephemeris!, dock.Id)), dock.Name);
+
+        // #973 L4 · …and then the place says its own thing, if it has one to say: a page this captain does not
+        // remember writing that NAMES this berth is finished by standing on it, and a hull impounded here is
+        // one he stopped signing for. After the tube's plate, because the establishing shot comes first.
+        TheArrivalIsRemembered(dock.Id);
     }
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
