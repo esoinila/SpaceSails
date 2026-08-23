@@ -164,6 +164,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?kaamos=hq&land=1"] = "8ef4066a474f7181c88f1acbe253a93b",
             ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "733998fe1ca41218c5219c134e46e25b",
             ["/map?nebula=all"] = "7c57c271ad96f80a9837c04eb9c57a09",
+            ["/map?oldcrew=1"] = "d081c4a19a015c970e5e221106844c6c",
             ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "7c57c271ad96f80a9837c04eb9c57a09",
             ["/map?park=1"] = "2d7155c0d14434a75a493abaad5fa7b9",
             ["/map?park=1&spread=1"] = "27a11235029568677b1cae9c695cfe10",
