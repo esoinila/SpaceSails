@@ -133,6 +133,15 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     ///
     /// <para><b>If any of these ever moves again, that is not this lane's kind of change either, and the same
     /// dump-and-diff is what settles it.</b></para>
+    ///
+    /// <para><b>#969 · ALL THIRTY WERE RE-RECORDED AGAIN, and this time the field COUNT itself moved — 663 →
+    /// 664.</b> That is the honest signature of what #969 did: one field was added to the page,
+    /// <c>_armedArrivalPassSimTime</c>, the pass epoch an arrival ARMED AT PLAN TIME was rehearsed for. It is
+    /// the whole of the new state (no forked autopilot), and every world here has it at its default
+    /// <c>null</c>, because none of them arms an arrival. The diff of the committed texts is again 30 files,
+    /// one line each, and that line is the sweep's — the ledger, the pen, the canvas buffer, the call counts
+    /// and every other row are byte-identical, which is exactly the claim: the frame's BEHAVIOUR is
+    /// unchanged, only the shape of the state it sweeps.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]
