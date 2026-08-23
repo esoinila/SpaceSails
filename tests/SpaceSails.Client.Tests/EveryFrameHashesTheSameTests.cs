@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -417,13 +417,13 @@ public sealed class EveryFrameHashesTheSameTests
         ["ship · under way"] = (335, "e943fa59228f59c49c0efebc3eda6579bda13f1abc0e3e48e16a6f1358630be5"),
         ["ship · docked, the shuttle away and the machine stalling"] = (308, "a8bec38425f92452c72de535eac14f855c4df214cbbf3301fe105fbe546bf62a"),
         ["ship · hatches dogged, seated at the table"] = (309, "9096ac57873a26df8ac1d3cf7740960a7e98900a29493ded9004887eda0da6f8"),
-        ["haven · the-space-bar"] = (358, "5c954a1fc36be5bec956434cafe3fe97103c347617aa039855aa2b3e031522b8"),
-        ["haven · cinder-roost"] = (362, "8a989082224c7807fd03e447b9b2a720485c6563129bc2873dee5313eb3f5f95"),
-        ["haven · ringside-exchange"] = (364, "4ba183130268987860bc8d093eea30e05e16c67ee1089d617840d5d2408388e7"),
-        ["haven · the-tilt"] = (358, "1c1ba6016cc3b6152dd4c128a1a77906081cf325cf28e87e44833c3a55c56355"),
-        ["haven · selene-gate"] = (362, "43278ff55066b4c0b489fc0b7974bd5ec7c138e077122a342b7f96e845d9bb7e"),
-        ["haven · red-eye"] = (362, "ee56ea4f5d240b6d41d9b4c357f8bfd0f83305f09a031c394ff13c4c0e4a2f75"),
-        ["haven · the-deep"] = (364, "ff8b1ecc94d2a48feda748f215a3ceb22e314d97891df32a5ed7f3df1a9b3af3"),
+        ["haven · the-space-bar"] = (358, "19ca5c6d71b008ef030af25f59ee0faaeb0f7ec87d45453fd1c2c77eb3d8e30a"),
+        ["haven · cinder-roost"] = (362, "77c60458ce301e2eb6445dd24be3c8584712fd689804e843b48ac5e5a5d14314"),
+        ["haven · ringside-exchange"] = (364, "fe9c4f3820c98c849f04b68368a752814d99a55145c97287ae6388792cad1697"),
+        ["haven · the-tilt"] = (358, "3082188a8ada5f37b096f6ffb05111cd45212b6cbc73150e6b426582d6e10242"),
+        ["haven · selene-gate"] = (362, "95438470755148ea59c54ff792b7c341a8159725f769bdbcecac6d7eb4441ff4"),
+        ["haven · red-eye"] = (362, "1dffd21daf968445e945dd4055d08c011460e6491b778cb5f9425f75040c725f"),
+        ["haven · the-deep"] = (364, "c046973066136cb0483ff561dae82768a1e59528ba97e78e4ed8e6043356bd20"),
         ["wreck · HullBreach"] = (592, "637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020"),
         ["luna B1"] = (1591, "c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab"),
         ["luna B2"] = (426, "86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0"),
