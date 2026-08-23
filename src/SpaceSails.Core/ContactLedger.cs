@@ -25,6 +25,18 @@ public enum CreditKind
 
     /// <summary>We paid a debt down, in coin or by working off a favor (balance ↑ toward zero).</summary>
     Repayment,
+
+    /// <summary>
+    /// #973 L2 · We bought a policy off them (balance UNCHANGED — the coin is spent, not parked).
+    ///
+    /// <para>The one kind whose <see cref="CreditTransaction.Amount"/> is zero by construction, and it is
+    /// zero because of what the balance MEANS: positive is coin they hold FOR us, negative is coin we owe
+    /// THEM, and a paid premium is neither. Booking it as a <see cref="Deposit"/> would have let the
+    /// captain draw their own insurance back out of the favor bank; booking it as a <see cref="Borrow"/>
+    /// would have put Nebula Mutual in our debt. The price rides the note, where a receipt belongs, and
+    /// the book still foots.</para>
+    /// </summary>
+    Premium,
 }
 
 /// <summary>One line in a contact's passbook: what kind of move, the signed credit delta, when, and a

@@ -75,15 +75,31 @@ public sealed class TheyKnewTheFaceBeforeTests
         Assert.Contains("_crossings = CaptainCrossings.Add(", body, StringComparison.Ordinal);
     }
 
-    /// <summary>The latch is PER LIFE, not per game: a rebirth is a new face and every one of them has to
-    /// explain itself again. The set is cleared on the load path with the rest of this lane's per-life state.</summary>
+    /// <summary>
+    /// THE LATCH IS PER LIFE, and both halves of that are wired: a REBIRTH empties it (a new face has
+    /// nothing explained, and it is emptied at the succession seam beside the filing line's own marking,
+    /// because they are the same fact about the same moment), and a RELOAD does not — the set rides the
+    /// vault, or a save and a load would let the player answer the same question twice and write a second
+    /// crossing for it.
+    /// </summary>
     [Fact]
-    public void TheLatchIsClearedWhenALifeIsLoadedOrForgotten()
+    public void TheLatchSurvivesAReloadAndIsEmptiedByARebirth()
     {
         string source = Pages("Map.OldCrew.cs");
 
+        // The rebirth half — cleared, and cleared where the succession happens.
         Assert.Contains("_facesExplained.Clear();",
+            Method(source, "private void ANewFaceHasNothingExplained()"), StringComparison.Ordinal);
+        Assert.Contains("ANewFaceHasNothingExplained();",
+            Pages("Map.Combat.Busted.cs"), StringComparison.Ordinal);
+
+        // The reload half — written to the file and read back out of it.
+        Assert.Contains("Explained = [.. _facesExplained]",
+            Method(source, "private OldCrewSection? BuildOldCrewSection()"), StringComparison.Ordinal);
+        Assert.Contains("vault.OldCrew?.Explained",
             Method(source, "private void RestoreOldCrewSections(Vault vault)"), StringComparison.Ordinal);
+
+        // …and a new universe forgets them entirely.
         Assert.Contains("_facesExplained.Clear();",
             Method(source, "private void ForgetTheOldCrew()"), StringComparison.Ordinal);
     }

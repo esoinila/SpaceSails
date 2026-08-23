@@ -485,6 +485,12 @@ public sealed record OldCrewSection
 {
     /// <summary>One row per seeded shipmate, in pool order.</summary>
     public IReadOnlyList<string> Shipmates { get; init; } = [];
+
+    /// <summary>#973 L5a · Which of them THIS captain has already explained his face to. Saved rather than
+    /// recomputed for the reason the filing line's marks are: a scene is a fact about a life, and a reload
+    /// that replayed it would let a player re-answer a question they have already answered — and write a
+    /// second crossing for it. Emptied by a rebirth, because the next face has its own explaining to do.</summary>
+    public IReadOnlyList<string> Explained { get; init; } = [];
 }
 
 /// <summary>#973 L5a · The captain's crossings, oldest first. Opaque rows (<c>CaptainCrossings.Crossing

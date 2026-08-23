@@ -5845,4 +5845,67 @@
     font-size: 1.1rem;
     font-style: italic;
     color: #e7f1ff;
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #973 L2 · THE REP'S PITCH CARD.
+
+   It borrows the .view-object family wholesale: the same shape as every other card in the game, and it
+   should be, because a salesman interrupting you is not a new kind of surface. The two rules of its own are
+   his PORTRAIT — the one this arc allows, and the arc's own inversion, since the adjuster is framed from
+   across the room precisely so the salesman can have a face — and the quoted line he says BACK, set apart
+   from the pitch because an answer is a different register from a sales patter.
+
+   The bleached page the policy line hands you is NOT here: #973 L1 raises it as a plate through the one
+   seam, and drawing it on this card as well would be the same picture twice on one screen (#777).
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+.rep-portrait {
+    max-height: 12rem;
+    object-fit: cover;
+}
+
+.rep-desk {
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(232, 236, 244, 0.55);
+    margin-bottom: 0.4rem;
+}
+
+.rep-pitch {
+    font-style: normal;
+}
+
+.rep-said {
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border-left: 2px solid rgba(243, 226, 196, 0.45);
+    color: rgba(243, 226, 196, 0.92);
+    font-style: italic;
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+.rep-offers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.8rem;
+}
+
+.rep-offer {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgba(243, 226, 196, 0.35);
+    border-radius: 0.3rem;
+    background: rgba(243, 226, 196, 0.08);
+    color: #f3e2c4;
+    font: inherit;
+    cursor: pointer;
+}
+
+.rep-offer:hover,
+.rep-offer:focus {
+    border-color: #f3e2c4;
+    background: rgba(243, 226, 196, 0.18);
+    color: #fff6e4;
+    outline: none;
 }

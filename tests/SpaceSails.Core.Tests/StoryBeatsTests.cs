@@ -35,6 +35,7 @@ public sealed class StoryBeatsTests
     {
         StoryBeats.Beat.KaamosShardFound => KaamosLore.AllPlates.First().Key,
         StoryBeats.Beat.NebulaShardFound => NebulaLore.AllPlates.First().Key,
+
         _ => "THE QUIET SISTER",
     };
 

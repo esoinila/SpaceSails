@@ -224,6 +224,7 @@ public sealed partial class Map
     private bool TheHostIsUp(StoryBeats.Beat beat) => beat switch
     {
         StoryBeats.Beat.CollectorHail => _busted is { Phase: BustedEncounter.Stage.Demand },
+
         _ => false,
     };
 

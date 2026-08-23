@@ -98,6 +98,24 @@ which is not service — it is noise. `RevealPlatesArePaintedTests` pins that de
 
 ---
 
+## 4. `art/nebula-rep-fess.jpg` — HARLAN FESS, OUTER REACHES DESK
+
+- **Slot:** the rep's own pitch card (#973 L2) — not a `RevealPlate`, so no sweep names it; it is the face
+  at the top of the panel Harlan raises when he reaches your table.
+- **Reach it:** the same walk-across-the-floor as above.
+- **Idiom:** the ONE portrait this arc allows, and it is allowed because it is the arc's inversion — the
+  adjuster is framed from across the room and denied portrait dignity precisely so that the *salesman* can
+  have it. He is delighted to see you. He has never seen you.
+- **The arc's clerical rule still holds:** nothing spooky, nothing reacting. The horror is that a man this
+  pleased to meet you is holding your file.
+
+> **Prompt used:** Portrait of a relentlessly cheerful middle-aged insurance salesman standing in a grimy
+> spaceport concourse bar, mid-pitch, leaning slightly forward with both hands open in a here-me-out gesture,
+> big warm practised smile, thinning hair combed over, a slightly too-tight synthetic suit with a company
+> lapel pin, a battered document folder tucked under one arm. Behind him out of focus: a dim used-future bar,
+> bottles, a wall poster. grimy lived-in used-future sci-fi, muted desaturated palette, painterly, moody
+> lighting, no text, no lettering, no signage.
+
 ## Generation recipe
 
 grok is the project's gen-AI art source (owner ruling 2026-07-18: **images only — no code, no git**).
@@ -119,6 +137,10 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 1 | `NebulaLore.PlateFor("adjuster-tell")` | `nebula-adjuster.jpg` | ✅ | ✅ | ✅ |
 | 2 | `NebulaLore.PlateFor("policy-terms")` | `nebula-truth.jpg` | ✅ | ✅ | ✅ |
 | 3 | `ArcConvergence.ArtFile` | `convergence.jpg` | ✅ | ✅ | ✅ |
+| 4 | the rep's pitch card (#973 L2) | `nebula-rep-fess.jpg` | ✅ | ✅ | — |
+
+The signing flashback wears the arc's ONE bleached plate, `art/flashback.jpg` (#973 L1) — it is raised as
+`StoryBeats.Beat.Flashback` with the subject `signing`, and no second painting was added for it.
 
 The guard is `tests/SpaceSails.Core.Tests/RevealPlatesArePaintedTests.cs` — it sweeps both arcs' plates,
 the convergence, **and every `DeathNarration.ArtFile(cause, place)` pairing**, and holds each to a file that
