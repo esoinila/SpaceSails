@@ -95,9 +95,10 @@ public sealed class TheWallsAreHungAndReadTests
                 // The whole of the advertising is on the label the captain reads walking past…
                 Assert.Contains(StationAds.Ads[i].Text, hung[i].Label, StringComparison.Ordinal);
 
-                // …and [E] gives it back on a card, so it can be read twice — which is what the THIRD one
-                // read is for. No canvas: a text plate in the poster's own idiom, like the lifeboat muster.
-                Assert.Equal(StationAds.Ads[i].Text, hung[i].Caption);
+                // …and there is nothing UNDER it: no canvas (a text plate in the poster's own idiom, like
+                // the lifeboat muster) and no caption, because the card [E] raises is this same sentence
+                // held closer and a caption would print it a second time on the same card.
+                Assert.Null(hung[i].Caption);
                 Assert.Null(hung[i].ImageUrl);
             }
 

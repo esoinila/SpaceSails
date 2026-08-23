@@ -766,6 +766,10 @@ public static class HavenInterior
         // the one that finishes a memory (`StationAds`). Detected by the ad's own text, so this file never
         // learns what any of them is FOR.
         //
+        // NO CAPTION, and that came out of looking at the card in a browser: a caption repeating the title
+        // word for word read as a stutter — the surface saying one thing twice and meaning it once. The
+        // plate is one sentence; the card is that sentence held closer, and there is nothing under it.
+        //
         // Placed on the northern half of the concourse, where nothing else stands: the poster and the plaque
         // are port-side and low, the lifeboat is starboard and low, the tube path is x 1..4 and southern.
         // Every one is at least 5 du from every other console on this deck, so [E] can never grab the wrong
@@ -779,8 +783,7 @@ public static class HavenInterior
         for (int adIdx = 0; adIdx < adSites.Length && adIdx < SpaceSails.Core.StationAds.Ads.Count; adIdx++)
         {
             SpaceSails.Core.StationAds.Ad ad = SpaceSails.Core.StationAds.Ads[adIdx];
-            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, adSites[adIdx].X, adSites[adIdx].Y,
-                ad.Label, null, ad.Text));
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, adSites[adIdx].X, adSites[adIdx].Y, ad.Label));
         }
 
         // Seven tables spread across the big room — the rota seats present regulars at some of them this
