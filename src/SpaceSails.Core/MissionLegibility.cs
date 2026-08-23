@@ -21,6 +21,12 @@ public enum ContractKind
     Fetch,
     Crack,
     FetchCache,
+
+    /// <summary>#973 L5b · THE WALK-IN'S JOB. A woman crossed a classy room and asked for something FOUND
+    /// (#972's verb), and the row it files under is tagged <i>love</i>, pays nothing, and is sized <i>for
+    /// her</i>. Its own kind rather than a re-used Fetch because it is a different VERB in every way that
+    /// shows: nothing is prised loose, nothing is dug up, and the payout line is a dash.</summary>
+    WalkIn,
 }
 
 /// <summary>Everything the brief text needs, already resolved to display strings by the caller
@@ -82,6 +88,10 @@ public static class MissionBrief
         // Fetch-a-cache (#223): the map is already in hand — walk the paces, dig, deliver the chest.
         ContractKind.FetchCache when f.PickedUp => $"deliver the chest to {NameOr(f.Giver, "the Fixer")} at {NameOr(f.DestName, "the bar")}{Place(f.DestParent)}",
         ContractKind.FetchCache => $"dig at the X on {NameOr(f.CacheBody, "the marked body")} — take the shuttle down and walk the paces",
+        // #973 L5b · the walk-in's two steps: go and find it, then come back and tell HER. The person is the
+        // whole of the destination, which is why she is named where every other kind names a berth.
+        ContractKind.WalkIn when f.PickedUp => $"tell {NameOr(f.Giver, "her")} — she is at {NameOr(f.DestName, "the bar")}{Place(f.DestParent)}",
+        ContractKind.WalkIn => $"find {NameOr(f.TargetName, "what she asked for")} at {NameOr(f.CacheBody, "the berth she named")}",
         // Intel is a gift of information, settled on the spot — no task to fly.
         _ => "",
     };
@@ -95,6 +105,8 @@ public static class MissionBrief
         ContractKind.Fetch => "recovery job",
         ContractKind.FetchCache => "cache run",
         ContractKind.Crack => "break-in",
+        // #973 L5b · never "job": what she asked for is not work, which is the whole of why the captain took it.
+        ContractKind.WalkIn => "favour",
         _ => "job",
     };
 
