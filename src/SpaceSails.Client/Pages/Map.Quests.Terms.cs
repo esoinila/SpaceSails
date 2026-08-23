@@ -138,30 +138,11 @@ public partial class Map
         return (distance, lane);
     }
 
-    /// <summary>The body both ends of the trip go round: the shared planet-level ancestor when the ship
-    /// and the target are in the same planet's system, otherwise the root (the Sun). Null only when there
-    /// is no ephemeris to ask.</summary>
-    private CelestialBody? SharedPrimaryFor(string? shipAnchorId, string? targetAnchorId)
-    {
-        CelestialBody? shipPlanet = PlanetLevelAncestor(BodyById(shipAnchorId));
-        CelestialBody? targetPlanet = PlanetLevelAncestor(BodyById(targetAnchorId));
-        if (shipPlanet is not null && targetPlanet is not null && shipPlanet.Id == targetPlanet.Id)
-        {
-            return shipPlanet;
-        }
-        return RootBody();
-    }
-
-    /// <summary>The parentless body at the middle of the system — the Sun in every shipped scenario.</summary>
-    private CelestialBody? RootBody()
-    {
-        foreach (CelestialBody b in _ephemeris?.Bodies ?? [])
-        {
-            if (b.ParentId is null)
-            {
-                return b;
-            }
-        }
-        return null;
-    }
+    /// <summary>The body both ends of the trip go round. The choice lives in Core
+    /// (<see cref="JobEffort.SharedPrimary"/>) rather than here, because it is the one piece of this file
+    /// that can be silently WRONG rather than merely absent — a Mars-local hop read against the Sun
+    /// returns half a Martian year — and Core is where it can be unit-tested against the shipped
+    /// scenario instead of only being looked at.</summary>
+    private CelestialBody? SharedPrimaryFor(string? shipAnchorId, string? targetAnchorId) =>
+        _ephemeris is null ? null : JobEffort.SharedPrimary(_ephemeris, shipAnchorId, targetAnchorId);
 }

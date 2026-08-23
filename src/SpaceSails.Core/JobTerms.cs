@@ -332,4 +332,80 @@ public static class JobEffort
         }
         return TransferMath.Hohmann(radius1Meters, radius2Meters, muPrimary).TransferSeconds;
     }
+
+    /// <summary>
+    /// THE BODY BOTH ENDS GO ROUND — the one choice the effort line lives or dies on.
+    /// </summary>
+    /// <remarks>
+    /// The plotting table's own law (#926, the owner: <i>"I had to remember to switch to Sun to get the
+    /// ship to really start moving from Earth towards Mars"</i>): a trip is read in the frame of the body
+    /// both ends go round. Here that is a planet when the ship and the target are in the SAME planet's
+    /// system — a berth and a depot both circling Mars — and the root (the Sun) in every other case,
+    /// including when either end cannot be placed at all.
+    /// <para>Getting this wrong is not a rounding error. A Mars-local hop read against the Sun puts both
+    /// ends on one rail and returns half a Martian year for a trip of days.</para>
+    /// </remarks>
+    public static CelestialBody? SharedPrimary(ICelestialEphemeris ephemeris, string? shipAnchorId, string? targetAnchorId)
+    {
+        ArgumentNullException.ThrowIfNull(ephemeris);
+        CelestialBody? shipPlanet = PlanetLevelAncestor(ephemeris, shipAnchorId);
+        CelestialBody? targetPlanet = PlanetLevelAncestor(ephemeris, targetAnchorId);
+        return shipPlanet is not null && targetPlanet is not null && shipPlanet.Id == targetPlanet.Id
+            ? shipPlanet
+            : Root(ephemeris);
+    }
+
+    /// <summary>The planet-level ancestor of a body: walk up parents until the next one up is the
+    /// parentless root. A moon or a station rides its planet round the sun, so this is the body whose
+    /// heliocentric orbit the place actually keeps. A planet returns itself; so does a heliocentric
+    /// station with no planet above it. Null for an unknown id, and for the root itself — the sun is
+    /// nobody's neighbourhood.</summary>
+    public static CelestialBody? PlanetLevelAncestor(ICelestialEphemeris ephemeris, string? bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(ephemeris);
+        CelestialBody? b = Find(ephemeris, bodyId);
+        if (b is null || b.ParentId is null)
+        {
+            return null;
+        }
+        while (Find(ephemeris, b.ParentId) is { } parent)
+        {
+            if (parent.ParentId is null)
+            {
+                break;   // the parent is the root — b is already planet-level
+            }
+            b = parent;
+        }
+        return b;
+    }
+
+    /// <summary>The parentless body at the middle of the system — the sun in every shipped scenario.</summary>
+    public static CelestialBody? Root(ICelestialEphemeris ephemeris)
+    {
+        ArgumentNullException.ThrowIfNull(ephemeris);
+        foreach (CelestialBody b in ephemeris.Bodies)
+        {
+            if (b.ParentId is null)
+            {
+                return b;
+            }
+        }
+        return null;
+    }
+
+    private static CelestialBody? Find(ICelestialEphemeris ephemeris, string? id)
+    {
+        if (id is null)
+        {
+            return null;
+        }
+        foreach (CelestialBody b in ephemeris.Bodies)
+        {
+            if (b.Id == id)
+            {
+                return b;
+            }
+        }
+        return null;
+    }
 }
