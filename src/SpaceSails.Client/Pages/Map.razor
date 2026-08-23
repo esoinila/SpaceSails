@@ -93,7 +93,7 @@
             @* #948 — the page is EDITABLE IN PLACE afterwards (owner: "having it updatable"). It rewrites the
                title and the note ONLY: the voyage in the berth is not re-saved and its clocks do not move. *@
             <button type="button" class="slot-mini" title="Write this berth's page — its title, and the note about what you were doing. The saved voyage itself is not touched."
-                    @onclick="() => BeginEditSlotPage(ctx.ThreadId, ctx.Id)">✎ page</button>
+                    @onclick="() => BeginEditSlotPage(ctx.ThreadId, ctx.Id)">✎</button>
             @if (ctx.InGame && ctx.Id != SaveSlotBook.AutoSlotId)
             {
                 <button type="button" class="slot-mini" title="Overwrite this berth with THIS moment (the live game right now) — it asks for a title and a note first"

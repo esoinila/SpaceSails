@@ -2019,7 +2019,10 @@
 
 /* #310 — the save/load surface (front door + in-game drawer share these). */
 .save-surface {
-    width: min(38rem, 96vw);
+    /* #948 — the shelf grew a headline per row, and a clipped headline is the exact complaint this lane
+       set out to fix ("Captain Erno of the Lo…" is no more findable than "The Tilt · day 0"). The surface
+       takes the width it needs on a real screen and still yields on a narrow one. */
+    width: min(52rem, 96vw);
 }
 
 /* Honest boot state (#310, #212): the door says it is warming rather than eating clicks. */
@@ -2116,12 +2119,26 @@
     gap: 0.4rem;
     max-height: 42vh;
     overflow-y: auto;
+    /* #948 — the list's own vertical scrollbar eats a dozen pixels the rows had already claimed, and the
+       shelf answered with a horizontal scrollbar that put the last control (🗑) just past the edge. Room
+       for the scrollbar, and no sideways scroll: a control you have to scroll to reach is a control the
+       captain will not find in the moment they need it. */
+    overflow-x: hidden;
+    padding-right: 0.4rem;
 }
 
 .slot-row {
     display: flex;
     align-items: stretch;
     gap: 0.35rem;
+    /* #948 — six controls beside a headline will not fit every window, and a row that scrolls sideways
+       hides its own last button. It wraps instead: the load button keeps a readable minimum and the mini
+       controls drop under it when the space runs out, so nothing is ever off the edge. */
+    flex-wrap: wrap;
+}
+
+.slot-load {
+    flex: 1 1 20rem;
 }
 
 .slot-load {
@@ -2172,9 +2189,14 @@
 .slot-where {
     font-weight: 600;
     font-size: 0.98rem;
-    white-space: nowrap;
+    /* #948 — the title is the thing the captain wrote to find this save by, so it gets a second line
+       before it is ever cut. Two lines, then ellipsis; the provenance under it stays one line each. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .slot-when {
