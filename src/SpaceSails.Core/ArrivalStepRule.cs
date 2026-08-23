@@ -198,6 +198,92 @@ public static class ArrivalStepRule
     public static string BrokenPlanAlarm(ArrivalCheck c) =>
         $"⚠ THE PLAN NO LONGER ENDS SAFELY — {Verdict(c)}. Nobody is flying the ship into a berth; she needs your hand.";
 
+    // ===== #969 — ARM IT *THEN*, NOT ONLY *NOW* =====
+    //
+    // The owner's ruling, 2026-08-23: "I just want the possibility to plan the trip from space to docked at
+    // one go. So once the burns are planned right I can add the autopilot after the last burn to dock the
+    // ship at plan time before the trip is even begun. The point is that now we only have orbit now / dock
+    // now. I want dock / orbit option as normal part, a step in the plan. Say three burns and one autopilot
+    // to finish the trip to Mars. After that no, absolutely no steps needed if the ship is not interfered
+    // with. Now this feature is missing. I want autopilot / dock / orbit THEN not just NOW."
+    //
+    // Arming an arrive step used to mean "take the ship from HERE" — the rehearsal that settles the promise
+    // was flown from the ship's present state, so a plan whose encounter is three burns and nine months away
+    // was refused ("can't verify a capture from here") because ballistically, from here, there is no
+    // encounter at all. A PLAN-TIME arm is a different sentence: the promise is rehearsed from the state the
+    // PLOT delivers at the step's own pass, and the autopilot then has nothing to do until the ship gets
+    // there. The two facts below are what tell those two arms apart; the client owns the rehearsal, this
+    // owns the law.
+
+    /// <summary>
+    /// <b>Is this arrival a THEN?</b> True when the step's pass lies in the future AND the ship is not yet
+    /// honestly near the body — which is exactly the trip the owner is describing: burns first, arrival
+    /// later. False means the captain is already at the door, and the arm is the old NOW arm (rehearsed
+    /// from the present state, with the #957 braking search behind it) — unchanged.
+    ///
+    /// <para>The same predicate does double duty: it decides which arm to make, and (with the pass epoch
+    /// the arm pinned) it is what HOLDS the armed autopilot's hands during the cruise — see
+    /// <see cref="ArrivalPromiseIsStillAhead"/>. One law, so the arm and the flight cannot disagree about
+    /// whether the arrival has come round yet.</para>
+    /// </summary>
+    /// <param name="passSimTime">The step's pass on the plotted course.</param>
+    /// <param name="simTime">Now.</param>
+    /// <param name="distanceNow">How far the ship is from the body right now (m).</param>
+    /// <param name="nearRange">The range at which the autopilot honestly has the arrival in its hands —
+    /// <see cref="OrbitRule.CaptureRangeHillRadii"/>·hill for an orbit, <see cref="DockRule.EnvelopeMeters"/>
+    /// for a μ=0 berth. The floor-free range on purpose: <see cref="OrbitRule.CaptureRangeFloorMeters"/>
+    /// would call a ship "in range" across a whole cruise.</param>
+    public static bool ArrivalIsAThen(double passSimTime, double simTime, double distanceNow, double nearRange) =>
+        passSimTime > simTime && distanceNow > nearRange;
+
+    /// <summary>
+    /// <b>The hold.</b> A plan-time arm is a promise about a moment that has not arrived: until it does, the
+    /// autopilot must keep its hands off the ship entirely — the captain's own plotted burns are flying her,
+    /// and any approach burn fired now would be the autopilot flying its OWN course instead of the plan (and
+    /// the convergence watchdog would stand it down for "not converging" on a trip that has not started).
+    /// So while this is true the armed loop coasts, touching nothing.
+    ///
+    /// <para>It stops being true the moment the pass epoch is reached OR the ship is honestly near the body,
+    /// whichever comes first — the ship can run early, and the epoch is only a projection. After that the
+    /// arm is an ordinary armed arrival and the existing insertion/dock path finishes the trip with no
+    /// further input, which is the owner's "absolutely no steps needed".</para>
+    /// </summary>
+    /// <param name="armedPassSimTime">The pass epoch the arm was rehearsed for; null for a NOW arm (never a
+    /// hold).</param>
+    /// <param name="simTime">Now.</param>
+    /// <param name="distanceNow">How far the ship is from the armed body right now (m).</param>
+    /// <param name="nearRange">As in <see cref="ArrivalIsAThen"/>.</param>
+    public static bool ArrivalPromiseIsStillAhead(
+        double? armedPassSimTime, double simTime, double distanceNow, double nearRange) =>
+        armedPassSimTime is { } pass && simTime < pass && distanceNow > nearRange;
+
+    /// <summary>
+    /// <b>The sentence the owner asked to be able to read off a finished plan.</b> "Say three burns and one
+    /// autopilot to finish the trip to Mars. After that no, absolutely no steps needed" — so when the arm is
+    /// accepted, the plan says exactly that, counting the burns still ahead and naming the arrival and its
+    /// CHARGED price (#928: never the raw Δv).
+    /// </summary>
+    /// <param name="burnsAhead">Plotted burns still to fire before the arrival.</param>
+    /// <param name="kind">Orbit or dock.</param>
+    /// <param name="bodyName">Where the plan ends.</param>
+    /// <param name="whenText">A ready-formatted "in 9 mo" / "in 3 d" (the client's own duration ladder).</param>
+    /// <param name="chargedPulses">What the arrival itself will cost the tank, at the autopilot's tenth.</param>
+    public static string PlanIsComplete(
+        int burnsAhead, ArrivalKind kind, string bodyName, string whenText, int chargedPulses)
+    {
+        string burns = burnsAhead == 1 ? "1 burn" : $"{burnsAhead} burns";
+        string arrival = $"{Verb(kind)} {bodyName}";
+        return $"{burns} · arrive {whenText} — the autopilot will {arrival} (≈{chargedPulses} p) · nothing more needed";
+    }
+
+    /// <summary>The armed THEN step's own row/banner label: the arrival is the last step, and it says who
+    /// finishes the trip. "🛰 arrive Mars — the autopilot inserts" / "⚓ arrive at The Rusty Roadstead —
+    /// the autopilot docks".</summary>
+    public static string ArmedThenLabel(ArrivalKind kind, string bodyName) =>
+        kind == ArrivalKind.Dock
+            ? $"⚓ arrive at {bodyName} — the autopilot docks"
+            : $"🛰 arrive {bodyName} — the autopilot inserts";
+
     // ===== Formatting: the same ladders the plotting panel speaks in =====
 
     /// <summary>Metres on the panel's own ladder — AU past a tenth of an AU, M km past a million km,
