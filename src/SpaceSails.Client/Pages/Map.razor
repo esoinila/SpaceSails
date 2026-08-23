@@ -1516,6 +1516,43 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L2 · HARLAN FESS, NEBULA MUTUAL. The salesman has crossed the floor and is standing at the
+       table — he is not sitting, because he was not invited, and there is no eighth way to open a sitting
+       in this codebase. Everything he says comes out of Core (NebulaRep): the tier line, the buttons and
+       their prices, his answer to the captain's own line. Nothing here is typed twice.
+
+       AND THE PAGE THAT COMES BACK IS NOT DRAWN HERE. #973 L1 shipped StoryBeats.Beat.Flashback as a
+       PLATE — one bleached painting for every memory, riding the edge for its seven seconds over a surface
+       that stays readable — and a merged guard pins that presentation. So "I already have a policy" raises
+       the beat through the one seam and the seam puts the plate up; this panel draws his pitch and his
+       answer and nothing of the plate, because drawing it here as well would be the stacked card #777 named
+       (the same picture, twice, on one screen).
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_repCard is { } pitch)
+    {
+        <div class="view-object-backdrop rep-backdrop">
+            <div class="view-object rep-card" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.NebulaRep.DisplayName</div>
+                <img class="view-object-img rep-portrait" src="@SpaceSails.Core.NebulaRep.PortraitArt"
+                     alt="@SpaceSails.Core.NebulaRep.RepName" onerror="this.style.display='none'" />
+                <div class="rep-desk">@SpaceSails.Core.NebulaRep.Desk</div>
+                <div class="view-object-caption rep-pitch">@pitch.Line</div>
+                @if (_repSaid is { Length: > 0 } saidBack)
+                {
+                    <div class="rep-said">@saidBack</div>
+                }
+                <div class="rep-offers">
+                    @foreach (var repOffer in pitch.Offers)
+                    {
+                        var repMove = repOffer.Move;
+                        <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheRep(repMove))">@repOffer.Label</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
     @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
        ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
        asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@

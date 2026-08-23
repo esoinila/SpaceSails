@@ -278,6 +278,7 @@ public static class StoryBeats
     public static string HostCard(Beat beat) => beat switch
     {
         Beat.CollectorHail => "the BUSTED demand panel (Map.razor, BustedEncounter.Stage.Demand)",
+
         _ => "",
     };
 
@@ -373,6 +374,7 @@ public static class StoryBeats
         Beat.ShelterIsNotSanctuary => CollectorLanding.SiegePlate,
         Beat.CollectorsSetDown => CollectorLanding.ArrivalPlate,
         Beat.SealedDoorReleased => NestPlates.Released,
+
         _ => null,
     };
 
@@ -415,6 +417,7 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
+
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
 
@@ -503,14 +506,12 @@ public static class StoryBeats
             Beat.BerthOutpost => ArrivalTube.Caption(ArrivalTube.Tier.Outpost) + " " +
                                  ArrivalTube.WalkLine(ArrivalTube.Tier.Outpost),
 
-            // FABLE: line needed — the flashback plate's caption. It must describe the bleached picture and
-            // STOP (the vented-room discipline): a single object left in focus while the rest of the frame
-            // washes out, and nobody telling the player what it means. It must read whole with no subject,
-            // it must never name what the clinic actually does, and it must not say which detail on a page
-            // is the wrong one. The line below is a plain placeholder describing the painting as shipped.
+            // #973 · The caption for EVERY flashback plate — the signing one included (#973 L2). Fable's
+            // line, verbatim; the FABLE marker L1 left here is answered and gone.
             Beat.Flashback =>
-                "A pen on a steel desk, sharp enough to count the scratches on it. Everything behind it — the " +
-                "room, the chair, the figure at the far side of the desk — is washed out to white.",
+                "Bleached to the bone. A pen on a steel desk, every scratch in it sharp; behind it the room, " +
+                "the chair, the one at the far side of the desk, all gone to white. Only the thing that was " +
+                "in the hand survives the light.",
 
             Beat.FireAboard =>
                 "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +

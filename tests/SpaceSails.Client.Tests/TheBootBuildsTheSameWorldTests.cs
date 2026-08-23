@@ -195,6 +195,9 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?stool=1&neighbour=0"] = "acd52c6aea3a389e635a7e239aca7d42",
             ["/map?stool=1&neighbour=1"] = "1cee407a0490ecad6e9effdbcd3d7d29",
             ["/map?tablescene=free&approach=1"] = "93e8b401a0a38b07f9dbd947377cfdc0",
+            // #973 L2 · the Nebula rep on the rota, forced. Taken with SPACESAILS_BOOT_FINGERPRINT_DUMP and
+            // diffed against the pinned list: this is the ONLY line the dump adds, and no other moved.
+            ["/map?tablescene=free&rep=1&approach=0"] = "92bd7c0885e897bff054a3b7722cebc0",
             ["/map?tablescene=free&watch=5&approach=0"] = "c0f15734992c164ada2630e1917fdf02",
             ["/map?threads=1"] = "ba39141253c852ffde69437c84c1b0e8",
             ["/map?threads=1&watch=5"] = "b570cb71e2d3f84b440aa329c739363b",

@@ -119,6 +119,11 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?stool=1&neighbour=0"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?stool=1&neighbour=1"] = "724bfab09e6e78001d448fae522dfe45",
             ["/map?tablescene=free&approach=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
+            // #973 L2 · …and the rep row hashes the SAME, which is correct and worth saying: this sweep
+            // renders BootQuery's own public fields, and neither ?approach= nor ?rep= lives there — both are
+            // read straight onto the page (_approachCheat, _repCheat). The query object really is identical;
+            // what the two URLs build differently is pinned next door, in TheBootBuildsTheSameWorldTests.
+            ["/map?tablescene=free&rep=1&approach=0"] = "885cf71b8ed559cbe924480f9e08c2b3",
             ["/map?tablescene=free&watch=5&approach=0"] = "885cf71b8ed559cbe924480f9e08c2b3",
             ["/map?threads=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
             ["/map?threads=1&watch=5"] = "885cf71b8ed559cbe924480f9e08c2b3",

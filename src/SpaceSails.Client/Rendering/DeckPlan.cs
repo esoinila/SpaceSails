@@ -366,8 +366,16 @@ public sealed class DeckPlan
     /// fingerprints went red with an <c>IndexOutOfRangeException</c> on the regolith, in a chair and on a Hive
     /// floor alike. The mirrored constant is the same bug it has always been; what changed since #633 is that
     /// the renderer now trusts the plan's own count instead of its buffer's length, so the silent version of
-    /// it has become the loud one.</para></summary>
-    public const int MaxDroids = 38;
+    /// it has become the loud one.</para>
+    ///
+    /// <para><b>#973 L2 · AND IT THREW AGAIN, THE SAME WAY, FOR THE SAME REASON.</b> The walker band grew by
+    /// one — the Nebula rep needs a slot of his own, because <c>Egress.MostAtOnce</c> is a law about the
+    /// room's REGULARS and he is not one of them — so <c>SurfaceDroidCount</c> went to 39 while this stayed
+    /// at 38, and the same fifteen fingerprints came back with the same <c>IndexOutOfRangeException</c> on
+    /// the regolith, in a chair and on a Hive floor. Seven bands now: 3 + 24 + 4 + 3 + 2 + 3 = 39. The
+    /// paragraph above is the whole lesson and it earned itself twice; anyone widening a band again should
+    /// expect to be back here.</para></summary>
+    public const int MaxDroids = 39;
 
     /// <summary>One figure on the deck that is not the captain.
     ///
