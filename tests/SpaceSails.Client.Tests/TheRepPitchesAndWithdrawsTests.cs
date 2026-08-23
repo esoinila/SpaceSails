@@ -327,8 +327,8 @@ public sealed class TheRepPitchesAndWithdrawsTests
     /// <summary>
     /// THE WRONG NAME, AND THE ONE LINE IT LEAVES. Driven through the shipped path with the bleed forced on,
     /// because the roll is deliberately rare: the card must carry the dead captain's name and the extra
-    /// button, and pressing it must put a line in the ship's ledger naming both captains — the note the
-    /// black book (#973 L3) will later find.
+    /// button, and pressing it must put a line in the ship's ledger naming the dead captain and Fess — the
+    /// note the black book (#973 L3) will later find.
     ///
     /// <para><b>Proven RED</b> by dropping the <c>LogAutopilotEvent</c> from
     /// <c>TellHimThatIsNotYourName</c>.</para>
@@ -350,8 +350,13 @@ public sealed class TheRepPitchesAndWithdrawsTests
         Answer(map, NebulaRep.RepMove.ThatsNotMyName);
 
         Assert.Equal(NebulaRep.BleedApology, (string?)Field(map, "_repSaid"));
-        Assert.Contains(Ledger(map), l => l.Contains(Captains.CleanName(dead), StringComparison.Ordinal)
-                                          && l.Contains(NebulaRep.BleedApology, StringComparison.Ordinal));
+
+        // #973 L5a · The ledger line is Fable's now — *"Fess called you {name}. Force of habit, he said."* —
+        // so what the row must carry is the DEAD captain's name and the fact that HE said it. It deliberately
+        // does not quote the apology back at the reader (the card already did) and it deliberately does not
+        // name the live captain, who is the one reading it.
+        Assert.Contains(Ledger(map), l => l.Contains(NebulaRep.BareName(Captains.CleanName(dead)), StringComparison.Ordinal)
+                                          && l.Contains("Fess", StringComparison.Ordinal));
 
         // …and he does not offer the button twice. There is nothing more to say about it, ever.
         Assert.DoesNotContain(TheCard(map)!.Value.Offers, o => o.Move == NebulaRep.RepMove.ThatsNotMyName);
