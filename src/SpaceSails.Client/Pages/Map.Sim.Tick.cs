@@ -202,6 +202,27 @@ public partial class Map
             bool useAdaptive = _effectiveWarp >= AdaptiveWarpThreshold && _simAccumulator >= AdaptiveWarpQuantum;
             double quantum = useAdaptive ? AdaptiveWarpQuantum : _simulator.TimeStep;
 
+            // #955 NAV-1 SPLIT-ADVANCE — THE CAST OFF IS LANDED ON, EXACTLY. The plan's first step is the one
+            // step that changes WHICH BRANCH this loop takes: while she is clamped the branch below advances
+            // the clock only, and the maneuver plan is never applied. So a quantum that swallowed both the
+            // cast-off and the clearance burn a minute behind it would let go of the clamp and skip the
+            // out-thrust in the same breath — the plan reporting a departure the ship never flew. Landed on
+            // the same way #146 lands on a transfer burn epoch: shorten the quantum onto it, or, if it is
+            // already due, run it now and re-loop with no clock spent (the next pass flies her free).
+            if (NextCastOffStep() is { } castOff)
+            {
+                double toCastOff = castOff.SimTime - _ship.SimTime;
+                if (toCastOff <= 0)
+                {
+                    RunTheCastOffStep(castOff);
+                    continue;
+                }
+                if (toCastOff < quantum)
+                {
+                    quantum = toCastOff;
+                }
+            }
+
             // #146 split-advance: if a scheduled transfer burn epoch falls inside this quantum, advance
             // EXACTLY onto it first (the way Simulator.RunAdaptive lands on a ManeuverPlan node), so the
             // impulse is applied from the true drifted state — never from a state warped thousands of
