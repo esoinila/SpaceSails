@@ -67,6 +67,24 @@ public static class FilingLine
     /// of? A page written exactly ON the line was filed and comes back.</summary>
     public static bool IsAfterTheLine(double line, double entrySimTime) => entrySimTime > line;
 
+    /// <summary>
+    /// #973 L5a · <b>THE ONE PAGE THE LINE CANNOT TAKE.</b> Owner ruling 2026-08-23 §13, and the joke has
+    /// teeth: a page the SERVICE filed comes back whatever the policy did, because the filing that preserved
+    /// it was not the captain's and was not paid for by him. There is one in the game — the summer-party
+    /// page, preserved perfectly because it was written up as a report against him — and this is the law
+    /// that keeps it, stated where the greying is decided rather than special-cased at a renderer.
+    ///
+    /// <para>It is deliberately a property of the PAGE and not a list of ids kept here. A rule that named the
+    /// exempt row by key would be a second place that has to agree with the world about what that row is,
+    /// and this house keeps a table of the bugs that shape produces.</para>
+    /// </summary>
+    public static bool TheServiceFiledIt(LedgerPage page) => page.Filed;
+
+    /// <summary>Does this page grey for a captain whose memory stops at <paramref name="line"/>? Dated after
+    /// the line and not filed by the service — both halves, and it is the only place the question is asked.</summary>
+    public static bool Greys(double line, LedgerPage page) =>
+        !TheServiceFiledIt(page) && IsAfterTheLine(line, page.SimTime);
+
     // ── §2 · HOW IT READS ────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The mark beside a page you don't remember writing. A glyph rather than a colour, because a
@@ -234,7 +252,7 @@ public static class FilingLine
         foreach (LedgerPage entry in pages)
         {
             was.TryGetValue(entry.Id, out Page before);
-            PageState state = IsAfterTheLine(line, entry.SimTime) ? PageState.Unremembered : PageState.Remembered;
+            PageState state = Greys(line, entry) ? PageState.Unremembered : PageState.Remembered;
             marked.Add(new Page(entry.Id, state, before.Which, before.Original ?? "", before.Substitute ?? ""));
         }
 
@@ -331,5 +349,11 @@ public static class FilingLine
 /// otherwise ("standing note", "logged 2h ago"). The two named halves are only read when it really does
 /// split into three, which is why a row with no attribution can only ever misremember a number.</para>
 /// </summary>
+/// <param name="Filed">#973 L5a · THE SERVICE FILED THIS ONE, and so no rebirth can take it — not even an
+/// uninsured one, where the line sits at negative infinity and every other page in the book goes grey. False
+/// for every row the game assembles out of its six books; true for exactly one seeded page, and the reason
+/// is written on <see cref="FilingLine.TheServiceFiledIt"/>. Defaulted, so every existing construction of
+/// this record still describes a page the filing line may take.</param>
 public readonly record struct LedgerPage(
-    string Id, double SimTime, string Title, IReadOnlyList<string> Lines, string Provenance);
+    string Id, double SimTime, string Title, IReadOnlyList<string> Lines, string Provenance,
+    bool Filed = false);

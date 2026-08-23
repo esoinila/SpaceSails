@@ -60,6 +60,69 @@ public static class ContactDrink
     /// direction — trust deep enough to trade on).</summary>
     public const int TrustForBusiness = 5;
 
+    // ── #973 L5a · THE THREE THE OLD CREW ADD ────────────────────────────────────────────────────────
+    //
+    // Named, like every modifier on this roll, because the whole point of the dice homage is that the
+    // player watches the numbers add up (and the UI prints them through `Describe`). One helps and two
+    // hurt, which is the shape the owner asked for: an old friend relaxes with you, and the two people
+    // you least want in the room while you relax are the one who signed and the one you did not marry.
+
+    /// <summary>What a shared past is worth over a glass: an old shipmate is easier to talk to than a
+    /// contact you did a job for, and they were easier to talk to before any of this. FLAGGED.</summary>
+    public const int SharedHistoryBonus = +1;
+
+    /// <summary>What it costs to drink with anybody while the man who signed the manifest is at the same
+    /// venue. He is not listening; he does not have to be. FLAGGED.</summary>
+    public const int SignerInTheRoomPenalty = -1;
+
+    /// <summary>…and what it costs when she is. The same roll that opens the friend is the roll where you
+    /// slip, and this is the thumb on it. FLAGGED.</summary>
+    public const int FlingInTheRoomPenalty = -1;
+
+    /// <summary>The three labels, written once so the roll, the UI math and the guards read one string.</summary>
+    public const string SharedHistoryLabel = "shared history";
+
+    /// <summary>The signer's label.</summary>
+    public const string SignerInTheRoomLabel = "the signer is in the room";
+
+    /// <summary>The fling's label.</summary>
+    public const string FlingInTheRoomLabel = "the fling is in the room";
+
+    /// <summary>#973 L5a · Who else is standing about while the glass is poured, and whether the person
+    /// across the table served with the captain. Passed as one value rather than three booleans on every
+    /// call so the two rolls (the offer and the drink) can never be handed different rooms.</summary>
+    /// <param name="SharedHistory">The contact knew the old face (<c>ContactHistory.KnewTheOldFace</c>).</param>
+    /// <param name="SignerPresent">Corwin Sallis is at this venue.</param>
+    /// <param name="FlingPresent">Ilse Marrow is at this venue.</param>
+    public readonly record struct TheRoom(bool SharedHistory, bool SignerPresent, bool FlingPresent)
+    {
+        /// <summary>Nobody of consequence, and no history — the room every drink before this lane was
+        /// poured in, and the default every existing caller keeps.</summary>
+        public static TheRoom Ordinary => default;
+
+        /// <summary>True when the room changes the math at all.</summary>
+        public bool Matters => SharedHistory || SignerPresent || FlingPresent;
+    }
+
+    /// <summary>Push the room's three named modifiers onto a stack, in the order the UI prints them.</summary>
+    private static void AddRoom(List<DiceModifier> modifiers, TheRoom room)
+    {
+        if (room.SharedHistory)
+        {
+            modifiers.Add(new DiceModifier(SharedHistoryLabel, SharedHistoryBonus));
+        }
+
+        if (room.SignerPresent)
+        {
+            modifiers.Add(new DiceModifier(SignerInTheRoomLabel, SignerInTheRoomPenalty));
+        }
+
+        if (room.FlingPresent)
+        {
+            modifiers.Add(new DiceModifier(FlingInTheRoomLabel, FlingInTheRoomPenalty));
+        }
+    }
+
     /// <summary>Roll the 2D6 for a drink shared with a contact.</summary>
     /// <param name="seed">Folds the contact and the moment (caller passes
     /// <see cref="DiceRule.Seed(string, long[])"/> over contact id + sim-second) so the roll is
@@ -71,7 +134,12 @@ public static class ContactDrink
     /// <param name="offeringFavorite">True when you offered the contact the very drink you KNOW is their
     /// favourite (#5 SundayMorningWind). A small honest edge — a warmer glass, +1 "their usual" — so
     /// learning what a contact drinks is progress you can spend.</param>
-    public static DrinkParley Roll(ulong seed, int currentGoodwill, bool holdingSecret, bool offeringFavorite = false)
+    /// <param name="room">#973 L5a — the old crew's three named modifiers: a shared past helps, and the
+    /// signer or the fling standing about hurts. Defaults to an ordinary room, so every caller written
+    /// before this lane rolls exactly the dice it always rolled.</param>
+    public static DrinkParley Roll(
+        ulong seed, int currentGoodwill, bool holdingSecret, bool offeringFavorite = false,
+        TheRoom room = default)
     {
         // Two d6 off the ONE shared rule, salted apart so the pair never correlate on a shared seed
         // (the #295/#303 ReeverRaid 2D6 pattern — mimicked here, not depended on, so this lands
@@ -94,6 +162,8 @@ public static class ContactDrink
         {
             modifiers.Add(new DiceModifier("two realities to hold", -2));
         }
+
+        AddRoom(modifiers, room);
 
         int total = face1 + face2;
         foreach (DiceModifier m in modifiers)
@@ -139,8 +209,12 @@ public static class ContactDrink
     /// <param name="offeringFavorite">True when you offered the exact drink you KNOW is their favourite
     /// (#5 SundayMorningWind) — a +1 "their usual" nudge to accept, the small honest edge that knowing
     /// what a contact drinks buys you.</param>
+    /// <param name="room">#973 L5a — the same three named modifiers the shared-drink roll takes, for the
+    /// same reason: whether an old shipmate takes the glass at all is coloured by who else is standing
+    /// about. Defaults to an ordinary room.</param>
     public static DrinkOfferResult OfferDrink(
-        ulong seed, int currentGoodwill, bool holdingSecret, bool offeringFavorite = false)
+        ulong seed, int currentGoodwill, bool holdingSecret, bool offeringFavorite = false,
+        TheRoom room = default)
     {
         int face1 = DiceRule.Roll(DiceRule.Seed(seed, "drink-offer-a"), Faces).Face;
         int face2 = DiceRule.Roll(DiceRule.Seed(seed, "drink-offer-b"), Faces).Face;
@@ -160,6 +234,8 @@ public static class ContactDrink
         {
             modifiers.Add(new DiceModifier("you read as shifty", -2));
         }
+
+        AddRoom(modifiers, room);
 
         int total = face1 + face2;
         foreach (DiceModifier m in modifiers)
