@@ -71,6 +71,15 @@ public static class HeldMemory
     /// <param name="Text">What the sheet says. Authored words — never assembled at read time.</param>
     /// <param name="Threads">The names on it, each of which stacks under its own name in THREADS.</param>
     /// <param name="SimTime">When the sheet entered the book, or when the memory is dated.</param>
+    /// <param name="HandedBy">#973 L3 · Who put it in your hand, in the book's own display name, or empty for a
+    /// sheet nobody handed over (your own page; a stray). The BOOK shows it under the byline, because a memory
+    /// with a second witness holding it is worth more than one without, and the sheet has to say which it is.</param>
+    /// <param name="Confidence">#973 L3 · How many times the SPREAD has laid this sheet beside something that
+    /// agreed with it. Goodwill, for a memory. Nothing spends it and nothing gates on it — it is the number the
+    /// reconcile moves, so a captain can see a page they have corroborated warm up.</param>
+    /// <param name="Corrected">#973 L3 · The SPREAD laid this memory beside the document it contradicted and the
+    /// hidden original came back (<see cref="FilingLine.Page.Original"/>). A corrected sheet is the one kind of
+    /// evidence in the book that has been caught lying and made to say the truth instead.</param>
     /// <param name="Filed">
     /// #973 L5a · THE SERVICE FILED THIS ONE. Set on exactly one sheet in the game — the summer-party page,
     /// which was written up as a fraternization report and is therefore the single piece of the captain's
@@ -88,13 +97,27 @@ public static class HeldMemory
         string Text,
         IReadOnlyList<string> Threads,
         double SimTime,
-        bool Filed = false)
+        bool Filed = false,
+        string HandedBy = "",
+        int Confidence = 0,
+        bool Corrected = false)
     {
         /// <summary>The one line the book prints under the text: whose it is and which theory it serves.</summary>
         public string Byline => $"{Label(Mark)} · {Label(Tag)}";
 
-        /// <summary>The opaque row the vault stores. Fields are pipe-separated with the pipe escaped in every
-        /// one of them, and the threads are joined on a second separator, so any text round-trips.</summary>
+        /// <summary>#973 L3 · Is this a page that fits nobody's life? The one mark that costs a pip, the one
+        /// the lattice is made of, and the question three different rules ask — so it is asked once.</summary>
+        public bool IsStray => Mark == Mark.NotAnyones;
+
+        /// <summary>
+        /// The opaque row the vault stores. Fields are pipe-separated with the pipe escaped in every one of
+        /// them, and the threads are joined on a second separator, so any text round-trips.
+        ///
+        /// <para>#973 L3 APPENDED three fields and did not move one. The reader below takes any row with at
+        /// least the original seven and defaults whatever a shorter one does not carry, which is exactly what
+        /// an L5a save has: a sheet nobody handed over, never laid on the table, never corrected. Additive is
+        /// the whole contract — an old file must load clean, not load differently.</para>
+        /// </summary>
         public string Stored =>
             string.Join('|',
                 Esc(Id), ((int)Mark).ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -102,10 +125,14 @@ public static class HeldMemory
                 SimTime.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
                 Filed ? "1" : "0",
                 Esc(string.Join('␟', Threads ?? [])),
-                Esc(Text));
+                Esc(Text),
+                Esc(HandedBy ?? ""),
+                Confidence.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Corrected ? "1" : "0");
 
         /// <summary>Read one back. Anything this build cannot parse is dropped rather than thrown over — the
-        /// same tolerance the satchel and the filing marks get.</summary>
+        /// same tolerance the satchel and the filing marks get. A row from before #973 L3 is short by three
+        /// fields and comes back with those three at their defaults.</summary>
         public static bool TryParse(string? stored, out Sheet sheet)
         {
             sheet = default;
@@ -114,8 +141,9 @@ public static class HeldMemory
                 return false;
             }
 
-            string[] p = stored.Split('|', 7);
-            if (p.Length != 7
+            // Every field is escaped, so a full split can never be fooled by a pipe inside the prose.
+            string[] p = stored.Split('|');
+            if (p.Length < 7
                 || p[0].Length == 0
                 || !int.TryParse(p[1], out int mark) || !Enum.IsDefined((Mark)mark)
                 || !int.TryParse(p[2], out int tag) || !Enum.IsDefined((Theory)tag)
@@ -126,11 +154,21 @@ public static class HeldMemory
             }
 
             string threads = Unesc(p[5]);
+            int confidence = 0;
+            if (p.Length > 8)
+            {
+                _ = int.TryParse(p[8], System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out confidence);
+            }
+
             sheet = new Sheet(
                 Unesc(p[0]), (Mark)mark, (Theory)tag, Unesc(p[6]),
                 threads.Length == 0 ? [] : threads.Split('␟'),
                 at,
-                p[4] == "1");
+                p[4] == "1",
+                p.Length > 7 ? Unesc(p[7]) : "",
+                confidence,
+                p.Length > 9 && p[9] == "1");
             return true;
         }
 
@@ -190,4 +228,124 @@ public static class HeldMemory
 
     /// <summary>The photograph's sheet id. One per game, whoever hands it over.</summary>
     public const string PhotographId = "photograph";
+
+    // ── #973 L3 · THREADS ────────────────────────────────────────────────────────────────────────────
+    //
+    // #741's THREADS page is one heading per NAME the field book wrote down more than once, and under it
+    // the entries that wrote it. The sheets stack on exactly the same principle and on the same page: the
+    // photograph writes down four faces, so it puts four names on the table at once, and the day a slip
+    // from one of those four arrives it lands under the name it shares.
+    //
+    // THE ONE DIFFERENCE FROM #741'S STACKS is deliberate: a name is a thread here from the FIRST sheet
+    // that writes it, not the second. The field book's rule earns its threshold — a place mentioned once
+    // is noise — but a held memory naming a person is never noise: the photograph naming Hollis Grey once
+    // is the only place in the game that name is ever spoken to the captain.
+
+    /// <summary>One stack on the THREADS page: a name the sheets have written down, and every sheet that
+    /// wrote it, oldest first.</summary>
+    public readonly record struct Stack(string Name, IReadOnlyList<Sheet> Sheets)
+    {
+        /// <summary>What the page puts over the stack — the #741 idiom, with the sheets' own glyph.</summary>
+        public string Heading => $"🎞 {Name}";
+
+        /// <summary>How many money sheets and how many love ones are in this stack — the second question,
+        /// asked of a whole thread rather than of a laid pair.</summary>
+        public int Money => Sheets.Count(s => s.Tag == Theory.Money);
+
+        /// <summary>…and the other theory.</summary>
+        public int Love => Sheets.Count(s => s.Tag == Theory.Love);
+    }
+
+    /// <summary>
+    /// THE SHEETS, STACKED BY THE NAMES THEY WRITE DOWN. Ordered by the most recent sheet in each stack,
+    /// newest stack first, with the name as the tiebreak — the same ordering
+    /// <see cref="CaseSubjects.ThreadsOf"/> gives the field book's threads, so the two halves of one page
+    /// do not read in two different directions.
+    /// </summary>
+    /// <param name="book">Every sheet the captain holds.</param>
+    /// <param name="tag">The money/love filter (owner ruling §12), or null for the whole book.</param>
+    public static IReadOnlyList<Stack> Stacks(IReadOnlyList<Sheet> book, Theory? tag = null)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+
+        var byName = new Dictionary<string, List<Sheet>>(StringComparer.Ordinal);
+        foreach (Sheet s in book)
+        {
+            if (tag is { } want && s.Tag != want)
+            {
+                continue;
+            }
+
+            foreach (string name in s.Threads ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                if (!byName.TryGetValue(name, out List<Sheet>? stack))
+                {
+                    stack = [];
+                    byName[name] = stack;
+                }
+
+                stack.Add(s);
+            }
+        }
+
+        var stacks = new List<Stack>(byName.Count);
+        foreach (KeyValuePair<string, List<Sheet>> pair in byName)
+        {
+            pair.Value.Sort((a, b) => a.SimTime.CompareTo(b.SimTime));
+            stacks.Add(new Stack(pair.Key, pair.Value));
+        }
+
+        stacks.Sort((a, b) =>
+        {
+            int byTime = b.Sheets[^1].SimTime.CompareTo(a.Sheets[^1].SimTime);
+            return byTime != 0 ? byTime : string.CompareOrdinal(a.Name, b.Name);
+        });
+
+        return stacks;
+    }
+
+    /// <summary>The sheets this filter shows, newest first — what the book draws when a thread is not the
+    /// arrangement being asked for.</summary>
+    public static IReadOnlyList<Sheet> Filtered(IReadOnlyList<Sheet> book, Theory? tag = null)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        var kept = new List<Sheet>(book.Count);
+        foreach (Sheet s in book)
+        {
+            if (tag is null || s.Tag == tag)
+            {
+                kept.Add(s);
+            }
+        }
+
+        kept.Sort((a, b) => b.SimTime.CompareTo(a.SimTime));
+        return kept;
+    }
+
+    /// <summary>How many money sheets and how many love ones are in a set — the SPREAD's second question,
+    /// and the THREADS filter's own count, asked once so the two can never disagree.</summary>
+    public static (int Money, int Love) MoneyAndLove(IEnumerable<Sheet> sheets)
+    {
+        ArgumentNullException.ThrowIfNull(sheets);
+        int money = 0;
+        int love = 0;
+        foreach (Sheet s in sheets)
+        {
+            if (s.Tag == Theory.Love)
+            {
+                love++;
+            }
+            else
+            {
+                money++;
+            }
+        }
+
+        return (money, love);
+    }
 }
