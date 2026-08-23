@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // #973 L4 · THE OLD SHIP — the survey tender the captain would not sign for.
@@ -43,13 +43,11 @@ public static class TheOldShip
     /// <summary>
     /// The name she answers to now.
     ///
-    /// <para>// FABLE: line needed — the name the REACH was given when they impounded and renamed her, as
-    /// it reads on a berth listing and on the scope. It is the name Teo's slip means by <i>"the name she was
-    /// given when they took her"</i>, and it should sound like something a registry assigned rather than
-    /// something anybody christened. Until it is written, the placeholder below is a plain clerical stand-in
-    /// and is deliberately not trying to be a name.</para>
+    /// <para>The name the registry gave her when they impounded and renamed her — the name Teo's slip means
+    /// by <i>"the name she was given when they took her"</i>. It is what a clerk types, not what anybody
+    /// christened: a word about paperwork, worn by a ship that was decent.</para>
     /// </summary>
-    public const string Callsign = "IMPOUNDED HULL";
+    public const string Callsign = "COMPLIANT";
 
     /// <summary>The one hull id this ship ever has. Constant rather than seeded: there is one REACH per
     /// universe and her identity is not a roll — only her BERTH is.</summary>

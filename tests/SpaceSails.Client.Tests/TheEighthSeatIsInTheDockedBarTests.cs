@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -353,6 +354,146 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
         RunFrames(map, 400);
         Assert.Null(Field(map, "_walkInCard"));
         Assert.Empty(Quests(map).Cast<object>());
+    }
+
+    // ── WHAT HE WORKED OUT STAYS WORKED OUT ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #973 L5b finisher · <b>A REVEALED SETUP SURVIVES THE SAVE.</b> L5b shipped the knowing in a bare
+    /// <c>HashSet</c> with no vault row and flagged it: a captain who laid her note beside a money-tagged
+    /// slip, read the same hand off both, saved and came back found the card quiet again — a thing he had
+    /// worked out about somebody, un-known by a reload.
+    ///
+    /// <para>Driven the whole way: reveal it on a live page, write the section, put it through
+    /// <see cref="VaultSerializer"/>'s <b>real JSON</b> — checksum, canonicalization and all — read it back
+    /// into a SECOND page and ask that page's own card what it says. The line has to be Core's
+    /// (<see cref="WalkIn.SetupCardLine"/>) on the far side, or the row did not carry. The last two asserts
+    /// are the only source-text ones in this file and they earn it: the whole of <c>BuildVault</c> and
+    /// <c>ApplyVault</c> cannot run on a bench (the logbook page reads the captain's name out of the BROWSER's
+    /// slot store, and the resume re-projects a trajectory into a renderer that is not there), so the two
+    /// lines that hang this section off them are read where they are written.</para>
+    ///
+    /// <para><b>Proven RED</b> by reverting the vault row — commenting out
+    /// <c>AddSection(sections, SecWalkIn, vault.WalkIn)</c> in <see cref="VaultSerializer"/>. The job id is
+    /// then nowhere in the written JSON, and with that assert lifted too the reloaded page comes back with an
+    /// EMPTY set and a silent card. Which is the bug, exactly as a captain meets it.</para>
+    /// </summary>
+    [Fact]
+    public void ARevealedSetupSurvivesTheVault()
+    {
+        Pages.Map map = SheIsAtTheTable();
+        WalkIn.Who who = WhoCame(map);
+        Invoke(map, "AnswerTheWalkIn", true);
+
+        object job = Quests(map).Cast<object>().Single();
+        string jobId = (string)Get(job, "Id")!;
+
+        // A universe in which her errand really IS the setup — the card is silent about a woman who was
+        // telling the truth, so a thread where the roll came out honest could never show the line at all.
+        string setupThread = AThreadWhereSheIsASetup(who);
+        Set(map, "_activeThreadId", setupThread);
+        Assert.True(WalkIn.IsASetup(setupThread, who));
+
+        // BEFORE the SPREAD: nothing. The player may simply go, and that is the design.
+        Assert.Null(Invoke(map, "WalkInCardWarning", job));
+
+        Invoke(map, "RevealTheWalkInSetup", jobId);
+        Assert.Equal(WalkIn.SetupCardLine(true, true), Invoke(map, "WalkInCardWarning", job));
+
+        // …AND THROUGH THE FILE ITSELF, bytes and all: the page's own builder, the serializer's real JSON
+        // (checksum, canonicalization, per-section harvest), and the page's own reader on the far side.
+        var written = new Vault { WalkIn = (WalkInSection?)Invoke(map, "BuildWalkInSection") };
+        Assert.NotNull(written.WalkIn);
+
+        string json = VaultSerializer.Save(written);
+        Assert.Contains(jobId, json, StringComparison.Ordinal);
+
+        Vault back = VaultSerializer.Load(json);
+        Assert.False(back.Tampered, "the walk-in section broke the checksum it is folded into.");
+
+        // A SECOND page, ashore at the same berth in the same universe, carrying the same job — and knowing
+        // nothing about it, until the file tells it.
+        Pages.Map reloaded = AshoreAt(TheRedEye);
+        Set(reloaded, "_activeThreadId", setupThread);
+        Quests(reloaded).Add(job);
+        Assert.Null(Invoke(reloaded, "WalkInCardWarning", job));
+
+        Invoke(reloaded, "RestoreWalkInSection", back.WalkIn);
+
+        Assert.Contains(jobId, (IEnumerable<string>)Field(reloaded, "_walkInSetupsRevealed")!);
+        Assert.Equal(WalkIn.SetupCardLine(true, true), Invoke(reloaded, "WalkInCardWarning", job));
+
+        // …and the two lines that hang the section off the save and the load, read where they are written.
+        string vaultSource = File.ReadAllText(
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Vault.cs"));
+        Assert.Contains("WalkIn = BuildWalkInSection(),", vaultSource, StringComparison.Ordinal);
+        Assert.Contains("RestoreWalkInSection(vault.WalkIn);", vaultSource, StringComparison.Ordinal);
+    }
+
+    /// <summary>An OLD FILE LOADS CLEAN. A save written before this row existed simply lacks the section, and
+    /// a page that reads it wakes with nothing revealed — which is the truth about a captain who never laid
+    /// the two papers side by side, and never a crash, a warning, or a card that says a thing he does not
+    /// know.</summary>
+    [Fact]
+    public void ASaveFromBeforeTheRowLoadsWithNothingRevealed()
+    {
+        // What the file looked like the day before this row shipped: no walk-in section at all.
+        Vault old = VaultSerializer.Load(VaultSerializer.Save(new Vault
+        {
+            Resume = new ResumeSection { HavenId = TheRedEye, HavenName = "The Red Eye", WasDocked = true },
+        }));
+
+        Assert.Null(old.WalkIn);
+        Assert.Empty(old.Warnings);
+
+        Pages.Map map = SheIsAtTheTable();
+        WalkIn.Who who = WhoCame(map);
+        Invoke(map, "AnswerTheWalkIn", true);
+        object job = Quests(map).Cast<object>().Single();
+
+        Set(map, "_activeThreadId", AThreadWhereSheIsASetup(who));
+        Invoke(map, "RevealTheWalkInSetup", (string)Get(job, "Id")!);
+        Assert.NotNull(Invoke(map, "WalkInCardWarning", job));
+
+        // Loading that older life over this one is a LOAD, not a merge: the knowing goes with it.
+        Invoke(map, "RestoreWalkInSection", old.WalkIn);
+        Assert.Empty((IEnumerable<string>)Field(map, "_walkInSetupsRevealed")!);
+        Assert.Null(Invoke(map, "WalkInCardWarning", job));
+    }
+
+    /// <summary>The repo root, found by climbing to the solution file — the same climb the sibling client
+    /// guards make.</summary>
+    private static string RepoRoot()
+    {
+        DirectoryInfo? at = new(AppContext.BaseDirectory);
+        while (at is not null)
+        {
+            if (at.GetFiles("*.sln").Length > 0 || at.GetFiles("*.slnx").Length > 0)
+            {
+                return at.FullName;
+            }
+
+            at = at.Parent;
+        }
+
+        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
+    }
+
+    /// <summary>A thread id whose one-in-three roll makes THIS woman's errand a setup. Searched rather than
+    /// typed in, because the roll is the seed's and not this test's — a hard-coded id would be a guard
+    /// pinned to a hash function it does not own.</summary>
+    private static string AThreadWhereSheIsASetup(WalkIn.Who who)
+    {
+        for (int i = 0; i < 10_000; i++)
+        {
+            string id = $"setupthread{i:D8}";
+            if (WalkIn.IsASetup(id, who))
+            {
+                return id;
+            }
+        }
+
+        throw new InvalidOperationException("no thread in ten thousand made her errand a setup.");
     }
 
     // ── THE BENCH ────────────────────────────────────────────────────────────────────────────────────────

@@ -69,6 +69,7 @@ public static class VaultSerializer
     private const string SecPapersShown = "papersshown"; // #836 · which name was given, and where
     private const string SecAuthorities = "authorities";  // #590 · the cards that run a shaft
     private const string SecFiling = "filing";            // #973 · the pages you don't remember writing
+    private const string SecWalkIn = "walkin";            // #973 L5b · the walk-ins the SPREAD found out
     private const string SecSatchel = "satchel";          // #603 · everything carried on foot
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
@@ -100,6 +101,7 @@ public static class VaultSerializer
         AddSection(sections, SecPapersShown, vault.PapersShown);
         AddSection(sections, SecAuthorities, vault.Authorities);
         AddSection(sections, SecFiling, vault.Filing);
+        AddSection(sections, SecWalkIn, vault.WalkIn);
         AddSection(sections, SecSatchel, vault.Satchel);
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
@@ -243,6 +245,7 @@ public static class VaultSerializer
             PapersShown = Harvest<PapersShownSection>(sections, SecPapersShown, warnings),
             Authorities = Harvest<AuthoritiesSection>(sections, SecAuthorities, warnings),
             Filing = Harvest<FilingSection>(sections, SecFiling, warnings),
+            WalkIn = Harvest<WalkInSection>(sections, SecWalkIn, warnings),
             Satchel = Harvest<SatchelSection>(sections, SecSatchel, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),

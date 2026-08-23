@@ -89,11 +89,13 @@ public sealed partial class Map
     /// below; empty until it fires, and until then every setup card says nothing, which is the shipped
     /// behaviour and the correct one — the player may simply go.
     ///
-    /// <para><b>FLAGGED: it does not survive a save.</b> Every other book in this arc has a vault section
-    /// (<c>OldCrewSection.Explained</c>, <c>HeldMemoriesSection</c>, <c>FilingSection</c>) and this set has
-    /// none, so a captain who works the setup out, saves and comes back finds the card quiet again. It wants
-    /// one row in the vault and a re-pin of what that costs; it is not smuggled in here, because a schema
-    /// change is a lane and this one is already carrying eight.</para></summary>
+    /// <para><b>AND IT SURVIVES A SAVE.</b> L5b shipped this set with no vault row and said so, and a captain
+    /// who worked the setup out, saved and came back found the card quiet again — a thing he had worked out
+    /// about somebody, un-known by a reload. It has its own section now
+    /// (<see cref="WalkInSection"/>, <c>BuildWalkInSection</c>/<c>RestoreWalkInSection</c> below), written the
+    /// way every other book in this arc is written: independently optional, so a file from before this row
+    /// existed loads with nothing revealed — which is the truth about a captain who never laid the two papers
+    /// side by side.</para></summary>
     private readonly HashSet<string> _walkInSetupsRevealed = new(StringComparer.Ordinal);
 
     // ── THE VISIT ──────────────────────────────────────────────────────────────────────────────────────
@@ -622,6 +624,31 @@ public sealed partial class Map
         {
             RequestVaultSave();
             StateHasChanged();
+        }
+    }
+
+    // ── THE KEEPING ────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#973 L5b · The knowings, as the vault stores them — job ids and nothing else, the house
+    /// idiom. Null when the SPREAD has found nothing out, so a captain who never laid the two papers side by
+    /// side writes no section at all.</summary>
+    private WalkInSection? BuildWalkInSection() =>
+        _walkInSetupsRevealed.Count == 0
+            ? null
+            : new WalkInSection { SetupsRevealed = [.. _walkInSetupsRevealed] };
+
+    /// <summary>Read them back. A pre-L5b-finisher file simply has none and wakes with every setup card
+    /// quiet, which is exactly what it was — and a blank or repeated id is dropped rather than thrown over,
+    /// the same tolerance the filing line and the satchel get.</summary>
+    private void RestoreWalkInSection(WalkInSection? section)
+    {
+        _walkInSetupsRevealed.Clear();
+        foreach (string jobId in section?.SetupsRevealed ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(jobId))
+            {
+                _walkInSetupsRevealed.Add(jobId);
+            }
         }
     }
 

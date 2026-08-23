@@ -264,19 +264,15 @@ public static class WalkIn
     // ── THE JOB ──────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The job's title on the offer card and in the ledger. FABLE-authored, per woman.</summary>
-    // FABLE: line needed — the job card's TITLE for each woman, in the ledger's own register (the issue gives
-    // her spoken lines and the note, not the row the book files them under). Placeholders below are plain and
-    // deliberately flat so nobody mistakes them for authored copy.
     public static string JobTitle(Who who) => who == Who.Ilse
-        ? "A berth listing"          // FABLE: placeholder
-        : "A claimant";              // FABLE: placeholder
+        ? "Find where they tied up the REACH"
+        : "Find the man, not the file";
 
     /// <summary>What the captain is being asked to find, named. Ilse's is the ship she will not say the name
     /// of out loud; Nadia's is her brother.</summary>
     public static string TargetName(Who who) => who == Who.Ilse
         ? OldCrew.TheDecentShip
-        // FABLE: line needed — the brother's NAME. The issue says "a named claimant" and does not name him.
-        : "the claimant";            // FABLE: placeholder
+        : "Anselm Kell";
 
     /// <summary>#973 L5b · The ledger's own theory tag for this job. <b>Love, by construction</b> — the first
     /// job in the game that is, and the reason the owner asked for the axis at all.</summary>

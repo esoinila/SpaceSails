@@ -291,9 +291,7 @@ public static class HavenInterior
 
     /// <summary>#973 L5b · The plate over a top nobody is at. The same shape the canteen's free top wears —
     /// the verb is TAKE THE TABLE, and the label is what the captain reads before pressing [E].</summary>
-    // FABLE: line needed — the plate on a takeable top in a docked station's bar. The issue authors her
-    // spoken lines, not the room's furniture labels; the placeholder below is deliberately plain.
-    public const string BarTopLabel = "🍸 A FREE TOP";   // FABLE: placeholder
+    public const string BarTopLabel = "🍸 A TOP NOBODY'S AT";
 
     /// <summary>
     /// #973 L5b · WHERE A BODY STANDS AT A BAR TOP — one body-width off its centre, on the first side the

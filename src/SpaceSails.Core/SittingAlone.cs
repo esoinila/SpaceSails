@@ -71,11 +71,10 @@ public static class SittingAlone
     ///
     /// <para>The room's own name, handed in, because it is per-station and Core does not know the berths.</para>
     /// </summary>
-    // FABLE: line needed — the setting clause for a top in a docked station's bar, in the register of
-    //   CanteenTable.Setting ("a table in the upper canteen"). The standing-in phrase below is the plainest
-    //   true statement of where the captain is and nothing more.
     public static string BarSetting(string? barName) =>
-        string.IsNullOrWhiteSpace(barName) ? "a table in the bar" : $"a table in {barName!.Trim()}";
+        string.IsNullOrWhiteSpace(barName)
+            ? "a top in the bar, the room still lit behind you"
+            : $"a top in {barName!.Trim()}, the room still lit behind you";
 
     // ── THE MOVES ─────────────────────────────────────────────────────────────────────────────────────
 
