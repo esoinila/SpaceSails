@@ -6614,11 +6614,21 @@
                                                     <span class="me-2">@_b.Unit <span class="fw-bold" style="color:#ff5a46">@SentryBot.Readout(_b.Rounds)</span></span>
                                                 }
                                             </div>
-                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2"
-                                                    @* #562: the affordability gate reads the CONSTANT, not a
-                                                       literal. A hard-coded 2 here silently shadowed
-                                                       RestockPricePerRound and went wrong the moment the
-                                                       ammo was re-priced — which is now. *@
+                                            @* #562: the affordability gate below reads the CONSTANT, not a
+                                               literal. A hard-coded 2 there silently shadowed
+                                               RestockPricePerRound and went wrong the moment the
+                                               ammo was re-priced — which is now.
+
+                                               This note sits ABOVE the tag, not between its attributes,
+                                               because Razor does NOT treat a comment inside a START TAG as
+                                               a comment: it compiles the whole run into an ATTRIBUTE NAME,
+                                               and the browser answers
+                                               "InvalidCharacterError: Failed to execute 'setAttribute'" —
+                                               which kills the render, so the Trade desk showed
+                                               "An unhandled error has occurred. Reload." and nothing else.
+                                               A note goes above a tag or after its closing bracket; never
+                                               inside it. TheRazorCommentIsNotAnAttributeTests is that law. *@
+                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2 sentry-rearm-btn"
                                                     disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
                                                     title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
                                                     @onclick="RestockSentries">
