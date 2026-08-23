@@ -15,9 +15,10 @@ namespace SpaceSails.Client.Tests;
 /// <list type="number">
 /// <item>the pitch he raises is the one for the policy you actually hold, and a Premium captain is offered
 /// nothing to buy;</item>
-/// <item>"I already have a policy" fires the signing flashback HOSTED on his card — counted, logged, and
-/// with no second surface stacked on top of his;</item>
-/// <item>it fires once per LIFE, and the next life reads the line the first captain never saw;</item>
+/// <item>"I already have a policy" raises the signing flashback through the one seam — the bleached plate
+/// #973 L1 shipped, counted and logged, with his card still up under it and nothing stacked on it;</item>
+/// <item>it comes back ONCE PER LIFE, and the next captain gets it again because it is a different man
+/// reaching for it;</item>
 /// <item>told no, he takes the card away and remembers it for the rest of the visit — and not one docking
 /// longer.</item>
 /// </list>
@@ -142,32 +143,36 @@ public sealed class TheRepPitchesAndWithdrawsTests
     // ── The flashback ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// "I ALREADY HAVE A POLICY" HANDS YOU THE DAY YOU SIGNED — hosted on his card, counted once, and with
-    /// NOTHING stacked over it.
+    /// "I ALREADY HAVE A POLICY" HANDS YOU THE DAY YOU SIGNED — through the one seam, as the plate #973 L1
+    /// shipped, with his card still up under it.
     ///
-    /// <para>Four things have to be true together and only together do they mean anything: his card is
-    /// still up (the canvas exists), the page is set on it (the host is really showing the plate), the beat
-    /// is in the seen-set (it was counted), its words are in the ledger (they survive the card closing,
-    /// #761) — and <c>_storyCard</c>, <c>_storyPlate</c> and <c>_deferredBeat</c> are all still empty.</para>
+    /// <para>Four things have to be true together and only together do they mean anything: the beat went in
+    /// under the SIGNING subject (not a ledger page, which is what every other flashback is about), the seam
+    /// raised its PLATE rather than a modal (a card here would take the screen off a man who is mid-sentence
+    /// and is the presentation a merged guard already pins), its words are in the ledger where they survive
+    /// the picture going (#761), and his card is still there to answer.</para>
     ///
-    /// <para><b>Proven RED</b> by putting <c>_storyCard = (beat, subject, outcome);</c> into the seam's
-    /// hosted arm, and again by raising the beat before the panel is set.</para>
+    /// <para><b>Proven RED</b> by raising the beat with no subject — the subject assertion names it — and
+    /// again by closing his card in <c>TellHimYouAlreadyHaveOne</c>.</para>
     /// </summary>
     [Fact]
-    public void ThePolicyLineFiresTheSigningFlashbackOnHisOwnCard()
+    public void ThePolicyLineHandsYouTheDayYouSigned()
     {
         Pages.Map map = AtATable();
         HeReachesTheTable(map);
         Answer(map, NebulaRep.RepMove.AlreadyHaveAPolicy);
 
         Assert.NotNull(TheCard(map));
-        Assert.Equal(FlashbackMemories.SubjectForLife(FlashbackMemories.Signing, 1),
-                     (string?)Field(map, "_repFlashback"));
         Assert.Equal(1, TimesFiled(map, StoryBeats.Beat.Flashback));
-        Assert.Contains(Ledger(map), l => l.Contains("chained to it", StringComparison.Ordinal));
 
+        var plate = (ValueTuple<StoryBeats.Beat, string?, double>?)Field(map, "_storyPlate");
+        Assert.NotNull(plate);
+        Assert.Equal(StoryBeats.Beat.Flashback, plate!.Value.Item1);
+        Assert.Equal(NebulaRep.SigningMemoryId, plate.Value.Item2);
+
+        Assert.Contains(Ledger(map),
+                        l => l.Contains(StoryBeats.Caption(StoryBeats.Beat.Flashback), StringComparison.Ordinal));
         Assert.Null(Field(map, "_storyCard"));
-        Assert.Null(Field(map, "_storyPlate"));
         Assert.Null(Field(map, "_deferredBeat"));
     }
 
@@ -186,29 +191,32 @@ public sealed class TheRepPitchesAndWithdrawsTests
     }
 
     /// <summary>
-    /// ONCE PER LIFE, AND NOT ONCE EVER. Saying it twice in one life gets the reply and no second plate;
-    /// saying it after a death gets the page back with a line on it the first captain never saw.
+    /// ONCE PER LIFE, AND NOT ONCE EVER. Said twice in one life he answers and no page comes back; said
+    /// after a death it comes back, because it is a different man reaching for it.
     ///
-    /// <para><b>Proven RED</b> by dropping the life stamp from the subject
-    /// (<c>FlashbackMemories.SubjectForLife</c> → the bare memory id): the reborn captain is then handed
-    /// nothing, because the seen-set already has that subject.</para>
+    /// <para>The beat's own cadence is <c>EveryTime</c> — L1 chose that for the LEDGER, where the latch is
+    /// the page's own <c>Refused</c> state and a rebirth re-greys the book. The rep has no page, so his
+    /// latch is <c>_repSigningToldInLife</c>, and this is what says so.</para>
+    ///
+    /// <para><b>Proven RED</b> by dropping the <c>_repSigningToldInLife</c> check: the second telling in
+    /// one life then files a second flashback.</para>
     /// </summary>
     [Fact]
-    public void TheSigningComesBackOncePerLifeAndDiffersAfterADeath()
+    public void TheSigningComesBackOncePerLife()
     {
         Pages.Map map = AtATable();
         HeReachesTheTable(map);
 
         Answer(map, NebulaRep.RepMove.AlreadyHaveAPolicy);
-        Assert.Equal(1, TimesFiled(map, StoryBeats.Beat.Flashback));
+        int first = Ledger(map).Count(l => l.Contains("Bleached to the bone", StringComparison.Ordinal));
+        Assert.Equal(1, first);
 
         // Said again in the same life: he answers, and no page comes back.
         Answer(map, NebulaRep.RepMove.AlreadyHaveAPolicy);
-        Assert.Equal(1, TimesFiled(map, StoryBeats.Beat.Flashback));
-        Assert.Null((string?)Field(map, "_repFlashback"));
+        Assert.Equal(1, Ledger(map).Count(l => l.Contains("Bleached to the bone", StringComparison.Ordinal)));
         Assert.False(string.IsNullOrWhiteSpace((string?)Field(map, "_repSaid")));
 
-        // …and a death later, the same page, one line longer.
+        // …and a death later, it comes back.
         Set(map, "_threadList", (IReadOnlyList<GameThreadInfo>)[new GameThreadInfo
         {
             Id = ThreadId,
@@ -217,30 +225,7 @@ public sealed class TheRepPitchesAndWithdrawsTests
         HeReachesTheTable(map);
         Answer(map, NebulaRep.RepMove.AlreadyHaveAPolicy);
 
-        Assert.Equal(2, TimesFiled(map, StoryBeats.Beat.Flashback));
-        Assert.Equal(FlashbackMemories.SubjectForLife(FlashbackMemories.Signing, 2),
-                     (string?)Field(map, "_repFlashback"));
-        Assert.Contains(Ledger(map),
-                        l => l.Contains(FlashbackMemories.SigningRebornLine, StringComparison.Ordinal));
-    }
-
-    /// <summary>
-    /// AND IT IS REFUSED WITH NO CARD UP. His panel is the canvas; a flashback filed as told with nothing on
-    /// the screen erases the evidence that #761's law was broken rather than breaking it loudly.
-    ///
-    /// <para><b>Proven RED</b> by giving <c>TheHostIsUp</c> a <c>_ =&gt; true</c> arm, or by answering
-    /// <c>TheRepIsTalkingToYou</c> off "is he on the floor" instead of off the card.</para>
-    /// </summary>
-    [Fact]
-    public void TheFlashbackIsRefusedWhenHisCardIsNotUp()
-    {
-        Pages.Map map = AtATable();
-
-        Call(map, "RaiseStoryBeat", StoryBeats.Beat.Flashback,
-             FlashbackMemories.SubjectForLife(FlashbackMemories.Signing, 1), null);
-
-        Assert.Equal(0, TimesFiled(map, StoryBeats.Beat.Flashback));
-        Assert.Contains(Ledger(map), l => l.Contains("⚠ ENGINE", StringComparison.Ordinal));
+        Assert.Equal(2, Ledger(map).Count(l => l.Contains("Bleached to the bone", StringComparison.Ordinal)));
     }
 
     // ── The withdrawal ─────────────────────────────────────────────────────────────────────────────────

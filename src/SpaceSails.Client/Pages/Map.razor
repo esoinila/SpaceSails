@@ -1,4 +1,4 @@
-@page "/map"
+﻿@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -1522,10 +1522,12 @@
        in this codebase. Everything he says comes out of Core (NebulaRep): the tier line, the buttons and
        their prices, his answer to the captain's own line. Nothing here is typed twice.
 
-       AND THIS PANEL IS A HOST. StoryBeats.Beat.Flashback is presented HOSTED, which means the seam spends
-       the cadence, files the seen-set and writes the words into the ledger, and then raises NOTHING —
-       because the plate belongs INSIDE the card that is already talking to you. So the bleached page rides
-       here, under his pitch, read off the seam and never hand-typed (#664/#777/#761).
+       AND THE PAGE THAT COMES BACK IS NOT DRAWN HERE. #973 L1 shipped StoryBeats.Beat.Flashback as a
+       PLATE — one bleached painting for every memory, riding the edge for its seven seconds over a surface
+       that stays readable — and a merged guard pins that presentation. So "I already have a policy" raises
+       the beat through the one seam and the seam puts the plate up; this panel draws his pitch and his
+       answer and nothing of the plate, because drawing it here as well would be the stacked card #777 named
+       (the same picture, twice, on one screen).
        ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
     @if (_repCard is { } pitch)
     {
@@ -1539,21 +1541,6 @@
                 @if (_repSaid is { Length: > 0 } saidBack)
                 {
                     <div class="rep-said">@saidBack</div>
-                }
-                @* The page that came back. Its picture, its stamp and its words are the seam's, so the host
-                   cannot drift from the beat it claims to be showing. *@
-                @if (_repFlashback is { } remembered)
-                {
-                    var backCopy = StoryBeatCopy(StoryBeats.Beat.Flashback, remembered);
-                    <div class="rep-flashback">
-                        @if (backCopy.Art is { Length: > 0 })
-                        {
-                            <img class="rep-flashback-art" src="@backCopy.Art" alt=""
-                                 aria-hidden="true" onerror="this.style.display='none'" />
-                        }
-                        <div class="rep-flashback-title">@backCopy.Title</div>
-                        <div class="rep-flashback-caption">@backCopy.Caption</div>
-                    </div>
                 }
                 <div class="rep-offers">
                     @foreach (var repOffer in pitch.Offers)
@@ -6600,7 +6587,9 @@
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
-                                                              Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
+                                                              Tips="LedgerTipsAsRemembered()" OnScopeTip="PointScopeFromLedger"
+                                                              OnReadGreyPage="ReadTheGreyPage"
+                                                              GreyPageMark="@FilingLine.Mark" GreyPageLabel="@FilingLine.Label"
                                                               Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
@@ -6992,6 +6981,15 @@
                             <div class="busted-succession">
                                 <div class="busted-succession-head">🪪 THE POLICY ISSUES A NEW CAPTAIN</div>
                                 <div class="busted-succession-line">@CaptainSuccession.PolicyPayoutLine</div>
+                                @* #973 L1 · THE FILING LINE, ON THE CARD THAT ALREADY EXISTS. One line, once per
+                                   rebirth, on the succession block rather than a card of its own — the wake is
+                                   already four panels long and the amnesia is a property of the succession, not
+                                   a separate event. Which line it is comes from the POLICY that was in force at
+                                   the death, never from counting how many rows happened to grey. *@
+                                @if (bust.FilingNotice is { Length: > 0 } filing)
+                                {
+                                    <div class="busted-succession-filing">@filing</div>
+                                }
                                 <div class="busted-succession-names">
                                     @if (!string.IsNullOrEmpty(bust.RetiredCaptainName))
                                     {

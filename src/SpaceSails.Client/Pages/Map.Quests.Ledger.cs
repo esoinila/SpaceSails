@@ -248,7 +248,10 @@ public partial class Map
         {
             tips.Add(new Stations.Captain.LedgerTip(
                 "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                // #973 L1 · a dated page, and therefore one the filing line can take away. Keyed off the
+                // receipt's own stamp and its text, never its rendered age — the age changes every minute.
+                EntryId: FilingLine.EntryId("autopilot", simTime, text), SimTime: simTime));
         }
 
         // #202: the piracy receipts — the shadow ledger of the honest jobs. What, units, worth, off
@@ -257,7 +260,8 @@ public partial class Map
         {
             tips.Add(new Stations.Captain.LedgerTip(
                 "🏴 Plunder", [loot.Describe()], $"taken {LedgerClock.Age(loot.SimTime, SimTime)}",
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("plunder", loot.SimTime, loot.Describe()), SimTime: loot.SimTime));
         }
 
         foreach (ScopeIntel si in _scopeIntel)
@@ -265,7 +269,8 @@ public partial class Map
             string? prov = si.Giver is { } giver ? ProvenanceLine(giver, si.Station ?? "ashore", si.AcquiredSimTime) : null;
             tips.Add(new Stations.Captain.LedgerTip(
                 si.Headline, si.Lines, prov,
-                ScopeTipId: si.Id, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: si.Id, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("scope", si.AcquiredSimTime, si.Id), SimTime: si.AcquiredSimTime));
         }
 
         foreach (RouteIntel entry in _intelLedger.Entries)
@@ -279,12 +284,16 @@ public partial class Map
             string route = npc is not null ? RouteLabel(npc.Ship) : "route off the books";
             double staleDays = Math.Max(0, entry.SecondsUntilStale(SimTime) / 86400);
             string line = $"{ship} really runs {route} — a ghost, on your contacts (🕸), stale in {staleDays.ToString("F0", CultureInfo.InvariantCulture)} d.";
-            string? prov = _routeIntelProvenance.TryGetValue(entry.ShipId, out IntelProvenance? p)
-                ? ProvenanceLine(p.Giver, p.Station, p.AcquiredSimTime)
-                : null;
+            bool known = _routeIntelProvenance.TryGetValue(entry.ShipId, out IntelProvenance? p);
+            string? prov = known ? ProvenanceLine(p!.Giver, p.Station, p.AcquiredSimTime) : null;
+            double? acquired = known ? p!.AcquiredSimTime : null;
             tips.Add(new Stations.Captain.LedgerTip(
                 $"🕸 {ship}", [line], prov,
-                ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null));
+                ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null,
+                // #973 L1 · dated only when we know who handed it over and when. A route tip bought off the
+                // books carries no stamp, so there is no filing line to put it on either side of.
+                EntryId: acquired is { } at ? FilingLine.EntryId("route", at, entry.ShipId) : null,
+                SimTime: acquired));
         }
 
         // #347 — the BUG the owner hit: the rumors and tips a contact hands you over a drink (and the
@@ -299,7 +308,9 @@ public partial class Map
                 $"👂 {who}",
                 rumor.Lines.Select(l => l.Text).ToArray(),
                 ProvenanceLine(who, rumor.LatestBar, rumor.LatestSimTime),
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("overheard", rumor.LatestSimTime, rumor.Source),
+                SimTime: rumor.LatestSimTime));
         }
 
         // #587 — THE FIELD BOOK, in the ledger. Owner, on a rebuilt site: "we should maybe collect the tips
@@ -313,7 +324,9 @@ public partial class Map
                 $"🥾 {found.Place}",
                 found.Lines.Select(l => $"{l.Glyph} {l.Text}").ToArray(),
                 $"found on the ground · day {(found.LatestSimTime / 86400).ToString("F0", CultureInfo.InvariantCulture)}",
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("field", found.LatestSimTime, found.Place),
+                SimTime: found.LatestSimTime));
         }
 
         // #208: a standing note explaining the haven/depot pair the picker now tags — the owner asked

@@ -69,6 +69,12 @@ public sealed class Vault
     /// truth about a captain this build has no record of.</summary>
     public PapersShownSection? PapersShown { get; init; }
 
+    /// <summary>#973 L1 · THE FILING LINE'S MARKS ON THE BOOK — which pages of the Captain's ledger this
+    /// captain does not remember writing, which of them have been read at already, and the hidden originals of
+    /// the ones that came back wrong. Its own independently optional section; a pre-#973 file simply lacks it
+    /// and loads with nothing marked, which is the truth about a captain nobody ever filed a claim for.</summary>
+    public FilingSection? Filing { get; init; }
+
     /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
     /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
     public AuthoritiesSection? Authorities { get; init; }
@@ -436,6 +442,17 @@ public sealed record SatchelSection
 {
     /// <summary>Items, in whatever order they were written.</summary>
     public IReadOnlyList<string> Items { get; init; } = [];
+}
+
+/// <summary>#973 L1 · The filing line's marks. Stored as opaque row strings
+/// (<c>FilingLine.Page.Stored</c>) — the same shape <see cref="SatchelSection"/> and
+/// <see cref="CaseThreadsSection"/> use and for the same reason: the file carries the FACT (this row is grey;
+/// this one came back wrong and really said <i>this</i>) and never the sentences, which are rebuilt from the
+/// live ledger every render. A row this build cannot parse is dropped rather than thrown over.</summary>
+public sealed record FilingSection
+{
+    /// <summary>One row per marked ledger entry, in ledger order.</summary>
+    public IReadOnlyList<string> Pages { get; init; } = [];
 }
 
 public sealed record AuthoritiesSection

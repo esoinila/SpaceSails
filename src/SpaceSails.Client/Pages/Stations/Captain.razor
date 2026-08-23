@@ -447,7 +447,22 @@
                         {
                             LedgerTip t = tip;
                             bool actionable = t.ScopeTipId is not null || t.ShowDarkWeb || t.DossierShipId is not null;
-                            <div class="captain-card captain-ledger-tip">
+                            @* #973 L1 · A PAGE YOU DON'T REMEMBER WRITING. The row is still in the book — it is
+                               drawn greyed, with the mark and the label saying what the mark means, and it is
+                               clickable: sitting down with it is a flashback attempt, once per page per life.
+                               The mark carries the meaning rather than the colour, because a greyed row on a
+                               dark ledger is not a difference everybody can see. *@
+                            <div class="captain-card captain-ledger-tip @(t.Grey ? "captain-ledger-unremembered" : "")"
+                                 role="@(t.Grey ? "button" : null)" tabindex="@(t.Grey ? "0" : null)"
+                                 title="@(t.Grey ? "Sit down with this page and try to remember writing it" : null)"
+                                 @onclick="() => ReadIfGrey(t)">
+                                @if (t.Grey)
+                                {
+                                    <div class="captain-ledger-unremembered-head">
+                                        <span class="captain-ledger-unremembered-mark">@GreyPageMark</span>
+                                        <span class="captain-ledger-unremembered-label">@GreyPageLabel</span>
+                                    </div>
+                                }
                                 <div class="fw-bold">@t.Title</div>
                                 @foreach (string line in t.Lines)
                                 {
@@ -461,6 +476,7 @@
                                 {
                                     <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
                                             title="Aim the scope where this tip points and jump to Sensors to run the scan"
+                                            @onclick:stopPropagation="true"
                                             @onclick="() => OnScopeTip.InvokeAsync(scopeId)">
                                         🔭 Point the scope where this says
                                     </button>
@@ -472,12 +488,14 @@
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
                                                     title="Jump to Comms and open the dark-web node this tip points to"
+                                                    @onclick:stopPropagation="true"
                                                     @onclick="() => OnRouteToDarkWeb.InvokeAsync()">→ dark web</button>
                                         }
                                         @if (t.DossierShipId is { } dossierId)
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
                                                     title="Jump to Comms and open this ship's dossier"
+                                                    @onclick:stopPropagation="true"
                                                     @onclick="() => OnRouteToDossier.InvokeAsync(dossierId)">→ dossier</button>
                                         }
                                     </div>
@@ -781,10 +799,29 @@
     /// <summary>One line in the ledger's Tips &amp; intel section. <paramref name="Lines"/> is the
     /// grounded numbers (scope) or the route in plain words (route); <paramref name="Provenance"/> is
     /// "&lt;giver&gt; · &lt;station&gt; · day N" or null when unknown. Exactly the actions that apply
-    /// are non-null/true; a tip with no action renders as background.</summary>
+    /// are non-null/true; a tip with no action renders as background.
+    ///
+    /// <para>#973 L1 · <paramref name="EntryId"/> and <paramref name="SimTime"/> are the FILING LINE's two
+    /// facts about this row: an identity that survives the ledger being reassembled from six books every
+    /// render, and the stamp that decides which side of the last filing it falls on. Null on the rows that
+    /// have no date at all — the standing note, the two arc readouts — which is why those can never grey.
+    /// <paramref name="Grey"/> is Map's answer for this captain: a page they don't remember writing, drawn
+    /// with the mark and open to being read at.</para></summary>
     public sealed record LedgerTip(
         string Title, IReadOnlyList<string> Lines, string? Provenance,
-        string? ScopeTipId, bool ShowDarkWeb, string? DossierShipId);
+        string? ScopeTipId, bool ShowDarkWeb, string? DossierShipId,
+        string? EntryId = null, double? SimTime = null, bool Grey = false);
+
+    /// <summary>#973 L1 · The captain sits down with a page they don't remember writing. Map rolls it once
+    /// on the shared dice — it comes back, it comes back wrong, or nothing — and never again this life.</summary>
+    [Parameter] public EventCallback<string> OnReadGreyPage { get; set; }
+
+    /// <summary>#973 L1 · The mark a grey row wears (<c>FilingLine.Mark</c>), passed in rather than typed
+    /// here so the glyph has one home.</summary>
+    [Parameter] public string GreyPageMark { get; set; } = "";
+
+    /// <summary>#973 L1 · What the mark means, spelled out on the row (<c>FilingLine.Label</c>).</summary>
+    [Parameter] public string GreyPageLabel { get; set; } = "";
 
     /// <summary>#223: the ledger's 🗺 treasure-maps section. Every buried chest we know of, ours and
     /// any rival's whose map we hold — clicking one throws its full-screen card back up (OnViewMap).</summary>
@@ -810,6 +847,12 @@
     /// (+ = they hold our coin; − = we owe them); <paramref name="Channel"/> is the one-line "how they
     /// bank" hint; <paramref name="Transactions"/> is the recent passbook, newest first.</summary>
     public sealed record AccountRow(string DisplayName, long Balance, string? Channel, IReadOnlyList<string> Transactions);
+
+    /// <summary>#973 L1 · A click anywhere on a ledger row. Only a GREY one does anything: it hands the entry
+    /// id back to Map, which owns the roll, the nerve and the beat. A remembered row is an ordinary card and
+    /// this is why it stays one.</summary>
+    private Task ReadIfGrey(LedgerTip tip)
+        => tip.Grey && tip.EntryId is { Length: > 0 } id ? OnReadGreyPage.InvokeAsync(id) : Task.CompletedTask;
 
     public enum CaptainView { Orders, Status, Tutorials, Ledger, Crew }
     private CaptainView _view;

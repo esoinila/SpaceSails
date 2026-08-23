@@ -39,8 +39,35 @@ public partial class Map
     ///
     /// <para><see cref="Egress.MostAtOnce"/> and not a number of its own: the room's own law about how many
     /// people may be on their feet at once is the same law as how many slots the buffer needs, and two
-    /// opinions about it is the mirrored-constant bug with a body walking through it.</para></summary>
-    private const int WalkerBand = Egress.MostAtOnce;
+    /// opinions about it is the mirrored-constant bug with a body walking through it.</para>
+    ///
+    /// <para>#973 L2 · …PLUS THE SALESMAN'S OWN SLOT, and he needs one of his own because he is not one of
+    /// the room's people. <see cref="Egress.MostAtOnce"/> is a law about how many REGULARS may be crossing
+    /// the floor at a time, and on a heaving watch it is satisfied constantly — which, while the band was
+    /// exactly that number, meant Harlan Fess could never get on the floor at all. Watched in a browser:
+    /// the room's two leavers held both slots for a whole shift and the rep's every attempt was refused.
+    /// So the band is the room's law plus his one body; the room's own departures are still capped at
+    /// <see cref="Egress.MostAtOnce"/> by <see cref="TheRoomsOwnFeet"/>, which counts the REGULARS on their
+    /// feet and not the visitor working them.</para></summary>
+    private const int WalkerBand = Egress.MostAtOnce + NebulaRep.OnTheFloorAtOnce;
+
+    /// <summary>#973 L2 · How many of the ROOM'S OWN people are on their feet. The salesman is not one of
+    /// them: he does not live here, he did not get up from a top, and he is not who
+    /// <see cref="Egress.MostAtOnce"/> is a law about. Counted rather than tracked, because the walker list
+    /// is the truth about who is afoot and a second tally of it would be a second opinion.</summary>
+    private static int TheRoomsOwnFeet(SurfaceExcursion ex)
+    {
+        int feet = 0;
+        foreach (Walker w in ex.Walkers)
+        {
+            if (w.For is not (Errand.RepRounds or Errand.RepPitching))
+            {
+                feet++;
+            }
+        }
+
+        return feet;
+    }
 
     /// <summary>#731 · One person on their feet: the walk, and what the walk is FOR.
     ///
@@ -273,7 +300,7 @@ public partial class Map
         // The shift's own list, worked out once. See the note above on why this is not a micro-optimisation.
         ex.HallSchedule ??= TheShiftDecidesWhoGoes(ex);
 
-        if (ex.HallSchedule.Count == 0 || ex.Walkers.Count >= WalkerBand)
+        if (ex.HallSchedule.Count == 0 || TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
         {
             return;
         }
@@ -294,7 +321,7 @@ public partial class Map
                 // answer, and never a body placed at the far end of a walk that could not be walked.
                 ex.HallDeparted.Remove(move.TableIndex);
             }
-            if (ex.Walkers.Count >= WalkerBand)
+            if (TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
             {
                 return;
             }

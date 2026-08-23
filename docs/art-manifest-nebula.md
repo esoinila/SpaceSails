@@ -98,28 +98,7 @@ which is not service — it is noise. `RevealPlatesArePaintedTests` pins that de
 
 ---
 
-## 4. `art/flashback-signing.jpg` — THE DAY YOU SIGNED
-
-- **Slot:** `FlashbackMemories.PlateFor("signing")`, raised as `StoryBeats.Beat.Flashback` **HOSTED** inside
-  whichever card is already talking to you — today the Nebula rep's pitch (#973 L2).
-- **Reach it:** dock, sit alone in a concourse bar until Harlan Fess crosses the floor, then press
-  *"I already have a policy."*
-- **Idiom:** the whole flashback pool is painted in ONE style and this canvas defines it — **bleached**,
-  over-exposed to near-white at the edges, colour almost gone, **a single object in sharp focus** and
-  everything else soft. A memory, not a photograph.
-- **The evidence in frame:** the desk is not quite level, the pen is on a chain, and the small print is
-  folded like a napkin. Every noun in the caption is in the picture and nothing else is. **No people** — the
-  clerk who was tapping the counter is out of frame, because the memory kept the counter and lost him.
-
-> **Prompt used:** A bleached, over-exposed memory: a cheap insurance clerk's counter in a shabby spaceport
-> office, one battered metal desk that is visibly not quite level, a cheap ballpoint pen on a short steel
-> chain bolted to the counter top, a signature form face-down and a folded slip of small print folded like a
-> paper napkin beside it. Nobody in frame. Washed-out near-white light drowning the edges of the picture,
-> colour almost gone, single object in sharp focus (the chained pen) and everything else soft. grimy lived-in
-> used-future sci-fi, muted desaturated palette, painterly, moody lighting, no text, no lettering, no
-> signage, no people.
-
-## 5. `art/nebula-rep-fess.jpg` — HARLAN FESS, OUTER REACHES DESK
+## 4. `art/nebula-rep-fess.jpg` — HARLAN FESS, OUTER REACHES DESK
 
 - **Slot:** the rep's own pitch card (#973 L2) — not a `RevealPlate`, so no sweep names it; it is the face
   at the top of the panel Harlan raises when he reaches your table.
@@ -158,8 +137,10 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 1 | `NebulaLore.PlateFor("adjuster-tell")` | `nebula-adjuster.jpg` | ✅ | ✅ | ✅ |
 | 2 | `NebulaLore.PlateFor("policy-terms")` | `nebula-truth.jpg` | ✅ | ✅ | ✅ |
 | 3 | `ArcConvergence.ArtFile` | `convergence.jpg` | ✅ | ✅ | ✅ |
-| 4 | `FlashbackMemories.PlateFor("signing")` | `flashback-signing.jpg` | ✅ | ✅ | ✅ |
-| 5 | the rep's pitch card (#973 L2) | `nebula-rep-fess.jpg` | ✅ | ✅ | — |
+| 4 | the rep's pitch card (#973 L2) | `nebula-rep-fess.jpg` | ✅ | ✅ | — |
+
+The signing flashback wears the arc's ONE bleached plate, `art/flashback.jpg` (#973 L1) — it is raised as
+`StoryBeats.Beat.Flashback` with the subject `signing`, and no second painting was added for it.
 
 The guard is `tests/SpaceSails.Core.Tests/RevealPlatesArePaintedTests.cs` — it sweeps both arcs' plates,
 the convergence, **and every `DeathNarration.ArtFile(cause, place)` pairing**, and holds each to a file that

@@ -43,6 +43,20 @@ public static class NebulaRep
     /// <summary>The desk he works out of, for the contact sheet and the card's second line.</summary>
     public const string Desk = "Nebula Mutual · Outer Reaches desk";
 
+    /// <summary>
+    /// #973 L2 · The memory the rep hands back — the subject the signing flashback is raised under.
+    ///
+    /// <para>L1's flashback subjects are LEDGER ENTRY ids, because in the book a flashback is always about
+    /// one page. His is not a page in the book at all: it is the day the policy was signed, which is the one
+    /// memory that predates every entry the ledger has. So it gets a name of its own in the same namespace,
+    /// and the plate is the same bleached painting every flashback wears.</para>
+    /// </summary>
+    public const string SigningMemoryId = "signing";
+
+    /// <summary>How many of him are ever on a floor. One, and it is a constant rather than a literal so the
+    /// figure buffer that has to hold him and the rule that puts him there cannot disagree.</summary>
+    public const int OnTheFloorAtOnce = 1;
+
     /// <summary>What the deck calls the figure crossing the floor — the house's <c>◈</c> plate idiom, the
     /// same one the haulier who comes to your table wears.</summary>
     public const string Plate = "◈ HARLAN FESS · NEBULA MUTUAL";

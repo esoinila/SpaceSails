@@ -77,12 +77,13 @@ public sealed partial class Map
     /// <summary>What he last said back, under the pitch. Cleared when he goes.</summary>
     private string? _repSaid;
 
-    /// <summary>The flashback his card is hosting right now — a <see cref="FlashbackMemories"/> subject with
-    /// the captain's life folded into it, or null when no page came back.</summary>
-    private string? _repFlashback;
-
-    /// <summary>Is his card on the screen? The client half of <c>StoryBeats.HostCard(Beat.Flashback)</c>.</summary>
-    private bool TheRepIsTalkingToYou => _repCard is not null;
+    /// <summary>#973 L2 · Which life the signing flashback has already come back in, or 0 for none.
+    ///
+    /// <para>The beat's own cadence is <c>EveryTime</c> — L1 chose it for the LEDGER, where the once-per-page
+    /// latch is <c>FilingLine.PageState.Refused</c> and a rebirth re-greys the book. The rep has no page and
+    /// no latch, so his once-per-life is kept here: the day you signed comes back to a captain once, and the
+    /// NEXT captain gets it back because it is a different man reaching for it.</para></summary>
+    private int _repSigningToldInLife;
 
     /// <summary>The name the file has. It is the captain's, except on the rare watch it is not.</summary>
     private string RepNameOnFile(bool bleeding) =>
@@ -112,7 +113,6 @@ public sealed partial class Map
         _repVisitBody = bodyId;
         _repCard = null;
         _repSaid = null;
-        _repFlashback = null;
         _repBleeding = false;
         _repSaidPassing = false;
         _repPost = 0;
@@ -373,7 +373,6 @@ public sealed partial class Map
             _activeThreadId ?? "", _repMeetings, RetiredCaptainCount);
         _repNameOnFile = RepNameOnFile(_repBleeding);
         _repSaid = null;
-        _repFlashback = null;
         _repCard = NebulaRep.PitchFor(_insurance.Tier, _repNameOnFile, _repBleeding);
 
         // He is a relationship, not a vending machine: the book knows him from the first hello.
@@ -388,7 +387,6 @@ public sealed partial class Map
     {
         _repCard = null;
         _repSaid = null;
-        _repFlashback = null;
         _repBleeding = false;
         StateHasChanged();
     }
@@ -443,12 +441,12 @@ public sealed partial class Map
     {
         _repSaid = NebulaRep.PolicyClaimReply(RetiredCaptainCount);
 
-        string subject = FlashbackMemories.SubjectForLife(FlashbackMemories.Signing, CaptainsLife);
-        bool unspoken = BeatMaySpeak(StoryBeats.Beat.Flashback, subject);
-        _repFlashback = unspoken ? subject : null;
+        if (_repSigningToldInLife != CaptainsLife)
+        {
+            _repSigningToldInLife = CaptainsLife;
+            RaiseStoryBeat(StoryBeats.Beat.Flashback, NebulaRep.SigningMemoryId);
+        }
 
-        // Raised AFTER the plate is on the panel, never before: the seam checks that its host is really up.
-        RaiseStoryBeat(StoryBeats.Beat.Flashback, subject);
         StateHasChanged();
     }
 
