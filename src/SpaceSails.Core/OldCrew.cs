@@ -324,12 +324,43 @@ public static class OldCrew
 
             string partner = candidates[
                 DiceRule.Roll(DiceRule.Seed($"oldcrew|bond-who|{threadId}|{id}"), candidates.Count).Face - 1];
-            var kind = (BondKind)(DiceRule.Roll(
-                DiceRule.Seed($"oldcrew|bond-what|{threadId}|{id}"), 7).Face - 1);
+            IReadOnlyList<BondKind> kinds = BondsAvailableAbout(partner);
+            BondKind kind = kinds[
+                DiceRule.Roll(DiceRule.Seed($"oldcrew|bond-what|{threadId}|{id}"), kinds.Count).Face - 1];
             seeded.Add(new Seeded(id, AsBond(who.Role), partner, kind, ""));
         }
 
         return Symmetrical(seeded);
+    }
+
+    /// <summary>
+    /// #973 L3 · <b>THE ONE WHO SIGNED IS ONE MAN.</b> The shipmate-to-shipmate bond names what the OTHER
+    /// person is to this one (<see cref="Seeded.History"/> reads <i>the fling · the best friend: Teo</i>), so
+    /// the bond <see cref="BondKind.Signed"/> is a sentence about the person it POINTS AT — and there is
+    /// exactly one man in this world it can truthfully point at. Corwin Sallis signed the manifest the captain
+    /// would not; a second name wearing that bond would be the book telling the player, in its own vocabulary,
+    /// that somebody else did the thing the whole arc turns on.
+    ///
+    /// <para>Carried by the DRAW rather than by a post-hoc fix-up: a rule that rolled the wrong answer and
+    /// then corrected it would put a bias nobody wrote into whatever kind it corrected TO. So the kind is
+    /// simply not in the bag unless the man it is about is on the other end of the bond — and, because the
+    /// bag is only short by one when he is not, a thread whose bond does point at him rolls exactly the roll
+    /// it always rolled (the L5a carry-over the crew flagged; every other bond kind is legal about anybody).</para>
+    /// </summary>
+    public static IReadOnlyList<BondKind> BondsAvailableAbout(string? partnerId)
+    {
+        var kinds = new List<BondKind>();
+        foreach (BondKind k in Enum.GetValues<BondKind>())
+        {
+            if (k == BondKind.Signed && !string.Equals(partnerId, SignerId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            kinds.Add(k);
+        }
+
+        return kinds;
     }
 
     /// <summary>

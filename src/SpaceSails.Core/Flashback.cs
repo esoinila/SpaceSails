@@ -347,4 +347,114 @@ public static class Flashback
 
     private static string Splice(string text, int at, int length, string with) =>
         string.Concat(text.AsSpan(0, at), with, text.AsSpan(at + length));
+
+    // ── #973 L3 · NOT ANYONE'S — THE STRAY MEMORIES ──────────────────────────────────────────────────
+    //
+    // The fourth thing a grey page can do, and it is a rarity hidden inside the WORST outcome rather than
+    // beside the best. Reading a page that stays somebody else's is the one result that gives the captain
+    // nothing; once in a long while what arrives in that silence is a page that was never theirs at all —
+    // a corridor they never walked, a name they turned for, rain.
+    //
+    // Where they come from is never said and never will be. The arc's whole discipline (NebulaLore, the
+    // Reever law) is that no surface names the thing; a stray memory is EVIDENCE of the archive and not a
+    // statement about it, which is why every one of these six is a domestic detail and not one of them
+    // mentions a policy, a clinic or a file. Three of them laid together do say something, and that is the
+    // one place this ever becomes an argument (`SpreadReconcile` → the-bleed).
+    //
+    // THREE CADENCE RULES, all of them the owner's shape:
+    //   · never the FIRST grey page read in a life. The first one has to teach the ordinary three outcomes,
+    //     and a rarity that can land on the tutorial is a rarity the player reads as the rule.
+    //   · at most one NOTHING in four. A quarter of the worst outcome, which over a whole run of a long
+    //     universe is a handful of them — and the sweep test holds the ratio rather than trusting the die.
+    //   · without replacement, per thread. A stray that came twice would stop being a memory and start
+    //     being a message, and the six of them are a set that is meant to be completed, not farmed.
+
+    /// <summary>The nerve a stray costs, in whole pips — the same price a page that came back wrong asks,
+    /// and for the same reason (#226's sanity seam; owner ruling 2026-08-23 §4). A memory that fits nobody's
+    /// life is not free to hold.</summary>
+    public const int StrayNervePips = 1;
+
+    /// <summary>The house-voice label that pip is filed under, so "what broke you?" can say so afterwards.</summary>
+    public const string StrayNerveLabel = "a memory that is not anyone's";
+
+    /// <summary>How many <i>nothing</i>s in this many carry a stray instead. One in four — the rarity is
+    /// arithmetic on the shared dice rather than a probability nobody can test. FLAGGED for the owner's
+    /// tuning.</summary>
+    public const int StrayInNothings = 4;
+
+    /// <summary>
+    /// THE SIX. Fable's, verbatim (#973 L3), in authored order — the order is part of the identity of a
+    /// draw, because the id a drawn stray rides under is its index here.
+    /// </summary>
+    public static IReadOnlyList<string> Strays { get; } =
+    [
+        "A corridor with the lights on the floor instead of the ceiling. You walked it barefoot. You have "
+        + "never been barefoot on a ship in your life.",
+
+        "Somebody calling a name down a stairwell, and you turning, because it was yours. It is not yours.",
+
+        "The taste of a drink you have never liked, and liking it.",
+
+        "A child's drawing of a ship taped inside a locker door. You do not know the ship. You know the tape.",
+
+        "Rain on a hull. Rain. You have never once been anywhere it rains.",
+
+        "A hand over yours on a throttle, teaching. You were the one teaching.",
+    ];
+
+    /// <summary>The sheet id one stray rides under in the black book. Keyed by the INDEX rather than by the
+    /// page that produced it, which is what makes "never the same stray twice" a question the book can answer
+    /// by itself — the drawn set is the sheets already in it, and nothing extra has to be persisted.</summary>
+    public static string StrayId(int index) => $"stray:{index.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+
+    /// <summary>Is this a stray's sheet id?</summary>
+    public static bool IsStrayId(string? id) =>
+        id is not null && id.StartsWith("stray:", StringComparison.Ordinal);
+
+    /// <summary>
+    /// DOES A STRAY COME INSTEAD OF THE NOTHING? Asked only when <see cref="Read"/> has already settled on
+    /// <see cref="Outcome.Nothing"/>, so it can never take a recollection away from a captain who earned one.
+    /// </summary>
+    /// <param name="threadId">The universe.</param>
+    /// <param name="entryId">The page being read at — so two pages in one life never agree.</param>
+    /// <param name="life">Which captain (<c>Retired.Count + 1</c>), so the next one gets their own answer.</param>
+    /// <param name="greyPagesReadBefore">How many grey pages this LIFE has already been read at. Zero is the
+    /// first read of a life and is never a stray.</param>
+    public static bool AStrayComesInstead(string threadId, string entryId, int life, int greyPagesReadBefore) =>
+        greyPagesReadBefore >= 1
+        && DiceRule.Roll(DiceRule.Seed($"flashback|stray|{threadId}|{entryId}", life), StrayInNothings).Face == 1;
+
+    /// <summary>
+    /// WHICH ONE. Drawn without replacement from the six: the ids already in the book are struck off, and one
+    /// of the rest is taken deterministically off the shared dice. Null once the thread has all six — a
+    /// seventh stray is not a thing that exists, and the roll silently falls back to the ordinary nothing.
+    /// </summary>
+    /// <param name="alreadyDrawn">The stray sheet ids the book already holds.</param>
+    /// <param name="seed">The same seed the outcome was settled on, so a reload draws the same page.</param>
+    public static int? DrawStray(IEnumerable<string> alreadyDrawn, ulong seed)
+    {
+        ArgumentNullException.ThrowIfNull(alreadyDrawn);
+
+        var held = new HashSet<string>(alreadyDrawn, StringComparer.Ordinal);
+        var left = new List<int>(Strays.Count);
+        for (int i = 0; i < Strays.Count; i++)
+        {
+            if (!held.Contains(StrayId(i)))
+            {
+                left.Add(i);
+            }
+        }
+
+        return left.Count == 0 ? null : left[(int)(seed % (ulong)left.Count)];
+    }
+
+    /// <summary>What the captain is told when one arrives: the sheet's FIRST SENTENCE and nothing else. The
+    /// rest of it is on the sheet, in the book, where a memory belongs — and a toast that read out the whole
+    /// page would be the pulse doing the black book's job for it.</summary>
+    public static string StrayToast(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        int stop = text.IndexOf(". ", StringComparison.Ordinal);
+        return stop >= 0 ? text[..(stop + 1)] : text;
+    }
 }

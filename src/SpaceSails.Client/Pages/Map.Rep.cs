@@ -448,6 +448,12 @@ public sealed partial class Map
         {
             _repSigningToldInLife = CaptainsLife;
             RaiseStoryBeat(StoryBeats.Beat.Flashback, NebulaRep.SigningMemoryId);
+
+            // #973 L3 · …and the afternoon goes into the BLACK BOOK. The plate is what was in the room; the
+            // paragraph is a held memory, marked MINE and tagged money, and after a rebirth it GROWS the one
+            // line about the hand. Filed on the same edge as the plate and behind the same once-per-life
+            // latch — this lane adds no second condition for anybody to keep in step with the first.
+            FileTheSigningSheet();
         }
 
         StateHasChanged();

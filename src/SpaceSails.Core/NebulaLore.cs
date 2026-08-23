@@ -33,6 +33,18 @@ public enum NebulaSource
     /// never made — because someone under your number has died before, and been read out before.</summary>
     ClinicLedger,
 
+    /// <summary>
+    /// #973 L3 · THE LATTICE — the only shard the captain assembles out of their OWN book. Three memories
+    /// that fit nobody's life, laid together on the SPREAD until they turn out to agree with each other
+    /// (<see cref="SpreadReconcile.TheBleedAssembles"/>).
+    ///
+    /// <para>Every other source in this list is somebody handing the captain a piece of paper. This one is
+    /// the captain noticing something about the pieces they were already holding — which is why it is the
+    /// one shard with no plate of its own: the SPREAD is its host, and a card raised over a table the player
+    /// is already looking at would be the reveal system showing them the room they are in.</para>
+    /// </summary>
+    Lattice,
+
     /// <summary>The policy's true terms — the capstone. Not a rumor but the CONTRACT: the archived-self
     /// clause, assembled from the pieces. Surfaces ONLY once enough of the rest is in hand (see
     /// <see cref="NebulaLore.KnowsTheFinePrint"/>), the earned last piece.</summary>
@@ -135,6 +147,13 @@ public static class NebulaLore
             "reads, refiles, a column headed PATTERN LUCIDITY trending down across dates that predate your " +
             "first death. Someone under your number has woken here before, more than once, and been read out " +
             "again each time, a little fainter. The archive keeps the tab open. It never closes a policy."),
+
+        // ── #973 L3 · The one the captain assembles out of their own book, on their own table. ──
+
+        new("the-bleed", "The bleed", NebulaSource.Lattice, false,
+            "Three things you remember that nobody did — a corridor, a name, a glass — and all three agree " +
+            "with each other about the weather. Patterns kept close enough, long enough, start to keep each " +
+            "other."),
 
         // ── The capstone. Not a rumor: the earned CONTRACT. Surfaces only once the rest is in hand. ──
 
@@ -328,7 +347,12 @@ public static class NebulaLore
     /// <summary>The reveal plate for a fragment id — only the two beats that earn one. The glitch on the
     /// resurrection card, the poster's grey line, the collector's writ and the clinic's second page all arrive
     /// INSIDE a host card that already has its own picture (the BUSTED modal, the poster) — giving them a
-    /// second frame would stack a card on a card. These two arrive at a bar table with nothing around them.</summary>
+    /// second frame would stack a card on a card. These two arrive at a bar table with nothing around them.
+    ///
+    /// <para>#973 L3 · <b>the-bleed has none either, and is the clearest case of the rule.</b> It arrives on
+    /// the SPREAD — the captain's own table, with three sheets already lying on it and the player's eye
+    /// already there. Its host is the surface that produced it, so it raises nothing at all, exactly as the
+    /// four hosted shards do.</para></summary>
     private static readonly Dictionary<string, RevealPlate> PlatesById = new(StringComparer.Ordinal)
     {
         ["adjuster-tell"] = new(

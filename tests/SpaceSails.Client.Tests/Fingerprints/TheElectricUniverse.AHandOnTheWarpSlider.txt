@@ -40,6 +40,6 @@ the ordnance          = []
 the ghost             = ∅
 the surface           = ∅
 the pulse cooldown    = -1
-sweep                 = 700 fields, sha256 fc68dd8784a549eee59c29d9ebdc7839c55246d87ffc4450ecebf4dd5624da04
+sweep                 = 703 fields, sha256 3c1d61a0c28fd60fceaea82b53f58aa44e2c8365da05949dda17da1a396ec639
 walked-view pen       = 36077 calls, sha256 dbdd614f640c3f78a8786aaf89a0223ddadef57f74591eae3c838c0a1ad2e748
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
