@@ -140,6 +140,15 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
         Assert.False((bool)Get(seat, "Bench")!);
         Assert.False((bool)Get(seat, "Quiet")!, "a station bar is one loud room with a window in it.");
 
+        // …AND THE SITTING SAYS WHERE IT IS. FOUND BY LOOKING: the strip's company clause is built out of the
+        // scene's own Setting, and the canteen's is a constant three hundred thousand kilometres from this
+        // room — a woman standing at a top in The Stormwatch Bar was announced as being at "a table in the
+        // upper canteen". This repository's "the sim doing one thing while a SENTENCE reports another" class.
+        string setting = (string)Get(Get(seat, "Scene")!, "Setting")!;
+        Assert.Equal(SittingAlone.BarSetting(HavenInterior.BarNameOf(TheRedEye)), setting);
+        Assert.NotEqual(SittingAlone.Setting, setting);
+        Assert.Contains(HavenInterior.BarNameOf(TheRedEye)!, setting, StringComparison.Ordinal);
+
         // The key is the BAR'S own — a berth has no excursion and no canteen watch, so it cannot be, and must
         // never collide with, the Hive's "watch:floor:index".
         string key = (string)Get(seat, "Key")!;
@@ -253,6 +262,15 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
         object seat = Seated(map)!;
         Assert.False((bool)Get(seat, "Solo")!, "somebody is at the top now.");
         Assert.Equal(WalkIn.Plate(WhoCame(map)), (string)Get(seat, "Plate")!);
+
+        // ONE OF HER, AND EXACTLY ONE. FOUND BY LOOKING: the strip read "seats 4, 0 chairs free" at a top with
+        // one woman standing at it, because `_walkInAskedThisVisit` is set on ARRIVAL — hundreds of frames
+        // after she sets off — so the plan gate re-sent her every frame in between and every arrival took a
+        // chair. Two chairs are spoken for at this table: the captain's and hers.
+        Assert.Equal((int)Get(seat, "Seats")! - 2, (int)Get(seat, "Free")!);
+        Assert.Single(
+            ((IEnumerable)Field(map, "_barAfoot")!).Cast<object>(),
+            b => (string)Get(Get(b, "Walk")!, "Plate")! == WalkIn.Plate(WhoCame(map)));
         Assert.False((bool)Get(seat, "TheyCameToYou")!,
                      "HER card is the card; a second modal with the same woman on it is #777's stacked card.");
     }
