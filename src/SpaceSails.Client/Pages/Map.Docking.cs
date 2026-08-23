@@ -889,6 +889,26 @@ public partial class Map
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
 
+    /// <summary>
+    /// The berth's own shove, as a pure function of the state it acts on. A gentle push clear of the clamp
+    /// so the ship drifts away with some motion of her own rather than hanging dead-still on the dock
+    /// (owner: "push the ship off so it has motion away from the station"), radially out along the berthing
+    /// arm.
+    ///
+    /// <para>#955 NAV-1 made this a function rather than four lines inside <see cref="Undock"/>: the plotted
+    /// ribbon has to start from the ship the cast-off will hand over (<c>PlanStartState</c>), and a departure
+    /// the plan DRAWS and a departure the ship FLIES that were computed by two different pieces of arithmetic
+    /// is precisely the named bug class — the sim doing one thing while a drawn shape reports another.</para>
+    /// </summary>
+    private static ShipState ShovedOffTheClamp(ShipState ship, Vector2d havenPosition)
+    {
+        Vector2d arm = ship.Position - havenPosition;
+        Vector2d outward = arm.LengthSquared == 0
+            ? (havenPosition == Vector2d.Zero ? new Vector2d(1, 0) : havenPosition.Normalized())
+            : arm.Normalized();
+        return ship with { Velocity = ship.Velocity + outward * UndockPushMps };
+    }
+
     private void Undock()
     {
         if (_dockedHavenId is null)
@@ -898,14 +918,9 @@ public partial class Map
 
         SetDeckForDock(null); // back to the bare ship deck; pulls you aboard if you'd wandered up the tube
 
-        // A gentle shove clear of the clamp — the ship drifts away with some motion of its own
-        // rather than hanging dead-still on the dock (owner: "push the ship off so it has motion
-        // away from the station"). Pushed radially out along the berthing arm.
         if (_ephemeris is not null)
         {
-            Vector2d dockPos = _ephemeris.Position(_dockedHavenId, SimTime);
-            Vector2d outward = (_ship.Position - dockPos).Normalized();
-            _ship = _ship with { Velocity = _ship.Velocity + outward * UndockPushMps };
+            _ship = ShovedOffTheClamp(_ship, _ephemeris.Position(_dockedHavenId, SimTime));
         }
 
         string name = _nearestBody?.Name ?? "the dock";

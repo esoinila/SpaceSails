@@ -5525,6 +5525,17 @@
                     @* #963: "This should help us highlight the NAV button and the Add Burn buttons as the keys
                        to navigation. Them and the scrub handle are really underrepresented now." Same primary
                        dress as Plot — these two are the navigation, everything else on the plan is trim. *@
+                    @* #955 NAV-1 · THE PLAN CAN START AT THE BERTH. Owner's test story for the unified nav list
+                       (2026-08-23): "plan while docked, then the plan starts with an undock step recorded
+                       topmost in the nav-burn list, then safe-harbour out-thrust to clear the vicinity of the
+                       station, then the actual burns." One press lays BOTH rows — a cast-off that leaves her
+                       drifting in the harbour's traffic is not a cast-off — and it is offered only where it
+                       means anything: at a berth, before the plan already has one. *@
+                    @if (NavLockedByDock && !PlanBeginsWithCastOff)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning map-key-action"
+                                title="@CastOffRule.ComposeHint" @onclick="AddCastOffAtTop">@CastOffRule.ComposeButton</button>
+                    }
                     <button type="button" class="btn btn-sm btn-warning map-key-action" title="Drop a new burn onto the plan at the scrub time" @onclick="AddBurnAtScrub">
                         + Add burn at scrub
                     </button>
@@ -5655,13 +5666,73 @@
 
                 @if (_planNodes.Count == 0 && _armedOrbitBodyId is null && _arrive is null)
                 {
-                    <div class="text-secondary">No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.</div>
+                    <div class="text-secondary">@(NavLockedByDock
+                        ? "No steps yet. Press ⚓ + Cast off to start the plan at this berth, then add the burns and end it with an orbit or a dock."
+                        : "No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.")</div>
                 }
                 else
                 {
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
+                            @* #955 NAV-1 · THE TWO DEPARTURE ROWS. Shaped exactly like every other row — pip,
+                               caret, glance line, time — because the owner's whole ask is ONE list read top to
+                               bottom, and a departure that looked different would read as a different kind of
+                               thing. Their editors are the small ones they deserve: the clamp has nothing to
+                               set (it costs nothing and points nowhere), the clearance has the ±p nudges in
+                               NodeFrame's own faces. Both are removable, like every step. *@
+                            if (node.Kind != PlanStepKind.Burn)
+                            {
+                                FlightStepState _ds = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                                bool _dopen = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                                <div class="mb-1 map-plan-step map-plan-step-@_ds.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_dopen ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                    <div class="map-plan-step-line" role="button" tabindex="0"
+                                         title="Click to @(_dopen ? "collapse" : "open") this departure step"
+                                         @onclick="() => ToggleBurnEditor(node)">
+                                        <span class="map-plan-step-pip" title="@_ds" aria-hidden="true"></span>
+                                        <span class="map-plan-step-caret" aria-hidden="true">@(_dopen ? "▾" : "▸")</span>
+                                        <span class="flex-grow-1">@PlanStepGlanceLine(node)</span>
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
+                                    </div>
+                                    @if (_dopen)
+                                    {
+                                        @* The modifier class is not decoration: the burn editor's own guards
+                                           (TheNumbersNudgeTooTests, ThePlannerPlansInTheVectorViewTests) bound
+                                           their slice by the bare `map-plan-step-edit` opening tag, and a
+                                           second panel wearing the identical tag would silently widen what
+                                           they judge. Same styling, its own name. *@
+                                        <div class="map-plan-step-edit map-departure-step-edit">
+                                            @if (node.Kind == PlanStepKind.ClearHarbour)
+                                            {
+                                                <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node)) · @ClearanceEtaLine(node)</div>
+                                                <div class="map-burn-steps" role="group" aria-label="Step the clearance thrust in pulses">
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
+                                                            @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
+                                                            @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
+                                                    <span class="map-burn-epoch-readout text-nowrap" title="What this thrust spends">@node.Pulses p</span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(1, false)"
+                                                            @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(1, true)"
+                                                            @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="small mb-1 text-secondary">The clamp lets go when the plan starts — nothing to set. She leaves with the berth's own shove and the thrust below carries her clear.</div>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1"
+                                                    title="Take this step off the plan" @onclick="() => DeleteNode(node)">✖ remove</button>
+                                        </div>
+                                    }
+                                </div>
+                                continue;
+                            }
+
                             @* PR-D2: each burn is a step. Collapsed, it shows a glanceable line (type +
                                direction + countdown); clicking the line expands its editor in place
                                (accordion — one open at a time). The state pip (planned / done / stale)
@@ -5956,9 +6027,19 @@
                                         {
                                             <div class="small mb-1 text-success">@_aplan</div>
                                         }
+                                        @* #955 NAV-1: a clamped ship may arm a THEN — but only once the plan starts by
+                                           casting her off, and the button says which of those two it is instead of
+                                           standing there dead. A NOW arm from a berth is still a live nav act and
+                                           still refused by the lock. *@
+                                        @{
+                                            bool _armIsAThen = ArriveIsAThen(_ar);
+                                            bool _armBlocked = NavLockedByDock && !_armIsAThen;
+                                        }
                                         <button type="button" class="btn btn-sm w-100 mb-1 @(_aarmed ? (_disarmConfirmBodyId == _ar.BodyId ? "btn-warning" : "btn-outline-warning") : _avalid ? "btn-success" : "btn-outline-secondary")"
-                                                disabled="@NavLockedByDock"
-                                                title="@(NavLockedByDock ? DockNavLockTip : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
+                                                disabled="@_armBlocked"
+                                                title="@(_armBlocked ? DockNavLockTip
+                                                    : NavLockedByDock && !PlanBeginsWithCastOff ? $"{DockNavLockTip} — {CastOffRule.ArmNeedsCastOff}"
+                                                    : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
                                                 @onclick="ArmArriveStep">
                                             @if (_aarmed && _disarmConfirmBodyId == _ar.BodyId)
                                             {
@@ -5968,9 +6049,9 @@
                                             {
                                                 <text>🛰 Disarm the arrival at @BodyName(_ar.BodyId)</text>
                                             }
-                                            else if (ArriveIsAThen(_ar))
+                                            else if (_armIsAThen)
                                             {
-                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip from here</text>
+                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
                                             }
                                             else
                                             {

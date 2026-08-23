@@ -323,6 +323,19 @@ public partial class Map
     // ManeuverPlan from the non-stale nodes after every edit.
     private sealed class PlanNode
     {
+        // #955 NAV-1 — WHICH KIND OF STEP THIS ROW IS. Every plotted row used to be a burn, and the type
+        // said so by saying nothing; the owner's dock-to-dock story needs the plan to be able to START AT
+        // THE BERTH ("an undock step recorded topmost in the nav-burn list, then safe-harbour out-thrust
+        // to clear the vicinity of the station, then the actual burns"). The kind rides on the node rather
+        // than in a parallel list because the list IS the plan — one ordered thing, readable top to bottom,
+        // is the whole point of UnifiedNavListNotes.md.
+        public PlanStepKind Kind = PlanStepKind.Burn;
+
+        // The haven a departure step belongs to: the berth whose clamp lets go, and the harbour the
+        // clearance is measured from and thrusts away from. Null for an ordinary burn — a burn belongs to
+        // no place.
+        public string? HavenId;
+
         public double SimTime;
         public ManeuverAction Action;
         public int Pulses = 1;

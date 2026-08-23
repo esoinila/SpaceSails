@@ -362,11 +362,16 @@ public partial class Map
     /// </summary>
     private void ArmTheArrivalForItsPass(ArriveStep step)
     {
-        if (RejectNavWhileDocked())
+        // #955 NAV-1 · THE ONE CARVE-OUT IN THE NAV LOCK — AND IT IS NOT A LIVE NAV ACT. #969 refused this
+        // from a berth for the same reason every other nav command is refused, and the owner's answer was the
+        // step: "plan while docked, then the plan starts with an undock step recorded topmost". Arming a THEN
+        // moves nothing — it is a promise about a pass months away, settled by rehearsing the plotted course —
+        // so a clamped ship may make it PROVIDED the plan begins by casting her off. Without that first row
+        // the promise would be rehearsed from a berth the ship never leaves, which is a promise about a voyage
+        // that cannot happen. Every other nav act stays refused by the same guard, in the same ⚓ sentence.
+        if (NavLockedByDock && !PlanBeginsWithCastOff)
         {
-            // Deliberately unchanged (#969 item 3): a clamped ship's nav is locked, so the plan-time arm is
-            // refused for the same reason every other nav act is, and says so in the same sentence. Cast off
-            // first; the arrive step and its numbers survive the undock, so the arm is one press away.
+            ShowPulseMessage($"⚓ {DockNavLockTip} — {CastOffRule.ArmNeedsCastOff}.");
             return;
         }
 

@@ -113,6 +113,39 @@ destination it offers the **trip's** frame — the common parent of both ends (`
 for Earth→Mars, Earth for Earth→Luna, Jupiter for Europa→Ganymede) — in one press. It offers; it never
 switches by itself, and the press moves the ribbon and the numbers, never the plan.
 
+## The trip starts at the berth (#955 NAV-1, 2026-08-23) — SHIPPED
+
+Owner's test story for this list, filed on #955: *"plan while docked, then the plan starts with an undock step
+recorded topmost in the nav-burn list, then safe-harbour out-thrust to clear the vicinity of the station, then
+the actual burns, then the autopilot approach step, then the dock step."* #965 built the arrival and #969 made
+arming it a plan-time promise; both of them refused to be made from a berth, which is the one place a captain
+actually plans a voyage from. So the table above gains its first two rows for real:
+
+| Step kind | Row | Executor |
+|---|---|---|
+| **⚓ Undock** (`PlanStepKind.Undock`) | topmost, laid by **⚓ + Cast off** | the frame loop, landed on exactly (`ConsumeTheAccumulator` → `RunTheCastOffStep`) — it is the one step that changes which BRANCH the loop takes, because a clamped ship's frame never applies a maneuver plan |
+| **🚀 Clear the harbour** (`PlanStepKind.ClearHarbour`) | row 2, laid by the same press | the ordinary plan executor — it is a real `BurnMode.Vector` node, which is why the ribbon already draws it and the tank already bills it |
+
+**One press lays both.** A cast-off that leaves the ship drifting in the harbour's traffic is not a cast-off.
+
+**The clearance is sized by the harbour, not typed** (`Core/CastOffRule`): it thrusts straight out along the
+berthing arm to a share of `DockRule.MatchSpeed` — the fastest relative speed the envelope law itself calls
+*matched*, so she never leaves faster than the clamp would have taken her coming in — and "clear" is
+`DockRule.EnvelopeMeters` with a margin. At a Sol berth that is **two pulses**; the berth's own shove
+(`UndockPushMps`) counts toward it and is not paid for twice. The two judgement numbers — the departure's
+share of the matched speed, and the margin — are named constants in `CastOffRule` and flagged there as owner
+knobs.
+
+**The plotted path starts at the berth.** `ReprojectTrajectory` projects from `PlanStartState()`, which for a
+clamped ship with a pending cast-off is the state the clamp is about to hand over (berth + shove). So the
+passes, the arrival's ✓/✗ and #969's arm-time rehearsal are all computed from the berth onward.
+
+**The one carve-out in the nav lock, and it is not a live act.** A clamped ship may ARM a *then* — a promise
+about a pass months away that moves nothing when it is pressed — provided the plan begins by casting her off.
+Every other nav act (the NOW arm, `EnterOrbit`, the match-and-clamp) is still refused by `RejectNavWhileDocked`
+in the same ⚓ sentence. And a plotted burn whose epoch slides past under the clamp is **struck, not billed**:
+the clamped branch never fired it, and charging for it would be a green number never asked of the world.
+
 ## Build order proposal
 
 1. **PR-D1 — steps for insertions:** model armed auto-orbit as a flight-plan step (read-only
