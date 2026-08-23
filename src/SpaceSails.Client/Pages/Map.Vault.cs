@@ -183,6 +183,11 @@ public partial class Map
         // would grey pages of a ledger that does not exist yet.)
         _filingBook = [];
 
+        // #973 L5a · …and the old crew with them. A new universe casts its own four, rolls its own history
+        // between them and lays down its own summer-party page; the crossings and the sheets are this
+        // captain's and go nowhere else.
+        ForgetTheOldCrew();
+
         // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again,
         // and so is the head office: a captain who has never been under the ice has never counted the beds,
         // and must be able to pay for it (the arc's 40) exactly once more.
@@ -460,6 +465,13 @@ public partial class Map
             // remember writing, which have been read at already, and the hidden originals of the ones that
             // came back wrong. Opaque rows — the file carries the FACT, never the sentences.
             Filing = BuildFilingSection(),
+            // #973 L5a · the old crew: who this universe cast, the history rolled between them, and where
+            // they ended up working. Opaque rows — the file carries the FACT and the book's sentences are
+            // rebuilt from the pool.
+            OldCrew = BuildOldCrewSection(),
+            // …the captain's crossings (the-captains-character.md §3), and the held-memory sheets.
+            Crossings = BuildCrossingsSection(),
+            HeldMemories = BuildHeldMemoriesSection(),
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
@@ -992,6 +1004,11 @@ public partial class Map
         // never re-roll one they lost, so the STATE rides the file rather than being recomputed — the roll
         // is deterministic, but the latch on a refusal is a fact about a life and not about a seed.
         RestoreFilingSection(vault.Filing);
+
+        // #973 L5a · The old crew, the crossings and the held memories. A seeding that comes back short is
+        // re-rolled from the thread id on first read — the roll is deterministic, so a pre-#973 save wakes
+        // with exactly the four shipmates it would always have had.
+        RestoreOldCrewSections(vault);
 
         // #603 · The satchel. Unreadable entries from an edited or future save are dropped rather than
         // thrown over — the vault is tolerant everywhere else and a mystery object is not worth a lost game.

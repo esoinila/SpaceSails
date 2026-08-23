@@ -169,6 +169,14 @@ public partial class Map
     private static string GiverDisplay(string giver)
     {
         if (string.IsNullOrWhiteSpace(giver)) return giver;
+        // #973 L5a — an old shipmate's row is keyed by a prefixed id and their name is authored rather than
+        // shouted, so title-casing it would turn Teodor "Teo" Brask into Teodor "teo" Brask.
+        if (Core.OldCrew.IsAnOldShipmate(giver)
+            && Core.OldCrew.ById(giver[Core.OldCrew.LedgerPrefix.Length..]) is { } shipmate)
+        {
+            return shipmate.Name;
+        }
+
         return string.Join(' ', giver
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Select(TitleWord));

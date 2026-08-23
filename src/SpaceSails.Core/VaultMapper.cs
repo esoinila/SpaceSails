@@ -40,6 +40,8 @@ public static class VaultMapper
                 // (Vault's own header): a restart that cleansed it would be a heat-cleanse exploit with a
                 // company on the other end of it.
                 HeatOwed = h.HeatOwed,
+                KnewTheOldFace = h.KnewTheOldFace,
+                WasLiedTo = h.WasLiedTo,
                 HeatStampSimTime = h.HeatStampSimTime,
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
@@ -77,6 +79,8 @@ public static class VaultMapper
                 // #715 — absent on any vault written before the meter existed, which reads as 0/0: nothing
                 // owed to anybody, and no clock running.
                 HeatOwed = r.HeatOwed,
+                KnewTheOldFace = r.KnewTheOldFace,
+                WasLiedTo = r.WasLiedTo,
                 HeatStampSimTime = r.HeatStampSimTime,
                 Transactions = txns,
             };

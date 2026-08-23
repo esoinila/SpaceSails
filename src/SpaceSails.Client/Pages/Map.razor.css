@@ -5799,6 +5799,52 @@
     outline: none;
 }
 
+/* #973 L5a · "YOU LOOK DIFFERENT." — the face scene, and the bond line that shows before you knock.
+   The card borrows the convergence shell (one modal look in this game, not seven); what is added here is
+   only the three answers, which are laid out as a stack of full-width choices because the player is
+   choosing what kind of man the captain is and that should not read like a toolbar. */
+.old-crew-card .old-crew-history {
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+}
+
+.old-crew-history {
+    opacity: 0.85;
+}
+
+.old-crew-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: 1rem;
+}
+
+.old-crew-answer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+}
+
+.old-crew-answer-label {
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.old-crew-answer-said {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.old-crew-reply {
+    margin: 1rem 0 1.1rem;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: #e7f1ff;
 /* ══════════════════════════════════════════════════════════════════════════════════════════════════════
    #973 L2 · THE REP'S PITCH CARD.
 

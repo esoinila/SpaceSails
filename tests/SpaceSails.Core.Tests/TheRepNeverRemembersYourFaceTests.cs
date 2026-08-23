@@ -214,7 +214,7 @@ public sealed class TheRepNeverRemembersYourFaceTests
 
         // …and the two ledger lines say it once as well.
         Assert.DoesNotContain("Captain Captain",
-                              NebulaRep.BleedLedgerNote(asTheGameNamesThem, asTheGameNamesThem),
+                              NebulaRep.BleedLedgerNote(asTheGameNamesThem),
                               StringComparison.Ordinal);
         Assert.DoesNotContain("Capt. Captain",
                               NebulaRep.SaleLedgerNote(InsuranceTier.Basic, 250, asTheGameNamesThem),
@@ -381,15 +381,23 @@ public sealed class TheRepNeverRemembersYourFaceTests
                                          + "that is a character trait, not a slip");
     }
 
-    /// <summary>The ledger note names both captains and quotes the only thing he ever says about it.</summary>
+    /// <summary>
+    /// The ledger note names the DEAD captain, says Fess said it, and explains nothing else. The authored
+    /// line is *"Fess called you {name}. Force of habit, he said."* — so the guard checks the two facts it
+    /// carries and, just as importantly, that it carries no third one: the live captain's own name is not in
+    /// it (he is the one reading), and neither is a word about files, habits explained or who that other
+    /// captain was. The clue is what the player is left holding.
+    /// </summary>
     [Fact]
     public void TheBleedLeavesOneLineTheBlackBookCanFind()
     {
-        string note = NebulaRep.BleedLedgerNote("Roake", "Vane");
+        string note = NebulaRep.BleedLedgerNote("Captain Roake");
 
         Assert.Contains("Roake", note, StringComparison.Ordinal);
-        Assert.Contains("Vane", note, StringComparison.Ordinal);
-        Assert.Contains(NebulaRep.BleedApology, note, StringComparison.Ordinal);
+        Assert.Contains("Fess", note, StringComparison.Ordinal);
+        Assert.DoesNotContain("Captain", note, StringComparison.Ordinal);
+        Assert.DoesNotContain("policy", note, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("copy", note, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── Remember-you-said-no ───────────────────────────────────────────────────────────────────────────

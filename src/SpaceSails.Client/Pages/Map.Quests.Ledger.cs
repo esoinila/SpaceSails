@@ -329,6 +329,11 @@ public partial class Map
                 SimTime: found.LatestSimTime));
         }
 
+        // #973 L5a · THE SHEETS. A held memory is a dated row like anything else, and one of them — the
+        // summer party — carries the mark that says the SERVICE filed it, which is why an uninsured rebirth
+        // greys the whole book around it and leaves it alone.
+        tips.AddRange(HeldMemoryTips());
+
         // #208: a standing note explaining the haven/depot pair the picker now tags — the owner asked
         // for it "in ledger" so the twin-port confusion has one discoverable, permanent answer. Filed
         // last so live tips stay on top; it is evergreen background, no action.

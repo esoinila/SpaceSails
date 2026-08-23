@@ -65,6 +65,7 @@ public partial class Map
         public DeathCause? DeathCheat; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         public readonly List<string> RevealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         public bool TableSceneCheat; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
+        public bool OldCrewCheat; // #973 L5a /map?oldcrew=1: boot ashore with the four shipmates working THIS berth and one captain already buried, so "you look different" can be played
     }
 
     /// <summary>Read the URL once, key by key. Each reader answers TRUE when the pair was its own and
@@ -153,6 +154,15 @@ public partial class Map
         // own ground and its own berth with it.
         // (…and only when NOTHING else chose a start: `?dock=` is read before `?start=` below, so
         // defaulting one unconditionally would quietly outrank a `?start=` the caller did pass.)
+        // #973 L5a · The old crew need a bar to be met in and a captain in the ground to be surprised by.
+        // The berth is defaulted the same way the bond's and the oracle's are, and being ASHORE is implied:
+        // every one of them works behind a counter of some kind, and the walk in is not what is being tested.
+        if (q.OldCrewCheat)
+        {
+            q.AshoreCheat = true;
+            q.DockCheat ??= "the-space-bar";
+        }
+
         if (q.DeathCheat is not null && !_landCheat && q.DockCheat is null && q.StartId is null)
         {
             q.DockCheat = "the-tilt";

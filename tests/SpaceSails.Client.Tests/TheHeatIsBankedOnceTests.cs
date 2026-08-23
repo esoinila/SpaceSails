@@ -70,8 +70,9 @@ public sealed class TheHeatIsBankedOnceTests
     }
 
     /// <summary>
-    /// #715 · <b>EACH PUBLISHED CROSSING IS BANKED, AND BANKED ONCE.</b> Four publications and the round's
-    /// two arms; one banking call each, and no seventh call anywhere in the client.
+    /// #715 · <b>EACH PUBLISHED CROSSING IS BANKED, AND BANKED ONCE.</b> Four publications, the round's
+    /// two arms and (#973 L5a) the signer's report; one banking call each, and no eighth call anywhere in
+    /// the client.
     ///
     /// <para><b>Proven RED</b> by dropping a source (deleting <c>BankTheCrossing(pressed.Charge)</c> from
     /// <c>PressTheHit</c>, which is exactly how #929 shipped):</para>
@@ -135,7 +136,20 @@ public sealed class TheHeatIsBankedOnceTests
             "the shot's charge is banked before the cursor is spent — one bang would then be re-heard and " +
             "re-banked on every frame after it.");
 
-        // …and there is no seventh banker anywhere in the client. One seam, or the count above proves nothing.
+        // #973 L5a · …and the SEVENTH, which is the only crossing in the game that is not about a machine
+        // refusing the captain or a man walking him out: the one who signed the manifest is standing in the
+        // room while the captain drinks with somebody, and what he does about it is what he did last time —
+        // he files it. Banked INSIDE the once-per-visit latch, because a captain who stands four glasses in
+        // one evening was seen once.
+        string crew = Read("src", "SpaceSails.Client", "Pages", "Map.OldCrew.cs");
+        Assert.Equal(1, Count(crew, "BankTheCrossing(OldCrew.SignerReport(here))"));
+        int perVisit = crew.IndexOf("_signerReportedFor.Add(here)", StringComparison.Ordinal);
+        int filedIt = crew.IndexOf("BankTheCrossing(OldCrew.SignerReport", StringComparison.Ordinal);
+        Assert.True(
+            perVisit >= 0 && filedIt > perVisit,
+            "the signer's report is banked outside the once-per-visit latch — four glasses, four reports.");
+
+        // …and there is no eighth banker anywhere in the client. One seam, or the count above proves nothing.
         // The seam's own DECLARATION is not a call — `private void BankTheCrossing(…)` in Map.IllegalHeat.cs
         // is the door, and counting the door as somebody walking through it would put a phantom crossing in
         // this list every time the file is read.
@@ -152,8 +166,8 @@ public sealed class TheHeatIsBankedOnceTests
         }
         bankers.Sort(StringComparer.Ordinal);
         Assert.Equal(
-            ["Map.Combat.Remote.cs×1", "Map.IllegalHeat.cs×1", "Map.Scan.cs×1", "Map.Surface.Hive.cs×1",
-             "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
+            ["Map.Combat.Remote.cs×1", "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1", "Map.Scan.cs×1",
+             "Map.Surface.Hive.cs×1", "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
             bankers);
     }
 

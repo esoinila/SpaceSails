@@ -455,7 +455,7 @@ public sealed partial class Map
     private void TellHimThatIsNotYourName()
     {
         _repSaid = NebulaRep.BleedApology;
-        LogAutopilotEvent(NebulaRep.BleedLedgerNote(_repNameOnFile, ActiveCaptainName));
+        LogAutopilotEvent(NebulaRep.BleedLedgerNote(_repNameOnFile));
         _repBleeding = false;
         _repCard = NebulaRep.PitchFor(_insurance.Tier, ActiveCaptainName, bleeding: false);
         StateHasChanged();

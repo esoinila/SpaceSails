@@ -75,6 +75,22 @@ public sealed class Vault
     /// and loads with nothing marked, which is the truth about a captain nobody ever filed a claim for.</summary>
     public FilingSection? Filing { get; init; }
 
+    /// <summary>#973 L5a · THE OLD CREW — which four shipmates this thread cast, the history rolled between
+    /// them, and where each ended up working. Its own independently optional section; a pre-#973 file simply
+    /// lacks it and the crew are seeded from the thread id on first load, which is what a deterministic
+    /// seeding is for.</summary>
+    public OldCrewSection? OldCrew { get; init; }
+
+    /// <summary>#973 L5a · THE CAPTAIN'S CROSSINGS (the-captains-character.md §3). Its own independently
+    /// optional section; a pre-#973 file lacks it and loads with an empty book, which is the honest state of
+    /// a captain nobody ever asked about his face.</summary>
+    public CrossingsSection? Crossings { get; init; }
+
+    /// <summary>#973 · THE HELD MEMORIES — the sheets in the black book that are not documents. Its own
+    /// independently optional section; a pre-#973 file lacks it and the seeded pages come back on first
+    /// load.</summary>
+    public HeldMemoriesSection? HeldMemories { get; init; }
+
     /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
     /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
     public AuthoritiesSection? Authorities { get; init; }
@@ -175,6 +191,12 @@ public sealed record ContactRecord
     /// <summary>#715 — when that heat was last charged or cooled. Only meaningful while
     /// <see cref="HeatOwed"/> is above zero, which is why a defaulted 0 costs an old file nothing.</summary>
     public double HeatStampSimTime { get; init; }
+    /// <summary>#973 L5a — this contact knew the captain's old face. Defaults false, so a vault written
+    /// before the old crew existed loads a cast of people who never served with him.</summary>
+    public bool KnewTheOldFace { get; init; }
+    /// <summary>#973 L5a — the captain told this contact the reactor-seal story. <i>The book marks the
+    /// lie.</i> Defaults false.</summary>
+    public bool WasLiedTo { get; init; }
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 
@@ -453,6 +475,41 @@ public sealed record FilingSection
 {
     /// <summary>One row per marked ledger entry, in ledger order.</summary>
     public IReadOnlyList<string> Pages { get; init; } = [];
+}
+
+/// <summary>#973 L5a · THE OLD CREW's seeding. Stored as opaque row strings so the file carries the FACT
+/// (these four, bound like this, posted there) and never the words — every sentence the black book prints
+/// about a shipmate is rebuilt from the pool at read time. A row this build cannot parse is dropped rather
+/// than thrown over; a seeding that comes back short is re-rolled from the thread id.</summary>
+public sealed record OldCrewSection
+{
+    /// <summary>One row per seeded shipmate, in pool order.</summary>
+    public IReadOnlyList<string> Shipmates { get; init; } = [];
+
+    /// <summary>#973 L5a · Which of them THIS captain has already explained his face to. Saved rather than
+    /// recomputed for the reason the filing line's marks are: a scene is a fact about a life, and a reload
+    /// that replayed it would let a player re-answer a question they have already answered — and write a
+    /// second crossing for it. Emptied by a rebirth, because the next face has its own explaining to do.</summary>
+    public IReadOnlyList<string> Explained { get; init; } = [];
+}
+
+/// <summary>#973 L5a · The captain's crossings, oldest first. Opaque rows (<c>CaptainCrossings.Crossing
+/// .Stored</c>) for the reason every other book here uses them: the row carries which line, which situation
+/// and who saw, and the sentence the desk prints is rebuilt from those three.</summary>
+public sealed record CrossingsSection
+{
+    /// <summary>The crossings, oldest first.</summary>
+    public IReadOnlyList<string> Crossings { get; init; } = [];
+}
+
+/// <summary>#973 · The held-memory sheets (<c>HeldMemory.Sheet.Stored</c>). These rows DO carry their text,
+/// unlike most of the opaque books here, and deliberately: a held memory is authored prose or a person's own
+/// words, not a sentence assembled out of a seeded world, and a sheet whose text was rebuilt could come back
+/// saying something the captain never read.</summary>
+public sealed record HeldMemoriesSection
+{
+    /// <summary>The sheets, in the order they entered the book.</summary>
+    public IReadOnlyList<string> Sheets { get; init; } = [];
 }
 
 public sealed record AuthoritiesSection

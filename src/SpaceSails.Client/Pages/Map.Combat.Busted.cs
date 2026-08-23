@@ -659,6 +659,11 @@ public partial class Map
             // `SimTime` — the same two the clinic bill above was computed from, so the receipt and the amnesia
             // can never disagree about whether anybody was covered.
             b.FilingNotice = MarkTheBookAtTheFilingLine();
+
+            // #973 L5a · …and the same moment empties the list of people this captain has explained his face
+            // to. Beside the filing line rather than anywhere else because it is the same fact about the same
+            // moment: the one who walks out of the clinic is not the one who answered them.
+            ANewFaceHasNothingExplained();
         }
     }
 
