@@ -255,12 +255,17 @@ public partial class Map
     }
 
     /// <summary>#973 L0 · Nobody to come to, or nobody left to come to. They stand at the counter — the
-    /// fixture this bar's own art draws its desk at — and that is all that happens.</summary>
+    /// fixture this bar's own art draws its desk at — and that is all that happens.
+    ///
+    /// <para>It is the SAME errand as the crossing, with nothing to deliver: an approach with no callback on
+    /// it, which lands and then simply stands. Deliberately not the rep's own <see cref="Errand.RepRounds"/> —
+    /// that errand is how <c>TheRepAfoot</c> knows which body is Harlan Fess, and a stranger waiting at the
+    /// counter wearing it would BE him as far as his card, his dwell and his withdrawal are concerned.</para></summary>
     private bool TheyWaitAtTheCounter(
         in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls, string plate) =>
         TheFirstFreeFixture(bar, walls) is { } post
         && WalkSomebodyIntoTheBar(
-            bar, walls, post, plate, Errand.RepRounds, NpcWalk.PersonalSpaceInRadii, null, null);
+            bar, walls, post, plate, Errand.Approaching, NpcWalk.PersonalSpaceInRadii, null, null);
 
     /// <summary>
     /// #973 L0 · One frame of somebody crossing the bar to the captain's table. The errand whose arrival is
@@ -476,7 +481,12 @@ public partial class Map
             return false;
         }
 
+        // He crosses to the table only when there IS somebody sitting alone at one and he has not been sent
+        // away this visit — everything else in this room is furniture he stands beside. The crossing itself
+        // goes through the hook, so his legs and L5b's are one set of legs; the hook's own fallback (come in
+        // and wait at the counter) belongs to a caller who has been ASKED to come, which he has not.
         if (_repMemory.MayApproach(_repVisitIndex)
+            && TheCaptainIsSittingAloneInTheBar()
             && ApproachTheTable(NebulaRep.Plate, TheCaptainIsSittingAloneInTheBar, HeReachesYourTable))
         {
             return true;
