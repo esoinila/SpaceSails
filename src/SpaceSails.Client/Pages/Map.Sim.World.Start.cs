@@ -144,6 +144,11 @@ public partial class Map
             SeedNebulaCheat(q.NebulaCheat); // #422: assemble N NEBULA fragments (readout + truth notice), or seat the adjuster so the bar scene itself can be played
         }
 
+        if (q.OldCrewCheat)
+        {
+            SeedOldCrewCheat(); // #973 L5a: the four shipmates at THIS berth, and a captain already buried
+        }
+
         if (q.ConvergeCheat)
         {
             SeedConvergeCheat(); // #422: seed both arcs' joint threshold and fire THE CONVERGENCE reveal

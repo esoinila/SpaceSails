@@ -326,13 +326,17 @@ public static class NebulaRep
     /// this — no explanation, no correction to the file, and no second thought.</summary>
     public const string BleedApology = "Did I? Force of habit. The file's a long one.";
 
-    // FABLE: line needed — the ship's-ledger note for the bleed. One line, engine voice, filed so the black
-    // book (#973 L3) can find it later; it must record WHICH dead captain's name was used and that Fess said
-    // it, and it must not explain anything. Placeholder below.
-    /// <summary>The one line the bleed leaves in the ship's ledger, so the black book can find it later.</summary>
-    public static string BleedLedgerNote(string wrongName, string rightName) =>
-        $"▓ NEBULA MUTUAL — Harlan Fess read the file and called you Captain {BareName(wrongName)}. You are "
-        + $"Captain {BareName(rightName)}. \"{BleedApology}\"";
+    /// <summary>
+    /// The one line the bleed leaves in the ship's ledger, so the black book (#973 L3) can find it later.
+    /// Fable's, verbatim, and the discipline is the whole of it: it records WHOSE name was read out and that
+    /// he said it, and it explains NOTHING — not who that captain was, not why the file has him in it, not
+    /// what a file is. The line the player is left holding is the clue.
+    ///
+    /// <para>It names only the dead captain, deliberately: the live one is reading the ledger, so telling him
+    /// his own name would be the engine saying something the reader already knows in order to look thorough.</para>
+    /// </summary>
+    public static string BleedLedgerNote(string previousName) =>
+        $"Fess called you {BareName(previousName)}. Force of habit, he said.";
 }
 
 /// <summary>

@@ -184,13 +184,36 @@ public readonly record struct ContactHistory(
         HeatStampSimTime = simTime,
     };
 
+    /// <summary>#973 L5a · <b>THEY KNEW THE OLD FACE.</b> True for the four old shipmates a game thread
+    /// seeds and for nobody else — not the rep, not a stranger, not an outfit. It is the flag the whole L5
+    /// lane turns on: only somebody who served with the captain can say <i>you look different</i>, and only
+    /// somebody who can say that can hold up a picture of who he used to be.
+    ///
+    /// <para>Additive and SAVED like the rest of the book, defaulting to false on every pre-existing
+    /// construction — an old vault loads with a cast of people who never met the captain's first face, which
+    /// is the truth about a save written before the old crew existed.</para></summary>
+    public bool KnewTheOldFace { get; init; }
+
+    /// <summary>#973 L5a · <b>THE BOOK MARKS THE LIE.</b> Set when the captain answered <i>you look
+    /// different</i> with the reactor seal on the Luna run. It is not goodwill with a minus sign and it is
+    /// not heat: it is a fact about what this person was told, kept because a later scene may need to know
+    /// that the captain has a story running with them that is not true.</summary>
+    public bool WasLiedTo { get; init; }
+
+    /// <summary>#973 L5a · Mark that this contact knew the face before. Idempotent.</summary>
+    public ContactHistory WithOldFace() => KnewTheOldFace ? this : this with { KnewTheOldFace = true };
+
+    /// <summary>#973 L5a · Mark that we lied to this contact about the face. Idempotent — one lie told twice
+    /// is still one story running.</summary>
+    public ContactHistory WithLie() => WasLiedTo ? this : this with { WasLiedTo = true };
+
     /// <summary>True once we've learned what this contact drinks.</summary>
     public bool FavoriteKnown => !string.IsNullOrEmpty(KnownFavorite);
 
     /// <summary>True once there is any history to read — an honest job done, a hull we robbed, coin
     /// in the air (banked with them or owed to them), a round stood them (goodwill), a tell slipped,
     /// their favourite learned, or (#715) an outfit that remembers being crossed.</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown || HeatOwed > 0;
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown || HeatOwed > 0 || KnewTheOldFace;
 }
 
 /// <summary>
@@ -309,6 +332,36 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithHeat(delta, simTime);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>#973 L5a · Seed or update an old shipmate's row: the display name they are known by, the
+    /// small warmth their role starts with, and the flag that says they knew the face before. Creating their
+    /// record on first seeding. Idempotent in the flag; the warmth is applied only ONCE, on the seeding, so
+    /// a reload cannot warm a shipmate a second time.</summary>
+    public ContactHistory SeedOldShipmate(string contactId, string displayName, int warmth)
+    {
+        if (_byId.TryGetValue(contactId, out ContactHistory existing))
+        {
+            ContactHistory kept = (existing with { DisplayName = displayName }).WithOldFace();
+            _byId[contactId] = kept;
+            return kept;
+        }
+
+        ContactHistory seeded = ContactHistory.New(contactId, displayName).WithOldFace().WithGoodwill(warmth);
+        _byId[contactId] = seeded;
+        return seeded;
+    }
+
+    /// <summary>#973 L5a · Mark that the captain lied to this contact about his own face — <i>the book marks
+    /// the lie</i>. Idempotent. Returns the marked history.</summary>
+    public ContactHistory RecordLie(string contactId, string displayName)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithLie();
         _byId[contactId] = updated;
         return updated;
     }
