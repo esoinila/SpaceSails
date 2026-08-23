@@ -35,6 +35,14 @@ public sealed class StoryBeatsTests
     {
         StoryBeats.Beat.KaamosShardFound => KaamosLore.AllPlates.First().Key,
         StoryBeats.Beat.NebulaShardFound => NebulaLore.AllPlates.First().Key,
+
+        // #973 · The flashback's subject is a memory id with the captain's LIFE folded into it, and it is
+        // built from the pool's own key for the same reason the two arcs' are: a subject typed in here is a
+        // world that cannot tell pass from fail. This beat is NOT keyed-by-subject for the art sweeps —
+        // the whole pool is painted in one bleached plate — so it must also read whole with no subject at
+        // all, which is what CaptionsReadWholeWithoutASubject asserts below.
+        StoryBeats.Beat.Flashback => FlashbackMemories.SubjectForLife(FlashbackMemories.Signing, 1),
+
         _ => "THE QUIET SISTER",
     };
 
@@ -209,6 +217,16 @@ public sealed class StoryBeatsTests
     /// them would show one and silently swallow every other one in the game, which is precisely the failure
     /// #541 widened the seen-key to stop — and it is worth saying that the arcs' two are the strongest case
     /// of all, because for them the PICTURE is chosen by the subject too.</para>
+    ///
+    /// <para>#973 · AND A NINTH, WHICH IS THE FIRST ONE THAT IS ABOUT THE CAPTAIN — and earns the cadence
+    /// anyway, for a reason the other eight do not have. A flashback's subject carries the captain's LIFE
+    /// (<see cref="FlashbackMemories.SubjectForLife"/>), so <c>signing#1</c> and <c>signing#2</c> are two
+    /// subjects to the seen-set and one page to the reader: the memory may come back after a rebirth, and
+    /// it must, because it comes back with a line on it the first captain never saw. <c>OnceEver</c> would
+    /// have shown the signing to the first captain and silently swallowed it for every one after, which is
+    /// #541's failure again; <c>EveryTime</c> would make the fine print wallpaper. What this cadence buys
+    /// here that no flag could is that <b>nothing has to be cleared on the rebirth path</b> — a forgotten
+    /// <c>.Clear()</c> is a bug that first shows up two deaths later, in somebody else's session.</para>
     /// </summary>
     [Fact]
     public void OnlyBeatsAboutAPlaceFireOncePerSubject()
@@ -226,6 +244,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.OutpostEffectsRead,
                 StoryBeats.Beat.SecretLabDoorFound,
                 StoryBeats.Beat.TheDormantThingWakes,
+                StoryBeats.Beat.Flashback,
             ],
             perSubject);
     }

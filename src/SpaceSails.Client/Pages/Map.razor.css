@@ -5798,3 +5798,104 @@
     color: #fff6e4;
     outline: none;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #973 L2 · THE REP'S PITCH CARD — and the bleached page it hosts.
+
+   The card itself borrows the .view-object family wholesale: it is the same shape as every other card in
+   the game and it should be, because a salesman interrupting you is not a new kind of surface. What is new
+   is the FLASHBACK block, and it earns its own rules for the reason #736 named — a hosted beat's words
+   ride the host's own subtree, where the backdrop cannot blur them, and the plate has to read as a
+   different register from the sentence above it: over-exposed, colour drained, one object in focus. So the
+   picture is desaturated and washed out in CSS as well as in the paint, and the caption sits on it rather
+   than beside it.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+.rep-portrait {
+    max-height: 12rem;
+    object-fit: cover;
+}
+
+.rep-desk {
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(232, 236, 244, 0.55);
+    margin-bottom: 0.4rem;
+}
+
+.rep-pitch {
+    font-style: normal;
+}
+
+.rep-said {
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border-left: 2px solid rgba(243, 226, 196, 0.45);
+    color: rgba(243, 226, 196, 0.92);
+    font-style: italic;
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+.rep-flashback {
+    position: relative;
+    margin-top: 0.7rem;
+    padding: 0.6rem;
+    border: 1px solid rgba(232, 236, 244, 0.18);
+    border-radius: 0.35rem;
+    background: rgba(226, 228, 232, 0.06);
+    overflow: hidden;
+}
+
+.rep-flashback-art {
+    display: block;
+    width: 100%;
+    border-radius: 0.25rem;
+    filter: saturate(0.25) brightness(1.18) contrast(0.85);
+    opacity: 0.85;
+}
+
+.rep-flashback-title {
+    position: relative;
+    z-index: 1;
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    color: rgba(240, 242, 246, 0.85);
+}
+
+.rep-flashback-caption {
+    position: relative;
+    z-index: 1;
+    margin-top: 0.3rem;
+    text-align: left;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: rgba(238, 241, 246, 0.92);
+}
+
+.rep-offers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.8rem;
+}
+
+.rep-offer {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgba(243, 226, 196, 0.35);
+    border-radius: 0.3rem;
+    background: rgba(243, 226, 196, 0.08);
+    color: #f3e2c4;
+    font: inherit;
+    cursor: pointer;
+}
+
+.rep-offer:hover,
+.rep-offer:focus {
+    border-color: #f3e2c4;
+    background: rgba(243, 226, 196, 0.18);
+    color: #fff6e4;
+    outline: none;
+}

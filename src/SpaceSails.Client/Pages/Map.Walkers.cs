@@ -82,6 +82,16 @@ public partial class Map
         /// us to follow them into kabinetti."</i> The one errand that does not end when the walk does: she
         /// gets to the door, and then she stands in it and looks back at you across the hall.</summary>
         LeadingYouIn,
+
+        /// <summary>#973 L2 · The Nebula rep drifting between the fixtures of his beat — a standing place
+        /// at the counter, the ends of the room's own tops — with nothing to do until somebody sits down
+        /// alone. Arriving is not an ending here either: he stands beside the thing he walked to.</summary>
+        RepRounds,
+
+        /// <summary>#973 L2 · The rep crossing to a captain sitting alone. He STANDS at the table — he is
+        /// not invited, and there is no eighth way to open a sitting in this codebase — and the pitch card
+        /// goes up on the frame he lands on.</summary>
+        RepPitching,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard
@@ -139,6 +149,21 @@ public partial class Map
         for (int i = ex.Walkers.Count - 1; i >= 0; i--)
         {
             Walker w = ex.Walkers[i];
+
+            // ── #973 L2 · …AND TWO MORE THAT END STANDING UP ─────────────────────────────────────────
+            //
+            // The salesman's two errands are the escort's shape, not the haulier's: he walks somewhere and
+            // then he is THERE, beside a fixture or at your elbow, until something moves him on. The
+            // decision of what that means is Map.Rep.cs's; this loop only owns the clock.
+            if (w.For is Errand.RepRounds or Errand.RepPitching)
+            {
+                if (StepTheRep(ex, w, dt, walls, i))
+                {
+                    anybodyLanded = true;
+                }
+
+                continue;
+            }
 
             // ── #731 v2 · THE ERRAND WHOSE ARRIVAL IS THE BEGINNING ──────────────────────────────────
             //

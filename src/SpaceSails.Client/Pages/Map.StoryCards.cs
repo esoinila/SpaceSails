@@ -224,6 +224,15 @@ public sealed partial class Map
     private bool TheHostIsUp(StoryBeats.Beat beat) => beat switch
     {
         StoryBeats.Beat.CollectorHail => _busted is { Phase: BustedEncounter.Stage.Demand },
+
+        // #973 L2 · The second case of the shape. A flashback's canvas is whichever card is already talking
+        // to the captain, and today there is exactly one of those: the Nebula rep's pitch panel. Note this
+        // asks about the PANEL and not merely whether he is on the floor — the same distinction the hail
+        // draws between the demand stage and an open BUSTED encounter, and for the same reason: he goes on
+        // standing at the table after the card has gone, and a beat filed as told over a surface that is
+        // no longer up does not break #761's law loudly, it erases the evidence that it was broken.
+        StoryBeats.Beat.Flashback => TheRepIsTalkingToYou,
+
         _ => false,
     };
 

@@ -112,6 +112,18 @@ public static class StoryBeats
 
         /// <summary>#664 · The sealed hatch comes off its dogs — and it opens both ways.</summary>
         SealedDoorReleased,
+
+        /// <summary>
+        /// #973 · A PAGE THE CAPTAIN HALF HAS. The fine print made playable: something in the world touches a
+        /// memory from before the filing line and it comes back bleached, one object in focus. The subject is
+        /// a <see cref="FlashbackMemories"/> key with the captain's LIFE folded into it, which is how the
+        /// once-per-subject cadence buys "once per life" with no clearing step for anybody to forget.
+        ///
+        /// <para>Hosted, always. A flashback arrives while somebody is talking to you — the rep's pitch card,
+        /// a poster, a photograph in a friend's hand — and its plate belongs inside that surface. It has no
+        /// standalone existence, so it never interrupts and never waits.</para>
+        /// </summary>
+        Flashback,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -199,6 +211,11 @@ public static class StoryBeats
         Beat.KaamosShardFound or Beat.NebulaShardFound or Beat.OutpostEffectsRead
             or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes => Cadence.OncePerSubject,
 
+        // #973 · ONCE PER SUBJECT, and the subject carries the life. A memory that came back once has come
+        // back; the same memory in the NEXT life is a different subject and a different plate, which is the
+        // whole of what the filing line does to a captain. See FlashbackMemories.SubjectForLife.
+        Beat.Flashback => Cadence.OncePerSubject,
+
         // …and CollectorsSetDown falls through to EveryTime with the grapples, deliberately. It is the only
         // warning the player gets — after it the only information in the world is a tracker fan — and it is
         // rare by its own nature (a heat threshold, and at most one landing per excursion), which is the
@@ -237,6 +254,11 @@ public static class StoryBeats
         // since #528. A card here would be a second modal over the first, with the same picture on it.
         Beat.CollectorHail => Presentation.Hosted,
 
+        // #973 · The second case of the shape, and the one that proves it was a shape and not a special case
+        // for the hail. A flashback is always somebody else's scene going quiet for a moment — the rep is
+        // mid-pitch, the poster is in front of you — so the plate goes INSIDE the card that is already up.
+        Beat.Flashback => Presentation.Hosted,
+
         // #664 · All eleven of the adopted moments fall through to CARD, and that is not an oversight: every
         // one of them was already a full-screen modal under the other system, and every one of them is a
         // moment where the world has just stopped for the captain anyway — a handle pulled, a shard laid on
@@ -258,6 +280,12 @@ public static class StoryBeats
     public static string HostCard(Beat beat) => beat switch
     {
         Beat.CollectorHail => "the BUSTED demand panel (Map.razor, BustedEncounter.Stage.Demand)",
+
+        // #973 L2 · The rep's own pitch card is the first host a flashback ever had. Later lanes add the
+        // poster and the photograph; the sentence widens with them rather than the presentation changing.
+        Beat.Flashback => "the card of whoever is talking to you — today the Nebula rep's pitch "
+                          + "(Map.razor, the nebula-rep panel)",
+
         _ => "",
     };
 
@@ -353,6 +381,11 @@ public static class StoryBeats
         Beat.ShelterIsNotSanctuary => CollectorLanding.SiegePlate,
         Beat.CollectorsSetDown => CollectorLanding.ArrivalPlate,
         Beat.SealedDoorReleased => NestPlates.Released,
+
+        // #973 · Keyed by its subject like the two arcs' shards, except that the key also carries the LIFE it
+        // is being remembered in — the same page reads differently to a captain who has died since.
+        Beat.Flashback => FlashbackMemories.PlateFor(subject ?? ""),
+
         _ => null,
     };
 
@@ -391,6 +424,13 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
+
+        // #973 · Named here rather than left to PlateOf, because the whole flashback pool is painted in ONE
+        // bleached plate style and the picture does not depend on which page came back. That also keeps the
+        // beat out of #664's keyed-by-subject family for the art sweeps: it has a canvas with no subject, so
+        // Canvases() names it and the folder-and-manifest law can see it.
+        Beat.Flashback => FlashbackMemories.PlateArt,
+
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
 

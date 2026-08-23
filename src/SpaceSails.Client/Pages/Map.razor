@@ -1516,6 +1516,56 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L2 · HARLAN FESS, NEBULA MUTUAL. The salesman has crossed the floor and is standing at the
+       table — he is not sitting, because he was not invited, and there is no eighth way to open a sitting
+       in this codebase. Everything he says comes out of Core (NebulaRep): the tier line, the buttons and
+       their prices, his answer to the captain's own line. Nothing here is typed twice.
+
+       AND THIS PANEL IS A HOST. StoryBeats.Beat.Flashback is presented HOSTED, which means the seam spends
+       the cadence, files the seen-set and writes the words into the ledger, and then raises NOTHING —
+       because the plate belongs INSIDE the card that is already talking to you. So the bleached page rides
+       here, under his pitch, read off the seam and never hand-typed (#664/#777/#761).
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_repCard is { } pitch)
+    {
+        <div class="view-object-backdrop rep-backdrop">
+            <div class="view-object rep-card" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.NebulaRep.DisplayName</div>
+                <img class="view-object-img rep-portrait" src="@SpaceSails.Core.NebulaRep.PortraitArt"
+                     alt="@SpaceSails.Core.NebulaRep.RepName" onerror="this.style.display='none'" />
+                <div class="rep-desk">@SpaceSails.Core.NebulaRep.Desk</div>
+                <div class="view-object-caption rep-pitch">@pitch.Line</div>
+                @if (_repSaid is { Length: > 0 } saidBack)
+                {
+                    <div class="rep-said">@saidBack</div>
+                }
+                @* The page that came back. Its picture, its stamp and its words are the seam's, so the host
+                   cannot drift from the beat it claims to be showing. *@
+                @if (_repFlashback is { } remembered)
+                {
+                    var backCopy = StoryBeatCopy(StoryBeats.Beat.Flashback, remembered);
+                    <div class="rep-flashback">
+                        @if (backCopy.Art is { Length: > 0 })
+                        {
+                            <img class="rep-flashback-art" src="@backCopy.Art" alt=""
+                                 aria-hidden="true" onerror="this.style.display='none'" />
+                        }
+                        <div class="rep-flashback-title">@backCopy.Title</div>
+                        <div class="rep-flashback-caption">@backCopy.Caption</div>
+                    </div>
+                }
+                <div class="rep-offers">
+                    @foreach (var repOffer in pitch.Offers)
+                    {
+                        var repMove = repOffer.Move;
+                        <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheRep(repMove))">@repOffer.Label</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
     @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
        ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
        asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
