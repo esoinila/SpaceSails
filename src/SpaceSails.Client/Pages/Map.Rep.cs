@@ -152,7 +152,7 @@ public sealed partial class Map
 
         // The shift turning over takes every walker off the floor, his included. Re-read the world rather
         // than trusting a field: the walker list is the truth about who is on their feet.
-        if (TheRepAfoot(ex) is null)
+        if (TheRepAfoot(ex.Walkers) is null)
         {
             if (_repCard is not null)
             {
@@ -165,14 +165,15 @@ public sealed partial class Map
             return;
         }
 
-        MaybeSayHeIsOnlyPassing(ex);
+        MaybeSayHeIsOnlyPassing(ex.Walkers);
         _ = dtRealSeconds;   // his stepping is AdvanceWalkers' job; this method only decides errands
     }
 
-    /// <summary>The walker that is him, if he is on the floor. By errand, because his plate is his own.</summary>
-    private Walker? TheRepAfoot(SurfaceExcursion ex)
+    /// <summary>The walker that is him, if he is on the floor. By errand, because his plate is his own.
+    /// <para>#973 L0 · Handed the list rather than the excursion: he works two rooms now.</para></summary>
+    private static Walker? TheRepAfoot(IReadOnlyList<Walker> afoot)
     {
-        foreach (Walker w in ex.Walkers)
+        foreach (Walker w in afoot)
         {
             if (w.For is Errand.RepRounds or Errand.RepPitching)
             {
@@ -317,8 +318,10 @@ public sealed partial class Map
     /// do, or at your elbow with a card. Called from <c>AdvanceWalkers</c>, which owns the clock.
     /// </summary>
     /// <returns>Whether anything happened that the page should redraw for.</returns>
+    /// <param name="afoot">The room's own feet — the excursion's underground, the docked bar's ashore
+    /// (#973 L0). One stepper, because he is the same man in both rooms.</param>
     private bool StepTheRep(
-        SurfaceExcursion ex, Walker who, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
+        IList<Walker> afoot, Walker who, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
     {
         if (who.Walk.State != NpcWalk.Doing.Arrived)
         {
@@ -331,7 +334,7 @@ public sealed partial class Map
             if (who.Walk.State != NpcWalk.Doing.Arrived)
             {
                 // The floor refused him. He simply is not there, which is honest — and nothing was said.
-                ex.Walkers.RemoveAt(slot);
+                afoot.RemoveAt(slot);
                 _repMoveOnAt = SimTime + RepDwellSeconds;
                 return true;
             }
@@ -354,7 +357,7 @@ public sealed partial class Map
         // an answer however long that takes, because the answer is the whole of the scene.
         if (who.For == Errand.RepRounds && SimTime >= _repMoveOnAt)
         {
-            ex.Walkers.RemoveAt(slot);
+            afoot.RemoveAt(slot);
             return true;
         }
 
@@ -505,9 +508,17 @@ public sealed partial class Map
 
         CloseTheRepsCard();
 
-        if (_surface is { } ex && TheRepAfoot(ex) is { } who)
+        // #973 L0 · Whichever room he is standing in. The walker list is the truth about who is afoot and
+        // there are two of them now — a withdrawal that only knew about the Hive would leave a salesman
+        // standing at a bar table with no card in his hand, which is the state #731's escort branch refuses.
+        if (_surface is { } ex && TheRepAfoot(ex.Walkers) is { } underground)
         {
-            ex.Walkers.Remove(who);
+            ex.Walkers.Remove(underground);
+        }
+
+        if (TheRepAfoot(_barAfoot) is { } ashore)
+        {
+            _barAfoot.Remove(ashore);
         }
 
         _repPost = -1;                                 // the counter is the first stop on his beat
@@ -516,9 +527,9 @@ public sealed partial class Map
 
     /// <summary>…and if the captain walks past him afterwards, he says the only thing he has left. Once a
     /// visit: a man repeating it every time you cross the room is a different, worse joke.</summary>
-    private void MaybeSayHeIsOnlyPassing(SurfaceExcursion ex)
+    private void MaybeSayHeIsOnlyPassing(IReadOnlyList<Walker> afoot)
     {
-        if (_repSaidPassing || _repMemory.MayApproach(_repVisitIndex) || TheRepAfoot(ex) is not { } who)
+        if (_repSaidPassing || _repMemory.MayApproach(_repVisitIndex) || TheRepAfoot(afoot) is not { } who)
         {
             return;
         }
