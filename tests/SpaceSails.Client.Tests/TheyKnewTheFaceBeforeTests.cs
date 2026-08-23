@@ -1,5 +1,9 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using Microsoft.AspNetCore.Components;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Tests;
@@ -10,10 +14,15 @@ namespace SpaceSails.Client.Tests;
 /// client can get wrong, and it is the half this repo has paid for repeatedly: a rule that is true in the
 /// model and unreachable, double-told or silently once-a-life-too-often on the surface.
 ///
-/// <para><b>Why these are source-shape guards.</b> This project has no component renderer, so every client
-/// audit here reads the shipping markup and the shipping method bodies. That is also the honest shape for
-/// the claims below, because all of them are about PLACEMENT and ROUTING rather than about a value.</para>
+/// <para><b>Why some of these are source-shape guards.</b> This project has no component renderer, so a
+/// client audit of MARKUP reads the shipping markup, and a claim about ROUTING (who calls what, and where
+/// from) reads the call site. Everything that is about a VALUE is driven on a real page instead — see the
+/// bench at the foot of this file. That line moved on 2026-08-23 and it cost something: the reload guard
+/// below used to read two method bodies for the words that write and read the vault's old-crew section, and
+/// it passed happily for the whole time <see cref="VaultSerializer"/> had no such section and every save
+/// dropped the latch, the crossing and the sheets on the floor.</para>
 /// </summary>
+[System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheyKnewTheFaceBeforeTests
 {
     private static string RepoRoot()
@@ -76,32 +85,153 @@ public sealed class TheyKnewTheFaceBeforeTests
     }
 
     /// <summary>
-    /// THE LATCH IS PER LIFE, and both halves of that are wired: a REBIRTH empties it (a new face has
-    /// nothing explained, and it is emptied at the succession seam beside the filing line's own marking,
-    /// because they are the same fact about the same moment), and a RELOAD does not — the set rides the
-    /// vault, or a save and a load would let the player answer the same question twice and write a second
-    /// crossing for it.
+    /// THE LATCH IS PER LIFE, AND IT SURVIVES THE FILE — <b>driven, not read</b>.
+    ///
+    /// <para>The first cut of this guard asserted the SOURCE TEXT of <c>BuildOldCrewSection</c> and
+    /// <c>RestoreOldCrewSections</c>: that the words <c>Explained = [.. _facesExplained]</c> appear in the
+    /// one and <c>vault.OldCrew?.Explained</c> in the other. Both were true, both stayed true, and the latch
+    /// was dropped on every save anyway — because <see cref="VaultSerializer"/> had no <c>oldcrew</c>
+    /// section at all, so the page built one and it went straight in the bin. A guard that reads two method
+    /// bodies cannot see the third place.</para>
+    ///
+    /// <para>So it is played instead: a real page seeds the crew, the captain answers a shipmate who knew
+    /// the old face, the page's own builder writes the section, the serializer's REAL JSON carries it
+    /// (checksum, canonicalization, per-section harvest), and a SECOND page reads it back and is asked the
+    /// live question — <i>would this person still notice the face?</i> The answer has to be no, or the
+    /// reload just handed the player the same question a second time and a second crossing for it.</para>
     /// </summary>
     [Fact]
-    public void TheLatchSurvivesAReloadAndIsEmptiedByARebirth()
+    public void TheLatchSurvivesARealSaveAndLoad()
     {
-        string source = Pages("Map.OldCrew.cs");
+        Pages.Map map = ACaptainWithANewFace();
+        string giver = ThePhotographHolder(map);
 
-        // The rebirth half — cleared, and cleared where the succession happens.
-        Assert.Contains("_facesExplained.Clear();",
-            Method(source, "private void ANewFaceHasNothingExplained()"), StringComparison.Ordinal);
+        Assert.True((bool)Invoke(map, "TheyWouldNoticeTheFace", giver)!);
+        Invoke(map, "OpenTheFaceScene", giver);
+        Invoke(map, "AnswerTheFace", OldCrewScene.Answer.TheTruth);
+        Assert.False((bool)Invoke(map, "TheyWouldNoticeTheFace", giver)!,
+            "answering did not latch the scene on the live page — nothing below would be testing a reload.");
+
+        // The page's own builder → the serializer's real bytes.
+        var written = new Vault { OldCrew = (OldCrewSection?)Invoke(map, "BuildOldCrewSection") };
+        Assert.NotNull(written.OldCrew);
+        Assert.Contains(giver, written.OldCrew!.Explained);
+
+        string json = VaultSerializer.Save(written);
+        Assert.Contains(giver, json, StringComparison.Ordinal);   // it REACHED THE FILE. This is the bug.
+
+        Vault back = VaultSerializer.Load(json);
+        Assert.False(back.Tampered, "the old-crew section broke the checksum it is folded into.");
+        Assert.NotNull(back.OldCrew);
+
+        // A SECOND page, same universe, same buried captain — it would ask again, until the file says not to.
+        Pages.Map reloaded = ACaptainWithANewFace();
+        Assert.True((bool)Invoke(reloaded, "TheyWouldNoticeTheFace", giver)!);
+
+        Invoke(reloaded, "RestoreOldCrewSections", back);
+
+        Assert.Contains(giver, (IEnumerable<string>)Field(reloaded, "_facesExplained")!);
+        Assert.False((bool)Invoke(reloaded, "TheyWouldNoticeTheFace", giver)!,
+            "the reloaded captain is about to be asked what happened to his face for the second time.");
+    }
+
+    /// <summary>
+    /// …AND SO DO THE CROSSING AND THE SHEETS. The same drive, the same file, the other two sections that
+    /// were declared on the vault and never written: the captain's ⚖ crossing (#973 L5a) and the black
+    /// book's held-memory pages (#978 — the fleet-day page, and the photograph a person hands over).
+    ///
+    /// <para>Asked of the far side the way the game asks: the desk's own <c>CrossingRows()</c>, and
+    /// <see cref="HeldMemory.Find"/> over the reloaded book. A section that does not reach the file comes
+    /// back null, and the page comes back with an empty desk and a book that lost a photograph.</para>
+    /// </summary>
+    [Fact]
+    public void TheCrossingAndTheHeldSheetsSurviveARealSaveAndLoad()
+    {
+        Pages.Map map = ACaptainWithANewFace();
+        string giver = ThePhotographHolder(map);
+
+        Invoke(map, "OpenTheFaceScene", giver);
+        Invoke(map, "AnswerTheFace", OldCrewScene.Answer.ALie);
+
+        var crossings = (IReadOnlyList<CaptainCrossings.Crossing>)Field(map, "_crossings")!;
+        Assert.Single(crossings);
+        var rowsBefore = (IReadOnlyList<string>)Invoke(map, "CrossingRows")!;
+
+        // The photograph really came out of the scene, so the book below has something to lose.
+        Assert.NotNull(HeldMemory.Find(Book(map), HeldMemory.PhotographId));
+        Assert.NotNull(HeldMemory.Find(Book(map), OldCrewScene.SummerPartyId));
+
+        var written = new Vault
+        {
+            OldCrew = (OldCrewSection?)Invoke(map, "BuildOldCrewSection"),
+            Crossings = (CrossingsSection?)Invoke(map, "BuildCrossingsSection"),
+            HeldMemories = (HeldMemoriesSection?)Invoke(map, "BuildHeldMemoriesSection"),
+        };
+        Assert.NotNull(written.Crossings);
+        Assert.NotNull(written.HeldMemories);
+
+        string json = VaultSerializer.Save(written);
+        Assert.Contains(HeldMemory.PhotographId, json, StringComparison.Ordinal);
+        Assert.Contains(OldCrewScene.SummerPartyId, json, StringComparison.Ordinal);
+        // …and the crossing's own row, asked of the loaded sections rather than of the raw text: the witness
+        // is a person's name and the writer escapes what a name contains, which is the file doing its job.
+        Vault back = VaultSerializer.Load(json);
+        Assert.False(back.Tampered);
+        Assert.Empty(back.Warnings);
+        Assert.NotNull(back.Crossings);
+        Assert.Contains(crossings[0].Stored, back.Crossings!.Crossings);
+        Assert.NotNull(back.HeldMemories);
+
+        // A second page: a desk with nothing on it and a book with no photograph in it, until the file lands.
+        Pages.Map reloaded = ACaptainWithANewFace();
+        Assert.Empty((IReadOnlyList<string>)Invoke(reloaded, "CrossingRows")!);
+        Assert.Null(HeldMemory.Find(Book(reloaded), HeldMemory.PhotographId));
+
+        Invoke(reloaded, "RestoreOldCrewSections", back);
+
+        Assert.Equal(rowsBefore, (IReadOnlyList<string>)Invoke(reloaded, "CrossingRows")!);
+        Assert.NotNull(HeldMemory.Find(Book(reloaded), OldCrewScene.SummerPartyId));
+
+        // …and the photograph came back WHOLE — the words a person handed over, not a rebuilt sentence.
+        HeldMemory.Sheet photo = HeldMemory.Find(Book(reloaded), HeldMemory.PhotographId)
+            ?? throw new InvalidOperationException("the photograph did not survive the file.");
+        Assert.Equal(OldCrewScene.Photograph, photo.Text);
+        Assert.Equal(HeldMemory.Mark.His, photo.Mark);
+        Assert.Equal(4, photo.Threads.Count);
+    }
+
+    /// <summary>
+    /// A REBIRTH EMPTIES IT — driven on the page, and routed from the succession seam. The clear itself is
+    /// played (a new face has nothing explained, so the person who asked once asks again); the CALL SITE is
+    /// the one claim here that is genuinely about placement, so it is read where it is written.
+    /// </summary>
+    [Fact]
+    public void ARebirthEmptiesTheLatchAndANewUniverseForgetsThemEntirely()
+    {
+        Pages.Map map = ACaptainWithANewFace();
+        string giver = ThePhotographHolder(map);
+
+        Invoke(map, "OpenTheFaceScene", giver);
+        Invoke(map, "AnswerTheFace", OldCrewScene.Answer.ThePolicyLine);
+        Assert.False((bool)Invoke(map, "TheyWouldNoticeTheFace", giver)!);
+
+        Invoke(map, "ANewFaceHasNothingExplained");
+
+        Assert.True((bool)Invoke(map, "TheyWouldNoticeTheFace", giver)!,
+            "the next captain walks past the one person who would not know him.");
+        Assert.Null(Field(map, "_faceScene"));
+
+        // …and it is called at the succession, which is a routing claim and reads as one.
         Assert.Contains("ANewFaceHasNothingExplained();",
             Pages("Map.Combat.Busted.cs"), StringComparison.Ordinal);
 
-        // The reload half — written to the file and read back out of it.
-        Assert.Contains("Explained = [.. _facesExplained]",
-            Method(source, "private OldCrewSection? BuildOldCrewSection()"), StringComparison.Ordinal);
-        Assert.Contains("vault.OldCrew?.Explained",
-            Method(source, "private void RestoreOldCrewSections(Vault vault)"), StringComparison.Ordinal);
-
-        // …and a new universe forgets them entirely.
-        Assert.Contains("_facesExplained.Clear();",
-            Method(source, "private void ForgetTheOldCrew()"), StringComparison.Ordinal);
+        // A NEW UNIVERSE forgets them entirely — driven too: the crew, the book and the latch all go.
+        Invoke(map, "OpenTheFaceScene", giver);
+        Invoke(map, "AnswerTheFace", OldCrewScene.Answer.TheTruth);
+        Invoke(map, "ForgetTheOldCrew");
+        Assert.Empty((IEnumerable<string>)Field(map, "_facesExplained")!);
+        Assert.Empty((IReadOnlyList<CaptainCrossings.Crossing>)Field(map, "_crossings")!);
+        Assert.Empty(Book(map));
     }
 
     /// <summary>Only the LIE is marked on their page, and it is marked through the ledger's own mutator
@@ -351,6 +481,87 @@ public sealed class TheyKnewTheFaceBeforeTests
         Assert.Contains("offeringFavorite, room)", body, StringComparison.Ordinal);
         Assert.Contains("offeringFavorite, room);", body, StringComparison.Ordinal);
     }
+
+    // ── THE BENCH ────────────────────────────────────────────────────────────────────────────────────
+
+    private const BindingFlags Hidden =
+        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+
+    private const string ThreadId = "9f3c71ab54d8402e8c17ba26d0e5391f";
+    private const string TheRedEye = "red-eye";
+    private const string TheOtherPort = "ringside-exchange";
+
+    /// <summary>
+    /// A page in a universe that has buried a captain, tied up at a berth, with the four shipmates cast and
+    /// booked. That is every condition the face scene asks for and no more: the crew are seeded lazily off
+    /// the thread id (touching <c>TheOldCrew</c> is what casts them), the contacts book gets its four rows
+    /// with the flag that says they knew the face, and the retired captain is the reason there IS a new one.
+    /// </summary>
+    private static Pages.Map ACaptainWithANewFace()
+    {
+        var map = new Pages.Map();
+        typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, true);
+
+        Set(map, "_ephemeris", TheWorld());
+        Set(map, "_dockedHavenId", TheRedEye);
+        Set(map, "_deckMode", true);
+        Set(map, "_activeThreadId", ThreadId);
+        Set(map, "_threadList", (IReadOnlyList<GameThreadInfo>)
+        [
+            new GameThreadInfo { Id = ThreadId, Retired = [new RetiredCaptain("Someone Who Died", 12)] },
+        ]);
+
+        // Cast them. The property is the seeding seam, so this is the game's own first read and not a poke.
+        Assert.Equal(OldCrew.SeededPerThread, Crew(map).Count);
+        return map;
+    }
+
+    /// <summary>The ledger id of the shipmate this thread put the photograph with — asked of Core, because
+    /// which of the four it is a property of the roll and never of this test.</summary>
+    private static string ThePhotographHolder(Pages.Map map) =>
+        OldCrew.LedgerId(OldCrewScene.PhotographHeldBy(Crew(map)));
+
+    private static IReadOnlyList<OldCrew.Seeded> Crew(Pages.Map map) =>
+        (IReadOnlyList<OldCrew.Seeded>)Invoke(map, "get_TheOldCrew")!;
+
+    private static IReadOnlyList<HeldMemory.Sheet> Book(Pages.Map map) =>
+        (IReadOnlyList<HeldMemory.Sheet>)Field(map, "_heldMemories")!;
+
+    /// <summary>Two great ports and the planets to hang them off — enough of a world for the postings.</summary>
+    private static ICelestialEphemeris TheWorld() =>
+        new CircularOrbitEphemeris(
+        [
+            new CelestialBody("sol", "Sol", null, 1.327e20, 6.96e8, 0, 0, 0),
+            new CelestialBody("jupiter", "Jupiter", "sol", 1.267e17, 6.99e7, 7.78e11, 3.7e5, 0),
+            new CelestialBody("saturn", "Saturn", "sol", 3.79e16, 5.82e7, 1.43e12, 2.2e5, 0),
+            new CelestialBody(TheRedEye, "The Red Eye", "jupiter", 0, 0, 5e8, 4e4, 0,
+                BodyKind.Station, IsHaven: true),
+            new CelestialBody(TheOtherPort, "Ringside Exchange", "saturn", 0, 0, 5e8, 4e4, 0,
+                BodyKind.Station, IsHaven: true),
+        ]);
+
+    private static object? Field(Pages.Map map, string name) =>
+        (typeof(Pages.Map).GetField(name, Hidden)
+         ?? throw new InvalidOperationException($"Map has no `{name}` — this guard is reading a dead name."))
+        .GetValue(map);
+
+    private static void Set(Pages.Map map, string name, object? value)
+    {
+        if (typeof(Pages.Map).GetField(name, Hidden) is { } field)
+        {
+            field.SetValue(map, value);
+            return;
+        }
+
+        (typeof(Pages.Map).GetProperty(name, Hidden)
+         ?? throw new InvalidOperationException($"Map has no `{name}`.")).SetValue(map, value);
+    }
+
+    private static object? Invoke(Pages.Map map, string method, params object?[] args) =>
+        (typeof(Pages.Map).GetMethod(method, Hidden)
+         ?? throw new InvalidOperationException($"Map has no `{method}` — this guard is reading a dead name."))
+        .Invoke(map, args);
 
     private static int Occurrences(string haystack, string needle)
     {
