@@ -36,16 +36,16 @@ public partial class Map
     // ── THE MARKING ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// THE REBIRTH READS THE POLICY AND CLOSES THE BOOK. Called once from the succession seam, with the
-    /// policy and the sim time of the death — the same two the clinic bill was just computed from, so the
-    /// bill and the amnesia can never disagree about whether there was a policy in force.
+    /// THE REBIRTH READS THE POLICY AND CLOSES THE BOOK. Called once from the succession seam, off the same
+    /// `_insurance` the clinic bill was computed from one screen earlier — so the receipt and the amnesia can
+    /// never disagree about what the captain was carrying.
     /// </summary>
     /// <returns>The one line the wake card says about it.</returns>
     private string MarkTheBookAtTheFilingLine()
     {
-        double line = FilingLine.At(_insurance, SimTime);
+        double line = FilingLine.At(_insurance);
         _filingBook = FilingLine.MarkTheBook(_filingBook, LedgerPagesForFiling(), line);
-        return FilingLine.WakeNotice(_insurance, SimTime);
+        return FilingLine.WakeNotice(line);
     }
 
     /// <summary>Every DATED row of the Captain's ledger, as the filing line sees it. Read off

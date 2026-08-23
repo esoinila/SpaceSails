@@ -14,12 +14,28 @@ namespace SpaceSails.Core;
 //
 //     a page dated AFTER the line is a page you don't remember writing.
 //
-// Uninsured or lapsed, the line is negative infinity and the whole book is grey (owner ruling 2026-08-23
-// §2: "uninsured wake with a blank ledger — true to the poster"). Premium, paid through this morning, and
-// almost nothing is. The policy's truth is NOT re-derived here: `PirateInsurance.IsActiveAt` already
-// decides whether a policy is in force at a moment, and `InsuranceRule.ApplyToRebirth` already consults
-// it at exactly this seam. Forking that predicate would be two places computing one fact, which is the
-// bug even while they agree (#621's lesson, one file over).
+// Uninsured, the line is negative infinity and the whole book is grey (owner ruling 2026-08-23 §2:
+// "uninsured wake with a blank ledger — true to the poster"). Covered and paid up, and almost nothing is,
+// because the money reached past the day you died.
+//
+// WHICH POLICIES FILE, AND UP TO WHEN — and the one place this lane had to choose. The lane brief said
+// "PremiumPaidThroughSimTime of the policy IN FORCE at death, or −∞ if Uninsured OR LAPSED". Written that
+// way the line can never cut a book in half: `PirateInsurance.IsActiveAt` is `simTime <= paid-through`, so
+// a policy in force at the death has its paid-through at or AFTER the death and nothing is dated past it,
+// while a lapsed one files nothing at all. Every rebirth would be all of the book or none of it, and the
+// wake card's own insured sentence — *"The pages come back to where the premium was paid. After that line,
+// the book is grey"* — would be describing a grey part that could not exist.
+//
+// So the line asks the question that sentence asks: WAS ANYTHING EVER FILED, and up to when. A real tier
+// filed you through the date the premium reached (in the future if you were paid up when you died, in the
+// past if you let it run out — and the pages after that date are the ones you lose). No tier at all filed
+// nothing, and `PirateInsurance.Uninsured` already carries negative infinity in that field, so the
+// uninsured case needs no special number — only the tier check.
+//
+// `IsActiveAt` is NOT forked and NOT weakened: it goes on being the only answer to "does this policy PAY",
+// which is `InsuranceRule.ApplyToRebirth`'s question at this same seam and a different question from this
+// one. Two places computing one fact is the bug even while they agree (#621, one file over); two questions
+// with two answers is not. FLAGGED for the owner — the alternative is one line here.
 //
 // WHAT IS NOT SAID ANYWHERE IN THIS FILE, by law (the same law the Reever origin keeps): the word for
 // what the clinic actually does. The rep says continuity; the ledger says pages you don't remember; no
@@ -33,12 +49,19 @@ public static class FilingLine
 {
     // ── §1 · THE LINE ────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The sim time this captain was last filed through — the premium's paid-through date if the
-    /// policy is in force at <paramref name="atSimTime"/>, and <see cref="double.NegativeInfinity"/> when it
-    /// is not (uninsured, or lapsed). Reads the policy's own truth via
-    /// <see cref="PirateInsurance.IsActiveAt"/> rather than re-deciding it.</summary>
-    public static double At(PirateInsurance policy, double atSimTime) =>
-        policy.IsActiveAt(atSimTime) ? policy.PremiumPaidThroughSimTime : double.NegativeInfinity;
+    /// <summary>
+    /// The sim time this captain was last filed through: the date the premium reached, for any real tier —
+    /// and <see cref="double.NegativeInfinity"/> for a captain who never held a policy, because nothing was
+    /// ever filed for them. See the header for why this is "was anything filed" rather than
+    /// <see cref="PirateInsurance.IsActiveAt"/>'s "does this policy pay".
+    ///
+    /// <para>No special number is needed for the uninsured case:
+    /// <see cref="PirateInsurance.Uninsured"/> already carries negative infinity in that field. The tier
+    /// check is belt to that braces, and it is what makes a hand-built <c>new(None, 500)</c> file nothing
+    /// rather than quietly file everything.</para>
+    /// </summary>
+    public static double At(PirateInsurance policy) =>
+        policy.Tier == InsuranceTier.None ? double.NegativeInfinity : policy.PremiumPaidThroughSimTime;
 
     /// <summary>Is this page dated after the line — i.e. written by somebody the new captain has no pattern
     /// of? A page written exactly ON the line was filed and comes back.</summary>
@@ -63,10 +86,15 @@ public static class FilingLine
     public const string InsuredWake =
         "The pages come back to where the premium was paid. After that line, the book is grey.";
 
-    /// <summary>The one line the succession card says about the filing, decided by the policy that was in
-    /// force at the death — never by how many rows happened to be greyed.</summary>
-    public static string WakeNotice(PirateInsurance policy, double atSimTime) =>
-        policy.IsActiveAt(atSimTime) ? InsuredWake : UninsuredWake;
+    /// <summary>The one line the succession card says about the filing: whether anything was filed for this
+    /// captain at all. Decided by the LINE and never by how many rows happened to grey — a captain covered
+    /// through next month and a captain whose premium ran out on day four are both told the same true thing
+    /// about where their book stops, and only a captain nobody ever filed for is told the other one.</summary>
+    public static string WakeNotice(double line) =>
+        double.IsNegativeInfinity(line) ? UninsuredWake : InsuredWake;
+
+    /// <summary>The same sentence, asked of the policy directly.</summary>
+    public static string WakeNotice(PirateInsurance policy) => WakeNotice(At(policy));
 
     // ── §3 · THE BOOK ────────────────────────────────────────────────────────────────────────────────
 
