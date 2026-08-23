@@ -161,6 +161,15 @@ public static class ShipHistories
     /// gets a stable maiden-hull default rather than throwing.</summary>
     public static ShipHistory For(string shipId)
     {
+        // #973 L4 · ONE HULL IN THE GAME HAS AN AUTHORED RECORD. The renamed HALCYON REACH is a fact of the
+        // arc rather than a roll, and her former-name line is the only place the captain's own service is
+        // ever written where he can read it. Asked FIRST, so no later change to the pools below can roll her
+        // a different past. Every other hull falls straight through to the seeded story, unchanged.
+        if (TheOldShip.IsHer(shipId))
+        {
+            return TheOldShip.History;
+        }
+
         uint state = Seed(shipId);
 
         // Laid down: a house yard and a comfortably-old year. "Now" is ~2341 (the player's plate, the

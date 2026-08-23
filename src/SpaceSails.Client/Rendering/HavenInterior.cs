@@ -757,6 +757,32 @@ public static class HavenInterior
             + "meaner and broker. Ask your dockmaster before the collectors ask about you. Underwritten by "
             + "Nebula Mutual — “We Bring You Back Meaner.”"));
 
+        // #973 L4 · THE THREE SMALL PLATES, hung round the same concourse the poster hangs in. A text plate
+        // in the poster's own idiom — no canvas, exactly as the lifeboat muster above carries none: three
+        // more paintings for three one-line ads would be a pool of art bought to say very little.
+        //
+        // The captain reads the WHOLE of each one walking past (the label IS the advertising), and [E] gives
+        // it back on a card so the words can be read twice — which matters, because the third one read is
+        // the one that finishes a memory (`StationAds`). Detected by the ad's own text, so this file never
+        // learns what any of them is FOR.
+        //
+        // Placed on the northern half of the concourse, where nothing else stands: the poster and the plaque
+        // are port-side and low, the lifeboat is starboard and low, the tube path is x 1..4 and southern.
+        // Every one is at least 5 du from every other console on this deck, so [E] can never grab the wrong
+        // fixture — the same clearance rule the second poster and the selfie spot are placed by.
+        (float X, float Y)[] adSites =
+        [
+            (HallCenterX + 8.5f, HallCenterY + 4),
+            (HallCenterX + 3, HallCenterY + 9),
+            (HallCenterX - 4, HallCenterY + 8),
+        ];
+        for (int adIdx = 0; adIdx < adSites.Length && adIdx < SpaceSails.Core.StationAds.Ads.Count; adIdx++)
+        {
+            SpaceSails.Core.StationAds.Ad ad = SpaceSails.Core.StationAds.Ads[adIdx];
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, adSites[adIdx].X, adSites[adIdx].Y,
+                ad.Label, null, ad.Text));
+        }
+
         // Seven tables spread across the big room — the rota seats present regulars at some of them this
         // watch, the rest stand open (an empty chair = someone's drifted off) — plus the ship's cantina.
         var tables = new List<DeckPlan.TableTop>(ship.Tables);
