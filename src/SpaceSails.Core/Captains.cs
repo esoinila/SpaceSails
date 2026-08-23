@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // The captains' roster (owner 2026-07-19: "a list of captains in the start with gen-ai profile images
@@ -19,6 +19,16 @@ public static class Captains
 {
     /// <summary>How many portraits the roster holds (<c>art/captain-1.jpg</c> … <c>art/captain-8.jpg</c>).</summary>
     public const int AvatarCount = 8;
+
+    /// <summary>#948 · How long a captain's name may be. Long enough for "Captain Bartholomew Featherstone-
+    /// Vex", short enough that a name still fits the chip in the corner and the row in the drawer.</summary>
+    public const int MaxNameLength = 48;
+
+    /// <summary>#948 · Tidy a name the player typed: trim, collapse runs of whitespace, cut to
+    /// <see cref="MaxNameLength"/>. Blank comes back "" — which every caller reads as "no name of my own",
+    /// and answers with the seeded one. Delegates to the one tidier the titles and notes use, so a name and
+    /// a title are cleaned by the same rules.</summary>
+    public static string CleanName(string? name) => SaveSlotLabels.CleanName(name);
 
     // House-flavor given names and surnames — spacer-pirate colour, deliberately gender-mixed so any name
     // sits under any of the eight portraits. Two independent hash streams pick from each list, so the name

@@ -246,6 +246,27 @@ public partial class Map
 
     private void CloseSaveDrawer() => _showSaveDrawer = false;
 
+    // ─────────────────────────────────────────────────────────────────────────────────────────────
+    // #951 · THE LOGBOOK IS REACHABLE FROM THE DEATH CARD TOO. Owner, having undocked and flown a periapsis
+    // under Selene Gate's own surface: "I undocked from station and died. I want an option to load previous
+    // game here like in the beginning."
+    //
+    // The death cards offered exactly one verb — "…wake up" — which is the brain-backup beat and stays
+    // exactly where it is (it is canon: the captain IS revived, and the succession/clinic pages hang off it).
+    // Beside it now stands the other true answer to a death: that was not the run I meant to keep, take me
+    // back to one I banked. It opens the SAME logbook the boot door opens — Continue on the newest autosave,
+    // every banked berth listed — because there is only one save surface in this game and this is it.
+    //
+    // The death card is drawn in the modal band ABOVE the logbook's own backdrop, so while the logbook is
+    // open the busted card yields (Map.razor guards its render on !_showSaveDrawer). Closing the logbook
+    // brings the death card back untouched — nobody is trapped, and the beat is not skipped by looking.
+    // ─────────────────────────────────────────────────────────────────────────────────────────────
+    private void OpenLogbookFromDeath()
+    {
+        OpenSaveDrawer();
+        StateHasChanged();
+    }
+
     // The nine manual slot ids (1..9), for the drawer/front-door to render a bank-to row per slot.
     private static readonly string[] ManualSlotIds =
         [.. Enumerable.Range(1, SaveSlotBook.ManualSlotCount).Select(SaveSlotBook.ManualSlotId)];
@@ -345,6 +366,11 @@ public partial class Map
             SavedRealTicks = now.UtcTicks,
             BuildStamp = BuildStamp.Display,
             Tampered = vault.Tampered,
+            // #948 — mirrored FROM THE PAYLOAD, never gathered a second time here: the row and the file it
+            // labels then cannot disagree about whose moment this is or what was written on it.
+            CaptainName = SaveSlotLabels.CleanName(vault.Logbook?.CaptainName),
+            Title = SaveSlotLabels.CleanTitle(vault.Logbook?.Title),
+            Note = SaveSlotLabels.CleanNote(vault.Logbook?.Note),
         };
     }
 
@@ -355,8 +381,11 @@ public partial class Map
     }
 
     /// <summary>Gather the whole durable life into a vault envelope. Physics (orbit/trajectory) is
-    /// deliberately absent — the resume section names the berth to wake at instead.</summary>
-    private Vault BuildVault()
+    /// deliberately absent — the resume section names the berth to wake at instead.
+    /// <para>#948 — every vault carries WHOSE it is; a deliberate bank or export also carries the title and
+    /// the note the captain wrote on it (the rolling autosave passes blanks, because nobody sat down and
+    /// named it).</para></summary>
+    private Vault BuildVault(string title = "", string note = "")
     {
         List<CargoLine> hold = _cargoByClass
             .Where(kv => kv.Value > 0)
@@ -424,6 +453,14 @@ public partial class Map
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
+            // #948 · the logbook page. The captain's name rides in the PAYLOAD, not only in the slot label,
+            // so an exported .json still says who sailed it on a machine that has never heard of this thread.
+            Logbook = new LogbookSection
+            {
+                CaptainName = ActiveCaptainName,
+                Title = SaveSlotLabels.CleanTitle(title),
+                Note = SaveSlotLabels.CleanNote(note),
+            },
         };
     }
 
@@ -771,6 +808,10 @@ public partial class Map
         if (slotId is not null && Slots.ReadPayload(slotId) is { } raw && !string.IsNullOrWhiteSpace(raw))
         {
             Vault vault = VaultSerializer.Load(raw);
+            // #951 — a load from the death card is the answer to the death: the catch/impact/regolith card
+            // that was open belongs to a timeline this captain just walked out of, so it goes with it. (On
+            // every other load path there is no card open and this is a no-op.)
+            _busted = null;
             ApplyVault(vault);
             RequestVaultSave(); // #310: the rolling autosave now follows THIS life, so Continue matches it
             ShowPulseMessage(vault.Tampered
@@ -804,6 +845,17 @@ public partial class Map
         _scopeIntel.Clear();
         _kaamos.Clear(); // #411: the loaded life brings its OWN assembled shards (applied below), not the last run's
         _nebula.Clear(); // #422/#425: same for the Nebula shards — the load re-hydrates its own set below
+
+        // #948 · the name comes back with the life. A vault carries the captain's name in its own payload,
+        // so an IMPORTED file (which arrives into a brand-new thread with a freshly seeded roster name) still
+        // wakes up as the captain who saved it, rather than as a stranger with the same purse. A pre-#948
+        // file has no logbook: the seeded name stands, which is exactly what it was.
+        if (!string.IsNullOrEmpty(_activeThreadId)
+            && SpaceSails.Core.Captains.CleanName(vault.Logbook?.CaptainName) is { Length: > 0 } sailedBy)
+        {
+            Threads.Rename(_activeThreadId, sailedBy);
+            RefreshThreadList();
+        }
 
         if (vault.Purse is { } purse)
         {
@@ -1106,14 +1158,15 @@ public partial class Map
 
     /// <summary>Bank the LIVE state into a specific manual slot (pre-haul, pre-bury — the vault moments).
     /// The autosave never touches these, so a deliberate bank is safe from the rolling save.</summary>
-    private void SaveToSlot(string slotId)
+    private void SaveToSlot(string slotId, string title = "", string note = "")
     {
         try
         {
-            Vault live = BuildVault();
-            Slots.Save(slotId, VaultSerializer.Save(live), BuildSlotMeta(live, SaveSlotKind.Manual));
+            Vault live = BuildVault(title, note);
+            SaveSlotMeta meta = BuildSlotMeta(live, SaveSlotKind.Manual);
+            Slots.Save(slotId, VaultSerializer.Save(live), meta);
             RefreshSlotList();
-            ShowPulseMessage($"💾 Banked to slot {slotId} — {SaveSlotLabels.Where(live)}.");
+            ShowPulseMessage($"💾 Banked to slot {slotId} — {SaveSlotLabels.TitleOf(meta)}.");
         }
         catch
         {
@@ -1146,11 +1199,11 @@ public partial class Map
     // EXPORT = the LIVE state at press time, never a stale slot (owner, #310). Reads current game state,
     // serializes it fresh, downloads it — NAMED for the harbor it was saved at (#312): the file names the
     // place, so six files in Downloads no longer play "which one is the Uranus save?".
-    private void ExportVault()
+    private void ExportVault(string title = "", string note = "")
     {
         try
         {
-            Vault live = BuildVault();
+            Vault live = BuildVault(title, note);
             string name = SaveFileNames.ForMeta(BuildSlotMeta(live, SaveSlotKind.Autosave));
             RendererInterop.VaultDownload(name, VaultSerializer.Save(live));
             ShowPulseMessage($"⬇ Exported this moment as {name}.");
