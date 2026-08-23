@@ -382,14 +382,37 @@ public static class AutopilotRehearsal
     public static ClosestApproach.Pass? PlanCollisionPass(
         RehearsalResult result, ICelestialEphemeris ephemeris, string targetBodyId)
     {
+        ClosestApproach.Pass? best = null;
+        foreach (ClosestApproach.Pass judged in PlanPasses(result, ephemeris, targetBodyId))
+        {
+            if (best is null || judged.Severity < best.Value.Severity)
+            {
+                best = judged;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// EVERY body's judged pass along the plan — the per-body list <see cref="PlanCollisionPass"/> picks
+    /// its worst from, and the list #962's <see cref="OrbitDegradeAlertRule"/> reads to ask a DIFFERENT
+    /// question of the same plan: not "does the plan hit anything" but "did the plan clear the body this
+    /// ship is BOUND to". One judging rule serves both (see <see cref="PlanCollisionPass"/> above): the
+    /// target is measured from the ACHIEVED PARK of a deliverable rehearsal, every other body over the
+    /// whole path. Empty when there is no path to judge.
+    /// </summary>
+    public static IReadOnlyList<ClosestApproach.Pass> PlanPasses(
+        RehearsalResult result, ICelestialEphemeris ephemeris, string targetBodyId)
+    {
         IReadOnlyList<TrajectorySample> path = result.Path;
         if (path.Count < 2)
         {
-            return null;
+            return [];
         }
 
         TrajectorySample park = path[^1]; // the rehearsal returns right after the insert: the park.
-        ClosestApproach.Pass? best = null;
+        var judgedPasses = new List<ClosestApproach.Pass>();
         foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(path, ephemeris))
         {
             ClosestApproach.Pass judged = pass;
@@ -402,13 +425,10 @@ public static class AutopilotRehearsal
                 judged = pass with { Distance = d, SimTime = park.SimTime, ShipPosition = park.Position };
             }
 
-            if (best is null || judged.Severity < best.Value.Severity)
-            {
-                best = judged;
-            }
+            judgedPasses.Add(judged);
         }
 
-        return best;
+        return judgedPasses;
     }
 
     private static CelestialBody? FindBody(ICelestialEphemeris ephemeris, string id)

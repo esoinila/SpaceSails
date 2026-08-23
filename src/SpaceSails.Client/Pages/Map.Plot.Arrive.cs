@@ -475,6 +475,7 @@ public partial class Map
         // rehearsal at the real state the moment the arrival comes round (OpenTheArrivalWindow).
         _autopilotPlanPath = null;
         _autopilotPlanClosestPass = null;
+        _autopilotPlanBodyClearance = null;
 
         // Friday §0: the park will be KEPT, so quote the trim budget honestly at arm time.
         _keepTrimPulsesPerDay = 0;
