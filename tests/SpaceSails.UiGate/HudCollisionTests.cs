@@ -150,6 +150,85 @@ public sealed class HudCollisionTests : IAsyncLifetime
                     "you do not have (#212):\n  " + string.Join("\n  ", collisions));
     }
 
+    /// <summary>
+    /// #986 F1 · A DESK'S OWN TITLE IS NOT UNDER THE MAP CONTROLS.
+    ///
+    /// <para>The boot sweep on #986 walked every desk in a real browser and found "Tracking post 📡" half
+    /// struck through: <c>.map-layers</c> at (12,51) 82×31 and <c>.nav-search</c> at (120,51) 240×31 are
+    /// absolutely positioned in the top-left corner, and <c>.tracking-post-desk</c>'s card header was laid
+    /// out at (69,64) 1440×31 — straight underneath them. The same shape as #482/#199/#559: two things, each
+    /// correct, visible and enabled, in one place.</para>
+    ///
+    /// <para><b>Why the gate above could not see it.</b> That one boots into the DECK and measures the deck's
+    /// own chrome. Nothing in this repository had ever measured a DESK's laid-out pixels — which is exactly
+    /// how a desk header spent releases sitting under a button.</para>
+    ///
+    /// <para>Measured at 1280×720, the narrowest viewport the game is laid out for: both controls are anchored
+    /// to the top-LEFT and the header stretches the desk's width, so a wider window only moves them further
+    /// apart. The War Room is walked in the same pass because it is the OTHER passthrough desk — the two that
+    /// shared the clearance exemption which caused this.</para>
+    ///
+    /// <para>RED PROOF: put <c>:not(.desk-layer-passthrough)</c> back on the two <c>.desk-layer</c> clearance
+    /// rules in <c>Map.razor.css</c> and this fails, naming both controls and the pixels they steal.</para>
+    /// </summary>
+    [Fact]
+    public async Task Desk_headers_are_not_covered_by_the_floating_map_controls()
+    {
+        await _page.SetViewportSizeAsync(1280, 720);
+        await BootIntoTheDeck();
+
+        var collisions = new List<string>();
+
+        foreach ((string tab, string header, string desk) in new[]
+                 {
+                     ("Sensors", ".tracking-post-desk:not(.d-none) > .card-header", "the tracking post"),
+                     ("War room", ".war-room-desk:not(.d-none) > .card-header", "the gun deck"),
+                 })
+        {
+            await _page.Locator("button.desk-tab", new() { HasTextString = tab }).ClickAsync();
+            await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = tab }).WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+            ILocator title = _page.Locator(header).First;
+            await title.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+            // The desk's own title row, as the browser laid it out. If it is not there the gate proves
+            // nothing, and says so rather than passing quietly.
+            var box = await title.BoundingBoxAsync();
+            Assert.True(box is { Width: > 0, Height: > 0 },
+                        $"{desk} desk showed no card header — this gate measured nothing");
+            (float, float, float, float) headerBox =
+                (box!.X, box.Y, box.Width, box.Height);
+
+            foreach (string selector in new[] { ".map-layers", ".nav-search" })
+            {
+                ILocator control = _page.Locator(selector).First;
+                if (await control.CountAsync() == 0 || !await control.IsVisibleAsync())
+                {
+                    // Both controls are raised on Nav/Sensors/WarRoom (Map.razor); a desk that does not raise
+                    // them cannot collide with them, and that is a pass rather than a skip in disguise.
+                    continue;
+                }
+                if (await control.BoundingBoxAsync() is not { } c || c.Width <= 0 || c.Height <= 0)
+                {
+                    continue;
+                }
+                if (Overlaps((selector, (float)c.X, (float)c.Y, (float)c.Width, (float)c.Height), headerBox))
+                {
+                    collisions.Add(
+                        $"{selector} at ({c.X:0},{c.Y:0}) {c.Width:0}×{c.Height:0} sits on {desk}'s header at "
+                        + $"({headerBox.Item1:0},{headerBox.Item2:0}) {headerBox.Item3:0}×{headerBox.Item4:0} "
+                        + "— the desk's own title is struck through");
+                }
+            }
+        }
+
+        Assert.True(collisions.Count == 0,
+                    "#986 F1 · the floating map controls are covering a desk's own title — a desk that cannot "
+                    + "say its own name is one you have to guess at (#212):\n  "
+                    + string.Join("\n  ", collisions));
+    }
+
     private static bool Overlaps(
         (string Name, float X, float Y, float W, float H) a, (float X, float Y, float W, float H) b) =>
         a.X < b.X + b.W && a.X + a.W > b.X && a.Y < b.Y + b.H && a.Y + a.H > b.Y;
