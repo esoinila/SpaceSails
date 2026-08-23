@@ -70,7 +70,7 @@ public static class NebulaRep
     /// number and a date, and the only sentence he ever gets is the one on his card.</summary>
     public static string SaleLedgerNote(InsuranceTier tier, int priceCr, string captainName) =>
         $"🧾 NEBULA MUTUAL — {tier} policy taken out with {RepName}, {priceCr} cr, "
-        + $"on the file under Capt. {captainName}.";
+        + $"on the file under Capt. {BareName(captainName)}.";
 
     // ── Presence: at most one station in three, never two in a row ─────────────────────────────────────
 
@@ -208,7 +208,7 @@ public static class NebulaRep
     /// <param name="bleeding">Whether this is a bleed — adds the one button that only exists then.</param>
     public static RepPitch PitchFor(InsuranceTier tier, string nameOnFile, bool bleeding = false)
     {
-        string name = string.IsNullOrWhiteSpace(nameOnFile) ? "" : nameOnFile.Trim();
+        string name = BareName(nameOnFile);
         List<RepOffer> offers = [];
         string line;
 
@@ -246,6 +246,22 @@ public static class NebulaRep
         }
 
         return new RepPitch(line, offers);
+    }
+
+    /// <summary>
+    /// THE NAME WITHOUT THE RANK. Every captain's name in this game arrives with <c>"Captain "</c> already
+    /// on the front of it (<see cref="Captains.Name"/>), and every one of his lines says the rank itself —
+    /// so without this he greets you as <i>"Captain Captain Corvin Marrow"</i>, which is exactly what he did
+    /// the first time anybody watched him cross a floor. Kept here rather than asked of the caller: a
+    /// salesman may not be allowed to get a name wrong, and a rule the caller has to remember is a rule
+    /// that will be forgotten at the third call site.
+    /// </summary>
+    public static string BareName(string? name)
+    {
+        string trimmed = (name ?? "").Trim();
+        return trimmed.StartsWith("Captain ", StringComparison.Ordinal)
+            ? trimmed["Captain ".Length..].Trim()
+            : trimmed;
     }
 
     /// <summary>The captain's own line, on every card he ever raises — because it is available whether or not
@@ -315,8 +331,8 @@ public static class NebulaRep
     // it, and it must not explain anything. Placeholder below.
     /// <summary>The one line the bleed leaves in the ship's ledger, so the black book can find it later.</summary>
     public static string BleedLedgerNote(string wrongName, string rightName) =>
-        $"▓ NEBULA MUTUAL — Harlan Fess read the file and called you Captain {wrongName}. You are Captain "
-        + $"{rightName}. \"{BleedApology}\"";
+        $"▓ NEBULA MUTUAL — Harlan Fess read the file and called you Captain {BareName(wrongName)}. You are "
+        + $"Captain {BareName(rightName)}. \"{BleedApology}\"";
 }
 
 /// <summary>

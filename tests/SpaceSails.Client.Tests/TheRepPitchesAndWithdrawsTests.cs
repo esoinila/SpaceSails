@@ -120,6 +120,10 @@ public sealed class TheRepPitchesAndWithdrawsTests
 
         NebulaRep.RepPitch card = TheCard(map)!.Value;
         Assert.Equal(NebulaRep.PitchFor(tier, Captains.Name(ThreadId)).Line, card.Line);
+
+        // …and it says the RANK ONCE. Comparing his card against PitchFor alone put the same doubled name on
+        // both sides of the assertion, which is how "Captain Captain Corvin Marrow!" reached a browser.
+        Assert.DoesNotContain("Captain Captain", card.Line, StringComparison.Ordinal);
     }
 
     /// <summary>

@@ -185,6 +185,42 @@ public sealed class TheRepNeverRemembersYourFaceTests
         Assert.All(premium, m => Assert.Equal(0, NebulaRep.PremiumFor(InsuranceTier.None)));
     }
 
+    /// <summary>
+    /// HE NEVER SAYS THE RANK TWICE. Found by watching him cross a floor: every name in this game arrives
+    /// with <c>"Captain "</c> already on the front of it (<see cref="Captains.Name"/>), and every line he
+    /// has says the rank itself — so the very first thing he ever said out loud in a browser was
+    /// <i>"Captain Captain Corvin Marrow!"</i>.
+    ///
+    /// <para>And the reason no test caught it is worth writing down: the sweeps above hand him
+    /// <c>"Vane"</c>, and the client guard compared his card against <c>PitchFor(tier, Captains.Name(...))</c>
+    /// — the same doubled name on both sides of the assertion. A world that cannot tell pass from fail,
+    /// twice over. So this one uses a name off <see cref="Captains"/> itself.</para>
+    ///
+    /// <para><b>Proven RED</b> by taking <c>BareName</c> back out of <c>PitchFor</c>.</para>
+    /// </summary>
+    [Fact]
+    public void HeNeverGreetsYouAsCaptainCaptain()
+    {
+        string asTheGameNamesThem = Captains.Name(Thread);
+        Assert.StartsWith("Captain ", asTheGameNamesThem, StringComparison.Ordinal);
+
+        foreach (InsuranceTier tier in Enum.GetValues<InsuranceTier>())
+        {
+            string line = NebulaRep.PitchFor(tier, asTheGameNamesThem).Line;
+
+            Assert.DoesNotContain("Captain Captain", line, StringComparison.Ordinal);
+            Assert.Contains(NebulaRep.BareName(asTheGameNamesThem), line, StringComparison.Ordinal);
+        }
+
+        // …and the two ledger lines say it once as well.
+        Assert.DoesNotContain("Captain Captain",
+                              NebulaRep.BleedLedgerNote(asTheGameNamesThem, asTheGameNamesThem),
+                              StringComparison.Ordinal);
+        Assert.DoesNotContain("Capt. Captain",
+                              NebulaRep.SaleLedgerNote(InsuranceTier.Basic, 250, asTheGameNamesThem),
+                              StringComparison.Ordinal);
+    }
+
     /// <summary>The "that's not my name" button exists ONLY when he has just used the wrong one. It is the
     /// player's only handle on the rarest thing in the feature, and an always-present one would advertise
     /// a bleed that had not happened.</summary>
