@@ -3883,7 +3883,11 @@
                                             <input type="checkbox" checked="@LayerVisible(l.Key)" title="Show or hide this on the map"
                                                    @onchange="() => ToggleLayer(l.Key)" />
                                         }
-                                        <span>@l.Icon @l.Label</span>
+                                        @* #963 — the owner met the 🛬 beside Ganymede and could not tell what it
+                                           meant ("it should have some kind of text pop-up?"). A glyph on a
+                                           canvas cannot carry a tooltip, so the LEGEND does: hover the layer
+                                           that draws the mark and it says what the mark means. *@
+                                        <span title="@(l.Hint.Length > 0 ? l.Hint : null)">@l.Icon @l.Label</span>
                                     </label>
                                 }
                             }
@@ -3920,8 +3924,10 @@
                     {
                         NavSearchRow row = _navSearchRows[i];
                         bool sel = i == _navSearchIndex;
+                        @* #963: the row already SAYS "🛬 landable" in its flavor; the hover spells out what
+                           landable buys you, since that was the owner's actual question about the glyph. *@
                         <button type="button" class="btn btn-sm text-start py-0 nav-search-row @(sel ? "btn-info" : "btn-outline-info")"
-                                title="Jump here — frame the map on it and centre the camera"
+                                title="@NavSearchRowTip(row)"
                                 @onclick="() => JumpToSearchResult(row)">
                             <span class="nav-search-name">@row.Icon @row.Name</span>
                             <span class="text-secondary"> · @row.Flavor</span>@if (row.Hidden)
@@ -4525,34 +4531,9 @@
 
     @* PR-C: the trade-lane menu — the corridor the owner drew by hand, now a clickable region.
        Replaces the tracking post's "— manual aim —" dropdown: the lane IS the control. *@
-    @if (_activeDesk == ShipDesk.Sensors && _corridorMenuLane is { } menuLane)
-    {
-        @* #253: a sweep-cost line plus the two sweep actions. *@
-        var corridorAt = ClampMenu(_corridorMenuX, _corridorMenuY, 3);
-        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(corridorAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(corridorAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold me-2">📦 @menuLane.Name</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this lane's menu"
-                        @onclick="CloseCorridorMenu"></button>
-            </div>
-            <div class="text-secondary mb-1">
-                @{ ScanJob laneJob = TradeCorridors.SweepJobFor(menuLane, _ship.Position); }
-                sweep arc @((int)(laneJob.ArcWidthRad * 180 / Math.PI))° from here ·
-                @SweepCostText(laneJob)
-            </div>
-            <div class="d-grid gap-1">
-                <button type="button" class="btn btn-sm btn-info" title="Sweep this trade lane once, right now"
-                        @onclick="() => SweepCorridorFromMenu(menuLane, standing: false)">
-                    📡 Sweep this lane now
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-info" title="Keep re-sweeping this lane every carousel round"
-                        @onclick="() => SweepCorridorFromMenu(menuLane, standing: true)">
-                    🔁 Standing lane watch — re-sweep every carousel round
-                </button>
-            </div>
-        </div>
-    }
+    @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
+       as a whole should not even be selectable, since they just colour the page in that option"). Its two
+       actions — sweep once, standing watch — live in the open-sky menu above, under the lane it names. *@
 
     @* PR-C: the open-sky menu — even empty space answers. What a scan here would take, and the
        guideline hint when the spot sits near a known lane. *@
@@ -4578,10 +4559,18 @@
                 </button>
                 @if (NearLaneFor(skyPoint) is { } nearLane)
                 {
+                    @* #953 — BOTH lane sweeps live here now. The whole corridor used to be a click target of
+                       its own, with a menu carrying these two buttons; the owner's ruling took the corridor
+                       off the picker ("the routes as a whole should not even be selectable, since they just
+                       colour the page"), so the actions moved to the one place a lane was already named. *@
                     <div class="text-info">near the @nearLane.Name</div>
                     <button type="button" class="btn btn-sm btn-outline-info" title="Sweep the nearby trade lane instead"
                             @onclick="() => SweepCorridorFromMenu(nearLane, standing: false)">
                         📡 Sweep the @nearLane.PairName lane instead
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Keep re-sweeping the nearby lane every carousel round"
+                            @onclick="() => SweepCorridorFromMenu(nearLane, standing: true)">
+                        🔁 Standing watch on the @nearLane.PairName lane
                     </button>
                 }
             </div>
@@ -4750,8 +4739,15 @@
             <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" title="Pause or resume the flow of sim time" @onclick="TogglePause">
                 @(Paused ? "Resume" : "Pause")
             </button>
-            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light") me-2" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
+            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light")" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
                 Follow Ship
+            </button>
+            @* #956 — …or on where she is GOING. Owner: "Let's have a follow nav destination option here in
+               addition to follow ship." Mutually exclusive with Follow Ship (one camera), and visible-but-
+               disabled with the reason when no destination is set (#212). *@
+            <button type="button" class="btn btn-sm @(_followDest && CanFollowDestination ? "btn-info" : "btn-outline-light") me-2"
+                    disabled="@(!CanFollowDestination)" title="@FollowDestTip()" @onclick="ToggleFollowDest">
+                Follow dest
             </button>
             @* #237 — clickable zoom: not every captain has a mouse wheel (and automation drives one
                poorly). One real step per press, zooming toward the viewport centre. *@
@@ -4761,8 +4757,14 @@
             <button type="button" class="btn btn-sm btn-outline-light me-2" title="Zoom the map out one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: false)">
                 🔍−
             </button>
-            <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light") me-2" title="Switch between flying live and plotting a course on the map" @onclick="TogglePlotMode">
-                @(PlotMode ? "Play" : "Plot")
+            @* #962 · THE HEART OF NAVIGATION IS DRESSED AS SUCH. Owner: "Here the smallest button is the most
+               important one… Plot. Plot should stand out among the buttons here. It is the heart of the
+               navigation process. Now it is too well hidden." So it wears the solid primary look the Dock
+               button wears (not an outline like its neighbours), a size up, and #963's live hover that names
+               what a press would plot right now. *@
+            <button type="button" class="btn @(PlotMode ? "btn-success" : "btn-warning") btn-sm map-key-action me-2"
+                    title="@PlotButtonTip()" @onclick="TogglePlotMode">
+                @(PlotMode ? "▶ Play" : "🗺 Plot")
             </button>
             @* Berth at a grey-market dock (a station haven) — clamps on, no steering, the heat bleeds
                off. #212: the button reads the ONE dock truth (_dockAffordance), the nearest DOCKABLE
@@ -4796,9 +4798,9 @@
                     ⚓ Match &amp; clamp — needs ≈@(_dockAffordance.MatchPulses) p
                 </button>
             }
-            <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" title="Open or close the telescope scope window" @onclick="ToggleScope">
-                Scope
-            </button>
+            @* #963: the Scope toggle used to sit here and the owner asked why — "that functionality should
+               stay at the scope position". It did: the scope window minimises into a tile in its own corner
+               (see .map-scope-tile below), which is also what stops this row from drowning out Plot. *@
             <a class="btn btn-sm btn-outline-secondary" href="/guide" target="_blank" title="Captain's Guide">?</a>
             @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
                appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
@@ -5145,7 +5147,10 @@
                    slingable / skimmable pass — they toggle at plot cadence and can wrap this row 1↔2
                    lines. Reserve the tallest state so the burn steps below never jump under a click. *@
                 <div class="map-plot-compose d-flex flex-wrap align-items-center mb-2 gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-light" title="Drop a new burn onto the plan at the scrub time" @onclick="AddBurnAtScrub">
+                    @* #963: "This should help us highlight the NAV button and the Add Burn buttons as the keys
+                       to navigation. Them and the scrub handle are really underrepresented now." Same primary
+                       dress as Plot — these two are the navigation, everything else on the plan is trim. *@
+                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="Drop a new burn onto the plan at the scrub time" @onclick="AddBurnAtScrub">
                         + Add burn at scrub
                     </button>
                     @if (_slingablePass is { } sp)
@@ -5829,7 +5834,7 @@
     @* The scope lives OUTSIDE the Nav-desk if: Blazor must never destroy this canvas — a
        recreated element leaves renderer.js holding a stale 2D context and the scope goes
        permanently dark after any desk switch (M26 fix). CSS hides it off-Nav instead. *@
-    <div class="map-scope @(_showScope && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
+    <div class="map-scope @(!_scopeMinimized && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
         <div class="card bg-dark bg-opacity-75 text-light">
             <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
                 <span class="fw-bold small">Scope 🔭</span>
@@ -5838,12 +5843,23 @@
                     <button type="button" class="btn @(_scopeManualId is null ? "btn-info" : "btn-outline-light") py-0" title="Let the scope pick its own target automatically" @onclick="() => _scopeManualId = null">AUTO</button>
                     <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the next target" @onclick="() => CycleScopeTarget(1)">▶</button>
                 </div>
-                <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the scope window" @onclick="ToggleScope"></button>
+                @* #963 — MINIMISE, not close. A closed window needs a switch somewhere else to reopen it (which
+                   is exactly the toolbar button the owner sent away); a minimised one leaves its own way back. *@
+                <button type="button" class="btn btn-sm btn-outline-light py-0 map-scope-min" aria-label="Minimise the scope"
+                        title="Minimise the scope into a tile — click the tile to bring it back" @onclick="ToggleScopeMinimized">–</button>
             </div>
             <div class="card-body p-1">
                 <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
             </div>
         </div>
+    </div>
+    @* #963 — the minimised scope: a button-sized tile in the SAME corner the window vacated, naming what is
+       in the eyepiece so it reads as an instrument standing by rather than a mystery button. Outside the
+       Nav-desk if for the same reason the window is (the canvas above must never be destroyed). *@
+    <div class="map-scope-tile @(_scopeMinimized && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
+        <button type="button" class="btn btn-sm btn-outline-info"
+                title="Open the scope wide — the telescope is on @ScopeTileTargetName()"
+                @onclick="ToggleScopeMinimized">🔭 @ScopeTileTargetName()</button>
     </div>
 
     @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
@@ -5859,12 +5875,25 @@
        ABOVE the desk layers so the sensors chief reads the same book the navigator does. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && TacticalTargetId is { } dossierId && DossierFor(dossierId) is { } dossier)
     {
-        <div class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small">
+        @* #960 — the owner's screenshot has this card lying ON TOP of the navigation-target panel, hiding
+           its text and half its buttons. Two answers, both his ("selectable top window or movable windows?
+           Maybe option to minimize a window into a sugarcube tile"): when the nav panel is up the dossier is
+           RAISED to ride above it (the panel with the buttons keeps the floor), and either way the card now
+           minimises into a tile of its own. No dragging — that is the can of worms he named. *@
+        <div class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small @(DossierIsStacked ? "map-dossier-raised" : "") @(_dossierMinimized ? "map-dossier-tile" : "")">
             <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier" title="Close the target dossier"
-                        @onclick="() => Dismiss(CloseDossier)"></button>
+                <span class="fw-bold">📖 @dossier.Name @if (!_dossierMinimized) {<span class="text-secondary">@dossier.Detail</span>}</span>
+                <span class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-light py-0 map-dossier-min"
+                            aria-label="@(_dossierMinimized ? "Open the dossier" : "Minimise the dossier")"
+                            title="@(_dossierMinimized ? "Open the dossier back up" : "Minimise the dossier into a tile — click it to bring it back")"
+                            @onclick="ToggleDossierMinimized">@(_dossierMinimized ? "▣" : "–")</button>
+                    <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier" title="Close the target dossier"
+                            @onclick="() => Dismiss(CloseDossier)"></button>
+                </span>
             </div>
+            @if (!_dossierMinimized)
+            {
             <div>@dossier.StatusLine</div>
             @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
                glance — "ex-AURORA QUEEN · three owners deep". The full ledger lives on her comms dossier. *@
@@ -5932,6 +5961,7 @@
                 <button type="button" class="btn btn-sm btn-outline-light py-0"
                         title="Take this target to the war room" @onclick="() => SwitchDeskFromClick(ShipDesk.WarRoom)">⚔ war room</button>
             </div>
+            }
         </div>
     }
 
@@ -6413,6 +6443,8 @@
                                                               OnReopenStartPicker="ReopenStartPicker"
                                                               OnOpenSaves="OpenSaveDrawer"
                                                               Voyage="CrewVoyage()"
+                                                              LastError="CaptainCrashNote()" ErrorCopied="_crashNoteCopied"
+                                                              OnCopyError="CopyCrashNote" OnDismissError="DismissCrashNote"
                                                               InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
                 }
             </div>

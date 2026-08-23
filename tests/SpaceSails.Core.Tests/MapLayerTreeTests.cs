@@ -110,7 +110,7 @@ public class MapLayerTreeTests
         Assert.Equal(MapLayerTree.TriState.On, MapLayerTree.GroupStateOf(hidden, traffic));
     }
 
-    // ---- Per-desk defaults (preserves the lanes-off default) ----
+    // ---- Per-desk defaults (#953: the lanes start off EVERYWHERE) ----
 
     [Fact]
     public void DefaultHidden_NonSensorsDesk_HidesTradeLanesOnly()
@@ -121,12 +121,39 @@ public class MapLayerTreeTests
         Assert.True(MapLayerTree.IsVisible(hidden, "routes.plan"));
     }
 
+    /// <summary>#953 · THE SENSORS CHIEF IS NOT HANDED A SKY FULL OF LINES EITHER. This desk was the one
+    /// exception — it opened on every layer, lanes included — and the owner's screenshot of it is the
+    /// issue: "The ship lanes display is a mess… It must always be much more filtered and off by default.
+    /// This is just ugly here by default." One checkbox still brings them back, per desk.</summary>
     [Fact]
-    public void DefaultHidden_SensorsDesk_ShowsEverything()
+    public void DefaultHidden_SensorsDesk_AlsoStartsWithTheLanesOff()
     {
         var hidden = MapLayerTree.DefaultHidden(isSensorsDesk: true);
-        Assert.Empty(hidden);
-        Assert.True(MapLayerTree.IsVisible(hidden, "routes.lanes"));
+        Assert.False(MapLayerTree.IsVisible(hidden, "routes.lanes"));
+
+        // …and ONLY the lanes: the working sky the chief actually needs is untouched.
+        foreach (string key in MapLayerTree.AllLeafKeys)
+        {
+            if (key != "routes.lanes")
+            {
+                Assert.True(MapLayerTree.IsVisible(hidden, key), $"{key} should still open visible");
+            }
+        }
+    }
+
+    /// <summary>#963 · The 🛬 the owner could not read ("what is the small symbol next to ganymede… it
+    /// should have some kind of text pop-up?") is a canvas glyph, so its MEANING has to live on the layer
+    /// that draws it — the one row in the Layers panel a hover can reach.</summary>
+    [Fact]
+    public void LandableMarksLeaf_CarriesTheSentenceThatExplainsTheGlyph()
+    {
+        MapLayerTree.Leaf landable = MapLayerTree.Groups
+            .SelectMany(g => g.Leaves)
+            .Single(l => l.Key == "labels.landable");
+
+        Assert.Contains("landable", landable.Hint, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("shuttle", landable.Hint, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(landable.Icon, landable.Hint);
     }
 
     // ---- Legacy key migration ----

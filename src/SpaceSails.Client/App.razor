@@ -1,6 +1,33 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+﻿@using SpaceSails.Client.Rendering
+@* THE APP SITS INSIDE A NET (#963 follow-up, owner's playtest 2026-08-22). Without one, an exception
+   thrown in a component's lifecycle or an event handler reaches Blazor's textless red bar — "An unhandled
+   error has occurred. Reload." — and whatever the console knew dies with the tab. The boundary reads the
+   exception into the ship's black box (CrashLog, which also writes it to localStorage so it OUTLIVES the
+   reload) and then says it out loud, so the sentence can go into an issue. *@
+<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        <ErrorBoundary>
+            <ChildContent>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </ChildContent>
+            <ErrorContent Context="thrown">
+                <div class="voyage-error">
+                    <h2>The voyage hit an error.</h2>
+                    <pre class="voyage-error-text">@Note(thrown)</pre>
+                    <p>
+                        It is written into the ship's log — the Captain's desk is still holding it after a
+                        reload, with a copy button, so it can go straight into an issue.
+                    </p>
+                    <a class="btn btn-warning" href=".">Reload</a>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
     </Found>
 </Router>
+
+@code {
+    // Recording happens HERE, at the moment the boundary renders the failure, rather than in a lifecycle
+    // hook — ErrorContent is the one callback that is handed the exception itself.
+    private static string Note(Exception thrown) => CrashLog.Report("component", thrown).DescribeFully();
+}

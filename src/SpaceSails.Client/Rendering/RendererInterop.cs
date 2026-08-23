@@ -129,6 +129,11 @@ internal static partial class RendererInterop
     [JSImport("vaultDownload", ModuleName)]
     internal static partial void VaultDownload(string filename, string json);
 
+    /// <summary>Put text on the system clipboard (the crash note's [copy] button). Defensive JS-side:
+    /// a browser that refuses clipboard access simply returns false.</summary>
+    [JSImport("copyText", ModuleName)]
+    internal static partial bool CopyText(string text);
+
     /// <summary>Open a file picker and resolve the chosen .json file's text (empty if cancelled).</summary>
     [JSImport("vaultImport", ModuleName)]
     [return: JSMarshalAs<JSType.Promise<JSType.String>>]
@@ -140,8 +145,13 @@ internal static partial class RendererInterop
     /// <summary>Raised when the canvas element's on-screen size actually changes (not every frame).</summary>
     public static event Action<double, double>? CanvasResized;
 
+    /// <summary>The rAF callback, and the one door almost everything this game does comes through. An
+    /// exception thrown in here used to reach JavaScript as Blazor's textless "An unhandled error has
+    /// occurred" (owner's playtest, 2026-08-22) — so it is READ on the way past and written to the ship's
+    /// black box (<see cref="CrashLog"/>) before it carries on doing exactly what it did before.</summary>
     [JSExport]
-    internal static void Tick(double highResTimestampMs) => FrameTick?.Invoke(highResTimestampMs);
+    internal static void Tick(double highResTimestampMs) =>
+        CrashLog.RunGuarded("frame tick", () => FrameTick?.Invoke(highResTimestampMs));
 
     [JSExport]
     internal static void OnResize(double widthPx, double heightPx) => CanvasResized?.Invoke(widthPx, heightPx);

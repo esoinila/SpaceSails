@@ -302,3 +302,37 @@
     padding-top: 0.5rem;
     margin-top: 0.75rem;
 }
+
+/* #963 follow-up — the black box's line at the top of the desk. Loud enough to be seen on the way past,
+   quiet enough that it is not an alarm: the voyage it describes is already over. */
+.captain-crash {
+    border: 1px solid rgba(255, 170, 120, 0.55);
+    border-radius: 0.45rem;
+    background: rgba(60, 30, 15, 0.55);
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.captain-crash-head {
+    font-weight: 700;
+    color: #ffcf9a;
+    margin-bottom: 0.3rem;
+}
+
+.captain-crash-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.78rem;
+    color: #ffe3c6;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    margin: 0 0 0.4rem 0;
+    max-height: 9rem;
+    overflow-y: auto;
+}
+
+.captain-crash-actions {
+    display: flex;
+    gap: 0.4rem;
+}
