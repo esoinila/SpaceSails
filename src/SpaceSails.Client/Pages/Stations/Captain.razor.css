@@ -302,3 +302,34 @@
     padding-top: 0.5rem;
     margin-top: 0.75rem;
 }
+
+/* #959 · THE JOB'S PLAIN BLOCK on the ledger row — the twin of .job-plain in Pages/Map.razor.css, which
+   dresses the same three Core-written lines on the bar's offer card. Same order, same colours, same left
+   rule, so the row a captain reads AFTER accepting is visibly the row he accepted. (Blazor scoped CSS is
+   per-component; there is no place to put this once. If one moves, move both.) */
+.job-plain {
+    text-align: left;
+    margin: 0.35rem 0 0.4rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.35rem;
+    border-left: 3px solid rgba(255, 212, 121, 0.7);
+    background: rgba(0, 0, 0, 0.3);
+    line-height: 1.35;
+}
+
+.job-plain-verb {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffd479;
+}
+
+.job-plain-takes {
+    color: #e0e4ec;
+    font-size: 0.9rem;
+}
+
+.job-plain-effort {
+    color: #8fd8e6;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}

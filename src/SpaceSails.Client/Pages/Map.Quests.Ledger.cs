@@ -165,13 +165,21 @@ public partial class Map
             string? nextAction = q is { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active } && cargoDest is not null
                 ? CargoNextAction(cargoDest)
                 : null;
+            // #959 — the four plain lines, measured off the live sim by JobFactsFor and worded by Core's
+            // JobTerms. The SAME call the offer card made before the job was accepted, so a captain who
+            // took a job on the strength of "≈ 3.60 M km · ~6 d by the lanes" reads that same sentence in
+            // his ledger afterwards rather than a different one.
+            IReadOnlyList<string> plain = JobPlainBlock(q);
+            // The foot's purse line now carries its size word ("764 cr · small") — the owner's other #959
+            // complaint, that the number alone never said whether it was worth the trip. Intel and worked-off
+            // favors keep their own faces, because neither pays in loose coin.
             string rewardText = q.Kind == QuestKind.Intel
                 ? "🕸 route tip"
                 : q.Kind == QuestKind.Favor
                     ? $"📡 clears {q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr favor"
-                    : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
+                    : plain[3];
             (IReadOnlyList<Stations.Captain.QuestStep> steps, bool showScope) = FetchStagePlan(q);
-            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope, nextAction);
+            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope, nextAction, plain);
         }).ToArray();
 
     // The fetch hunt's staged plan for the quest card (Tuesday plan PR-A): intel → scan → fly →

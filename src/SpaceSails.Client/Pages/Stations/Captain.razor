@@ -283,6 +283,21 @@
                         {
                             <div class="captain-card captain-quest-@q.StatusKind">
                                 <div class="fw-bold">@q.Title</div>
+                                @* #959 · THE PLAIN BLOCK, ABOVE THE VOICE. Owner, on a row that read
+                                   "Bring down Mars Depot / Hunt Mars Depot — hole her sail or board her":
+                                   "What is this job... should I destroy a ship or rob a place?" So the
+                                   verb (a fixed five-word vocabulary), what completion takes AND what the
+                                   target IS, and the honest distance + lane time stand first. @q.Detail
+                                   keeps every word of its voice one line below. Byte for byte the same
+                                   block the offer card showed before the job was accepted. *@
+                                @if (q.Plain is { Count: > 0 } plain)
+                                {
+                                    <div class="job-plain">
+                                        <div class="job-plain-verb">@plain[0]</div>
+                                        <div class="job-plain-takes">@plain[1]</div>
+                                        <div class="job-plain-effort">@plain[2]</div>
+                                    </div>
+                                }
                                 <div class="captain-card-blurb text-secondary small">@q.Detail</div>
                                 @if (q.NextAction is { } next)
                                 {
@@ -628,9 +643,13 @@
     /// (active / complete / paid); Map owns the live quest state. <paramref name="Steps"/> is the
     /// staged plan (empty for quests without one); <paramref name="ShowScopeButton"/> surfaces the
     /// 🔭 "point the scope" hook while the fetch hunt is at its pre-scan stage.</summary>
+    /// <remarks>#959 — <paramref name="Plain"/> is the verb / takes / effort block Core's
+    /// <c>JobTerms.PlainBlock</c> computes, rendered ABOVE the flavour <paramref name="Detail"/>. Null or
+    /// empty for a row Map could not measure; the card then simply shows the voice, as it always did.</remarks>
     public sealed record QuestItem(
         string Title, string Detail, string RewardText, string StatusLabel, string StatusKind,
-        IReadOnlyList<QuestStep> Steps, bool ShowScopeButton, string? NextAction = null)
+        IReadOnlyList<QuestStep> Steps, bool ShowScopeButton, string? NextAction = null,
+        IReadOnlyList<string>? Plain = null)
     {
         public QuestItem(string title, string detail, string rewardText, string statusLabel, string statusKind)
             : this(title, detail, rewardText, statusLabel, statusKind, [], false) { }

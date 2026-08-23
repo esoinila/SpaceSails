@@ -5473,3 +5473,46 @@
 .spread-item .satchel-item-try {
     color: #d8c56a;
 }
+
+/* #959 · THE JOB'S PLAIN BLOCK — the spec sheet above the pitch.
+
+   Owner, 2026-08-18: "What is this job... should I destroy a ship or rob a place? We should make sure
+   these missions all tell clearly what it takes to complete them. We need to know before we decide if we
+   accept or not." Three lines, always in the same order, always in the same places: the VERB from a fixed
+   five-word vocabulary, what completion TAKES and what the target actually IS, and the honest distance and
+   lane time. Core's JobTerms writes them; this only lays them out.
+
+   LEFT-ALIGNED inside a centre-aligned card on purpose. The pitch is a person talking and reads well
+   centred; a spec sheet is a list and reads badly that way — the eye needs one left edge to run down. The
+   panel ground is a shade darker than the card so the block reads as an inset plate rather than as more
+   dialogue, and it carries its own ground rather than borrowing the card's, because the same block renders
+   over the Captain desk's paper too. Twin of .job-plain in Stations/Captain.razor.css — one look, two
+   components; Blazor's scoped CSS cannot share it. */
+.job-plain {
+    text-align: left;
+    margin: 0 0 0.7rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.35rem;
+    border-left: 3px solid rgba(255, 212, 121, 0.7);
+    background: rgba(0, 0, 0, 0.35);
+    line-height: 1.35;
+}
+
+.job-plain-verb {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffd479;
+}
+
+.job-plain-takes {
+    color: #e8ecf4;
+    font-size: 0.9rem;
+}
+
+/* The effort line is the one the owner asked for by name — "how long we must fly to do it" — so it wears
+   the nav desk's own cyan, the colour every distance and ETA in this game is already spoken in. */
+.job-plain-effort {
+    color: #8fd8e6;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
