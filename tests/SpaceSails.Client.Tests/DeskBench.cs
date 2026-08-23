@@ -1,0 +1,364 @@
+#pragma warning disable BL0006 // the render tree is exactly what this bench exists to read — see the note below
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.Extensions.Logging.Abstractions;
+using SpaceSails.Client.Pages;
+
+namespace SpaceSails.Client.Tests;
+
+/// <summary>
+/// THE DESK BENCH — a real Blazor renderer with the shipping <see cref="Map"/> in it.
+///
+/// <para><b>Why a renderer and not a fingerprint.</b> <see cref="TheBootBuildsTheSameWorldTests"/> proves what
+/// the boot BUILDS: it reads the component's fields. It cannot prove the page DRAWS, and the Trade-desk crash
+/// lived exactly in that gap — the world was built perfectly and the desk showed "An unhandled error has
+/// occurred." So this bench takes the same booted component one step further and runs the Razor-generated
+/// render code through a real <see cref="Renderer"/>, child components and all, which is the only way a
+/// mistake in the MARKUP can be seen at all.</para>
+///
+/// <para><b>How far off-browser gets, exactly.</b> Two walls, both already documented by the guards next
+/// door, and both crossed deliberately rather than faked:</para>
+/// <list type="number">
+/// <item><b>The boot's browser gate.</b> <c>WireTheRendererToTheBrowserAsync</c> ends in
+/// <c>JSHost.ImportAsync</c>, which off a browser throws <c>PlatformNotSupportedException</c> —
+/// <see cref="TheBootBuildsTheSameWorldTests"/> calls that "the fingerprint's horizon" and
+/// <c>TheBootStopsWhenYouLeaveTests</c> asserts the same wall from the other side. Everything the boot does
+/// AFTER that gate — the start point, the cheats that need a live world, the landing — is four ordinary
+/// private methods with no browser under them, so this bench <b>calls those four itself</b>, in the boot's own
+/// order, with the query re-read through the boot's own <c>ReadEveryQueryKey</c> and defaulted through its own
+/// <c>DefaultABerthForTheCheatsThatNeedOne</c>. That is what makes a berth, an excursion or a Hive floor
+/// reachable here at all, and it is the shipping code that makes it, not a stand-in.</item>
+/// <item><b><c>_worldReady</c>.</b> The one field the gate sets on its far side (the last line of the method
+/// the gate is in). It is set here directly, because without it the page draws nothing but a loading door, and
+/// a loading door is not a desk.</item>
+/// </list>
+///
+/// <para><b>What still throws, and why that is not a failure.</b> <c>TrackingPost</c> reaches for the same JS
+/// module from its own <c>OnAfterRenderAsync</c>, so every render raises one
+/// <c>PlatformNotSupportedException</c> out of <c>System.Runtime.InteropServices.JavaScript</c>. That is the
+/// documented gate again, arriving through the renderer's error channel, and <see cref="EscapedPastTheGate"/>
+/// filters it — <b>by its type AND its message, never by swallowing everything</b>, so any other exception a
+/// render raises is reported. A filter that hid them all would be this repo's fifth named bug class: a guard
+/// that cannot tell pass from fail.</para>
+///
+/// <para><b>On BL0006.</b> <c>Microsoft.AspNetCore.Components.RenderTree</c> is warned against for application
+/// code because its shape may change between releases. This is a test whose entire subject is what the render
+/// tree CONTAINS; there is no supported API that answers "what attribute names did this component emit", and
+/// a framework change that moved these types would fail loudly at compile time, in one file. Suppressed with a
+/// pragma here rather than in the project file, so nothing else picks up the habit.</para>
+/// </summary>
+internal sealed class DeskBench : Renderer
+{
+    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Shared = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+
+    /// <summary>The four stages of <c>BootTheWorldAsync</c> that run BEHIND the browser gate, in the order the
+    /// boot runs them. Named rather than re-implemented: if one is renamed or a fifth is added, this bench
+    /// throws on the missing method instead of quietly booting a smaller world.</summary>
+    private static readonly string[] TheStagesBehindTheGate =
+    [
+        "ApplyTheStartPoint",
+        "StandTheCaptainWhereTheCheatsAsk",
+        "SeedTheArcsAndTheJobs",
+        "SeedTheApproachesAndThePurse",
+    ];
+
+    /// <summary>The landing cheat is fire-and-forget (<c>_ = AutoLandThenStageDeathAsync(…)</c>, by design — it
+    /// narrates its own descent phases and yields between them), so there is no task to await. The bench lets
+    /// the scheduler run instead, and
+    /// <see cref="EveryDeskBootsTests.EveryWorldInTheMatrixIsTheWorldItClaims"/> is what proves the wait was
+    /// long enough: a world that had not landed yet fails its own row rather than quietly testing the wrong
+    /// scene.</summary>
+    private const int DescentSpins = 40;
+
+    private readonly Map _map;
+    private readonly List<Exception> _escaped = [];
+    private int _rootId = -1;
+
+    private DeskBench(IServiceProvider services, Map map)
+        : base(services, NullLoggerFactory.Instance) => _map = map;
+
+    public override Dispatcher Dispatcher { get; } = Dispatcher.CreateDefault();
+
+    protected override void HandleException(Exception e) => _escaped.Add(e);
+
+    protected override Task UpdateDisplayAsync(in RenderBatch batch) => Task.CompletedTask;
+
+    // ── Booting ──────────────────────────────────────────────────────────────────────────────────────
+
+    public static async Task<DeskBench> BootAsync(string url)
+    {
+        var map = new Map();
+        TheBootBuildsTheSameWorldTests.NeverRender(map);
+        System.Net.Http.HttpClient http = TheBootBuildsTheSameWorldTests.ScenariosFromDisk();
+        var navigation = new TheBootBuildsTheSameWorldTests.Bench(url);
+        TheBootBuildsTheSameWorldTests.Hand(map, "Http", http);
+        TheBootBuildsTheSameWorldTests.Hand(map, "Navigation", navigation);
+
+        var bench = new DeskBench(new OnlyWhatThePageInjects(http, navigation), map);
+
+        try
+        {
+            await (Task)Method("BootTheWorldAsync").Invoke(map, [CancellationToken.None])!;
+        }
+        catch (TargetInvocationException)
+        {
+            // the browser gate, reached synchronously
+        }
+        catch (Exception)
+        {
+            // the browser gate, reached from a continuation
+        }
+
+        if (Read(map, "_ephemeris") is null)
+        {
+            throw new InvalidOperationException(
+                $"{url}: the boot stopped before it built an ephemeris — that is not the browser gate, it is a "
+                + "world that was never built, and rendering it would prove nothing.");
+        }
+
+        // Past the gate, by hand — see the class note.
+        object query = Method("ReadEveryQueryKey").Invoke(map, [new Uri(navigation.Uri)])!;
+        Method("DefaultABerthForTheCheatsThatNeedOne").Invoke(map, [query]);
+        Write(map, "_worldReady", true);
+
+        foreach (string stage in TheStagesBehindTheGate)
+        {
+            try
+            {
+                Method(stage).Invoke(map, [query]);
+            }
+            catch (TargetInvocationException ex)
+            {
+                bench._escaped.Add(ex.InnerException ?? ex);
+            }
+        }
+
+        for (int spin = 0; spin < DescentSpins; spin++)
+        {
+            await Task.Delay(25);
+        }
+
+        // The page is now where the boot would have left it. Two latches so the renderer does not boot it a
+        // SECOND time: `_started` is the page's own "the boot began" flag (OnAfterRenderAsync early-outs on
+        // it), and `_hasPendingQueuedRender` is the early-out NeverRender set for the boot, which now has to be
+        // released so StateHasChanged reaches this renderer.
+        Write(map, "_started", true);
+        typeof(ComponentBase)
+            .GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, false);
+        return bench;
+    }
+
+    // ── Driving ──────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>Ask the SHIPPING desk switch to take us there. Number keys, tab clicks, chips and bridge-seat
+    /// interactions all funnel through <c>SwitchDesk</c> — "the one place a desk switch happens" — so a
+    /// refusal here is the refusal a player gets, and a desk this bench can reach is a desk a player can.</summary>
+    public Task SwitchAsync(ShipDesk desk) =>
+        Dispatcher.InvokeAsync(() => Method("SwitchDesk").Invoke(_map, [desk]));
+
+    public async Task<Painted> RenderAsync()
+    {
+        if (_rootId < 0)
+        {
+            _rootId = AssignRootComponentId(_map);
+            await Dispatcher.InvokeAsync(() => RenderRootComponentAsync(_rootId));
+        }
+        else
+        {
+            await Dispatcher.InvokeAsync(() =>
+                typeof(ComponentBase).GetMethod("StateHasChanged", Hidden)!.Invoke(_map, null));
+        }
+
+        var painted = new Painted();
+        WalkComponent(_rootId, painted, new StringBuilder());
+        return painted;
+    }
+
+    // ── Reading the page back ────────────────────────────────────────────────────────────────────────
+
+    public static ShipDesk[] TabBarOrder =>
+        (ShipDesk[])(typeof(Map).GetField("TabBarOrder", Shared)
+            ?? throw new InvalidOperationException("Map has no TabBarOrder — the tab bar's own ordering has moved."))
+            .GetValue(null)!;
+
+    public ShipDesk ActiveDesk => (ShipDesk)Read(_map, "_activeDesk")!;
+
+    public bool DeckMode => (bool)Read(_map, "_deckMode")!;
+
+    public bool OnSurface => Read(_map, "_surface") is not null;
+
+    public bool Docked => Read(_map, "_dockedHavenId") is not null;
+
+    public string Pulse => Read(_map, "_pulse")?.ToString() ?? "";
+
+    /// <summary>Every exception the page raised that is NOT the documented browser gate. Matched on type AND
+    /// message: <c>PlatformNotSupportedException</c> is a real failure everywhere else, so hiding the type
+    /// outright would blind the sweep to it.</summary>
+    public IEnumerable<Exception> EscapedPastTheGate =>
+        _escaped.SelectMany(Unwrap).Where(e => !IsTheBrowserGate(e));
+
+    private static IEnumerable<Exception> Unwrap(Exception e) =>
+        e is AggregateException aggregate ? aggregate.InnerExceptions.SelectMany(Unwrap) : [e];
+
+    private static bool IsTheBrowserGate(Exception e) =>
+        e is PlatformNotSupportedException
+        && e.Message.Contains("System.Runtime.InteropServices.JavaScript", StringComparison.Ordinal);
+
+    // ── The render tree, walked ──────────────────────────────────────────────────────────────────────
+
+    private void WalkComponent(int componentId, Painted into, StringBuilder spokenHere)
+    {
+        ArrayRange<RenderTreeFrame> frames = GetCurrentRenderTreeFrames(componentId);
+        WalkRange(frames.Array, 0, frames.Count, into, spokenHere);
+    }
+
+    /// <summary>One pass over a frame range, honouring the subtree lengths the renderer wrote — so an
+    /// element's attributes are ITS attributes and the text under it is ITS text, which is what lets a control
+    /// be named and a class list be attached to the element that wears it.</summary>
+    private void WalkRange(RenderTreeFrame[] all, int start, int end, Painted into, StringBuilder spokenHere)
+    {
+        int at = start;
+        while (at < end)
+        {
+            ref RenderTreeFrame frame = ref all[at];
+            switch (frame.FrameType)
+            {
+                case RenderTreeFrameType.Element:
+                {
+                    int subtreeEnd = Math.Min(end, at + Math.Max(1, frame.ElementSubtreeLength));
+                    string element = frame.ElementName;
+                    var attributes = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+                    int child = at + 1;
+                    while (child < subtreeEnd && all[child].FrameType == RenderTreeFrameType.Attribute)
+                    {
+                        into.Attributes.Add(all[child].AttributeName);
+                        attributes[all[child].AttributeName] = all[child].AttributeValue as string;
+                        child++;
+                    }
+
+                    var inside = new StringBuilder();
+                    WalkRange(all, child, subtreeEnd, into, inside);
+                    into.Element(element, attributes, inside.ToString().Trim());
+                    spokenHere.Append(inside);
+                    at = subtreeEnd;
+                    break;
+                }
+
+                case RenderTreeFrameType.Text:
+                    spokenHere.Append(frame.TextContent).Append(' ');
+                    at++;
+                    break;
+
+                case RenderTreeFrameType.Markup:
+                    spokenHere.Append(frame.MarkupContent).Append(' ');
+                    at++;
+                    break;
+
+                case RenderTreeFrameType.Component:
+                {
+                    into.Components.Add(frame.ComponentType?.Name ?? "?");
+                    WalkComponent(frame.ComponentId, into, spokenHere);
+                    at += Math.Max(1, frame.ComponentSubtreeLength);
+                    break;
+                }
+
+                case RenderTreeFrameType.Region:
+                    at++;
+                    break;
+
+                default:
+                    at++;
+                    break;
+            }
+        }
+    }
+
+    // ── Plumbing ─────────────────────────────────────────────────────────────────────────────────────
+
+    private static MethodInfo Method(string name) =>
+        typeof(Map).GetMethod(name, Hidden)
+        ?? throw new InvalidOperationException(
+            $"Map has no {name} — this bench drives the shipping boot by name, and that name has moved.");
+
+    private static FieldInfo TheField(string name) =>
+        typeof(Map).GetField(name, Hidden)
+        ?? throw new InvalidOperationException($"Map has no field {name} — this bench reads it by name.");
+
+    private static object? Read(Map map, string name) => TheField(name).GetValue(map);
+
+    private static void Write(Map map, string name, object value) => TheField(name).SetValue(map, value);
+
+    /// <summary>The two services <c>Map.razor</c>'s <c>@inject</c> lines ask for, and nothing else. A component
+    /// that starts asking for a third gets a null and a NullReferenceException naming it — louder and more
+    /// useful than a container that invents one.</summary>
+    private sealed class OnlyWhatThePageInjects(System.Net.Http.HttpClient http, NavigationManager navigation)
+        : IServiceProvider
+    {
+        public object? GetService(Type serviceType) =>
+            serviceType == typeof(System.Net.Http.HttpClient) ? http
+            : serviceType == typeof(NavigationManager) ? navigation
+            : null;
+    }
+
+    /// <summary>What one render produced: every attribute NAME the tree emitted, every class list, the desk
+    /// tabs the bar drew (and which of them is lit), and the controls carrying a name a player could read.</summary>
+    internal sealed class Painted
+    {
+        private static readonly string[] Controls = ["button", "input", "select", "textarea", "a"];
+
+        public List<string> Attributes { get; } = [];
+
+        public List<string> Components { get; } = [];
+
+        public List<string> ClassLists { get; } = [];
+
+        /// <summary>Controls a player could name out loud: a button/input/select/textarea/link carrying text of
+        /// its own, a <c>title</c>, or an <c>aria-label</c>.</summary>
+        public List<string> NamedControls { get; } = [];
+
+        /// <summary>The labels the desk tab bar drew, in order — read off the buttons wearing
+        /// <c>.desk-tab</c>, which is the bar telling us itself which desks it offers.</summary>
+        public List<string> DeskTabLabels { get; } = [];
+
+        /// <summary>…and the ones it drew LIT (<c>btn-info</c>): the page saying which desk is up.</summary>
+        public List<string> LitDeskTabs { get; } = [];
+
+        internal void Element(string element, Dictionary<string, string?> attributes, string spoken)
+        {
+            string classList = attributes.GetValueOrDefault("class") ?? "";
+            if (classList.Length > 0)
+            {
+                ClassLists.Add(classList);
+            }
+
+            string name = spoken.Length > 0 ? spoken
+                : attributes.GetValueOrDefault("title") ?? attributes.GetValueOrDefault("aria-label") ?? "";
+            name = name.Trim();
+
+            if (name.Length > 0 && Controls.Contains(element, StringComparer.Ordinal))
+            {
+                NamedControls.Add(name);
+            }
+
+            string[] classes = classList.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (element == "button" && classes.Contains("desk-tab", StringComparer.Ordinal))
+            {
+                DeskTabLabels.Add(name);
+                if (classes.Contains("btn-info", StringComparer.Ordinal))
+                {
+                    LitDeskTabs.Add(name);
+                }
+            }
+        }
+    }
+}
