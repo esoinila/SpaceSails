@@ -362,8 +362,12 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
         return dir?.FullName ?? throw new InvalidOperationException("no repo root above the test binary");
     }
 
+    /// <summary>Source, with the line endings normalised. Git hands these files out as CRLF on Windows and
+    /// LF on the CI runner, so a guard that matches across a blank line passed on one machine and failed on
+    /// the other — a bench that cannot tell pass from fail rather than a finding.</summary>
     private static string Client(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]))
+            .Replace("\r\n", "\n");
 
     private static string Razor(string file) => Client("Pages", file);
 
