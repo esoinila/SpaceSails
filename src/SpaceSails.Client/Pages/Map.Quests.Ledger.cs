@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -158,6 +158,14 @@ public partial class Map
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
                 QuestKind.FetchCache => $"Take the shuttle down to {BodyName(q.SourceBodyId ?? "")}, dig up the marked chest, then carry the lot to {q.TargetCallsign}.",
+                // #973 L5b · her favour. The row carries the theory tag the whole arc's second axis is made
+                // of — LOVE, and the first job in this game that is — and, ONLY once L3's SPREAD has found it
+                // out, the grey line about the setup. Until then it says nothing, which is the design: the
+                // player may simply go.
+                QuestKind.WalkIn =>
+                    $"{HeldMemory.Label(q.Theory ?? WalkIn.Theory)} · find {q.TargetCallsign} at "
+                    + $"{BodyName(q.SourceBodyId ?? "")}, then come back and tell {q.Giver} yourself."
+                    + (WalkInCardWarning(q) is { Length: > 0 } grey ? $" — {grey}" : ""),
                 _ => "",
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the

@@ -1,4 +1,4 @@
-﻿using SpaceSails.Core;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -72,6 +72,13 @@ public sealed class DeckPlan
         // one of these on a bare deck: "in office people sit down … Let's make some cubicles / desks /
         // chairs we can sit in."
         HiveOfficeChair,
+        // #973 L5b · A TOP IN A DOCKED STATION'S BAR, WITH NOBODY AT IT. Its own kind and not a re-used
+        // HiveTable, for the reason every other split in this list is: HiveTable is matched back against
+        // `CanteenRegulars.Tables` on a floor of the Hive, and a berth has no floor, no canteen watch and no
+        // excursion at all — one kind serving both would put a press in a room it cannot ask a question
+        // about. #973 L0's own file said what was missing out loud: "the bar's seven tops are drawn dressing
+        // with no chairs and no console", so [E] at one answered nothing. This is the console.
+        BarTop,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.

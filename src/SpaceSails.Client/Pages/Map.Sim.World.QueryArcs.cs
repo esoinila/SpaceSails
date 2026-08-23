@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -22,7 +22,7 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?rep=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?walkin=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
     /// <c>?roll=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
@@ -61,6 +61,25 @@ public partial class Map
             // ones a captain gets.
             string candidate = Uri.UnescapeDataString(pair["rep=".Length..]).ToLowerInvariant();
             _repCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("walkin=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #973 L5b dev cheat: /map?walkin=1 lets a walk-in happen at this berth whatever the rota and the
+            // tier say; /map?walkin=0 keeps her away.
+            //
+            // The strongest case of the three on this page. Her cadence is "rare, once per subject" ON TOP OF
+            // a classy-venue gate and a captain who has to already be sitting alone at a top — so without a
+            // lever the whole scene (the entrance, the crossing, the ask, the note, the setup) is reachable
+            // only by docking great ports over and over and sitting down at each of them. It forces WHETHER
+            // and never WHO: who crosses the floor is the world's answer (is the fling posted here?), her
+            // lines are the ones a captain gets, and whether this one is a setup is the seed's.
+            string candidate = Uri.UnescapeDataString(pair["walkin=".Length..]).ToLowerInvariant();
+            _walkInCheat = candidate switch
             {
                 "1" or "true" or "yes" or "now" => true,
                 "0" or "false" or "no" or "never" => false,

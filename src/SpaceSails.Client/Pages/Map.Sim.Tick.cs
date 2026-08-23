@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -549,6 +549,16 @@ public partial class Map
             // the first line when there is no excursion, and a berth has none. This is the room the owner
             // drinks in finally having people who move in it.
             AdvanceBarWalkers(dtRealSeconds);
+            // #973 L5b · …AND THE SIT BEAT IS SPENT ASHORE TOO. It is a debt in real seconds owed to the
+            // player for having pressed [E] (#865), and it was paid out of `StepSurface` alone — the one
+            // clock a seated captain had, back when every seat in the game was on an excursion. The eighth
+            // seat is not: a captain sitting at a bar top in a docked berth would have owed that beat
+            // forever, and a beat that never runs out holds every deferrable card behind it for the rest of
+            // the visit. Only where the surface clock cannot reach, so nothing is ever spent twice.
+            if (_surface is null)
+            {
+                SpendTheSitBeat(dtRealSeconds);
+            }
             AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
             AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
             DrawWalkFrame();

@@ -1,4 +1,4 @@
-﻿using SpaceSails.Core;
+using SpaceSails.Core;
 
 namespace SpaceSails.Core.Tests;
 
@@ -212,6 +212,13 @@ public sealed class StoryBeatsTests
     /// gangway and silently swallowed every other berth in the system; <c>EveryTime</c> would have made docking at
     /// a place you live at annoying. So: each berth's establishing shot, once, for that berth.
     ///
+    /// <para>#973 L5b · AND THE NINTH IS ABOUT A PERSON, which widens the sentence above rather than breaking
+    /// it. The clause that ever mattered was not "a place" — it was <i>not about the captain</i>: a beat whose
+    /// subject is somebody else has to be able to happen again about somebody else. Two women who each walk
+    /// into a bar are two moments; the same woman twice is not one, and she is not coming back to ask a second
+    /// time. <c>OnceEver</c> would have shown the fling's entrance and silently swallowed the stranger's
+    /// forever, which is precisely the failure #541 widened the seen-key to stop.</para>
+    ///
     /// <para>#664 · Five more, and every one of them passes the same test the tube did: it is about a PLACE
     /// or a THING and not about the captain. A second KAAMOS or NEBULA shard is a different painting and
     /// different words; a second moon's buried door is a different moon; a second hut's last effects are
@@ -236,6 +243,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.OutpostEffectsRead,
                 StoryBeats.Beat.SecretLabDoorFound,
                 StoryBeats.Beat.TheDormantThingWakes,
+                StoryBeats.Beat.WalkIn,
             ],
             perSubject);
     }

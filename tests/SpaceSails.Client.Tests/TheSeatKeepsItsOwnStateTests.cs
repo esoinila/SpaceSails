@@ -312,6 +312,14 @@ public sealed class TheSeatKeepsItsOwnStateTests
     /// which one went. RAISING it is a lane of its own, because it is the chair asking the page for something
     /// new, and that is a design decision rather than a build error.</para>
     ///
+    /// <para><b>#973 L5b · 31 → 32, and the lane that argued for it.</b> The eighth seat is the first one in
+    /// the game that is NOT on a surface excursion — a top in a docked station's bar — and every other verb
+    /// in this family opens on <c>Surface</c> because until now there was no building without a landing. What
+    /// an excursion gave the other seven (which top, keyed how, on which watch, where a body sits at it) is
+    /// what <c>TheBarTopUnderfoot()</c> hands back, in one member, in the shape the three walk members
+    /// already have: an ANSWER, never the machinery. The alternative was handing a chair a haven's
+    /// geometry and a collision field, which is handing it a building.</para>
+    ///
     /// <para><b>#731 · 28 → 30, and the lane that argued for it.</b> Owner, 2026-08-06: <i>"Now it is possible
     /// to have NPC ask to sit down at our table and offer a quest! This is the classic TTRPG event."</i> and
     /// <i>"If they go behind a door that is locked to us, we use that as 'I guess that concludes the
@@ -345,7 +353,7 @@ public sealed class TheSeatKeepsItsOwnStateTests
     [Fact]
     public void TheSeatNeedsExactlyThisManyThingsFromThePage()
     {
-        const int TheRatchet = 31;
+        const int TheRatchet = 32;
 
         List<string> members = HostMembers();
 

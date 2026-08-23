@@ -277,6 +277,71 @@ public static class HavenInterior
         IReadOnlyList<DeckReachability.Point> Fixtures,
         IReadOnlyList<DeckReachability.Point> Tops);
 
+    /// <summary>#973 L5b · What this berth's bar is CALLED — THE STORMWATCH BAR, THE EARTHRISE, THE DEEP END.
+    /// The same string the deck's own location strip reads off the spec, published because the strip's company
+    /// clause needs it: a top in a station bar that announced itself as a canteen table was the sentence and
+    /// the room disagreeing, and it was found by looking.</summary>
+    public static string? BarNameOf(string bodyId) =>
+        System.Array.Find(Specs, s => s.BodyId == bodyId) is { } spec ? spec.BarName : null;
+
+    /// <summary>#973 L5b · How many a bar top seats. The room's own number, stated once — the sitting says it
+    /// in chairs ("one of them is yours now"), and a second count anywhere would be the panel and the picture
+    /// disagreeing about how alone the captain is.</summary>
+    public const int BarTopSeats = 4;
+
+    /// <summary>#973 L5b · The plate over a top nobody is at. The same shape the canteen's free top wears —
+    /// the verb is TAKE THE TABLE, and the label is what the captain reads before pressing [E].</summary>
+    // FABLE: line needed — the plate on a takeable top in a docked station's bar. The issue authors her
+    // spoken lines, not the room's furniture labels; the placeholder below is deliberately plain.
+    public const string BarTopLabel = "🍸 A FREE TOP";   // FABLE: placeholder
+
+    /// <summary>
+    /// #973 L5b · WHERE A BODY STANDS AT A BAR TOP — one body-width off its centre, on the first side the
+    /// stone allows, hall side sounded first because that is the side somebody crossing this room comes from.
+    ///
+    /// <para>Published here, with the tops themselves, rather than kept private to whoever asked first. TWO
+    /// callers need it and they must not disagree: the walker planning a crossing (<c>Map.BarWalkers</c>) and
+    /// the seat putting the captain in a chair (<c>Seating.BarTop</c>). A second sounding would put the woman
+    /// and the captain on the same square, which is the drawn room and the walked room disagreeing about a
+    /// lap — this repository's third named bug class, at a table for two.</para>
+    /// </summary>
+    /// <returns>The place, or null when the stone allows no side of this top at all.</returns>
+    /// <param name="clearOf">#973 L5b · Somebody who is already standing (or sitting) at this top, whose side
+    /// is therefore taken. A top is a place for more than one body now — the captain in a chair at it and the
+    /// woman who crossed the room to it — and a sounding that could not be told about the first would put the
+    /// two of them on one square. Null when nobody is there yet.</param>
+    public static DeckReachability.Point? BesideATop(
+        DeckReachability.Point top, double radius, IReadOnlyList<SurfaceCollision.Segment> walls,
+        DeckReachability.Point? clearOf = null)
+    {
+        double off = 2 * radius;
+        (double X, double Y)[] sides =
+        [
+            (top.X, top.Y - off), (top.X + off, top.Y), (top.X - off, top.Y), (top.X, top.Y + off),
+        ];
+        foreach ((double x, double y) in sides)
+        {
+            if (SurfaceCollision.Blocked(x, y, radius, walls))
+            {
+                continue;
+            }
+
+            if (clearOf is { } taken)
+            {
+                double dx = x - taken.X;
+                double dy = y - taken.Y;
+                if ((dx * dx) + (dy * dy) < off * off)
+                {
+                    continue;   // that side is somebody's; a second body on it is a lap, not a table.
+                }
+            }
+
+            return new DeckReachability.Point(x, y);
+        }
+
+        return null;
+    }
+
     /// <summary>#973 L0 · The walkable band of a docked station's bar, or null at a berth with no interior to
     /// walk. Pure: it reads the same constants the room is carved from and builds nothing.</summary>
     public static BarFloor? BarBand(string bodyId)
@@ -793,6 +858,39 @@ public static class HavenInterior
             foreach (WingLabel l in wing.Labels)
             {
                 labels.Add((l.X, l.Y, l.Text));
+            }
+        }
+
+        // ── #973 L5b · A TOP THE CAPTAIN CAN TAKE ───────────────────────────────────────────────────────
+        //
+        // #973 L0 found the gap and wrote it down: every one of the seven ways to open a sitting in this game
+        // was gated on a SurfaceExcursion, a berth has none, and so "the bar's seven tops are drawn dressing
+        // with no chairs and no console" — [E] at one answered nothing, which is an absence rather than a
+        // refusal and is the one kind of no a player cannot read (#757's own lesson, in the other room).
+        //
+        // A console goes on every top the room has not already given to somebody: the regulars the rota
+        // seated this watch, the Magpie at their stop, the oracle in her corner. Asked of the console list
+        // ITSELF, after everything else is in it, so the answer cannot drift from the room — a second table
+        // of who is sitting where would be this file's oldest bug class with a stranger in the captain's
+        // chair. Within an interact radius of an existing console is "somebody's", because that is exactly
+        // the distance at which [E] would grab the wrong one.
+        foreach ((float X, float Y) top in BarTops)
+        {
+            bool somebodysAlready = false;
+            foreach (DeckPlan.ConsoleSpot spot in consoles)
+            {
+                double dx = spot.X - top.X;
+                double dy = spot.Y - top.Y;
+                if ((dx * dx) + (dy * dy) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+                {
+                    somebodysAlready = true;
+                    break;
+                }
+            }
+
+            if (!somebodysAlready)
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.BarTop, top.X, top.Y, BarTopLabel));
             }
         }
 

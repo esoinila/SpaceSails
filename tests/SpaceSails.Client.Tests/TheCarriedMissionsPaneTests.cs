@@ -112,7 +112,11 @@ public sealed class TheCarriedMissionsPaneTests
         object quest = Activator.CreateInstance(Nested("Quest"), Hidden, binder: null,
         [
             $"{kind}-1", Kind(kind), "THE FIXER", targetShipId, callsign,
-            $"A {kind} job", "What the stranger wanted.", 2600, destBodyId, sourceBodyId, pin,
+            // #973 L5b · …and the theory tag the row carries since the walk-in's favour became the first
+            // LOVE-tagged job in the game. Null here on purpose: every contract this bench mints is one of
+            // the money-shaped ones, and a tag invented for them would be this bench answering a question
+            // the ledger is supposed to.
+            $"A {kind} job", "What the stranger wanted.", 2600, destBodyId, sourceBodyId, pin, null,
         ], culture: null)!;
         Nested("Quest").GetProperty("State", Hidden)!.SetValue(quest, State(state));
         ((IList)Get(map, "_quests")!).Add(quest);

@@ -75,6 +75,15 @@ public partial class Map
                 (new MissionStep($"📦 Chest lifted — carry it to {q.TargetCallsign}", MissionUiLevel.Ship,
                     station), "active"),
 
+            // #973 L5b · her favour, both legs. The second one names HER and not a berth, because the
+            // person is the destination — that is the whole of what makes it hers rather than a delivery.
+            (QuestKind.WalkIn, QuestState.Active) =>
+                (new MissionStep($"♥ Find {q.TargetCallsign} at {BodyName(q.SourceBodyId ?? "")}",
+                    MissionUiLevel.Ship, PlaceNamed(q.SourceBodyId, q.TargetCallsign)), "active"),
+            (QuestKind.WalkIn, QuestState.PickedUp) =>
+                (new MissionStep($"♥ Found it — go back and tell {q.Giver}", MissionUiLevel.Ship,
+                    station), "active"),
+
             (QuestKind.Favor, QuestState.Active) =>
                 (new MissionStep($"📡 Favor owed — quiet delivery to {q.TargetCallsign}", MissionUiLevel.Ship,
                     station), "active"),

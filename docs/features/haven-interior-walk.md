@@ -514,12 +514,27 @@ visited rather than on a berth id, so not one line of Core changed: what was mis
 floor in it. He comes out of a back-room door, drifts between the counter and the ends of the tops, and
 goes back out again.
 
-**What is still missing: you cannot sit down in a docked bar.** All seven ways to open a sitting
-(`Seating.TakeThisSeat`) are gated on a `SurfaceExcursion`, and a berth has none; the bar's seven tops are
-drawn dressing with no chairs and no console. So `TheCaptainIsSittingAloneInTheBar` answers false at every
-berth today and Fess never pitches ashore — he works the room. The approach's gate is a `Func<bool>` for
-exactly that reason: when the haven bar grows a top the captain can take, one predicate starts answering
-true and the whole walk is already built.
+**~~What is still missing: you cannot sit down in a docked bar.~~ #973 L5b paid this off.** It read: *all
+seven ways to open a sitting are gated on a `SurfaceExcursion`, and a berth has none; the bar's seven tops
+are drawn dressing with no chairs and no console.* The sentence stands as the record of why the approach's
+gate was written as a `Func<bool>` — and the prediction under it came true exactly as written: **one
+predicate started answering true and the whole walk was already built.**
+
+## #973 L5b — the eighth seat, and the woman who crosses the room to it
+
+- **A top you can take.** `DeckPlan.ConsoleKind.BarTop` goes on every top the room has not already given to
+  somebody — the rota's regulars, the Magpie, the oracle — decided against the console list *itself* after
+  everything else is in it, so there is no second table of who is sitting where. `Seating.BarTop.cs ·
+  TryTakeBarTop` is the **eighth construction site** and goes through `TakeThisSeat` like the other seven;
+  the law in `EverySeatTheCaptainTakesFingerprintsTheSameTests` moved 7 → 8.
+- **One new thing a chair needs from the page.** `ISeatHost.TheBarTopUnderfoot()` (ratchet 31 → 32): which
+  top the press landed on, keyed how, on which watch, where a body sits at it, how many chairs, and what
+  the room is called. Everything an excursion was giving the other seven, as an ANSWER — never the room.
+- **The walk-in.** `Map.WalkIn.cs`. Great ports only, rare, once per subject, and only at a captain who is
+  seated and alone: she comes out of a leaf, crosses on `ApproachTheTable`, JOINS the sitting as a guest
+  (no ninth site) and opens her card `Hosted`. Yes yields a FIND job — payout `—`, size word *for her*,
+  tagged love — and her note in the book marked *hers*. No yields her line and nothing else.
+- **Dev cheat:** `/map?walkin=1` forces her on at this berth (`?walkin=0` off). WHETHER, never who.
 
 Guards: `TheDockedBarIsAWalkableRoomTests` — every haven with an interior publishes a band; every leaf it
 publishes is a `Locked` door the deck really hangs and the plate the captain reads; **every leaf reaches

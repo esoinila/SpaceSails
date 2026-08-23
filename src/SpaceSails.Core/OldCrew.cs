@@ -164,6 +164,13 @@ public static class OldCrew
     /// <summary>The best friend.</summary>
     public const string BestFriendId = "teo";
 
+    /// <summary>#973 L5b · THE DECENT SHIP, by the name she had before they took her. Bible only (owner
+    /// ruling §6): a survey tender on the KAAMOS supply chain, impounded and renamed after the crew opened a
+    /// pod. She is named in the photograph's own line and, now, in the one job that goes looking for her —
+    /// one constant, so the sheet in the book and the row in the ledger cannot spell her two ways. What was
+    /// in the pods is still never said (the Reever law).</summary>
+    public const string TheDecentShip = "HALCYON REACH";
+
     /// <summary>The seven, in the bible's order. Order is part of the save-compatible identity of a
     /// seeding: changing it re-casts every universe.</summary>
     public static IReadOnlyList<Shipmate> Pool { get; } =
