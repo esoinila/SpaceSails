@@ -1,4 +1,4 @@
-﻿@page "/map"
+@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -3134,11 +3134,32 @@
     {
         <div class="deck-offer-card">
             <div class="deck-offer-giver">◈ @offer.Giver</div>
+            @* #959 · THE PLAIN BLOCK, BEFORE THE VOICE. Owner: "We need to know before we decide if we
+               accept or not." So the four lines Core computes — the verb from a fixed vocabulary, what
+               completion actually takes AND what the target is, the honest distance and lane time, the pay
+               with its size against this purse — stand ABOVE the pitch. The pitch keeps every word it had;
+               it just stops being the only thing on the card that says what the job is. The SAME block, from
+               the SAME call, renders on the Captain's ledger row after acceptance. *@
+            @{ IReadOnlyList<string> _offerPlain = JobPlainBlock(offer); }
+            @if (_offerPlain.Count > 0)
+            {
+                <div class="job-plain">
+                    <div class="job-plain-verb">@_offerPlain[0]</div>
+                    <div class="job-plain-takes">@_offerPlain[1]</div>
+                    <div class="job-plain-effort">@_offerPlain[2]</div>
+                </div>
+            }
             <div class="deck-offer-blurb">@offer.Blurb</div>
+            @* The pay keeps its own prominent slot on the card, and keeps the house's voice when there is
+               no coin in it — but when there IS and the offer is a real contract, the line is Core's, so
+               the size word travels with it. An offer that is a door rather than a job (the KAAMOS
+               returned filing) keeps the plain fee it always had. *@
             <div class="deck-offer-reward">
-                @(offer.Reward > 0
-                    ? $"Reward: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr"
-                    : "On the house — the tip's the payoff 🕸")
+                @(offer.Reward <= 0
+                    ? "On the house — the tip's the payoff 🕸"
+                    : _offerPlain.Count > 0
+                        ? _offerPlain[3]
+                        : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")
             </div>
             <div class="deck-offer-actions">
                 <button type="button" class="btn btn-sm btn-warning" title="Take the stranger's offer — it lands in your logbook" @onclick="AcceptOffer">@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")</button>
@@ -4892,7 +4913,10 @@
             @* #963: the Scope toggle used to sit here and the owner asked why — "that functionality should
                stay at the scope position". It did: the scope window minimises into a tile in its own corner
                (see .map-scope-tile below), which is also what stops this row from drowning out Plot. *@
-            <a class="btn btn-sm btn-outline-secondary" href="/guide" target="_blank" title="Captain's Guide">?</a>
+            @* #949 — and the ? beside it opens the NAV desk's own two-minute walkthrough (pick a target,
+               Plot, scrub, add a burn, iterate with the ± buttons, add the arrive step, arm, warp), which
+               links on to the full Captain's Guide. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
+            <a class="btn btn-sm btn-outline-secondary" href="/help/nav" target="_blank" title="How to plot a trip — the eight steps, and on to the Captain's Guide">?</a>
             @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
                appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
                tutorial chrome for a veteran. Starting or replaying a lesson lives at the Captain's desk
@@ -6568,7 +6592,12 @@
                 <div class="mc-title">@party.Title</div>
                 <div class="mc-giver">◈ @party.GiverName</div>
                 <div class="mc-thanks">@party.GiverThanks</div>
-                <div class="mc-payment">💰 +@party.PaidCredits.ToString("N0", CultureInfo.InvariantCulture) cr received</div>
+                @* #959 — the owner on this very pop-up: "the job was really small also... it is fine".
+                   He was right, and the card should have been the one to say so. The size word is measured
+                   against the purse as it stood BEFORE this payment landed (_credits has already been
+                   credited by PayCompletedQuests), so "small" means small next to what you had, not next to
+                   what you have now. Same word, same thresholds, as the offer card that sold him the job. *@
+                <div class="mc-payment">💰 +@party.PaidCredits.ToString("N0", CultureInfo.InvariantCulture) cr received · @JobTerms.SizeWord(party.PaidCredits, _credits - party.PaidCredits)</div>
                 <div class="mc-parrot">🦜 @party.ParrotSong</div>
                 <div class="mc-history">
                     @(party.MissionsWithGiver <= 1
