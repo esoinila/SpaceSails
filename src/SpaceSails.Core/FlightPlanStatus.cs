@@ -103,6 +103,11 @@ public readonly record struct FlightPlanStatus(string NowLine, string? NextLine)
 /// NOW line — "🛰 AUTOPILOT HOLDS THE ORBIT — Enceladus, 313 km, trim ≈N p/day". This builder only
 /// slots it in as the NOW row (below Docked, above every flying phase). Null until that lane sets
 /// it; this owner only guarantees the layout, not the text.</param>
+/// <param name="CastOffLine">COORDINATION SEAM (#955 NAV-1): when a clamped ship's plan begins with a cast
+/// off, the ship is not merely "docked" — she is leaving, on her own, and the banner must say so. That lane
+/// owns the verbatim NOW line (<c>CastOffRule.CastingOffNow</c>); this builder only slots it in ABOVE the
+/// docked line, because "casting off" is what a berthed ship with a live plan is actually doing. Null
+/// whenever she is simply tied up.</param>
 /// <param name="UpcomingSteps">The ordered queue of steps to name below NOW — pending burns, then
 /// the approach/insertion — already composed by the caller. When null the builder falls back to the
 /// single <see cref="NextStepLabel"/>/<see cref="NextStepEta"/> pair (back-compat). The first entry
@@ -118,7 +123,8 @@ public readonly record struct FlightPlanInputs(
     string? HandbackReason = null,
     bool AutopilotInserting = false,
     string? HoldingLine = null,
-    IReadOnlyList<FlightPlanStep>? UpcomingSteps = null);
+    IReadOnlyList<FlightPlanStep>? UpcomingSteps = null,
+    string? CastOffLine = null);
 
 /// <summary>Derives step states and the now/next readout — the single source of truth so the
 /// banner, the Nav header, and the list stay coherent.</summary>
@@ -147,7 +153,10 @@ public static class FlightPlanStatusBuilder
     {
         string body = NameOr(f.AutopilotBodyName, "target");
         string now =
-            f.Docked ? $"NOW: docked at {NameOr(f.DockedHavenName, "haven")}"
+            // #955 NAV-1: a berthed ship whose plan starts with a cast off is not idling at a berth — she is
+            // leaving. That reading outranks the plain docked line; every other phase is untouched.
+            f.Docked && !string.IsNullOrWhiteSpace(f.CastOffLine) ? f.CastOffLine!
+            : f.Docked ? $"NOW: docked at {NameOr(f.DockedHavenName, "haven")}"
             // The kept-orbit line is owned verbatim by the station-keeping lane (Friday §0). It is a
             // NOW state that outranks the flying phases: the ship has arrived and is holding.
             : !string.IsNullOrWhiteSpace(f.HoldingLine)

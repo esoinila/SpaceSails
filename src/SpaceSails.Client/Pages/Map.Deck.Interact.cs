@@ -258,6 +258,13 @@ public partial class Map
                 // down alone is a choice to be FINDABLE, and WAIT is what you do once you have made it.
                 TryTakeTable();
                 break;
+            case DeckPlan.ConsoleKind.BarTop:
+                // #973 L5b · TAKE A TOP IN THE DOCKED BAR — the eighth way to open a sitting in this game,
+                // and the first one that is not on a surface excursion. #973 L0 wrote the gap down ("the
+                // bar's seven tops are drawn dressing with no chairs and no console"); this is the press.
+                // Sitting alone in a classy room is also what a walk-in is looking for.
+                TryTakeBarTop();
+                break;
             case DeckPlan.ConsoleKind.HiveBench:
                 // #793 · SIT ON THE BENCH. #790 put them in the park as plates over solid steel and said
                 // the verb would arrive with #778; it has. A bench with somebody already on the far end

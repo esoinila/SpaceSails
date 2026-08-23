@@ -87,6 +87,25 @@ public partial class Map
         return Math.Max(1, idx + (_armedOrbitBodyId is not null ? 1 : 0));
     }
 
+    // #955 NAV-1: the banner's label for a plotted step, whichever kind it is. TOTAL over PlanStepKind —
+    // a step with no words is a step the captain cannot read, and TheCastOffIsAStepTests walks the enum to
+    // prove none of them is missing one.
+    private string PlanStepLabel(PlanNode node) => node.Kind switch
+    {
+        PlanStepKind.Burn => BurnStepLabel(node),
+        PlanStepKind.Undock or PlanStepKind.ClearHarbour =>
+            CastOffRule.StepLabel(node.Kind, HavenNameOf(node), node.Pulses),
+        _ => throw new ArgumentOutOfRangeException(nameof(node), node.Kind, "no banner label for this step kind"),
+    };
+
+    // …and the collapsed glance line for the same row, by the same law.
+    private string PlanStepGlanceLine(PlanNode node) => node.Kind switch
+    {
+        PlanStepKind.Burn => BurnGlanceLine(node),
+        PlanStepKind.Undock or PlanStepKind.ClearHarbour => DepartureGlanceLine(node),
+        _ => throw new ArgumentOutOfRangeException(nameof(node), node.Kind, "no glance line for this step kind"),
+    };
+
     private static string BurnStepLabel(PlanNode node)
     {
         string dir = node.Mode == BurnMode.Vector ? "✚"
@@ -167,7 +186,7 @@ public partial class Map
         pending.Sort((a, b) => a.SimTime.CompareTo(b.SimTime));
         foreach (PlanNode node in pending)
         {
-            steps.Add(new FlightPlanStep(BurnStepLabel(node), $"in {FormatDuration(node.SimTime - SimTime)}", FlightStepState.Planned));
+            steps.Add(new FlightPlanStep(PlanStepLabel(node), $"in {FormatDuration(node.SimTime - SimTime)}", FlightStepState.Planned));
         }
 
         // #957: the autopilot's own scheduled burns — the in-well transfer arc, or the braking step it laid
@@ -258,6 +277,8 @@ public partial class Map
         return FlightPlanStatusBuilder.Build(new FlightPlanInputs(
             Docked: NavLockedByDock,
             DockedHavenName: _havenName,
+            // #955 NAV-1: she is clamped, but the plan is about to let go — say THAT, not "docked".
+            CastOffLine: CastOffNowLine(),
             AutopilotArmed: _armedOrbitBodyId is not null,
             AutopilotFlyingApproach: AutopilotFlyingApproach,
             AutopilotBodyName: _armedOrbitBodyId is null ? null : BodyName(_armedOrbitBodyId),
@@ -308,6 +329,9 @@ public partial class Map
         double now = SimTime;
         foreach (PlanNode node in _planNodes)
         {
+            // #955 NAV-1: the UNDOCK row carries no impulse but it is still a decision point the skip must
+            // not leap over — it is where a clamped ship becomes a flying one. Reported here with the burns
+            // so the one list of "epochs that must not be skipped" stays one list.
             if (!node.Stale && !node.Executed && node.SimTime > now)
             {
                 yield return node.SimTime;

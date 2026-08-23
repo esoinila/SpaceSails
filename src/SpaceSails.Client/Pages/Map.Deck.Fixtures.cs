@@ -108,6 +108,20 @@ public partial class Map
                         "📋 This time you actually read the small print, the grey line no advertising should keep. " +
                         Core.NebulaLore.ById("fine-print")!.Lore);
                 }
+
+                // #973 L4 · …and a THIRD thing, for a man who has been through the clinic once. Asked LAST,
+                // so the two reads above are exactly the two reads they have always been — the cheerful sell,
+                // then the grey line — and a first-life captain never reaches past this call.
+                ThePosterAfterARebirth();
+            }
+
+            // #973 L4 · THE THREE SMALL PLATES, detected by the ad's own WORDS (Core.StationAds) — the same
+            // idiom the poster above is detected by, and for the same reason: the wall is hung in
+            // HavenInterior and this file never has to be told which fixture is which.
+            if (_viewObject is { Label: { } adLabel }
+                && Core.StationAds.IndexOfLabel(adLabel) is { } adIndex)
+            {
+                TheAdIsRead(adIndex);
             }
         }
     }

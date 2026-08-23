@@ -1162,6 +1162,11 @@ public partial class Map
         }
         _descentPhase = null;
 
+        // #973 L4 · SETTING DOWN IS AN ARRIVAL TOO. A page you don't remember writing that NAMES this ground
+        // is finished by standing on it — no roll. Said after the boat's own receipt above and before the
+        // wreck branch below, so a derelict boarding gets it exactly as a regolith landing does.
+        TheArrivalIsRemembered(stop.Body.Id);
+
         // #461 · the clock the arrival grace is measured off, and the house sentry that makes walking out of
         // the door possible at all (owner: "there should always be one un-paid-for sentry at the door" — he
         // had to spend one of his own just to get clear). It is the shuttle's own fixture: never bought,

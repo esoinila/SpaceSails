@@ -142,6 +142,18 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// one line each, and that line is the sweep's — the ledger, the pen, the canvas buffer, the call counts
     /// and every other row are byte-identical, which is exactly the claim: the frame's BEHAVIOUR is
     /// unchanged, only the shape of the state it sweeps.</para>
+    ///
+    /// <para><b>#973 L2 · AND ALL THIRTY AGAIN, with the field count 672 → 686.</b> Fourteen fields, all of
+    /// them the Nebula rep's and all of them on the page: which visit's room he is remembering, the running
+    /// visit count, whether the rota has him working it, the per-visit remember-you-said-no, the meeting
+    /// count the bleed is clocked in, when he drifts on, which fixture he is heading for, whether he has
+    /// said the one thing a rebuffed salesman says, his pitch card and the four things on it, and the
+    /// <c>?rep=</c> cheat. <b>Every one of them is at its default in every world here</b>, because none of
+    /// these six worlds is a hive canteen with him on the rota — the diff of the committed texts is again 30
+    /// files, one line each, and that line is the sweep's own. The ledger, the pen, the canvas buffer and
+    /// the call counts are byte-identical on all thirty rows, and <c>EveryFrameHashesTheSameTests</c>' draw
+    /// transcripts did not move at all: he is a walker, so when he is not on a floor there is nothing extra
+    /// to draw.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

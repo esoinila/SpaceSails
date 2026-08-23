@@ -1516,6 +1516,77 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L2 · HARLAN FESS, NEBULA MUTUAL. The salesman has crossed the floor and is standing at the
+       table — he is not sitting, because he was not invited, and there is no eighth way to open a sitting
+       in this codebase. Everything he says comes out of Core (NebulaRep): the tier line, the buttons and
+       their prices, his answer to the captain's own line. Nothing here is typed twice.
+
+       AND THE PAGE THAT COMES BACK IS NOT DRAWN HERE. #973 L1 shipped StoryBeats.Beat.Flashback as a
+       PLATE — one bleached painting for every memory, riding the edge for its seven seconds over a surface
+       that stays readable — and a merged guard pins that presentation. So "I already have a policy" raises
+       the beat through the one seam and the seam puts the plate up; this panel draws his pitch and his
+       answer and nothing of the plate, because drawing it here as well would be the stacked card #777 named
+       (the same picture, twice, on one screen).
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_repCard is { } pitch)
+    {
+        <div class="view-object-backdrop rep-backdrop">
+            <div class="view-object rep-card" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.NebulaRep.DisplayName</div>
+                <img class="view-object-img rep-portrait" src="@SpaceSails.Core.NebulaRep.PortraitArt"
+                     alt="@SpaceSails.Core.NebulaRep.RepName" onerror="this.style.display='none'" />
+                <div class="rep-desk">@SpaceSails.Core.NebulaRep.Desk</div>
+                <div class="view-object-caption rep-pitch">@pitch.Line</div>
+                @if (_repSaid is { Length: > 0 } saidBack)
+                {
+                    <div class="rep-said">@saidBack</div>
+                }
+                <div class="rep-offers">
+                    @foreach (var repOffer in pitch.Offers)
+                    {
+                        var repMove = repOffer.Move;
+                        <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheRep(repMove))">@repOffer.Label</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L5b · THE WALK-IN. She came in through a leaf that does not open for you, crossed the floor on
+       the real A*, and is standing at the top the captain took for himself. She is not sitting: she said
+       she would not stay.
+
+       EVERYTHING SHE SAYS COMES OUT OF CORE (WalkIn), including the two buttons. Nothing here is typed
+       twice and nothing here is authored — the file that holds her words is the file the ledger row, the
+       note in the book and the plate over her head all read.
+
+       AND THE BEAT IS HOSTED ON THIS PANEL. StoryBeats.Beat.WalkIn is Presentation.Hosted with this card
+       named as its canvas, so the seam spends her cadence, files the seen-set and writes her entrance into
+       the ledger while THIS is the picture on the screen. A plate raised alongside would be the stacked
+       card #777 named — the same woman, twice, on one screen.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_walkInCard is { } sheAsks)
+    {
+        <div class="view-object-backdrop rep-backdrop">
+            <div class="view-object rep-card" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SpaceSails.Core.WalkIn.Name(sheAsks)</div>
+                <img class="view-object-img rep-portrait"
+                     src="@SpaceSails.Core.WalkIn.PortraitArt(sheAsks)"
+                     alt="@SpaceSails.Core.WalkIn.Name(sheAsks)" onerror="this.style.display='none'" />
+                <div class="view-object-caption rep-pitch">@SpaceSails.Core.WalkIn.AtTheTable(sheAsks)</div>
+                <div class="rep-said">@SpaceSails.Core.WalkIn.TheStory(sheAsks)</div>
+                <div class="rep-offers">
+                    <button type="button" class="rep-offer"
+                            @onclick="() => Dismiss(() => AnswerTheWalkIn(true))">@SpaceSails.Core.WalkIn.Yes</button>
+                    <button type="button" class="rep-offer"
+                            @onclick="() => Dismiss(() => AnswerTheWalkIn(false))">@SpaceSails.Core.WalkIn.No</button>
+                </div>
+            </div>
+        </div>
+    }
+
     @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
        ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
        asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
@@ -2287,6 +2358,62 @@
                         <div class="satchel-outcome">@spreadBusy</div>
                     }
 
+                    @* ── #973 L3 · THE RECONCILE. The other verb a table full of paper is for: lay two
+                       things side by side and see whether they are talking about the same world. Every
+                       word of the three verdicts is Fable's (SpreadReconcile); this markup lays a row and
+                       prints what the table said.
+
+                       The laid pair is drawn ABOVE the papers, because it is what the captain is looking
+                       at — and the second question sits under the verdict rather than beside it, since it
+                       is a count and not a conclusion. Nothing here is disabled (#212/#603): a paper
+                       already on the table says so on its own row. *@
+                    @if (LayablePapers() is { Count: > 0 } papers)
+                    {
+                        <div class="spread-lay">
+                            <div class="satchel-sub">
+                                @SpaceSails.Core.SeatedSpread.LayThemTogetherBlurb
+                            </div>
+
+                            @if (_laid.Count > 0)
+                            {
+                                <div class="spread-laid">
+                                    @foreach (SpaceSails.Core.SpreadReconcile.Paper on in _laid)
+                                    {
+                                        <span class="spread-laid-item">@on.Label</span>
+                                    }
+                                    <button type="button" class="satchel-filter"
+                                            title="Take everything off the table"
+                                            @onclick="ClearTheSpread">✕</button>
+                                </div>
+                            }
+
+                            @if (_reconciled is { } said)
+                            {
+                                <div class="satchel-outcome spread-verdict">@said.Line</div>
+                                <div class="spread-second-question">@said.SecondQuestion</div>
+                            }
+
+                            <div class="satchel-items">
+                                @foreach (SpaceSails.Core.SpreadReconcile.Paper paper in papers)
+                                {
+                                    SpaceSails.Core.SpreadReconcile.Paper lay = paper;
+                                    <div class="satchel-row">
+                                        <button type="button" class="satchel-item spread-item"
+                                                title="@SpaceSails.Core.SeatedSpread.LayItHint"
+                                                @onclick="() => LayItOnTheSpread(lay)">
+                                            <span class="satchel-item-name">@paper.Label</span>
+                                            <span class="satchel-item-try">
+                                                @(IsLaid(paper.Id)
+                                                    ? SpaceSails.Core.SeatedSpread.AlreadyLaidWord
+                                                    : SpaceSails.Core.SeatedSpread.LayItWord)
+                                            </span>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     @if (SpreadableFinds() is { Count: > 0 } spreadable)
                     {
                         <div class="satchel-items">
@@ -2372,6 +2499,31 @@
                     @if (_satchelOutcome is { Length: > 0 } penSaid)
                     {
                         <div class="satchel-outcome">@penSaid</div>
+                    }
+
+                    @* ── #973 L3 · THE SHEETS. The other kind of evidence the book holds: not what the
+                       ground told you, but what somebody REMEMBERS. Drawn above the notes and on every
+                       reading of them, because a held memory has no ground — the photograph was taken on a
+                       boat deck that is not in this system any more, and the day you signed happened
+                       somewhere nobody wrote down.
+
+                       Each row is the text, then the one line that says whose it is, which theory it
+                       serves, who put it in your hand and the day (HeldMemory.Sheet.BookLine). The book
+                       keeps no opinion about any of it — the SPREAD is where two of them get to argue. *@
+                    @if (TheSheets() is { Count: > 0 } sheets)
+                    {
+                        <div class="satchel-sheets">
+                            @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in sheets)
+                            {
+                                <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                    <div class="held-sheet-title">
+                                        @SpaceSails.Core.HeldMemory.RowTitle(sheet)
+                                    </div>
+                                    <div class="held-sheet-text">@sheet.Text</div>
+                                    <div class="held-sheet-byline">@sheet.BookLine</div>
+                                </div>
+                            }
+                        </div>
                     }
 
                     @if (_notesView == NotesView.Everywhere)
@@ -2492,6 +2644,56 @@
                        juxtaposition and the juxtaposition is the whole argument; the captain draws the line,
                        with the same pen, and the book keeps no opinion about what it means. *@
                     <div class="satchel-sub">@SpaceSails.Core.CaseSubjects.Blurb</div>
+
+                    @* ── #973 L3 · MONEY &amp; LOVE (owner ruling §12). The detective's two theories, as a
+                       filter over the sheets that stack on this page. It never hides a NOTE: the field
+                       book's own threads have no tag to be filtered by, and a filter that silently emptied
+                       half the page would be the tab lying about what the book holds. Always lands on the
+                       whole book, because a filter that survived the lid is a captain opening their own
+                       book onto half of it and not being told why. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_bookTag is null ? "on" : "")"
+                                title="Every sheet in the book"
+                                @onclick="() => TheThreadsFilterTurnsTo(null)">🎞 every sheet</button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Money ? "on" : "")"
+                                title="Only the sheets that follow the money"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Money)">
+                            💰 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Money)
+                        </button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Love ? "on" : "")"
+                                title="Only the sheets that follow the heart"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Love)">
+                            🖤 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Love)
+                        </button>
+                    </div>
+
+                    @* The sheets, stacked by the names they write down — the photograph's four faces are
+                       four threads on the day it is handed over. Drawn above the field book's own stacks
+                       and in the same shape, because they are the same page answering the same question
+                       about two different kinds of paper. *@
+                    @if (SheetStacks() is { Count: > 0 } sheetStacks)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.HeldMemory.Stack stack in sheetStacks)
+                            {
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Sheets.Count)
+                                    </span>
+                                </div>
+                                @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in stack.Sheets)
+                                {
+                                    <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                        <div class="held-sheet-text">@sheet.Text</div>
+                                        <div class="held-sheet-byline">@sheet.BookLine</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
 
                     <div class="notebook-pen">
                         <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
@@ -3599,6 +3801,14 @@
                                 <span class="deck-shuttle-meta">
                                     @FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)@(local.HasCache ? " · a chest waits here 🗺" : "")
                                 </span>
+                                @* #955 NAV-2: a row in reach is not a row that STAYS in reach. The window it
+                                   is open for — and, on an armed plan, the RETURN BY it binds you to, because
+                                   the ship flies on whether or not you are back aboard. *@
+                                <span class="deck-shuttle-meta deck-shuttle-window">
+                                    ⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
+                                        ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
+                                        : "")
+                                </span>
                             </div>
                             <div class="deck-shuttle-row-actions">
                                 @if (local.HasBerth)
@@ -3645,6 +3855,17 @@
                                 <span class="deck-shuttle-meta">
                                     @ShuttleSeparationText(f.DistanceMeters) · beyond shuttle reach (@ShuttleReachText(f.RangeMeters)) · @ShuttleTrendWord(f.Trend)
                                 </span>
+                                @* #955 NAV-2 · THE OWNER'S CORNER CASE, SAID OUT LOUD. Docked at a Jupiter or
+                                   Saturn haven the moons swing in and out of shuttle reach every synodic
+                                   period, so "beyond reach" is almost never permanent — it is a wait with a
+                                   length. Where the geometry brings the ground back inside the horizon, this
+                                   row says WHEN instead of leaving the captain to guess. *@
+                                @if (AwayReopenSeconds(f.Body.Id) is { } reopensIn)
+                                {
+                                    <span class="deck-shuttle-meta deck-shuttle-window">
+                                        ⏳ next window in @RouteShuttleWindow.In(reopensIn)
+                                    </span>
+                                }
                             </div>
                         </div>
                     }
@@ -3656,6 +3877,34 @@
                     No landable ground near enough to call either — the hatch stays shut for now.
                 </div>
             }
+
+            @* #955 NAV-2 · GO BY SHUTTLE, THE SHIP FLIES ON. Owner (2026-08-23): "with a pre-plotted, armed
+               route you can LEAVE the ship by shuttle mid-voyage (meteorites, small sites) with a return-window
+               clock … without a planned route you risk leaving the ship adrift." So this section exists ONLY
+               while a plan is armed — the ship is then promised to fly herself (#969) and a RETURN BY is a
+               promise the game can keep. Each row is one window the plotted path opens on ground ahead, read
+               off the SAME samples the ARRIVE step reads; two rows for one moon are the owner's separate
+               INGRESS and EGRESS windows. Informational: the boarding buttons above are still the only way
+               aboard, and they light when a window is actually open. *@
+            @{ var routeWindows = ShuttleRouteWindowRows(); }
+            @if (routeWindows.Count > 0)
+            {
+                <div class="deck-shuttle-farhead">On the plotted route — go by shuttle, the ship flies on:</div>
+                <div class="deck-shuttle-rows deck-shuttle-far">
+                    @foreach (var win in routeWindows)
+                    {
+                        var r = win;
+                        <div class="deck-shuttle-row deck-shuttle-row-far"
+                             title="The plan carries her inside a shuttle hop of @r.Body.Name for a while. She will not stop and she will not wait: be off the ground by the RETURN BY or she goes on without you.">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">🛸 @r.Body.Name — @r.Role window</span>
+                                <span class="deck-shuttle-meta">@RouteWindowRowText(r)</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
             <div class="deck-shuttle-actions">
                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => Dismiss(CloseShuttleBayDoor)">Close hatch</button>
             </div>
@@ -4208,6 +4457,17 @@
 
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
                 <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+
+                @* #955 NAV-2 · THE RETURN-WINDOW CLOCK. Owner: "with a pre-plotted, armed route you can LEAVE
+                   the ship by shuttle mid-voyage … with a return-window clock on the captain's remote." The
+                   ship flies her own plan and is NOT waiting, so the only number that matters while standing
+                   on a rock is when the boat must lift. Built by the Core copy (RouteShuttleWindow.RemoteLine)
+                   so the away-site HUD line quotes the identical numbers — never a second clock. *@
+                @if (AwayWindowRemoteLine() is { } awayWindow)
+                {
+                    <div class="vent-readout">@awayWindow</div>
+                    <div class="vent-sub">@AwayWindowRemoteSubLine()</div>
+                }
                 }
 
                 @* #736 · What the last switch DID. Every switch on this handset orders something that is
@@ -5265,6 +5525,17 @@
                     @* #963: "This should help us highlight the NAV button and the Add Burn buttons as the keys
                        to navigation. Them and the scrub handle are really underrepresented now." Same primary
                        dress as Plot — these two are the navigation, everything else on the plan is trim. *@
+                    @* #955 NAV-1 · THE PLAN CAN START AT THE BERTH. Owner's test story for the unified nav list
+                       (2026-08-23): "plan while docked, then the plan starts with an undock step recorded
+                       topmost in the nav-burn list, then safe-harbour out-thrust to clear the vicinity of the
+                       station, then the actual burns." One press lays BOTH rows — a cast-off that leaves her
+                       drifting in the harbour's traffic is not a cast-off — and it is offered only where it
+                       means anything: at a berth, before the plan already has one. *@
+                    @if (NavLockedByDock && !PlanBeginsWithCastOff)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning map-key-action"
+                                title="@CastOffRule.ComposeHint" @onclick="AddCastOffAtTop">@CastOffRule.ComposeButton</button>
+                    }
                     <button type="button" class="btn btn-sm btn-warning map-key-action" title="Drop a new burn onto the plan at the scrub time" @onclick="AddBurnAtScrub">
                         + Add burn at scrub
                     </button>
@@ -5395,13 +5666,73 @@
 
                 @if (_planNodes.Count == 0 && _armedOrbitBodyId is null && _arrive is null)
                 {
-                    <div class="text-secondary">No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.</div>
+                    <div class="text-secondary">@(NavLockedByDock
+                        ? "No steps yet. Press ⚓ + Cast off to start the plan at this berth, then add the burns and end it with an orbit or a dock."
+                        : "No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.")</div>
                 }
                 else
                 {
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
+                            @* #955 NAV-1 · THE TWO DEPARTURE ROWS. Shaped exactly like every other row — pip,
+                               caret, glance line, time — because the owner's whole ask is ONE list read top to
+                               bottom, and a departure that looked different would read as a different kind of
+                               thing. Their editors are the small ones they deserve: the clamp has nothing to
+                               set (it costs nothing and points nowhere), the clearance has the ±p nudges in
+                               NodeFrame's own faces. Both are removable, like every step. *@
+                            if (node.Kind != PlanStepKind.Burn)
+                            {
+                                FlightStepState _ds = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                                bool _dopen = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                                <div class="mb-1 map-plan-step map-plan-step-@_ds.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_dopen ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                    <div class="map-plan-step-line" role="button" tabindex="0"
+                                         title="Click to @(_dopen ? "collapse" : "open") this departure step"
+                                         @onclick="() => ToggleBurnEditor(node)">
+                                        <span class="map-plan-step-pip" title="@_ds" aria-hidden="true"></span>
+                                        <span class="map-plan-step-caret" aria-hidden="true">@(_dopen ? "▾" : "▸")</span>
+                                        <span class="flex-grow-1">@PlanStepGlanceLine(node)</span>
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
+                                    </div>
+                                    @if (_dopen)
+                                    {
+                                        @* The modifier class is not decoration: the burn editor's own guards
+                                           (TheNumbersNudgeTooTests, ThePlannerPlansInTheVectorViewTests) bound
+                                           their slice by the bare `map-plan-step-edit` opening tag, and a
+                                           second panel wearing the identical tag would silently widen what
+                                           they judge. Same styling, its own name. *@
+                                        <div class="map-plan-step-edit map-departure-step-edit">
+                                            @if (node.Kind == PlanStepKind.ClearHarbour)
+                                            {
+                                                <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node)) · @ClearanceEtaLine(node)</div>
+                                                <div class="map-burn-steps" role="group" aria-label="Step the clearance thrust in pulses">
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
+                                                            @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
+                                                            @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
+                                                    <span class="map-burn-epoch-readout text-nowrap" title="What this thrust spends">@node.Pulses p</span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(1, false)"
+                                                            @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(1, true)"
+                                                            @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="small mb-1 text-secondary">The clamp lets go when the plan starts — nothing to set. She leaves with the berth's own shove and the thrust below carries her clear.</div>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1"
+                                                    title="Take this step off the plan" @onclick="() => DeleteNode(node)">✖ remove</button>
+                                        </div>
+                                    }
+                                </div>
+                                continue;
+                            }
+
                             @* PR-D2: each burn is a step. Collapsed, it shows a glanceable line (type +
                                direction + countdown); clicking the line expands its editor in place
                                (accordion — one open at a time). The state pip (planned / done / stale)
@@ -5696,9 +6027,19 @@
                                         {
                                             <div class="small mb-1 text-success">@_aplan</div>
                                         }
+                                        @* #955 NAV-1: a clamped ship may arm a THEN — but only once the plan starts by
+                                           casting her off, and the button says which of those two it is instead of
+                                           standing there dead. A NOW arm from a berth is still a live nav act and
+                                           still refused by the lock. *@
+                                        @{
+                                            bool _armIsAThen = ArriveIsAThen(_ar);
+                                            bool _armBlocked = NavLockedByDock && !_armIsAThen;
+                                        }
                                         <button type="button" class="btn btn-sm w-100 mb-1 @(_aarmed ? (_disarmConfirmBodyId == _ar.BodyId ? "btn-warning" : "btn-outline-warning") : _avalid ? "btn-success" : "btn-outline-secondary")"
-                                                disabled="@NavLockedByDock"
-                                                title="@(NavLockedByDock ? DockNavLockTip : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
+                                                disabled="@_armBlocked"
+                                                title="@(_armBlocked ? DockNavLockTip
+                                                    : NavLockedByDock && !PlanBeginsWithCastOff ? $"{DockNavLockTip} — {CastOffRule.ArmNeedsCastOff}"
+                                                    : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
                                                 @onclick="ArmArriveStep">
                                             @if (_aarmed && _disarmConfirmBodyId == _ar.BodyId)
                                             {
@@ -5708,9 +6049,9 @@
                                             {
                                                 <text>🛰 Disarm the arrival at @BodyName(_ar.BodyId)</text>
                                             }
-                                            else if (ArriveIsAThen(_ar))
+                                            else if (_armIsAThen)
                                             {
-                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip from here</text>
+                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
                                             }
                                             else
                                             {
@@ -6273,11 +6614,21 @@
                                                     <span class="me-2">@_b.Unit <span class="fw-bold" style="color:#ff5a46">@SentryBot.Readout(_b.Rounds)</span></span>
                                                 }
                                             </div>
-                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2"
-                                                    @* #562: the affordability gate reads the CONSTANT, not a
-                                                       literal. A hard-coded 2 here silently shadowed
-                                                       RestockPricePerRound and went wrong the moment the
-                                                       ammo was re-priced — which is now. *@
+                                            @* #562: the affordability gate below reads the CONSTANT, not a
+                                               literal. A hard-coded 2 there silently shadowed
+                                               RestockPricePerRound and went wrong the moment the
+                                               ammo was re-priced — which is now.
+
+                                               This note sits ABOVE the tag, not between its attributes,
+                                               because Razor does NOT treat a comment inside a START TAG as
+                                               a comment: it compiles the whole run into an ATTRIBUTE NAME,
+                                               and the browser answers
+                                               "InvalidCharacterError: Failed to execute 'setAttribute'" —
+                                               which kills the render, so the Trade desk showed
+                                               "An unhandled error has occurred. Reload." and nothing else.
+                                               A note goes above a tag or after its closing bracket; never
+                                               inside it. TheRazorCommentIsNotAnAttributeTests is that law. *@
+                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2 sentry-rearm-btn"
                                                     disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
                                                     title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
                                                     @onclick="RestockSentries">
@@ -6550,7 +6901,10 @@
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
-                                                              Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
+                                                              Tips="LedgerTipsAsRemembered()" OnScopeTip="PointScopeFromLedger"
+                                                              OnReadGreyPage="ReadTheGreyPage"
+                                                              GreyPageMark="@FilingLine.Mark" GreyPageLabel="@FilingLine.Label"
+                                                              Crossings="CrossingRows()" CrossingsHeading="@CaptainCrossings.Heading"
                                                               Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
@@ -6942,6 +7296,15 @@
                             <div class="busted-succession">
                                 <div class="busted-succession-head">🪪 THE POLICY ISSUES A NEW CAPTAIN</div>
                                 <div class="busted-succession-line">@CaptainSuccession.PolicyPayoutLine</div>
+                                @* #973 L1 · THE FILING LINE, ON THE CARD THAT ALREADY EXISTS. One line, once per
+                                   rebirth, on the succession block rather than a card of its own — the wake is
+                                   already four panels long and the amnesia is a property of the succession, not
+                                   a separate event. Which line it is comes from the POLICY that was in force at
+                                   the death, never from counting how many rows happened to grey. *@
+                                @if (bust.FilingNotice is { Length: > 0 } filing)
+                                {
+                                    <div class="busted-succession-filing">@filing</div>
+                                }
                                 <div class="busted-succession-names">
                                     @if (!string.IsNullOrEmpty(bust.RetiredCaptainName))
                                     {
@@ -7106,6 +7469,42 @@
         </div>
     }
 
+    @* #973 L5a · "YOU LOOK DIFFERENT." The first meeting after a rebirth with somebody who knew the old
+       face. Their line, the captain's three answers, and — once he has said one — what they say back. It
+       earns a modal for the reason the vented room does: the captain is standing still at a table, and this
+       is the one moment in the game that is about his own face. *@
+    @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTheFaceScene)">
+            <div class="convergence-card old-crew-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">🪞 @faceWho.Name.ToUpperInvariant()</div>
+                <div class="old-crew-history small text-secondary">@OldCrewHistoryLine(faceGiver)</div>
+                <div class="convergence-head">“@OldCrewScene.Opening(faceWho.Id)”</div>
+                @if (_faceSceneReply is null)
+                {
+                    <div class="old-crew-answers">
+                        @foreach (OldCrewScene.Answer answer in Enum.GetValues<OldCrewScene.Answer>())
+                        {
+                            OldCrewScene.Answer a = answer;
+                            <button type="button" class="btn btn-light old-crew-answer"
+                                    title="@OldCrewScene.Said(a)"
+                                    @onclick="() => AnswerTheFace(a)">
+                                <span class="old-crew-answer-label">[@OldCrewScene.Button(a)]</span>
+                                <span class="old-crew-answer-said">“@OldCrewScene.Said(a)”</span>
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="old-crew-reply">“@_faceSceneReply”</div>
+                    <button type="button" class="btn btn-light convergence-close"
+                            @onclick="() => Dismiss(CloseTheFaceScene)">Leave it there</button>
+                }
+            </div>
+        </div>
+    }
+
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
         @if (_parrotSquawk is not null)
@@ -7130,8 +7529,26 @@
         @{
             Core.Drink? knownFav = KnownFavoriteDrink(giver);
             bool poursUsual = BarPoursFavorite(giver);
+            string sharedHistory = OldCrewHistoryLine(giver);
         }
-        @if (_pendingContactDrink == giver)
+        @* #973 L5a · The bond, readable BEFORE the captain walks in — the whole of the Fail Forward
+           adoption: the player, like a player at that table, knows what is between these people before the
+           scene rather than after it. *@
+        @if (sharedHistory.Length > 0)
+        {
+            <div class="old-crew-history small text-secondary">@display — @sharedHistory</div>
+        }
+        @if (TheyWouldNoticeTheFace(giver))
+        {
+            @* …and they are looking at the face before they are looking at the glass. Nothing else about
+               this person is available until the captain has said one of the three things. *@
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-outline-light"
+                        title="@($"{display} is looking at a face they have never seen before")"
+                        @onclick="@(() => OpenTheFaceScene(giver))">🪞 @display is looking at you</button>
+            </div>
+        }
+        else if (_pendingContactDrink == giver)
         {
             <div class="deck-offer-actions">
                 <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>

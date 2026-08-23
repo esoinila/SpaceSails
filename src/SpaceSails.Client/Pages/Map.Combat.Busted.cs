@@ -651,6 +651,19 @@ public partial class Map
             b.NewCaptainName = after.CaptainName;
             b.NewCaptainAvatar = after.AvatarIndex;
             RefreshThreadList(); // the chip (ActiveThreadInfo) + the roster now read the new identity
+
+            // #973 L1 · THE FILING LINE. The successor wakes remembering the ledger only as far as the last
+            // premium reached; every page dated after that is one they don't remember writing. Read AFTER the
+            // succession is on the thread, because the roll a grey page is later read on is salted with the
+            // LIFE, and this is the moment the life number changes. The policy consulted is `_insurance` at
+            // `SimTime` — the same two the clinic bill above was computed from, so the receipt and the amnesia
+            // can never disagree about whether anybody was covered.
+            b.FilingNotice = MarkTheBookAtTheFilingLine();
+
+            // #973 L5a · …and the same moment empties the list of people this captain has explained his face
+            // to. Beside the filing line rather than anywhere else because it is the same fact about the same
+            // moment: the one who walks out of the clinic is not the one who answered them.
+            ANewFaceHasNothingExplained();
         }
     }
 
@@ -804,6 +817,12 @@ public partial class Map
         // Evening wind #20 — THE NEW CAPTAIN. On any death-resurrection the piracy insurance issues a fresh
         // name + face; these carry the hand-over for the resurrection card (blank when no thread to succeed —
         // a legacy run — so the card falls back to the plain brain-backup copy).
+        /// <summary>#973 L1 · The one line the wake says about the FILING LINE — which pages of the ledger came
+        /// back with this captain and which did not. Decided by the policy in force at the death
+        /// (<c>FilingLine.WakeNotice</c>), never by counting greyed rows. Blank on a legacy run with no thread
+        /// to succeed, exactly like the two names below it.</summary>
+        public string? FilingNotice { get; set; }
+
         public string? RetiredCaptainName { get; set; } // the captain who just walked into the dark
         public string? NewCaptainName { get; set; }     // the name the policy put on the license
         public int NewCaptainAvatar { get; set; }       // the new face in the mirror (art/captain-N.jpg)

@@ -35,6 +35,7 @@ public sealed class StoryBeatsTests
     {
         StoryBeats.Beat.KaamosShardFound => KaamosLore.AllPlates.First().Key,
         StoryBeats.Beat.NebulaShardFound => NebulaLore.AllPlates.First().Key,
+
         _ => "THE QUIET SISTER",
     };
 
@@ -178,6 +179,14 @@ public sealed class StoryBeatsTests
     /// world is a tracker fan — and it is rare by its own nature twice over: a heat threshold has to be
     /// crossed, and at most one boat lands per excursion. A warning rationed for being repetitive is not a
     /// warning, so it is the one adopted beat that keeps EveryTime.</para>
+    ///
+    /// <para>#973 · And the sixth, saying why in its turn. <c>Flashback</c> is rare by its own nature and
+    /// cannot be made repetitive by trying: a grey page may be read at ONCE PER LIFE and never again
+    /// (<see cref="FilingLine.PageState.Refused"/> is the latch), and a captain who has never died has no
+    /// grey pages to read at all. <see cref="StoryBeats.Cadence.OncePerSubject"/> was the near miss and it
+    /// is wrong for one reason: a rebirth RE-GREYS the book, so the same page read by a later captain is a
+    /// different captain reaching for a different stranger's afternoon — and filing under (beat, page id)
+    /// would silently un-illustrate every flashback after the first death.</para>
     /// </summary>
     [Fact]
     public void OnlyRareMomentsFireEveryTime()
@@ -191,6 +200,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.ArcNewsBreaks,
                 StoryBeats.Beat.FireAboard,
                 StoryBeats.Beat.CollectorsSetDown,
+                StoryBeats.Beat.Flashback,
             ],
             everyTime);
     }
@@ -201,6 +211,13 @@ public sealed class StoryBeatsTests
     /// down — the beat is about a PLACE rather than about the captain. <c>OnceEver</c> would have shown one berth's
     /// gangway and silently swallowed every other berth in the system; <c>EveryTime</c> would have made docking at
     /// a place you live at annoying. So: each berth's establishing shot, once, for that berth.
+    ///
+    /// <para>#973 L5b · AND THE NINTH IS ABOUT A PERSON, which widens the sentence above rather than breaking
+    /// it. The clause that ever mattered was not "a place" — it was <i>not about the captain</i>: a beat whose
+    /// subject is somebody else has to be able to happen again about somebody else. Two women who each walk
+    /// into a bar are two moments; the same woman twice is not one, and she is not coming back to ask a second
+    /// time. <c>OnceEver</c> would have shown the fling's entrance and silently swallowed the stranger's
+    /// forever, which is precisely the failure #541 widened the seen-key to stop.</para>
     ///
     /// <para>#664 · Five more, and every one of them passes the same test the tube did: it is about a PLACE
     /// or a THING and not about the captain. A second KAAMOS or NEBULA shard is a different painting and
@@ -226,6 +243,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.OutpostEffectsRead,
                 StoryBeats.Beat.SecretLabDoorFound,
                 StoryBeats.Beat.TheDormantThingWakes,
+                StoryBeats.Beat.WalkIn,
             ],
             perSubject);
     }

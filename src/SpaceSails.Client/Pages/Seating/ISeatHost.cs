@@ -254,5 +254,30 @@ public partial class Map
         /// <summary>#784 QA · <c>?spread=1</c> — whether this boot is one of the demos that sits the captain down
         /// with papers to work on.</summary>
         bool SpreadCheat { get; }
+
+        // ── #973 L5b · THE EIGHTH SEAT ────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// #973 L5b · <b>THE BAR TOP UNDER THE PRESS, OR NULL.</b> The one thing a chair in a docked station's
+        /// bar cannot work out for itself.
+        ///
+        /// <para><b>THE RATCHET MOVED 31 → 32, AND THIS IS THE ARGUMENT.</b> Every other seat verb in this
+        /// family opens on <see cref="Surface"/>, because until now a seat was a thing in a building and there
+        /// was no building without a landing. A DOCKED BERTH HAS NO EXCURSION — that is the whole of the gap
+        /// #973 L0 found and wrote down ("all seven <c>TakeThisSeat</c> sites are gated on a
+        /// <c>SurfaceExcursion</c> … the bar tops are dressing") — so the eighth site has no <c>ex</c> to open
+        /// on, no <c>CanteenWatch</c> to key on and no <c>CanteenRegulars.Tables</c> to match against.</para>
+        ///
+        /// <para>What it needs instead is exactly what those three gave the other seven: which top, keyed how,
+        /// on which watch, and where a body sits at it. So it is ONE member in the same shape as
+        /// <see cref="WalkTheVisitorIntoACabinet"/> and its two neighbours — an answer, asked of the page that
+        /// owns the deck and the room, and never the room itself. Handing a chair
+        /// <c>HavenInterior.BarBand</c> and a collision field would have been handing it a building.</para>
+        ///
+        /// <para><b>Null means this press is not a bar top</b> — not in a bar, not standing at one, or the
+        /// stone allows no body a place at this one — and the caller does what every other seat verb does with
+        /// a press that is not its own, which is nothing at all.</para>
+        /// </summary>
+        BarTopUnderfoot? TheBarTopUnderfoot();
     }
 }

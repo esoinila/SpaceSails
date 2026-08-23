@@ -145,6 +145,28 @@ public static class SeatedSpread
         "Nothing in the sleeve to work. Rounds and relics are not evidence — paper is, and dirt on somebody " +
         "is.";
 
+    // ── #973 L3 · THE OTHER VERB THE TABLE HAS ───────────────────────────────────────────────────────
+    //
+    // Digging turns a sheet into a page of the book. RECONCILING lays two pages of the book against each
+    // other, and all three things that can come of it are Fable's (`SpreadReconcile.AgreeLine` and its
+    // two siblings). What is written here is only the affordance around them: what the section is called,
+    // and what a row's press does.
+
+    /// <summary>#973 L5b · What the reconcile section says over its rows. Fable's line, verbatim — the
+    /// marker L3 left here is answered and gone.</summary>
+    public const string LayThemTogetherBlurb =
+        "Two sheets on the table at a time. See whether they were written about the same world.";
+
+    /// <summary>What a row's press does, said on the row.</summary>
+    public const string LayItWord = "🗂 lay it";
+
+    /// <summary>…and what it says for a paper already lying on the table. Never disabled (#212/#603): the
+    /// row says where the paper is, and pressing it again is simply nothing.</summary>
+    public const string AlreadyLaidWord = "🗂 on the table";
+
+    /// <summary>The hover behind that press.</summary>
+    public const string LayItHint = "Lay this beside the last one and see whether they agree";
+
     /// <summary>Every sentence this file can put on a screen, for the canon sweep.</summary>
     public static IEnumerable<string> AllProse()
     {
@@ -158,6 +180,10 @@ public static class SeatedSpread
         yield return SpreadAgainHint;
         yield return SpreadAgainBlurb;
         yield return NothingToWorkLine;
+        yield return LayThemTogetherBlurb;
+        yield return LayItWord;
+        yield return AlreadyLaidWord;
+        yield return LayItHint;
     }
 
     /// <summary>Every seat this ladder knows, private end first — for guards that must sweep BOTH directions

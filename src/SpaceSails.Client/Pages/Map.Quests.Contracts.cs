@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -101,7 +101,7 @@ public partial class Map
         Pin: q.Pin,
         Charted: q.SourceBodyId is not { } src || !IsBodyHidden(src),
         PickedUp: q.State is QuestState.PickedUp,
-        CacheBody: q.Kind == QuestKind.FetchCache ? BodyName(q.SourceBodyId ?? "") : null);
+        CacheBody: q.Kind is QuestKind.FetchCache or QuestKind.WalkIn ? BodyName(q.SourceBodyId ?? "") : null);
 
     private static ContractKind ToContractKind(QuestKind kind) => kind switch
     {
@@ -112,6 +112,7 @@ public partial class Map
         QuestKind.FetchCache => ContractKind.FetchCache,
         QuestKind.Crack => ContractKind.Crack,
         QuestKind.Favor => ContractKind.CargoRun, // a favor delivery reads as a cargo run in the brief
+        QuestKind.WalkIn => ContractKind.WalkIn,  // #973 L5b · a FIND whose payout line is a dash
         _ => ContractKind.CargoRun,
     };
 
@@ -169,6 +170,14 @@ public partial class Map
     private static string GiverDisplay(string giver)
     {
         if (string.IsNullOrWhiteSpace(giver)) return giver;
+        // #973 L5a — an old shipmate's row is keyed by a prefixed id and their name is authored rather than
+        // shouted, so title-casing it would turn Teodor "Teo" Brask into Teodor "teo" Brask.
+        if (Core.OldCrew.IsAnOldShipmate(giver)
+            && Core.OldCrew.ById(giver[Core.OldCrew.LedgerPrefix.Length..]) is { } shipmate)
+        {
+            return shipmate.Name;
+        }
+
         return string.Join(' ', giver
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Select(TitleWord));
@@ -289,6 +298,18 @@ public partial class Map
             {
                 AdvanceMission(q, QuestState.Complete,
                     $"Chest delivered to {q.TargetCallsign} — {q.Reward:N0} cr for the recovery. 🗺");
+            }
+            // #973 L5b · HER FAVOUR HAS TWO BERTHS AND NO COIN AT EITHER. The first is where the thing is;
+            // the second is her, and the second is the point. Both legs are settled by the same dock event
+            // every other job is, so nothing new watches the ship — what is different is what ARRIVING
+            // MEANS, and that is the walk-in's own file to say.
+            else if (q is { Kind: QuestKind.WalkIn, State: QuestState.Active } && q.SourceBodyId == dockId)
+            {
+                YouFindWhatSheAskedFor(q);
+            }
+            else if (q is { Kind: QuestKind.WalkIn, State: QuestState.PickedUp } && q.DestBodyId == dockId)
+            {
+                YouComeBackAndTellHer(q);
             }
         }
     }

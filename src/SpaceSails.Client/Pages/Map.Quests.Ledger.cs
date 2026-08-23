@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -158,6 +158,14 @@ public partial class Map
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
                 QuestKind.FetchCache => $"Take the shuttle down to {BodyName(q.SourceBodyId ?? "")}, dig up the marked chest, then carry the lot to {q.TargetCallsign}.",
+                // #973 L5b · her favour. The row carries the theory tag the whole arc's second axis is made
+                // of — LOVE, and the first job in this game that is — and, ONLY once L3's SPREAD has found it
+                // out, the grey line about the setup. Until then it says nothing, which is the design: the
+                // player may simply go.
+                QuestKind.WalkIn =>
+                    $"{HeldMemory.Label(q.Theory ?? WalkIn.Theory)} · find {q.TargetCallsign} at "
+                    + $"{BodyName(q.SourceBodyId ?? "")}, then come back and tell {q.Giver} yourself."
+                    + (WalkInCardWarning(q) is { Length: > 0 } grey ? $" — {grey}" : ""),
                 _ => "",
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the
@@ -248,7 +256,10 @@ public partial class Map
         {
             tips.Add(new Stations.Captain.LedgerTip(
                 "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                // #973 L1 · a dated page, and therefore one the filing line can take away. Keyed off the
+                // receipt's own stamp and its text, never its rendered age — the age changes every minute.
+                EntryId: FilingLine.EntryId("autopilot", simTime, text), SimTime: simTime));
         }
 
         // #202: the piracy receipts — the shadow ledger of the honest jobs. What, units, worth, off
@@ -257,7 +268,8 @@ public partial class Map
         {
             tips.Add(new Stations.Captain.LedgerTip(
                 "🏴 Plunder", [loot.Describe()], $"taken {LedgerClock.Age(loot.SimTime, SimTime)}",
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("plunder", loot.SimTime, loot.Describe()), SimTime: loot.SimTime));
         }
 
         foreach (ScopeIntel si in _scopeIntel)
@@ -265,7 +277,8 @@ public partial class Map
             string? prov = si.Giver is { } giver ? ProvenanceLine(giver, si.Station ?? "ashore", si.AcquiredSimTime) : null;
             tips.Add(new Stations.Captain.LedgerTip(
                 si.Headline, si.Lines, prov,
-                ScopeTipId: si.Id, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: si.Id, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("scope", si.AcquiredSimTime, si.Id), SimTime: si.AcquiredSimTime));
         }
 
         foreach (RouteIntel entry in _intelLedger.Entries)
@@ -279,12 +292,16 @@ public partial class Map
             string route = npc is not null ? RouteLabel(npc.Ship) : "route off the books";
             double staleDays = Math.Max(0, entry.SecondsUntilStale(SimTime) / 86400);
             string line = $"{ship} really runs {route} — a ghost, on your contacts (🕸), stale in {staleDays.ToString("F0", CultureInfo.InvariantCulture)} d.";
-            string? prov = _routeIntelProvenance.TryGetValue(entry.ShipId, out IntelProvenance? p)
-                ? ProvenanceLine(p.Giver, p.Station, p.AcquiredSimTime)
-                : null;
+            bool known = _routeIntelProvenance.TryGetValue(entry.ShipId, out IntelProvenance? p);
+            string? prov = known ? ProvenanceLine(p!.Giver, p.Station, p.AcquiredSimTime) : null;
+            double? acquired = known ? p!.AcquiredSimTime : null;
             tips.Add(new Stations.Captain.LedgerTip(
                 $"🕸 {ship}", [line], prov,
-                ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null));
+                ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null,
+                // #973 L1 · dated only when we know who handed it over and when. A route tip bought off the
+                // books carries no stamp, so there is no filing line to put it on either side of.
+                EntryId: acquired is { } at ? FilingLine.EntryId("route", at, entry.ShipId) : null,
+                SimTime: acquired));
         }
 
         // #347 — the BUG the owner hit: the rumors and tips a contact hands you over a drink (and the
@@ -299,7 +316,9 @@ public partial class Map
                 $"👂 {who}",
                 rumor.Lines.Select(l => l.Text).ToArray(),
                 ProvenanceLine(who, rumor.LatestBar, rumor.LatestSimTime),
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("overheard", rumor.LatestSimTime, rumor.Source),
+                SimTime: rumor.LatestSimTime));
         }
 
         // #587 — THE FIELD BOOK, in the ledger. Owner, on a rebuilt site: "we should maybe collect the tips
@@ -313,8 +332,15 @@ public partial class Map
                 $"🥾 {found.Place}",
                 found.Lines.Select(l => $"{l.Glyph} {l.Text}").ToArray(),
                 $"found on the ground · day {(found.LatestSimTime / 86400).ToString("F0", CultureInfo.InvariantCulture)}",
-                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("field", found.LatestSimTime, found.Place),
+                SimTime: found.LatestSimTime));
         }
+
+        // #973 L5a · THE SHEETS. A held memory is a dated row like anything else, and one of them — the
+        // summer party — carries the mark that says the SERVICE filed it, which is why an uninsured rebirth
+        // greys the whole book around it and leaves it alone.
+        tips.AddRange(HeldMemoryTips());
 
         // #208: a standing note explaining the haven/depot pair the picker now tags — the owner asked
         // for it "in ledger" so the twin-port confusion has one discoverable, permanent answer. Filed

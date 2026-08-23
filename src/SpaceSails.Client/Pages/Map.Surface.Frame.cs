@@ -369,6 +369,11 @@ public partial class Map
         // door the captain's own TRY is refused at, and the one who comes out of one to sit at your table.
         // After the round, deliberately — a walker is not a guard and never shares a list with one.
         AdvanceWalkers(dtRealSeconds);
+        // #973 L2 · …and the one who is on a payroll and is not the law: the Nebula rep, deciding whether to
+        // come in through a door, drift to the next fixture on his beat, or cross the floor to a captain
+        // sitting alone. AFTER the walkers, deliberately — the decision is about a floor whose bodies have
+        // already been stepped this frame, his included.
+        AdvanceTheRep(dtRealSeconds);
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
         // #370/#394: an away site runs NO endless tide (owner: "not a continuous endless stream like on
         // Miranda"). The expedition's beats may rouse a LIMITED pack; the deflection rock runs the pack OFF

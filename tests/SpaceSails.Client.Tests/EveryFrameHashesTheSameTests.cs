@@ -393,18 +393,37 @@ public sealed class EveryFrameHashesTheSameTests
     // State carries ShowNerve. Nothing was added to a frame, taken out of one, or moved in one; every other
     // row in this table is byte-identical. That is what a re-pin is allowed to look like.
 
+    // #973 L5b · SEVEN HAVEN ROWS RE-PINNED, and they are the only rows that moved. Every docked bar grew a
+    // console the room never had — a top the captain can take (`DeckPlan.ConsoleKind.BarTop`) on each of its
+    // tops that the rota has not already given to somebody — so each of those frames draws a handful more pen
+    // calls than it did and nothing else about any of them changed. Six to eight more calls per haven, which
+    // is exactly the number of free tops that bar has this watch, and not one ship, wreck, hive or park row
+    // moved at all. That is what a re-pin is allowed to look like.
+
+    // ── #973 L4 · THE SAME SEVEN ROWS, RE-PINNED AGAIN ON TOP OF L5b, AND THE COUNTS PROVE WHY ────────
+    //
+    // Three NEBULA MUTUAL wall plates are hung in every docked station's CONCOURSE (`StationAds`, hung in
+    // HavenInterior beside the PIRATE INSURANCE poster that has stood there since #380). Each is one more
+    // ViewObject fixture, and a fixture is drawn as a marker and a label — so every one of the seven halls
+    // gained EXACTLY SIX calls over L5b's numbers: 352→358, 356→362, 358→364, 352→358, 356→362, 356→362,
+    // 358→364. The arithmetic is the proof, and it is a different arithmetic from L5b's: that lane's rows
+    // moved by the number of FREE TOPS a bar had that watch, which differs per haven; these move by six
+    // everywhere, because three plates × two calls does not depend on who is drinking. Not one ship, wreck,
+    // hive or park row moved at all — the rest of this table is byte-identical across both lanes. Had a
+    // count moved by anything but six here, it would be a different lane's bug wearing this lane's clothes.
+
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
         ["ship · under way"] = (335, "e943fa59228f59c49c0efebc3eda6579bda13f1abc0e3e48e16a6f1358630be5"),
         ["ship · docked, the shuttle away and the machine stalling"] = (308, "a8bec38425f92452c72de535eac14f855c4df214cbbf3301fe105fbe546bf62a"),
         ["ship · hatches dogged, seated at the table"] = (309, "9096ac57873a26df8ac1d3cf7740960a7e98900a29493ded9004887eda0da6f8"),
-        ["haven · the-space-bar"] = (346, "dbc517c0b49a716efccad244e30fefb52a4b1aa7d7613db97f609533cd6b9c02"),
-        ["haven · cinder-roost"] = (350, "37e0a21a58f73fc29c5c88b5c9373ac4850ac6c14369a97393ba19457a48a58c"),
-        ["haven · ringside-exchange"] = (350, "9ce3e18d23896e323424dd54361e0e1f6495574ca5109b1c07510932f6811442"),
-        ["haven · the-tilt"] = (344, "269bd7fccb68b15c8af0e3675bc4bd266f74cb31b629bee6cc8549b76c19238f"),
-        ["haven · selene-gate"] = (348, "076124dd05cf4015c0d1909255974d30535e944c105c2467fa7f052521ac7e2b"),
-        ["haven · red-eye"] = (346, "42ab936424fe78ddc93fa197d347548d1bc960f8d8a62cb08edb982316988949"),
-        ["haven · the-deep"] = (350, "e2777d7370fd273aee8d6737fe394c6baff9867261615431dc02672bbca81d52"),
+        ["haven · the-space-bar"] = (358, "19ca5c6d71b008ef030af25f59ee0faaeb0f7ec87d45453fd1c2c77eb3d8e30a"),
+        ["haven · cinder-roost"] = (362, "77c60458ce301e2eb6445dd24be3c8584712fd689804e843b48ac5e5a5d14314"),
+        ["haven · ringside-exchange"] = (364, "fe9c4f3820c98c849f04b68368a752814d99a55145c97287ae6388792cad1697"),
+        ["haven · the-tilt"] = (358, "3082188a8ada5f37b096f6ffb05111cd45212b6cbc73150e6b426582d6e10242"),
+        ["haven · selene-gate"] = (362, "95438470755148ea59c54ff792b7c341a8159725f769bdbcecac6d7eb4441ff4"),
+        ["haven · red-eye"] = (362, "1dffd21daf968445e945dd4055d08c011460e6491b778cb5f9425f75040c725f"),
+        ["haven · the-deep"] = (364, "c046973066136cb0483ff561dae82768a1e59528ba97e78e4ed8e6043356bd20"),
         ["wreck · HullBreach"] = (592, "637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020"),
         ["luna B1"] = (1591, "c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab"),
         ["luna B2"] = (426, "86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0"),

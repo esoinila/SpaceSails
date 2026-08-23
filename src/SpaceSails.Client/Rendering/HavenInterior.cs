@@ -1,3 +1,4 @@
+using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Rendering;
@@ -134,8 +135,19 @@ public static class HavenInterior
     /// <param name="forceOracle">The <c>?oracle=1</c> seat cheat (#428): plant the oracle's corner console
     /// whatever her rota says this watch. Part of the cache key — a deck built before the cheat was armed
     /// can never be handed back for a forced boot.</param>
+    /// <param name="fillWalkers">#973 L0 · The page's own walker band, written into the slots after the room's
+    /// seated figures — handed <c>(buffer, firstSlot)</c> on every frame the plan is drawn. Null for a deck
+    /// nobody is walking across, which is every caller that only wants the geometry (and every test that has
+    /// always asked for one).
+    ///
+    /// <para><b>A plan with a filler is NOT cached, and that is deliberate.</b> The cache is shared process-wide
+    /// and xUnit runs test classes in parallel — the concurrent dictionary above exists because two of them
+    /// building haven decks at once corrupted it. A delegate closed over ONE page, handed back to a second page
+    /// out of a shared cache, would be one buffer written by two rooms: the named bug class, with the flakiest
+    /// possible symptom. Building costs a few hundred objects and happens twice per docking, so there is
+    /// nothing to save here anyway.</para></param>
     public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
-        bool forceOracle = false)
+        bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -144,6 +156,10 @@ public static class HavenInterior
         IReadOnlyList<DeckWing> active = unlockedHatchIds is null
             ? []
             : DeckExpansions.ActiveWings(WingCatalog(bodyId), bodyId, unlockedHatchIds).ToList();
+        if (fillWalkers is not null)
+        {
+            return BuildComplex(spec, active, simTime, forceOracle, fillWalkers);
+        }
         long watch = PatronRota.WatchIndex(simTime);
         string wingKey = active.Count == 0
             ? bodyId
@@ -200,6 +216,164 @@ public static class HavenInterior
     /// <summary>How far past the door line the ashore boot stands: one avatar ACROSS, so the captain is
     /// wholly inside the room rather than straddling the door line they just crossed.</summary>
     private const double AshoreStepDeckUnits = 2 * DeckPlan.AvatarRadius;
+
+    // ── #973 L0 · THE BAR AS A ROOM WITH A METABOLISM ────────────────────────────────────────────────────
+    //
+    // Owner's favourite room is The Red Eye's bar, and until this lane it was the one place in the game where
+    // nobody could move: eleven droid slots that are a stateless function of sim time, no band, no doors an
+    // NPC could come out of, no floor anybody but the captain walked. #731's whole beat — a regular goes out
+    // through a leaf the captain's own TRY is refused at, and no line explains it — worked on a Hive canteen
+    // floor and nowhere else.
+    //
+    // What is published below is the room's OWN geometry, verbatim, and never a second copy of it: the two
+    // back-room leaves are the same records BuildComplex hangs on the wall, and the tops are the same list it
+    // draws. A band computed here and a room drawn there would be this repo's oldest and most reliably wrong
+    // bug class with a body walking through it.
+
+    /// <summary>#973 L0 · The bar's seven tops, as ONE list. Consumed by <see cref="BuildComplex"/> (which
+    /// draws them) and by <see cref="BarBand"/> (which walks people to them), so the room somebody crosses is
+    /// the room the captain is looking at.</summary>
+    private static readonly (float X, float Y)[] BarTops =
+    [
+        (-9f, HallTopY + 6f), (14f, HallTopY + 6f), (2.5f, HallTopY + 11f),
+        (-9f, HallTopY + 16f), (14f, HallTopY + 16f), (-3f, HallTopY + 18f), (8f, HallTopY + 18f),
+    ];
+
+    /// <summary>
+    /// #973 L0 · THE TWO LEAVES OFF THE BAR, as the building's own <see cref="UndergroundComplex.LockedDoor"/>
+    /// — the type <see cref="Egress"/> insists on, and it insists for the reason that IS this beat: every
+    /// member of that list is refused to the captain by construction, so a walker cannot be given a public
+    /// door to vanish through by an oversight.
+    ///
+    /// <para>They are the cellar and the storeroom the bar has always had, hung on the room's two side walls
+    /// (which are unbroken stone — the leaf is drawn on the wall, not cut into it), with the plate that is
+    /// already painted on them. <see cref="BuildComplex"/> takes its doors and its knockable hatch consoles
+    /// from this one call, so the sign a walker carries and the sign the captain reads are one string.</para>
+    /// </summary>
+    private static UndergroundComplex.LockedDoor[] BarBackRoomLeaves(char authority) =>
+    [
+        new(BarLeft, HallTopY + 9, BarLeft, HallTopY + 13, $"🔒 CELLAR · {authority}-B1"),
+        new(BarRight, HallTopY + 9, BarRight, HallTopY + 13, $"🔒 STOREROOM · {authority}-B2"),
+    ];
+
+    /// <summary>
+    /// #973 L0 · WHAT A DOCKED STATION'S BAR IS, TO SOMEBODY WHO HAS TO WALK ACROSS IT.
+    /// </summary>
+    /// <param name="BodyId">The berth, which is also the rota key — <see cref="SpaceSails.Core.NebulaRep"/>'s
+    /// presence law is keyed on the BODY being visited, so a docked station needs no second kind of id.</param>
+    /// <param name="FloorY">The bar's south wall. North of it is the room; the immigration hall is south. The
+    /// one line that answers "is the captain in the bar", and it is the wall the room is built off rather than
+    /// a threshold typed in somewhere else.</param>
+    /// <param name="Doors">The leaves somebody may come out of, in the room's own order.</param>
+    /// <param name="Fixtures">Where a person with nothing to do stands — the counter's service point, which is
+    /// the spot this bar's own art draws its desk at (<c>BarDesks</c>) and the same one the captain bellies up
+    /// to.</param>
+    /// <param name="Tops">The room's tables, by their centres. Where a BODY stands at one is the caller's to
+    /// sound against the stone, exactly as a canteen top's chair is.</param>
+    public readonly record struct BarFloor(
+        string BodyId,
+        double FloorY,
+        IReadOnlyList<UndergroundComplex.LockedDoor> Doors,
+        IReadOnlyList<DeckReachability.Point> Fixtures,
+        IReadOnlyList<DeckReachability.Point> Tops);
+
+    /// <summary>#973 L5b · What this berth's bar is CALLED — THE STORMWATCH BAR, THE EARTHRISE, THE DEEP END.
+    /// The same string the deck's own location strip reads off the spec, published because the strip's company
+    /// clause needs it: a top in a station bar that announced itself as a canteen table was the sentence and
+    /// the room disagreeing, and it was found by looking.</summary>
+    public static string? BarNameOf(string bodyId) =>
+        System.Array.Find(Specs, s => s.BodyId == bodyId) is { } spec ? spec.BarName : null;
+
+    /// <summary>#973 L5b · How many a bar top seats. The room's own number, stated once — the sitting says it
+    /// in chairs ("one of them is yours now"), and a second count anywhere would be the panel and the picture
+    /// disagreeing about how alone the captain is.</summary>
+    public const int BarTopSeats = 4;
+
+    /// <summary>#973 L5b · The plate over a top nobody is at. The same shape the canteen's free top wears —
+    /// the verb is TAKE THE TABLE, and the label is what the captain reads before pressing [E].</summary>
+    public const string BarTopLabel = "🍸 A TOP NOBODY'S AT";
+
+    /// <summary>
+    /// #973 L5b · WHERE A BODY STANDS AT A BAR TOP — one body-width off its centre, on the first side the
+    /// stone allows, hall side sounded first because that is the side somebody crossing this room comes from.
+    ///
+    /// <para>Published here, with the tops themselves, rather than kept private to whoever asked first. TWO
+    /// callers need it and they must not disagree: the walker planning a crossing (<c>Map.BarWalkers</c>) and
+    /// the seat putting the captain in a chair (<c>Seating.BarTop</c>). A second sounding would put the woman
+    /// and the captain on the same square, which is the drawn room and the walked room disagreeing about a
+    /// lap — this repository's third named bug class, at a table for two.</para>
+    /// </summary>
+    /// <returns>The place, or null when the stone allows no side of this top at all.</returns>
+    /// <param name="clearOf">#973 L5b · Somebody who is already standing (or sitting) at this top, whose side
+    /// is therefore taken. A top is a place for more than one body now — the captain in a chair at it and the
+    /// woman who crossed the room to it — and a sounding that could not be told about the first would put the
+    /// two of them on one square. Null when nobody is there yet.</param>
+    public static DeckReachability.Point? BesideATop(
+        DeckReachability.Point top, double radius, IReadOnlyList<SurfaceCollision.Segment> walls,
+        DeckReachability.Point? clearOf = null)
+    {
+        double off = 2 * radius;
+        (double X, double Y)[] sides =
+        [
+            (top.X, top.Y - off), (top.X + off, top.Y), (top.X - off, top.Y), (top.X, top.Y + off),
+        ];
+        foreach ((double x, double y) in sides)
+        {
+            if (SurfaceCollision.Blocked(x, y, radius, walls))
+            {
+                continue;
+            }
+
+            if (clearOf is { } taken)
+            {
+                double dx = x - taken.X;
+                double dy = y - taken.Y;
+                if ((dx * dx) + (dy * dy) < off * off)
+                {
+                    continue;   // that side is somebody's; a second body on it is a lap, not a table.
+                }
+            }
+
+            return new DeckReachability.Point(x, y);
+        }
+
+        return null;
+    }
+
+    /// <summary>#973 L0 · The walkable band of a docked station's bar, or null at a berth with no interior to
+    /// walk. Pure: it reads the same constants the room is carved from and builds nothing.</summary>
+    public static BarFloor? BarBand(string bodyId)
+    {
+        if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
+        {
+            return null;
+        }
+
+        BarDesk desk = BarDesks.For(spec.BodyId) ?? DefaultBarDesk(spec.BodyId);
+        var tops = new List<DeckReachability.Point>(BarTops.Length);
+        foreach ((float X, float Y) top in BarTops)
+        {
+            tops.Add(new DeckReachability.Point(top.X, top.Y));
+        }
+
+        return new BarFloor(
+            spec.BodyId,
+            HallTopY,
+            BarBackRoomLeaves(spec.Authority[0]),
+            [new DeckReachability.Point(desk.ServiceX, HallTopY + desk.ServiceYOffset)],
+            tops);
+    }
+
+    /// <summary>The safe fallback desk for a bar whose art has not been measured — one place, so the band and
+    /// the build cannot come to two different views of where the counter is.</summary>
+    private static BarDesk DefaultBarDesk(string bodyId) => new(bodyId, 0.26f, 0.60f, 4.5f);
+
+    /// <summary>#973 L0 · How many figures the docked complex draws before any walker: the ship's three, the
+    /// customs officer, the four seated regulars, the Magpie, the barkeep and the oracle's corner. Named
+    /// because <see cref="BuildComplex"/> hands it to the plan and the walker band is written after it, and a
+    /// buffer offset that is two opinions about one number is how this game has twice thrown
+    /// <c>IndexOutOfRangeException</c> at the renderer.</summary>
+    public const int SeatedFigureCount = 11;
 
     // --- The roaming Magpie (PR-F, the owner's "people cannot be static furniture" ruling) ---
     // A fence's runner who never sits still: a bar table one watch, out of reach the next, waiting in
@@ -398,7 +572,7 @@ public static class HavenInterior
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
     private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime,
-        bool forceOracle = false)
+        bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null)
     {
         DeckPlan ship = DeckPlan.Ship;
         bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
@@ -519,7 +693,7 @@ public static class HavenInterior
         // mid-depth, where every backdrop actually draws it. The service point (S) is the [E] spot on the
         // players' side; the counter wall sits just BEHIND it (toward the window) and the droid paces
         // behind that (see FillComplexDroids). A safe fallback keeps any unlisted bar sane.
-        BarDesk desk = BarDesks.For(spec.BodyId) ?? new BarDesk(spec.BodyId, 0.26f, 0.60f, 4.5f);
+        BarDesk desk = BarDesks.For(spec.BodyId) ?? DefaultBarDesk(spec.BodyId);
         float serviceX = desk.ServiceX;
         float serviceY = HallTopY + desk.ServiceYOffset;   // mid-depth on the desk, clear of the window
         float counterY = serviceY + 1f;                     // the counter wall, one du behind the service line
@@ -527,12 +701,18 @@ public static class HavenInterior
         Barkeep? keep = Barkeeps.For(spec.BodyId);
         string keepLabel = keep is { } bk ? $"🍺 BARKEEP · {bk.Name}" : "🍺 BARKEEP";
 
-        // Two locked back-room hatches off the bar — more of the place you can't get into (yet).
-        char lvl = spec.Authority[0];
-        doors.Add(new(BarLeft, HallTopY + 9, BarLeft, HallTopY + 13, Locked: true));
-        hatches.Add(new(DeckPlan.ConsoleKind.Hatch, BarLeft + 2, HallTopY + 11, $"🔒 CELLAR · {lvl}-B1"));
-        doors.Add(new(BarRight, HallTopY + 9, BarRight, HallTopY + 13, Locked: true));
-        hatches.Add(new(DeckPlan.ConsoleKind.Hatch, BarRight - 2, HallTopY + 11, $"🔒 STOREROOM · {lvl}-B2"));
+        // Two locked back-room hatches off the bar — more of the place you can't get into (yet), and since
+        // #973 L0 the two leaves people come OUT of. The records are BarBackRoomLeaves' and not typed again
+        // here: a walker's plate and the plate the captain is refused at are one string, by construction.
+        UndergroundComplex.LockedDoor[] backRooms = BarBackRoomLeaves(spec.Authority[0]);
+        foreach (UndergroundComplex.LockedDoor leaf in backRooms)
+        {
+            doors.Add(new((float)leaf.X1, (float)leaf.Y1, (float)leaf.X2, (float)leaf.Y2, Locked: true));
+            // The knockable panel sits two du INTO the room from its leaf, on whichever side wall it hangs on.
+            float inward = leaf.X1 <= BarLeft ? 2f : -2f;
+            hatches.Add(new(DeckPlan.ConsoleKind.Hatch,
+                (float)leaf.X1 + inward, (float)((leaf.Y1 + leaf.Y2) / 2), leaf.Sign));
+        }
 
         // The bar's regulars (issue #410): no longer four names nailed to four fixed chairs in every bar.
         // The rota (ResolveRegulars → PatronRota) decides, for THIS station and THIS docking watch, which
@@ -640,13 +820,42 @@ public static class HavenInterior
             + "meaner and broker. Ask your dockmaster before the collectors ask about you. Underwritten by "
             + "Nebula Mutual — “We Bring You Back Meaner.”"));
 
+        // #973 L4 · THE THREE SMALL PLATES, hung round the same concourse the poster hangs in. A text plate
+        // in the poster's own idiom — no canvas, exactly as the lifeboat muster above carries none: three
+        // more paintings for three one-line ads would be a pool of art bought to say very little.
+        //
+        // The captain reads the WHOLE of each one walking past (the label IS the advertising), and [E] gives
+        // it back on a card so the words can be read twice — which matters, because the third one read is
+        // the one that finishes a memory (`StationAds`). Detected by the ad's own text, so this file never
+        // learns what any of them is FOR.
+        //
+        // NO CAPTION, and that came out of looking at the card in a browser: a caption repeating the title
+        // word for word read as a stutter — the surface saying one thing twice and meaning it once. The
+        // plate is one sentence; the card is that sentence held closer, and there is nothing under it.
+        //
+        // Placed on the northern half of the concourse, where nothing else stands: the poster and the plaque
+        // are port-side and low, the lifeboat is starboard and low, the tube path is x 1..4 and southern.
+        // Every one is at least 5 du from every other console on this deck, so [E] can never grab the wrong
+        // fixture — the same clearance rule the second poster and the selfie spot are placed by.
+        (float X, float Y)[] adSites =
+        [
+            (HallCenterX + 8.5f, HallCenterY + 4),
+            (HallCenterX + 3, HallCenterY + 9),
+            (HallCenterX - 4, HallCenterY + 8),
+        ];
+        for (int adIdx = 0; adIdx < adSites.Length && adIdx < SpaceSails.Core.StationAds.Ads.Count; adIdx++)
+        {
+            SpaceSails.Core.StationAds.Ad ad = SpaceSails.Core.StationAds.Ads[adIdx];
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, adSites[adIdx].X, adSites[adIdx].Y, ad.Label));
+        }
+
         // Seven tables spread across the big room — the rota seats present regulars at some of them this
         // watch, the rest stand open (an empty chair = someone's drifted off) — plus the ship's cantina.
-        var tables = new List<DeckPlan.TableTop>(ship.Tables)
+        var tables = new List<DeckPlan.TableTop>(ship.Tables);
+        foreach ((float X, float Y) top in BarTops)
         {
-            new(-9, HallTopY + 6), new(14, HallTopY + 6), new(2.5f, HallTopY + 11),
-            new(-9, HallTopY + 16), new(14, HallTopY + 16), new(-3, HallTopY + 18), new(8, HallTopY + 18),
-        };
+            tables.Add(new(top.X, top.Y));
+        }
 
         var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops)
         {
@@ -679,9 +888,51 @@ public static class HavenInterior
             }
         }
 
+        // ── #973 L5b · A TOP THE CAPTAIN CAN TAKE ───────────────────────────────────────────────────────
+        //
+        // #973 L0 found the gap and wrote it down: every one of the seven ways to open a sitting in this game
+        // was gated on a SurfaceExcursion, a berth has none, and so "the bar's seven tops are drawn dressing
+        // with no chairs and no console" — [E] at one answered nothing, which is an absence rather than a
+        // refusal and is the one kind of no a player cannot read (#757's own lesson, in the other room).
+        //
+        // A console goes on every top the room has not already given to somebody: the regulars the rota
+        // seated this watch, the Magpie at their stop, the oracle in her corner. Asked of the console list
+        // ITSELF, after everything else is in it, so the answer cannot drift from the room — a second table
+        // of who is sitting where would be this file's oldest bug class with a stranger in the captain's
+        // chair. Within an interact radius of an existing console is "somebody's", because that is exactly
+        // the distance at which [E] would grab the wrong one.
+        foreach ((float X, float Y) top in BarTops)
+        {
+            bool somebodysAlready = false;
+            foreach (DeckPlan.ConsoleSpot spot in consoles)
+            {
+                double dx = spot.X - top.X;
+                double dy = spot.Y - top.Y;
+                if ((dx * dx) + (dy * dy) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+                {
+                    somebodysAlready = true;
+                    break;
+                }
+            }
+
+            if (!somebodysAlready)
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.BarTop, top.X, top.Y, BarTopLabel));
+            }
+        }
+
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 11, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere),
+            // #973 L0 · …and the WALKER BAND after the room's own seated figures, when somebody is walking this
+            // deck. The offset is stated once (SeatedFigureCount) and the width once (Egress.BandSlots); the
+            // two times this game threw IndexOutOfRangeException at the renderer, it was because a band's
+            // width and a buffer's length were two opinions about one number.
+            droidCount: SeatedFigureCount + (fillWalkers is null ? 0 : Egress.BandSlots),
+            fillDroids: (simTime, buffer) =>
+            {
+                FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere);
+                fillWalkers?.Invoke(buffer, SeatedFigureCount);
+            },
             location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -22,7 +22,7 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?walkin=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
     /// <c>?roll=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
@@ -42,6 +42,44 @@ public partial class Map
             // than no cheat at all.
             string candidate = Uri.UnescapeDataString(pair["approach=".Length..]).ToLowerInvariant();
             _approachCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("rep=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #973 L2 dev cheat: /map?rep=1 puts Harlan Fess on this ground whatever his rota says;
+            // /map?rep=0 keeps him off it.
+            //
+            // Same argument as ?approach= above, and it is the stronger case of the two: his presence is
+            // "at most one place in three, never two visits running", so without a lever the whole
+            // feature — the walk in, the pitch, the flashback, the withdrawal — is reachable only by
+            // docking somewhere three or four times and hoping. It forces WHETHER and never WHO or WHAT:
+            // the tier line, the buttons, the rarity of the bleed and the once-per-life page are all the
+            // ones a captain gets.
+            string candidate = Uri.UnescapeDataString(pair["rep=".Length..]).ToLowerInvariant();
+            _repCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("walkin=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #973 L5b dev cheat: /map?walkin=1 lets a walk-in happen at this berth whatever the rota and the
+            // tier say; /map?walkin=0 keeps her away.
+            //
+            // The strongest case of the three on this page. Her cadence is "rare, once per subject" ON TOP OF
+            // a classy-venue gate and a captain who has to already be sitting alone at a top — so without a
+            // lever the whole scene (the entrance, the crossing, the ask, the note, the setup) is reachable
+            // only by docking great ports over and over and sitting down at each of them. It forces WHETHER
+            // and never WHO: who crosses the floor is the world's answer (is the fling posted here?), her
+            // lines are the ones a captain gets, and whether this one is a setup is the seed's.
+            string candidate = Uri.UnescapeDataString(pair["walkin=".Length..]).ToLowerInvariant();
+            _walkInCheat = candidate switch
             {
                 "1" or "true" or "yes" or "now" => true,
                 "0" or "false" or "no" or "never" => false,
@@ -285,6 +323,19 @@ public partial class Map
             //   /map?ashore=1&nebula=adjuster&simhours=9
             string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
             q.AshoreCheat = candidate is "1" or "true" or "yes";
+        }
+        else if (pair.StartsWith("oldcrew=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #973 L5a dev cheat: /map?oldcrew=1 boots ashore (default The Space Bar, override with ?dock=)
+            // with the four shipmates this universe cast working THIS berth, and with one captain already
+            // buried — so the face scene, the photograph and the three named drink modifiers are all one URL
+            // away instead of one death and four voyages away.
+            //
+            // The same seat idiom as ?kaamos=holder / ?oracle=1 / ?nebula=adjuster, and the same discipline:
+            // it grants no sheet, writes no crossing and answers nothing. It hands you the people and the
+            // fact that your face is new, and every word after that is played.
+            string candidate = Uri.UnescapeDataString(pair["oldcrew=".Length..]).ToLowerInvariant();
+            q.OldCrewCheat = candidate is "1" or "true" or "yes";
         }
         else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))
         {

@@ -36,7 +36,13 @@ public partial class Map
 
     private void ReprojectTrajectory()
     {
-        _samples = _simulator!.ProjectAdaptive(_ship, _plan, CurrentPlotHorizonSeconds, maxTimeStep: 3 * 3600, maxSamples: 8000);
+        // #955 NAV-1 — THE DRAWN FUTURE STARTS WHERE THE PLAN STARTS. For a free-flying ship that is the ship
+        // herself (PlanStartState returns _ship unchanged, so nothing about an ordinary plot moved); for a
+        // clamped ship whose plan begins with a cast off it is the state the clamp is about to hand over —
+        // the berth plus the berth's own shove. Everything judged off this ribbon (the passes, the arrival
+        // row's OK/NOT bit, #969's arm-time rehearsal) is therefore computed FROM THE BERTH ONWARD, which is
+        // the owner's "the plotted path starts with the cast-off + clearance" in one argument.
+        _samples = _simulator!.ProjectAdaptive(PlanStartState(), _plan, CurrentPlotHorizonSeconds, maxTimeStep: 3 * 3600, maxSamples: 8000);
         _nextProjectionSimTime = _ship.SimTime + ProjectionRefreshSimSeconds;
         _passDirty = true;
         _lastReprojectMs = _lastTimestampMs ?? 0;
@@ -79,8 +85,14 @@ public partial class Map
     // harmless to include (their firing window has passed), so the same plan serves projection too.
     private void RebuildPlan()
     {
+        // #955 NAV-1: the UNDOCK row is a step, not an impulse — there is no delta-v in a clamp letting go, and
+        // handing one to the maneuver plan would have the integrator "fire" a burn of zero pulses at the berth.
+        // It is flown by the frame loop instead (RunTheCastOffStep), because it is the one step that changes
+        // which branch the loop takes. The CLEARANCE row is a genuine Vector burn and goes in like any other,
+        // which is exactly why it was built as one: the existing executor fires it and the existing projection
+        // draws it, with no new machinery on either side.
         _plan = new ManeuverPlan(
-            _planNodes.Where(n => !n.Stale)
+            _planNodes.Where(n => !n.Stale && n.Kind != PlanStepKind.Undock)
                       .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, Fine: false, Percent: n.Percent,
                                                     Mode: n.Mode, HeadingDegrees: n.HeadingDegrees)));
     }
@@ -145,7 +157,10 @@ public partial class Map
     // planner from the auto-plot path, which still lays Factor nodes.
     private void EnsureVectorPlanning(PlanNode node)
     {
-        if (node.Mode == BurnMode.Vector)
+        // #955 NAV-1: a departure step is not a burn the planner aims. The clamp has no heading, and the
+        // clearance's heading is the berthing arm's, re-solved by ResizeClearance — not something a quick
+        // select may quietly overwrite.
+        if (node.Kind != PlanStepKind.Burn || node.Mode == BurnMode.Vector)
         {
             return;
         }
@@ -304,6 +319,7 @@ public partial class Map
     private void NudgeNodeEpoch(PlanNode node, int sign, bool coarse)
     {
         node.SimTime = NodeFrame.NudgeEpoch(node.SimTime, sign, coarse, NodeEpochFloor());
+        ResizeClearance(node);   // #955: a departure re-timed is a departure re-solved — the berth has moved
         SortNodes();
         RebuildPlan();
         ReprojectTrajectory();
@@ -425,13 +441,43 @@ public partial class Map
     private void AccountForFiredNodes()
     {
         int firedPulses = 0;
+        int heldByTheClamp = 0;
         foreach (PlanNode node in _planNodes)
         {
-            if (!node.Executed && !node.Stale && node.SimTime < _ship.SimTime)
+            if (node.Executed || node.Stale || node.SimTime >= _ship.SimTime)
             {
-                node.Executed = true;
-                firedPulses += node.Pulses;
+                continue;
             }
+
+            // #955 NAV-1: the UNDOCK row is not billed here and is not retired here — the frame loop flies it
+            // (RunTheCastOffStep) at the exact epoch, because it is the step that unclamps her, and a row
+            // marked "done" by the accountant that the loop never ran would be a plan reporting a cast-off
+            // that never happened.
+            if (node.Kind == PlanStepKind.Undock)
+            {
+                continue;
+            }
+
+            // #955 NAV-1 · A CLAMPED SHIP FIRES NOTHING. Plotting from the berth is now allowed, and while she
+            // is clamped the frame takes the clock-only branch: the integrator never runs and the maneuver
+            // plan is never applied. A burn whose epoch slid past under the clamp therefore did NOT fire, and
+            // billing it would be exactly the green number never asked of the world. Strike it instead, and
+            // say so — re-time it (or cast off first) and it flies.
+            if (_dockedHavenId is not null)
+            {
+                node.Stale = true;
+                heldByTheClamp++;
+                continue;
+            }
+
+            node.Executed = true;
+            firedPulses += node.Pulses;
+        }
+
+        if (heldByTheClamp > 0)
+        {
+            RebuildPlan();
+            ShowPulseMessage($"⚓ {DockNavLockTip} — {heldByTheClamp} plotted burn{(heldByTheClamp == 1 ? "" : "s")} struck; nothing fires from a berth.");
         }
 
         if (firedPulses > 0)

@@ -496,6 +496,19 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// spelled out, because the order is the behaviour: the panel the captain is about to read is a
     /// function of the seat, so the draw has to be the frame after the seat is in.</para>
     ///
+    /// <para><b>#973 L5b · 7 → 8, and the eighth is <c>Seating.BarTop.cs · TryTakeBarTop</c>.</b> A top in a
+    /// DOCKED STATION'S BAR — the first sitting in this game that is not on a surface excursion. #973 L0
+    /// found the gap and wrote it down in its own file: <i>"all seven sites of it are gated on a
+    /// <c>SurfaceExcursion</c>, and a docked berth has none — the bar's seven tops are drawn dressing with no
+    /// chairs and no console."</i> It is a construction site like the other seven and obeys the same three
+    /// laws.</para>
+    ///
+    /// <para>It has no row in <see cref="WhichSite"/> and no pin above, for the SAME reason the seventh has
+    /// not: those two are keyed on cases the console sweep can reach, and the sweep drives a
+    /// <c>SurfaceExcursion</c> on a Hive floor — there is no berth in it, no docked deck and therefore no
+    /// <c>BarTop</c> console to press. The sitting it opens is fingerprinted end to end by
+    /// <c>TheEighthSeatIsInTheDockedBarTests</c> instead, which docks a berth and presses the top.</para>
+    ///
     /// <para><b>#731 v2 · 6 → 7, and the seventh is <c>Seating.Table.cs · SheLedYouHere</c>.</b> A contact
     /// stands up mid-sentence, crosses the hall and holds a booth door open; the press that would otherwise
     /// take a free top resumes HER conversation instead, with what was already said to her carried in on the
@@ -513,10 +526,10 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
 
         int built = family.Sum(f => Occurrences(f.Text, "new TableTalk"));
         int through = family.Sum(f => Occurrences(f.Text, "TakeThisSeat(new TableTalk"));
-        Assert.True(built == 7 && through == 7,
+        Assert.True(built == 8 && through == 8,
             $"#870 lane 6d · the seat family builds {built} sitting(s) and {through} of them go through "
-            + "`TakeThisSeat`. There are SEVEN construction sites and every one of them must, because the "
-            + "reveal cue and the draw live in that method and nowhere else. An eighth way to open a "
+            + "`TakeThisSeat`. There are EIGHT construction sites and every one of them must, because the "
+            + "reveal cue and the draw live in that method and nowhere else. A ninth way to open a "
             + "sitting needs this count moved, a line in the PR body, and — if a console press can reach it "
             + "— a row in `WhichSite` and a pin above.\n\n"
             + string.Join("\n", family.Select(f =>

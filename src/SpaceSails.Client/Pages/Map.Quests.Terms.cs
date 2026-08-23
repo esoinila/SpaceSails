@@ -106,6 +106,18 @@ public partial class Map
                 targetPos = ground is not null ? _ephemeris?.Position(ground.Id, SimTime) : null;
                 break;
             }
+            case QuestKind.WalkIn:
+            {
+                // #973 L5b · a berth, like a cargo run's — but the target NAMED is the thing she asked for
+                // (a renamed ship, a man), never the port it is filed at. The effort is measured off the
+                // live world exactly as every other job's is; nothing about a favour is estimated.
+                CelestialBody? sought = BodyById(q.SourceBodyId);
+                nature = JobTargetNature.Haven;
+                targetAnchorId = sought?.Id;
+                where = sought is not null ? BodyAddress(sought.Id) : null;
+                targetPos = sought is not null ? _ephemeris?.Position(sought.Id, SimTime) : null;
+                break;
+            }
             case QuestKind.Crack:
                 // A hatch on the station the captain is standing in. Core's effort line knows this kind
                 // has no voyage in it and says "on foot" rather than "0 km".
@@ -129,7 +141,9 @@ public partial class Map
             DistanceMeters: distance,
             LaneSeconds: lane,
             Reward: q.Reward,
-            PurseCredits: _credits);
+            PurseCredits: _credits,
+            // #973 L5b · …and the one job in the game whose size word is not about money.
+            ForHer: q.Kind == QuestKind.WalkIn);
     }
 
     /// <summary>How far the target is RIGHT NOW, and roughly how long the trip runs by the lanes.

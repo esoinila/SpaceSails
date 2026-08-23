@@ -39,8 +39,39 @@ public partial class Map
     ///
     /// <para><see cref="Egress.MostAtOnce"/> and not a number of its own: the room's own law about how many
     /// people may be on their feet at once is the same law as how many slots the buffer needs, and two
-    /// opinions about it is the mirrored-constant bug with a body walking through it.</para></summary>
-    private const int WalkerBand = Egress.MostAtOnce;
+    /// opinions about it is the mirrored-constant bug with a body walking through it.</para>
+    ///
+    /// <para>#973 L2 · …PLUS THE SALESMAN'S OWN SLOT, and he needs one of his own because he is not one of
+    /// the room's people. <see cref="Egress.MostAtOnce"/> is a law about how many REGULARS may be crossing
+    /// the floor at a time, and on a heaving watch it is satisfied constantly — which, while the band was
+    /// exactly that number, meant Harlan Fess could never get on the floor at all. Watched in a browser:
+    /// the room's two leavers held both slots for a whole shift and the rep's every attempt was refused.
+    /// So the band is the room's law plus his one body; the room's own departures are still capped at
+    /// <see cref="Egress.MostAtOnce"/> by <see cref="TheRoomsOwnFeet"/>, which counts the REGULARS on their
+    /// feet and not the visitor working them.</para>
+    ///
+    /// <para>#973 L0 · …and it is <see cref="Egress.BandSlots"/> rather than that sum spelled out again,
+    /// because a docked station's bar now asks the same question and got the same answer. The arithmetic is
+    /// Core's, once, for the reason it has thrown twice.</para></summary>
+    private const int WalkerBand = Egress.BandSlots;
+
+    /// <summary>#973 L2 · How many of the ROOM'S OWN people are on their feet. The salesman is not one of
+    /// them: he does not live here, he did not get up from a top, and he is not who
+    /// <see cref="Egress.MostAtOnce"/> is a law about. Counted rather than tracked, because the walker list
+    /// is the truth about who is afoot and a second tally of it would be a second opinion.</summary>
+    private static int TheRoomsOwnFeet(SurfaceExcursion ex)
+    {
+        int feet = 0;
+        foreach (Walker w in ex.Walkers)
+        {
+            if (w.For is not (Errand.RepRounds or Errand.RepPitching))
+            {
+                feet++;
+            }
+        }
+
+        return feet;
+    }
 
     /// <summary>#731 · One person on their feet: the walk, and what the walk is FOR.
     ///
@@ -62,6 +93,17 @@ public partial class Map
         /// <summary>#731 v2 · Which cabinet they are leading you into, as the plate reads — 0 on every other
         /// errand.</summary>
         public int Cabinet { get; init; }
+
+        /// <summary>#973 L0 · IS THIS WALK STILL WANTED? Asked again on the frame the route runs out, and
+        /// never trusted from the frame it was planned on — a body that crossed a room to a captain who has
+        /// stood up in the meantime must not deliver anything. Null on every errand that answers this for
+        /// itself (see <see cref="ApproachTheTable"/>).</summary>
+        public Func<bool>? StillWanted { get; init; }
+
+        /// <summary>#973 L0 · What happens on the frame they land, and only if <see cref="StillWanted"/> still
+        /// says so. The whole of what an APPROACH means is the caller's; this component owns the walking and
+        /// knows nothing about what somebody has come to say.</summary>
+        public Action? OnArrive { get; init; }
     }
 
     /// <summary>#731 · WHY SOMEBODY IS ON THEIR FEET. Three answers, and they are three different ENDINGS,
@@ -82,14 +124,32 @@ public partial class Map
         /// us to follow them into kabinetti."</i> The one errand that does not end when the walk does: she
         /// gets to the door, and then she stands in it and looks back at you across the hall.</summary>
         LeadingYouIn,
+
+        /// <summary>#973 L2 · The Nebula rep drifting between the fixtures of his beat — a standing place
+        /// at the counter, the ends of the room's own tops — with nothing to do until somebody sits down
+        /// alone. Arriving is not an ending here either: he stands beside the thing he walked to.</summary>
+        RepRounds,
+
+        /// <summary>#973 L2 · The rep crossing to a captain sitting alone. He STANDS at the table — he is
+        /// not invited, and there is no eighth way to open a sitting in this codebase — and the pitch card
+        /// goes up on the frame he lands on.</summary>
+        RepPitching,
+
+        /// <summary>#973 L0 · SOMEBODY CROSSING A DOCKED STATION'S BAR TO YOUR TABLE. The sixth errand, and
+        /// the first that belongs to a room the Hive did not build — see <see cref="ApproachTheTable"/>. Like
+        /// the escort's and the rep's, arriving is not an ending: they stand at the top and look at you until
+        /// whatever brought them there is over.</summary>
+        Approaching,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard
     /// and a behind-cover Old One already use, so the buffer is always fully written and the renderer never
     /// has to know how many people are afoot.</summary>
-    private void FillWalkerDroids(DeckPlan.Droid[] buffer, int firstSlot)
+    /// <param name="afoot">Whose feet these are — the excursion's on a Hive floor, the docked bar's ashore
+    /// (#973 L0). Handed in rather than read off <c>_surface</c>, because there are two rooms with a
+    /// metabolism now and a filler that reached for one of them would draw an empty bar.</param>
+    private void FillWalkerDroids(DeckPlan.Droid[] buffer, int firstSlot, IReadOnlyList<Walker> afoot)
     {
-        List<Walker> afoot = _surface?.Walkers ?? [];
         for (int i = 0; i < WalkerBand; i++)
         {
             int slot = firstSlot + i;
@@ -139,6 +199,21 @@ public partial class Map
         for (int i = ex.Walkers.Count - 1; i >= 0; i--)
         {
             Walker w = ex.Walkers[i];
+
+            // ── #973 L2 · …AND TWO MORE THAT END STANDING UP ─────────────────────────────────────────
+            //
+            // The salesman's two errands are the escort's shape, not the haulier's: he walks somewhere and
+            // then he is THERE, beside a fixture or at your elbow, until something moves him on. The
+            // decision of what that means is Map.Rep.cs's; this loop only owns the clock.
+            if (w.For is Errand.RepRounds or Errand.RepPitching)
+            {
+                if (StepTheRep(ex.Walkers, w, dt, walls, i))
+                {
+                    anybodyLanded = true;
+                }
+
+                continue;
+            }
 
             // ── #731 v2 · THE ERRAND WHOSE ARRIVAL IS THE BEGINNING ──────────────────────────────────
             //
@@ -248,7 +323,7 @@ public partial class Map
         // The shift's own list, worked out once. See the note above on why this is not a micro-optimisation.
         ex.HallSchedule ??= TheShiftDecidesWhoGoes(ex);
 
-        if (ex.HallSchedule.Count == 0 || ex.Walkers.Count >= WalkerBand)
+        if (ex.HallSchedule.Count == 0 || TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
         {
             return;
         }
@@ -269,7 +344,7 @@ public partial class Map
                 // answer, and never a body placed at the far end of a walk that could not be walked.
                 ex.HallDeparted.Remove(move.TableIndex);
             }
-            if (ex.Walkers.Count >= WalkerBand)
+            if (TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
             {
                 return;
             }

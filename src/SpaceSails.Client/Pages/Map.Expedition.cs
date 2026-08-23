@@ -146,8 +146,13 @@ public partial class Map
             }
         }
 
-        // The window closed: the ship can't hold the course-match any longer. One diced stranding toll.
-        if (!ex.ExpeditionStrandingFired && ExpeditionClockSeconds(plan, ex) <= 0.0)
+        // The window closed FOR GOOD: the ship can't hold the course-match any longer. One diced stranding
+        // toll. #955 NAV-2 — a window that is merely CLOSED is not this: at a Jupiter berth the moon swings
+        // back into shuttle reach on its own every synodic period, and a team waiting one out is not a team
+        // that died. Only Lost (nothing inside the horizon brings the gap back), or the sponsor's contracted
+        // budget actually running out, ends the gig.
+        if (!ex.ExpeditionStrandingFired
+            && (ExpeditionStatus(plan, ex) == WindowStatus.Lost || ExpeditionBudgetLeft(ex) <= 0.0))
         {
             ex.ExpeditionStrandingFired = true;
             ResolveExpeditionStranding(ex, plan);
@@ -238,9 +243,13 @@ public partial class Map
     }
 
     // ── The away clock: how the HUD's ship-line reads on the gig (SurfaceOrbitComms routes to this). ──
-    // The tighter of the sponsor's contracted hold budget and the honest geometry window (ExpeditionWindow):
-    // docked at the berth the ship holds perfect range, so the budget is the live countdown; cast off and
-    // drift, and the geometry can cut it short.
+    // The tighter of the sponsor's contracted hold budget and the honest geometry window (Map.ShuttleWindow's
+    // WindowOn, which is Core's ExpeditionWindow with the reopening folded in).
+    //
+    // #955 NAV-2: this line used to have no way of saying CLOSED. Docked, the geometry was declared infinite
+    // and the moon's motion simply ignored; cast off, "out of reach" meant a dead team the instant the gap
+    // crossed the edge. Now a periodic geometry — a Jupiter berth watching Ganymede swing away — reads
+    // "closed · next window in X", and only a gap nothing brings back reads OUT OF REACH.
     private (string Line, int Severity)? ExpeditionComms()
     {
         if (_expedition is not { } plan || _surface is not { Expedition: true } ex)
@@ -254,8 +263,15 @@ public partial class Map
         {
             WindowStatus.Holding => 0,
             WindowStatus.Ticking => 1,
-            _ => 2, // Critical or Lost — loud
+            _ => 2, // Critical, Closed or Lost — loud
         };
+
+        // Closed is its own sentence: the number a captain wants is not "0:00", it is how long the wait is.
+        if (status == WindowStatus.Closed)
+        {
+            double reopen = AwayReopenSeconds(plan.SiteBodyId) ?? 0.0;
+            return ($"⏱ Away window CLOSED — next window in {RouteShuttleWindow.In(reopen)}", severity);
+        }
 
         string word = status switch
         {
@@ -268,68 +284,49 @@ public partial class Map
         return ($"⏱ Away window {clockText} — {word}", severity);
     }
 
-    // The live away-clock seconds: min(contracted budget remaining, honest geometry window). Docked → the
-    // geometry is a held (infinite) window, so the budget rules; adrift → the geometry range-rate can win.
-    private double ExpeditionClockSeconds(ExpeditionPlan plan, SurfaceExcursion ex)
-    {
-        double budget = ExpeditionWindow.OnSiteRemainingSeconds(
+    /// <summary>The sponsor's contracted on-site budget still to run — the clock that ticks even while the
+    /// ship holds perfect range.</summary>
+    private static double ExpeditionBudgetLeft(SurfaceExcursion ex) =>
+        ExpeditionWindow.OnSiteRemainingSeconds(
             ExpeditionWindow.DefaultHoldWindowSeconds, ex.ExpeditionOnSiteSeconds);
-        double geometry = ExpeditionGeometryWindow(plan);
-        return ExpeditionWindow.EffectiveClockSeconds(budget, geometry);
-    }
+
+    // The live away-clock seconds: min(contracted budget remaining, honest geometry window). A held or
+    // closing gap carries an infinite geometry window, so the budget rules; an opening one can cut it short.
+    private double ExpeditionClockSeconds(ExpeditionPlan plan, SurfaceExcursion ex) =>
+        ExpeditionWindow.EffectiveClockSeconds(
+            ExpeditionBudgetLeft(ex), ExpeditionGeometryWindow(plan));
 
     private WindowStatus ExpeditionStatus(ExpeditionPlan plan, SurfaceExcursion ex)
     {
-        if (ExpeditionClockSeconds(plan, ex) <= 0.0)
+        // The ONE law (Map.ShuttleWindow.WindowOn): the same reading the shuttle board and the captain's
+        // remote take, whether we are clamped to a berth or flying a plotted route. The docked case no
+        // longer gets a special exemption — it gets the real berth↔site geometry, and its periodic windows
+        // read Closed rather than Lost.
+        WindowStatus geo = WindowOn(plan.SiteBodyId).Status;
+        if (geo is WindowStatus.Closed or WindowStatus.Lost)
         {
-            return WindowStatus.Lost;
+            return geo;   // the gap decides; the sponsor's budget cannot make a shut window shutter
         }
 
-        // Docked, the station holds us in the local frame — a held window; the budget simply counts down.
-        if (_dockedHavenId is not null)
+        // Still in reach — so the tighter of the two clocks sets the urgency.
+        double budget = ExpeditionBudgetLeft(ex);
+        if (budget <= 0.0)
         {
-            return ExpeditionWindow.OnSiteRemainingSeconds(ExpeditionWindow.DefaultHoldWindowSeconds, ex.ExpeditionOnSiteSeconds)
-                <= ExpeditionWindow.DefaultCriticalSeconds ? WindowStatus.Critical : WindowStatus.Holding;
+            return WindowStatus.Lost;   // the contract ran out; the ship breaks station whatever the geometry
         }
-
-        (double distance, double rate) = ExpeditionRangeState(plan);
-        WindowStatus geo = ExpeditionWindow.Classify(distance, rate, ExpeditionWindow.DefaultCriticalSeconds);
-        // If the budget is the tighter of the two, reflect its urgency too.
-        double budget = ExpeditionWindow.OnSiteRemainingSeconds(ExpeditionWindow.DefaultHoldWindowSeconds, ex.ExpeditionOnSiteSeconds);
-        if (budget <= ExpeditionWindow.DefaultCriticalSeconds && geo != WindowStatus.Lost)
-        {
-            return WindowStatus.Critical;
-        }
-        return geo;
+        return budget <= ExpeditionWindow.DefaultCriticalSeconds ? WindowStatus.Critical : geo;
     }
 
-    // The honest geometry window (seconds) from the live ship↔site geometry. Infinite while docked (the
-    // station holds the range) or while closing/holding; finite and shrinking only when the gap opens.
-    private double ExpeditionGeometryWindow(ExpeditionPlan plan)
-    {
-        if (_dockedHavenId is not null)
-        {
-            return double.PositiveInfinity;
-        }
-        (double distance, double rate) = ExpeditionRangeState(plan);
-        return ExpeditionWindow.TimeLeftInRangeSeconds(distance, rate);
-    }
+    // The honest geometry window (seconds) from the live ship↔site geometry — finite and shrinking only
+    // when the gap is opening. Read through the one anchor law (Map.ShuttleWindow), so a clamped ship reads
+    // the BERTH's rail rather than a stale ship velocity.
+    private double ExpeditionGeometryWindow(ExpeditionPlan plan) =>
+        WindowOn(plan.SiteBodyId).SecondsLeft;
 
-    // The site's current distance from the ship and the opening range-rate, read off the ephemeris rail
-    // (site velocity by a 1-second finite difference — cheap, deterministic).
-    private (double Distance, double Rate) ExpeditionRangeState(ExpeditionPlan plan)
-    {
-        if (_ephemeris is null)
-        {
-            return (0.0, 0.0);
-        }
-        Vector2d sitePos = _ephemeris.Position(plan.SiteBodyId, SimTime);
-        Vector2d siteNext = _ephemeris.Position(plan.SiteBodyId, SimTime + 1.0);
-        Vector2d siteVel = siteNext - sitePos; // per second
-        Vector2d relPos = sitePos - _ship.Position;
-        Vector2d relVel = siteVel - _ship.Velocity;
-        return (relPos.Length, ExpeditionWindow.RangeRate(relPos, relVel));
-    }
+    // (The old private ExpeditionRangeState is gone: the ship↔site distance and range-rate are now read in
+    // ONE place, Map.ShuttleWindow's anchor law, which knows that a clamped ship rides her berth's rail and
+    // an armed ship rides her plotted ribbon. Two readings of one geometry is exactly how the docked case
+    // came to be answered with a fiction.)
 
     // ── Settle: the payout on the ride home (called from LiftOffFromSurface for an expedition excursion). ──
     private bool SettleExpedition(SurfaceExcursion ex)

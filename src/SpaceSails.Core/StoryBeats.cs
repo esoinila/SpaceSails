@@ -112,6 +112,17 @@ public static class StoryBeats
 
         /// <summary>#664 · The sealed hatch comes off its dogs — and it opens both ways.</summary>
         SealedDoorReleased,
+
+        /// <summary>#973 · A page you don't remember writing gives something back. The subject is the MEMORY
+        /// ID — the ledger entry the captain just read at — because a flashback is always about one page and
+        /// never about flashbacks in general.</summary>
+        Flashback,
+
+        /// <summary>#973 L5b · SHE COMES IN THROUGH THE DOOR. A woman crosses a classy room to a captain
+        /// sitting alone and asks for something found. The subject is HER (<see cref="WalkIn.Subject"/>),
+        /// because the cadence is once per subject and the subject of this moment is a person — two women is
+        /// two moments; the same woman twice is not one.</summary>
+        WalkIn,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -199,6 +210,19 @@ public static class StoryBeats
         Beat.KaamosShardFound or Beat.NebulaShardFound or Beat.OutpostEffectsRead
             or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes => Cadence.OncePerSubject,
 
+        // #973 L5b · …and the walk-in with them, for the same clause and one more. It is about a PERSON, and
+        // a person who has already crossed a room to ask you for something does not do it again — the ask is
+        // the whole of the scene, and the second time it would be a job board with a face on it.
+        Beat.WalkIn => Cadence.OncePerSubject,
+
+        // #973 · …and Flashback falls through to EveryTime with them, for the clause EveryTime is reserved
+        // for: it is rare by its OWN nature and cannot be made repetitive by trying. A page may be read at
+        // ONCE PER LIFE and never again (FilingLine.PageState.Refused is the latch), and there are only grey
+        // pages to read at all after a captain has died. OncePerSubject was the near miss and it is wrong for
+        // the one reason that matters here: the rebirth RE-GREYS the book, so the same page read by a later
+        // captain is a different captain reaching for a different stranger's afternoon, and swallowing that
+        // would silently un-illustrate every flashback after the first death.
+
         // …and CollectorsSetDown falls through to EveryTime with the grapples, deliberately. It is the only
         // warning the player gets — after it the only information in the world is a tracker fan — and it is
         // rare by its own nature (a heat threshold, and at most one landing per excursion), which is the
@@ -237,6 +261,20 @@ public static class StoryBeats
         // since #528. A card here would be a second modal over the first, with the same picture on it.
         Beat.CollectorHail => Presentation.Hosted,
 
+        // #973 L5b · HOSTED, and the host is HER OWN CARD. She is standing at the table with her portrait on
+        // the screen and her two lines under it by the time this beat is raised; a card here would be the
+        // same face twice on one screen, which is exactly what #777 named. The seam still spends the cadence,
+        // files the seen-set and writes the words into the ledger — which is the whole of what a hosted beat
+        // is for.
+        Beat.WalkIn => Presentation.Hosted,
+
+        // #973 · A PLATE, and deliberately not a card. The captain is at the Captain's desk with the ledger
+        // open, clicking grey rows; a full-screen modal over that is a dismissal between every click, which
+        // is the "too repetitive" half of the owner's law arriving through the back door. The plate rides the
+        // edge for its seven seconds while the book stays open and readable underneath — and the page the
+        // captain just won back is right there to be read, which is the whole reason they clicked.
+        Beat.Flashback => Presentation.Plate,
+
         // #664 · All eleven of the adopted moments fall through to CARD, and that is not an oversight: every
         // one of them was already a full-screen modal under the other system, and every one of them is a
         // moment where the world has just stopped for the captain anyway — a handle pulled, a shard laid on
@@ -258,6 +296,10 @@ public static class StoryBeats
     public static string HostCard(Beat beat) => beat switch
     {
         Beat.CollectorHail => "the BUSTED demand panel (Map.razor, BustedEncounter.Stage.Demand)",
+
+        // #973 L5b · her card, raised on the frame she reaches the table and taken down when she leaves it.
+        Beat.WalkIn => "the WALK-IN card (Map.razor, Map.WalkIn.cs · _walkInCard)",
+
         _ => "",
     };
 
@@ -353,6 +395,7 @@ public static class StoryBeats
         Beat.ShelterIsNotSanctuary => CollectorLanding.SiegePlate,
         Beat.CollectorsSetDown => CollectorLanding.ArrivalPlate,
         Beat.SealedDoorReleased => NestPlates.Released,
+
         _ => null,
     };
 
@@ -370,6 +413,9 @@ public static class StoryBeats
     {
         Beat.KaamosShardFound => KaamosLore.AllPlates.Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
         Beat.NebulaShardFound => NebulaLore.AllPlates.Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
+        // #973 L5b · both women's portraits, so the manifest sweep sees the one that is not on screen too.
+        Beat.WalkIn => WalkIn.AllPortraits,
+
         _ => [ArtFile(beat)],
     };
 
@@ -387,10 +433,18 @@ public static class StoryBeats
         Beat.ArcNewsBreaks => "art/arc-news.jpg",
         Beat.ChargeLetGo => "art/charge-let-go.jpg",
         Beat.FireAboard => "art/fire-aboard.jpg",
+        // #973 · One plate for every flashback, and one style: bleached to white, a single object left in
+        // focus. Fixed rather than keyed by the memory id on purpose — a memory is not a place, and painting
+        // one canvas per ledger row is a pool nobody could ever finish.
+        Beat.Flashback => "art/flashback.jpg",
+        // #973 L5b · her portrait, which is also what her card draws. One painting for both women would be
+        // one woman, so the canvas is chosen by the subject the beat was raised with.
+        Beat.WalkIn => WalkIn.PortraitArt(subject),
         // #541: the tube's own canvases live with the tube, so the tier rule and the picture cannot disagree.
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
+
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
 
@@ -407,6 +461,12 @@ public static class StoryBeats
         Beat.ArcNewsBreaks => "📰 THE STORY BREAKS",
         Beat.ChargeLetGo => "⚡ SHE LETS GO",
         Beat.FireAboard => "🔥 THERE IS FIRE IN HER",
+        // #973 · The stamp is the mark and the label the ledger row already wears, said louder. The subject
+        // is the memory id and is deliberately NOT in the stamp: an entry key is bookkeeping, and a card that
+        // put one on the screen would be showing the player the filing system instead of the memory.
+        Beat.Flashback => FilingLine.Mark + " " + "A PAGE YOU DON'T REMEMBER WRITING",
+        // #973 L5b · the stamp names the door, because the door is what the room looked at.
+        Beat.WalkIn => "🚪 THE ROOM LOOKS AT THE DOOR",
         Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.Title(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
@@ -474,6 +534,24 @@ public static class StoryBeats
                                       ArrivalTube.WalkLine(ArrivalTube.Tier.WorkingBerth),
             Beat.BerthOutpost => ArrivalTube.Caption(ArrivalTube.Tier.Outpost) + " " +
                                  ArrivalTube.WalkLine(ArrivalTube.Tier.Outpost),
+
+            // #973 · The caption for EVERY flashback plate — the signing one included (#973 L2). Fable's
+            // line, verbatim; the FABLE marker L1 left here is answered and gone.
+            // #973 L5b · …except the one whose subject is `since`, which is a page about a WOMAN and not
+            // about a desk. Chosen by the subject, the way a shard's plate already is, and null for every
+            // other memory — so the signing's sentence stays the sentence for all of them.
+            Beat.Flashback when WalkIn.FlashbackCaption(subject) is { } sinceLine => sinceLine,
+
+            Beat.Flashback =>
+                "Bleached to the bone. A pen on a steel desk, every scratch in it sharp; behind it the room, " +
+                "the chair, the one at the far side of the desk, all gone to white. Only the thing that was " +
+                "in the hand survives the light.",
+
+            // #973 L5b · Fable's own line for the moment, verbatim and whole: the room notices her before the
+            // captain does, and nothing else about her is said. The subject is her id and is deliberately not
+            // in the sentence — a caption that named her would be the seam introducing somebody the player is
+            // about to be introduced to.
+            Beat.WalkIn => WalkIn.TheRoomLooks,
 
             Beat.FireAboard =>
                 "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +

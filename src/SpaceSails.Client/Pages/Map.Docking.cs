@@ -636,6 +636,7 @@ public partial class Map
         _nearestBodyVelocity = _ship.Velocity;              // the berth rides the destination's drift
         _armedOrbitBodyId = null;                           // a berth disarms any pending auto-insert
         ArrivedAt(dest.Id);                                 // #962: a shuttle hop is an arrival too — see ClampOntoHaven
+        TheArrivalIsRemembered(dest.Id);                    // #973 L4: …and a place can finish a grey page
         _autopilotStandDownReason = null; _dockReadyStatus = null;
         ResetAutopilotBudget();
         _matchLedger = _matchLedger.Abort();                // #268: a shuttle hop abandons any match tab, uncharged
@@ -879,9 +880,34 @@ public partial class Map
         // first — this is scene-setting, and it goes through the one story-beat door like everything else. Once per
         // berth, ever, which is what taught that seam the OncePerSubject cadence.
         RaiseStoryBeat(ArrivalTube.BeatFor(ArrivalTube.TierFor(_ephemeris!, dock.Id)), dock.Name);
+
+        // #973 L4 · …and then the place says its own thing, if it has one to say: a page this captain does not
+        // remember writing that NAMES this berth is finished by standing on it, and a hull impounded here is
+        // one he stopped signing for. After the tube's plate, because the establishing shot comes first.
+        TheArrivalIsRemembered(dock.Id);
     }
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
+
+    /// <summary>
+    /// The berth's own shove, as a pure function of the state it acts on. A gentle push clear of the clamp
+    /// so the ship drifts away with some motion of her own rather than hanging dead-still on the dock
+    /// (owner: "push the ship off so it has motion away from the station"), radially out along the berthing
+    /// arm.
+    ///
+    /// <para>#955 NAV-1 made this a function rather than four lines inside <see cref="Undock"/>: the plotted
+    /// ribbon has to start from the ship the cast-off will hand over (<c>PlanStartState</c>), and a departure
+    /// the plan DRAWS and a departure the ship FLIES that were computed by two different pieces of arithmetic
+    /// is precisely the named bug class — the sim doing one thing while a drawn shape reports another.</para>
+    /// </summary>
+    private static ShipState ShovedOffTheClamp(ShipState ship, Vector2d havenPosition)
+    {
+        Vector2d arm = ship.Position - havenPosition;
+        Vector2d outward = arm.LengthSquared == 0
+            ? (havenPosition == Vector2d.Zero ? new Vector2d(1, 0) : havenPosition.Normalized())
+            : arm.Normalized();
+        return ship with { Velocity = ship.Velocity + outward * UndockPushMps };
+    }
 
     private void Undock()
     {
@@ -892,14 +918,9 @@ public partial class Map
 
         SetDeckForDock(null); // back to the bare ship deck; pulls you aboard if you'd wandered up the tube
 
-        // A gentle shove clear of the clamp — the ship drifts away with some motion of its own
-        // rather than hanging dead-still on the dock (owner: "push the ship off so it has motion
-        // away from the station"). Pushed radially out along the berthing arm.
         if (_ephemeris is not null)
         {
-            Vector2d dockPos = _ephemeris.Position(_dockedHavenId, SimTime);
-            Vector2d outward = (_ship.Position - dockPos).Normalized();
-            _ship = _ship with { Velocity = _ship.Velocity + outward * UndockPushMps };
+            _ship = ShovedOffTheClamp(_ship, _ephemeris.Position(_dockedHavenId, SimTime));
         }
 
         string name = _nearestBody?.Name ?? "the dock";

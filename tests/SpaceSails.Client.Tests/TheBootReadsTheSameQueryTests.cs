@@ -30,6 +30,15 @@ namespace SpaceSails.Client.Tests;
 /// front door itself, a query of keys this page has never heard of, and a <c>?scenario=</c> the slug check
 /// rejects.</para>
 ///
+/// <para><b>#973 L5a re-pinned every value in this file, and the WORLD sweep next door is the proof that
+/// nothing behaved differently.</b> The dev door onto the old crew's scene (<c>?oldcrew=1</c>) adds a
+/// thirty-first field to the holder, and this rendering walks EVERY public field of it — so
+/// <c>OldCrewCheat = False</c> joins the text for all seventy-nine URLs and every digest moves, including
+/// the bare front door's. That is the rendering changing, not the parse. The world fingerprints in
+/// <see cref="TheBootBuildsTheSameWorldTests"/> read the built world rather than the holder, and exactly
+/// ONE of them moved: the new URL's. The new values here are the failing run's own output, never typed by
+/// hand.</para>
+///
 /// <para><b>Red proof.</b> One implication line deleted from the <c>?tablescene=</c> branch —
 /// <c>q.SecretlabDeep = true;</c>, which is exactly the kind of side effect a method split is most
 /// likely to drop on the floor — reddens this guard AND the world sweep next door, on exactly the two
@@ -44,86 +53,92 @@ public sealed class TheBootReadsTheSameQueryTests
     private static readonly IReadOnlyDictionary<string, string> WhatEachUrlSaid =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["/map"] = "779b62d347d83ecf5ff1c04bd1c41c83",
-            ["/map?archive=1&land=1&nerve=2"] = "3c34c7dc8543424eb7f1bb1b000e6fe2",
-            ["/map?ashore=1&kaamos=bounce"] = "4cac614093e39b44164399ea7c91ef10",
-            ["/map?ashore=1&start=space-bar"] = "b477882b5366ad14bf3fea98cb6f6c65",
-            ["/map?badge=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?bond=1"] = "27efba56488efbb29a78656d2585b0f6",
-            ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "9082e8dcc2a7a6887268cc61a1484725",
-            ["/map?converge=1"] = "4e82a376afa29b6585aee0b77139cd69",
-            ["/map?counter=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?counter=1&watch=2"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?counter=1&watch=5"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?credits=1234&fuel=7&simhours=9"] = "e45e2435adfcdc8faa40e81f723dbb0d",
-            ["/map?credits=50000"] = "cc6e4609cdd3fa37f99a4b32e7229af0",
-            ["/map?death=collector&dock=selene-gate"] = "1b0759305685764b2ae0f2322e2adf69",
-            ["/map?death=impact"] = "34744b712f0242aa51665b2686ace127",
-            ["/map?death=suffocated&dock=the-tilt&land=1"] = "6a57b4f6fe9c72e30e8c8821bebc3e59",
-            ["/map?deflection=1"] = "3459123707a8c2db5c6efb372a00a242",
-            ["/map?deflection=s&expedition=science&watchers=1&outpost=1&kit=1"] = "03f169fb64f968f000190c729cda3c07",
-            ["/map?designate=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "332805e822e2f9385ec46acdd8220d87",
-            ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "ddb5c1ddadd46f8d2d6d04159cdca040",
-            ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "4917080f85c867d32f0d2476b17161ce",
-            ["/map?dock=the-deep&body=triton&site=2&land=1"] = "26b95409bc91eaefddd014ad170f138d",
-            ["/map?dock=the-space-bar"] = "580eb43673671a6393fcba90764ad794",
-            ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "580eb43673671a6393fcba90764ad794",
-            ["/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1"] = "580eb43673671a6393fcba90764ad794",
-            ["/map?dock=the-space-bar&body=phobos&site=1&land=1"] = "580eb43673671a6393fcba90764ad794",
-            ["/map?dock=the-tilt&site=0"] = "2e67490b4d189e27f34c89e39d77a2e8",
-            ["/map?dock=the-tilt&site=0&land=1"] = "2e67490b4d189e27f34c89e39d77a2e8",
-            ["/map?dock=the-tilt&site=0&land=1&air=45&process=0&collectors=20&hurt=2&nerve=low"] = "f1453d2f96436ab3aa5b95e3af996c3d",
-            ["/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"] = "2e67490b4d189e27f34c89e39d77a2e8",
-            ["/map?dock=the-tilt&site=0&land=1&reevers=4"] = "2e67490b4d189e27f34c89e39d77a2e8",
-            ["/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"] = "2e67490b4d189e27f34c89e39d77a2e8",
-            ["/map?dock=the-tilt&site=1"] = "2e67490b4d189e27f34c89e39d77a2e8",
-            ["/map?dock=the-tilt&start=space-bar"] = "821841f76c4467aec4d0da4ac3232cc1",
-            ["/map?expedition=mining"] = "398129f33bc62156dd0abcc3e48085dd",
-            ["/map?fetch=intel&tip=route&hoard=both&crack=active&backroom=quest"] = "9e4afd3c3bbfbfb624ba319348ff4ba6",
-            ["/map?found=1&land=1"] = "a28bdaad4a146bc96cbe9284cd52aa28",
-            ["/map?found=1&land=1&floor=17&card=all"] = "a28bdaad4a146bc96cbe9284cd52aa28",
-            ["/map?freight=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?frontdoor=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?goodscar=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?kaamos=all"] = "4d37ffe2047a6e3b9f075728a117d7a2",
-            ["/map?kaamos=hq&arrivalphase=2&land=1&floor=23"] = "654f5bbaab22179014eca5208f25456f",
-            ["/map?kaamos=hq&land=1"] = "654f5bbaab22179014eca5208f25456f",
-            ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "4ba3c0cca16a5138cd4cf147228b3431",
-            ["/map?nebula=all"] = "570e4af933bc16703b74e0c6a650d7d4",
-            ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "779b62d347d83ecf5ff1c04bd1c41c83",
-            ["/map?park=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?park=1&spread=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?parkback=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?parkwalk=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?patrol=2"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "fb9c4e2511f41624545f09285c17fa49",
-            ["/map?ringoffice=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?rip=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?scenario=..%2Foops"] = "779b62d347d83ecf5ff1c04bd1c41c83",
-            ["/map?scenario=sol-eu"] = "49c218918858b12cc6bc4382885fab22",
-            ["/map?secretlab=1"] = "a28bdaad4a146bc96cbe9284cd52aa28",
-            ["/map?secretlab=deep&land=1&card=next"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?secretlab=deep&land=1&floor=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?secretlab=deep&land=1&floor=1&card=next"] = "724bfab09e6e78001d448fae522dfe45",
+            ["/map"] = "a6547abcd4389bea94e4de74ca93b634",
+            ["/map?archive=1&land=1&nerve=2"] = "f7f7b0a135a1211c7012c8aaac739870",
+            ["/map?ashore=1&kaamos=bounce"] = "8c686d7bec6b862d1c1e34dcda7040b3",
+            ["/map?ashore=1&start=space-bar"] = "7ed5829495725beb89ef7e3307fd8823",
+            ["/map?badge=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?bond=1"] = "8682220bcfc49d8431fce35fdde41798",
+            ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "3093252fa48a0c1185e4945147844a64",
+            ["/map?converge=1"] = "033c033c7bffffd70794e3ca6481fd87",
+            ["/map?counter=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?counter=1&watch=2"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?counter=1&watch=5"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?credits=1234&fuel=7&simhours=9"] = "b1676b8418a8d6b34d001e020d0ee77e",
+            ["/map?credits=50000"] = "fd2bfc30c608df4c19908e5815d22a83",
+            ["/map?death=collector&dock=selene-gate"] = "9e174a2018742acf109c9caedc1b5c3a",
+            ["/map?death=impact"] = "8ad2670c81b9b3ccf8f8a2d49fa09e1a",
+            ["/map?death=suffocated&dock=the-tilt&land=1"] = "4439ddaf6ad566014304f086a8aacd29",
+            ["/map?deflection=1"] = "1d1c0acb60823c338e62a5e41d19e558",
+            ["/map?deflection=s&expedition=science&watchers=1&outpost=1&kit=1"] = "67ecf213e4c92943d35d0138f001771c",
+            ["/map?designate=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "7f7d0b90d0ed499b0be515fca61f0424",
+            ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "4b70009ec5c9ef8dae8f6c2a1d73291b",
+            ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "bcb18ca64a0c991534886e93ae2e016f",
+            ["/map?dock=the-deep&body=triton&site=2&land=1"] = "0f1160b994fda28ec93416204de33268",
+            ["/map?dock=the-space-bar"] = "5ef8916f537a3110b6beeea69e9baadd",
+            ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "5ef8916f537a3110b6beeea69e9baadd",
+            ["/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1"] = "5ef8916f537a3110b6beeea69e9baadd",
+            ["/map?dock=the-space-bar&body=phobos&site=1&land=1"] = "5ef8916f537a3110b6beeea69e9baadd",
+            ["/map?dock=the-tilt&site=0"] = "df7fbc55d42777815a5ca3127277760e",
+            ["/map?dock=the-tilt&site=0&land=1"] = "df7fbc55d42777815a5ca3127277760e",
+            ["/map?dock=the-tilt&site=0&land=1&air=45&process=0&collectors=20&hurt=2&nerve=low"] = "69c379a09134c16f72a979851de7e97a",
+            ["/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"] = "df7fbc55d42777815a5ca3127277760e",
+            ["/map?dock=the-tilt&site=0&land=1&reevers=4"] = "df7fbc55d42777815a5ca3127277760e",
+            ["/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"] = "df7fbc55d42777815a5ca3127277760e",
+            ["/map?dock=the-tilt&site=1"] = "df7fbc55d42777815a5ca3127277760e",
+            ["/map?dock=the-tilt&start=space-bar"] = "1d3049d07a9bf569bb0f438ace0aa22c",
+            ["/map?expedition=mining"] = "29b78eccfde9d7c82b82dcab3313cc6f",
+            ["/map?fetch=intel&tip=route&hoard=both&crack=active&backroom=quest"] = "01c6844141256950db7152fac097e15a",
+            ["/map?found=1&land=1"] = "78a433461078ed72a0c5644af5d0f80c",
+            ["/map?found=1&land=1&floor=17&card=all"] = "78a433461078ed72a0c5644af5d0f80c",
+            ["/map?freight=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?frontdoor=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?goodscar=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?kaamos=all"] = "b497a93382ab2df7ff8638048a79f6e2",
+            ["/map?kaamos=hq&arrivalphase=2&land=1&floor=23"] = "b7e640c580815bb9c7f4e73ccda393a4",
+            ["/map?kaamos=hq&land=1"] = "b7e640c580815bb9c7f4e73ccda393a4",
+            ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "d2925231b936a795723915a7b286871c",
+            ["/map?nebula=all"] = "51c3de696913da7a53598def39b484bd",
+            ["/map?oldcrew=1"] = "f28e593c4e185d5bf76de005b9f3b805",
+            ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "a6547abcd4389bea94e4de74ca93b634",
+            ["/map?park=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?park=1&spread=1"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?parkback=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?parkwalk=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?patrol=2"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "bc8d7bec0f17a43d11fb0e6269f6ddd0",
+            ["/map?ringoffice=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?rip=1"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?scenario=..%2Foops"] = "a6547abcd4389bea94e4de74ca93b634",
+            ["/map?scenario=sol-eu"] = "b3be984527aaf03fe8b8bf28ff0d0060",
+            ["/map?secretlab=1"] = "78a433461078ed72a0c5644af5d0f80c",
+            ["/map?secretlab=deep&land=1&card=next"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?secretlab=deep&land=1&floor=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?secretlab=deep&land=1&floor=1&card=next"] = "3642ff52160278c32d3ee08cca492f6f",
             // #841 · ?perf=1 is read where the DeckView is built, not into BootQuery — it changes nothing
             // the parse answers, and this row says exactly that.
-            ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?secretlab=deep&land=1&floor=21"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?skim=saturn"] = "a8f910fa21cce6eb4561866ee45865c4",
-            ["/map?sling=jupiter"] = "97b45b2e29e5ec24db289580f150572f",
-            ["/map?spread=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "779b62d347d83ecf5ff1c04bd1c41c83",
-            ["/map?start=wreck&fetch=active"] = "352f75c1e6963fc6ac73a136d9ff3858",
-            ["/map?stool=1&neighbour=0"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?stool=1&neighbour=1"] = "724bfab09e6e78001d448fae522dfe45",
-            ["/map?tablescene=free&approach=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?tablescene=free&watch=5&approach=0"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?threads=1"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?threads=1&watch=5"] = "885cf71b8ed559cbe924480f9e08c2b3",
-            ["/map?wreck=drivefailure&land=1"] = "6aa8794014974d5c08a65f3cce1b30b3",
-            ["/map?wreck=infested&land=1&sweep=3&mags=0&reevers=4"] = "8ac42a7bbeddc421728cbafdd24fb0e2",
+            ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?secretlab=deep&land=1&floor=21"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?skim=saturn"] = "0c7405acf13d0839ee40681d8ca1c3d8",
+            ["/map?sling=jupiter"] = "a40d37afee9d18a0adf448ea96521519",
+            ["/map?spread=1"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "a6547abcd4389bea94e4de74ca93b634",
+            ["/map?start=wreck&fetch=active"] = "59b2699001e9455c9d2ceb3fbca0897e",
+            ["/map?stool=1&neighbour=0"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?stool=1&neighbour=1"] = "3642ff52160278c32d3ee08cca492f6f",
+            ["/map?tablescene=free&approach=1"] = "21d1c2897d1445690a5aa09b1031a37c",
+            // #973 L2 · …and the rep row hashes the SAME, which is correct and worth saying: this sweep
+            // renders BootQuery's own public fields, and neither ?approach= nor ?rep= lives there — both are
+            // read straight onto the page (_approachCheat, _repCheat). The query object really is identical;
+            // what the two URLs build differently is pinned next door, in TheBootBuildsTheSameWorldTests.
+            ["/map?tablescene=free&rep=1&approach=0"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?tablescene=free&watch=5&approach=0"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?threads=1"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?threads=1&watch=5"] = "21d1c2897d1445690a5aa09b1031a37c",
+            ["/map?wreck=drivefailure&land=1"] = "5fb4da6ba52cd74b7c79beb57c02f094",
+            ["/map?wreck=infested&land=1&sweep=3&mags=0&reevers=4"] = "973fbd106e15b62aa6093846afd22147",
         };
 
     [Fact]
@@ -171,8 +186,10 @@ public sealed class TheBootReadsTheSameQueryTests
     public void TheHolderCarriesEveryLOCALTheOldMethodDeclared()
     {
         // Thirty locals went in; thirty public fields must come out, or something the parse answers is
-        // being answered somewhere this guard cannot see it.
-        Assert.Equal(30, TheQuery("/map").GetType()
+        // being answered somewhere this guard cannot see it. …and one more since (#973 L5a's ?oldcrew=,
+        // the dev door onto the old crew's scene), which is what a key ADDED to the chain is supposed to
+        // look like here: the number moves, deliberately, in the same commit as the key.
+        Assert.Equal(31, TheQuery("/map").GetType()
             .GetFields(BindingFlags.Instance | BindingFlags.Public).Length);
     }
 

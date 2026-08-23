@@ -481,6 +481,67 @@ The **station oracle** (Solenne "Static" Marsh, #425) keeps her own corner and h
 reachable on demand: **`?oracle=1`** seats her at whatever bar you dock at (#428). See
 [`testing-guide.md`](../testing-guide.md).
 
+## The room has a metabolism (2026-08-22, issue #973 L0)
+
+Until this lane the bar was the one room in the game **nobody could move in**. Eleven droid slots, every
+one of them a stateless function of sim time: the regulars sit where `PatronRota` put them, the barkeep
+paces a sine behind their desk, the Magpie stands on a schedule. #731 built a room's whole metabolism —
+*"the NPCs but not reevers could also use the A\* … if they go behind a door that is locked to us, we use
+that as 'I guess that concludes the conversation'"* — and could only wire it to a Hive canteen floor,
+because that was the only deck with a walker band. #976 put Harlan Fess on that floor and wrote down why
+he could go nowhere else.
+
+A docked bar now has:
+
+- **A band.** `HavenInterior.DockedDeck` reserves `Egress.BandSlots` figure slots after its eleven seated
+  ones, filled by the page (`Map.BarWalkers.FillBarWalkerDroids`). A plan built with a page's filler is
+  **not cached** — the delegate is closed over one page and xUnit runs test classes in parallel.
+- **Two leaves people come out of.** The bar's cellar and storeroom hatches, published as
+  `UndergroundComplex.LockedDoor` (the type `Egress` insists on, because every member of that list is
+  refused to the captain *by construction*) and consumed by the same call that hangs them on the wall.
+- **A floor the A\* walks.** `NpcWalk` over `AutoWalk`'s route and the deck's own collision field — the
+  captain's own lattice, the captain's own width, one claim of `Gait.Person`. No new primitive.
+- **One hook.** `Map.ApproachTheTable(plate, stillWanted, onArrive)` — come out of a leaf, cross to the
+  top the captain is at, and fire the callback on the landing frame *only if* the caller still wants it.
+  Nobody available? They come in and wait at the counter. This is what the walk-in (L5b) calls.
+
+`HavenInterior.BarBand(bodyId)` publishes the room to whoever has to walk it: the leaves, the counter's
+service point (off this bar's own `BarDesks` measurement), the seven tops and the south wall that answers
+"is the captain in the bar". Every one of those is the same list the room is *drawn* from.
+
+**Fess works station bars now.** `NebulaRep.IsWorkingThisStation` was already keyed on the body being
+visited rather than on a berth id, so not one line of Core changed: what was missing was a room with a
+floor in it. He comes out of a back-room door, drifts between the counter and the ends of the tops, and
+goes back out again.
+
+**~~What is still missing: you cannot sit down in a docked bar.~~ #973 L5b paid this off.** It read: *all
+seven ways to open a sitting are gated on a `SurfaceExcursion`, and a berth has none; the bar's seven tops
+are drawn dressing with no chairs and no console.* The sentence stands as the record of why the approach's
+gate was written as a `Func<bool>` — and the prediction under it came true exactly as written: **one
+predicate started answering true and the whole walk was already built.**
+
+## #973 L5b — the eighth seat, and the woman who crosses the room to it
+
+- **A top you can take.** `DeckPlan.ConsoleKind.BarTop` goes on every top the room has not already given to
+  somebody — the rota's regulars, the Magpie, the oracle — decided against the console list *itself* after
+  everything else is in it, so there is no second table of who is sitting where. `Seating.BarTop.cs ·
+  TryTakeBarTop` is the **eighth construction site** and goes through `TakeThisSeat` like the other seven;
+  the law in `EverySeatTheCaptainTakesFingerprintsTheSameTests` moved 7 → 8.
+- **One new thing a chair needs from the page.** `ISeatHost.TheBarTopUnderfoot()` (ratchet 31 → 32): which
+  top the press landed on, keyed how, on which watch, where a body sits at it, how many chairs, and what
+  the room is called. Everything an excursion was giving the other seven, as an ANSWER — never the room.
+- **The walk-in.** `Map.WalkIn.cs`. Great ports only, rare, once per subject, and only at a captain who is
+  seated and alone: she comes out of a leaf, crosses on `ApproachTheTable`, JOINS the sitting as a guest
+  (no ninth site) and opens her card `Hosted`. Yes yields a FIND job — payout `—`, size word *for her*,
+  tagged love — and her note in the book marked *hers*. No yields her line and nothing else.
+- **Dev cheat:** `/map?walkin=1` forces her on at this berth (`?walkin=0` off). WHETHER, never who.
+
+Guards: `TheDockedBarIsAWalkableRoomTests` — every haven with an interior publishes a band; every leaf it
+publishes is a `Locked` door the deck really hangs and the plate the captain reads; **every leaf reaches
+every top in every bar** on a real route; the band fits the buffer; a walked deck is never shared out of
+the cache; and the approach fires on somebody who is still there and delivers nothing to a captain who has
+gone.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat

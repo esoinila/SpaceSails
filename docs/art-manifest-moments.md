@@ -179,3 +179,50 @@ grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Ga
   the coaming; through the gap, scarred riveted plating an arm's reach away, unlit. One lone crew member in a
   patched suit holding a hand lamp that throws the only real light in the frame.
 - **Rule it illustrates:** you step from your lock into theirs. There is no walk, and there is no one to run it.
+
+## 12. `art/flashback.jpg` — A PAGE YOU DON'T REMEMBER WRITING ✅ PAINTED
+- **Beat:** `Flashback` · **every time** (rare by its own nature — a page may be read at once per life, and
+  only a captain who has died has grey pages at all) · **PLATE**
+- **Fires:** `Map.FilingLine.ReadTheGreyPage`, when a flashback attempt comes back or comes back wrong.
+  Nothing gets no plate.
+- **Composition:** a bleached, over-exposed memory. **One object left sharp in the lower third — a worn
+  ballpoint pen lying on a bare brushed-steel desk** — while the entire rest of the frame blows out into a pale
+  washed white haze: a dim office interior, filing cabinets, a seated figure out of focus at the far side of the
+  desk, their face unreadable. Colour drained almost to monochrome, a faint amber cast surviving only on the
+  pen. Heavy bloom, painterly, grimy lived-in used-future sci-fi. **No text, no lettering, no signage** — the
+  caption is written in code and must not be doubled in pixels.
+- **Rule it illustrates:** the flashback style itself, and it is one style for every memory on purpose — the
+  bleach is what a filed pattern looks like coming back, and the single object in focus is all of the afternoon
+  that survived. A per-memory canvas would be a pool nobody could finish, and it would also be a lie: these do
+  not come back as scenes.
+- **Negative list:** as the house rules above (no sea, no sky, no daylight, no horizon) — this one is an
+  interior and the only light in it is fluorescent.
+
+## 13. `art/walk-in-ilse-marrow.jpg` — THE ROOM LOOKS AT THE DOOR (the fling) ✅ PAINTED
+- **Beat:** `WalkIn` · **once per subject (her id)** · **HOSTED** on her own card (`Map.WalkIn.cs · _walkInCard`)
+- **Fires:** she has crossed a great port's bar floor on the real A* and is standing at the table of a captain
+  who was sitting alone. The canvas is chosen by the SUBJECT, so the woman on the card is the woman in the
+  room — a shared painting would be one woman with two names.
+- **Composition:** film-noir portrait at the seated captain's eye level, a striking woman in her forties
+  **standing** beside a small round table — she said she would not stay, so she is never seated. Dark tailored
+  coat over a high-collared clerk's blouse, hair pinned up, one gloved hand on the back of the empty chair, a
+  quiet steady gaze held a beat too long. Behind her the bar counter and its brass rail out of focus, other
+  patrons blurred, a huge window with a banded gas-giant storm glowing dull orange. One warm amber key from the
+  left, heavy shadow, shallow depth of field, muted desaturated palette, painterly.
+- **Rule it illustrates:** she knew the old face. Everything about her is *composed* — the coat, the pinned
+  hair, the desk uniform under it — and the only thing that is not is how long she looks at you.
+- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
+  signage** — her lines are written in code and must not be doubled in pixels.
+
+## 14. `art/walk-in-nadia-kell.jpg` — THE ROOM LOOKS AT THE DOOR (the stranger) ✅ PAINTED
+- **Beat:** `WalkIn` · **once per subject (her id)** · **HOSTED** on her own card
+- **Fires:** the same moment, in a thread where the fling was never posted at this port — the pure Bogart
+  walk-in, a woman the bar has never seen.
+- **Composition:** the same room, the same eye level, the opposite person. A young woman **standing** at a small
+  round table, half turned as if she has only just stopped walking, a folded paper held against her chest, plain
+  travelling coat buttoned to the throat, dark hair loose, anxious and hopeful, chin lifted. Behind her the bar
+  and its patrons out of focus and **several of them glancing at her** — the room noticed before the captain
+  did. Cool key from the right with warm amber spill behind, heavy shadow, shallow depth of field, painterly.
+- **Rule it illustrates:** nobody here knows her, and she knows it. The paper in her hands is the whole of what
+  she has, and she is holding it like proof rather than like evidence.
+- **Negative list:** as above. **No text, no lettering, no signage.**
