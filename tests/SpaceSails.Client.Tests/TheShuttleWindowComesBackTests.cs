@@ -194,6 +194,46 @@ public sealed class TheShuttleWindowComesBackTests
         Assert.Contains("without you", small, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #955 NAV-1 MEETS NAV-2: a plan armed AT THE CLAMP. Since cast off is a step the projection starts at
+    /// the berth and carries her off it, so the window must follow the RIBBON and not the berth's rail — a
+    /// ship on her way out is not a ship that stays. Reading the clamp first would answer "she is at the
+    /// berth for ever" about a ship that leaves in an hour.
+    /// </summary>
+    [Fact]
+    public void A_PLAN_ARMED_AT_THE_CLAMP_TheWindowFollowsTheRibbon_NotTheBerth()
+    {
+        Pages.Map map = AShipClampedAtTheRedEyeWithTheCaptainOnGanymede();
+        ICelestialEphemeris eph = Get<ICelestialEphemeris>(map, "_ephemeris");
+        Set(map, "SimTime", 0.0);
+        Assert.Equal(Berth, Get<string?>(map, "_dockedHavenId"));   // still clamped — that is the point
+
+        // Nothing armed: the anchor is the clamp, and the window is the berth↔moon geometry.
+        Set(map, "_armedArrivalPassSimTime", null);
+        Vector2d atClamp = (Vector2d)Invoke(map, "ShipAnchorAt", 200_000.0)!;
+        Assert.Equal((eph.Position(Berth, 200_000.0)).Length, atClamp.Length, 1.0);
+
+        // A plan armed at the clamp: the ribbon carries her a long way off, and the anchor must follow it.
+        var ribbon = new List<TrajectorySample>();
+        Vector2d away = eph.Position(Berth, 0) + new Vector2d(9.0e9, 0);
+        for (double t = 0; t <= 400_000; t += 1_000)
+        {
+            ribbon.Add(new TrajectorySample(t, away));
+        }
+        Set(map, "_samples", (IReadOnlyList<TrajectorySample>)ribbon);
+        Set(map, "_armedArrivalPassSimTime", (double?)400_000.0);
+
+        Vector2d onTheRibbon = (Vector2d)Invoke(map, "ShipAnchorAt", 200_000.0)!;
+        Assert.Equal(away.Length, onTheRibbon.Length, 1.0);
+        _out.WriteLine($"clamped anchor {atClamp.Length:E3} m → armed anchor {onTheRibbon.Length:E3} m");
+
+        // …and the window reads off that future: nine million km from Ganymede is nobody's shuttle hop, and
+        // nothing on this ribbon brings it back, so it is honestly Lost rather than a berth's cosy Holding.
+        object window = Invoke(map, "WindowOn", Moon)!;
+        var status = (WindowStatus)window.GetType().GetProperty("Status", Hidden)!.GetValue(window)!;
+        Assert.Equal(WindowStatus.Lost, status);
+    }
+
     /// <summary>TWO DISJOINT SPANS ARE TWO ROWS — the owner's separate INGRESS and EGRESS windows, on the
     /// board, from one armed plan.</summary>
     [Fact]
