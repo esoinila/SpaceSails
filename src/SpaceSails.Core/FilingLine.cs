@@ -129,7 +129,9 @@ public static class FilingLine
         /// <summary>Nothing on this page could be moved — it came back whole.</summary>
         None = 0,
 
-        /// <summary>A number in the page's own lines (or, failing that, its title or provenance).</summary>
+        /// <summary>A number in the page's own lines (or, failing that, its title). Never one out of the
+        /// provenance: half of those are an AGE, and a lie written against a clock stops matching within
+        /// the hour.</summary>
         Number = 1,
 
         /// <summary>Who the page says told you: the first field of the provenance line.</summary>
