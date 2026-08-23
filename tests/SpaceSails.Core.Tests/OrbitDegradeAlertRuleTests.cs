@@ -130,6 +130,7 @@ public class OrbitDegradeAlertRuleTests
 
         string flown = OrbitDegradeAlertRule.Offer(autopilotHasTheShip: true, reparkPulses: 48);
         Assert.Contains("autopilot", flown);
+        Assert.Contains("has the ship", flown);
         Assert.Contains("stand it down", flown);
         Assert.DoesNotContain("48 p", flown);
     }

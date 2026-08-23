@@ -126,11 +126,13 @@ public static class OrbitDegradeAlertRule
     /// offering her a burn that fights the plan still being flown (the second half of #962: "re-park
     /// (≈48 p) or leave", to a ship under autopilot). She is told what has the helm instead.
     /// </summary>
-    /// <param name="autopilotHasTheShip">The autopilot is flying this ship — armed and on its approach,
-    /// or holding a park.</param>
+    /// <param name="autopilotHasTheShip">The autopilot is actually at the helm — flying an approach, or
+    /// holding a park. NOT a plan-time arm still waiting for its pass (#969): through that hold the
+    /// captain's own plotted burns are flying the ship, so the re-park bill is a real choice and she is
+    /// given it.</param>
     /// <param name="reparkPulses">Ballpark pulses the corrective insertion would cost from here.</param>
     public static string Offer(bool autopilotHasTheShip, int reparkPulses) =>
         autopilotHasTheShip
-            ? "the autopilot is flying this approach — stand it down before you re-park by hand"
+            ? "the autopilot has the ship — stand it down before you re-park by hand"
             : $"re-park (≈{reparkPulses} p) or leave";
 }

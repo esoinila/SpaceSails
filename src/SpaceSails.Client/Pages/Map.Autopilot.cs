@@ -1279,11 +1279,14 @@ public partial class Map
         // prediction about a coast the next approach burn is about to erase. Both deferrals stay
         // falsifiable: a plan that did not itself clear the floor here, or a ship gone deeper toward the
         // body than the plan ever went, is judged raw and shouts.
+        // (The plan question is only ASKED on a risk verdict, and AutopilotFlyingApproach — which walks
+        // the body list through OrbitInfo — is the last term of it, so the quiet tick stays a comparison.)
+        bool risk = verdict is OrbitRule.ParkStabilityVerdict.TideRisk or OrbitRule.ParkStabilityVerdict.Subsurface;
         verdict = OrbitDegradeAlertRule.Evaluate(
             verdict,
             keepingHoldsOrbit: _orbitKept,
-            autopilotFlyingRehearsedPath: body is not null && AutopilotFlyingApproach
-                && _autopilotPlanPath is { Count: >= 2 },
+            autopilotFlyingRehearsedPath: risk && body is not null
+                && _autopilotPlanPath is { Count: >= 2 } && AutopilotFlyingApproach,
             planClosestApproach: body is not null && _autopilotPlanBodyClearance is { } cleared
                 && cleared.TryGetValue(body.Id, out double planPass)
                     ? planPass
@@ -1345,8 +1348,10 @@ public partial class Map
         // #962, second half: the offer must be a choice the captain HAS. The owner was shown
         // "re-park (≈48 p) or leave" while the banner one line above read "AUTOPILOT HAS THE SHIP" —
         // a manual insertion there is a burn that fights the plan still being flown. A ship under the
-        // autopilot is told what has the helm instead.
-        bool autopilotHasTheShip = _armedOrbitBodyId is not null || _orbitKept;
+        // autopilot is told what has the helm instead. "Under the autopilot" means at the HELM — flying
+        // the approach, or holding the park. A #969 plan-time arm still waiting for its pass is not that
+        // (the captain's own plotted burns fly the ship through the hold), so there she keeps the bill.
+        bool autopilotHasTheShip = AutopilotFlyingApproach || _orbitKept;
         string offer = OrbitDegradeAlertRule.Offer(autopilotHasTheShip, reparkCost);
 
         _orbitDegradeSeverity = subsurface ? 2 : 1;

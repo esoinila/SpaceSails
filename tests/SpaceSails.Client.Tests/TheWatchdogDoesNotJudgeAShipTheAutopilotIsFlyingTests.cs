@@ -22,7 +22,7 @@ namespace SpaceSails.Client.Tests;
 /// <b>nothing is touched</b> but the clock. Three numbers come out, and they are the whole issue:</para>
 /// <list type="bullet">
 /// <item>the rehearsed plan's tightest Jupiter pass — <b>1.35 R</b>, clear of the 1.1 R floor;</item>
-/// <item>the flown track's own closest approach to Jupiter — <b>1.44 R</b>, clear of it too;</item>
+/// <item>the flown track's own closest approach to Jupiter — <b>1.41 R</b>, clear of it too;</item>
 /// <item>and the osculating conic the watchdog was reading, mid-approach — <b>periapsis 0.06 R</b>.</item>
 /// </list>
 /// <para>The third number is the alarm's whole case, and it is a prediction about a coast that never
@@ -200,6 +200,7 @@ public sealed class TheWatchdogDoesNotJudgeAShipTheAutopilotIsFlyingTests
         string warning = Get<string?>(map, "_orbitDegradeWarning")!;
         _out.WriteLine($"banner under autopilot: {warning}");
         Assert.DoesNotContain("re-park (≈", warning);
+        Assert.Contains("the autopilot has the ship", warning);
         Assert.Contains("stand it down", warning);
 
         // …and a ship nobody is flying still gets the bill, because then it IS her choice. (The arm is
