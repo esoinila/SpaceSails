@@ -5638,7 +5638,12 @@
                                     </div>
                                     @if (_dopen)
                                     {
-                                        <div class="map-plan-step-edit">
+                                        @* The modifier class is not decoration: the burn editor's own guards
+                                           (TheNumbersNudgeTooTests, ThePlannerPlansInTheVectorViewTests) bound
+                                           their slice by the bare `map-plan-step-edit` opening tag, and a
+                                           second panel wearing the identical tag would silently widen what
+                                           they judge. Same styling, its own name. *@
+                                        <div class="map-plan-step-edit map-departure-step-edit">
                                             @if (node.Kind == PlanStepKind.ClearHarbour)
                                             {
                                                 <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node))</div>

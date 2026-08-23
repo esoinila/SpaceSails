@@ -112,7 +112,12 @@ public partial class Map
         node.Mode = BurnMode.Vector;
         node.HeadingDegrees = NodeFrame.Prograde(OutwardFromHaven(havenPos));
         node.Percent = CastOffRule.PulsePercent;
-        node.Pulses = Math.Max(1, CastOffRule.Pulses(havenVel.Length, UndockPushMps));
+
+        // #937's law, honoured: ApplyPulses is the ONE place in the planner that writes a node's magnitude,
+        // so the clearance is clamped, charged against the tank and re-solved by exactly the arithmetic a
+        // typed number and a ±p press go through. A departure that could reach a magnitude the field would
+        // have refused would be a second solve path, which is how the two drift apart.
+        ApplyPulses(node, Math.Max(MinNodePulses, CastOffRule.Pulses(havenVel.Length, UndockPushMps)));
     }
 
     /// <summary>The direction "away from the harbour": the berthing arm's own outward radial, which is the
