@@ -672,11 +672,14 @@ public sealed class TheOldCrewTests
         Assert.All(all, a => Assert.False(string.IsNullOrWhiteSpace(OldCrewScene.Reply(OldCrew.SignerId, a))));
     }
 
-    /// <summary>The seven slots the bible authors are the seven the bible authors, and every other slot is
-    /// honestly marked as standing in. This is the guard that keeps the PR body's list of unwritten lines
-    /// true: the day one is written, the count moves here.</summary>
+    /// <summary>
+    /// #973 L3 · <b>NOT ONE SLOT IS STANDING IN ANY MORE.</b> L5a shipped with eleven of the eighteen replies
+    /// wearing the best friend's line, and this guard counted them so the PR body could not lie about it. The
+    /// words exist now, so the guard is INVERTED rather than deleted: zero standing-ins, and a name added to
+    /// the pool without a voice of its own fails here the day it is added.
+    /// </summary>
     [Fact]
-    public void ElevenReplySlotsAreStillStandingIn()
+    public void NoReplySlotIsStandingInAnyMore()
     {
         var standingIn = new List<string>();
         foreach (OldCrew.Shipmate who in OldCrew.Pool.Where(p => p.Living))
@@ -690,15 +693,78 @@ public sealed class TheOldCrewTests
             }
         }
 
-        Assert.Equal(11, standingIn.Count);
+        Assert.Empty(standingIn);
     }
 
-    /// <summary>All six slips are placeholders today, and the same rule applies: the count lives with the
-    /// code rather than in a paragraph somebody has to remember to edit.</summary>
+    /// <summary>…and every one of the eighteen is a DIFFERENT sentence — six people by three answers, all
+    /// distinct. The whole value of the old crew, stated as an assertion: they sound like people somebody
+    /// knew, and two of them saying the identical thing would be the wiring showing through.</summary>
     [Fact]
-    public void AllSixSlipsAreStillPlaceholders()
+    public void EveryReplyIsThatPersonsOwnSentence()
     {
-        Assert.Equal(6, OldCrew.Pool.Count(p => p.Living && OldCrewScene.SlipIsPlaceholder(p.Id)));
+        var replies = new List<string>();
+        foreach (OldCrew.Shipmate who in OldCrew.Pool.Where(p => p.Living))
+        {
+            foreach (OldCrewScene.Answer answer in Enum.GetValues<OldCrewScene.Answer>())
+            {
+                string said = OldCrewScene.Reply(who.Id, answer);
+                Assert.False(string.IsNullOrWhiteSpace(said), $"{who.Name} has nothing to say to {answer}");
+                replies.Add(said);
+            }
+        }
+
+        Assert.Equal(18, replies.Count);
+        Assert.Equal(replies.Count, replies.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    /// <summary>All six slips are that person's own piece of paper, and no two of them are the same one. The
+    /// count lives with the code rather than in a paragraph somebody has to remember to edit.</summary>
+    [Fact]
+    public void AllSixSlipsAreWrittenAndNoneRepeats()
+    {
+        string[] slips = [.. OldCrew.Pool.Where(p => p.Living).Select(p => OldCrewScene.Slip(p.Id))];
+
+        Assert.Equal(6, slips.Length);
+        Assert.DoesNotContain(OldCrew.Pool.Where(p => p.Living), p => OldCrewScene.SlipIsPlaceholder(p.Id));
+        Assert.Equal(slips.Length, slips.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    /// <summary>
+    /// #973 L3 · <b>THE ONE WHO SIGNED IS ONE MAN.</b> The shipmate-to-shipmate bond names what the OTHER
+    /// person is to this one (<c>Seeded.History</c> reads <i>the fling · the best friend: Teo</i>), so
+    /// <c>Signed</c> is a sentence about the person it points AT — and there is exactly one man in this world
+    /// it can truthfully point at. Swept over a long run of threads, and asked of the bag itself as well, so
+    /// the law is proved at the DRAW rather than sampled at the result.
+    /// </summary>
+    [Fact]
+    public void OnlyCorwinEverWearsTheBondOfTheOneWhoSigned()
+    {
+        foreach (string thread in ManyThreads(300))
+        {
+            foreach (OldCrew.Seeded s in OldCrew.Seed(thread, Berths))
+            {
+                if (s.Bond == OldCrew.BondKind.Signed)
+                {
+                    Assert.Equal(OldCrew.SignerId, s.BondToId);
+                }
+            }
+        }
+
+        Assert.Contains(OldCrew.BondKind.Signed, OldCrew.BondsAvailableAbout(OldCrew.SignerId));
+        foreach (OldCrew.Shipmate other in OldCrew.Pool.Where(p => p.Id != OldCrew.SignerId))
+        {
+            Assert.DoesNotContain(OldCrew.BondKind.Signed, OldCrew.BondsAvailableAbout(other.Id));
+        }
+
+        // …and every OTHER kind is still legal about anybody, so the reservation cost the table one cell and
+        // not a column: a bag that had quietly lost two kinds would flatten the history between four people.
+        foreach (OldCrew.BondKind kind in Enum.GetValues<OldCrew.BondKind>())
+        {
+            if (kind != OldCrew.BondKind.Signed)
+            {
+                Assert.Contains(kind, OldCrew.BondsAvailableAbout("maren"));
+            }
+        }
     }
 
     /// <summary>The tags are the bible's: the fling and the best friend are LOVE, everybody else is MONEY.</summary>
@@ -754,11 +820,26 @@ public sealed class TheOldCrewTests
         Assert.All(everySurface, line =>
             Assert.DoesNotContain("copy", line, StringComparison.OrdinalIgnoreCase));
 
-        // …and what was in the pods. Never named, never hinted at by a noun.
-        foreach (string forbidden in new[] { "restore", "reefer", "pod", "manifest", "clone", "backup", "cadaver" })
+        // …and WHAT WAS IN THE PODS. Never named — which is the law, and it is about the CONTENTS.
+        //
+        // #973 L3 narrowed this list, deliberately and with the canon in hand. L5a wrote it before the slips
+        // existed and reached for the nearest nouns as a proxy; Fable's own text for the signer's slip is
+        // "a customs receipt for sealed reefer pods, medical, and a counter-signature you would know
+        // anywhere", which is the single strongest clue in the arc and says nothing whatever about what was
+        // inside. A crate is not its contents. What must never appear is the WORD FOR THE THING — and every
+        // one of those is still swept below, alongside the manifest's own lie ("medical") going on being
+        // allowed to stand, because the lie is the point.
+        foreach (string forbidden in new[] { "restore", "clone", "backup", "cadaver", "corpse", "body double" })
         {
             Assert.All(everySurface, line =>
                 Assert.DoesNotContain(forbidden, line, StringComparison.OrdinalIgnoreCase));
         }
+
+        // …and the receipt is real: the one line that DOES name the crates is the signer's slip, and nobody
+        // else's surface has picked the noun up.
+        Assert.Contains("reefer pods", OldCrewScene.Slip(OldCrew.SignerId), StringComparison.Ordinal);
+        Assert.Equal(
+            1,
+            everySurface.Count(line => line.Contains("reefer", StringComparison.OrdinalIgnoreCase)));
     }
 }

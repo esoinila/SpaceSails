@@ -110,6 +110,52 @@ public static class HeldMemory
         public bool IsStray => Mark == Mark.NotAnyones;
 
         /// <summary>
+        /// #973 L3 · The line the BOOK prints under a sheet: whose it is, which theory it serves, who put it
+        /// in your hand, and the day. The ledger's own <c>&lt;who&gt; · &lt;where&gt; · day N</c> idiom, with
+        /// the mark standing where the place would be — because for a memory the answer to <i>where did this
+        /// come from</i> is a person's head and not a room.
+        /// </summary>
+        public string BookLine
+        {
+            get
+            {
+                string line = HandedBy is { Length: > 0 } who ? $"{Byline} · {who}" : Byline;
+                line += $" · day {((int)(SimTime / 86400)).ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+                if (Corrected)
+                {
+                    line += " · corrected";
+                }
+
+                if (Confidence > 0)
+                {
+                    line += $" · confidence {Confidence.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+                }
+
+                return line;
+            }
+        }
+
+        /// <summary>One more corroboration, capped. Returns the same sheet once the cap is reached, so a
+        /// captain laying the same agreeing pair twenty times gains nothing the twenty-first time.</summary>
+        public Sheet Warmer(int cap) =>
+            Confidence >= cap ? this : this with { Confidence = Confidence + 1 };
+
+        /// <summary>Add a name to the ones this sheet writes down, if it does not have it — how a lead the
+        /// book cannot answer gets onto the THREADS page and waits there.</summary>
+        public Sheet Naming(string name)
+        {
+            foreach (string had in Threads ?? [])
+            {
+                if (string.Equals(had, name, StringComparison.Ordinal))
+                {
+                    return this;
+                }
+            }
+
+            return this with { Threads = [.. Threads ?? [], name] };
+        }
+
+        /// <summary>
         /// The opaque row the vault stores. Fields are pipe-separated with the pipe escaped in every one of
         /// them, and the threads are joined on a second separator, so any text round-trips.
         ///
@@ -228,6 +274,15 @@ public static class HeldMemory
 
     /// <summary>The photograph's sheet id. One per game, whoever hands it over.</summary>
     public const string PhotographId = "photograph";
+
+    /// <summary>What the row over a sheet says, wherever a sheet is drawn — the Captain's ledger and the
+    /// black book both. One rule, so the fleet-day page cannot end up being two different rows in two
+    /// different surfaces. Every heading is a NOUN and never a summary: a heading that told you what the
+    /// memory meant would be doing the reading for you.</summary>
+    public static string RowTitle(Sheet sheet) =>
+        string.Equals(sheet.Id, OldCrewScene.SummerPartyId, StringComparison.Ordinal)
+            ? OldCrewScene.SummerPartyTitle
+            : "🎞 A held memory";
 
     // ── #973 L3 · THREADS ────────────────────────────────────────────────────────────────────────────
     //

@@ -5074,6 +5074,69 @@
     color: #7b8ca3;
 }
 
+/* #973 L3 · A HELD MEMORY, DRAWN. Not a note and deliberately not shaped like one: a note is a line the
+   captain wrote on a ground the book can name, and this is a page somebody remembers. So it gets a left
+   rule rather than a bullet, and the byline under it carries the whole of what the book knows about it —
+   whose it is, which theory it serves, who handed it over, the day. */
+.held-sheet {
+    border-left: 2px solid rgba(216, 181, 106, 0.45);
+    padding: 0.25rem 0 0.25rem 0.55rem;
+    margin: 0.4rem 0;
+}
+
+.held-sheet-title {
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #d8b56a;
+}
+
+.held-sheet-text {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #c9d6e4;
+}
+
+/* The one line that says whose it is. Quiet, like every other provenance in this book — a byline is what
+   the page is FILED as, never what it is arguing. */
+.held-sheet-byline {
+    font-size: 0.7rem;
+    color: #7b8ca3;
+    margin-top: 0.15rem;
+}
+
+/* …and a page that fits nobody's life is drawn in the flashback's own bleached ink rather than the
+   book's gold. It is the one row on the page the captain did not earn and cannot place. */
+.held-sheet.stray { border-left-color: rgba(200, 210, 220, 0.5); }
+
+.held-sheet.stray .held-sheet-text { color: #dfe6ee; }
+
+/* #973 L3 · THE RECONCILE, on the spread. The laid pair sits above the papers because it is what the
+   captain is looking at; the second question sits under the verdict because it is a count and not a
+   conclusion. */
+.spread-lay { margin-bottom: 0.6rem; }
+
+.spread-laid {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin: 0.3rem 0;
+}
+
+.spread-laid-item {
+    font-size: 0.75rem;
+    color: #d8b56a;
+    border: 1px solid rgba(216, 181, 106, 0.35);
+    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
+}
+
+.spread-second-question {
+    font-size: 0.7rem;
+    color: #7b8ca3;
+    margin: 0.15rem 0 0.4rem;
+}
+
 /* Quiet, and smaller than the reading: the pen offered at a stack must never read as the page's own
    recommendation. It is a shortcut for the wrist, not for the judgement. */
 .satchel-filter.thread-pen {
