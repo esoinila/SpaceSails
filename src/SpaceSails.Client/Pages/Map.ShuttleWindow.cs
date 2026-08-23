@@ -154,15 +154,23 @@ public partial class Map
         var separations = new List<RouteShuttleWindow.RouteSample>(_samples.Count);
         foreach (TrajectorySample s in _samples)
         {
-            if (s.SimTime < SimTime)
-            {
-                continue;   // the part of the ribbon already flown is not a window anybody can take
-            }
             separations.Add(new RouteShuttleWindow.RouteSample(
                 s.SimTime, (s.Position - _ephemeris.Position(bodyId, s.SimTime)).Length));
         }
 
-        return RouteShuttleWindow.Along(separations);
+        // Windows already shut are not offers. The ribbon itself is not trimmed to NOW first: a window the
+        // ship is standing in the middle of has its true OPENING in the past, and cutting the ribbon there
+        // would move the opening to wherever the projection's first sample happened to fall — which is how
+        // "am I inside this window?" silently becomes "did the window start on a sample boundary?".
+        var ahead = new List<RouteShuttleWindow.Window>();
+        foreach (RouteShuttleWindow.Window w in RouteShuttleWindow.Along(separations))
+        {
+            if (w.ClosesSimTime > SimTime)
+            {
+                ahead.Add(w);
+            }
+        }
+        return ahead;
     }
 
     /// <summary>The RETURN BY the route imposes on a captain standing on <paramref name="bodyId"/> right
