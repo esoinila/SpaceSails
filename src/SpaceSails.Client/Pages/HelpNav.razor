@@ -163,10 +163,17 @@
             <div class="col-md-7">
                 <h2 class="h5" id="step-7">7. Arm it</h2>
                 <p>
-                    Open the arrive step and press <strong>🛰 Arm the arrival</strong>. That arms the
-                    autopilot for <em>that body, at that pass</em> — never whatever happens to be nearest
-                    when the moment comes. The badge reads <strong>ARMED</strong>, then
-                    <strong>ACTIVE</strong> when the ship starts flying the approach.
+                    Open the arrive step and press
+                    <strong>🛰 Arm the arrival at <em>Mars</em> — finish the trip from here</strong>. You can
+                    do this at <em>plan time</em>, with burns still ahead of you: arming is a decision about
+                    the whole trip, not a thing you have to be awake for at the pass. It arms the autopilot
+                    for <em>that body, at that pass</em> — never whatever happens to be nearest when the
+                    moment comes.
+                </p>
+                <p>
+                    The badge then reads <strong>ARMED</strong>, and the step says
+                    <em>"The plan is complete. The autopilot takes her at the pass — nothing more is needed
+                    unless something interferes."</em> That is the sentence you are plotting towards.
                 </p>
             </div>
             <div class="col-md-5">@SketchArm()</div>
@@ -334,10 +341,10 @@
         <rect x="240" y="16" width="54" height="16" rx="4" fill="{Good}"/>
         <text x="267" y="28" fill="#11151b" font-size="9" font-family="monospace" text-anchor="middle">&#10003; VALID</text>
         <rect x="24" y="46" width="272" height="22" rx="4" fill="{Good}"/>
-        <text x="160" y="61" fill="#11151b" font-size="11" font-family="monospace" text-anchor="middle">&#128752; Arm the arrival at Mars</text>
-        {Pill(24, 76, 176, "scrub to it", Info)}
-        {Pill(208, 76, 88, "&#10006; remove", Bad)}
-        <text x="24" y="110" fill="{Dim}" font-size="9">the plan ends here</text>
+        <text x="160" y="61" fill="#11151b" font-size="10" font-family="monospace" text-anchor="middle">&#128752; Arm the arrival at Mars</text>
+        <text x="160" y="90" fill="{Good}" font-size="9" text-anchor="middle">&#8220;the plan is complete&#8221;</text>
+        {Pill(24, 100, 176, "scrub to it", Info)}
+        {Pill(208, 100, 88, "&#10006; remove", Bad)}
         """);
 
     private MarkupString SketchWarp() => Frame("The warp slider pushed up, and a burn firing on the ribbon",

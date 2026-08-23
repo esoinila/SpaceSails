@@ -217,6 +217,70 @@ public sealed class EveryJobSaysWhatItTakesTests
         Assert.Equal(half, JobEffort.LaneSeconds(mu, r, r), 3);
     }
 
+    // ── LAW 3b · THE PRIMARY IS CHOSEN, NOT ASSUMED ────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE ONE CHOICE THE EFFORT LINE LIVES OR DIES ON, asked of the SHIPPED Sol scenario rather than of
+    /// a hand-built toy. Ship and target in the same planet's system read about that planet; anything
+    /// else reads about the Sun.
+    /// <para>RED PROOF: return the root unconditionally and the first case goes red; return the ship's
+    /// own planet unconditionally and the Earth→Mars case does.</para>
+    /// </summary>
+    [Fact]
+    public void TheSharedPrimaryIsThePlanetWhenBothEndsAreInItsSystem()
+    {
+        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CelestialBody sun = sol.Bodies.Single(b => b.ParentId is null);
+
+        // Every body that rides Mars round the Sun — a moon, a haven, a depot berth. If the scenario ever
+        // ships fewer than two of them this test says so rather than passing on an empty sweep.
+        string[] martian = sol.Bodies
+            .Where(b => JobEffort.PlanetLevelAncestor(sol, b.Id)?.Id == "mars")
+            .Select(b => b.Id)
+            .ToArray();
+        Assert.True(martian.Length >= 2, $"Sol ships only {martian.Length} bodies in the Mars system");
+
+        Assert.Equal("mars", JobEffort.SharedPrimary(sol, martian[0], martian[1])?.Id);
+        Assert.Equal("mars", JobEffort.SharedPrimary(sol, "mars", martian[0])?.Id);
+
+        // Two different planets' systems — read about the Sun.
+        Assert.Equal(sun.Id, JobEffort.SharedPrimary(sol, "earth", "mars")?.Id);
+        // The ship cannot be placed at all (under way, docked nowhere) — the Sun again, never a guess.
+        Assert.Equal(sun.Id, JobEffort.SharedPrimary(sol, null, "mars")?.Id);
+        Assert.Equal(sun.Id, JobEffort.SharedPrimary(sol, "no-such-body", "mars")?.Id);
+    }
+
+    /// <summary>The planet-level walk: a planet is its own ancestor, a moon's is its planet, and the sun
+    /// is nobody's neighbourhood.</summary>
+    [Fact]
+    public void ThePlanetLevelWalkStopsBelowTheSun()
+    {
+        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CelestialBody sun = sol.Bodies.Single(b => b.ParentId is null);
+
+        Assert.Equal("mars", JobEffort.PlanetLevelAncestor(sol, "mars")?.Id);
+        Assert.Null(JobEffort.PlanetLevelAncestor(sol, sun.Id));
+        Assert.Null(JobEffort.PlanetLevelAncestor(sol, "no-such-body"));
+
+        // Every non-root body resolves to something whose own parent IS the root — that is what
+        // "planet-level" means, and a walk that stopped one rung short would break it silently.
+        foreach (CelestialBody b in sol.Bodies.Where(b => b.ParentId is not null))
+        {
+            CelestialBody ancestor = Assert.IsType<CelestialBody>(JobEffort.PlanetLevelAncestor(sol, b.Id));
+            Assert.Equal(sun.Id, ancestor.ParentId);
+        }
+    }
+
+    /// <summary>The root of the shipped system is the sun, and it is the only parentless body — the whole
+    /// fallback rests on there being exactly one.</summary>
+    [Fact]
+    public void TheShippedSystemHasExactlyOneRoot()
+    {
+        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        Assert.Single(sol.Bodies, b => b.ParentId is null);
+        Assert.Equal(sol.Bodies.Single(b => b.ParentId is null).Id, JobEffort.Root(sol)?.Id);
+    }
+
     // ── LAW 4 · AN UNMEASURABLE NUMBER IS NOT PRINTED ──────────────────────────────────────────────
 
     /// <summary>A world that cannot be asked returns zero, not a guess. RED PROOF: return any positive
