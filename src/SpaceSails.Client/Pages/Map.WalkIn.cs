@@ -39,8 +39,15 @@ namespace SpaceSails.Client.Pages;
 /// (<c>StoryBeats.Presentation.Hosted</c>), so the seam spends the cadence, files the seen-set and writes her
 /// entrance into the ledger while her own portrait is the picture on the screen.</para>
 ///
-/// <para>If the captain is not alone when she gets there she does what a person in a bar does: waits at the
-/// counter, and tries once more this visit. That is L0's own fallback and not a second behaviour.</para>
+/// <para>If the captain is not alone when she gets there she does what a person in a bar does: <b>she waits
+/// at the counter.</b> That is L0's own fallback and not a second behaviour of this file's.</para>
+///
+/// <para><b>NOT BUILT, and said out loud rather than faked: "and tries once more that visit".</b> The brief
+/// asks for a second attempt, and the only way to plan one with what the room publishes today is to take her
+/// off the floor and walk her in through a back-room leaf again — so a player watching the counter would see
+/// her vanish from it and come back out of the cellar. That is a worse lie than not retrying, and the honest
+/// version wants a "walk from where you are standing" that the bar's planner does not have yet. Flagged for
+/// whoever adds it: the gate to relax is <see cref="TheWalkInAfoot"/> in the plan branch below.</para>
 /// </summary>
 public sealed partial class Map
 {
