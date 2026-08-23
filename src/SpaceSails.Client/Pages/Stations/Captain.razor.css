@@ -1,4 +1,4 @@
-/* The captain's position (PR-15): a stately, uncluttered room. The mission statement gets its
+﻿/* The captain's position (PR-15): a stately, uncluttered room. The mission statement gets its
    own quiet block up top (70% rule doesn't apply here the way it does to instrument-heavy desks —
    there's no "big instrument", just the one thing that matters: the current order and the list of
    orders that could replace it). */
@@ -145,6 +145,45 @@
 .captain-quest-status-active { color: #ffd479; }
 .captain-quest-status-complete { color: #9fe6b0; }
 .captain-quest-status-paid { color: rgba(224, 228, 236, 0.55); }
+
+/* #973 L1 — A PAGE YOU DON'T REMEMBER WRITING. The row is still in the book and still readable; what it
+   loses is the colour and the confidence. The ⟂ mark and the label above the title carry the meaning, because
+   a greyed row on an already-dark ledger is not a difference everybody can see — the opacity is the mood and
+   the glyph is the fact. Clickable, because sitting down with it is the whole mechanic. */
+.captain-ledger-unremembered {
+    opacity: 0.55;
+    filter: grayscale(1);
+    border-left: 3px solid rgba(150, 160, 180, 0.55);
+    cursor: pointer;
+}
+
+.captain-ledger-unremembered:hover,
+.captain-ledger-unremembered:focus-visible {
+    opacity: 0.78;
+    border-color: rgba(150, 160, 180, 0.55);
+    border-left-color: rgba(200, 210, 225, 0.85);
+    outline: none;
+}
+
+.captain-ledger-unremembered-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 0.2rem;
+}
+
+.captain-ledger-unremembered-mark {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: rgba(224, 228, 236, 0.85);
+}
+
+.captain-ledger-unremembered-label {
+    font-size: 0.78rem;
+    font-style: italic;
+    letter-spacing: 0.02em;
+    color: rgba(224, 228, 236, 0.6);
+}
 
 /* PR-WIRE — the favor-bank accounts on the ledger: a soft gold left border marks a money line. */
 .captain-ledger-account { border-left: 3px solid rgba(255, 212, 121, 0.6); }

@@ -112,6 +112,11 @@ public static class StoryBeats
 
         /// <summary>#664 · The sealed hatch comes off its dogs — and it opens both ways.</summary>
         SealedDoorReleased,
+
+        /// <summary>#973 · A page you don't remember writing gives something back. The subject is the MEMORY
+        /// ID — the ledger entry the captain just read at — because a flashback is always about one page and
+        /// never about flashbacks in general.</summary>
+        Flashback,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -199,6 +204,14 @@ public static class StoryBeats
         Beat.KaamosShardFound or Beat.NebulaShardFound or Beat.OutpostEffectsRead
             or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes => Cadence.OncePerSubject,
 
+        // #973 · …and Flashback falls through to EveryTime with them, for the clause EveryTime is reserved
+        // for: it is rare by its OWN nature and cannot be made repetitive by trying. A page may be read at
+        // ONCE PER LIFE and never again (FilingLine.PageState.Refused is the latch), and there are only grey
+        // pages to read at all after a captain has died. OncePerSubject was the near miss and it is wrong for
+        // the one reason that matters here: the rebirth RE-GREYS the book, so the same page read by a later
+        // captain is a different captain reaching for a different stranger's afternoon, and swallowing that
+        // would silently un-illustrate every flashback after the first death.
+
         // …and CollectorsSetDown falls through to EveryTime with the grapples, deliberately. It is the only
         // warning the player gets — after it the only information in the world is a tracker fan — and it is
         // rare by its own nature (a heat threshold, and at most one landing per excursion), which is the
@@ -236,6 +249,13 @@ public static class StoryBeats
         // #777: the grapples arrive AS the BUSTED demand panel, which has been showing this beat's painting
         // since #528. A card here would be a second modal over the first, with the same picture on it.
         Beat.CollectorHail => Presentation.Hosted,
+
+        // #973 · A PLATE, and deliberately not a card. The captain is at the Captain's desk with the ledger
+        // open, clicking grey rows; a full-screen modal over that is a dismissal between every click, which
+        // is the "too repetitive" half of the owner's law arriving through the back door. The plate rides the
+        // edge for its seven seconds while the book stays open and readable underneath — and the page the
+        // captain just won back is right there to be read, which is the whole reason they clicked.
+        Beat.Flashback => Presentation.Plate,
 
         // #664 · All eleven of the adopted moments fall through to CARD, and that is not an oversight: every
         // one of them was already a full-screen modal under the other system, and every one of them is a
@@ -387,6 +407,10 @@ public static class StoryBeats
         Beat.ArcNewsBreaks => "art/arc-news.jpg",
         Beat.ChargeLetGo => "art/charge-let-go.jpg",
         Beat.FireAboard => "art/fire-aboard.jpg",
+        // #973 · One plate for every flashback, and one style: bleached to white, a single object left in
+        // focus. Fixed rather than keyed by the memory id on purpose — a memory is not a place, and painting
+        // one canvas per ledger row is a pool nobody could ever finish.
+        Beat.Flashback => "art/flashback.jpg",
         // #541: the tube's own canvases live with the tube, so the tier rule and the picture cannot disagree.
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
@@ -407,6 +431,10 @@ public static class StoryBeats
         Beat.ArcNewsBreaks => "📰 THE STORY BREAKS",
         Beat.ChargeLetGo => "⚡ SHE LETS GO",
         Beat.FireAboard => "🔥 THERE IS FIRE IN HER",
+        // #973 · The stamp is the mark and the label the ledger row already wears, said louder. The subject
+        // is the memory id and is deliberately NOT in the stamp: an entry key is bookkeeping, and a card that
+        // put one on the screen would be showing the player the filing system instead of the memory.
+        Beat.Flashback => FilingLine.Mark + " " + "A PAGE YOU DON'T REMEMBER WRITING",
         Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.Title(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
@@ -474,6 +502,15 @@ public static class StoryBeats
                                       ArrivalTube.WalkLine(ArrivalTube.Tier.WorkingBerth),
             Beat.BerthOutpost => ArrivalTube.Caption(ArrivalTube.Tier.Outpost) + " " +
                                  ArrivalTube.WalkLine(ArrivalTube.Tier.Outpost),
+
+            // FABLE: line needed — the flashback plate's caption. It must describe the bleached picture and
+            // STOP (the vented-room discipline): a single object left in focus while the rest of the frame
+            // washes out, and nobody telling the player what it means. It must read whole with no subject,
+            // it must never name what the clinic actually does, and it must not say which detail on a page
+            // is the wrong one. The line below is a plain placeholder describing the painting as shipped.
+            Beat.Flashback =>
+                "A pen on a steel desk, sharp enough to count the scratches on it. Everything behind it — the " +
+                "room, the chair, the figure at the far side of the desk — is washed out to white.",
 
             Beat.FireAboard =>
                 "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +
