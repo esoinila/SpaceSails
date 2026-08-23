@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Core.Tests;
 
@@ -178,6 +178,14 @@ public sealed class StoryBeatsTests
     /// world is a tracker fan — and it is rare by its own nature twice over: a heat threshold has to be
     /// crossed, and at most one boat lands per excursion. A warning rationed for being repetitive is not a
     /// warning, so it is the one adopted beat that keeps EveryTime.</para>
+    ///
+    /// <para>#973 · And the sixth, saying why in its turn. <c>Flashback</c> is rare by its own nature and
+    /// cannot be made repetitive by trying: a grey page may be read at ONCE PER LIFE and never again
+    /// (<see cref="FilingLine.PageState.Refused"/> is the latch), and a captain who has never died has no
+    /// grey pages to read at all. <see cref="StoryBeats.Cadence.OncePerSubject"/> was the near miss and it
+    /// is wrong for one reason: a rebirth RE-GREYS the book, so the same page read by a later captain is a
+    /// different captain reaching for a different stranger's afternoon — and filing under (beat, page id)
+    /// would silently un-illustrate every flashback after the first death.</para>
     /// </summary>
     [Fact]
     public void OnlyRareMomentsFireEveryTime()
@@ -191,6 +199,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.ArcNewsBreaks,
                 StoryBeats.Beat.FireAboard,
                 StoryBeats.Beat.CollectorsSetDown,
+                StoryBeats.Beat.Flashback,
             ],
             everyTime);
     }

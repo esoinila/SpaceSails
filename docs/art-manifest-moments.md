@@ -179,3 +179,21 @@ grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Ga
   the coaming; through the gap, scarred riveted plating an arm's reach away, unlit. One lone crew member in a
   patched suit holding a hand lamp that throws the only real light in the frame.
 - **Rule it illustrates:** you step from your lock into theirs. There is no walk, and there is no one to run it.
+
+## 12. `art/flashback.jpg` — A PAGE YOU DON'T REMEMBER WRITING ✅ PAINTED
+- **Beat:** `Flashback` · **every time** (rare by its own nature — a page may be read at once per life, and
+  only a captain who has died has grey pages at all) · **PLATE**
+- **Fires:** `Map.FilingLine.ReadTheGreyPage`, when a flashback attempt comes back or comes back wrong.
+  Nothing gets no plate.
+- **Composition:** a bleached, over-exposed memory. **One object left sharp in the lower third — a worn
+  ballpoint pen lying on a bare brushed-steel desk** — while the entire rest of the frame blows out into a pale
+  washed white haze: a dim office interior, filing cabinets, a seated figure out of focus at the far side of the
+  desk, their face unreadable. Colour drained almost to monochrome, a faint amber cast surviving only on the
+  pen. Heavy bloom, painterly, grimy lived-in used-future sci-fi. **No text, no lettering, no signage** — the
+  caption is written in code and must not be doubled in pixels.
+- **Rule it illustrates:** the flashback style itself, and it is one style for every memory on purpose — the
+  bleach is what a filed pattern looks like coming back, and the single object in focus is all of the afternoon
+  that survived. A per-memory canvas would be a pool nobody could finish, and it would also be a lie: these do
+  not come back as scenes.
+- **Negative list:** as the house rules above (no sea, no sky, no daylight, no horizon) — this one is an
+  interior and the only light in it is fluorescent.

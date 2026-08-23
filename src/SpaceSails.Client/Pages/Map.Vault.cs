@@ -177,6 +177,12 @@ public partial class Map
         _caches.Clear();
         _overheard = [];
 
+        // #973 L1 · …and the filing line's marks with them. A new universe's captain has never died, so no
+        // page of their ledger is in anybody else's hand. (This method's contract is "the exact inverse of
+        // BuildVault" — the #563 lesson two blocks up — and a book of grey rows carried into a fresh voyage
+        // would grey pages of a ledger that does not exist yet.)
+        _filingBook = [];
+
         // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again,
         // and so is the head office: a captain who has never been under the ice has never counted the beds,
         // and must be able to pay for it (the arc's 40) exactly once more.
@@ -450,6 +456,10 @@ public partial class Map
             Satchel = _satchel.Count > 0
                 ? new SatchelSection { Items = [.. _satchel.Select(i => i.Stored)] }
                 : null,
+            // #973 L1 · the filing line's marks on the Captain's ledger: which pages this captain does not
+            // remember writing, which have been read at already, and the hidden originals of the ones that
+            // came back wrong. Opaque rows — the file carries the FACT, never the sentences.
+            Filing = BuildFilingSection(),
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
@@ -977,6 +987,11 @@ public partial class Map
                 RestoreAPaperTrailRow(row);
             }
         }
+
+        // #973 L1 · The filing line's marks. A reload must never re-grey a page the captain won back and
+        // never re-roll one they lost, so the STATE rides the file rather than being recomputed — the roll
+        // is deterministic, but the latch on a refusal is a fact about a life and not about a seed.
+        RestoreFilingSection(vault.Filing);
 
         // #603 · The satchel. Unreadable entries from an edited or future save are dropped rather than
         // thrown over — the vault is tolerant everywhere else and a mystery object is not worth a lost game.

@@ -1,4 +1,4 @@
-@page "/map"
+﻿@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -6550,7 +6550,9 @@
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
-                                                              Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
+                                                              Tips="LedgerTipsAsRemembered()" OnScopeTip="PointScopeFromLedger"
+                                                              OnReadGreyPage="ReadTheGreyPage"
+                                                              GreyPageMark="@FilingLine.Mark" GreyPageLabel="@FilingLine.Label"
                                                               Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
@@ -6942,6 +6944,15 @@
                             <div class="busted-succession">
                                 <div class="busted-succession-head">🪪 THE POLICY ISSUES A NEW CAPTAIN</div>
                                 <div class="busted-succession-line">@CaptainSuccession.PolicyPayoutLine</div>
+                                @* #973 L1 · THE FILING LINE, ON THE CARD THAT ALREADY EXISTS. One line, once per
+                                   rebirth, on the succession block rather than a card of its own — the wake is
+                                   already four panels long and the amnesia is a property of the succession, not
+                                   a separate event. Which line it is comes from the POLICY that was in force at
+                                   the death, never from counting how many rows happened to grey. *@
+                                @if (bust.FilingNotice is { Length: > 0 } filing)
+                                {
+                                    <div class="busted-succession-filing">@filing</div>
+                                }
                                 <div class="busted-succession-names">
                                     @if (!string.IsNullOrEmpty(bust.RetiredCaptainName))
                                     {
