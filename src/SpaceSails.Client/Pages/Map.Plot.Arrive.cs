@@ -432,6 +432,25 @@ public partial class Map
             return;
         }
 
+        // #286 moon-docked clearance, the same guard the NOW arm applies: the rehearsal stops at the
+        // insertion, so it never sees the KEPT orbit that follows — and a kept orbit round a small moon can
+        // sweep through the planet it circles beside.
+        if (BodyById(step.BodyId) is { } moonTarget
+            && MoonOrbitClearance.Solve(_ephemeris, moonTarget, pass.SimTime) is { } keptVerdict)
+        {
+            if (keptVerdict.NoSafeOrbit)
+            {
+                _autopilotStandDownReason = $"autopilot declines {name}: {MoonOrbitClearance.RefusalText(keptVerdict)}.";
+                ResetAutopilotBudget();
+                ShowPulseMessage($"🛰 {_autopilotStandDownReason}");
+                return;
+            }
+            if (keptVerdict.Clamped)
+            {
+                ShowPulseMessage($"🛰 {MoonOrbitClearance.RefusalText(keptVerdict)}.");
+            }
+        }
+
         _armedBudgetPulses = r.PulsesCharged; // #928: quote the tenth, which is what the tank really loses
         _armedSpentPulses = 0;
         _armedTransferSchedule = schedule;    // the brake, if one was laid — it fires at the pass, as a step
