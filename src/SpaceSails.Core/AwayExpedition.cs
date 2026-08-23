@@ -243,21 +243,193 @@ public static class ExpeditionWindow
 
     /// <summary>How the window HUD should read — a coarse status the client colours. Out of reach = the
     /// team is stranded (the mission's failure branch); inside <paramref name="criticalSeconds"/> = a red
-    /// "last call"; an opening gap with time to spare = amber "ticking"; a held/closing course = green.</summary>
-    public static WindowStatus Classify(double distanceMeters, double rangeRateMps, double criticalSeconds)
+    /// "last call"; an opening gap with time to spare = amber "ticking"; a held/closing course = green.
+    ///
+    /// <para>This overload asks nothing about the FUTURE, so an out-of-reach gap is <see cref="WindowStatus.Lost"/>
+    /// full stop. Prefer the overload that takes <c>secondsUntilReopen</c> wherever the geometry is periodic
+    /// (#955 NAV-2 — a moon that swings back into reach of a berth is a window LOST AND REGAINED, not a dead
+    /// team).</para></summary>
+    public static WindowStatus Classify(double distanceMeters, double rangeRateMps, double criticalSeconds) =>
+        Classify(distanceMeters, rangeRateMps, criticalSeconds, secondsUntilReopen: null);
+
+    /// <summary>
+    /// #955 NAV-2 · THE ONE LAW, with the future folded in. Same reading as the three-argument overload,
+    /// except that a gap already past the shuttle edge asks one more question before it kills anyone: will
+    /// the geometry bring the site back inside reach? <paramref name="secondsUntilReopen"/> non-null (from
+    /// <see cref="SecondsUntilReopen"/>, a bounded forward scan of the real ephemeris) ⇒
+    /// <see cref="WindowStatus.Closed"/> — closed, reopens in X, the team waits. Null ⇒
+    /// <see cref="WindowStatus.Lost"/>, and only then is anybody stranded.
+    ///
+    /// <para>The owner's corner case (2026-08-23): docked at a Jupiter/Saturn haven the moon windows are
+    /// PERIODIC BY DEFAULT — the berth and the moon are on different rails around the same giant, so the gap
+    /// opens past a shuttle hop and closes again every synodic period with no plotted course involved. The
+    /// same law serves the plotted-route case; only the HORIZON the caller scans differs (a berth scans one
+    /// synodic period, an armed plan scans what is left of its span, a loose contract scans its budget).</para>
+    /// </summary>
+    public static WindowStatus Classify(
+        double distanceMeters, double rangeRateMps, double criticalSeconds, double? secondsUntilReopen) =>
+        ClassifyClock(
+            distanceMeters, TimeLeftInRangeSeconds(distanceMeters, rangeRateMps),
+            criticalSeconds, secondsUntilReopen);
+
+    /// <summary>
+    /// The same law, read off a clock the caller has ALREADY measured rather than off a range-rate this
+    /// method extrapolates in a straight line.
+    ///
+    /// <para>#955 NAV-2, found by opening the shuttle board and looking at it: clamped to The Red Eye with
+    /// Ganymede a quarter of a hop away, the row read <b>"window closes in 986 d 18 h"</b>. Nothing was
+    /// broken — <see cref="TimeLeftInRangeSeconds"/> is a straight-line extrapolation, the berth and the moon
+    /// were near their closest approach, and at closest approach the range-rate is momentarily ZERO. Divide a
+    /// real gap by a rate that is about to change sign and you get a lifetime. A drifting rock (#370's own
+    /// case) really does recede in a straight line, so the extrapolation was honest there; a moon on a rail
+    /// does not, and its close time has to be MEASURED the same way the reopening is — by walking the actual
+    /// geometry (<see cref="SecondsUntilClose"/>).</para>
+    /// </summary>
+    public static WindowStatus ClassifyClock(
+        double distanceMeters, double secondsLeftInRange, double criticalSeconds, double? secondsUntilReopen)
     {
         if (distanceMeters >= RangeMeters)
         {
-            return WindowStatus.Lost;
+            return secondsUntilReopen is not null ? WindowStatus.Closed : WindowStatus.Lost;
         }
 
-        double left = TimeLeftInRangeSeconds(distanceMeters, rangeRateMps);
-        if (double.IsPositiveInfinity(left))
+        if (double.IsPositiveInfinity(secondsLeftInRange))
         {
             return WindowStatus.Holding;
         }
 
-        return left <= criticalSeconds ? WindowStatus.Critical : WindowStatus.Ticking;
+        return secondsLeftInRange <= criticalSeconds ? WindowStatus.Critical : WindowStatus.Ticking;
+    }
+
+    // ── #955 NAV-2 · THE REOPENING: a bounded forward scan of the real geometry ──
+    // No analytic orbit theory: the caller hands in a separation function it already owns (the ephemeris
+    // rail, or the plotted path's samples), and this marches it forward at a stated step to the stated
+    // horizon, then bisects the first bracketing pair. Honest, deterministic, and cheap enough that the
+    // client can cache one absolute reopen instant and simply count down to it.
+
+    /// <summary>The forward scan's stride (seconds): ten sim-minutes. Chosen three orders of magnitude
+    /// finer than the shortest in-range span the shipping scenario produces (The Red Eye ↔ Ganymede sit
+    /// inside a shuttle hop for ≈2.6 days of every ≈17-day synodic period), so no window can hide between
+    /// two samples. OWNER-TUNABLE.</summary>
+    public const double ReopenScanStepSeconds = 600.0;
+
+    /// <summary>The scan's hard sample budget — a horizon longer than <see cref="ReopenScanStepSeconds"/> ×
+    /// this simply gets a wider stride rather than a longer loop, so the cost of one scan is bounded no
+    /// matter what horizon a caller asks for.</summary>
+    public const int MaxReopenScanSamples = 4096;
+
+    /// <summary>However far a caller's own horizon reaches, the scan never looks further than this (60 sim
+    /// days). A window that will not reopen inside two months is not a window a captain is waiting out on a
+    /// rock. OWNER-TUNABLE.</summary>
+    public const double MaxReopenHorizonSeconds = 60.0 * 24.0 * 3600.0;
+
+    /// <summary>How close the bisection pins the crossing (seconds). Well inside the "within a minute of the
+    /// geometry" accuracy the owner asked the test to assert.</summary>
+    public const double ReopenPrecisionSeconds = 1.0;
+
+    /// <summary>
+    /// Seconds until the gap next falls back inside <see cref="RangeMeters"/>, or null when it does not
+    /// inside the horizon. <paramref name="separationAfterSeconds"/> is the caller's own honest geometry —
+    /// give it an offset from now and it returns the berth↔site (or ship↔site) distance then. Already in
+    /// range now ⇒ 0. Marching stride is <see cref="ReopenScanStepSeconds"/>, widened if the horizon would
+    /// need more than <see cref="MaxReopenScanSamples"/> steps; the first bracketing pair is then bisected
+    /// to <see cref="ReopenPrecisionSeconds"/>.
+    /// </summary>
+    public static double? SecondsUntilReopen(
+        System.Func<double, double> separationAfterSeconds, double horizonSeconds) =>
+        SecondsUntilCrossing(separationAfterSeconds, horizonSeconds, wantInRange: true);
+
+    /// <summary>
+    /// The mirror: seconds until the gap next grows PAST <see cref="RangeMeters"/>, or null when it stays
+    /// inside for the whole horizon (a window that holds — <see cref="WindowStatus.Holding"/>). Already out
+    /// of range now ⇒ 0. This is what a periodic geometry needs instead of
+    /// <see cref="TimeLeftInRangeSeconds"/>: see <see cref="ClassifyClock"/> for the 986-day reading that
+    /// made it necessary.
+    /// </summary>
+    public static double? SecondsUntilClose(
+        System.Func<double, double> separationAfterSeconds, double horizonSeconds) =>
+        SecondsUntilCrossing(separationAfterSeconds, horizonSeconds, wantInRange: false);
+
+    /// <summary>The one scan both directions ride: march the caller's geometry forward at
+    /// <see cref="ReopenScanStepSeconds"/> (widened if the horizon needs more than
+    /// <see cref="MaxReopenScanSamples"/> strides) until the reach test flips to
+    /// <paramref name="wantInRange"/>, then bisect the bracketing pair to
+    /// <see cref="ReopenPrecisionSeconds"/>. Null when it never flips inside the horizon.</summary>
+    private static double? SecondsUntilCrossing(
+        System.Func<double, double> separationAfterSeconds, double horizonSeconds, bool wantInRange)
+    {
+        System.ArgumentNullException.ThrowIfNull(separationAfterSeconds);
+        double horizon = System.Math.Min(System.Math.Max(0.0, horizonSeconds), MaxReopenHorizonSeconds);
+        if (horizon <= 0.0)
+        {
+            return null;
+        }
+
+        if (InReach(separationAfterSeconds(0.0)) == wantInRange)
+        {
+            return 0.0;   // it is already the way the caller asked about — an easy question
+        }
+
+        double step = System.Math.Max(ReopenScanStepSeconds, horizon / MaxReopenScanSamples);
+        double previous = 0.0;
+        for (double t = step; ; t += step)
+        {
+            bool last = t >= horizon;
+            double at = last ? horizon : t;
+            if (InReach(separationAfterSeconds(at)) == wantInRange)
+            {
+                return Bisect(separationAfterSeconds, previous, at, wantInRange);
+            }
+            previous = at;
+            if (last)
+            {
+                return null;   // it never flips inside the horizon
+            }
+        }
+    }
+
+    private static bool InReach(double separationMeters) => separationMeters <= RangeMeters;
+
+    /// <summary>Pin the crossing between <paramref name="before"/> (the old state) and
+    /// <paramref name="after"/> (the state the caller asked for) to
+    /// <see cref="ReopenPrecisionSeconds"/>. Pure bisection — the separation function is monotone enough
+    /// across one stride that nothing cleverer earns its keep.</summary>
+    private static double Bisect(
+        System.Func<double, double> separationAfterSeconds, double before, double after, bool wantInRange)
+    {
+        while (after - before > ReopenPrecisionSeconds)
+        {
+            double mid = before + ((after - before) * 0.5);
+            if (InReach(separationAfterSeconds(mid)) == wantInRange)
+            {
+                after = mid;
+            }
+            else
+            {
+                before = mid;
+            }
+        }
+        return after;
+    }
+
+    /// <summary>
+    /// The synodic period (seconds) of two bodies on the same rail system — how long until their relative
+    /// geometry repeats, and therefore the honest horizon for "will this berth see that moon again?".
+    /// 1/|1/Ta − 1/Tb|, with retrograde periods (a negative <c>OrbitPeriod</c>, e.g. Triton) read by
+    /// magnitude, and two identical periods — a pair locked in formation, whose gap never changes —
+    /// returning <see cref="double.PositiveInfinity"/>: they will never come back, because they never left.
+    /// </summary>
+    public static double SynodicPeriodSeconds(double periodASeconds, double periodBSeconds)
+    {
+        double a = System.Math.Abs(periodASeconds);
+        double b = System.Math.Abs(periodBSeconds);
+        if (a <= 0.0 || b <= 0.0)
+        {
+            return double.PositiveInfinity;
+        }
+
+        double delta = System.Math.Abs((1.0 / a) - (1.0 / b));
+        return delta <= 0.0 ? double.PositiveInfinity : 1.0 / delta;
     }
 }
 
@@ -273,7 +445,13 @@ public enum WindowStatus
     /// <summary>Last call — inside the critical margin; recall the team NOW.</summary>
     Critical,
 
-    /// <summary>The gap crossed the shuttle-range edge — the team is stranded (the failure branch).</summary>
+    /// <summary>#955 NAV-2 · The gap is past the shuttle edge RIGHT NOW, but the geometry brings it back
+    /// inside the horizon — a window lost and regained. Nobody is stranded; the clock reads "next window
+    /// in X" and the team waits it out.</summary>
+    Closed,
+
+    /// <summary>The gap crossed the shuttle-range edge and nothing in the horizon brings it back — the team
+    /// is stranded (the failure branch).</summary>
     Lost,
 }
 

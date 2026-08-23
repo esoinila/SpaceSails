@@ -3801,6 +3801,14 @@
                                 <span class="deck-shuttle-meta">
                                     @FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)@(local.HasCache ? " · a chest waits here 🗺" : "")
                                 </span>
+                                @* #955 NAV-2: a row in reach is not a row that STAYS in reach. The window it
+                                   is open for — and, on an armed plan, the RETURN BY it binds you to, because
+                                   the ship flies on whether or not you are back aboard. *@
+                                <span class="deck-shuttle-meta deck-shuttle-window">
+                                    ⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
+                                        ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
+                                        : "")
+                                </span>
                             </div>
                             <div class="deck-shuttle-row-actions">
                                 @if (local.HasBerth)
@@ -3847,6 +3855,17 @@
                                 <span class="deck-shuttle-meta">
                                     @ShuttleSeparationText(f.DistanceMeters) · beyond shuttle reach (@ShuttleReachText(f.RangeMeters)) · @ShuttleTrendWord(f.Trend)
                                 </span>
+                                @* #955 NAV-2 · THE OWNER'S CORNER CASE, SAID OUT LOUD. Docked at a Jupiter or
+                                   Saturn haven the moons swing in and out of shuttle reach every synodic
+                                   period, so "beyond reach" is almost never permanent — it is a wait with a
+                                   length. Where the geometry brings the ground back inside the horizon, this
+                                   row says WHEN instead of leaving the captain to guess. *@
+                                @if (AwayReopenSeconds(f.Body.Id) is { } reopensIn)
+                                {
+                                    <span class="deck-shuttle-meta deck-shuttle-window">
+                                        ⏳ next window in @RouteShuttleWindow.In(reopensIn)
+                                    </span>
+                                }
                             </div>
                         </div>
                     }
@@ -3858,6 +3877,34 @@
                     No landable ground near enough to call either — the hatch stays shut for now.
                 </div>
             }
+
+            @* #955 NAV-2 · GO BY SHUTTLE, THE SHIP FLIES ON. Owner (2026-08-23): "with a pre-plotted, armed
+               route you can LEAVE the ship by shuttle mid-voyage (meteorites, small sites) with a return-window
+               clock … without a planned route you risk leaving the ship adrift." So this section exists ONLY
+               while a plan is armed — the ship is then promised to fly herself (#969) and a RETURN BY is a
+               promise the game can keep. Each row is one window the plotted path opens on ground ahead, read
+               off the SAME samples the ARRIVE step reads; two rows for one moon are the owner's separate
+               INGRESS and EGRESS windows. Informational: the boarding buttons above are still the only way
+               aboard, and they light when a window is actually open. *@
+            @{ var routeWindows = ShuttleRouteWindowRows(); }
+            @if (routeWindows.Count > 0)
+            {
+                <div class="deck-shuttle-farhead">On the plotted route — go by shuttle, the ship flies on:</div>
+                <div class="deck-shuttle-rows deck-shuttle-far">
+                    @foreach (var win in routeWindows)
+                    {
+                        var r = win;
+                        <div class="deck-shuttle-row deck-shuttle-row-far"
+                             title="The plan carries her inside a shuttle hop of @r.Body.Name for a while. She will not stop and she will not wait: be off the ground by the RETURN BY or she goes on without you.">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">🛸 @r.Body.Name — @r.Role window</span>
+                                <span class="deck-shuttle-meta">@RouteWindowRowText(r)</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
             <div class="deck-shuttle-actions">
                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => Dismiss(CloseShuttleBayDoor)">Close hatch</button>
             </div>
@@ -4410,6 +4457,17 @@
 
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
                 <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+
+                @* #955 NAV-2 · THE RETURN-WINDOW CLOCK. Owner: "with a pre-plotted, armed route you can LEAVE
+                   the ship by shuttle mid-voyage … with a return-window clock on the captain's remote." The
+                   ship flies her own plan and is NOT waiting, so the only number that matters while standing
+                   on a rock is when the boat must lift. Built by the Core copy (RouteShuttleWindow.RemoteLine)
+                   so the away-site HUD line quotes the identical numbers — never a second clock. *@
+                @if (AwayWindowRemoteLine() is { } awayWindow)
+                {
+                    <div class="vent-readout">@awayWindow</div>
+                    <div class="vent-sub">@AwayWindowRemoteSubLine()</div>
+                }
                 }
 
                 @* #736 · What the last switch DID. Every switch on this handset orders something that is
