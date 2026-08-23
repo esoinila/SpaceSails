@@ -72,8 +72,9 @@ internal sealed class DeskBench : Renderer
 
     /// <summary>The landing cheat is fire-and-forget (<c>_ = AutoLandThenStageDeathAsync(…)</c>, by design — it
     /// narrates its own descent phases and yields between them), so there is no task to await. The bench lets
-    /// the scheduler run instead, and
-    /// <see cref="EveryDeskBootsTests.EveryWorldInTheMatrixIsTheWorldItClaims"/> is what proves the wait was
+    /// the scheduler run instead, one second of it, and only when a landing was actually asked for — most boot
+    /// URLs never leave the ship and waiting on them would add a minute to the dev-start sweep for nothing.
+    /// <see cref="EveryDeskBootsTests.EveryWorldInTheMatrixIsTheWorldItClaims"/> is what proves the wait is
     /// long enough: a world that had not landed yet fails its own row rather than quietly testing the wrong
     /// scene.</summary>
     private const int DescentSpins = 40;
@@ -141,9 +142,12 @@ internal sealed class DeskBench : Renderer
             }
         }
 
-        for (int spin = 0; spin < DescentSpins; spin++)
+        if ((bool)Read(map, "_landCheat")!)
         {
-            await Task.Delay(25);
+            for (int spin = 0; spin < DescentSpins; spin++)
+            {
+                await Task.Delay(25);
+            }
         }
 
         // The page is now where the boot would have left it. Two latches so the renderer does not boot it a

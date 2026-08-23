@@ -33,11 +33,30 @@ namespace SpaceSails.Client.Tests;
 /// <item>The page carries at least one NAMED control — a button/input/select/textarea/link wearing a title or
 /// a readable label. A desk that renders an empty box has not rendered.</item>
 /// <item>Every attribute name the render tree emits is a name a browser will accept. <b>This is the one that
-/// catches the Trade crash</b>, and it catches it from the other end than the sibling lane's static law over
-/// the <c>.razor</c> sources: that one reads what was TYPED, this one reads what the compiled component
-/// EMITS — which also covers a bad attribute name no comment produced (a splatted <c>@attributes</c>
-/// dictionary with a bad key, a name built from data) and covers it in every world state.</item>
+/// caught the Trade crash</b> — see the red proof below.</item>
 /// </list></para>
+///
+/// <para><b>Where this sits next to the two laws that landed with the fix (#985).</b> Three angles on one
+/// class of bug, and none of them is the other:
+/// <list type="bullet">
+/// <item><see cref="TheRazorCommentIsNotAnAttributeTests"/> reads what was TYPED — no <c>@* … *@</c> between a
+/// start tag's angle brackets, in any client <c>.razor</c>. The cheap one; catches the next typist before the
+/// code ever runs.</item>
+/// <item><c>SpaceSails.UiGate.TheTradeDeskRendersTests</c> boots the PUBLISHED artifact in a real Chromium at
+/// one berth and proves the Trade desk paints. The expensive one that cannot be fooled — but it is one desk in
+/// one state, because a real browser per state costs minutes.</item>
+/// <item><b>This file</b> reads what the compiled component EMITS, at EVERY desk in EVERY world, for the price
+/// of a unit test. It covers a bad attribute name no comment produced — a splatted <c>@attributes</c>
+/// dictionary with a bad key, a name built from data — and it covers the other four ways a desk can fail to
+/// stand up, which have nothing to do with attribute names at all.</item>
+/// </list>
+/// The three overlap on exactly one cell (Trade, docked) and agree there. If a fourth desk law is ever wanted,
+/// the harness to share is <see cref="DeskBench"/>, not any of the three tests.</para>
+///
+/// <para><b>Red proof.</b> Run on the base commit BEFORE #985 landed, this file failed with:
+/// <c>2 of 40 desk x world cells did not stand up (8 desks x 5 worlds)</c> — "docked at Selene Gate · Trade"
+/// and "docked at the Red Eye · Trade", both naming the attribute the Razor comment had become. Two, and not
+/// forty: the sweep is sensitive to the real thing and not to everything.</para>
 ///
 /// <para><b>The matrix is data-driven</b> (<see cref="TheDesks"/> × <see cref="TheWorlds"/>) so a new desk is
 /// ONE row — and <see cref="ATenthDeskCannotSkipTheLaw"/> compares that table against the tab bar the
