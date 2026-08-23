@@ -5268,6 +5268,7 @@
    the button's own top edge and all of it falls below: reach any higher and it swallows the footnote the
    first-ground cards print just above their button, which is the second thing the browser showed me. Each
    card names its own colour below; the fallback is the dark every card in this family is a shade of. */
+.busted-card .busted-close-row,
 .busted-card .busted-close,
 .busted-card > .busted-options,
 .view-object > .view-object-close,
@@ -5645,7 +5646,14 @@
     font-weight: 600;
 }
 
-/* #951 — the death card's two verbs sit side by side: wake up (the brain backup, canon) and the logbook. */
+/* #951 — the death card's two verbs sit side by side: wake up (the brain backup, canon) and the logbook.
+
+   THE ROW OWNS THE PINNED FOOT, and it must. .busted-close carries this family's sticky footer treatment —
+   `position: sticky` plus a `box-shadow: 0 12rem 0 12rem <scrim>` that paints the card's own darkness far
+   out to both shoulders — and the moment it acquired a SIBLING that scrim swallowed it. The browser showed
+   it immediately: an outlined button with no readable text inside it, because a 12rem spread drawn from a
+   z-index:3 element covers a plain sibling entirely. So the row is added to that selector list above and
+   the button inside a row gives its own scrim up; one foot, one scrim, two verbs on top of it. */
 .busted-close-row {
     display: flex;
     align-items: center;
@@ -5655,6 +5663,26 @@
     margin-top: 0.6rem;
 }
 
+/* Inside a row, the button is just a button — the row is the pinned foot now. */
+.busted-card .busted-close-row .busted-close {
+    position: static;
+    box-shadow: none;
+    margin-top: 0;
+}
+
+/* Readable against the sepia backdrop without competing with the white "…wake up": the logbook is the
+   quieter of the two verbs, but it must be legible, which btn-outline-light alone was not here. */
 .busted-logbook {
     font-size: 0.9rem;
+    border-color: rgba(243, 226, 196, 0.65);
+    color: #f3e2c4;
+    background: rgba(20, 14, 8, 0.55);
+}
+
+.busted-logbook:hover,
+.busted-logbook:focus-visible {
+    border-color: #f3e2c4;
+    background: rgba(243, 226, 196, 0.16);
+    color: #fff6e4;
+    outline: none;
 }
