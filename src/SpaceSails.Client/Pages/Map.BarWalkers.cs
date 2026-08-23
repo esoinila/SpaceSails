@@ -117,6 +117,7 @@ public partial class Map
             if (_surface is null)
             {
                 EnsureRepVisit(null);
+                EnsureWalkInVisit(null);
             }
 
             return;
@@ -125,6 +126,7 @@ public partial class Map
         ForgetTheBarsFeet(bar.BodyId);
         StepTheBarsFeet(dtRealSeconds, bar);
         AdvanceTheRepAshore(bar);
+        AdvanceTheWalkIn(bar);   // #973 L5b · …and whoever the evening has crossing the floor to your table
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what
@@ -390,31 +392,30 @@ public partial class Map
         // At it, not merely in the room with it. The captain's own interact reach, so "at a table" means what
         // it means everywhere else in this game.
         return nearest is { } t && best <= DeckPlan.InteractRadius * DeckPlan.InteractRadius
-            ? BesideThisTop(t, walls)
+            ? BesideThisTopClearOfTheCaptain(t, walls)
             : null;
     }
 
     /// <summary>#973 L0 · Where a body stands at a top: one body-width off its centre, on the first side the
     /// stone allows — the same "first one the floor allows" idiom a canteen top's chair ring already uses. The
-    /// hall side is sounded first, because that is the side somebody crossing this room comes from.</summary>
+    /// hall side is sounded first, because that is the side somebody crossing this room comes from.
+    ///
+    /// <para>#973 L5b · THE SOUNDING MOVED TO THE ROOM (<see cref="HavenInterior.BesideATop"/>) and this is
+    /// the name it kept. It has two callers now — the walker crossing to the table, and the SEAT putting the
+    /// captain in a chair at one — and two soundings would put the two of them on the same square, which is
+    /// the drawn room and the walked room disagreeing about a lap. The body width is still stated here,
+    /// because it is the avatar's and not the room's.</para></summary>
     private static DeckReachability.Point? BesideThisTop(
-        DeckReachability.Point top, IReadOnlyList<SurfaceCollision.Segment> walls)
-    {
-        (double X, double Y)[] sides =
-        [
-            (top.X, top.Y - BesideATopDu), (top.X + BesideATopDu, top.Y),
-            (top.X - BesideATopDu, top.Y), (top.X, top.Y + BesideATopDu),
-        ];
-        foreach ((double x, double y) in sides)
-        {
-            if (!SurfaceCollision.Blocked(x, y, DeckPlan.AvatarRadius, walls))
-            {
-                return new DeckReachability.Point(x, y);
-            }
-        }
+        DeckReachability.Point top, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        HavenInterior.BesideATop(top, BesideATopDu / 2.0, walls);
 
-        return null;
-    }
+    /// <summary>#973 L5b · …and the same sounding with the CAPTAIN'S OWN BODY taken out of it. Every walk in
+    /// this room is a walk toward somebody who is already there, and the first side the stone allows is
+    /// exactly the side they are sitting on since the bar grew a seat.</summary>
+    private DeckReachability.Point? BesideThisTopClearOfTheCaptain(
+        DeckReachability.Point top, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        HavenInterior.BesideATop(
+            top, BesideATopDu / 2.0, walls, new DeckReachability.Point(_avatarX, _avatarY));
 
     /// <summary>#973 L0 · The first place at the counter the stone allows a body to stand. Read off the room's
     /// published fixtures and never carved here — a second list of where this bar's desk is would be this
@@ -509,7 +510,7 @@ public partial class Map
     /// #973 L0 · HIS BEAT IN A STATION BAR — the counter first, because that is where he says he will be, then
     /// the ends of the room's own tops. The same shape his hive beat has, off this room's published geometry.
     /// </summary>
-    private static List<DeckReachability.Point> TheRepsBeatInTheBar(
+    private List<DeckReachability.Point> TheRepsBeatInTheBar(
         in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         List<DeckReachability.Point> beat = [];
@@ -520,7 +521,7 @@ public partial class Map
 
         foreach (DeckReachability.Point top in bar.Tops)
         {
-            if (BesideThisTop(top, walls) is { } beside)
+            if (BesideThisTopClearOfTheCaptain(top, walls) is { } beside)
             {
                 beat.Add(beside);
             }
@@ -532,6 +533,92 @@ public partial class Map
         }
 
         return beat;
+    }
+
+    /// <inheritdoc cref="Seating.TryTakeBarTop"/>
+    private bool TryTakeBarTop() => _seating.TryTakeBarTop();
+
+    // ── #973 L5b · THE EIGHTH SEAT'S ONE QUESTION ────────────────────────────────────────────────────────
+    //
+    // THE ANSWER'S TYPE LIVES HERE AND NOT IN `ISeatHost.cs`, and the reason is the ratchet itself: the guard
+    // that counts what a chair asks the page for reads that file a DECLARATION at a time, and a positional
+    // record struct is spelled exactly like a method. Declared next door it counted as a thirty-third member
+    // the seat had never asked for. It is a nested type of the page either way, so the seat still names it
+    // bare — where a type is declared changes nothing about who can see it.
+
+    /// <summary>
+    /// #973 L5b · A TOP IN A DOCKED STATION'S BAR, AS THE SEAT NEEDS IT — the page's whole answer to "what
+    /// did that [E] land on", and nothing behind it.
+    ///
+    /// <para>It is an ANSWER and never machinery, which is the rule <see cref="ISeatHost"/>'s own summary
+    /// states: the deck, the room's published tops and the stone the chair is sounded against are all things
+    /// the PAGE owns, and a chair handed a lattice is exactly what lane 6c took away. Everything about the
+    /// SITTING — which scene it is, whether it reads relaxed, how many chairs are left — the seat decides
+    /// from these six facts, the same way it decides them from a <c>CanteenRegulars.TableSeat</c>.</para>
+    /// </summary>
+    /// <param name="Index">The top's ordinal in the room's own list.</param>
+    /// <param name="Key">What every fact about this sitting is keyed on: the berth, the frozen docking watch
+    /// and the ordinal. A berth has no excursion and no canteen watch, so it cannot be the Hive's key — and a
+    /// key that could collide with one would file two rooms' business in one drawer.</param>
+    /// <param name="Watch">The frozen docking watch, for the one question the SCENE asks of a clock: whether
+    /// a sit at this hour reads relaxed (<c>SittingAlone.SitReadsAsRelaxed</c>).</param>
+    /// <param name="ChairX">Where the body goes — Core's own sounding against the room's own stone
+    /// (<c>HavenInterior.BesideATop</c>), never a coordinate the seat measured (§13.15).</param>
+    /// <param name="ChairY"><inheritdoc cref="ChairX"/></param>
+    /// <param name="Seats">How many the top seats — the room's own number.</param>
+    /// <param name="Room">What this bar is called, for the one clause that says where the captain is sitting.
+    /// A canteen's setting is a constant; a berth's is per-station, so it travels with the answer.</param>
+    private readonly record struct BarTopUnderfoot(
+        int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Room);
+
+
+    /// <summary>
+    /// #973 L5b · <b>WHICH BAR TOP THAT [E] LANDED ON, AND WHERE A BODY SITS AT IT.</b> The page's whole
+    /// answer to the eighth sitting site (<c>Seating.BarTop.cs</c>), and the one member #973 L5b added to
+    /// <see cref="ISeatHost"/>.
+    ///
+    /// <para>The shape is <c>TryTakeTable</c>'s, one room over: find the console the press landed on, match
+    /// it back against the room's OWN published list rather than against anything measured here, and hand
+    /// back the ordinal. What is different is what a berth does not have — no excursion, no canteen watch, no
+    /// <c>CanteenRegulars.Tables</c> — so the key is the bar's own (berth · docking watch · ordinal) and the
+    /// chair is <see cref="HavenInterior.BesideATop"/>'s, the same sounding a walker crossing to this top
+    /// uses.</para>
+    ///
+    /// <para><b>The chair is sounded with nobody excluded, and that is the right way round.</b> The captain
+    /// is the FIRST body at this top — the woman who crosses the floor to it afterwards is the one who has to
+    /// be told about him, which is what <see cref="BesideThisTopClearOfTheCaptain"/> is for.</para>
+    /// </summary>
+    private BarTopUnderfoot? TheBarTopUnderfoot()
+    {
+        if (TheDockedBar() is not { } bar
+            || _deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+                { Kind: DeckPlan.ConsoleKind.BarTop } spot)
+        {
+            return null;
+        }
+
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        for (int i = 0; i < bar.Tops.Count; i++)
+        {
+            DeckReachability.Point top = bar.Tops[i];
+            if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
+            {
+                continue;
+            }
+
+            // No place at it, so there is no seat here — answered as an absence rather than by sitting the
+            // captain down inside the counter, which is §13.15's own sentence about measured coordinates.
+            if (BesideThisTop(top, walls) is not { } chair)
+            {
+                return null;
+            }
+
+            return new BarTopUnderfoot(
+                i, $"bar:{bar.BodyId}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y, HavenInterior.BarTopSeats,
+                HavenInterior.BarNameOf(bar.BodyId) ?? "");
+        }
+
+        return null;
     }
 
     /// <summary>

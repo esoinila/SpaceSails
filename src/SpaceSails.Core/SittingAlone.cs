@@ -60,6 +60,23 @@ public static class SittingAlone
     /// it.</summary>
     public const string Setting = CanteenTable.Setting;
 
+    /// <summary>
+    /// #973 L5b · …AND WHERE THAT TABLE IS, WHEN IT IS NOT IN A CANTEEN.
+    ///
+    /// <para>The eighth seat put a takeable top in a docked station's BAR, and the strip's company clause is
+    /// built out of <see cref="Encounter.Scene.Setting"/> — so a woman standing at a top in The Stormwatch Bar
+    /// was announced as being <i>"a table in the upper canteen"</i>, three hundred thousand kilometres from
+    /// the nearest one. Found by looking at it, which is where this repository's "the sim doing one thing
+    /// while a SENTENCE reports another" bug class has been found every single time.</para>
+    ///
+    /// <para>The room's own name, handed in, because it is per-station and Core does not know the berths.</para>
+    /// </summary>
+    // FABLE: line needed — the setting clause for a top in a docked station's bar, in the register of
+    //   CanteenTable.Setting ("a table in the upper canteen"). The standing-in phrase below is the plainest
+    //   true statement of where the captain is and nothing more.
+    public static string BarSetting(string? barName) =>
+        string.IsNullOrWhiteSpace(barName) ? "a table in the bar" : $"a table in {barName!.Trim()}";
+
     // ── THE MOVES ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Hold the table and let the room decide. The passive verb, and the only one a solo table

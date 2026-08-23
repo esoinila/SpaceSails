@@ -197,3 +197,32 @@ grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Ga
   not come back as scenes.
 - **Negative list:** as the house rules above (no sea, no sky, no daylight, no horizon) — this one is an
   interior and the only light in it is fluorescent.
+
+## 13. `art/walk-in-ilse-marrow.jpg` — THE ROOM LOOKS AT THE DOOR (the fling) ✅ PAINTED
+- **Beat:** `WalkIn` · **once per subject (her id)** · **HOSTED** on her own card (`Map.WalkIn.cs · _walkInCard`)
+- **Fires:** she has crossed a great port's bar floor on the real A* and is standing at the table of a captain
+  who was sitting alone. The canvas is chosen by the SUBJECT, so the woman on the card is the woman in the
+  room — a shared painting would be one woman with two names.
+- **Composition:** film-noir portrait at the seated captain's eye level, a striking woman in her forties
+  **standing** beside a small round table — she said she would not stay, so she is never seated. Dark tailored
+  coat over a high-collared clerk's blouse, hair pinned up, one gloved hand on the back of the empty chair, a
+  quiet steady gaze held a beat too long. Behind her the bar counter and its brass rail out of focus, other
+  patrons blurred, a huge window with a banded gas-giant storm glowing dull orange. One warm amber key from the
+  left, heavy shadow, shallow depth of field, muted desaturated palette, painterly.
+- **Rule it illustrates:** she knew the old face. Everything about her is *composed* — the coat, the pinned
+  hair, the desk uniform under it — and the only thing that is not is how long she looks at you.
+- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
+  signage** — her lines are written in code and must not be doubled in pixels.
+
+## 14. `art/walk-in-nadia-kell.jpg` — THE ROOM LOOKS AT THE DOOR (the stranger) ✅ PAINTED
+- **Beat:** `WalkIn` · **once per subject (her id)** · **HOSTED** on her own card
+- **Fires:** the same moment, in a thread where the fling was never posted at this port — the pure Bogart
+  walk-in, a woman the bar has never seen.
+- **Composition:** the same room, the same eye level, the opposite person. A young woman **standing** at a small
+  round table, half turned as if she has only just stopped walking, a folded paper held against her chest, plain
+  travelling coat buttoned to the throat, dark hair loose, anxious and hopeful, chin lifted. Behind her the bar
+  and its patrons out of focus and **several of them glancing at her** — the room noticed before the captain
+  did. Cool key from the right with warm amber spill behind, heavy shadow, shallow depth of field, painterly.
+- **Rule it illustrates:** nobody here knows her, and she knows it. The paper in her hands is the whole of what
+  she has, and she is holding it like proof rather than like evidence.
+- **Negative list:** as above. **No text, no lettering, no signage.**

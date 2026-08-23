@@ -156,4 +156,9 @@ public partial class Map : Map.ISeatHost
 
     /// <inheritdoc/>
     bool ISeatHost.SpreadCheat => _spreadCheat;
+
+    // ── #973 L5b · THE EIGHTH SEAT ────────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    BarTopUnderfoot? ISeatHost.TheBarTopUnderfoot() => TheBarTopUnderfoot();
 }

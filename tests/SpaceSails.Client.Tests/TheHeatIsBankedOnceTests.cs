@@ -166,8 +166,11 @@ public sealed class TheHeatIsBankedOnceTests
         }
         bankers.Sort(StringComparer.Ordinal);
         Assert.Equal(
+            // #973 L5b · THE EIGHTH BANKER, and it is the femme fatale's. One walk-in in three is a setup, and
+            // paying for it is a customs post that was waiting at the berth the errand was flown back to —
+            // owed to whoever runs THAT berth, through the one seam, like every other crossing in this list.
             ["Map.Combat.Remote.cs×1", "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1", "Map.Scan.cs×1",
-             "Map.Surface.Hive.cs×1", "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
+             "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
             bankers);
     }
 

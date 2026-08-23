@@ -124,7 +124,8 @@ public readonly record struct JobFacts(
     double DistanceMeters = double.NaN,
     double LaneSeconds = 0.0,
     int Reward = 0,
-    int PurseCredits = 0);
+    int PurseCredits = 0,
+    bool ForHer = false);
 
 /// <summary>
 /// The plain block: four lines above the flavour, on every card a job is offered or carried on (#959).
@@ -148,6 +149,10 @@ public static class JobTerms
         // Both fetches are the same shape: the thing is somewhere nobody has charted for you.
         ContractKind.Fetch => JobVerb.Find,
         ContractKind.FetchCache => JobVerb.Find,
+        // #973 L5b · a woman crossed a room and asked for something FOUND. Same verb, and it has to be the
+        // same verb: the plain block is the ONE vocabulary a player learns jobs in, and a favour that spoke
+        // its own dialect would be a second grammar for the sake of one scene.
+        ContractKind.WalkIn => JobVerb.Find,
         // A crack is a locked hatch with a code — you get inside and carry out what is in it.
         ContractKind.Crack => JobVerb.BoardAndRob,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "every contract kind must name its verb"),
@@ -188,6 +193,9 @@ public static class JobTerms
         ContractKind.Fetch => "find the wreck with the scope, fly to her, prise the wallet loose, then hand it over in person.",
         ContractKind.FetchCache => "shuttle down, walk the paces on the map, dig, then carry the chest back.",
         ContractKind.Crack => "key the code into the hatch on foot, lift the package, then hand it back in person.",
+        // #973 L5b · two berths and a face. The second half is what makes it hers rather than a delivery: it
+        // is not filed, not banked and not handed to a desk — it is told to a person, in a room, out loud.
+        ContractKind.WalkIn => $"go to {NameOr(f.WhereName, "the berth she named")}, find {NameOr(f.TargetName, "it")}, then come back and tell her yourself.",
         _ => throw new ArgumentOutOfRangeException(nameof(f), f.Kind, "every contract kind must say what completes it"),
     };
 
@@ -239,7 +247,11 @@ public static class JobTerms
 
     /// <summary>Line 4 — the payout with its one-word size, measured against the purse:
     /// <c>764 cr · small</c>. A job that pays in something other than coin says what instead.</summary>
-    public static string PayLine(JobFacts f) => f.Reward <= 0
+    public static string PayLine(JobFacts f) => f.ForHer
+        // #973 L5b · no coin at all, and the card says so with a dash rather than an explanation. The reason
+        // the captain went is on the other three lines and in the woman's own face.
+        ? $"{NoPayout} · {SizeWord(f.Reward, f.PurseCredits, forHer: true)}"
+        : f.Reward <= 0
         ? "No coin — the job pays in something else."
         : $"{f.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr · {SizeWord(f.Reward, f.PurseCredits)}";
 
@@ -264,10 +276,25 @@ public static class JobTerms
     /// <summary>Under this it is a real payday; above it the job is worth more than everything aboard.</summary>
     public const double GoodCeiling = 2.00;
 
-    /// <summary>One word for how big this purse is TO YOU. The whole vocabulary is four words, so the
-    /// hint is read at a glance and never argued with.</summary>
-    public static string SizeWord(int reward, int purseCredits)
+    /// <summary>#973 L5b · THE FIFTH WORD, and the only one that is not about money. The owner named it
+    /// himself: a walk-in's card does not say what the job is worth, it says who it is for.</summary>
+    public const string ForHerWord = "for her";
+
+    /// <summary>#973 L5b · …and what stands where the credits would be. A dash, and not a sentence: the
+    /// vocabulary's whole discipline is that the payout line is read at a glance, and "nothing" is a lie
+    /// about a job somebody took anyway.</summary>
+    public const string NoPayout = "—";
+
+    /// <summary>One word for how big this purse is TO YOU. The vocabulary is five words, so the hint is read
+    /// at a glance and never argued with.</summary>
+    /// <param name="forHer">#973 L5b · Whether this is the walk-in's favour, which is sized by WHO rather
+    /// than by how much. Asked first, because a ratio against a purse is a question about a job that pays.</param>
+    public static string SizeWord(int reward, int purseCredits, bool forHer = false)
     {
+        if (forHer)
+        {
+            return ForHerWord;
+        }
         if (reward <= 0)
         {
             return "nothing";

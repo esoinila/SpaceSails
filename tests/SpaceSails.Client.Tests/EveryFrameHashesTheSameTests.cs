@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -393,30 +393,37 @@ public sealed class EveryFrameHashesTheSameTests
     // State carries ShowNerve. Nothing was added to a frame, taken out of one, or moved in one; every other
     // row in this table is byte-identical. That is what a re-pin is allowed to look like.
 
-    // ── #973 L4 · THE SEVEN HAVEN CONCOURSES WERE RE-PINNED, AND THE COUNTS PROVE WHY ─────────────────
+    // #973 L5b · SEVEN HAVEN ROWS RE-PINNED, and they are the only rows that moved. Every docked bar grew a
+    // console the room never had — a top the captain can take (`DeckPlan.ConsoleKind.BarTop`) on each of its
+    // tops that the rota has not already given to somebody — so each of those frames draws a handful more pen
+    // calls than it did and nothing else about any of them changed. Six to eight more calls per haven, which
+    // is exactly the number of free tops that bar has this watch, and not one ship, wreck, hive or park row
+    // moved at all. That is what a re-pin is allowed to look like.
+
+    // ── #973 L4 · THE SAME SEVEN ROWS, RE-PINNED AGAIN ON TOP OF L5b, AND THE COUNTS PROVE WHY ────────
     //
-    // Three NEBULA MUTUAL wall plates are hung in every docked station's concourse (`StationAds`, hung in
+    // Three NEBULA MUTUAL wall plates are hung in every docked station's CONCOURSE (`StationAds`, hung in
     // HavenInterior beside the PIRATE INSURANCE poster that has stood there since #380). Each is one more
     // ViewObject fixture, and a fixture is drawn as a marker and a label — so every one of the seven halls
-    // gained EXACTLY SIX calls: 346→352, 350→356, 350→356, 344→350, 348→354, 346→352, 350→356. The
-    // arithmetic is the proof: three plates × two calls, on the seven cases that have a concourse in them
-    // and on nothing else. Not one ship frame, not one Hive floor and not one regolith frame moved; the
-    // rest of this table is byte-identical. Something ARRIVED in these frames, which is exactly what this
-    // re-pin claims — had a count moved by anything but six, or a row outside the concourse cases moved at
-    // all, it would be a different lane's bug wearing this lane's clothes.
+    // gained EXACTLY SIX calls over L5b's numbers: 352→358, 356→362, 358→364, 352→358, 356→362, 356→362,
+    // 358→364. The arithmetic is the proof, and it is a different arithmetic from L5b's: that lane's rows
+    // moved by the number of FREE TOPS a bar had that watch, which differs per haven; these move by six
+    // everywhere, because three plates × two calls does not depend on who is drinking. Not one ship, wreck,
+    // hive or park row moved at all — the rest of this table is byte-identical across both lanes. Had a
+    // count moved by anything but six here, it would be a different lane's bug wearing this lane's clothes.
 
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
         ["ship · under way"] = (335, "e943fa59228f59c49c0efebc3eda6579bda13f1abc0e3e48e16a6f1358630be5"),
         ["ship · docked, the shuttle away and the machine stalling"] = (308, "a8bec38425f92452c72de535eac14f855c4df214cbbf3301fe105fbe546bf62a"),
         ["ship · hatches dogged, seated at the table"] = (309, "9096ac57873a26df8ac1d3cf7740960a7e98900a29493ded9004887eda0da6f8"),
-        ["haven · the-space-bar"] = (352, "69a4ea4df68b8fc08a1f9235b80a5bcddff58217b78c333e312d5fa5ae5aab23"),
-        ["haven · cinder-roost"] = (356, "c80ce98d65cdcbc4c8c8477079c445311c5b58f7385007789f1846ca3e32e717"),
-        ["haven · ringside-exchange"] = (356, "ff9d2a37213228ca867aed178aa52aa46bb82940ba18e18c888b3e7f7a14878c"),
-        ["haven · the-tilt"] = (350, "fcca59350edac1b7d61331ad01779743b76a559a660047f26d9537932d4002ea"),
-        ["haven · selene-gate"] = (354, "6e541bcc8b44400719c1181d4ad0f81e929eee9067ce25c5e51f8fe81229651e"),
-        ["haven · red-eye"] = (352, "3ec56cdc8a25237b22de9c3fd1b8e95d4d93e9ee8c330a55ec2463eaf3af1432"),
-        ["haven · the-deep"] = (356, "05a233ca2d3c4fd1e7b61882d364e62aa74e4bbec135314bf4e0b81a5c2c1e0e"),
+        ["haven · the-space-bar"] = (352, "5a643ff8a2bfcde04ed898945e42382549f5be74b64da979fb8d2003b5018a9b"),
+        ["haven · cinder-roost"] = (356, "17e8559a10b1a5b600d9c04ad9ebcf2aef3d91fc3548e2bda70ace5f3f88a5d8"),
+        ["haven · ringside-exchange"] = (358, "4120cac535d787c54dd0b5b07a21c5a5751e3659abe0cd95239b9e234d7aeeae"),
+        ["haven · the-tilt"] = (352, "50d31b9f3a60cf5e9cc8d408261aad91fea218857d6b479e64a373acf0609f0e"),
+        ["haven · selene-gate"] = (356, "f340e8c30cba5053ab5c17d446462baf0276964f30aaced35bbd25156bce06d9"),
+        ["haven · red-eye"] = (356, "ff18fa4644f52074ea90bff557cba17fe0c790caf98a11f9a15e2f0e67fe409b"),
+        ["haven · the-deep"] = (358, "c9af41afe33330bc26ff9506e6a59f316eb23d8f857069cc67964efc76458995"),
         ["wreck · HullBreach"] = (592, "637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020"),
         ["luna B1"] = (1591, "c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab"),
         ["luna B2"] = (426, "86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0"),
