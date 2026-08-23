@@ -30,9 +30,57 @@ public partial class Map
     private const string ScopeCanvasId = "scope-canvas";
     private const int ScopeSizePx = 280;
     private ScopeView? _scopeView;
-    private bool _showScope = true;
+    // #963 · THE SCOPE'S SWITCH LIVES ON THE SCOPE. The Nav toolbar used to carry a "Scope" toggle, and the
+    // owner asked why: "Why have the scope enable/disable button competing for attention at the top of the
+    // screen — that functionality should stay at the scope position." So the toolbar button is gone and the
+    // window minimises into a button-sized tile in its own corner, which is also what stops the toolbar from
+    // drowning out Plot — "the heart of the navigation process" — and the Add-burn keys beside it.
+    //
+    // Remembered for the session (a field, like FollowShip): a captain who tucks the scope away expects it to
+    // stay tucked away until he says otherwise.
+    private bool _scopeMinimized;
 
-    private void ToggleScope() => _showScope = !_showScope;
+    private void ToggleScopeMinimized() => _scopeMinimized = !_scopeMinimized;
+
+    /// <summary>What the minimised tile names, so the tile is an instrument and not a mystery button: the same
+    /// priority <see cref="PickScopeTarget"/> resolves — a manual pick, then a selected contact, then the
+    /// navigation destination, then whatever is nearest. Read-only on purpose: the tile renders outside the
+    /// frame, and PickScopeTarget writes the scope's lock label as a side effect.</summary>
+    private string ScopeTileTargetName()
+    {
+        foreach (string? id in new[] { _scopeManualId, _selectedTargetId, _destinationBodyId })
+        {
+            if (id is not null && ScopeSubjectName(id) is { } named)
+            {
+                return named;
+            }
+        }
+
+        return _nearestBody?.Name ?? "the sky";
+    }
+
+    /// <summary>The name behind a scope-subject id — a contact's callsign or a body's name — or null when the
+    /// id names nothing that is still out there.</summary>
+    private string? ScopeSubjectName(string id)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == id)
+            {
+                return npc.Active && !npc.Arrived && npc.CurrentlyObserved ? npc.Ship.Callsign : null;
+            }
+        }
+
+        foreach (CelestialBody b in _ephemeris?.Bodies ?? [])
+        {
+            if (b.Id == id)
+            {
+                return IsBodyHidden(b.Id) ? null : b.Name;
+            }
+        }
+
+        return null;
+    }
 
     private string? _scopeManualId; // null = AUTO
 
@@ -43,6 +91,13 @@ public partial class Map
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Active && !npc.Arrived && npc.CurrentlyObserved) ids.Add(npc.Ship.Id);
+        }
+        // #962: hired muscle rides the carousel too. A hunter was absent from this list AND from
+        // ResolveScopeTarget, so the one contact a captain most wants in the video box was the one
+        // thing the scope could not be pointed at, by any route.
+        foreach (HunterState hunter in _hunters)
+        {
+            ids.Add(hunter.Id);
         }
         foreach (CelestialBody b in _ephemeris!.Bodies)
         {
@@ -76,7 +131,13 @@ public partial class Map
         // M29: a deliberately SELECTED contact outranks the destination while the selection
         // lives (owner: "target selection should work even when the ship is on course to
         // orbit") — deselect and the DEST lock returns.
-        if (_selectedTargetId is not null && ResolveScopeTarget(_selectedTargetId) is { } picked)
+        // #962: …and so does the TARGET OF INTEREST, which is how a hunter becomes the dossier's
+        // subject in the first place (a map click on a collector marks interest, never selection).
+        // Without this the owner could open the Debt Collector's book, press every button on it,
+        // and still watch the video box show his destination: "it is like our telescope pirate is
+        // high on drugs". TacticalTargetId is the same id the dossier renders, so the book and the
+        // box are now looking at one contact.
+        if (TacticalTargetId is { } tactical && ResolveScopeTarget(tactical) is { } picked)
         {
             if (_scopeView is not null) _scopeView.LockLabel = "◆ TRACK";
             return picked;
@@ -123,8 +184,15 @@ public partial class Map
 
         if (_nearestBody is CelestialBody body)
         {
+            // #954: AUTO reads the (now hysteresis-held) nearest body, so the box no longer ping-pongs
+            // between a planet and the station in its Hill sphere every station orbit. Where there IS a
+            // hierarchy, the sub-line says whose sphere we are in — the box still names, and still draws,
+            // the object actually locked, so the words and the picture can never disagree.
+            string? note = _nearestParentName is { } parentName && _nearestChildName == body.Name
+                ? NearestRule.OrbitsNote(parentName)
+                : null;
             return new ScopeView.Target(
-                ScopeView.TargetKind.Body, body.Name, null,
+                ScopeView.TargetKind.Body, body.Name, note,
                 _nearestBodyPosition, _nearestBodyVelocity,
                 body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
                 IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
@@ -145,6 +213,19 @@ public partial class Map
                     npc.State.Position, npc.State.Velocity,
                     0, NpcColor, InPlasmaAt(npc.State.Position),
                     IsDepot: npc.Ship.DepotBodyId is not null);
+            }
+        }
+
+        // #962: hired muscle is a legitimate thing to put in the video box — she is a contact whose
+        // state the gun deck already reads exactly, so there is no optical-truth gate to pass.
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == id)
+            {
+                return new ScopeView.Target(
+                    ScopeView.TargetKind.Freighter, hunter.Callsign, "hired muscle 🐺",
+                    hunter.State.Position, hunter.State.Velocity,
+                    0, HunterColor, InPlasmaAt(hunter.State.Position));
             }
         }
 

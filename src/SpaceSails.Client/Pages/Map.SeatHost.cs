@@ -134,6 +134,12 @@ public partial class Map : Map.ISeatHost
     bool ISeatHost.WalkTheVisitorOut(SurfaceExcursion ex, int tableIndex) =>
         WalkTheVisitorOut(ex, tableIndex);
 
+    /// <inheritdoc/>
+    bool ISeatHost.WalkTheVisitorIntoACabinet(
+        SurfaceExcursion ex, int tableIndex, Encounter.Scene scene,
+        System.Collections.Generic.IReadOnlySet<string> said) =>
+        WalkTheVisitorIntoACabinet(ex, tableIndex, scene, said);
+
     // ── THE DEV ROWS ──────────────────────────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>

@@ -124,12 +124,7 @@ public partial class Map
         }
         try
         {
-            // Throwaway plan — Miranda's ground, an empty own-cache set, a no-op droid fill. The memoized
-            // layout it builds also warms the (now shared) SurfaceDeck cache for a first landing on Miranda.
-            DeckPlan warm = MoonSurface.SurfaceDeck(
-                "miranda", "Miranda",
-                System.Array.Empty<(string, double, double, int)>(),
-                DeckPlan.Ship.DroidCount, static (_, _) => { });
+            DeckPlan warm = BootWarmUpPlan();
 
             if (_showStartPicker && _viewportWidth > 0 && _viewportHeight > 0)
             {
@@ -151,6 +146,29 @@ public partial class Map
             Console.WriteLine($"boot surface warm-up skipped: {ex}");
         }
     }
+
+    /// <summary>
+    /// The THROWAWAY plan the boot warm-up paints once — Miranda's ground, an empty own-cache set, and a
+    /// deck with NOBODY ON IT. The memoized layout it builds also warms the (shared) SurfaceDeck cache for a
+    /// first landing on Miranda.
+    ///
+    /// <para><b>#962 · Nought figures, and it must SAY nought.</b> This used to claim
+    /// <c>DeckPlan.Ship.DroidCount</c> figures while handing in a no-op fill, which is a plan lying about
+    /// its own buffer: <c>DeckView.DrawTheFigures</c> walks <c>DroidCount</c> entries, so it read three
+    /// default <see cref="DeckPlan.Droid"/> structs whose <c>Name</c> is null and died in
+    /// <c>IsSweeper(null)</c> with a <see cref="NullReferenceException"/>. The warm-up's own try/catch ate
+    /// it, so nothing was ever seen on screen — but the paint it exists for never happened either, and the
+    /// #371 Phase-1 cold-draw cost the player was supposed to stop paying went right back on the first live
+    /// frame, every boot, silently. A count and a fill are one statement; this is the honest one.</para>
+    ///
+    /// <para>Internal so the regression guard can build the very expression the boot builds, rather than a
+    /// re-typed look-alike that could go on passing after this one changed.</para>
+    /// </summary>
+    internal static DeckPlan BootWarmUpPlan() =>
+        MoonSurface.SurfaceDeck(
+            "miranda", "Miranda",
+            System.Array.Empty<(string, double, double, int)>(),
+            droidCount: 0, static (_, _) => { });
 
     private ShipState InitializeShipState()
     {

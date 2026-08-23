@@ -302,3 +302,68 @@
     padding-top: 0.5rem;
     margin-top: 0.75rem;
 }
+
+/* #959 · THE JOB'S PLAIN BLOCK on the ledger row — the twin of .job-plain in Pages/Map.razor.css, which
+   dresses the same three Core-written lines on the bar's offer card. Same order, same colours, same left
+   rule, so the row a captain reads AFTER accepting is visibly the row he accepted. (Blazor scoped CSS is
+   per-component; there is no place to put this once. If one moves, move both.) */
+.job-plain {
+    text-align: left;
+    margin: 0.35rem 0 0.4rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.35rem;
+    border-left: 3px solid rgba(255, 212, 121, 0.7);
+    background: rgba(0, 0, 0, 0.3);
+    line-height: 1.35;
+}
+
+.job-plain-verb {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffd479;
+}
+
+.job-plain-takes {
+    color: #e0e4ec;
+    font-size: 0.9rem;
+}
+
+.job-plain-effort {
+    color: #8fd8e6;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* #963 follow-up — the black box's line at the top of the desk. Loud enough to be seen on the way past,
+   quiet enough that it is not an alarm: the voyage it describes is already over. */
+.captain-crash {
+    border: 1px solid rgba(255, 170, 120, 0.55);
+    border-radius: 0.45rem;
+    background: rgba(60, 30, 15, 0.55);
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.captain-crash-head {
+    font-weight: 700;
+    color: #ffcf9a;
+    margin-bottom: 0.3rem;
+}
+
+.captain-crash-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.78rem;
+    color: #ffe3c6;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    margin: 0 0 0.4rem 0;
+    max-height: 9rem;
+    overflow-y: auto;
+}
+
+.captain-crash-actions {
+    display: flex;
+    gap: 0.4rem;
+}

@@ -267,6 +267,12 @@ public partial class Map
     {
         await RendererInterop.EnsureModuleLoadedAsync();
 
+        // The module is up, so localStorage is reachable: pick up whatever the LAST voyage left in the
+        // black box and give this one somewhere durable to write. Deliberately BEFORE the abandoned gate
+        // below — a note that survived a crash is worth reading even into a page nobody is looking at,
+        // and it touches no DOM.
+        WireTheBlackBox();
+
         // #737 · THE LAST GATE BEFORE THE DOM. Everything from here on names elements by id — the canvas,
         // the scope inset, the focusable page div — and renderer.js throws rather than shrugging when the
         // id resolves to nothing. If the player left during any of the planning phases above, the page
@@ -295,7 +301,6 @@ public partial class Map
             _deckView.ArmThePerfProbe(Console.WriteLine);
         }
 
-        _fpView = new FirstPersonView(_renderer!);
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
         _renderLoopRunning = true;

@@ -52,11 +52,53 @@ public static partial class PatrolBeat
         /// owner's own finding: <i>the fiction strains when the same guard books the same face four times
         /// and just keeps walking.</i></summary>
         BookedTooManyTimes,
+
+        /// <summary>
+        /// #618 · A GUN WENT OFF WITHIN EARSHOT — and it is the one rung on this ladder that is not about
+        /// YOU. Owner, 2026-08-05: <i>"they come if we make a big noise like start to use the special ammo to
+        /// open a locked door."</i>
+        ///
+        /// <para><b>It buys a LOOK and never a run</b>, which is why <see cref="EarnsIt"/> answers no to it
+        /// and <see cref="EarnsALook"/> answers yes. Every other member above names something a man WATCHED
+        /// the captain do, and a run ends with a hand on your arm and a card that says why (<see
+        /// cref="WhyHeCame"/>). Nobody watched this. He heard a bang somewhere on his floor, and the only
+        /// honest thing a man in that position does is walk over and look at the place it came from — and
+        /// find out who you are, if he finds out at all, by seeing you, on the same ladder as everybody else
+        /// (§13.8: nothing may explain it, least of all to him).</para>
+        ///
+        /// <para>It is on THIS enum rather than beside it because the enum is the list of everything that
+        /// takes a man off his round, and a second list would be the answer to <i>why is he not walking his
+        /// beat</i> kept in two places.</para>
+        /// </summary>
+        GunfireHeard,
     }
 
-    /// <summary>Is this a reason to come after somebody? The one gate, so the answer cannot be spelled twice.
-    /// A caller with <see cref="Provocation.None"/> in its hand is a caller that must walk away.</summary>
-    public static bool EarnsIt(Provocation why) => why != Provocation.None;
+    /// <summary>Is this a reason to come after somebody — to say a floor number into a radio and RUN? The one
+    /// gate, so the answer cannot be spelled twice. A caller with <see cref="Provocation.None"/> in its hand
+    /// is a caller that must walk away.
+    ///
+    /// <para>#618 · …and so is a caller holding <see cref="Provocation.GunfireHeard"/>. A noise is not a
+    /// person: it earns the walk over (<see cref="EarnsALook"/>) and nothing above it, so
+    /// <c>Patrol.TheRadioCall</c>'s own gate refuses it by construction rather than by anybody
+    /// remembering.</para></summary>
+    public static bool EarnsIt(Provocation why) =>
+        why is not (Provocation.None or Provocation.GunfireHeard);
+
+    /// <summary>#618 · Is this a reason to leave the round and go and LOOK at a place? The other gate, and
+    /// the two of them partition the enum: nothing is both, and only <see cref="Provocation.None"/> is
+    /// neither.</summary>
+    public static bool EarnsALook(Provocation why) => why is Provocation.GunfireHeard;
+
+    /// <summary>#618 · How long a man will spend getting to a noise before he decides it was nothing.
+    /// <see cref="WalkUpSeconds"/> and not a number of its own — the walk to a bang and the walk to a person
+    /// are the same man doing the same walk, and at <see cref="WalkSpeed"/> that is comfortably further than
+    /// a shot carries (<c>GunfireHeard.EarshotDu</c>), so the bound is a backstop and never the thing that
+    /// decides.
+    ///
+    /// <para>It is a CLOCK only, deliberately: <see cref="StillComing"/> also gives up when the target gets
+    /// far away, and a place does not walk off.</para></summary>
+    public static bool StillLookingIntoIt(double secondsWalkingOver) =>
+        !double.IsNaN(secondsWalkingOver) && secondsWalkingOver <= WalkUpSeconds;
 
     /// <summary>#835 · HOW MANY TIMES ONE WATCH WILL WRITE YOU DOWN AND STILL JUST WALK YOU TO THE LIFT.
     /// Three, because the owner hit four in one evening and the fourth was the one that read as a bug in the
@@ -137,6 +179,11 @@ public static partial class PatrolBeat
         Provocation.WalkedAwayTwice => WalkedOffTwiceLine,
         Provocation.SeenAtTheHasp => SawYouAtTheHaspLine,
         Provocation.BookedTooManyTimes => BookedLine(EscortsAWatchAllows + 1),
+
+        // #618 · GunfireHeard is not here and cannot reach here: it never earns a run (EarnsIt), so it is
+        // never written onto a man (Guard.HeCallsItIn is the only writer of Why, and Guard.Check asserts a
+        // reason and a run are the same posture), so no catch is ever told with it in hand. Giving it a
+        // sentence would be authoring the one line §13.8 forbids — a guard explaining a bang.
         _ => WalkedOffTwiceLine,
     };
 

@@ -47,8 +47,8 @@
     z-index: 6;
 }
 
-/* Console quip toast while walking the deck / in first person (the Nav HUD that hosts pulse
-   messages is hidden then). Centred near the top, clear of the desk tab bar. */
+/* Console quip toast while walking the deck (the Nav HUD that hosts pulse messages is hidden
+   then). Centred near the top, clear of the desk tab bar. */
 .deck-pulse-toast {
     position: absolute;
     top: 6rem;
@@ -551,6 +551,14 @@
        label ("365d 23h 59m"). max-width still clamps it to the viewport on a phone (#253). */
     width: 38rem;
     max-width: 100%;
+    /* #950 — "UI at scrub planning is clipped from below … I cannot remove the insertion step." The panel
+       is an in-flow block under the pilot banner and simply grew past the bottom of the window, taking its
+       last controls with it. Cap it to what is left of the viewport and let it scroll: no control the
+       captain needs may live below the fold. The step list keeps its own inner scroll (.map-plot-nodes) so
+       a long plan still pages inside a panel whose head and compose row stay put. */
+    max-height: calc(100vh - 14rem);
+    min-height: 12rem;
+    overflow-y: auto;
 }
 
 .map-plot-nodes {
@@ -817,6 +825,21 @@
     pointer-events: auto;
 }
 
+/* #963 — the minimised scope: a button-sized tile in the corner the window vacated, so the switch that
+   used to shout from the top of the screen now lives exactly where the instrument is. */
+.map-scope-tile {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    pointer-events: auto;
+}
+
+.map-scope-min {
+    line-height: 1;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+}
+
 .map-scope-canvas {
     width: 280px;
     height: 280px;
@@ -956,6 +979,20 @@
     animation: pilot-banner-pulse 1.8s ease-in-out infinite;
 }
 
+/* #952 · the arrive step's INVALID state — the plan does not end safely. Red pip and a red "why" line
+   under the row, carrying the numbers (distance and relative speed against the real thresholds). Not a
+   FlightStepState: "stale" means struck out and will not fire, which is a different and softer thing than
+   "this plan ends nowhere". */
+.map-plan-step-invalid .map-plan-step-pip {
+    background: #ff6b6b;
+    box-shadow: 0 0 6px rgba(255, 107, 107, 0.7);
+}
+
+.map-arrive-why {
+    margin-left: 1.25rem;
+    line-height: 1.25;
+}
+
 /* PR-D2 · the flight-plan accordion. Each step is a glanceable clickable line; opening it reveals its
    editor in place. The open row lifts (background + inset ring) so the one editor in focus reads as a
    sub-panel, per GeminiUINotes.md (data-state / accordion / lifted editor). */
@@ -1030,6 +1067,23 @@
     pointer-events: auto;
     z-index: calc(var(--z-map-chrome) + 2);
     border: 1px solid rgba(120, 220, 255, 0.5);
+    /* #960: CAPPED so the dossier stacked above it (.map-dossier-raised) sits at a KNOWN offset rather than
+       one CSS would have to measure. A long plan scrolls inside its own box instead of growing under the
+       card that is riding on top of it. */
+    max-height: 17rem;
+    overflow-y: auto;
+}
+
+/* #962/#963 — THE KEYS OF NAVIGATION, DRESSED AS KEYS. Owner: "Here the smallest button is the most
+   important one… Plot should stand out among the buttons here. It is the heart of the navigation process."
+   A solid fill already separates Plot and + Add burn from the outline buttons around them; this is the rest
+   of the difference — a size up and a little weight, without leaving the toolbar's own rhythm. */
+.map-key-action {
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+    box-shadow: 0 0 0 1px rgba(255, 220, 150, 0.35), 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
 /* M24: planet click menu — anchored at the click point, above the canvas. */
@@ -1519,6 +1573,31 @@
     max-width: calc(100% - 1.5rem);
 }
 
+/* #960 — WINDOWS AT THE BOTTOM CENTRE TAKE TURNS. The target dossier and the navigation-target panel both
+   want this spot, and in the owner's screenshot the dossier lay across the nav panel's text and buttons.
+   The nav panel keeps the floor (it is the one with the arm-the-arrival button); the dossier rides above it,
+   clear of the capped panel below. Declared AFTER .map-dossier on purpose — same specificity, later wins. */
+.map-dossier-raised {
+    bottom: 18.25rem;
+    max-height: min(26rem, calc(100vh - 24rem));
+    overflow-y: auto;
+}
+
+/* …and either way the card can be tucked into a tile of its own (owner: "option to minimize a window into
+   a sugarcube tile and back would avoid the moving-windows can of worms"). No dragging. */
+.map-dossier-tile {
+    width: auto;
+    max-width: 22rem;
+    overflow: visible;
+    max-height: none;
+}
+
+.map-dossier-min {
+    line-height: 1;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+}
+
 /* M29: the sensors chief works the SKY — the desk layer's empty space passes pointer events
    through to the live map (pan, wheel zoom, ship/planet click), while every real instrument
    re-enables its own. The dim backdrop still paints; only hit-testing changes. */
@@ -1611,22 +1690,12 @@
 }
 
 /* Map-picking PR: the 🗺 Layers control — below the desk switcher, out of every panel's way. */
-/* First-person ⇄ deck-plan toggle button — top-left, clear of the centred desk tabs and Layers. */
-.deck-view-toggle {
-    position: absolute;
-    top: 3.2rem;
-    left: 0.75rem;
-    z-index: calc(var(--z-map-chrome) + 30);
-}
-
-/* #324: on a surface excursion the enlarged SANITY gauge owns the top-left corner (owner: "let's make
-   sanity visible"), so the first-person toggle steps down and to the right of it — nothing buries the
-   gauge, and the toggle stays plainly pressable (#212 affordances-never-hide). */
-.deck-view-toggle.on-surface {
-    top: auto;
-    bottom: 2.4rem;
-    left: 0.75rem;
-}
+/* #958 · A deck-view toggle button sat at top 3.2rem / left 0.75rem, stepping down to bottom 2.4rem on
+   a surface excursion. It went with the mode it opened. The RULE it was placed by outlived it and is worth
+   keeping written down here, because the next control to reach for this corner needs it: on a surface
+   excursion the enlarged SANITY gauge owns the top-left (#324, owner: "let's make sanity visible"), so a
+   deck control steps down and out of its way — nothing buries the gauge, and nothing hides an affordance
+   (#212). `.captains-remote-btn` below is placed by exactly this rule. */
 
 /* Round-2 audit fix 4: the Layers control was dead-center at top 3.2rem, stacking on top of the
    centered pilot-in-command banner (top 3.0rem) — the "top-center cyan control" collision. Tuck it
@@ -2007,7 +2076,10 @@
 
 /* #310 — the save/load surface (front door + in-game drawer share these). */
 .save-surface {
-    width: min(38rem, 96vw);
+    /* #948 — the shelf grew a headline per row, and a clipped headline is the exact complaint this lane
+       set out to fix ("Captain Erno of the Lo…" is no more findable than "The Tilt · day 0"). The surface
+       takes the width it needs on a real screen and still yields on a narrow one. */
+    width: min(52rem, 96vw);
 }
 
 /* Honest boot state (#310, #212): the door says it is warming rather than eating clicks. */
@@ -2104,12 +2176,26 @@
     gap: 0.4rem;
     max-height: 42vh;
     overflow-y: auto;
+    /* #948 — the list's own vertical scrollbar eats a dozen pixels the rows had already claimed, and the
+       shelf answered with a horizontal scrollbar that put the last control (🗑) just past the edge. Room
+       for the scrollbar, and no sideways scroll: a control you have to scroll to reach is a control the
+       captain will not find in the moment they need it. */
+    overflow-x: hidden;
+    padding-right: 0.4rem;
 }
 
 .slot-row {
     display: flex;
     align-items: stretch;
     gap: 0.35rem;
+    /* #948 — six controls beside a headline will not fit every window, and a row that scrolls sideways
+       hides its own last button. It wraps instead: the load button keeps a readable minimum and the mini
+       controls drop under it when the space runs out, so nothing is ever off the edge. */
+    flex-wrap: wrap;
+}
+
+.slot-load {
+    flex: 1 1 20rem;
 }
 
 .slot-load {
@@ -2160,9 +2246,14 @@
 .slot-where {
     font-weight: 600;
     font-size: 0.98rem;
-    white-space: nowrap;
+    /* #948 — the title is the thing the captain wrote to find this save by, so it gets a second line
+       before it is ever cut. Two lines, then ellipsis; the provenance under it stays one line each. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .slot-when {
@@ -5081,15 +5172,15 @@
 /* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
    is live, because the order it carries is the one whose absence gets a captain shot.
 
-   IT SITS BOTTOM-LEFT, ABOVE THE FIRST-PERSON TOGGLE, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it:
-   "look at the sanity and health meters now overlap" — and they did, because I put this at top 3.2rem, which is
-   directly on the nerve readout AND on the five condition pips beneath it. Both meters, buried by a button.
+   IT SITS BOTTOM-LEFT, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it: "look at the sanity and health
+   meters now overlap" — and they did, because I put this at top 3.2rem, which is directly on the nerve readout
+   AND on the five condition pips beneath it. Both meters, buried by a button.
 
-   The rule was already written down forty lines up, for the first-person toggle: "on a surface excursion the
-   enlarged SANITY gauge owns the top-left corner … nothing buries the gauge, and the toggle stays plainly
-   pressable (#212 affordances-never-hide)". The toggle steps down and to the right for exactly this reason. I
-   added a control to that corner without reading the rule that corner already had — so this now follows the
-   same precedent it should have followed first time: same column as the toggle, one row above it. */
+   The rule was already written down forty lines up (and is still there, now that the deck-view toggle it was
+   first written for has gone): on a surface excursion the enlarged SANITY gauge owns the top-left corner, so a
+   deck control steps down and to the right — nothing buries the gauge, and the control stays plainly pressable
+   (#212 affordances-never-hide). I added a control to that corner without reading the rule that corner already
+   had; this now follows the precedent it should have followed first time. */
 .captains-remote-btn {
     position: absolute;
     left: 0.75rem;
@@ -5246,6 +5337,7 @@
    the button's own top edge and all of it falls below: reach any higher and it swallows the footnote the
    first-ground cards print just above their button, which is the second thing the browser showed me. Each
    card names its own colour below; the fallback is the dark every card in this family is a shade of. */
+.busted-card .busted-close-row,
 .busted-card .busted-close,
 .busted-card > .busted-options,
 .view-object > .view-object-close,
@@ -5460,4 +5552,249 @@
    dig reads apart from a TRY at a glance. */
 .spread-item .satchel-item-try {
     color: #d8c56a;
+}
+
+/* #959 · THE JOB'S PLAIN BLOCK — the spec sheet above the pitch.
+
+   Owner, 2026-08-18: "What is this job... should I destroy a ship or rob a place? We should make sure
+   these missions all tell clearly what it takes to complete them. We need to know before we decide if we
+   accept or not." Three lines, always in the same order, always in the same places: the VERB from a fixed
+   five-word vocabulary, what completion TAKES and what the target actually IS, and the honest distance and
+   lane time. Core's JobTerms writes them; this only lays them out.
+
+   LEFT-ALIGNED inside a centre-aligned card on purpose. The pitch is a person talking and reads well
+   centred; a spec sheet is a list and reads badly that way — the eye needs one left edge to run down. The
+   panel ground is a shade darker than the card so the block reads as an inset plate rather than as more
+   dialogue, and it carries its own ground rather than borrowing the card's, because the same block renders
+   over the Captain desk's paper too. Twin of .job-plain in Stations/Captain.razor.css — one look, two
+   components; Blazor's scoped CSS cannot share it. */
+.job-plain {
+    text-align: left;
+    margin: 0 0 0.7rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.35rem;
+    border-left: 3px solid rgba(255, 212, 121, 0.7);
+    background: rgba(0, 0, 0, 0.35);
+    line-height: 1.35;
+}
+
+.job-plain-verb {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffd479;
+}
+
+.job-plain-takes {
+    color: #e8ecf4;
+    font-size: 0.9rem;
+}
+
+/* The effort line is the one the owner asked for by name — "how long we must fly to do it" — so it wears
+   the nav desk's own cyan, the colour every distance and ETA in this game is already spoken in. */
+.job-plain-effort {
+    color: #8fd8e6;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── #948 · The logbook's human half: a title, a note, and a captain with a name of their own. ──
+   The rows were a shelf of identical harbours ("The Tilt · day 0", six times over). A row is now a small
+   stack: the TITLE the captain gave, the provenance under it, and — when there is one — the NOTE as a
+   single clamped line the reader can open. Nothing here changes what a row DOES; it changes what it says.
+   Colours come off the same palette the slot rows already use, so the shelf still reads as one object. */
+.slot-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.slot-note {
+    display: block;
+    width: 100%;
+    margin: 0 0 0.1rem 2.4rem;
+    padding: 0.28rem 0.6rem;
+    text-align: left;
+    background: rgba(255, 214, 140, 0.06);
+    border: 1px solid rgba(255, 214, 140, 0.22);
+    border-left-width: 3px;
+    border-radius: 0.4rem;
+    color: rgba(240, 226, 200, 0.82);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    cursor: pointer;
+    /* One line until it is asked for — a shelf of ten paragraphs is not a shelf. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slot-note:hover,
+.slot-note:focus-visible {
+    border-color: rgba(255, 214, 140, 0.55);
+    color: #f6ead2;
+    outline: none;
+}
+
+.slot-note-open {
+    white-space: pre-wrap;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* The bank/export/edit sheet: two fields and the promise that a banked berth stays banked. */
+.bank-sheet {
+    max-width: 34rem;
+}
+
+.bank-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin: 0.5rem 0;
+    text-align: left;
+}
+
+.bank-field-label {
+    color: rgba(224, 228, 236, 0.62);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.bank-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.4rem;
+    color: #e8eef6;
+    font-size: 0.92rem;
+}
+
+.bank-input:focus {
+    border-color: rgba(120, 200, 255, 0.75);
+    outline: none;
+}
+
+.bank-note {
+    resize: vertical;
+    min-height: 4.5rem;
+    line-height: 1.4;
+}
+
+/* The owner's actual fear, answered in words on the sheet that does the banking: "I want this moment, not
+   that I die and that situation overwrites this." The law was always true (#310 gave the autosave its own
+   slot); it had simply never been said anywhere the captain could read it. */
+.bank-safety {
+    margin: 0.4rem 0 0.2rem;
+    padding: 0.4rem 0.6rem;
+    background: rgba(120, 230, 160, 0.1);
+    border: 1px solid rgba(120, 230, 160, 0.35);
+    border-radius: 0.4rem;
+    color: #a9e9c4;
+    font-size: 0.8rem;
+    text-align: left;
+}
+
+/* The rename input, on the roster card and at the desk. */
+.captain-rename {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.captain-rename-input {
+    flex: 1 1 auto;
+    min-width: 8rem;
+    padding: 0.2rem 0.45rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(120, 200, 255, 0.6);
+    border-radius: 0.35rem;
+    color: #e8eef6;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.captain-rename-input:focus {
+    outline: none;
+    border-color: rgba(120, 200, 255, 0.95);
+}
+
+/* The pencil is quiet until the name is hovered — the card is a portrait first, a form second. */
+.captain-rename-pencil {
+    margin-left: 0.4rem;
+    padding: 0 0.25rem;
+    background: none;
+    border: none;
+    color: rgba(224, 228, 236, 0.35);
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.captain-card:hover .captain-rename-pencil,
+.captain-rename-pencil:hover,
+.captain-rename-pencil:focus-visible {
+    color: #9fd8ff;
+    outline: none;
+}
+
+/* The captain's identity line at their own desk. */
+.captain-ident-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+}
+
+.captain-ident-label {
+    color: rgba(224, 228, 236, 0.55);
+    font-size: 0.8rem;
+}
+
+.captain-ident-name {
+    color: #e8eef6;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+/* #951 — the death card's two verbs sit side by side: wake up (the brain backup, canon) and the logbook.
+
+   THE ROW OWNS THE PINNED FOOT, and it must. .busted-close carries this family's sticky footer treatment —
+   `position: sticky` plus a `box-shadow: 0 12rem 0 12rem <scrim>` that paints the card's own darkness far
+   out to both shoulders — and the moment it acquired a SIBLING that scrim swallowed it. The browser showed
+   it immediately: an outlined button with no readable text inside it, because a 12rem spread drawn from a
+   z-index:3 element covers a plain sibling entirely. So the row is added to that selector list above and
+   the button inside a row gives its own scrim up; one foot, one scrim, two verbs on top of it. */
+.busted-close-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+/* Inside a row, the button is just a button — the row is the pinned foot now. */
+.busted-card .busted-close-row .busted-close {
+    position: static;
+    box-shadow: none;
+    margin-top: 0;
+}
+
+/* Readable against the sepia backdrop without competing with the white "…wake up": the logbook is the
+   quieter of the two verbs, but it must be legible, which btn-outline-light alone was not here. */
+.busted-logbook {
+    font-size: 0.9rem;
+    border-color: rgba(243, 226, 196, 0.65);
+    color: #f3e2c4;
+    background: rgba(20, 14, 8, 0.55);
+}
+
+.busted-logbook:hover,
+.busted-logbook:focus-visible {
+    border-color: #f3e2c4;
+    background: rgba(243, 226, 196, 0.16);
+    color: #fff6e4;
+    outline: none;
 }

@@ -709,25 +709,30 @@ public partial class Map
     private bool _brakeShowing; // last frame's Asking state — so the raise squawks on the rising edge only
 
     // The world-space body the current brake window is owed at (propulsive arrival or armed aerobrake), and
-    // whether the armed method is the aerobrake. Aerobrake takes precedence — it is the chosen way to pay.
+    // whether the armed method is the aerobrake. Aerobrake takes precedence — it is the chosen way to pay —
+    // but ONLY while its filed quote is a real trade (#962; see ArmedAerobrakeOffer).
     private CelestialBody? BrakeWindowBody()
     {
-        string? id = _aerobrakeArmedBodyId ?? _brakeArrivalBodyId;
+        string? id = ArmedAerobrakeOffer() is not null ? _aerobrakeArmedBodyId : _brakeArrivalBodyId;
         return id is null ? null : _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id);
     }
 
-    private bool BrakeIsAerobrake => _aerobrakeArmedBodyId is not null;
+    private bool BrakeIsAerobrake => ArmedAerobrakeOffer() is not null;
 
     // The ship's speed relative to a body right now (the "how hot am I coming in" the window reads).
     private double RelativeSpeedTo(CelestialBody body) =>
         _ephemeris is null ? 0.0 : (_ship.Velocity - TransferMath.BodyVelocity(_ephemeris, body.Id, SimTime)).Length;
 
     // Is the brake WINDOW open this frame? The ship is near the destination (inside its Hill sphere — the
-    // arrival vicinity) AND still hot (relative speed above the clamp window, so a brake is genuinely owed).
-    // Once the captain sheds by hand, docks, or wanders clear, this falls false and the gate resets.
+    // arrival vicinity), still hot (relative speed above the clamp window, so a brake is genuinely owed),
+    // and actually FLYING — a clamped ship is not arriving (#962: the owner's screenshot had the Jupiter
+    // card up while the ship lay clamped at The Red Eye, because a berth inside Jupiter's Hill sphere reads
+    // as "near Jupiter and moving fast relative to it" for as long as you lie there). The predicate itself
+    // is Core (ArrivalBrake.WindowOpen); this reads the world and hands it the numbers. Once the captain
+    // sheds by hand, clamps on, or wanders clear, this falls false and the gate resets.
     private bool BrakeWindowOpen(CelestialBody body)
     {
-        if (_ephemeris is null || _jumpInProgress)
+        if (_ephemeris is null)
         {
             return false;
         }
@@ -737,7 +742,16 @@ public partial class Map
             ? OrbitRule.HillRadius(body, parent.Mu)
             : OrbitRule.CaptureRange(OrbitRule.HillRadius(body, 1.0));
         double dist = (_ship.Position - _ephemeris.Position(body.Id, SimTime)).Length;
-        return dist <= vicinity && RelativeSpeedTo(body) > LongHaul.InsertionTargetSpeed;
+        return ArrivalBrake.WindowOpen(
+            // The CLAMP, not _docked — that other flag is mere market proximity (0.067 AU of a trade body)
+            // where the ship still flies freely and a brake still means something. Only NavLockedByDock
+            // says the berth owns her, which is the state the owner was in at The Red Eye.
+            clamped: NavLockedByDock,
+            crossingTheVoid: _jumpInProgress,
+            distance: dist,
+            vicinityRadius: vicinity,
+            relativeSpeed: RelativeSpeedTo(body),
+            clampWindowSpeed: LongHaul.InsertionTargetSpeed);
     }
 
     // The per-frame arrival-brake law (called from OnTick after the alerts sweep). Drives ArrivalBrake.Advance
@@ -746,7 +760,7 @@ public partial class Map
     {
         CelestialBody? body = BrakeWindowBody();
         bool open = body is not null && BrakeWindowOpen(body);
-        _brakeGate = ArrivalBrake.Advance(_brakeGate, open, nowMs);
+        _brakeGate = ArrivalBrake.Advance(_brakeGate, open);
 
         if (!open)
         {
@@ -757,7 +771,7 @@ public partial class Map
             _brakeDestName = BodyName(body.Id);
         }
 
-        // Rising edge (Dormant/Snoozed → Asking): shout once so the ask isn't missed in the heat of arrival.
+        // Rising edge (Dormant → Asking): shout once so the ask isn't missed in the heat of arrival.
         if (_brakeGate.Asking && !_brakeShowing)
         {
             SquawkNow(Parrot.Squawk.LongHaul, nowMs, force: true);
@@ -768,10 +782,13 @@ public partial class Map
     // The ask's spoken line for the card (propulsive quoted bill, its unfunded variant, or the aerobrake).
     private string ArrivalBrakeAskText()
     {
-        if (BrakeIsAerobrake)
+        // #962 · The aerobrake ask reads the quote the arm was FILED with, not whatever the body menu
+        // happens to be caching. The old line asked AerobrakeMenuQuote, which is keyed to the currently-open
+        // menu body and is null the moment that menu closes — which is how the owner got an offer to commit
+        // "0 passes (≈0 p saved)". The filed quote is the trade the captain accepted; it is the one to speak.
+        if (ArmedAerobrakeOffer() is { } q)
         {
-            Aerobrake.Quote? q = BrakeWindowBody() is { } aeroBody ? AerobrakeMenuQuote(aeroBody) : null;
-            return ArrivalBrake.AskAerobrake(_brakeDestName, q?.PassesNeeded ?? 0, q?.PulsesSaved ?? 0);
+            return ArrivalBrake.AskAerobrake(_brakeDestName, q.PassesNeeded, q.PulsesSaved);
         }
 
         int tank = LongHaulBudgetPulses();
@@ -832,11 +849,13 @@ public partial class Map
         ReprojectTrajectory();
     }
 
-    // DECLINE / snooze — wave the ask off. Nothing fires, no pulses move: the manual state is exactly as
-    // today. The window stays open, so ArrivalBrake.Advance re-raises the ask after the snooze interval.
+    // HOLD — the captain answers "I'll shed by hand". Nothing fires, no pulses move: the manual state is
+    // exactly as it was. #962: this is an ANSWER, not a snooze — the gate goes to Held and stays there for
+    // as long as this window lasts, so the card does not come back at the captain eight seconds later.
+    // A genuinely new arrival shuts the window first, which resets the gate and asks afresh.
     private void DeclineArrivalBrake()
     {
-        _brakeGate = ArrivalBrake.Snooze(_brakeGate, _frameNowMs);
+        _brakeGate = ArrivalBrake.Hold(_brakeGate);
         _brakeShowing = false;
         ShowPulseMessage(ArrivalBrake.Declined(_brakeDestName));
     }

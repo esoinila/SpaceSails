@@ -35,7 +35,6 @@ public sealed class HudCollisionTests : IAsyncLifetime
     /// </summary>
     private static readonly string[] HudControls =
     [
-        ".deck-view-toggle",
         ".captains-remote-btn",
         ".map-layers",
         ".wreck-clocks",
@@ -45,16 +44,18 @@ public sealed class HudCollisionTests : IAsyncLifetime
     /// <summary>
     /// THE CORNER THE GAUGES OWN — and it MOVES, which the first run of this gate taught me by failing.
     ///
-    /// <para>It reported <c>.deck-view-toggle at (12,51) sits over the NERVE gauge</c>, and that was a false
+    /// <para>It reported a deck control at (12,51) sitting over the NERVE gauge, and that was a false
     /// positive that turned out to be worth more than a true one: aboard the ship the gauge is drawn COMPACT at
-    /// <c>baseY = 112</c>, deliberately BELOW the first-person toggle ("tucked below the deck chrome … so it
-    /// whispers without colliding"), while on a surface excursion it takes the corner outright and the TOGGLE is
-    /// the one that steps down to <c>bottom: 2.4rem</c>. Two controls that swap places.</para>
+    /// <c>baseY = 112</c>, deliberately BELOW the top-left deck chrome ("tucked below the deck chrome … so it
+    /// whispers without colliding"), while on a surface excursion it takes the corner outright and the deck
+    /// controls step down to the bottom of the column. Two things that swap places.</para>
     ///
     /// <para>So a single reserved rectangle is wrong, and asserting one would have forced somebody to "fix" a
-    /// layout that was already correct. The gate reads which arrangement it is in from the toggle's own
-    /// <c>on-surface</c> class — the same flag the CSS switches on — and reserves accordingly. That is the
-    /// arrangement written down in a place that fails when it stops being true.</para>
+    /// layout that was already correct. The gate reads which arrangement it is in from the DESK TAB BAR, which
+    /// the page hides outright on an excursion (#330) — the same fact the CSS and the gauge both switch on —
+    /// and reserves accordingly. (It used to read the deck-view toggle's own <c>on-surface</c> class; #958
+    /// removed that button with the mode it opened.) That is the arrangement written down in a place that
+    /// fails when it stops being true.</para>
     ///
     /// <para>Literals because the gate talks to a PUBLISHED artifact over HTTP and cannot reference the client
     /// assembly; they mirror <c>DeckView.DrawNerveGauge</c>, and the comment above <c>.captains-remote-btn</c> in
@@ -96,8 +97,9 @@ public sealed class HudCollisionTests : IAsyncLifetime
     {
         await BootIntoTheDeck();
 
-        // Which arrangement are we in? The toggle carries the same flag the CSS switches on.
-        bool onSurface = await _page.Locator(".deck-view-toggle.on-surface").CountAsync() > 0;
+        // Which arrangement are we in? The desk tab bar is hidden outright on an excursion (#330), which is
+        // the same fact the gauge's own compact/full switch is made on.
+        bool onSurface = await _page.Locator(".desk-tab-bar").CountAsync() == 0;
         (float gx, float gy, float gw, float gh) = GaugeBand(onSurface);
 
         var boxes = new List<(string Name, float X, float Y, float W, float H)>();
@@ -115,7 +117,11 @@ public sealed class HudCollisionTests : IAsyncLifetime
             }
         }
 
-        Assert.True(boxes.Count >= 2, "the deck showed fewer than two HUD controls — the gate proved nothing");
+        // #958 · This asked for two. It could, while the deck-view toggle stood in the same corner as the desk
+        // tabs; with that button gone the ship's deck shows exactly ONE named control, and the load-bearing half
+        // of this gate has always been the one the canvas gauges cannot make for themselves — a DOM control
+        // sitting on a painted meter. One control is enough to make that check, and zero is not.
+        Assert.True(boxes.Count >= 1, "the deck showed no HUD control at all — the gate proved nothing");
 
         var collisions = new List<string>();
 
@@ -164,9 +170,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
         await _page.Locator(".desk-tab-bar").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
-        // The Deck tab is where the gauges and the walking HUD live.
+        // The Deck tab is where the gauges and the walking HUD live. The tab going info-blue is the page
+        // saying the desk switched (#958: this used to wait on the deck-view toggle, which no longer exists).
         await _page.Locator("button.desk-tab", new() { HasTextString = "Deck" }).ClickAsync();
-        await _page.Locator(".deck-view-toggle").WaitForAsync(
+        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Deck" }).WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
     }
 }

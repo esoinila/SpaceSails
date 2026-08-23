@@ -18,8 +18,9 @@ namespace SpaceSails.Client.Tests;
 /// <summary>
 /// #870 lane 6d · THE SNAPSHOT, TAKEN ON THE OLD CODE.
 ///
-/// <para>There are SIX places in this client where a sitting is opened — <c>Table = new TableTalk { … }</c>
-/// in <c>Seating.Bench.cs</c> (×1), <c>Seating.OfficeChair.cs</c> (×3) and <c>Seating.Table.cs</c> (×2) —
+/// <para>There are SEVEN places in this client where a sitting is opened — <c>Table = new TableTalk { … }</c>
+/// in <c>Seating.Bench.cs</c> (×1), <c>Seating.OfficeChair.cs</c> (×3) and <c>Seating.Table.cs</c> (×3; it
+/// was ×2 until #731 v2 gave a contact a booth to lead you into) —
 /// and each of them ends with the same three lines: the seat goes into the field, the reveal cue plays, the
 /// page is asked to draw. Lane 6d makes that tail ONE method. Nothing about that can be proved by counting
 /// members: the whole content of a sit site is WHICH properties it sets and TO WHAT, so the guard is a
@@ -114,7 +115,6 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
 
         if (pour)
         {
@@ -378,6 +378,12 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// TOTAL in both directions: every sitting the search finds is attributed to one of the six, and every
     /// one of the six is entered by at least one sitting. A seventh way to open a sitting, or a site that
     /// stops being reachable, reddens here by name rather than passing quietly.</para>
+    ///
+    /// <para><b>These are the six a CONSOLE PRESS can reach.</b> #731 v2's <c>SheLedYouHere</c> is a seventh
+    /// construction site and is deliberately not below: it cannot be entered by pressing a table on a floor
+    /// nobody has walked yet — a contact has to be standing in the doorway first — so listing it here would
+    /// be a row that could never be entered. <c>ThereIsOnePlaceASittingIsOpened</c> counts it, and
+    /// <c>FollowMeIntoTheCabinetTests</c> drives it.</para>
     /// </summary>
     private static readonly Dictionary<string, string> WhichSite = new(StringComparer.Ordinal)
     {
@@ -482,13 +488,23 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// play it BEFORE the seat is in the field, and sixteen digests would still reproduce. So the tail is
     /// held where it can be seen: in the source.</para>
     ///
-    /// <para>Three laws. <b>Six sites, and every one goes through the one method</b> — a seventh
+    /// <para>Three laws. <b>Seven sites, and every one goes through the one method</b> — an eighth
     /// <c>new TableTalk</c>, or a site that goes back to building the record and assigning it itself,
     /// reddens by count. <b>One assignment</b> — exactly one line in the whole family puts a sitting into
     /// <c>Table</c>, and it is in <c>Seating.Sit.cs</c> (clearing it is not opening one, so
     /// <c>Table = null</c> is not counted). <b>And the tail is these three statements in THIS order</b>,
     /// spelled out, because the order is the behaviour: the panel the captain is about to read is a
     /// function of the seat, so the draw has to be the frame after the seat is in.</para>
+    ///
+    /// <para><b>#731 v2 · 6 → 7, and the seventh is <c>Seating.Table.cs · SheLedYouHere</c>.</b> A contact
+    /// stands up mid-sentence, crosses the hall and holds a booth door open; the press that would otherwise
+    /// take a free top resumes HER conversation instead, with what was already said to her carried in on the
+    /// initializer. It is a construction site like the other six and it obeys the same three laws.</para>
+    ///
+    /// <para>It has no row in <see cref="WhichSite"/> and no pin above, and that is not an oversight: those
+    /// two are keyed on cases the console sweep can REACH, and no press on a virgin floor reaches this one —
+    /// it needs a walker standing in a doorway first. The sitting it opens is fingerprinted end to end by
+    /// <c>FollowMeIntoTheCabinetTests</c> instead, which drives the walk that makes it reachable.</para>
     /// </summary>
     [Fact]
     public void ThereIsOnePlaceASittingIsOpened()
@@ -497,11 +513,12 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
 
         int built = family.Sum(f => Occurrences(f.Text, "new TableTalk"));
         int through = family.Sum(f => Occurrences(f.Text, "TakeThisSeat(new TableTalk"));
-        Assert.True(built == 6 && through == 6,
+        Assert.True(built == 7 && through == 7,
             $"#870 lane 6d · the seat family builds {built} sitting(s) and {through} of them go through "
-            + "`TakeThisSeat`. There are SIX construction sites and every one of them must, because the "
-            + "reveal cue and the draw live in that method and nowhere else. A seventh way to open a "
-            + "sitting needs a row in `WhichSite`, a pin above, and a line in the PR body.\n\n"
+            + "`TakeThisSeat`. There are SEVEN construction sites and every one of them must, because the "
+            + "reveal cue and the draw live in that method and nowhere else. An eighth way to open a "
+            + "sitting needs this count moved, a line in the PR body, and — if a console press can reach it "
+            + "— a row in `WhichSite` and a pin above.\n\n"
             + string.Join("\n", family.Select(f =>
                 $"  {f.Name}: {Occurrences(f.Text, "new TableTalk")} built, "
                 + $"{Occurrences(f.Text, "TakeThisSeat(new TableTalk")} through")));

@@ -80,12 +80,15 @@
 
     <h2 id="map">4. The map (the Nav desk)</h2>
     <ul>
-        <li><strong>Drag</strong> to pan, <strong>mouse wheel</strong> to zoom, <strong>Follow Ship</strong> to re-center.</li>
+        <li><strong>Drag</strong> to pan, <strong>mouse wheel</strong> to zoom, <strong>Follow Ship</strong> to re-center —
+            or <strong>Follow dest</strong> to ride the navigation target instead of the ship (one or the
+            other; a hand on the map stands both down).</li>
         <li>The Nav toolbar keeps only true nav controls: the <strong>warp slider</strong>
             (logarithmic, 1× to 10,000×; it auto-drops near planets and encounters so you don't
             overshoot the interesting parts), <strong>Pause</strong>, <strong>Follow Ship</strong>,
-            <strong>Plot</strong>, <strong>Scope</strong>, and <strong>?</strong> for this guide.
-            Everything else moved to its own duty station — see §2.</li>
+            <strong>Follow dest</strong>, <strong>Plot</strong>, and <strong>?</strong> for this guide.
+            <strong>Plot</strong> is the loud one on purpose — it and <strong>+ Add burn at scrub</strong>
+            are the keys to navigating anywhere. Everything else moved to its own duty station — see §2.</li>
         <li><strong>HUD readouts</strong> — sim time, ship speed with
             <em>(circular here: …)</em> beside it: the speed that would hold a circular sun orbit at
             your current distance. Match it and you coast forever; it is the difference between
@@ -110,6 +113,14 @@
     </p>
 
     <h2 id="plotting">6. Plotting a course</h2>
+    @* #949 — the owner, looking at a screenshot of the plotting panel: "New player seeing this image would
+       understand how to play." This section is the reference; the walkthrough is the two-minute read that
+       gets somebody from "I clicked Plot and nothing happened" to a ship in orbit. It goes first, because a
+       reference is no use to a reader who has not yet done the thing once. *@
+    <p>
+        <a class="btn btn-outline-primary btn-sm" href="/help/nav">📐 New here? Plotting a trip — the eight
+        steps, one picture each</a>
+    </p>
     <ul>
         <li><strong>Plot</strong> (on the Nav desk toolbar) opens the plotting table, or press
             <kbd>E</kbd> at the NAV POST console inside the ship. The sim pauses while you plan.</li>
@@ -377,8 +388,10 @@
             iteration where every step flies the round through the real simulator — and you watch
             it converge, iteration by iteration. The solution locks at T-60 s; the hull slews to
             the firing bearing, the round leaves on its own, and control returns. Range is
-            honest: the driver tops out at 8 km/s, so fire control is close work — get inside
-            ~7×10<sup>8</sup> m or the panel says NO SOLUTION and means it.</li>
+            honest: the driver tops out at 66 km/s (#961 — a ship-length barrel, fusion pellets
+            behind the sabot, the Pascal-B manhole cover as the design brief), so fire control is
+            still close work — get inside ~7×10<sup>8</sup> m or the panel says NO SOLUTION and
+            means it.</li>
         <li>A hit takes the sail: the target drops to a ballistic drift, tagged <em>adrift</em> —
             a boarding gift. Hunters are fair game (a holed hunter breaks off for good). Every
             hit makes the news wire; every locked solution prints a <strong>gunner's
@@ -398,8 +411,12 @@
         <li>Robbing a ship (not just warning it) raises <strong>heat</strong>, a 0–3 gauge that
             decays one level per 20 days — four times faster hidden in orbit at a haven. Enough heat
             spawns a <strong>hunter</strong>: a hired collector that fits out for about five days, then
-            hunts you down. Fly clean and lie low at a haven for two days straight and it loses the
-            scent.</li>
+            hunts you down. The contract is bought <em>once</em>, over the hull you took — so letting the
+            heat gauge cool back to zero does <em>not</em> call her off (#962: "we have zero heat and are
+            docked at haven … why is this still hunting us?"). Three things end a hunt: lie low at a haven
+            for two unbroken days and she loses the scent; put enough warning shots near her and she voids
+            the contract; or hole her sail. Her dossier card and the war room both name which, with the
+            clocks running.</li>
         <li><strong>The catch — BUSTED.</strong> If a collector runs you down, warp yanks to 1×, the
             ship is grappled, and a demand opens in the collector's own voice. <strong>Submit</strong>
             and they take every <em>hot</em> crate (cargo boarded while you were heated) plus a share
@@ -424,12 +441,15 @@
 
     <h2 id="scope">13. The scope</h2>
     <ul>
-        <li><strong>Scope</strong>, on the Nav toolbar, opens a small instrument overlay:
+        <li>The scope sits in the bottom-right corner of the Nav desk — a small instrument overlay:
             auto-locks the nearest interesting contact, draws it (freighters, pods, players,
             planets, the sun, plasma wisps), and reads out distance and relative speed.</li>
         <li><strong>◀ / ▶</strong> cycle targets manually; the middle button returns to
             <strong>AUTO</strong> (a set destination owns the scope as 🎯 DEST). For the tracked
             ledger with full target cards, see the Sensors desk (§9) instead.</li>
+        <li><strong>–</strong> tucks the scope into a tile in the same corner, naming whatever is in the
+            eyepiece; click the tile to open it wide again. The target dossier minimises the same way, and
+            steps up out of the navigation-target panel's way when both are open.</li>
     </ul>
 
     <h2 id="galley">14. The Galley 🍹</h2>
@@ -449,9 +469,7 @@
         <li>Press <kbd>7</kbd> or click <strong>7 Deck</strong> — top-down plan of your pirate
             sail. Walk with <kbd>WASD</kbd>/arrows, interact with <kbd>E</kbd>, drag the map if the
             bow hides behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.</li>
-        <li><kbd>F</kbd> — <strong>first person</strong>. Walk the corridors; the windows show the
-            real sky — the sun blazes bigger the closer you sail, and the planets are where the
-            ephemeris says they are. <kbd>Q</kbd> returns to the helm (and the Nav desk).</li>
+        <li><kbd>Q</kbd> returns to the helm (and the Nav desk) from anywhere on the deck.</li>
         <li>Consoles are <strong>bridge seats</strong>: sit at one and press <kbd>E</kbd> to open
             its desk. <strong>HELM</strong> and <strong>NAV POST</strong> open Nav (the nav post
             also lights up the plotting table); <strong>SCOPE</strong> opens Sensors;

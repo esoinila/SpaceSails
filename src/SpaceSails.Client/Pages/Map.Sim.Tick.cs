@@ -87,6 +87,12 @@ public partial class Map
         {
             _camera.CenterOn(_ship.Position);
         }
+        else if (FollowedDestinationPosition() is { } followed)
+        {
+            // #956 · the camera rides the NAV DESTINATION. Mutually exclusive with Follow Ship (above), so a
+            // frame can only ever be told to centre on one thing.
+            _camera.CenterOn(followed);
+        }
 
         if (TheShuttleRunOwnsThisFrame(dtRealSeconds, highResTimestampMs))
         {
@@ -372,12 +378,19 @@ public partial class Map
             _destinationPass = null;
             _slingablePass = null;
             _skimmablePass = null;
+            _passes = [];
             if (_ephemeris is not null)
             {
                 double bestArmable = double.MaxValue;
                 double bestSling = double.MaxValue;
                 double bestSkim = double.MaxValue;
-                foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(_samples, _ephemeris))
+                // #952: the pass list is KEPT this time round, not just folded into four fields. The arrive
+                // step re-picks its candidate against the LIVE scrub (Map.Plot.Arrive) and re-judges its
+                // valid/invalid bit off the same list, so dragging the scrub costs a lookup over a handful
+                // of bodies instead of another 8000-sample scan.
+                IReadOnlyList<ClosestApproach.Pass> passes = ClosestApproach.Passes(_samples, _ephemeris);
+                _passes = passes;
+                foreach (ClosestApproach.Pass pass in passes)
                 {
                     if (_closestPass is null || pass.Severity < _closestPass.Value.Severity)
                     {
@@ -427,6 +440,9 @@ public partial class Map
 
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
             UpdateCourseOpportunities(); // M29: what does this course conveniently brush by?
+            // #952: does the plan still END SAFELY? Judged on the freshly rebuilt passes, so a mid-flight
+            // edit or a missed burn flips the arrive row to ✗ and wakes the captain once.
+            RefreshArriveValidity();
         }
     }
 
@@ -553,8 +569,10 @@ public partial class Map
         DrawStreams();
         if (LayerVisible("routes.lanes"))
         {
-            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes): lanes default ON
-            // for the sensors chief and OFF everywhere else, and every desk can change its mind.
+            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes). #953: OFF by default on
+            // EVERY desk, the sensors chief included. The owner opened his onto a sky "covered in faint
+            // lines with no intersection" — "It must always be much more filtered and off by default. This
+            // is just ugly here by default." One checkbox still brings them back, per desk.
             DrawTradeCorridors();
         }
         DrawShipTrajectory();
@@ -583,6 +601,7 @@ public partial class Map
         DrawNpcs();           // #402 follow-up: DEPOT name labels enqueue here, so the flush must follow it
         FlushNavLabels();     // #402: resolve overlapping body/threat/depot labels — priority wins, depots yield
         DrawHunters();
+        DrawTargetReticle(); // #962: the red X on the tactical target, brackets on every held track
         DrawOrdnance();
         DrawPyramids();
         DrawShuttleRange();
@@ -637,7 +656,7 @@ public partial class Map
     /// the map frame — one call, so the two can never come to draw two different scopes.</summary>
     private void DrawTheScopeInsetIfItIsUp()
     {
-        if (_showScope && _scopeView is not null)
+        if (!_scopeMinimized && _scopeView is not null)
         {
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
@@ -702,64 +721,69 @@ public partial class Map
     }
 
 
-    // The one walked-view paint — first person or the top-down deck — for whatever plan is welded on
-    // right now. Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once
-    // under the still-up door (WarmFirstSurfaceFrameAsync): the cold DeckView.Draw of the enlarged
-    // regolith is the last synchronous block that tripped Chrome's page-unresponsive dialog, and paying
-    // it there — off the rAF loop, on its own yield — leaves the live loop warm.
+    // The one walked-view paint — the top-down deck — for whatever plan is welded on right now.
+    // Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once under the
+    // still-up door (WarmFirstSurfaceFrameAsync): the cold DeckView.Draw of the enlarged regolith is
+    // the last synchronous block that tripped Chrome's page-unresponsive dialog, and paying it there
+    // — off the rAF loop, on its own yield — leaves the live loop warm.
     private void DrawWalkFrame()
     {
-        if (_fpMode)
-        {
-            BuildSkyBodies();
-            double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
-            _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
-                _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
-        }
-        else
-        {
-            // #841 / Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
-            // #905's frame ledger sweeps every field of this component into a pinned hash, and a wall-clock
-            // stamp is the one kind of reading that cannot be in it. Null unless ?perf=1 armed the probe;
-            // DeckView.Draw closes the bracket. What this catches that Draw alone cannot is the surface HUD
-            // the page BUILDS before it can call Draw at all — blips, smudges, ghosts, beacons, the swept
-            // grid — which is draw-side work by any honest reading and is not inside the conductor.
-            _deckView?.Perf?.OpenWalkFrame();
+        // #841 / Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
+        // #905's frame ledger sweeps every field of this component into a pinned hash, and a wall-clock
+        // stamp is the one kind of reading that cannot be in it. Null unless ?perf=1 armed the probe;
+        // DeckView.Draw closes the bracket. What this catches that Draw alone cannot is the surface HUD
+        // the page BUILDS before it can call Draw at all — blips, smudges, ghosts, beacons, the swept
+        // grid — which is draw-side work by any honest reading and is not inside the conductor.
+        _deckView?.Perf?.OpenWalkFrame();
 
-            // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
-            // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
-            // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.
-            (double sdx, double sdy) = ShudderShakeOffset();
-            _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
-                _avatarX, _avatarY, _avatarHeading,
-                _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
-                Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
-                // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
-                // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
-                // stays gauge-free by construction.)
-                Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
-                ShowNerve: true, NerveCompact: _surface is null,
-                // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
-                // off an excursion there is nothing to count, so they leave the corner entirely.
-                HitsTaken: _surface?.HitsTaken ?? -1,
-                // #480: the gauge never moves anonymously — the flash names the pip that just went, the
-                // ledger keeps the last few so "what broke me?" has an answer after the fact.
-                NerveFlash: LiveNerveFlash,
-                NerveLedger: NerveLedgerLines,
-                // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
-                // for itself (the #591 one-reach lesson).
-                Dark: DarkHere(),
-                // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
-                // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
-                Seated: CaptainIsSeated,
-                // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
-                StallBanner: TheStallBanner()),
-                _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
-        }
+        // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
+        // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
+        // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.
+        (double sdx, double sdy) = ShudderShakeOffset();
+        _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+            _avatarX, _avatarY, _avatarHeading,
+            _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
+            Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
+            // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
+            // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
+            // stays gauge-free by construction.)
+            Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
+            ShowNerve: true, NerveCompact: _surface is null,
+            // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
+            // off an excursion there is nothing to count, so they leave the corner entirely.
+            HitsTaken: _surface?.HitsTaken ?? -1,
+            // #480: the gauge never moves anonymously — the flash names the pip that just went, the
+            // ledger keeps the last few so "what broke me?" has an answer after the fact.
+            NerveFlash: LiveNerveFlash,
+            NerveLedger: NerveLedgerLines,
+            // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
+            // for itself (the #591 one-reach lesson).
+            Dark: DarkHere(),
+            // #784: and the POSTURE, the same way — the sim knows whether the captain is in a chair
+            // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
+            Seated: CaptainIsSeated,
+            // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
+            StallBanner: TheStallBanner()),
+            _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
     }
 
+    // #954 — the nearest reading, with the flicker taken out of it. It used to take the literal minimum
+    // every frame, which is why the HUD (and the scope's AUTO lock, which reads the same field) alternated
+    // between Mars and The Rusty Roadstead twice per two-hour station orbit: from 0.16 AU the two ARE the
+    // same distance, and "closest" was re-decided on a hair. Now the incumbent keeps the slot until a
+    // challenger beats it by a real margin (NearestRule.Unseats) — and the pair that used to trade places
+    // is named together, "Mars › The Rusty Roadstead", by UpdateNearestNeighbourhood below.
     private void UpdateNearestBody()
     {
+        // The incumbent, re-read from the live ephemeris (it may have been hidden or charted since).
+        CelestialBody? incumbent = _nearestBody is { } held && !IsBodyHidden(held.Id)
+            ? _ephemeris!.Bodies.FirstOrDefault(b => b.Id == held.Id)
+            : null;
+        double incumbentDistSq = incumbent is null
+            ? double.MaxValue
+            : (_ship.Position - _ephemeris!.Position(incumbent.Id, SimTime)).LengthSquared;
+
+        CelestialBody? challenger = null;
         double minDistanceSq = double.MaxValue;
         foreach (var body in _ephemeris!.Bodies)
         {
@@ -769,19 +793,106 @@ public partial class Map
             if (distSq < minDistanceSq)
             {
                 minDistanceSq = distSq;
-                _nearestBody = body;
-                _nearestBodyPosition = bodyPos;
+                challenger = body;
             }
         }
 
+        // With no incumbent the closest takes the slot outright; otherwise it has to earn it.
+        _nearestBody = incumbent is null || (challenger is not null
+            && NearestRule.UnseatsSquared(incumbentDistSq, minDistanceSq))
+            ? challenger ?? incumbent
+            : incumbent;
+
         if (_nearestBody is not null)
         {
+            _nearestBodyPosition = _ephemeris.Position(_nearestBody.Id, SimTime);
             // Same numeric derivative as the ship's initial state — can't disagree with the ephemeris.
             const double h = 1.0;
             _nearestBodyVelocity = (_ephemeris.Position(_nearestBody.Id, SimTime + h)
                                   - _ephemeris.Position(_nearestBody.Id, SimTime - h)) / (2 * h);
         }
+
+        UpdateNearestNeighbourhood();
     }
+
+    // #954 · The hierarchy the single "Nearest" slot could not hold. Owner: "present the hierarchy — Mars is
+    // closest and it contains (in its Hill sphere) The Rusty Roadstead." Two shapes qualify, and they are
+    // deliberately the SAME readout, so whichever of the pair happens to hold the slot the line reads alike:
+    //   (a) the nearest thing itself orbits a body that orbits something else — a moon or a station, never
+    //       the nonsense "Sun › Mars"; and
+    //   (b) the nearest thing IS a planet, and one of its own dockable havens is in the same breath (inside
+    //       the hysteresis band) — the very body the readout used to flip to every orbit.
+    private void UpdateNearestNeighbourhood()
+    {
+        _nearestParentName = null;
+        _nearestChildName = null;
+        _nearestHaven = null;
+
+        if (_ephemeris is null || _nearestBody is not { } near)
+        {
+            return;
+        }
+
+        if (IsDockableHaven(near))
+        {
+            _nearestHaven = near;
+        }
+
+        // (a) A satellite of a satellite-bearing body: Phobos and the Roadstead qualify, Mars does not
+        // (its parent is the sun, which orbits nothing — "Sun › Mars" is not a neighbourhood).
+        CelestialBody? parent = near.ParentId is { } pid
+            ? _ephemeris.Bodies.FirstOrDefault(b => b.Id == pid)
+            : null;
+        if (parent is { ParentId: not null })
+        {
+            _nearestParentName = parent.Name;
+            _nearestChildName = near.Name;
+            return;
+        }
+
+        // (b) The planet holds the slot — look for the haven riding beside it, close enough that neither
+        // could unseat the other. That is exactly the pair whose swap the owner watched flicker.
+        double nearDistSq = (_ship.Position - _nearestBodyPosition).LengthSquared;
+        CelestialBody? haven = null;
+        double havenDistSq = double.MaxValue;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (body.ParentId != near.Id || IsBodyHidden(body.Id) || !IsDockableHaven(body))
+            {
+                continue;
+            }
+
+            double d = (_ship.Position - _ephemeris.Position(body.Id, SimTime)).LengthSquared;
+            if (d < havenDistSq)
+            {
+                (havenDistSq, haven) = (d, body);
+            }
+        }
+
+        if (haven is not null && NearestRule.InTheSameBreathSquared(nearDistSq, havenDistSq))
+        {
+            _nearestParentName = near.Name;
+            _nearestChildName = haven.Name;
+            _nearestHaven = haven;
+        }
+    }
+
+    // The neighbourhood the nearest reading belongs to: the containing body's name and the thing inside it,
+    // or nulls when the nearest is just itself. Read by the HUD line and by the scope's AUTO sub-line.
+    private string? _nearestParentName;
+    private string? _nearestChildName;
+
+    // The dockable haven this neighbourhood offers — the nearest body itself when IT is the haven, else the
+    // one riding beside it. The ⚓ affordance hint follows this, so it no longer blinks out on the frames
+    // the planet held the slot.
+    private CelestialBody? _nearestHaven;
+
+    // The one line the "Nearest:" readout speaks — "Mars › The Rusty Roadstead" when there is a hierarchy
+    // to present, the plain name when there is not.
+    private string NearestReadoutName() =>
+        _nearestParentName is { } p && _nearestChildName is { } c
+            ? NearestRule.Hierarchy(p, c)
+            : _nearestBody?.Name ?? "";
 
     private void UpdateEffectiveWarp()
     {

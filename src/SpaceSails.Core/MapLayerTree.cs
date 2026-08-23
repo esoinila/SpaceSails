@@ -19,8 +19,12 @@ public static class MapLayerTree
 {
     public enum TriState { Off, On, Mixed }
 
-    /// <summary>One toggleable thing on the map — the atom the draw path and picker gate on.</summary>
-    public sealed record Leaf(string Key, string Label, string Icon);
+    /// <summary>One toggleable thing on the map — the atom the draw path and picker gate on.
+    /// <para><paramref name="Hint"/> is the sentence the row hovers (#963: the owner met the 🛬 beside
+    /// Ganymede and could not tell what it meant — "it should have some kind of text pop-up?"). A glyph
+    /// drawn on a canvas cannot carry a tooltip, so the LEGEND has to: the layer that draws the mark is
+    /// where its meaning is written down. Empty for the leaves whose label already says it all.</para></summary>
+    public sealed record Leaf(string Key, string Label, string Icon, string Hint = "");
 
     /// <summary>A collapsible family of leaves with a cascading tri-state parent checkbox.</summary>
     public sealed record Group(
@@ -62,7 +66,7 @@ public static class MapLayerTree
         [
             new("labels.bodies", "Body names", "🏷"),
             new("labels.minor", "Minor / depot labels", "·"),
-            new("labels.landable", "Landable marks", "🛬"),
+            new("labels.landable", "Landable marks", "🛬", "🛬 landable — a surface you can go down to: ride the shuttle to the ground. Bright when the ground is in shuttle range right now, dim when it is landable only in principle."),
         ]),
         new("finds", "Ground finds", "⛏",
         [
@@ -90,11 +94,13 @@ public static class MapLayerTree
     public static bool IsVisible(IReadOnlySet<string> hidden, string leafKey) =>
         IsPinnedLeaf(leafKey) || !hidden.Contains(leafKey);
 
-    /// <summary>The per-desk starting hidden set. The sensors chief opens on the full working sky;
-    /// every other desk starts with the trade lanes off — the clutter the owner flagged — after which
-    /// each desk remembers its own picks. (Preserves the pre-tree lanes-off default.)</summary>
+    /// <summary>The per-desk starting hidden set. The trade lanes start OFF on EVERY desk — the sensors
+    /// chief included (#953). The owner opened his sensors desk onto a sky "covered in faint lines with no
+    /// intersection": <i>"It must always be much more filtered and off by default. This is just ugly here by
+    /// default."</i> Every desk still remembers its own picks the moment it changes its mind, so the lanes
+    /// are one checkbox away — they are simply no longer the sky you are handed.</summary>
     public static HashSet<string> DefaultHidden(bool isSensorsDesk) =>
-        isSensorsDesk ? new HashSet<string>() : new HashSet<string> { "routes.lanes" };
+        new HashSet<string> { "routes.lanes" };
 
     /// <summary>Where an old flat layer key (lanes / traffic / depots / scans) lands in the tree.
     /// Not called at runtime — the hidden sets are session-scoped, never persisted — but it pins the

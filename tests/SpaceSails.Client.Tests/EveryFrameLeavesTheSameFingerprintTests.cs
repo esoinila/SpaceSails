@@ -112,6 +112,36 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// <c>Fingerprints/&lt;world&gt;.&lt;sequence&gt;.txt</c>, taken on the PRE-SPLIT code — the first twenty on
     /// commit b19ef16, the plasma world's four on 04bb219, and the warp slider's six on the commit that put
     /// the unsplit method back in the tree to capture them.
+    ///
+    /// <para><b>#618 · ALL THIRTY WERE RE-RECORDED, AND IT IS THE STATE-SHAPE KIND OF CHANGE — the third kind
+    /// <c>EveryRoundFingerprintsTheSameTests</c> names, and the same proof.</b> The sweep walks the page's
+    /// fields and RENDERS each one whole, so a member added to a collaborator the page holds — here the
+    /// round's three for #618 (<c>LookingIntoIt</c>, <c>TheNoise</c>, <c>ShotsAnswered</c>) — moves the
+    /// sweep's hash on every row, in worlds that have no round on the floor at all and never fire anything.
+    /// The field COUNT is unmoved at 657, because it counts <c>Map</c>'s own fields and #905's ratchet is
+    /// untouched: no field was added to the page.</para>
+    ///
+    /// <para>It was proved a state change and not a behaviour change the only honest way, using this file's
+    /// own <c>SPACESAILS_SWEEP_DUMP</c> hook: the whole sweep was dumped on the base (d1fbc0c) and on this
+    /// lane and the sixty texts compared line by line. All thirty have the same line count either way, and on
+    /// every one of them <b>exactly one line differs — <c>_patrol=</c> — and nothing in it was REMOVED or
+    /// CHANGED</b>: the only difference is five tokens added, <c>LookingIntoIt=∅</c>, <c>TheNoise=(0, 0)</c>
+    /// and <c>ShotsAnswered=0</c>, every one at its default, because no world here fires a gun. Every other
+    /// field of the round, every guard, the escort, the wallet and the whole rest of the page are
+    /// byte-identical, and so are the ledger, the pen and the canvas buffer on all thirty rows — the diff of
+    /// the committed texts is 30 files, one line each, and that line is the sweep's hash.</para>
+    ///
+    /// <para><b>If any of these ever moves again, that is not this lane's kind of change either, and the same
+    /// dump-and-diff is what settles it.</b></para>
+    ///
+    /// <para><b>#969 · ALL THIRTY WERE RE-RECORDED AGAIN, and this time the field COUNT itself moved — 663 →
+    /// 664.</b> That is the honest signature of what #969 did: one field was added to the page,
+    /// <c>_armedArrivalPassSimTime</c>, the pass epoch an arrival ARMED AT PLAN TIME was rehearsed for. It is
+    /// the whole of the new state (no forked autopilot), and every world here has it at its default
+    /// <c>null</c>, because none of them arms an arrival. The diff of the committed texts is again 30 files,
+    /// one line each, and that line is the sweep's — the ledger, the pen, the canvas buffer, the call counts
+    /// and every other row are byte-identical, which is exactly the claim: the frame's BEHAVIOUR is
+    /// unchanged, only the shape of the state it sweeps.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]
@@ -432,7 +462,6 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         // field typed to the sealed CanvasRenderer); every walked view paints into the recording one.
         Set(map, "_renderer", new CanvasRenderer("fingerprint-canvas"));
         Set(map, "_deckView", new DeckView(pen));
-        Set(map, "_fpView", new FirstPersonView(pen));
 
         Invoke(map, "ReprojectTrajectory");
 
@@ -440,7 +469,6 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         {
             case World.HerOwnDeckInFlight:
                 Set(map, "_deckMode", true);
-                Set(map, "_fpMode", false);
                 Set(map, "Warp", 1000);      // so the near-body caps and the adaptive quanta are both live
                 break;
 
@@ -460,13 +488,11 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
             case World.TheMapFrameInFlight:
                 Set(map, "_deckMode", false);
-                Set(map, "_fpMode", false);
                 Set(map, "Warp", 100);
                 break;
 
             case World.TheElectricUniverse:
                 Set(map, "_deckMode", true);
-                Set(map, "_fpMode", false);
                 Set(map, "Warp", 1000);
                 // The contactor RUNNING is the whole point of this world. Every other world here is a
                 // Newtonian scenario, where AdvanceChargeSystems is one early return — so without this the
@@ -501,7 +527,6 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
         Invoke(map, "RebuildSurfaceDeck");
 
         // The round, laid the one way the game ever lays it — off the lift ride, never off a deck
@@ -652,8 +677,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         // The world and its integrators — constant for the whole run, and enormous.
         nameof(ICelestialEphemeris), "CircularOrbitEphemeris", nameof(Simulator),
         // The pen and the views — fingerprinted separately, as the pen.
-        nameof(CanvasRenderer), nameof(DeckView), nameof(FirstPersonView), nameof(ShuttleFlightView),
-        nameof(ScopeView),
+        nameof(CanvasRenderer), nameof(DeckView), nameof(ShuttleFlightView), nameof(ScopeView),
         // Browser/framework plumbing that has no state of the frame's in it.
         "HttpClient", "NavigationManager", "IJSRuntime", "ElementReference",
         "CancellationTokenSource", "CancellationToken",

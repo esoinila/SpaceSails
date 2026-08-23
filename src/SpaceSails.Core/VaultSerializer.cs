@@ -72,6 +72,7 @@ public static class VaultSerializer
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
+    private const string SecLogbook = "logbook";        // #948 · the captain's name, the title, the note
 
     /// <summary>Serialize a vault to its on-disk JSON string (envelope + checksum). Only non-null
     /// sections are written, so the file is exactly as large as the pirate's life is rich.</summary>
@@ -101,6 +102,7 @@ public static class VaultSerializer
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
+        AddSection(sections, SecLogbook, vault.Logbook);
 
         // Build the payload (everything the checksum protects), hash it, THEN stamp the checksum in.
         var envelope = new JsonObject
@@ -114,6 +116,68 @@ public static class VaultSerializer
         envelope["checksum"] = checksum;
 
         return envelope.ToJsonString(WireOptions);
+    }
+
+    /// <summary>
+    /// #948 · WRITE THE PAGE ONTO A SAVE THAT IS ALREADY BANKED — and touch nothing else.
+    ///
+    /// <para>Editing a slot's title or note must not re-serialize the voyage. A <see cref="Load"/> then
+    /// <see cref="Save"/> round-trip would silently DROP any section this build does not know about (the
+    /// harvest is per-section and by name), so a forward-compatible file edited by an older build would come
+    /// back poorer than it went in. This is JSON surgery instead: parse the stored bytes, replace exactly the
+    /// <c>logbook</c> section, recompute the checksum over the payload as it now stands, and re-emit. Every
+    /// other section — known, unknown or unreadable — passes through untouched, and the file stays honest
+    /// (its checksum still validates, so a retitled save is not marked tampered).</para>
+    ///
+    /// <para>Returns the stored text UNCHANGED if it cannot be parsed as a save envelope — an unreadable
+    /// file is not made worse by a rename.</para>
+    /// </summary>
+    public static string StampLogbook(string json, LogbookSection logbook)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentNullException.ThrowIfNull(logbook);
+
+        JsonNode? root;
+        try
+        {
+            root = JsonNode.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return json; // not JSON at all — leave the bytes exactly as they were
+        }
+
+        if (root is not JsonObject rootObj)
+        {
+            return json;
+        }
+
+        JsonObject? sections = FindObject(rootObj, "sections");
+        if (sections is null)
+        {
+            sections = new JsonObject();
+            rootObj["sections"] = sections;
+        }
+
+        // Replace under whatever casing the file already used, so we never leave two logbook keys behind.
+        foreach (string key in sections.Select(kv => kv.Key)
+                     .Where(k => string.Equals(k, SecLogbook, StringComparison.OrdinalIgnoreCase))
+                     .ToList())
+        {
+            sections.Remove(key);
+        }
+
+        sections[SecLogbook] = JsonSerializer.SerializeToNode(logbook, WireOptions);
+
+        var payload = new JsonObject
+        {
+            ["version"] = rootObj["version"]?.DeepClone(),
+            ["savedSimTime"] = rootObj["savedSimTime"]?.DeepClone(),
+            ["sections"] = sections.DeepClone(),
+        };
+        rootObj["checksum"] = Checksum(Canonicalize(payload));
+
+        return rootObj.ToJsonString(WireOptions);
     }
 
     /// <summary>Load a vault from JSON, harvesting every section it can and flagging tampering. Never
@@ -180,6 +244,7 @@ public static class VaultSerializer
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),
+            Logbook = Harvest<LogbookSection>(sections, SecLogbook, warnings),
         };
 
         // Recompute the checksum over the payload exactly as written (raw node, unknown fields and

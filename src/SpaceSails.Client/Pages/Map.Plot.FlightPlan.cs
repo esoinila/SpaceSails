@@ -20,15 +20,56 @@ namespace SpaceSails.Client.Pages;
 // Subject: part of Map.Plot (#870 split; the header note lives in Map.Plot.cs) — the flight-plan board: how many steps and which one is being flown, the glance line, the accordion, the NOW/next banner rows, and the burn epochs #261's skip test reads.
 public partial class Map
 {
-    // Live flight-plan steps: non-stale burns still on the board plus the armed insertion, if any.
+    // #952 — THE PLAN ENDS SOMEWHERE, AND ONE ROW SAYS SO. When the arrive step names the very body the
+    // autopilot is armed for, the two are ONE fact and must be ONE row (the owner's standing complaint about
+    // parallel UIs for the same thing); the arrive row wins, because it is the one that carries the pass, the
+    // ✓/✗ bit and the numbers. This predicate is the single place that decision is taken — the list, the
+    // banner queue and the step counter all read it.
+    private bool ArriveCoversArmed =>
+        _arrive is not null && _armedOrbitBodyId is not null && _arrive.BodyId == _armedOrbitBodyId;
+
+    // Live flight-plan steps: non-stale burns still on the board, the autopilot's own scheduled burns, the
+    // armed insertion, and the arrival that ends the plan.
     private int FlightPlanStepCount()
     {
-        int n = _armedOrbitBodyId is not null ? 1 : 0;
+        int n = _armedOrbitBodyId is not null && !ArriveCoversArmed ? 1 : 0;
+        if (_arrive is not null) n++;
+        n += ScheduledAutopilotBurns().Count;
         foreach (PlanNode node in _planNodes)
         {
             if (!node.Stale) n++;
         }
         return n;
+    }
+
+    // #957 — THE AUTOPILOT'S OWN BURNS ARE STEPS TOO. The owner, after the autopilot finally accepted the
+    // Roadstead: "it accepted the autopilot but it does [not] add it as navigation step to the list." The
+    // armed transfer schedule (the #146 in-well arc, and since #957 the braking step laid instead of a
+    // refusal) fires impulses at fixed epochs and had NO list presence at all — the plan the ship was
+    // actually flying was partly invisible. These are the ones still ahead, in order.
+    private IReadOnlyList<TransferPlanner.BurnStep> ScheduledAutopilotBurns()
+    {
+        if (_armedTransferSchedule is not { } schedule)
+        {
+            return [];
+        }
+
+        var ahead = new List<TransferPlanner.BurnStep>();
+        for (int i = _armedTransferBurnsFired; i < schedule.Burns.Count; i++)
+        {
+            ahead.Add(schedule.Burns[i]);
+        }
+        return ahead;
+    }
+
+    // The glance line for one of those — priced with the same OrbitRule.PulsesFor kernel ApplyTransferBurn
+    // spends with, so the row and the tank agree (#928: what it says is the CHARGED tenth).
+    private string ScheduledBurnGlanceLine(TransferPlanner.BurnStep burn)
+    {
+        int raw = OrbitRule.PulsesFor(burn.DeltaV.Length, _ship.Velocity.Length);
+        int charged = AutopilotRehearsal.ChargeForBurn(_armedSpentPulses, raw);
+        string when = burn.SimTime <= SimTime ? "now" : $"in {FormatDuration(burn.SimTime - SimTime)}";
+        return $"🛑 autopilot burn {ArrivalStepRule.FormatSpeed(burn.DeltaV.Length)} · ≈{charged} p · {when}";
     }
 
     // 1-based index of the step being worked now: the earliest pending burn, or the insertion when the
@@ -129,10 +170,21 @@ public partial class Map
             steps.Add(new FlightPlanStep(BurnStepLabel(node), $"in {FormatDuration(node.SimTime - SimTime)}", FlightStepState.Planned));
         }
 
+        // #957: the autopilot's own scheduled burns — the in-well transfer arc, or the braking step it laid
+        // instead of refusing. They fire at fixed epochs whether or not anything names them, so they are
+        // named.
+        foreach (TransferPlanner.BurnStep burn in ScheduledAutopilotBurns())
+        {
+            steps.Add(new FlightPlanStep(
+                ScheduledBurnGlanceLine(burn),
+                burn.SimTime > SimTime ? $"in {FormatDuration(burn.SimTime - SimTime)}" : "now",
+                FlightStepState.Armed));
+        }
+
         // The armed orbit-insert — named in plain language ("will it orbit or crash?" → it says so),
         // with the parked altitude when we know it, and the insertion's Armed/Active step state. Only
         // while still FLYING to it — once the park is kept there is no insertion step pending (Friday §0).
-        if (_armedOrbitBodyId is not null && !_orbitKept)
+        if (_armedOrbitBodyId is not null && !_orbitKept && !ArriveCoversArmed)
         {
             string eta = ArmedInsertionSimTime is { } t ? $"in {FormatDuration(t - SimTime)}" : "at window";
             // #204: a μ=0 station is never orbit-inserted — the plan's final step is the ⚓ dock. For an
@@ -145,6 +197,35 @@ public partial class Map
                 : InsertStepLabel();
             steps.Add(new FlightPlanStep(
                 label, eta, FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach)));
+        }
+
+        // #952 THE CHERRY ON TOP: the arrival that ends the plan, carried into the banner queue with its
+        // valid/invalid bit. An INVALID arrival speaks its whole sentence here — distance and relative
+        // speed against the real thresholds — because the banner is where a captain who is not looking at
+        // the Nav desk will read that his plan no longer ends safely.
+        if (_arrive is { } arrive)
+        {
+            ArrivalStepRule.ArrivalCheck? check = ArriveCheck();
+            // #969: an arrival ARMED AT PLAN TIME is the last step of a finished trip, and the banner says
+            // so in those words — "🛰 arrive Mars — the autopilot inserts", "in 9 mo". The ✓/✗ verdict stays
+            // the row's business; up here the captain who is nowhere near the Nav desk wants to read WHO
+            // finishes the trip, and that nothing is owed until then.
+            string label = ArriveCoversArmed && ArmedArrivalStillAhead
+                ? ArrivalStepRule.ArmedThenLabel(arrive.Kind, BodyName(arrive.BodyId))
+                : check is { } c
+                ? (c.Valid
+                    ? $"{(arrive.Kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} {ArrivalStepRule.Verb(arrive.Kind)} at {BodyName(arrive.BodyId)} ✓"
+                    : ArrivalStepRule.Verdict(c))
+                : $"{(arrive.Kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} {ArrivalStepRule.Verb(arrive.Kind)} at {BodyName(arrive.BodyId)}";
+            string arriveEta = ArrivePassFor(arrive.BodyId) is { } ap && ap.SimTime > SimTime
+                ? $"in {FormatDuration(ap.SimTime - SimTime)}"
+                : "at the pass";
+            steps.Add(new FlightPlanStep(
+                label,
+                arriveEta,
+                ArriveCoversArmed
+                    ? FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach)
+                    : FlightStepState.Planned));
         }
 
         // Friday §0 (owner ruling): the kept-orbit NOW line, composed HERE and fed through main's

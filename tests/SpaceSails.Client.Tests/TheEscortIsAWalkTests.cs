@@ -615,9 +615,26 @@ public sealed class TheEscortIsAWalkTests
         Assert.DoesNotContain("TheRoundStopsAtYou(", sighting, StringComparison.Ordinal);
 
         string walkUp = Between(patrol, "private void WalkUpToTheCaptain(", "private void GiveUpTheHail(");
-        Assert.Contains("PatrolBeat.AtCardReach(g.X, g.Y, _host.AvatarX, _host.AvatarY)", walkUp, StringComparison.Ordinal);
+
+        // #618 · THE DESTINATION IS A NAMED PAIR NOW, and the clause is the same clause. A man may be crossing
+        // the floor to a PLACE — where a gun went off — instead of to a person, so the reach is asked of a
+        // destination; and that destination is the captain on every road but that one, spelled out here so a
+        // lane which quietly widened it to something else has to come through this line.
+        Assert.Contains("bool toTheNoise = ReferenceEquals(g, LookingIntoIt);", walkUp, StringComparison.Ordinal);
+        Assert.Contains("double toX = toTheNoise ? TheNoise.X : _host.AvatarX;", walkUp, StringComparison.Ordinal);
+        Assert.Contains("double toY = toTheNoise ? TheNoise.Y : _host.AvatarY;", walkUp, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.AtCardReach(g.X, g.Y, toX, toY)", walkUp, StringComparison.Ordinal);
         Assert.Contains("TheRoundStopsAtYou(ex, g);", walkUp, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.StillComing(", walkUp, StringComparison.Ordinal);
+
+        // …and arriving at a NOISE may never raise the card: that arm returns ABOVE the read, so a man who
+        // walked over to a hole in a hasp does not inspect the papers of whoever is not standing beside it.
+        int atTheNoise = walkUp.IndexOf("TheNoiseWasNothing(g);", StringComparison.Ordinal);
+        int theCard = walkUp.IndexOf("TheRoundStopsAtYou(ex, g);", StringComparison.Ordinal);
+        Assert.True(
+            atTheNoise >= 0 && atTheNoise < theCard,
+            "the walk to a bang no longer returns above the read — a man who arrived at a PLACE would raise "
+            + "a challenge at whatever happened to be the destination.");
 
         // …and there is exactly ONE road to the card in the whole file, so it cannot be raised from anywhere
         // that has not asked how far away he is.

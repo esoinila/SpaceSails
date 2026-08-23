@@ -38,8 +38,8 @@ the traffic           = [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, 
 the hunters           = []
 the ordnance          = []
 the ghost             = ∅
-the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5025 chars, sha256 c125611d102db063
+the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5129 chars, sha256 61b3557d6beb2277
 the pulse cooldown    = -1
-sweep                 = 657 fields, sha256 5769587cfae38fe1d9fd79045706e9e6d75afdac6276d1bae52be5cb578dec44
-walked-view pen       = 211441 calls, sha256 125aa2c0c9ff272fc4ee89eeec14a5c891e5142b65295ae0af8c5eb098225026
+sweep                 = 672 fields, sha256 53bdcc259c2e957633f2832056d78f38c2f74863311483d767ff6481f8b64f77
+walked-view pen       = 211441 calls, sha256 301aa7f978cd325f3c36269e5a6f05ec2a05b9d40efda745575a13b98e9ee0fd
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

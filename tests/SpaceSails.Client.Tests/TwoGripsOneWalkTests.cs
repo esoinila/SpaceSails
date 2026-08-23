@@ -35,8 +35,8 @@ namespace SpaceSails.Client.Tests;
 /// <para><c>Map.Deck.TheCaptainsLegsAreTheirOwn</c> — <c>_deckMode &amp;&amp; !CaptainIsUnderEscort</c> —
 /// asked by <c>HandleDeckKey</c>'s WASD case and by <c>ClickToWalkAt</c>, and by nothing else. The click
 /// grip's one extra question is <c>ADeckClickIsAPlaceOnTheFloor</c>, and it is about the CANVAS (is that
-/// pixel a floor or the ecliptic?) rather than about the walk: first person is tank controls with no floor
-/// drawn to point at, and that is the only term in the game that separates the two grips.</para>
+/// pixel a floor or the ecliptic?) rather than about the walk. Since #958 removed the walk-in view that was
+/// the other term in it, that question is <c>_deckMode</c> and nothing else.</para>
 ///
 /// <h3>Why these are driven</h3>
 ///
@@ -190,54 +190,6 @@ public sealed class TwoGripsOneWalkTests
         }
 
         static string Said(Answer a) => a.Said is null ? "nothing" : $"\"{a.Said}\"";
-    }
-
-    /// <summary>
-    /// #875 · …and the ONE place the grips are allowed to differ, named so that nobody quietly widens it.
-    ///
-    /// <para>In first person the arrow keys are tank controls and there is no deck drawn to point at, so the
-    /// pointer is not a walk order there — a fact about the VIEW. The walk law itself must not mention it:
-    /// a first-person term inside <c>TheCaptainsLegsAreTheirOwn</c> would take the keys away from the very
-    /// mode that steers with them.</para>
-    ///
-    /// <para><b>Proven RED</b> by moving the view term into the walk law — <c>TheCaptainsLegsAreTheirOwn</c>
-    /// given <c>&amp;&amp; !_fpMode</c>, which is what the old <c>AutoWalkAvailable</c> mixed in and what
-    /// anybody "unifying" the two grips by copying that old property reaches for first:</para>
-    /// <code>
-    /// Failed …TwoGripsOneWalkTests.FirstPersonIsTheOnlyThingThatSeparatesTheGrips [207 ms]
-    ///   Error Message:
-    ///    first person has taken the captain's legs. It is a camera, not a hold: W and S walk along the view
-    ///    direction there and A and D turn — a walk law that refuses in first person refuses the only grip
-    ///    that mode has.
-    /// </code>
-    /// </summary>
-    [Fact]
-    public void FirstPersonIsTheOnlyThingThatSeparatesTheGrips()
-    {
-        Pages.Map map = OnTheFloor();
-        StandOnTheFloor(map);
-        Invoke(map, "ToggleFirstPerson");
-        Assert.True((bool)Get(map, "_fpMode")!, "the component did not go into first person at all.");
-
-        Assert.True((bool)Get(map, "TheCaptainsLegsAreTheirOwn")!,
-            "first person has taken the captain's legs. It is a camera, not a hold: W and S walk along the "
-            + "view direction there and A and D turn — a walk law that refuses in first person refuses the "
-            + "only grip that mode has.");
-        Assert.False((bool)Get(map, "ADeckClickIsAPlaceOnTheFloor")!,
-            "a click is still being treated as a place on the floor in first person, where no floor is "
-            + "drawn — the pixel under that pointer is a wall, a window or the sky.");
-
-        // And the keys really do still walk him, so the sentence above is about a real mode.
-        (double x0, double y0) = Where(map);
-        Invoke(map, "HandleDeckKey", "w");
-        for (int frame = 0; frame < 60; frame++)
-        {
-            Invoke(map, "MoveAvatar", 1.0 / 60.0);
-        }
-        (double x1, double y1) = Where(map);
-        Assert.True(Math.Abs(x1 - x0) + Math.Abs(y1 - y0) > WalkedDu,
-            "W in first person walked nobody anywhere — this guard is asserting about a mode that does not "
-            + "work, and could not tell the split it exists to measure.");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -462,7 +414,6 @@ public sealed class TwoGripsOneWalkTests
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
-        Set(map, "_fpMode", false);
 
         Invoke(map, "RebuildSurfaceDeck");
         return map;

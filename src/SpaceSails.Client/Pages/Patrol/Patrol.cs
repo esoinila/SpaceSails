@@ -139,6 +139,36 @@ public sealed partial class Map
         /// surface, where nothing else in this file runs, and one rebuild takes it away again.</summary>
         public double KickedOutPlateFor { get; set; }
 
+        // ── #618 · A SHOT IS HEARD, AS STATE ──────────────────────────────────────────────────────────────
+        //
+        // Three small members and no fourth. They are here rather than on a Guard on purpose and the reason is
+        // not tidiness: #906's transcript writes down EVERY field of every guard after every frame of thirteen
+        // rounds, so a field on the man would move all thirteen pinned digests for cases that have no shot in
+        // them at all — a re-pin the shape of a behaviour change, which is exactly the thing those digests exist
+        // to make somebody look at. Whose errand it is IS a fact about the round (the escort is held the same
+        // way, by reference, and for the same reason), so it lives with the round.
+
+        /// <summary>#618 · The one man who has heard a gun go off and is walking over to where it came from, or
+        /// null. He is an ordinary <see cref="Guard.WalkingUp"/> while it lasts — the walk to a bang and the walk
+        /// to a person are the same man doing the same walk — and this reference is the whole of the difference:
+        /// it says where he is walking TO.</summary>
+        public Guard? LookingIntoIt { get; set; }
+
+        /// <summary>#618 · Where the round it came from landed, off the shot's own record
+        /// (<see cref="GunfireHeard.Shot"/>) and never re-derived. It is the thing on the floor with a hole in
+        /// it, which is what a man walking over is walking over to look at.</summary>
+        public (double X, double Y) TheNoise { get; set; }
+
+        /// <summary>#618 · How many shots on this ground the round has already answered — a cursor into the
+        /// excursion's own append-only ledger, so one bang is answered once and a floor cannot be made to walk
+        /// its backlog.
+        ///
+        /// <para>It is brought UP to the ledger's length when a floor is entered rather than zeroed, and that is
+        /// the whole of "a shot on another floor is not heard here": the men on B5 are not owed an errand about
+        /// a door on B3, and the shot's own coordinates are floor coordinates that would happily be in range of
+        /// somebody two levels down.</para></summary>
+        public int ShotsAnswered { get; set; }
+
         // ── #836 · THE FLETCH WALLET, AS STATE ────────────────────────────────────────────────────────────
         //
         // Owner, evening playtest 2026-08-11: "I think I should be able to pick the badge I show the guard...

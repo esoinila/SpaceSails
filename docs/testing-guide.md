@@ -200,7 +200,7 @@ enabled/disabled incorrectly relative to your credits.
 
 ---
 
-## 10. Deck walk, rum wobble, first person
+## 10. Deck walk, rum wobble
 
 *(See [deck-view.md](features/deck-view.md).)*
 
@@ -213,12 +213,12 @@ enabled/disabled incorrectly relative to your credits.
    movement direction visibly wobbles for about 25 seconds.
 5. Confirm you can still walk and interact normally during the wobble (it's cosmetic, not a
    lockout).
-6. Press `F`. Confirm the view switches to first-person, with a real sky visible through the
-   windows (sun and planets at their correct positions/sizes).
-7. Press `Q`. Confirm you're returned to the helm view (map/plot), not just the deck plan.
+6. Press `Q`. Confirm you're returned to the helm view (map/plot), not just the deck plan.
+7. Press `F`. Confirm **nothing happens** — the walk-in view it opened was removed (#958) and the
+   key was deliberately left unbound rather than remapped.
 
 **Broken looks like:** no wobble after 3 rapid tots, wobble blocking interaction entirely, or `F`
-not producing a real (ephemeris-matched) sky.
+doing something.
 
 ---
 
@@ -367,8 +367,10 @@ never appearing on the traffic board, or laser ranging not marking the target aw
 
 *(See [war-room.md](features/war-room.md).)*
 
-1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range (2×10⁸ m —
-   tighter than the boarding capture envelope). Press `3` (or click **3 War room** in the station
+1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range
+   (7.128×10⁸ m — the mass driver's 66 km/s over a three-hour engagement horizon, and WIDER
+   than both the boarding capture envelope and a hunter's catch radius, per the owner's
+   #961/#962 ruling). Press `3` (or click **3 War room** in the station
    tab bar) to open the War room desk — full-screen as of PR-13, the tactical circle filling the
    left ~60% of the screen with a range-scale selector above it and the heat gauge blown up large
    in its bottom-left corner.

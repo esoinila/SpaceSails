@@ -61,7 +61,14 @@ public partial class Map
         Paused = !Paused;
     }
 
-    private void ToggleFollow() => FollowShip = !FollowShip;
+    private void ToggleFollow()
+    {
+        FollowShip = !FollowShip;
+        if (FollowShip)
+        {
+            _followDest = false; // #956: one camera, one thing to follow
+        }
+    }
 
     private void OnWheel(WheelEventArgs e)
     {
@@ -98,7 +105,7 @@ public partial class Map
 
         // A click that only dismisses an open menu must not immediately open the next one.
         _suppressClickMenu = _bodyMenuBody is not null || _shipMenuId is not null
-            || _corridorMenuLane is not null || _skyMenuWorld is not null || _pickMenu is not null;
+            || _skyMenuWorld is not null || _pickMenu is not null;
 
         if (_bodyMenuBody is not null)
         {
@@ -108,11 +115,6 @@ public partial class Map
         if (_shipMenuId is not null)
         {
             CloseShipMenu(); // same rule for the contact menu
-        }
-
-        if (_corridorMenuLane is not null)
-        {
-            CloseCorridorMenu();
         }
 
         if (_skyMenuWorld is not null)
@@ -170,8 +172,8 @@ public partial class Map
         }
 
         // In the top-down deck view the drag moves the DECK plan (its bow hides under the HUD
-        // panel otherwise); in first person and on the map it pans the camera as before.
-        if (_deckMode && !_fpMode)
+        // panel otherwise); on the map it pans the camera as before.
+        if (_deckMode)
         {
             _deckPanX += dx;
             _deckPanY += dy;
@@ -180,6 +182,7 @@ public partial class Map
 
         _camera.PanByPixels(dx, dy);
         FollowShip = false; // manual pan disengages follow-ship, same as most space-game maps.
+        _followDest = false; // …and follow-destination with it (#956): a hand on the map outranks both.
     }
 
     private void OnPointerUp(PointerEventArgs e)
@@ -203,31 +206,29 @@ public partial class Map
             return;
         }
 
-        // Near-miss forgiveness + the owner's rule that a lane is the LEAST likely meaning
-        // near anything else: gather what sits within the loose radius; the lane and the
-        // empty-sky scan join the chooser at the bottom.
+        // Near-miss forgiveness: gather what sits within the loose radius; the empty-sky scan joins the
+        // chooser at the bottom.
+        //
+        // #953 · A WHOLE LANE IS NOT A THING YOU CAN PICK ANY MORE. It used to be — a click near a corridor
+        // offered the corridor itself — and the owner's ruling is that this was never worth an entry in the
+        // chooser: "At least the routes as a whole should not even be selectable, since they just colour the
+        // page in that option. We could have the A⇒B pairs as selectable here instead. That ship lanes
+        // feature needs re-design." The redesign is a separate ruling; what happens NOW is that the lane
+        // stops answering clicks, so a click near one means the thing you were actually aiming at.
         List<PickCandidate> near = CollectPointCandidates(e.OffsetX, e.OffsetY, PickNearRadiusPx);
-        CorridorRegion? lane = LayerVisible("routes.lanes") ? CorridorAt(e.OffsetX, e.OffsetY) : null; // #405 Routes → Trade lanes
         if (near.Count == 0)
         {
-            if (lane is { } directLane)
-            {
-                OpenCorridorMenuFor(CorridorKey(directLane), e.OffsetX, e.OffsetY);
-                return;
-            }
-
             OpenSkyMenu(e.OffsetX, e.OffsetY);
             return;
-        }
-
-        if (lane is { } nearLane)
-        {
-            near.Add(new PickCandidate('C', CorridorKey(nearLane), nearLane.Name, "🛣"));
         }
 
         near.Add(new PickCandidate('K', "", "scan this patch of sky", "🔭"));
         OpenPickMenu(near, e.OffsetX, e.OffsetY);
     }
 
-    private void CenterShipOnMap() => FollowShip = true;
+    private void CenterShipOnMap()
+    {
+        FollowShip = true;
+        _followDest = false; // #956: centring on the ship is the other follow standing down
+    }
 }

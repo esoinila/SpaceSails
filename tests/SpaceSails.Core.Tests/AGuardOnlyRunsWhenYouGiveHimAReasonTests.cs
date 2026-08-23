@@ -33,6 +33,14 @@ public sealed class AGuardOnlyRunsWhenYouGiveHimAReasonTests
     /// There is no member of <see cref="PatrolBeat.Provocation"/> that means "he saw you", because seeing you
     /// is what buys a hail; and <see cref="PatrolBeat.EarnsIt"/> is the single gate every road has to come
     /// through.
+    ///
+    /// <para><b>#618 · THE ENUM GREW A FIFTH, AND IT IS THE FIRST ONE THAT DOES NOT RUN.</b> A gun going off
+    /// within earshot takes a man off his round to come and LOOK at where it came from — and it may never buy
+    /// anything above that, because nobody watched the captain do it and a run ends in a hand on your arm and
+    /// a card that names a reason. So the one gate became two, and the pair of them PARTITION the list: this
+    /// fact walks every member and asserts each is a run, or a look, or (only <c>None</c>) neither, and never
+    /// two of those. RED both ways — by leaving <see cref="PatrolBeat.EarnsIt"/> its old <c>why != None</c>
+    /// body, and by letting <see cref="PatrolBeat.EarnsALook"/> answer true for <c>SeenAtTheHasp</c> too.</para>
     /// </summary>
     [Fact]
     public void NothingButAThingYouDidEverStartsARun()
@@ -40,21 +48,37 @@ public sealed class AGuardOnlyRunsWhenYouGiveHimAReasonTests
         // The catalog is what it says it is — a sweep over a list nobody pinned is a green test that asserts
         // nothing, and this list growing quietly is precisely how "earned" would rot into "ambient".
         PatrolBeat.Provocation[] all = Enum.GetValues<PatrolBeat.Provocation>();
-        Assert.Equal(4, all.Length);
+        Assert.Equal(5, all.Length);
 
         Assert.False(PatrolBeat.EarnsIt(PatrolBeat.Provocation.None),
             "the default earned a run, which is the law this issue did NOT reverse.");
+        Assert.False(PatrolBeat.EarnsALook(PatrolBeat.Provocation.None),
+            "the default earned a walk over, which is the same law one rung down.");
         Assert.Equal(0, (int)PatrolBeat.Provocation.None);
 
         foreach (PatrolBeat.Provocation why in all)
         {
-            Assert.Equal(why != PatrolBeat.Provocation.None, PatrolBeat.EarnsIt(why));
+            bool run = why is PatrolBeat.Provocation.WalkedAwayTwice
+                            or PatrolBeat.Provocation.SeenAtTheHasp
+                            or PatrolBeat.Provocation.BookedTooManyTimes;
+            bool look = why is PatrolBeat.Provocation.GunfireHeard;
+
+            Assert.Equal(run, PatrolBeat.EarnsIt(why));
+            Assert.Equal(look, PatrolBeat.EarnsALook(why));
+
+            // …and the two gates PARTITION it. Nothing is both — a noise that could also buy a run would be
+            // the floor-wide hunt #835 deliberately did not build — and only None is neither.
+            Assert.False(run && look, $"{why} both starts a run and buys a walk over.");
+            Assert.Equal(why == PatrolBeat.Provocation.None, !run && !look);
         }
 
-        // …and every one of the three names a thing the captain chose to do.
+        // …and every one of the three that RUNS names a thing the captain chose to do.
         Assert.Contains(PatrolBeat.Provocation.WalkedAwayTwice, all);
         Assert.Contains(PatrolBeat.Provocation.SeenAtTheHasp, all);
         Assert.Contains(PatrolBeat.Provocation.BookedTooManyTimes, all);
+
+        // #618 · …and the fourth is the one that does not, and is not about the captain at all.
+        Assert.Contains(PatrolBeat.Provocation.GunfireHeard, all);
     }
 
     /// <summary>
