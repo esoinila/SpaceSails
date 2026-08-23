@@ -49,7 +49,8 @@ public partial class Map
         // Re-weld at the SAME watch this visit docked at, so an opened wing appears without re-rolling the
         // seated regulars mid-dock (their rota was baked when we tied up — issue #410).
         if (_dockedHavenId is { } id
-            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce) is { } complex)
+            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
+                                        FillBarWalkerDroids) is { } complex)
         {
             _deckPlan = complex;
         }
@@ -73,8 +74,12 @@ public partial class Map
     private void SetDeckForDock(string? havenId)
     {
         _dockVisitSimTime = SimTime; // freeze the watch this docking sees the bar on (issue #410 rota)
+        // #973 L0 · …and the bar's own feet go with the berth. Cast off and the people who were crossing that
+        // room are people who are not here: the same law a turned shift keeps underground.
+        ForgetTheBarsFeet(havenId);
         if (havenId is { } id
-            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce) is { } complex)
+            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
+                                        FillBarWalkerDroids) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";

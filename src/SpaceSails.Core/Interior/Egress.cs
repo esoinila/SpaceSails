@@ -60,6 +60,22 @@ public static class Egress
     /// somebody coming.</para></summary>
     public const int MostAtOnce = 2;
 
+    /// <summary>
+    /// #973 L0 · HOW MANY FIGURE SLOTS A ROOM WITH A METABOLISM NEEDS — the room's own law
+    /// (<see cref="MostAtOnce"/>) plus the visitors who are not the room's people.
+    ///
+    /// <para>Stated ONCE, here, because two rooms now ask it: the Hive's canteen floor and a docked station's
+    /// bar. Two constants for one fact is this repository's oldest bug class, and it has already thrown twice
+    /// on exactly this number — <c>DeckPlan.MaxDroids</c> lagged the walker band and fifteen frame fingerprints
+    /// came back with an <c>IndexOutOfRangeException</c>, once on #731 and again on #973 L2. A third room may
+    /// not be allowed to invent a third arithmetic.</para>
+    ///
+    /// <para>The visitor is <see cref="NebulaRep.OnTheFloorAtOnce"/> and not a number of its own for the same
+    /// reason: <see cref="MostAtOnce"/> is a law about REGULARS, satisfied constantly on a heaving watch, and
+    /// a salesman sharing that allowance is a salesman who never gets on the floor at all.</para>
+    /// </summary>
+    public const int BandSlots = MostAtOnce + NebulaRep.OnTheFloorAtOnce;
+
     /// <summary>The share of a watch that a scheduled departure may fall in, as a fraction from the start.
     ///
     /// <para>Departures are dealt into the FIRST part of the shift and never the last, for one reason: a

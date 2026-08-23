@@ -85,7 +85,7 @@ public partial class Map
         FillPatrolDroids(buffer, PatrolFirstSlot);
         // #731 · …and the people who are leaving, or who have come out of a door to sit at your table. Their
         // own band after the rounds, drawn with the ordinary NPC pen because they are ordinary people.
-        FillWalkerDroids(buffer, WalkerFirstSlot);
+        FillWalkerDroids(buffer, WalkerFirstSlot, _surface?.Walkers ?? []);
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
