@@ -323,6 +323,9 @@ public static class DevStarts
         new("🍸", "The Rusty Roadstead",
             "Clamped on at the bar with the regulars at the tables — drinks, contacts, the barkeep, and the station Oracle ranting in the corner.",
             "/map?dock=the-space-bar"),
+        new("🪞", "You look different",
+            "Ashore at the bar with the four who served with you working this berth and one captain already in the ground — the face scene, the photograph, and the three modifiers an old shipmate puts on a glass (#973 L5a).",
+            "/map?oldcrew=1"),
 
         // --- Set pieces --------------------------------------------------------------------------------
         // #777 · THE HAIL, AND IT IS COUNTED NOW. ?death=collector has existed since #621 with only a row in

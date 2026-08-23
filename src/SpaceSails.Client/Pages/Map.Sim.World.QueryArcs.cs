@@ -286,6 +286,19 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
             q.AshoreCheat = candidate is "1" or "true" or "yes";
         }
+        else if (pair.StartsWith("oldcrew=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #973 L5a dev cheat: /map?oldcrew=1 boots ashore (default The Space Bar, override with ?dock=)
+            // with the four shipmates this universe cast working THIS berth, and with one captain already
+            // buried — so the face scene, the photograph and the three named drink modifiers are all one URL
+            // away instead of one death and four voyages away.
+            //
+            // The same seat idiom as ?kaamos=holder / ?oracle=1 / ?nebula=adjuster, and the same discipline:
+            // it grants no sheet, writes no crossing and answers nothing. It hands you the people and the
+            // fact that your face is new, and every word after that is played.
+            string candidate = Uri.UnescapeDataString(pair["oldcrew=".Length..]).ToLowerInvariant();
+            q.OldCrewCheat = candidate is "1" or "true" or "yes";
+        }
         else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))
         {
             // #428 dev cheat: /map?nerve=N seeds the nerve gauge at boot at N WHOLE PIPS — the same ten
