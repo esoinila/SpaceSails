@@ -189,10 +189,6 @@ public partial class Map
         return ShovedOffTheClamp(_ship, _ephemeris.Position(haven, _ship.SimTime));
     }
 
-    /// <summary>The haven a pending cast-off leaves from, for the rows and the banner.</summary>
-    private string CastOffHavenName() =>
-        PendingUndockStep()?.HavenId is { } id ? BodyName(id) : _havenName;
-
     // ===== The rows =====
 
     /// <summary>The collapsed glance line for a departure step — the same shape as
@@ -209,6 +205,17 @@ public partial class Map
 
     private string HavenNameOf(PlanNode node) => node.HavenId is { } id ? BodyName(id) : "the berth";
 
+    /// <summary>The clearance row's honest clock: how long, at the speed the harbour's law set, until the
+    /// berth is behind her from where she is standing now. Said in the same words every other countdown in
+    /// the plan is said in.</summary>
+    private string ClearanceEtaLine(PlanNode node)
+    {
+        double seconds = CastOffRule.SecondsToClear(SeparationFromHarbour(node));
+        return seconds <= 0
+            ? "the harbour is already behind her"
+            : $"≈{FormatDuration(seconds)} to clear from here";
+    }
+
     /// <summary>How far the harbour is behind her right now — what the clearance row explains itself
     /// with. Measured from the haven the step belongs to, live.</summary>
     private double SeparationFromHarbour(PlanNode node)
@@ -223,9 +230,9 @@ public partial class Map
     // ===== The executor =====
 
     /// <summary>
-    /// The next ⚓ Undock step the loop must land on: pending, and due at or before this epoch is reached.
-    /// Only the undock needs this — the clearance is an ordinary Vector node and the plan executor fires it
-    /// like any other burn, which is exactly why it was built as one.
+    /// The ⚓ Undock step the frame loop must land on, or null when the plan has none pending. Only the
+    /// undock needs this — the clearance is an ordinary Vector node and the plan executor fires it like any
+    /// other burn, which is exactly why it was built as one.
     /// </summary>
     private PlanNode? NextCastOffStep() => PendingUndockStep();
 

@@ -5646,7 +5646,7 @@
                                         <div class="map-plan-step-edit map-departure-step-edit">
                                             @if (node.Kind == PlanStepKind.ClearHarbour)
                                             {
-                                                <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node))</div>
+                                                <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node)) · @ClearanceEtaLine(node)</div>
                                                 <div class="map-burn-steps" role="group" aria-label="Step the clearance thrust in pulses">
                                                     <button type="button" class="btn btn-sm btn-outline-info"
                                                             title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
