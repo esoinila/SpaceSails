@@ -81,6 +81,12 @@ public sealed class Vault
     /// seeding is for.</summary>
     public OldCrewSection? OldCrew { get; init; }
 
+    /// <summary>#973 L5b · THE WALK-INS THE SPREAD HAS FOUND OUT — which of the two women's jobs the captain
+    /// has laid beside a money-tagged slip and read the same hand off. Its own independently optional section;
+    /// a pre-#973-L5b file simply lacks it and loads with every setup card quiet, which is the truth about a
+    /// captain who never worked it out — and exactly what the card says before the SPREAD fires.</summary>
+    public WalkInSection? WalkIn { get; init; }
+
     /// <summary>#973 L5a · THE CAPTAIN'S CROSSINGS (the-captains-character.md §3). Its own independently
     /// optional section; a pre-#973 file lacks it and loads with an empty book, which is the honest state of
     /// a captain nobody ever asked about his face.</summary>
@@ -475,6 +481,18 @@ public sealed record FilingSection
 {
     /// <summary>One row per marked ledger entry, in ledger order.</summary>
     public IReadOnlyList<string> Pages { get; init; } = [];
+}
+
+/// <summary>#973 L5b · What the SPREAD has found out about a walk-in. Job ids and nothing else: the file
+/// carries the FACT (this job is a setup and the captain knows it) and never the grey line, which
+/// <see cref="WalkIn.SetupCardLine"/> rebuilds every render — the same shape <see cref="FilingSection"/> and
+/// <see cref="SatchelSection"/> use, for the same reason. A knowing is never un-known, so this list only ever
+/// grows.</summary>
+public sealed record WalkInSection
+{
+    /// <summary>One job id per walk-in the SPREAD has read the same hand off. A set on the page, so the order
+    /// this list happens to be in is not a fact about anything.</summary>
+    public IReadOnlyList<string> SetupsRevealed { get; init; } = [];
 }
 
 /// <summary>#973 L5a · THE OLD CREW's seeding. Stored as opaque row strings so the file carries the FACT

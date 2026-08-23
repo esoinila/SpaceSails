@@ -465,6 +465,9 @@ public partial class Map
             // remember writing, which have been read at already, and the hidden originals of the ones that
             // came back wrong. Opaque rows — the file carries the FACT, never the sentences.
             Filing = BuildFilingSection(),
+            // #973 L5b · which walk-ins the SPREAD has read the same hand off. Job ids only — the grey line
+            // itself is rebuilt from Core every render, so the file carries the knowing and never the words.
+            WalkIn = BuildWalkInSection(),
             // #973 L5a · the old crew: who this universe cast, the history rolled between them, and where
             // they ended up working. Opaque rows — the file carries the FACT and the book's sentences are
             // rebuilt from the pool.
@@ -1004,6 +1007,11 @@ public partial class Map
         // never re-roll one they lost, so the STATE rides the file rather than being recomputed — the roll
         // is deterministic, but the latch on a refusal is a fact about a life and not about a seed.
         RestoreFilingSection(vault.Filing);
+
+        // #973 L5b · What the SPREAD found out about a walk-in. A thing the captain has worked out about
+        // somebody does not become unknown again — least of all across a save — so the knowing rides the
+        // file rather than waiting for the player to lay the same two papers down a second time.
+        RestoreWalkInSection(vault.WalkIn);
 
         // #973 L5a · The old crew, the crossings and the held memories. A seeding that comes back short is
         // re-rolled from the thread id on first read — the roll is deterministic, so a pre-#973 save wakes
