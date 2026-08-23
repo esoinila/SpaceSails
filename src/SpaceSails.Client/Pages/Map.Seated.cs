@@ -394,7 +394,14 @@ public partial class Map
     private void KeepYourSeat() => _seating.KeepYourSeat();
 
     /// <inheritdoc cref="Seating.StandUpFromTable"/>
-    private void StandUpFromTable() => _seating.StandUpFromTable();
+    private void StandUpFromTable()
+    {
+        // #973 L3 · THE TABLE IS CLEARED BY STANDING UP. A pair laid at one seat is not a pair laid at the
+        // next one — and the SPREAD is seated-only by law, so a laid pair that outlived the chair would be
+        // state the player could not see, could not reach and could not put down.
+        ClearTheSpread();
+        _seating.StandUpFromTable();
+    }
 
     /// <inheritdoc cref="Seating.StandUpBeforeWalking"/>
     private bool StandUpBeforeWalking() => _seating.StandUpBeforeWalking();

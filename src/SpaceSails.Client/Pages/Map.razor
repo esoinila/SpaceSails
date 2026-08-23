@@ -2324,6 +2324,62 @@
                         <div class="satchel-outcome">@spreadBusy</div>
                     }
 
+                    @* ── #973 L3 · THE RECONCILE. The other verb a table full of paper is for: lay two
+                       things side by side and see whether they are talking about the same world. Every
+                       word of the three verdicts is Fable's (SpreadReconcile); this markup lays a row and
+                       prints what the table said.
+
+                       The laid pair is drawn ABOVE the papers, because it is what the captain is looking
+                       at — and the second question sits under the verdict rather than beside it, since it
+                       is a count and not a conclusion. Nothing here is disabled (#212/#603): a paper
+                       already on the table says so on its own row. *@
+                    @if (LayablePapers() is { Count: > 0 } papers)
+                    {
+                        <div class="spread-lay">
+                            <div class="satchel-sub">
+                                @SpaceSails.Core.SeatedSpread.LayThemTogetherBlurb
+                            </div>
+
+                            @if (_laid.Count > 0)
+                            {
+                                <div class="spread-laid">
+                                    @foreach (SpaceSails.Core.SpreadReconcile.Paper on in _laid)
+                                    {
+                                        <span class="spread-laid-item">@on.Label</span>
+                                    }
+                                    <button type="button" class="satchel-filter"
+                                            title="Take everything off the table"
+                                            @onclick="ClearTheSpread">✕</button>
+                                </div>
+                            }
+
+                            @if (_reconciled is { } said)
+                            {
+                                <div class="satchel-outcome spread-verdict">@said.Line</div>
+                                <div class="spread-second-question">@said.SecondQuestion</div>
+                            }
+
+                            <div class="satchel-items">
+                                @foreach (SpaceSails.Core.SpreadReconcile.Paper paper in papers)
+                                {
+                                    SpaceSails.Core.SpreadReconcile.Paper lay = paper;
+                                    <div class="satchel-row">
+                                        <button type="button" class="satchel-item spread-item"
+                                                title="@SpaceSails.Core.SeatedSpread.LayItHint"
+                                                @onclick="() => LayItOnTheSpread(lay)">
+                                            <span class="satchel-item-name">@paper.Label</span>
+                                            <span class="satchel-item-try">
+                                                @(IsLaid(paper.Id)
+                                                    ? SpaceSails.Core.SeatedSpread.AlreadyLaidWord
+                                                    : SpaceSails.Core.SeatedSpread.LayItWord)
+                                            </span>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     @if (SpreadableFinds() is { Count: > 0 } spreadable)
                     {
                         <div class="satchel-items">
@@ -2409,6 +2465,31 @@
                     @if (_satchelOutcome is { Length: > 0 } penSaid)
                     {
                         <div class="satchel-outcome">@penSaid</div>
+                    }
+
+                    @* ── #973 L3 · THE SHEETS. The other kind of evidence the book holds: not what the
+                       ground told you, but what somebody REMEMBERS. Drawn above the notes and on every
+                       reading of them, because a held memory has no ground — the photograph was taken on a
+                       boat deck that is not in this system any more, and the day you signed happened
+                       somewhere nobody wrote down.
+
+                       Each row is the text, then the one line that says whose it is, which theory it
+                       serves, who put it in your hand and the day (HeldMemory.Sheet.BookLine). The book
+                       keeps no opinion about any of it — the SPREAD is where two of them get to argue. *@
+                    @if (TheSheets() is { Count: > 0 } sheets)
+                    {
+                        <div class="satchel-sheets">
+                            @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in sheets)
+                            {
+                                <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                    <div class="held-sheet-title">
+                                        @SpaceSails.Core.HeldMemory.RowTitle(sheet)
+                                    </div>
+                                    <div class="held-sheet-text">@sheet.Text</div>
+                                    <div class="held-sheet-byline">@sheet.BookLine</div>
+                                </div>
+                            }
+                        </div>
                     }
 
                     @if (_notesView == NotesView.Everywhere)
@@ -2529,6 +2610,56 @@
                        juxtaposition and the juxtaposition is the whole argument; the captain draws the line,
                        with the same pen, and the book keeps no opinion about what it means. *@
                     <div class="satchel-sub">@SpaceSails.Core.CaseSubjects.Blurb</div>
+
+                    @* ── #973 L3 · MONEY &amp; LOVE (owner ruling §12). The detective's two theories, as a
+                       filter over the sheets that stack on this page. It never hides a NOTE: the field
+                       book's own threads have no tag to be filtered by, and a filter that silently emptied
+                       half the page would be the tab lying about what the book holds. Always lands on the
+                       whole book, because a filter that survived the lid is a captain opening their own
+                       book onto half of it and not being told why. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_bookTag is null ? "on" : "")"
+                                title="Every sheet in the book"
+                                @onclick="() => TheThreadsFilterTurnsTo(null)">🎞 every sheet</button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Money ? "on" : "")"
+                                title="Only the sheets that follow the money"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Money)">
+                            💰 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Money)
+                        </button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Love ? "on" : "")"
+                                title="Only the sheets that follow the heart"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Love)">
+                            🖤 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Love)
+                        </button>
+                    </div>
+
+                    @* The sheets, stacked by the names they write down — the photograph's four faces are
+                       four threads on the day it is handed over. Drawn above the field book's own stacks
+                       and in the same shape, because they are the same page answering the same question
+                       about two different kinds of paper. *@
+                    @if (SheetStacks() is { Count: > 0 } sheetStacks)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.HeldMemory.Stack stack in sheetStacks)
+                            {
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Sheets.Count)
+                                    </span>
+                                </div>
+                                @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in stack.Sheets)
+                                {
+                                    <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                        <div class="held-sheet-text">@sheet.Text</div>
+                                        <div class="held-sheet-byline">@sheet.BookLine</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
 
                     <div class="notebook-pen">
                         <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"

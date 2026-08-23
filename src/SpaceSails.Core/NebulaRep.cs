@@ -53,6 +53,31 @@ public static class NebulaRep
     /// </summary>
     public const string SigningMemoryId = "signing";
 
+    /// <summary>
+    /// #973 L3 · THE SIGNING, AS A SHEET IN THE BLACK BOOK. Fable's words, verbatim. L2 raised the plate and
+    /// had nowhere to put the prose (the flashback is a PLATE, and a plate carries a caption about the room,
+    /// not a paragraph about the afternoon) — so the text is a HELD MEMORY, marked <i>mine</i> and tagged
+    /// <b>money</b>, filed the first time the captain says the line out loud to a man holding the file.
+    ///
+    /// <para>Tagged money and not love on purpose: it is the only memory in the book that is about a
+    /// transaction, and the SPREAD's second question is only worth asking if the tags mean something.</para>
+    /// </summary>
+    public const string SigningMemory =
+        "A desk that was not quite level. A pen that had been chained to it. You read the first clause and "
+        + "not the second, because the clerk was tapping the counter, and you signed where the ink was "
+        + "already wet from the one before you. They gave you the small print folded, like a napkin.";
+
+    /// <summary>The one line a reborn captain's copy of that afternoon has that the first one's did not. It
+    /// is APPENDED rather than substituted — the memory did not change, it grew a sentence — which is the
+    /// whole of what a rebirth does to a page you still have.</summary>
+    public const string SigningMemoryReborn = "…and the hand that signed it was not this hand.";
+
+    /// <summary>The sheet's text for a captain who has buried <paramref name="retiredCaptains"/> of
+    /// themselves. One function, so the first life and the fourth cannot be assembled two different ways at
+    /// two different call sites.</summary>
+    public static string SigningMemoryFor(int retiredCaptains) =>
+        retiredCaptains > 0 ? $"{SigningMemory} {SigningMemoryReborn}" : SigningMemory;
+
     /// <summary>How many of him are ever on a floor. One, and it is a constant rather than a literal so the
     /// figure buffer that has to hold him and the rule that puts him there cannot disagree.</summary>
     public const int OnTheFloorAtOnce = 1;

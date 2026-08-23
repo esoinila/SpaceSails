@@ -139,11 +139,23 @@ public partial class Map
 
         if (outcome == Flashback.Outcome.Nothing)
         {
+            // #973 L3 · …UNLESS SOMETHING ELSE CAME. The rare fourth thing a grey page does is hidden inside
+            // the WORST outcome rather than beside the best one: once in four nothings, never on the first
+            // grey page of a life, a page comes back that was never yours (`AStrayComesBackInstead`, and
+            // every rule of it is Core's). The row is still Refused either way — what arrived was not this
+            // page — and the stray says its own line, spends its own pip and raises its own plate.
+            bool stray = AStrayComesBackInstead(entryId);
+
             _filingBook = FilingLine.Put(_filingBook, standing with { State = FilingLine.PageState.Refused });
-            ShowPulseMessage(Flashback.Toast(Flashback.Outcome.Nothing));
-            // No beat and no card: nothing came back, and a picture of a memory that did not arrive would be
-            // the seam being spent on an absence. The dice are still filed, so the ledger can show the math.
-            LogAutopilotEvent($"{FilingLine.Mark} {Flashback.Toast(Flashback.Outcome.Nothing)}  ({roll.Describe()})");
+            if (!stray)
+            {
+                ShowPulseMessage(Flashback.Toast(Flashback.Outcome.Nothing));
+                // No beat and no card: nothing came back, and a picture of a memory that did not arrive would
+                // be the seam being spent on an absence. The dice are still filed, so the ledger can show the
+                // math.
+                LogAutopilotEvent($"{FilingLine.Mark} {Flashback.Toast(Flashback.Outcome.Nothing)}  ({roll.Describe()})");
+            }
+
             RequestVaultSave();
             StateHasChanged();
             return;

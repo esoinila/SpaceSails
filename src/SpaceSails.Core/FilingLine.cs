@@ -276,6 +276,31 @@ public static class FilingLine
         return Page.Remembered(entryId);
     }
 
+    /// <summary>
+    /// #973 L3 · HOW MANY GREY PAGES THIS CAPTAIN HAS READ AT. Derived from the book rather than counted in
+    /// a field, and that is not thrift — it is the only version of this number that survives a reload.
+    ///
+    /// <para><see cref="MarkTheBook"/> resets every page to <see cref="PageState.Remembered"/> or
+    /// <see cref="PageState.Unremembered"/> at the succession seam, so the only way a row can be standing in
+    /// any of the three states below is that somebody sat down with it SINCE the last rebirth. A counter
+    /// kept beside the book would have had to be persisted, cleared on the rebirth, and remembered about at
+    /// the one seam that clears it; this cannot be wrong.</para>
+    /// </summary>
+    public static int GreyPagesReadThisLife(IReadOnlyList<Page> book)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        int read = 0;
+        foreach (Page p in book)
+        {
+            if (p.State is PageState.Refused or PageState.CameBack or PageState.CameBackWrong)
+            {
+                read++;
+            }
+        }
+
+        return read;
+    }
+
     /// <summary>Write one page's new standing into the book, replacing any row it already had.</summary>
     public static IReadOnlyList<Page> Put(IReadOnlyList<Page> book, Page page)
     {

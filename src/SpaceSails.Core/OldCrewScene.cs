@@ -4,10 +4,12 @@ namespace SpaceSails.Core;
 // #973 L5a · "YOU LOOK DIFFERENT." — every word an old shipmate says, and the three the captain can
 // say back.
 //
-// EVERY STRING IN THIS FILE IS FABLE'S, WIRED VERBATIM. Where the bible gives no line for a person and
-// an answer, the slot carries a `FABLE: line needed` marker naming the person and the answer, and the
-// placeholder beside it is the one line the bible DOES give for that answer — the best friend's — so
-// the scene plays rather than showing a blank. Nothing here is paraphrased and nothing is improved.
+// EVERY STRING IN THIS FILE IS FABLE'S, WIRED VERBATIM. L5a shipped with eleven replies and all six
+// slips standing in behind a `FABLE: line needed` marker; #973 L3's comment authored every one of them
+// and this file now carries them. There is no standing-in text left anywhere in it, and the two guards
+// that used to COUNT the markers (`ReplyIsStandingIn`, `SlipIsPlaceholder`) are kept and inverted — they
+// now assert zero, so the day somebody adds a slot the count moves in the code rather than in a
+// paragraph. Nothing here is paraphrased and nothing is improved.
 //
 // AND THE LAW THAT GOVERNS THE FILE: the bible's account of the decent ship is WRITERS' BIBLE and is
 // not here. What she carried is never named. The word for what the clinic does is never printed.
@@ -62,43 +64,54 @@ public static class OldCrewScene
     };
 
     /// <summary>
-    /// What they say back. The bible authors seven of the eighteen slots; the other eleven stand in with the
-    /// best friend's line for that answer and are listed, one by one, in the lane's PR body.
+    /// What they say back. All eighteen slots — six living names by three answers — are authored, and every
+    /// one of them is that person's own sentence.
     ///
-    /// <para>Standing in rather than inventing is deliberate: a line written by the wiring would be the one
-    /// thing this arc cannot afford, because the whole value of the old crew is that they sound like people
-    /// somebody knew.</para>
+    /// <para>The eleven that L5a left standing in are the reason this method is worth reading: a line written
+    /// by the wiring would have been the one thing this arc cannot afford, because the whole value of the old
+    /// crew is that they sound like people somebody knew. They stood empty until the words existed. The
+    /// fallback arm below is now only ever reached by an id that is not one of the six — the man who is dead,
+    /// or a name from a future pool — and it is the best friend's line rather than a blank for the same
+    /// reason it always was: a scene that plays is better than a scene with a hole in it.</para>
     /// </summary>
     public static string Reply(string shipmateId, Answer answer) => (shipmateId, answer) switch
     {
+        // ── "I died. The policy brought me back." ────────────────────────────────────────────────────
         (OldCrew.BestFriendId, Answer.TheTruth) => "…Then it's true, what they say about the premium.",
         (OldCrew.FlingId, Answer.TheTruth) => "I know. I process them.",
         (OldCrew.SignerId, Answer.TheTruth) => "Then we're square. Nobody owes a dead man.",
+        ("maren", Answer.TheTruth) =>
+            "They brought you back. — I do their paperwork. I never once thought about whose.",
+        ("pell", Answer.TheTruth) => "Dead men drink free here. The first one, anyway.",
+        ("dagny", Answer.TheTruth) => "You'd think they'd have fixed the walk.",
 
+        // ── "New face. Same file." ───────────────────────────────────────────────────────────────────
         (OldCrew.BestFriendId, Answer.ThePolicyLine) => "That's Fess's line. You've been talking to Fess.",
         (OldCrew.FlingId, Answer.ThePolicyLine) => "Don't say it like him. Please.",
+        (OldCrew.SignerId, Answer.ThePolicyLine) => "Files. Yes. I sign things too, these days. It pays.",
+        ("maren", Answer.ThePolicyLine) =>
+            "Same file. That's what the clinic says when the name doesn't match the scan. I say it four "
+            + "times a shift.",
+        ("pell", Answer.ThePolicyLine) => "A file's not a face. Sit down before somebody reads it.",
+        ("dagny", Answer.ThePolicyLine) =>
+            "The file can say what it likes. Sit where I can see your hands.",
 
+        // ── "Burns. A reactor seal on the Luna run." ─────────────────────────────────────────────────
         (OldCrew.BestFriendId, Answer.ALie) => "Hm. You always did look away when you lied.",
         (OldCrew.FlingId, Answer.ALie) => "The Luna run. All right.",
+        (OldCrew.SignerId, Answer.ALie) => "The Luna run. — I'll put that in my report, then.",
+        ("maren", Answer.ALie) => "A seal doesn't change the eyes. But all right.",
+        ("pell", Answer.ALie) => "Burns. Right. Same face for your tab, mind.",
+        ("dagny", Answer.ALie) =>
+            "Liar. You never held a seal in your life; you held the clipboard.",
 
-        // FABLE: line needed — Maren Okafor's reply to THE TRUTH ("I died. The policy brought me back.").
-        // She is the clinic clerk and the one who owes you; she of all of them has seen the second page.
-        // FABLE: line needed — Pell Andrade's reply to THE TRUTH. He is the one you owe, behind the taps.
-        // FABLE: line needed — Dagny Voss's reply to THE TRUTH. The rival, second officer on a cutter.
-        // FABLE: line needed — Corwin Sallis's reply to THE POLICY LINE ("New face. Same file.").
-        // FABLE: line needed — Maren Okafor's reply to THE POLICY LINE.
-        // FABLE: line needed — Pell Andrade's reply to THE POLICY LINE.
-        // FABLE: line needed — Dagny Voss's reply to THE POLICY LINE.
-        // FABLE: line needed — Corwin Sallis's reply to A LIE ("Burns. A reactor seal on the Luna run.").
-        // FABLE: line needed — Maren Okafor's reply to A LIE.
-        // FABLE: line needed — Pell Andrade's reply to A LIE.
-        // FABLE: line needed — Dagny Voss's reply to A LIE.
         _ => Reply(OldCrew.BestFriendId, answer),
     };
 
     /// <summary>True when the reply for this person and this answer is the best friend's line standing in
-    /// rather than their own. Read by the guard that counts the unwritten slots, so the count in the PR body
-    /// and the count in the code can never drift apart.</summary>
+    /// rather than their own. Kept after every slot was written, and inverted: the guard now asserts that it
+    /// is false for every living name, so a slot added to the pool without a voice is caught by the same
+    /// mechanism that used to count the ones that had none.</summary>
     public static bool ReplyIsStandingIn(string shipmateId, Answer answer) =>
         shipmateId != OldCrew.BestFriendId
         && string.Equals(Reply(shipmateId, answer), Reply(OldCrew.BestFriendId, answer), StringComparison.Ordinal);
@@ -232,31 +245,49 @@ public static class OldCrewScene
     };
 
     /// <summary>
-    /// What a shipmate slips you when the glass goes well: a sheet into the book, marked <i>his</i> and
-    /// tagged by what they are to the captain.
+    /// What a shipmate slips you when the glass goes well: a sheet into the book, marked <i>his</i> (or
+    /// <i>hers</i>) and tagged by what they are to the captain.
     ///
-    /// <para>All six texts are unwritten and every one of them is listed in the lane's PR body. The
-    /// placeholder is deliberately the plainest sentence that can be true of any of them — it names the
-    /// person and the fact that something was handed over, and stops.</para>
+    /// <para>All six are Fable's, verbatim (#973 L3). Every one is a piece of PAPER from the job that person
+    /// ended up in — a claims form, a berth listing, a receipt, a docket, a tab, a patrol schedule — because
+    /// the bible's whole conceit is that they work where they know things, and the thing they know is filed
+    /// where they work. Nothing in any of them says what the pods held; that is writers' bible and it stays
+    /// there. What they say is that somebody put it down and did not pick it up again.</para>
     /// </summary>
-    public static string Slip(string shipmateId)
+    public static string Slip(string shipmateId) => shipmateId switch
     {
-        // FABLE: line needed — Ilse Marrow's slip. She reads fine print for a living, and the sheet she
-        //   lets go of should be a piece of it. Tagged LOVE.
-        // FABLE: line needed — Teodor "Teo" Brask's slip. The registrar; hulls and their former names.
-        //   Tagged LOVE.
-        // FABLE: line needed — Corwin Sallis's slip. The customs post, and he signed once already.
-        //   Tagged MONEY.
-        // FABLE: line needed — Maren Okafor's slip. The clinic clerk: the second page of everything.
-        //   Tagged MONEY.
-        // FABLE: line needed — Pell Andrade's slip. Behind the taps at a working berth. Tagged MONEY.
-        // FABLE: line needed — Dagny Voss's slip. Second officer on a registry cutter. Tagged MONEY.
-        string who = OldCrew.ById(shipmateId)?.Name ?? shipmateId;
-        return $"A sheet {who} put on the table and did not pick up again.";
-    }
+        OldCrew.FlingId =>
+            "A claims form, folded twice, your old name in the subject line and hers in the box marked "
+            + "WITNESS. She did not say why she had kept it.",
 
-    /// <summary>Every slip text is a placeholder today. The guard that counts them reads this rather than a
-    /// number typed in a test, so the count cannot go stale the day one of them is written.</summary>
+        OldCrew.BestFriendId =>
+            "A berth listing for the REACH under the name she was given when they took her. He had circled "
+            + "the date. 'She's still there,' he said, and did not look at you.",
+
+        OldCrew.SignerId =>
+            "A customs receipt for sealed reefer pods, medical, and a counter-signature you would know "
+            + "anywhere. It is his. He let you see it, which is not the same as giving it to you.",
+
+        "maren" =>
+            "A clinic docket: an intake for a patient whose name is crossed out and written again, twice, "
+            + "in the same hand, a week apart.",
+
+        "pell" =>
+            "A bar tab in your old name, never paid, with a line at the bottom: 'covered — H.G.' The "
+            + "bartender does not forgive debts. Somebody paid it.",
+
+        "dagny" =>
+            "A cutter's patrol schedule, one sector blanked with a thumb. 'Don't be there,' she said, which "
+            + "is a kind of gift.",
+
+        // Not one of the six. The plainest sentence that can be true of anybody, so a future pool member
+        // without a slip is a visible hole rather than somebody else's paper in their hand.
+        _ => $"A sheet {OldCrew.ById(shipmateId)?.Name ?? shipmateId} put on the table and did not pick up again.",
+    };
+
+    /// <summary>True while a slip is the plain standing-in sentence rather than that person's own paper.
+    /// False for all six now that they are written; the guard reads this rather than a number typed in a
+    /// test, so a name added to the pool without a slip is caught the day it is added.</summary>
     public static bool SlipIsPlaceholder(string shipmateId) =>
         Slip(shipmateId).StartsWith("A sheet ", StringComparison.Ordinal);
 }
