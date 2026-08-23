@@ -455,6 +455,12 @@
     font-size: 0.8rem;
 }
 
+/* #955 NAV-2: the window line under a destination row — the clock, not the geography. Warmer than the
+   grey meta above it, because a shuttle window is a thing that runs out while you are reading it. */
+.deck-shuttle-window {
+    color: #d9b473;
+}
+
 .deck-shuttle-noberth {
     color: #9098a6;
     font-style: italic;
