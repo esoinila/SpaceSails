@@ -400,6 +400,21 @@
                 @* PR-WIRE — the favor bank's books (FridaySecondPlan §0). Balances both ways: coin we've
                    parked with a contact (safe from confiscation), and gas money we owe. Read-only here;
                    the deposit/withdraw/borrow controls live at the contact's table and the dark-web desk. *@
+                @* #973 L5a · THE CROSSINGS (the-captains-character.md §3), and it is a MAP rather than a
+                   METER by construction: one row per line crossed, no total, no tier, no score. The section
+                   hides itself until the captain has crossed something, because an empty ledger of what a
+                   man has done is a sentence about him that is not true yet. *@
+                @if (Crossings.Count > 0)
+                {
+                    <div class="captain-ledger-section-label text-info fw-bold small mt-3">@CrossingsHeading</div>
+                    <div class="captain-group-cards">
+                        @foreach (string row in Crossings)
+                        {
+                            <div class="captain-card captain-ledger-tip"><div class="fw-bold">@row</div></div>
+                        }
+                    </div>
+                }
+
                 <div class="captain-ledger-section-label text-info fw-bold small mt-3">💰 Accounts</div>
                 <div class="captain-group-cards">
                     @if (Accounts.Count == 0)
@@ -508,21 +523,6 @@
                         }
                     }
                 </div>
-
-                @* #973 L5a · THE CROSSINGS (the-captains-character.md §3), and it is a MAP rather than a
-                   METER by construction: one row per line crossed, no total, no tier, no score. The section
-                   hides itself until the captain has crossed something, because an empty ledger of what a
-                   man has done is a sentence about him that is not true yet. *@
-                @if (Crossings.Count > 0)
-                {
-                    <div class="captain-ledger-section-label text-info fw-bold small mt-3">@CrossingsHeading</div>
-                    <div class="captain-group-cards">
-                        @foreach (string row in Crossings)
-                        {
-                            <div class="captain-card captain-ledger-tip"><div class="fw-bold">@row</div></div>
-                        }
-                    </div>
-                }
 
                 @* #223: the buried-treasure maps — every chest we know of, ours and any rival's whose
                    map we hold. Viewable any time: click a map to throw the full-screen card back up. *@
