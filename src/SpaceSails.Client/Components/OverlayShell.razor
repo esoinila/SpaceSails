@@ -99,10 +99,14 @@
     public sealed record Choice(string Label, EventCallback Chosen, string? Title = null, bool Closes = true);
 
     /// <summary>
-    /// #997 · WHERE A DESIGN FAULT GOES. <see cref="Debug.Fail(string)"/> by default — which compiles away
-    /// entirely in Release, so none of the auditing below costs the shipped game anything — and swappable so
-    /// a test can prove the audit FIRES instead of trusting that it would. Never a throw: a shell that blew
-    /// the page up over a missing tooltip would be a worse bug than the one it is reporting.
+    /// #997 · WHERE A DESIGN FAULT GOES. <see cref="Debug.Fail(string)"/> by default — itself
+    /// <c>[Conditional("DEBUG")]</c>, so the REPORTING is what a Release game drops, while the audits below
+    /// keep running (see <see cref="AuditTheShape"/> for why that is deliberate and what CI taught us about
+    /// the alternative). Swappable, so a test can prove the audit FIRES rather than trusting that it would.
+    ///
+    /// <para>Never a throw. A shell that blew the page up over a missing tooltip would be a worse bug than
+    /// the one it is reporting, and <see cref="Debug.Fail(string)"/> is not one either — it writes and, with
+    /// no debugger attached, returns.</para>
     /// </summary>
     internal static Action<string> DesignFault { get; set; } = static message => Debug.Fail(message);
 
@@ -308,45 +312,56 @@
     }
 
     /// <summary>
-    /// #997 · THE DESIGN AUDIT, and it costs Release nothing (<see cref="ConditionalAttribute"/>).
+    /// #997 · THE DESIGN AUDIT.
     ///
     /// <para>Three shapes, each of them the ruling failing quietly rather than loudly: a Close with no verb
     /// behind its ✕ (the control that LOOKS like a way out and is wired to nothing — the exact bug #992 was
     /// written to catch); a Minimize with no face on its tile (tucked into a mystery button, which is #963's
     /// own complaint about the toolbar switch it replaced); and a ByDecision that offers no decision at all,
     /// which is the forbidden shape wearing the exception's clothes.</para>
+    ///
+    /// <para><b>Why the CHECKS run everywhere and only the REPORTING is compiled away.</b> The first cut of
+    /// this put <c>[Conditional("DEBUG")]</c> on the method, and CI — which builds and tests the client in
+    /// <b>Release</b> — proved that wrong the same afternoon: the audit was gone from the assembly under
+    /// test, so the guards that exist to prove it fires were asking a component that could no longer answer.
+    /// An audit only a debug build performs is an audit CI cannot hold to account. So the four predicates
+    /// below are ordinary branches on parameters already in hand, no message is composed unless one of them
+    /// is true, and the DEFAULT sink — <see cref="Debug.Fail(string)"/>, itself conditional — is what
+    /// disappears from a Release game. The cost of being always-on is four comparisons per parameter set.
+    /// </para>
     /// </summary>
-    [Conditional("DEBUG")]
     private void AuditTheShape()
     {
-        string me = Title is { Length: > 0 } named ? $"the \"{named}\" shell" : $"an {Frame} shell";
-
         if (Dismiss == OverlayDismiss.Close && !OnClose.HasDelegate)
         {
-            DesignFault($"{me} is a Close and nothing is wired to OnClose: its ✕ would be a control that "
+            DesignFault($"{Me()} is a Close and nothing is wired to OnClose: its ✕ would be a control that "
                         + "looks like a way out and is not one — the owner's ruling of 2026-08-24 failing "
                         + "quietly instead of loudly.");
         }
 
         if (Dismiss == OverlayDismiss.Minimize && TileFace.Length == 0)
         {
-            DesignFault($"{me} minimises into a tile with no face on it. A tile with no glyph and no label "
+            DesignFault($"{Me()} minimises into a tile with no face on it. A tile with no glyph and no label "
                         + "is a mystery button in a corner.");
         }
 
         if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: 0 })
         {
-            DesignFault($"{me} is a critical-decision modal — allowed no ✕ only because every answer it "
+            DesignFault($"{Me()} is a critical-decision modal — allowed no ✕ only because every answer it "
                         + "offers is itself a close — and it offers no answers.");
         }
 
         if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: > 0 } offered
             && !offered.Any(choice => choice.Closes))
         {
-            DesignFault($"{me} is a critical-decision modal and not one of its {offered.Count} answers even "
+            DesignFault($"{Me()} is a critical-decision modal and not one of its {offered.Count} answers even "
                         + "claims to end it. There is no way out of it at all.");
         }
     }
+
+    /// <summary>What to call this shell in a complaint. Composed only when there is a complaint to make.
+    /// </summary>
+    private string Me() => Title is { Length: > 0 } named ? $"the \"{named}\" shell" : $"an {Frame} shell";
 
     /// <summary>
     /// #997 · …and the one audit that is about BEHAVIOUR rather than shape, because a claim in a parameter
@@ -362,8 +377,10 @@
     /// A page that drops the surface has therefore already disposed it by the time its own paint would have
     /// come round, and a disposed component is skipped. So the audit fires on exactly one thing: a surface
     /// that is still there afterwards.</para>
+    ///
+    /// <para>Not <c>[Conditional("DEBUG")]</c>, for the reason given above <see cref="AuditTheShape"/>: it
+    /// costs one bool test per paint, and CI tests this client in Release.</para>
     /// </summary>
-    [Conditional("DEBUG")]
     private void AuditTheDecision()
     {
         if (!_decided)
