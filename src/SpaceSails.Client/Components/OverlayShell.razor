@@ -355,6 +355,13 @@
     /// <para>An answer was pressed and this shell is being drawn again: the decision did not end the
     /// surface, so the exception it claims — "no ✕ is needed, every answer closes it" — is false on the
     /// screen. A modal that really does answer in stages says so with <see cref="Restages"/>.</para>
+    ///
+    /// <para><b>Why a shell that IS taken down never reaches here.</b> Blazor renders a batch in the order
+    /// renders were queued. Pressing an answer runs this component's <c>HandleEventAsync</c>, which invokes
+    /// the page's callback FIRST — queueing the page's own render — and only then queues this component's.
+    /// A page that drops the surface has therefore already disposed it by the time its own paint would have
+    /// come round, and a disposed component is skipped. So the audit fires on exactly one thing: a surface
+    /// that is still there afterwards.</para>
     /// </summary>
     [Conditional("DEBUG")]
     private void AuditTheDecision()

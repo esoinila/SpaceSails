@@ -76,6 +76,18 @@ internal sealed class ShellBench : Renderer
         return painted;
     }
 
+    /// <summary>
+    /// Re-render the stage from INSIDE a handler — what a page does when it writes a field and calls
+    /// <c>StateHasChanged</c>.
+    ///
+    /// <para>It matters to one test and it matters a lot. Blazor renders a batch in the order things were
+    /// queued: a handler that reaches the page first queues the PAGE's render first, so a surface the page
+    /// drops is disposed before its own queued render is reached. A bench that only re-rendered afterwards
+    /// would leave every surface standing for one extra paint and make a "did this stay up?" audit fire on
+    /// everything — which is exactly how a guard stops being able to tell pass from fail.</para>
+    /// </summary>
+    public void Redraw() => _stage.Refresh();
+
     public Task PressAsync(ulong handlerId) =>
         Dispatcher.InvokeAsync(() => DispatchEventAsync(handlerId, null, new MouseEventArgs()));
 

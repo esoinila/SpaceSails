@@ -264,14 +264,20 @@ public sealed class TheOverlayShellIsOneMechanismTests
 
         try
         {
-            using ShellBench bench = ShellBench.Mount(Shell(
+            // The page answers the way a page does — it re-renders — and simply keeps the card up, which
+            // is the whole of the fault. Written as the mirror image of the test below it: same shell,
+            // same press, same re-render, and the ONE difference is whether the surface goes.
+            ShellBench? host = null;
+            host = ShellBench.Mount(Shell(
                 ("class", "test-demand"),
                 ("Dismiss", OverlayDismiss.ByDecision),
                 ("Choices", (IReadOnlyList<OverlayShell.Choice>)
                 [
-                    new OverlayShell.Choice("Nod along", EventCallback.Factory.Create(new object(), () => { })),
+                    new OverlayShell.Choice("Nod along",
+                        EventCallback.Factory.Create(new object(), () => host!.Redraw())),
                 ])));
 
+            using ShellBench bench = host;
             DeskBench.Painted painted = await bench.RenderAsync();
             Assert.Empty(complaints);
 
@@ -301,7 +307,8 @@ public sealed class TheOverlayShellIsOneMechanismTests
         try
         {
             bool up = true;
-            using ShellBench bench = ShellBench.Mount(builder =>
+            ShellBench? host = null;
+            host = ShellBench.Mount(builder =>
             {
                 if (!up)
                 {
@@ -313,11 +320,20 @@ public sealed class TheOverlayShellIsOneMechanismTests
                     ("Dismiss", OverlayDismiss.ByDecision),
                     ("Choices", (IReadOnlyList<OverlayShell.Choice>)
                     [
-                        new OverlayShell.Choice("Pay the fine",
-                            EventCallback.Factory.Create(new object(), () => up = false)),
+                        new OverlayShell.Choice("Pay the fine", EventCallback.Factory.Create(
+                            new object(),
+                            () =>
+                            {
+                                // A page's own answer: drop the surface, re-render. The re-render is
+                                // queued from INSIDE the handler, which is where Blazor puts a page's
+                                // StateHasChanged too — so the card is disposed before its own paint.
+                                up = false;
+                                host!.Redraw();
+                            })),
                     ])));
             });
 
+            using ShellBench bench = host;
             DeskBench.Painted painted = await bench.RenderAsync();
             await bench.PressAsync(ShellBench.Control(painted, "Pay the fine")!.Handlers["onclick"]);
             await bench.RenderAsync();
