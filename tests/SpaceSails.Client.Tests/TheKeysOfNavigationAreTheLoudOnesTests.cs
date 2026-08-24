@@ -58,8 +58,13 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
     {
         string razor = Razor("Map.razor");
 
+        // #997 · the toggle is the OverlayShell's now — ONE minimise mechanism for this window and the
+        // dossier, where there were two booleans and two markup shapes. What the page still owns is the
+        // BINDING (its own tick must know whether the eyepiece is on the screen) and the tile's name. The
+        // round trip itself — tuck, tile, restore, with what was in the window still in it — is pressed for
+        // real through the renderer's event channel in TheOverlayShellIsOneMechanismTests.
         Assert.Contains("map-scope-tile", razor);
-        Assert.Contains("ToggleScopeMinimized", razor);
+        Assert.Contains("@bind-Minimized=\"_scopeMinimized\"", razor);
         Assert.Contains("ScopeTileTargetName()", razor);
 
         // The tile sits where the window it replaces sat — same corner, or the switch has moved again.
@@ -281,17 +286,19 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
     [Fact]
     public void TheDossierCanBeMinimisedIntoATileAndBroughtBack()
     {
-        Pages.Map map = ParkedOffMars();
-
-        Assert.False(Get<bool>(map, "_dossierMinimized"));
-        Invoke(map, "ToggleDossierMinimized");
-        Assert.True(Get<bool>(map, "_dossierMinimized"));
-        Invoke(map, "ToggleDossierMinimized");
-        Assert.False(Get<bool>(map, "_dossierMinimized"));
+        // #997 · this card and the scope now share ONE mechanism instead of resembling each other: the
+        // toggle that used to sit beside this field is the OverlayShell's, and the round trip is pressed
+        // for real — through the renderer's own event channel, with something alive inside the shell to
+        // prove nothing was destroyed on the way to the tile — in
+        // TheOverlayShellIsOneMechanismTests.TheTileRoundTripKeepsWhatWasInTheWindow. What stays this
+        // card's own business, and is asserted here, is that it STARTS open and that it is wired to that
+        // mechanism rather than to a second one somebody wrote for it.
+        Assert.False(Get<bool>(ParkedOffMars(), "_dossierMinimized"));
 
         string razor = Razor("Map.razor");
         Assert.Contains("map-dossier-tile", razor);
-        Assert.Contains("ToggleDossierMinimized", razor);
+        Assert.Contains("@bind-Minimized=\"_dossierMinimized\"", razor);
+        Assert.Contains("Dismiss=\"OverlayDismiss.Minimize\"", razor);
         Assert.DoesNotContain("draggable", Between(razor, "map-dossier bg-dark", "war room"));
     }
 
