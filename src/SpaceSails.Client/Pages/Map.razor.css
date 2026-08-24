@@ -514,6 +514,31 @@
     justify-content: center;
 }
 
+/* #992 · THE PAIR THAT IS THE WINDOW TALL. The two in-flow children of the map page (#195: the top stack
+   and, on Nav, the HUD) share one column that is exactly the viewport high, so the HUD's height is the
+   ARITHMETIC of what the top stack really took rather than a number somebody wrote down. That is the whole
+   fix for the owner's clipped Plotting panel: #950 capped the panel at `100vh - 14rem`, a constant guess at
+   the chrome above it, and the real chrome on Nav is roughly twice that — so the cap sat below the fold and
+   the panel simply grew past the bottom of the window.
+
+   100dvh first (a phone's URL bar makes 100vh taller than the glass); 100vh is the fallback for anything
+   that does not know dvh. Unpositioned on purpose: .map-topstack and .map-hud keep their own z-index boxes
+   in .map-page's stacking context, so nothing changes layer. */
+.map-flowcolumn {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    /* This box covers the whole window; the canvas underneath has to stay grabbable through it. Each
+       child re-enables its own controls, exactly as it did as a direct child of .map-page. */
+    pointer-events: none;
+}
+
+/* The top stack takes what its banner needs — one row or four — and never gives any of it back. */
+.map-flowcolumn > .map-topstack {
+    flex: 0 0 auto;
+}
+
 .map-hud {
     /* #195: an in-flow block that follows .map-topstack (was absolute top:5.9rem), so the banner above
        it can never overlap it — it starts below the banner's real height, whatever that grows to. */
@@ -524,6 +549,23 @@
     max-width: 100%;
     padding-left: 0.75rem;
     margin-top: 0.4rem;
+
+    /* #992: …and it takes exactly the rest of the window. min-height:0 is the load-bearing half — without
+       it a flex item refuses to shrink below its content, which is precisely how a panel walks off the
+       bottom of the screen. */
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* #992 · WHO GIVES WHEN THE WINDOW IS SHORT. The toolbar, the readouts and the frame chip are read at a
+   glance and are the same height whatever the plan does — they keep their measured height. The Plotting
+   panel is the one that gives, because it is the one with a scroll inside it. */
+.map-hud .btn-toolbar,
+.map-hud .map-readouts,
+.map-hud .map-frame {
+    flex: 0 0 auto;
 }
 
 .map-hud .btn-toolbar,
@@ -578,14 +620,33 @@
        label ("365d 23h 59m"). max-width still clamps it to the viewport on a phone (#253). */
     width: 38rem;
     max-width: 100%;
-    /* #950 — "UI at scrub planning is clipped from below … I cannot remove the insertion step." The panel
-       is an in-flow block under the pilot banner and simply grew past the bottom of the window, taking its
-       last controls with it. Cap it to what is left of the viewport and let it scroll: no control the
-       captain needs may live below the fold. The step list keeps its own inner scroll (.map-plot-nodes) so
-       a long plan still pages inside a panel whose head and compose row stay put. */
-    max-height: calc(100vh - 14rem);
-    min-height: 12rem;
+
+    /* #950 — "UI at scrub planning is clipped from below … I cannot remove the insertion step." #992, the
+       owner again, docked at The Red Eye with cast off · clear the harbour · two burns and the LAST row's
+       editor open: the same clipping, and the ±p / ±d / ±h rows could not be reached at all.
+
+       #950's answer was `max-height: calc(100vh - 14rem)` — a constant standing in for the chrome above
+       this panel. MEASURED (1483×1105, the owner's own window, Nav with the plot open): the tab bar and
+       banner take 128 px, then the toolbar 48, the readouts block 264 and the frame chip 69, so the panel's
+       own top is 540 px — 34 rem, not 14. The cap resolved to 881 px against a 701 px panel and never once
+       engaged; nothing about #971/#983/#990 broke it, it could not fire on this desk from the day it was
+       written. The cap is now the .map-flowcolumn arithmetic above, which cannot be wrong about a height it
+       did not have to guess.
+
+       flex 0 1 auto: the panel is the one thing in the HUD allowed to shrink (see .map-hud above), and
+       min-height:0 is what lets it. overflow-y stays as the BACKSTOP — on a short window the step list
+       reaches its own floor and the whole panel pages rather than losing its head. */
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
+}
+
+/* Everything above the step list — the title, the scrub, the path length, the pass line, the flight-plan
+   head and the compose row — is the panel's HEAD and keeps its measured height. Only the list gives. */
+.map-plot > * {
+    flex: 0 0 auto;
 }
 
 .map-plot-nodes {
@@ -593,9 +654,19 @@
        an old always-inline row — give the list room so the open editor shows without immediately scrolling.
        #838 added the quick-select row and its frame note, so the open editor is ~2 lines taller again.
        #926 added the nudge pair and the trip-frame offer — another ~3 lines when the offer stands — so the
-       list grows rather than shrinking the words on it (#782: the pressure valve is SCROLL, never size). */
-    max-height: 28rem;
+       list grows rather than shrinking the words on it (#782: the pressure valve is SCROLL, never size).
+
+       #992 · THE STEP LIST IS THE SCROLLING ELEMENT. Owner: "Let's make the step list start scroll when it
+       gets high enough." It no longer carries a written-down 28rem — it takes whatever the panel has left
+       after its head, which is whatever the window has left after the top stack and the readouts, and it
+       scrolls inside that. The 6rem floor is what keeps a very short window honest: the list stops giving
+       there and the panel's own overflow takes over, so the list can never be squeezed to nothing.
+       overscroll-behavior keeps a flick at the end of the plan inside the plan instead of paging the HUD. */
+    flex: 1 1 auto;
+    min-height: 6rem;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* #838 · the four quick selects — forward, back, up, down. A 4-column grid rather than a flex row so

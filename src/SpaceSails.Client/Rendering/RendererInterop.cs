@@ -134,6 +134,24 @@ internal static partial class RendererInterop
     [JSImport("copyText", ModuleName)]
     internal static partial bool CopyText(string text);
 
+    /// <summary>#992 · Scroll the first element matching <paramref name="selector"/> just inside its own
+    /// scrollers (<c>block: 'nearest'</c> — an element already in view is not moved).
+    ///
+    /// <para>Decoration, like <see cref="PlayCue"/>: the browser-only call is behind the same guard so a
+    /// bench with no DOM in it can drive the shipping act without a <c>PlatformNotSupportedException</c>
+    /// (#837), and the JS side swallows its own failures. A page that will not scroll for us still leaves
+    /// the list scrollable by hand — nothing the captain needs depends on this landing.</para></summary>
+    internal static void ScrollIntoView(string selector)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            ScrollTheElementIntoView(selector);
+        }
+    }
+
+    [JSImport("scrollIntoView", ModuleName)]
+    private static partial void ScrollTheElementIntoView(string selector);
+
     /// <summary>Open a file picker and resolve the chosen .json file's text (empty if cancelled).</summary>
     [JSImport("vaultImport", ModuleName)]
     [return: JSMarshalAs<JSType.Promise<JSType.String>>]
