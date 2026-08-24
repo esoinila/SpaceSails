@@ -309,6 +309,29 @@ public sealed partial class Map
         ReleaseHeldSayings();
     }
 
+    /// <summary>
+    /// #992 · TAKE THE PLATE DOWN NOW. Owner ruling 2026-08-24: <i>"As a general ruling there should not be a
+    /// pop-up that cannot be closed or minimized."</i>
+    ///
+    /// <para>The plate shipped with no way out on purpose — the comment beside its markup read <i>"It is not
+    /// clickable on purpose — a thing you must dismiss is a thing that blocked you"</i> — and that reasoning
+    /// held right up until a player wanted the corner back. The great port's plate is the one that made the
+    /// case: <c>ArrivalTube.Title(Tier.GreatPort)</c> is literally <b>"🛬 THE LONG WALK IN"</b>, its caption is
+    /// the longest of the three, and it lands bottom-left across the captain's-remote button for the whole of
+    /// <c>StoryBeats.PlateSeconds</c>. Owner, live: <i>"the long walk-in there just blocks UI."</i></para>
+    ///
+    /// <para>So the plate keeps everything that made it a plate — it steals no keyboard, stops no world, eats
+    /// no click (<c>pointer-events: none</c> stays on the panel; only the ✕ re-enables its own) and still
+    /// expires on its own clock. What it gains is the one thing the ruling asks for: a way out that is EARLIER
+    /// than the clock. It is a close and not a minimise because a plate has no second size — the tucked-away
+    /// version of five words in a corner is no words in that corner.</para>
+    ///
+    /// <para>Nothing about the BOOKS moves: the cadence was spent and the seen-set filed when the beat spoke
+    /// (<c>ShowStoryBeat</c>, one screen up), so a plate the captain waves away is a plate that was told. That
+    /// is the same accounting a card's ✕ has always had.</para>
+    /// </summary>
+    private void CloseStoryPlate() => _storyPlate = null;
+
     /// <summary>What a card or plate is showing, resolved for the razor in one place. The subject reaches all
     /// three now (#664): two of the arcs choose their painting by the shard the captain just assembled, and a
     /// released hatch puts the room's name in its own stamp.</summary>

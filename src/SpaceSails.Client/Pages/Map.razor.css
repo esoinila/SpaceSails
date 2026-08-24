@@ -3781,8 +3781,46 @@
 }
 
 .jump-overlay-inner {
+    position: relative;
     max-width: min(90vw, 34rem);
     padding: 2rem 2.5rem;
+}
+
+/* #992 · THE WAY OUT OF THE VOID SHEET (owner ruling 2026-08-24). It hangs off the INNER card and not off
+   the viewport, so on a narrow screen it travels with the words it belongs to instead of being pushed under
+   the edge — the whole point of the ruling is a control the player can actually reach. */
+.jump-overlay-min {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    min-width: 1.75rem;
+    padding: 0 0.4rem;
+    color: rgba(223, 232, 255, 0.8);
+    font: 600 1rem/1.6 monospace;
+    /* Opaque, and #782's law is what asked for it: this is a POSITIONED panel painting text, so at 0.6 alpha
+       its contrast would be decided by whatever the void sheet's gradient happened to be over. The way out
+       of a surface is the last control in the game that should be hard to read. */
+    background: #0a0f18;
+    border: 1px solid rgba(143, 208, 255, 0.4);
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.jump-overlay-min:hover,
+.jump-overlay-min:focus-visible {
+    color: #8fd0ff;
+    border-color: rgba(143, 208, 255, 0.85);
+}
+
+/* …and the tile it becomes. Top-right of the viewport rather than the scope's bottom-right corner: the
+   crossing is not a Nav instrument and it must not land on top of the scope tile, which the captain can now
+   see again precisely because this sheet went away. */
+.jump-overlay-tile {
+    position: fixed;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: calc(var(--z-modal) + 40);
+    pointer-events: auto;
 }
 
 .jump-overlay-title {
@@ -3905,6 +3943,29 @@
     border: 1px solid rgba(140, 190, 230, 0.55);
     border-radius: 0.85rem;
     box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 180, 230, 0.28);
+}
+
+/* #992 · the corner ✕ on a convergence card. It is INSIDE the card's own padding rather than hanging off
+   its corner, so a narrow viewport cannot push it off the edge — a dismiss control the player cannot reach
+   is the ruling failing quietly instead of loudly. The card is position: static, so this floats to the
+   right of the flow it sits at the top of. */
+.convergence-x {
+    float: right;
+    margin: -0.6rem -0.6rem 0 0;
+    min-width: 1.75rem;
+    padding: 0 0.4rem;
+    color: rgba(219, 230, 242, 0.72);
+    font: 600 0.95rem/1.6 monospace;
+    background: transparent;
+    border: 1px solid rgba(140, 190, 230, 0.4);
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.convergence-x:hover,
+.convergence-x:focus-visible {
+    color: #dbe6f2;
+    border-color: rgba(140, 190, 230, 0.85);
 }
 
 .convergence-stamp {
@@ -5269,6 +5330,31 @@
 @keyframes story-plate-in {
     from { opacity: 0; transform: translateY(0.5rem); }
     to   { opacity: 1; transform: translateY(0); }
+}
+
+/* #992 · THE ONE PART OF THE PLATE THAT TAKES A CLICK (owner ruling 2026-08-24: no pop-up without a way
+   out). The panel above keeps pointer-events: none — the plate has never eaten a click and must not start
+   — so exactly one child re-enables its own, which is the same "the gaps pass clicks to the canvas; each
+   child re-enables its own" idiom .map-topstack has used since #402. It sits INSIDE the plate's own box
+   rather than hanging off a corner of it: a control that overhangs its surface is a control that can be
+   pushed off the viewport edge, and this plate is already anchored 1rem from the left wall. */
+.story-plate-close {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    padding: 0 0.3rem;
+    color: rgba(232, 236, 244, 0.75);
+    font: 600 0.8rem/1.4 monospace;
+    background: transparent;
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.story-plate-close:hover,
+.story-plate-close:focus-visible {
+    color: #ffd9a0;
+    border-color: rgba(255, 180, 90, 0.75);
 }
 
 .story-plate-art {
