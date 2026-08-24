@@ -712,6 +712,36 @@ public partial class Map
     private string _jumpDestName = "";
     private string _jumpFlavor = "";
 
+    /// <summary>
+    /// #992 · THE VOID CARD, TUCKED AWAY. Owner ruling 2026-08-24: <i>"As a general ruling there should not be
+    /// a pop-up that cannot be closed or minimized."</i>
+    ///
+    /// <para><b>This overlay was the worst offender in the whole client, by a distance.</b> Every other
+    /// surface in <c>Map.razor</c> has at least one control that ends it; <c>.jump-overlay</c> — used by BOTH
+    /// the long-haul crossing and the computed coast skip — is <c>position: fixed; inset: 0</c> at z 1400 with
+    /// a 3 px blur over the entire viewport and <b>not one button in it</b>. Its own comment said so out loud:
+    /// <i>"No cancel is offered."</i> There was no ✕, no scrim click, no key: the player waited, and that was
+    /// the whole of the interface.</para>
+    ///
+    /// <para><b>It is a MINIMISE and not a close, and the distinction is the point.</b> Cancelling a crossing
+    /// is a decision about the WORLD — the tick loop is frozen behind <c>_jumpInProgress</c> precisely so the
+    /// void is never integrated, and handing the player a button that abandons a re-seed half-done would be a
+    /// game-design change nobody asked for. Tucking the CARD away is a decision about the SCREEN, and it
+    /// changes nothing at all: the crossing runs on exactly the clock it ran on before, the year counter goes
+    /// on ticking, and the arrival lands when it always landed. The captain simply gets to watch his own map
+    /// while it happens instead of a blurred sheet.</para>
+    ///
+    /// <para>The idiom is the one the scope (#963) and the dossier (#960) already share, and the tile is read
+    /// off the same fields the full card reads — so the two can never disagree about which year it is. It is
+    /// remembered for the session, for the scope's own stated reason: <i>"a captain who tucks the scope away
+    /// expects it to stay tucked away until he says otherwise."</i> A crossing that re-inflated a card the
+    /// player had deliberately put away would be the ruling failing on the second jump instead of the
+    /// first.</para>
+    /// </summary>
+    private bool _voidCardTucked;
+
+    private void ToggleVoidCardTucked() => _voidCardTucked = !_voidCardTucked;
+
     // ===== #304 — THE ARRIVAL BRAKE ASKS (owner 2026-07-18: "let's have it ask, it is hard to remember in
     // the heat of the moment otherwise"). The #262/#284 arrival brake was fired-by-hand-or-forgotten; now it
     // is classed with the are-you-sure family. When a long haul delivers the ship hot to a destination that

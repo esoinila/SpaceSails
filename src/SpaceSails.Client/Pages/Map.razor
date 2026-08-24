@@ -477,11 +477,22 @@
 
     @* #255 — the diegetic long-haul jump overlay: the one loading bar allowed to be a FEATURE. While
        the world re-seeds at the arrival epoch, the screen SAYS the state — CROSSING THE VOID, the years
-       ticking up, and a charming note that the bus does not stop out here. No cancel is offered. *@
-    @if (_jumpActive)
+       ticking up, and a charming note that the bus does not stop out here. No cancel is offered.
+
+       #992 · …and no cancel is offered STILL, because cancelling a crossing is a decision about the world
+       and the tick loop is frozen behind _jumpInProgress so the void is never integrated. What #992 adds is
+       a decision about the SCREEN: the card tucks into a corner tile (the scope's #963 idiom, the dossier's
+       #960 gesture) and the map comes back, while the crossing runs on exactly the clock it always ran on.
+       Owner ruling 2026-08-24: "there should not be a pop-up that cannot be closed or minimized" — and this
+       full-viewport fixed sheet, whose own comment used to end the sentence at "No cancel is offered", was
+       the only surface in this file with no control in it at all. *@
+    @if (_jumpActive && !_voidCardTucked)
     {
         <div class="jump-overlay">
             <div class="jump-overlay-inner">
+                <button type="button" class="jump-overlay-min" aria-label="Minimise the crossing"
+                        title="Tuck the crossing into a tile — it keeps its own clock and the map comes back"
+                        @onclick="ToggleVoidCardTucked">–</button>
                 <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
                 <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
                 <div class="jump-overlay-bar">
@@ -496,15 +507,36 @@
 
     @* #261 — the COMPUTED skip's short beat: a jump-scale coast is reckoned in closed form (or chunked with
        yields), never integrated into a frozen tab. A mundane fast-forward, not the long haul's dramatic
-       CROSSING THE VOID — so it says "COAST CONSUMED" and lets out in a beat. *@
-    @if (_coastSkipActive)
+       CROSSING THE VOID — so it says "COAST CONSUMED" and lets out in a beat. #992 gives it the same tile,
+       off the same switch: it wears the same full-viewport class, so it inherited the same fault. *@
+    @if (_coastSkipActive && !_voidCardTucked)
     {
         <div class="jump-overlay">
             <div class="jump-overlay-inner">
+                <button type="button" class="jump-overlay-min" aria-label="Minimise the coast"
+                        title="Tuck the coast into a tile — it keeps its own clock and the map comes back"
+                        @onclick="ToggleVoidCardTucked">–</button>
                 <div class="jump-overlay-title">⏭ @WarpSkip.CoastConsumedTitle</div>
                 <div class="jump-overlay-bound">@WarpSkip.CoastConsumedBound(_coastSkipLabel)</div>
                 <div class="jump-overlay-note">@WarpSkip.CoastComputingNote(_coastSkipDays)</div>
             </div>
+        </div>
+    }
+
+    @* #992 · THE TUCKED CROSSING — a button-sized tile in a corner the full sheet was covering anyway, naming
+       what is still running so the tile is an instrument and not a mystery button (the scope tile's own law).
+       Clicking it opens the sheet back up. It reads the SAME fields the sheet reads, so the tile and the card
+       can never disagree about which year it is. *@
+    @if (_voidCardTucked && (_jumpActive || _coastSkipActive))
+    {
+        <div class="jump-overlay-tile">
+            <button type="button" class="btn btn-sm btn-outline-info"
+                    title="Open the crossing back up"
+                    @onclick="ToggleVoidCardTucked">
+                @(_jumpActive
+                    ? $"🚀 {LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)}"
+                    : $"⏭ {WarpSkip.CoastConsumedBound(_coastSkipLabel)}")
+            </button>
         </div>
     }
 
@@ -1498,8 +1530,14 @@
         </div>
     }
 
-    @* The plate: same picture, same words, no keyboard stolen and no world stopped. It is not clickable on
-       purpose — a thing you must dismiss is a thing that blocked you. *@
+    @* The plate: same picture, same words, no keyboard stolen and no world stopped. The PANEL is still not
+       clickable — a thing you must dismiss is a thing that blocked you — but #992 gives it the one control
+       the owner's ruling asks of every surface in this file: "there should not be a pop-up that cannot be
+       closed or minimized" (owner ruling 2026-08-24). The ✕ re-enables its own pointer-events and nothing
+       else does, so the plate goes on passing every other click through to the room behind it. The great
+       port's own plate is what made the case: ArrivalTube.Title(GreatPort) is "🛬 THE LONG WALK IN", it
+       carries the longest of the three captions, and it lands bottom-left across the captain's-remote
+       button for the whole of StoryBeats.PlateSeconds. *@
     @if (_storyPlate is { } flash)
     {
         var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
@@ -1513,6 +1551,9 @@
                 <div class="story-plate-title">@flashCopy.Title</div>
                 <div class="story-plate-caption">@flashCopy.Caption</div>
             </div>
+            <button type="button" class="story-plate-close" aria-label="Close"
+                    title="Take it down now — it would go on its own in a few seconds"
+                    @onclick="() => Dismiss(CloseStoryPlate)">✕</button>
         </div>
     }
 
@@ -7522,6 +7563,14 @@
     {
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTheFaceScene)">
             <div class="convergence-card old-crew-card" @onclick:stopPropagation="true">
+                @* #992 · A VISIBLE WAY OUT OF THE ANSWER PHASE (owner ruling 2026-08-24). Walking away
+                   without answering has always been legal here — the backdrop closes the scene — but a
+                   backdrop is an invisible control, and while the three answers are up they are the only
+                   thing on the card that LOOKS clickable and not one of them ends it. Same verb as the
+                   backdrop's, so there is still exactly one road out of this scene. *@
+                <button type="button" class="convergence-x" aria-label="Close"
+                        title="Say nothing and go — you can leave a face unanswered"
+                        @onclick="() => Dismiss(CloseTheFaceScene)">✕</button>
                 <div class="convergence-stamp">🪞 @faceWho.Name.ToUpperInvariant()</div>
                 <div class="old-crew-history small text-secondary">@OldCrewHistoryLine(faceGiver)</div>
                 <div class="convergence-head">“@OldCrewScene.Opening(faceWho.Id)”</div>
