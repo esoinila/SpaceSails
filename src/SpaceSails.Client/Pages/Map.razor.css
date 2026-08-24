@@ -5307,11 +5307,26 @@
 
 /* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
    universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
-   the modals, pointer-events NONE so it can never eat a click during a fight. */
+   the modals, pointer-events NONE so it can never eat a click during a fight.
+
+   #994 · "does not block the playing" was a claim about CLICKS, and the plate kept it — it has never eaten
+   one. It was not keeping it about PIXELS. Absolutely positioned at bottom 5.5rem it lay on top of whatever
+   the left column had grown into: measured at 1280x720 with a four-step plan open, plate y 465…633 against
+   Plotting panel y 520…720, i.e. 480 x 113 px of the step list and its open editor behind an opaque card for
+   the whole of StoryBeats.PlateSeconds.
+
+   It is the LAST ITEM IN .map-flowcolumn now (see Map.razor), so the two can no longer share a pixel: the
+   plate takes its own measured height off the bottom of the column and .map-hud — `flex: 1 1 auto` — gets
+   what is left, which is #992's arithmetic exactly. `margin-top: auto` is for the seven desks that raise no
+   .map-hud at all: with nothing above it to grow, the plate would otherwise ride up under the tab bar
+   instead of sitting at the foot of the window. `position: relative` keeps its z-index working from inside
+   the column, and the column makes no stacking context of its own, so the plate stacks against .map-page's
+   children exactly as it did while it was one of them. */
 .story-plate {
-    position: absolute;
-    left: 1rem;
-    bottom: 5.5rem;
+    position: relative;
+    align-self: flex-start;
+    flex: 0 0 auto;
+    margin: auto 0 5.5rem 1rem;
     z-index: calc(var(--z-desks-popups) + 40);
     display: flex;
     gap: 0.6rem;

@@ -1,11 +1,23 @@
 /* Thin edge strip (StationDesks.md rule 2): narrow enough that it never blocks the map, but
-   pointer-events auto so its chips are clickable everywhere it's docked. */
+   pointer-events auto so its chips are clickable everywhere it's docked.
+
+   #994 · IT IS AS TALL AS ITS CHIPS, NOT AS TALL AS THE WINDOW. `bottom: 0.75rem` made the strip a
+   full-height column with `pointer-events: auto` on all of it, and the chips only ever fill the top
+   third of that — so the empty two thirds silently took every click aimed at whatever was behind it
+   in the bottom-right corner. Measured at 1280x720 the moment this file came back to life: the box
+   ran y 76…708 and the last chip ended at y 418, and the 152 x 290 px of nothing below it lay over
+   the scope's window (.map-scope, y 386…708) and the parrot's perch. Nothing is painted there and
+   nothing should be caught there.
+
+   The band it may use is unchanged — top 4.75rem, 0.75rem clear of the floor — it is a max-height
+   now rather than an anchor, so the strip shrink-wraps its chips and still scrolls when there are
+   more of them than the band holds (the Deck's seven end at y 466 and fit). */
 
 .desk-chip-strip {
     position: absolute;
     top: 4.75rem;
     right: 0.5rem;
-    bottom: 0.75rem;
+    max-height: calc(100% - 5.5rem);
     width: 9.5rem;
     display: flex;
     flex-direction: column;
