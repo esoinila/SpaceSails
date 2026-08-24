@@ -3797,7 +3797,10 @@
     padding: 0 0.4rem;
     color: rgba(223, 232, 255, 0.8);
     font: 600 1rem/1.6 monospace;
-    background: rgba(8, 11, 17, 0.6);
+    /* Opaque, and #782's law is what asked for it: this is a POSITIONED panel painting text, so at 0.6 alpha
+       its contrast would be decided by whatever the void sheet's gradient happened to be over. The way out
+       of a surface is the last control in the game that should be hard to read. */
+    background: #0a0f18;
     border: 1px solid rgba(143, 208, 255, 0.4);
     border-radius: 0.25rem;
     cursor: pointer;
