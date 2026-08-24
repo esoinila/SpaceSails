@@ -154,6 +154,20 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// the call counts are byte-identical on all thirty rows, and <c>EveryFrameHashesTheSameTests</c>' draw
     /// transcripts did not move at all: he is a walker, so when he is not on a floor there is nothing extra
     /// to draw.</para>
+    ///
+    /// <para><b>#962 · AND ALL THIRTY ONCE MORE, field count 720 → 721.</b> The smallest version of the same
+    /// signature: <b>one</b> field was added to the page, <c>_autopilotPlanBodyClearance</c> — how close the
+    /// armed autopilot's rehearsed path came to each world it passed, cached at arm time beside the path and
+    /// the collision pass it already cached (the #219 one-arm law), so the #180 park watchdog can ask whether
+    /// the plan cleared the body the ship is BOUND to. The <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run
+    /// on the base (35dd47a) and on this lane, and on <b>all thirty</b> rows the diff is the same single
+    /// line, and it is an ADDITION, never a change or a removal:</para>
+    /// <code>52a53
+    /// &gt; _autopilotPlanBodyClearance=∅</code>
+    /// <para>…at its default in every world, because not one of these six arms an autopilot approach. The
+    /// ledger, the pen, the canvas buffer and the call counts are byte-identical on all thirty rows, and
+    /// <c>EveryFrameHashesTheSameTests</c>' draw transcripts and <c>EveryRoundFingerprintsTheSameTests</c>
+    /// did not move at all — the alarm this lane quiets shouts on nothing any of these worlds does.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]
