@@ -5092,7 +5092,10 @@
                 <button type="button" class="btn btn-sm btn-outline-warning me-2"
                         title="The coast costs nothing — the skip spends only time. Jump to the next event."
                         @onclick="StartSkip">
-                    ⏭ Long coast ahead (@LongCoastDays d) — skip it
+                    @* #989 clock: through the plan's own ladder, not a private whole-days rounding. The
+                       advert opens at 24 h, so LongCoastDays said "1 d" for every coast up to a day and a
+                       half — sitting one toolbar row above a plan whose every step now reads "in 33 h". *@
+                    ⏭ Long coast ahead (@LongCoastAheadReadout) — skip it
                 </button>
             }
             @* #246/#249 🚀 the long haul as a toolbar chip — a SECONDARY surface (the map context menu is

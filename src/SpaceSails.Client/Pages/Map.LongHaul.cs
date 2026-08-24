@@ -364,8 +364,11 @@ public partial class Map
     private bool ShowLongCoastAdvert =>
         !_skipActive && _skipNext.Found && (_skipNext.Epoch - SimTime) > WarpSkip.LongCoastThresholdSeconds;
 
-    // Whole sim-days of coast still ahead, for the advert copy.
-    private int LongCoastDays => (int)Math.Round((_skipNext.Epoch - SimTime) / DaySeconds);
+    // How much coast is still ahead, for the advert copy — said in the SAME words the plan's own rows and
+    // the pulse message below say it in (#989 clock). It used to round to whole sim-days on its own, which
+    // meant the toolbar offered to skip "1 d" while the flight plan a finger away counted the very same
+    // wait as "in 33 h". One clock, one sentence.
+    private string LongCoastAheadReadout => FormatDuration(Math.Max(0, _skipNext.Epoch - SimTime));
 
     // ===== #246 🚀 LONG HAUL — the void is COMPUTED, not animated =====
     // Where #172's warp-skip INTEGRATES a coast you want to watch, the long haul JUMPS a void you don't:
