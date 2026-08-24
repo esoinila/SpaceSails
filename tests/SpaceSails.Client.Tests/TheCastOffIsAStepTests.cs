@@ -330,19 +330,107 @@ public sealed class TheCastOffIsAStepTests
         Assert.Equal(Math.Floor(scrubOut), NodeEpochOf(undock), 3);
         Assert.Equal(Math.Floor(scrubOut) + 60, NodeEpochOf(clear), 3);
 
-        // …so the row's own countdown reads the truth rather than "in 0 h".
+        // …so the row's own countdown reads the truth rather than "in 0 h" — and, since the clock's own
+        // bands were fixed (#989 clock), it reads it in the unit the captain typed: THIRTY-THREE HOURS, not
+        // the "in 1 d" the old whole-days branch rounded his afternoon down to.
         var glance = (string)Invoke(map, "PlanStepGlanceLine", undock)!;
         _out.WriteLine($"row: {glance}");
-        Assert.Contains("in 1 d", glance);
+        Assert.Contains("in 33 h", glance);
         Assert.DoesNotContain("in 0 h", glance);
+        Assert.DoesNotContain("in 1 d", glance);
 
         // And the banner: she is tied up, the captain has her, and the plan lets go at its own hour.
         AssertTheBannerSays(map, "YOU HAVE THE SHIP");
         AssertTheBannerSays(map, "docked at Selene Gate");
-        AssertTheBannerSays(map, "the plan casts off in 1 d");
+        AssertTheBannerSays(map, "the plan casts off in 33 h");
         AssertTheBannerDoesNotSay(map, "casting off from");
         AssertTheBannerNamesTheCastOffOnce(map);
     }
+
+    // ── (4b) #989 clock — THE COUNTDOWN IS QUOTED AT THE BAND IT IS IN ────────────────────────────────
+    //
+    // The scheduling was only half of the owner's complaint; the other half was the DISPLAY. PR #990 laid
+    // the cast-off at the scrub, but the row still read it through a formatter that knew two units: whole
+    // hours under a day, whole days over it. So a plan laid one minute out said "in 0 h" — the clock
+    // reporting nothing where something was about to happen — and the owner's 33 h scrub said "in 1 d".
+    // These pin the ladder AND the surface it reaches, because a formatter nobody's row calls is not a fix.
+
+    /// <summary>
+    /// THE LADDER, unit by unit. Seconds under a minute, minutes under an hour, hours under two days,
+    /// days-and-hours under a month, and the horizon's own idiom past that.
+    ///
+    /// <para>RED on the commit before this fix (watched, and the whole point of the pin): the old body was
+    /// <c>seconds &lt; 86400 ? $"{seconds / 3600:F0} h" : FormatHorizon(seconds)</c> — two units and a
+    /// rounding. Under a day everything became whole hours (45 s → "0 h", 60 s → "0 h", 42 m → "1 h"); over
+    /// a day everything fell through to whole DAYS (33 h → "1 d", 47 h → "2 d", 3 d 7 h → "3 d"). Six of the
+    /// eight rows below go red on that body; 1 h and 120 d are the two the ladder deliberately keeps, so the
+    /// pin also says what did NOT change.</para>
+    /// </summary>
+    [Theory]
+    [InlineData(45.0, "45 s")]
+    [InlineData(60.0, "1 m")]              // the never-"0 h" case, at the exact epoch floor a plan uses
+    [InlineData(42 * 60.0, "42 m")]
+    [InlineData(3600.0, "1 h")]
+    [InlineData(33 * 3600.0, "33 h")]      // the owner's own screenshot, in his own unit
+    [InlineData(47 * 3600.0, "47 h")]      // still an "afternoon-and-a-bit", still hours
+    [InlineData((3 * 86400.0) + (7 * 3600.0), "3 d 7 h")]
+    [InlineData(120 * 86400.0, "120 d")]   // past a month the hour is noise; FormatHorizon takes over
+    public void ThePlansClockIsQuotedAtTheBandItIsIn(double seconds, string expected)
+    {
+        string said = TheClockSays(seconds);
+        _out.WriteLine($"{seconds:F0} s → \"{said}\"");
+        Assert.Equal(expected, said);
+    }
+
+    /// <summary>
+    /// AND NEVER "0 h", at any wait a plan can actually hold. The old body said "0 h" for everything under
+    /// half an hour — which is precisely the band a freshly laid cast-off sits in.
+    /// </summary>
+    [Fact]
+    public void NoWaitAPlanCanHoldIsEverQuotedAsZeroHours()
+    {
+        foreach (double seconds in new[] { 1.0, 30.0, 60.0, 90.0, 600.0, 1799.0, 2520.0, 3599.0 })
+        {
+            string said = TheClockSays(seconds);
+            _out.WriteLine($"{seconds:F0} s → \"{said}\"");
+            Assert.DoesNotContain("0 h", said);
+            Assert.NotEqual("0 m", said);
+        }
+    }
+
+    /// <summary>
+    /// THE WIRE, not just the formatter: the shipping cast-off row and the shipping banner, on a real
+    /// clamped ship, at the smallest wait the plan can hold — one minute. The row says "in 1 m" and the
+    /// banner says she is waiting a minute; neither says "in 0 h". (This is the assertion that would have
+    /// caught the owner's first screenshot, and it goes red on the old formatter with the fix's scheduling
+    /// already in place — which is exactly the state PR #990 shipped.)
+    /// </summary>
+    [Fact]
+    public void ONE_MINUTE_OUT_TheRowAndTheBannerSayAMinute_NotZeroHours()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        Set(map, "_scrubOffsetSeconds", 0.0);       // scrub at now → the plan's own 60 s floor
+
+        Invoke(map, "AddCastOffAtTop");
+
+        object undock = FirstNodeOfKind(map, PlanStepKind.Undock);
+        Assert.Equal(60.0, NodeEpochOf(undock), 3);
+
+        var glance = (string)Invoke(map, "PlanStepGlanceLine", undock)!;
+        _out.WriteLine($"row: {glance}");
+        Assert.Contains("in 1 m", glance);
+        Assert.DoesNotContain("0 h", glance);
+
+        AssertTheBannerSays(map, "the plan casts off in 1 m");
+        AssertTheBannerDoesNotSay(map, "0 h");
+    }
+
+    /// <summary>Ask the shipping page's own duration clock — the one every plan row, banner countdown and
+    /// cast-off line is worded through — rather than a copy of it living in the test.</summary>
+    private static string TheClockSays(double seconds) =>
+        (string)typeof(Pages.Map)
+            .GetMethod("FormatDuration", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, [seconds])!;
 
     /// <summary>
     /// (b) SHE WAITS, THEN SHE LEAVES — WITH NOBODY AT THE CONSOLE. The same scheduled departure, warped

@@ -238,8 +238,37 @@ public partial class Map
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) =>
         callback.InvokeAsync(arg);
 
-    private static string FormatDuration(double seconds) =>
-        seconds < 86400 ? $"{seconds / 3600:F0} h" : FormatHorizon(seconds);
+    // #989 · THE PLAN'S CLOCK IS READ AT THE BAND THE CAPTAIN IS STANDING IN.
+    //
+    // The old line was one division and a rounding: everything under a day was quoted in whole hours, and
+    // everything over it went straight to FormatHorizon's whole DAYS. Both ends lied at the ends the captain
+    // actually reads. A 60 s wait — a cast-off laid a minute out, a round in flight — came out "in 0 h", the
+    // clock saying nothing is happening while it happens; and the owner's 33 h scrub came out "in 1 d",
+    // rounding the whole afternoon he had planned around into a word (#989, and PR #990's own row).
+    //
+    // So: FOUR BANDS, each coarsening only once the next unit stops carrying information.
+    //   under a minute  → seconds  ("in 45 s")   — never "0 h"; a countdown at this range is the whole point
+    //   under an hour   → minutes  ("in 42 m")
+    //   under two days  → hours    ("in 33 h")   — an afternoon is an afternoon, not "1 d"
+    //   under a month   → d + h    ("in 3 d 7 h")
+    //   beyond          → FormatHorizon's d / yr — past a month an hour IS noise, and the horizon's own
+    //                     idiom is what the ribbon and the path-length row already speak.
+    // Truncating (not rounding) at every band is deliberate: a countdown that still says "33 h" with 33 h 50 m
+    // to run is how a clock counts down; one that says "34 h" is a clock running ahead of the world.
+    private static string FormatDuration(double seconds)
+    {
+        double s = Math.Max(0, seconds);
+        if (s < 60) return $"{(long)s} s";
+        long minutes = (long)(s / 60);
+        if (minutes < 60) return $"{minutes} m";
+        long hours = minutes / 60;
+        if (hours < 48) return $"{hours} h";
+        if (s < HorizonBandSeconds) return $"{hours / 24} d {hours % 24} h";
+        return FormatHorizon(s);
+    }
+
+    // Past a month, an hour on the end of a countdown is noise — the horizon's own d/yr idiom takes over.
+    private const double HorizonBandSeconds = 30 * 86400.0;
 
     // The body carrying this id, or null.
     private CelestialBody? BodyById(string? id)
