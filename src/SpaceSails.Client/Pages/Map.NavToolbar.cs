@@ -78,10 +78,12 @@ public partial class Map
 
     /// <summary>#960 — the dossier's own minimize, the same gesture the scope now has (owner: "option to
     /// minimize a window into a sugarcube tile and back would avoid the moving-windows can of worms").
-    /// Per-session, like the scope's.</summary>
+    /// Per-session, like the scope's.
+    ///
+    /// <para>#997 · …and "the same gesture the scope now has" is finally one gesture rather than two that
+    /// resemble each other: the OverlayShell owns it, this field is what the card is BOUND to, and the
+    /// toggle that used to sit here is gone.</para></summary>
     private bool _dossierMinimized;
-
-    private void ToggleDossierMinimized() => _dossierMinimized = !_dossierMinimized;
 
     /// <summary>#963 — the hover on a find-a-target row. The owner's question about the small glyph beside
     /// Ganymede ("Is there ground visitable at these places… what is the small symbol… it should have some

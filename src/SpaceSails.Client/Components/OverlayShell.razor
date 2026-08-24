@@ -1,0 +1,378 @@
+@namespace SpaceSails.Client.Components
+@using System.Diagnostics
+
+@* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #997 · THE OVERLAY SHELL — one component owning what every pop-up in this client shares.
+
+   #992 enumerated 89 positioned surfaces and wrote the owner's ruling down as a law. What that audit also
+   found is that the SAME few moves had been implemented over and over: a card, a title, a way out, and —
+   twice, independently, with no shared field between them — a minimise-into-a-tile (#963's scope and
+   #960's dossier). This is those moves, once.
+
+   WHAT IT DOES NOT OWN: geometry. Every surface keeps its own class and its own rule in the page's
+   stylesheet — where it sits, how wide it is, what colour its border is. The shell owns the CHROME and the
+   MECHANISM: the head row, the dismiss affordance, the tile round-trip, the stacking backstop. That split
+   is why this migration moves nothing on the screen.
+
+   HOW THE PAGE'S OWN CSS STILL REACHES IT. Blazor scopes a stylesheet to the component that RENDERED the
+   element, so a `.map-dossier` rule in Map.razor.css stops matching the moment this component draws that
+   div. Every such rule is reached with `::deep` instead — the idiom Map.razor.css has used for the
+   TrackingPost child component since M27 — which compiles to `[b-map] .map-dossier` and matches again.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
+@{
+    RenderFragment theDismiss =
+        @<button type="button" class="overlay-shell-dismiss @DismissClass"
+                 aria-label="@DismissLabel" title="@DismissTitle" @onclick="PressTheDismiss">@DismissFace</button>;
+
+    RenderFragment theSecondaryClose =
+        @<button type="button" class="overlay-shell-close @CloseClass"
+                 aria-label="@CloseLabel" title="@CloseTitle" @onclick="PressTheClose">@CloseFace</button>;
+}
+<div class="@RootClassList" @attributes="Splat" @onclick:stopPropagation="StopClicks">
+    @if (Dismiss == OverlayDismiss.Minimize)
+    {
+        @* THE TILE, AND IT IS NEVER A DIFFERENT ELEMENT. #963's scope minimises by class rather than by
+           `@if` for a reason the M26 fix paid for in a dark eyepiece: destroying the surface destroys the
+           canvas inside it and leaves renderer.js holding a stale 2D context. So the tucked state hides its
+           own head and body and shows this button — one element, one subtree, nothing recreated, and
+           whatever the body was in the middle of is still there when it comes back. *@
+        <button type="button" class="overlay-shell-tile-btn @TileButtonClass @(Tucked ? "" : "d-none")"
+                aria-label="@OpenLabel" title="@OpenTitle" @onclick="PressTheDismiss">@TileFace</button>
+    }
+    @if (Frame == OverlayFrame.Bare)
+    {
+        @* #996's story-plate idiom: no head, no body wrapper, and the way out is the LAST child. The plate
+           is one flex row of [art][words][✕], and the .view-object family pins its foot with
+           `.view-object > .view-object-close` — both need the dismiss to be a DIRECT child, so a wrapper
+           here would be a wrapper that quietly unstuck twenty cards' buttons. *@
+        @ChildContent
+        @if (Dismiss != OverlayDismiss.ByDecision)
+        {
+            @theDismiss
+        }
+    }
+    else
+    {
+        @if (Title is { Length: > 0 } || TitleContent is not null || Tools is not null
+             || Dismiss != OverlayDismiss.ByDecision)
+        {
+            <div class="overlay-shell-head @HeadClass @(Tucked ? "d-none" : "")">
+                <span class="overlay-shell-title @TitleClass">@Title@TitleContent</span>
+                <span class="overlay-shell-tools @ToolsClass">
+                    @Tools
+                    @if (Dismiss != OverlayDismiss.ByDecision)
+                    {
+                        @theDismiss
+                    }
+                    @if (Dismiss == OverlayDismiss.Minimize && OnClose.HasDelegate)
+                    {
+                        @* #960's dossier carries BOTH: a – that tucks it and a ✕ that ends it. Two verbs,
+                           one card, and neither is the other — tucking keeps the target, closing drops it. *@
+                        @theSecondaryClose
+                    }
+                </span>
+            </div>
+        }
+        <div class="overlay-shell-body @BodyClass @(Tucked ? "d-none" : "")">
+            @ChildContent
+            @if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: > 0 })
+            {
+                <div class="overlay-shell-choices @ChoicesClass">
+                    @foreach (Choice choice in Choices)
+                    {
+                        Choice thisOne = choice;
+                        <button type="button" class="overlay-shell-choice @ChoiceClass" title="@thisOne.Title"
+                                @onclick="() => Choose(thisOne)">@thisOne.Label</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>One answer on a critical-decision modal. <c>Closes</c> is the CLAIM that taking this answer
+    /// ends the surface; the shell does not believe it — it watches for the surface still being drawn
+    /// afterwards and complains then. The flag is only there so a shell that offers nothing but non-closing
+    /// answers can be caught before anybody presses one.</summary>
+    public sealed record Choice(string Label, EventCallback Chosen, string? Title = null, bool Closes = true);
+
+    /// <summary>
+    /// #997 · WHERE A DESIGN FAULT GOES. <see cref="Debug.Fail(string)"/> by default — which compiles away
+    /// entirely in Release, so none of the auditing below costs the shipped game anything — and swappable so
+    /// a test can prove the audit FIRES instead of trusting that it would. Never a throw: a shell that blew
+    /// the page up over a missing tooltip would be a worse bug than the one it is reporting.
+    /// </summary>
+    internal static Action<string> DesignFault { get; set; } = static message => Debug.Fail(message);
+
+    // ── What kind of surface this is ─────────────────────────────────────────────────────────────────
+
+    [Parameter] public OverlayDismiss Dismiss { get; set; } = OverlayDismiss.Close;
+
+    [Parameter] public OverlayFrame Frame { get; set; } = OverlayFrame.Card;
+
+    // ── Its contents ─────────────────────────────────────────────────────────────────────────────────
+
+    [Parameter] public string? Title { get; set; }
+
+    [Parameter] public RenderFragment? TitleContent { get; set; }
+
+    /// <summary>Controls that belong on the head row beside the dismiss — the scope's ◀ AUTO ▶.</summary>
+    [Parameter] public RenderFragment? Tools { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>The answers on a <see cref="OverlayDismiss.ByDecision"/> modal.</summary>
+    [Parameter] public IReadOnlyList<Choice>? Choices { get; set; }
+
+    // ── The ways out ─────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>The close verb: the ✕ in <see cref="OverlayDismiss.Close"/>, and the dossier's second
+    /// control in <see cref="OverlayDismiss.Minimize"/>.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>Bound when the page needs to KNOW it is tucked — the scope's own tick skips drawing an
+    /// eyepiece nobody can see. Left unbound the shell simply remembers it itself, which is the same
+    /// per-session memory #963 and #960 each wrote their own field for.</summary>
+    [Parameter] public bool Minimized { get; set; }
+
+    [Parameter] public EventCallback<bool> MinimizedChanged { get; set; }
+
+    /// <summary>
+    /// DRAWN, AND OFF THE SCREEN. Bootstrap's <c>d-none</c>, applied to whichever of the two states is up.
+    ///
+    /// <para>Not the same thing as <c>@@if</c>, and the difference cost the M26 fix a dark eyepiece: the
+    /// scope must survive a desk switch WITH ITS CANVAS, because a recreated element leaves renderer.js
+    /// holding a stale 2D context. A surface that is only sometimes on this desk hides; it does not go.</para>
+    ///
+    /// <para>It rides outside the class swap on purpose. A page that wrote its own <c>d-none</c> into the
+    /// class attribute would lose it the moment the shell tucked itself into a tile — and a tile that
+    /// followed the captain onto every other desk is exactly the bug that shape invites.</para>
+    /// </summary>
+    [Parameter] public bool Hidden { get; set; }
+
+    /// <summary>Keep a click on this surface off whatever is behind it. The <c>.view-object</c> family sits
+    /// in a backdrop that closes on a click, and a card that let its own clicks through would close itself
+    /// under the captain's hand.</summary>
+    [Parameter] public bool StopClicks { get; set; }
+
+    /// <summary>A ByDecision surface that answers in STAGES (the BUSTED demand's second page) and is meant
+    /// to still be up after a press. Opts out of the behaviour audit, deliberately and by name.</summary>
+    [Parameter] public bool Restages { get; set; }
+
+    // ── The tile ─────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>The class the ROOT wears while tucked, in place of the page's own. Which corner it lands in
+    /// is that class's business — <see cref="Corner"/> offers one when the page has no opinion.</summary>
+    [Parameter] public string? TileClass { get; set; }
+
+    [Parameter] public OverlayCorner Corner { get; set; } = OverlayCorner.None;
+
+    [Parameter] public string? TileGlyph { get; set; }
+
+    [Parameter] public string? TileLabel { get; set; }
+
+    [Parameter] public string? TileButtonClass { get; set; }
+
+    [Parameter] public string? OpenTitle { get; set; }
+
+    // ── Stacking ─────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#960 · TWO SHELLS AT ONE ANCHOR TAKE TURNS. Set when something else already owns this
+    /// surface's spot: the shell lifts clear of it rather than lying across it. Never a z-index — the card
+    /// underneath is one the captain is reading too.</summary>
+    [Parameter] public bool Stacked { get; set; }
+
+    /// <summary>The page's own name for its raised state, when it wants to say how far by itself.</summary>
+    [Parameter] public string? StackedClass { get; set; }
+
+    // ── Chrome the page names ────────────────────────────────────────────────────────────────────────
+
+    [Parameter] public string? HeadClass { get; set; }
+
+    [Parameter] public string? TitleClass { get; set; }
+
+    [Parameter] public string? ToolsClass { get; set; }
+
+    [Parameter] public string? BodyClass { get; set; }
+
+    [Parameter] public string? DismissClass { get; set; }
+
+    [Parameter] public string? DismissFace { get; set; }
+
+    [Parameter] public string? DismissLabel { get; set; }
+
+    [Parameter] public string? DismissTitle { get; set; }
+
+    [Parameter] public string? CloseClass { get; set; }
+
+    [Parameter] public string? CloseFace { get; set; }
+
+    [Parameter] public string? CloseLabel { get; set; }
+
+    [Parameter] public string? CloseTitle { get; set; }
+
+    [Parameter] public string? ChoicesClass { get; set; }
+
+    [Parameter] public string? ChoiceClass { get; set; }
+
+    /// <summary>
+    /// Everything else the page wrote on the tag — and the reason <c>class</c> is CAPTURED rather than
+    /// declared as a parameter is the dismissibility law. Its completeness guard reads the markup AS TYPED,
+    /// looking for <c>class="…"</c>; a surface that named itself through a <c>Class</c> parameter would
+    /// vanish from that guard's sight and be covered by nothing. So the page goes on writing a lowercase
+    /// class attribute, this catches it, and the law goes on seeing every surface in the file.
+    /// </summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? Extra { get; set; }
+
+    private bool _tucked;
+
+    private bool _decided;
+
+    private bool Tucked =>
+        Dismiss == OverlayDismiss.Minimize && (MinimizedChanged.HasDelegate ? Minimized : _tucked);
+
+    private string HostClass =>
+        Extra is not null && Extra.TryGetValue("class", out object? css) ? css?.ToString() ?? "" : "";
+
+    /// <summary>The captured attributes MINUS the class — the class is merged by hand above, and splatting
+    /// it as well would leave the surface wearing its open name while it is tucked.</summary>
+    private IReadOnlyDictionary<string, object>? Splat =>
+        Extra is null || !Extra.ContainsKey("class")
+            ? Extra
+            : Extra.Where(pair => pair.Key != "class").ToDictionary(pair => pair.Key, pair => pair.Value);
+
+    private string TileFace => $"{TileGlyph} {TileLabel}".Trim();
+
+    private string OpenLabel => TileLabel is { Length: > 0 } named ? $"Open {named}" : "Open it back up";
+
+    private string RootClassList =>
+        string.Join(' ', new[]
+        {
+            "overlay-shell",
+            Frame switch
+            {
+                OverlayFrame.Hosted => "overlay-shell-hosted",
+                OverlayFrame.Bare => "overlay-shell-bare",
+                _ => "overlay-shell-card",
+            },
+            Tucked ? "overlay-shell-tucked" : "",
+            Tucked ? TileClass ?? "" : HostClass,
+            Tucked ? CornerClass : "",
+            !Tucked && Stacked ? "overlay-shell-stacked" : "",
+            !Tucked && Stacked ? StackedClass ?? "" : "",
+            Hidden ? "d-none" : "",
+        }.Where(css => css.Length > 0));
+
+    private string CornerClass => Corner switch
+    {
+        OverlayCorner.BottomRight => "overlay-shell-corner-br",
+        OverlayCorner.BottomLeft => "overlay-shell-corner-bl",
+        OverlayCorner.BottomCentre => "overlay-shell-corner-bc",
+        OverlayCorner.TopRight => "overlay-shell-corner-tr",
+        _ => "",
+    };
+
+    protected override void OnParametersSet() => AuditTheShape();
+
+    protected override void OnAfterRender(bool firstRender) => AuditTheDecision();
+
+    private async Task PressTheDismiss()
+    {
+        if (Dismiss == OverlayDismiss.Minimize)
+        {
+            bool next = !Tucked;
+            _tucked = next;
+            if (MinimizedChanged.HasDelegate)
+            {
+                await MinimizedChanged.InvokeAsync(next);
+            }
+
+            return;
+        }
+
+        await PressTheClose();
+    }
+
+    private Task PressTheClose() => OnClose.HasDelegate ? OnClose.InvokeAsync() : Task.CompletedTask;
+
+    private async Task Choose(Choice choice)
+    {
+        _decided = true;
+        if (choice.Chosen.HasDelegate)
+        {
+            await choice.Chosen.InvokeAsync();
+        }
+    }
+
+    /// <summary>
+    /// #997 · THE DESIGN AUDIT, and it costs Release nothing (<see cref="ConditionalAttribute"/>).
+    ///
+    /// <para>Three shapes, each of them the ruling failing quietly rather than loudly: a Close with no verb
+    /// behind its ✕ (the control that LOOKS like a way out and is wired to nothing — the exact bug #992 was
+    /// written to catch); a Minimize with no face on its tile (tucked into a mystery button, which is #963's
+    /// own complaint about the toolbar switch it replaced); and a ByDecision that offers no decision at all,
+    /// which is the forbidden shape wearing the exception's clothes.</para>
+    /// </summary>
+    [Conditional("DEBUG")]
+    private void AuditTheShape()
+    {
+        string me = Title is { Length: > 0 } named ? $"the \"{named}\" shell" : $"an {Frame} shell";
+
+        if (Dismiss == OverlayDismiss.Close && !OnClose.HasDelegate)
+        {
+            DesignFault($"{me} is a Close and nothing is wired to OnClose: its ✕ would be a control that "
+                        + "looks like a way out and is not one — the owner's ruling of 2026-08-24 failing "
+                        + "quietly instead of loudly.");
+        }
+
+        if (Dismiss == OverlayDismiss.Minimize && TileFace.Length == 0)
+        {
+            DesignFault($"{me} minimises into a tile with no face on it. A tile with no glyph and no label "
+                        + "is a mystery button in a corner.");
+        }
+
+        if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: 0 })
+        {
+            DesignFault($"{me} is a critical-decision modal — allowed no ✕ only because every answer it "
+                        + "offers is itself a close — and it offers no answers.");
+        }
+
+        if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: > 0 } offered
+            && !offered.Any(choice => choice.Closes))
+        {
+            DesignFault($"{me} is a critical-decision modal and not one of its {offered.Count} answers even "
+                        + "claims to end it. There is no way out of it at all.");
+        }
+    }
+
+    /// <summary>
+    /// #997 · …and the one audit that is about BEHAVIOUR rather than shape, because a claim in a parameter
+    /// is a claim, and this repository has been burned by guards that took such claims from a list.
+    ///
+    /// <para>An answer was pressed and this shell is being drawn again: the decision did not end the
+    /// surface, so the exception it claims — "no ✕ is needed, every answer closes it" — is false on the
+    /// screen. A modal that really does answer in stages says so with <see cref="Restages"/>.</para>
+    /// </summary>
+    [Conditional("DEBUG")]
+    private void AuditTheDecision()
+    {
+        if (!_decided)
+        {
+            return;
+        }
+
+        _decided = false;
+        if (Restages)
+        {
+            return;
+        }
+
+        string me = Title is { Length: > 0 } named ? $"\"{named}\"" : "a ByDecision shell";
+        DesignFault($"a decision was taken on {me} and the surface is still on the screen. It carries no ✕ "
+                    + "because every answer was supposed to be one — give it a Close, or make the answer "
+                    + "end it.");
+    }
+}
