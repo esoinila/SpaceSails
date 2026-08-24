@@ -1546,7 +1546,23 @@
     @if (_repCard is { } pitch)
     {
         <div class="view-object-backdrop rep-backdrop">
-            <div class="view-object rep-card" @onclick:stopPropagation="true">
+            @* #997 · AND HE GETS A WAY OUT THAT IS NOT AN ANSWER. #992's register has this card down as a
+               critical-DECISION modal — allowed no ✕ only because every answer it offers is itself a close
+               — and that row was never driven, so nothing ever pressed it. Read AnswerTheRep: THREE of his
+               six moves leave the card up. Buying refreshes the pitch to the tier you now hold, "I already
+               have a policy" sets his reply beside it, and "that is not my name" re-pitches under the
+               corrected name. Only "not today" and "good day" send him to the bar. So the claim was false,
+               and the honest fix is the one the ruling asks for first: a way out that is not a decision.
+
+               A BARE frame, because .view-object is a flex column whose foot is pinned by
+               `.view-object > .view-object-close` — the dismiss has to be a DIRECT child of the card, and
+               a shell that wrapped it would quietly unstick twenty other cards' buttons too. *@
+            <OverlayShell class="view-object rep-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          DismissLabel="Step away from the rep"
+                          DismissTitle="Leave the pitch where it is — he keeps the file, and the bar keeps him"
+                          OnClose="() => Dismiss(CloseTheRepsCard)">
                 <div class="view-object-title">@SpaceSails.Core.NebulaRep.DisplayName</div>
                 <img class="view-object-img rep-portrait" src="@SpaceSails.Core.NebulaRep.PortraitArt"
                      alt="@SpaceSails.Core.NebulaRep.RepName" onerror="this.style.display='none'" />
@@ -1563,7 +1579,7 @@
                         <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheRep(repMove))">@repOffer.Label</button>
                     }
                 </div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -5481,7 +5497,21 @@
 
         @if (PlotMode)
         {
-            <div class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+            @* #997 · THE PANEL IS A CappedScrollPanel NOW, and its behaviour is exactly #993's — because
+               the component IS #993's arithmetic, lifted out of this one panel's forty-line comment and
+               given a name. A head that keeps its measured height, a body that takes what is left and
+               scrolls there, a floor under the body so a short window pages the panel instead of squeezing
+               the plan to nothing, and the open editor scrolled into view when — and only when — WHICH
+               editor is open has changed since the last paint.
+
+               PlotPanelFitsTheWindowTests is unchanged and still locates `.map-plot` and `.map-plot-nodes`
+               by name: the panel keeps both names and both jobs, and the guard that proved the behaviour
+               at 1280x720 is the guard that now proves the component. *@
+            <CappedScrollPanel class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small"
+                               BodyClass="map-plot-nodes" BodyFloor="6rem"
+                               HasContent="@(!PlanListIsEmpty)"
+                               OpenChild="@OpenPlanEditorKey()" OpenChildSelector=".map-plan-step-open">
+                <Header>
                 <div class="fw-bold mb-1">Plotting</div>
                 <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
@@ -5701,24 +5731,29 @@
                     </button>
                 }
 
-                @if (_planNodes.Count == 0 && _armedOrbitBodyId is null && _arrive is null)
+                @* #989 · THE PLAN'S SHAPE, SAID AT THE DESK. Owner: "2 cast-off in sequence sounds kind of
+                   silly — we should have some logic check." The check is Core's (CastOffRule.CheckShape),
+                   and it is the SAME call that refuses a second pair at the button and that wakes the
+                   captain once when a plan on the board goes bad. Here it is simply readable: a plan that
+                   cannot be flown as written says so above the steps, in the rule's own words.
+
+                   #997 · IT AND THE EMPTY LINE ARE BOTH HEAD, and that is the whole of the restructuring
+                   this migration asked of the panel: what is above the plan does not scroll, the plan does.
+                   The empty state is a head row for a reason a body element would have got wrong — a body
+                   drawn on an empty plan would stand its own 6rem floor of blank scroller under a sentence
+                   that says there is nothing to scroll. *@
+                @if (PlanListIsEmpty)
                 {
                     <div class="text-secondary">@(NavLockedByDock
                         ? "No steps yet. Press ⚓ + Cast off to start the plan at this berth, then add the burns and end it with an orbit or a dock."
                         : "No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.")</div>
                 }
-                else
+                else if (PlanShapeWarningLine() is { } _shapeWarning)
                 {
-                    @* #989 · THE PLAN'S SHAPE, SAID AT THE DESK. Owner: "2 cast-off in sequence sounds kind of
-                       silly — we should have some logic check." The check is Core's (CastOffRule.CheckShape),
-                       and it is the SAME call that refuses a second pair at the button and that wakes the
-                       captain once when a plan on the board goes bad. Here it is simply readable: a plan that
-                       cannot be flown as written says so above the steps, in the rule's own words. *@
-                    @if (PlanShapeWarningLine() is { } _shapeWarning)
-                    {
-                        <div class="text-warning small mb-1">✗ @_shapeWarning</div>
-                    }
-                    <div class="map-plot-nodes">
+                    <div class="text-warning small mb-1">✗ @_shapeWarning</div>
+                }
+                </Header>
+                <ChildContent>
                         @foreach (PlanNode node in _planNodes)
                         {
                             @* #955 NAV-1 · THE TWO DEPARTURE ROWS. Shaped exactly like every other row — pip,
@@ -6156,9 +6191,8 @@
                                 }
                             </div>
                         }
-                    </div>
-                }
-            </div>
+                </ChildContent>
+            </CappedScrollPanel>
         }
     </div>
     }
@@ -6189,7 +6223,14 @@
         @if (_storyPlate is { } flash)
         {
             var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
-            <div class="story-plate" aria-live="polite">
+            @* #997 · the plate is an OverlayShell in its BARE frame: no head row, no body wrapper, and the
+               way out is the LAST child — which is exactly the geometry #996 measured and #992 gave it. The
+               plate is one flex row of [art][words][✕], so the shell puts nothing between them. *@
+            <OverlayShell class="story-plate" aria-live="polite"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="story-plate-close" DismissFace="✕" DismissLabel="Close"
+                          DismissTitle="Take it down now — it would go on its own in a few seconds"
+                          OnClose="() => Dismiss(CloseStoryPlate)">
                 @if (flashCopy.Art is { Length: > 0 })
                 {
                     <img class="story-plate-art" src="@flashCopy.Art" alt=""
@@ -6199,10 +6240,7 @@
                     <div class="story-plate-title">@flashCopy.Title</div>
                     <div class="story-plate-caption">@flashCopy.Caption</div>
                 </div>
-                <button type="button" class="story-plate-close" aria-label="Close"
-                        title="Take it down now — it would go on its own in a few seconds"
-                        @onclick="() => Dismiss(CloseStoryPlate)">✕</button>
-            </div>
+            </OverlayShell>
         }
 
     </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
@@ -6419,33 +6457,40 @@
     @* The scope lives OUTSIDE the Nav-desk if: Blazor must never destroy this canvas — a
        recreated element leaves renderer.js holding a stale 2D context and the scope goes
        permanently dark after any desk switch (M26 fix). CSS hides it off-Nav instead. *@
-    <div class="map-scope @(!_scopeMinimized && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
-        <div class="card bg-dark bg-opacity-75 text-light">
-            <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
-                <span class="fw-bold small">Scope 🔭</span>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Scope target">
-                    <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the previous target" @onclick="() => CycleScopeTarget(-1)">◀</button>
-                    <button type="button" class="btn @(_scopeManualId is null ? "btn-info" : "btn-outline-light") py-0" title="Let the scope pick its own target automatically" @onclick="() => _scopeManualId = null">AUTO</button>
-                    <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the next target" @onclick="() => CycleScopeTarget(1)">▶</button>
-                </div>
-                @* #963 — MINIMISE, not close. A closed window needs a switch somewhere else to reopen it (which
-                   is exactly the toolbar button the owner sent away); a minimised one leaves its own way back. *@
-                <button type="button" class="btn btn-sm btn-outline-light py-0 map-scope-min" aria-label="Minimise the scope"
-                        title="Minimise the scope into a tile — click the tile to bring it back" @onclick="ToggleScopeMinimized">–</button>
+    @* #997 · ONE ELEMENT NOW, NOT TWO. #963 wrote the window and its tile as separate siblings, each
+       gated on the same pair of conditions; the shell tucks by swapping the root's class list, so the
+       canvas below is the SAME element in both states and the M26 rule above holds by construction rather
+       than by two markup gates agreeing with each other. `Hidden` rides outside that swap on purpose — a
+       d-none written into the class attribute would be lost the moment the shell went to its tile, and a
+       tile that followed the captain onto every other desk is the bug that shape invites.
+
+       #963 — MINIMISE, not close. A closed window needs a switch somewhere else to reopen it (which is
+       exactly the toolbar button the owner sent away); a minimised one leaves its own way back, and the
+       tile names what is in the eyepiece so it reads as an instrument standing by rather than a mystery
+       button. *@
+    <OverlayShell class="map-scope card bg-dark bg-opacity-75 text-light"
+                  Hidden="@(_activeDesk != ShipDesk.Nav)"
+                  Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_scopeMinimized"
+                  Title="Scope 🔭" TitleClass="fw-bold small"
+                  HeadClass="card-header py-1 d-flex justify-content-between align-items-center gap-1"
+                  BodyClass="card-body p-1"
+                  DismissClass="btn btn-sm btn-outline-light py-0 map-scope-min"
+                  DismissFace="–" DismissLabel="Minimise the scope"
+                  DismissTitle="Minimise the scope into a tile — click the tile to bring it back"
+                  TileClass="map-scope-tile" TileGlyph="🔭" TileLabel="@ScopeTileTargetName()"
+                  TileButtonClass="btn btn-sm btn-outline-info"
+                  OpenTitle="@($"Open the scope wide — the telescope is on {ScopeTileTargetName()}")">
+        <Tools>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Scope target">
+                <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the previous target" @onclick="() => CycleScopeTarget(-1)">◀</button>
+                <button type="button" class="btn @(_scopeManualId is null ? "btn-info" : "btn-outline-light") py-0" title="Let the scope pick its own target automatically" @onclick="() => _scopeManualId = null">AUTO</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the next target" @onclick="() => CycleScopeTarget(1)">▶</button>
             </div>
-            <div class="card-body p-1">
-                <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
-            </div>
-        </div>
-    </div>
-    @* #963 — the minimised scope: a button-sized tile in the SAME corner the window vacated, naming what is
-       in the eyepiece so it reads as an instrument standing by rather than a mystery button. Outside the
-       Nav-desk if for the same reason the window is (the canvas above must never be destroyed). *@
-    <div class="map-scope-tile @(_scopeMinimized && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
-        <button type="button" class="btn btn-sm btn-outline-info"
-                title="Open the scope wide — the telescope is on @ScopeTileTargetName()"
-                @onclick="ToggleScopeMinimized">🔭 @ScopeTileTargetName()</button>
-    </div>
+        </Tools>
+        <ChildContent>
+            <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
+        </ChildContent>
+    </OverlayShell>
 
     @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
        (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
@@ -6465,20 +6510,25 @@
            Maybe option to minimize a window into a sugarcube tile"): when the nav panel is up the dossier is
            RAISED to ride above it (the panel with the buttons keeps the floor), and either way the card now
            minimises into a tile of its own. No dragging — that is the can of worms he named. *@
-        <div class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small @(DossierIsStacked ? "map-dossier-raised" : "") @(_dossierMinimized ? "map-dossier-tile" : "")">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">📖 @dossier.Name @if (!_dossierMinimized) {<span class="text-secondary">@dossier.Detail</span>}</span>
-                <span class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-sm btn-outline-light py-0 map-dossier-min"
-                            aria-label="@(_dossierMinimized ? "Open the dossier" : "Minimise the dossier")"
-                            title="@(_dossierMinimized ? "Open the dossier back up" : "Minimise the dossier into a tile — click it to bring it back")"
-                            @onclick="ToggleDossierMinimized">@(_dossierMinimized ? "▣" : "–")</button>
-                    <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier" title="Close the target dossier"
-                            @onclick="() => Dismiss(CloseDossier)"></button>
-                </span>
-            </div>
-            @if (!_dossierMinimized)
-            {
+        @* #997 · both of #960's answers are now the shell's, and they are the SAME two the scope has —
+           one minimise mechanism instead of two independent booleans and two markup shapes. The card keeps
+           BOTH verbs, because they are not the same verb: tucking keeps the target and closing drops it. *@
+        <OverlayShell class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small"
+                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_dossierMinimized"
+                      Stacked="DossierIsStacked" StackedClass="map-dossier-raised"
+                      HeadClass="d-flex justify-content-between align-items-center"
+                      TitleClass="fw-bold" ToolsClass="d-flex align-items-center gap-1"
+                      DismissClass="btn btn-sm btn-outline-light py-0 map-dossier-min"
+                      DismissFace="–" DismissLabel="Minimise the dossier"
+                      DismissTitle="Minimise the dossier into a tile — click it to bring it back"
+                      CloseClass="btn-close btn-close-white btn-sm" CloseLabel="Close dossier"
+                      CloseTitle="Close the target dossier" OnClose="() => Dismiss(CloseDossier)"
+                      TileClass="map-dossier-tile" Corner="OverlayCorner.BottomCentre"
+                      TileGlyph="📖" TileLabel="@dossier.Name"
+                      TileButtonClass="btn btn-sm btn-outline-info"
+                      OpenTitle="Open the dossier back up">
+            <TitleContent>📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></TitleContent>
+            <ChildContent>
             <div>@dossier.StatusLine</div>
             @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
                glance — "ex-AURORA QUEEN · three owners deep". The full ledger lives on her comms dossier. *@
@@ -6546,8 +6596,8 @@
                 <button type="button" class="btn btn-sm btn-outline-light py-0"
                         title="Take this target to the war room" @onclick="() => SwitchDeskFromClick(ShipDesk.WarRoom)">⚔ war room</button>
             </div>
-            }
-        </div>
+            </ChildContent>
+        </OverlayShell>
     }
 
     @* M29: desk-layer-passthrough — the sensors chief works the SKY, not a form: pointer

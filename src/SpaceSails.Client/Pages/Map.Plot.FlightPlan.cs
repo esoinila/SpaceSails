@@ -168,34 +168,33 @@ public partial class Map
         }
     }
 
-    /// <summary>#992 · The accordion state the last paint already scrolled to. Compared rather than flagged
-    /// ON PURPOSE: an editor opens from five places — this toggle, a fresh burn (<c>AddBurnAtScrub</c>), the
-    /// cast-off pair, a click on a ribbon node, and an arrival — and a flag set at four of them is a flag
-    /// somebody forgets at the fifth. The accordion holds exactly one open editor (PR-D2), so "which one is
-    /// open" IS the whole state, and asking whether it changed cannot be forgotten anywhere.</summary>
-    private FlightEditorKind _scrolledEditorKind = FlightEditorKind.None;
-    private PlanNode? _scrolledEditorNode;
+    /// <summary>
+    /// #997 · IS THERE A PLAN TO SCROLL AT ALL. Asked once, in one place, because the Plotting panel now
+    /// asks it twice — the head draws the "no steps yet" line, and the body is not drawn at all — and two
+    /// spellings of one condition is how a panel ends up saying there is nothing on the plan above a
+    /// scroller with something on it.
+    /// </summary>
+    private bool PlanListIsEmpty =>
+        _planNodes.Count == 0 && _armedOrbitBodyId is null && _arrive is null;
 
-    /// <summary>#992 · Bring the open step's row inside the step list, once the editor is really in the DOM.
+    /// <summary>
+    /// #992/#997 · WHICH EDITOR IS OPEN, as a string the panel can compare between paints.
     ///
-    /// <para>The list scrolls now (the panel is bound to the window), so a step opened near the bottom of a
-    /// long plan can unfold below the LIST's fold — the owner's sighting one scroller further in. A selector
-    /// rather than an ElementReference: exactly one row carries <c>map-plan-step-open</c> at a time, and the
-    /// class the CSS already keys off is the one honest handle on it.</para></summary>
-    private void BringOpenStepIntoViewIfAsked()
-    {
-        if (_openEditor == _scrolledEditorKind && ReferenceEquals(_selectedPlanNode, _scrolledEditorNode))
-        {
-            return;
-        }
-
-        _scrolledEditorKind = _openEditor;
-        _scrolledEditorNode = _selectedPlanNode;
-        if (_openEditor != FlightEditorKind.None)
-        {
-            RendererInterop.ScrollIntoView(".map-plan-step-open");
-        }
-    }
+    /// <para>Compared rather than flagged ON PURPOSE, and that is #992's finding rather than a preference:
+    /// an editor opens from five places — the row toggle, a fresh burn (<c>AddBurnAtScrub</c>), the cast-off
+    /// pair, a click on a ribbon node, and an arrival — and a flag set at four of them is a flag somebody
+    /// forgets at the fifth. The accordion holds exactly one open editor (PR-D2), so "which one is open" IS
+    /// the whole state, and asking whether it changed cannot be forgotten anywhere.</para>
+    ///
+    /// <para>The node's identity is its INDEX on the plan rather than its reference, because the comparison
+    /// now travels as a component parameter and a parameter is a value. Two steps never share an index, and
+    /// the worst a reordered plan can do is scroll to a row that was already in view — which is a no-op,
+    /// because <c>ScrollIntoView</c> asks for <c>block: 'nearest'</c>.</para>
+    /// </summary>
+    private string? OpenPlanEditorKey() =>
+        _openEditor == FlightEditorKind.None
+            ? null
+            : $"{_openEditor}#{(_selectedPlanNode is null ? -1 : _planNodes.IndexOf(_selectedPlanNode))}";
 
     // The NOW / next readout AND the full banner row list, built through the shared Core helper so the
     // banner, the Nav header, and the desk chips can never contradict (#159/#184). The queue below NOW

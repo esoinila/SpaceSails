@@ -270,16 +270,32 @@ internal sealed class DeskBench : Renderer
 
     // ── The render tree, walked ──────────────────────────────────────────────────────────────────────
 
-    private void WalkComponent(int componentId, Painted into, StringBuilder spokenHere, Painted.Node parent)
+    private void WalkComponent(int componentId, Painted into, StringBuilder spokenHere, Painted.Node parent) =>
+        Walk(GetCurrentRenderTreeFrames, componentId, into, spokenHere, parent);
+
+    /// <summary>
+    /// #997 · THE WALK, LIFTED OUT OF THIS BENCH. It was private and it was only ever about frames, not
+    /// about the Map: the only thing it needed from the renderer was "hand me component N's frames", which
+    /// is now the first parameter. <see cref="ShellBench"/> mounts a single component instead of the whole
+    /// page and reads its tree with exactly this code — one reading of a render tree in the test project,
+    /// so a component test and the dismissibility law can never disagree about what was drawn.
+    /// </summary>
+    internal static void Walk(
+        Func<int, ArrayRange<RenderTreeFrame>> framesOf,
+        int componentId,
+        Painted into,
+        StringBuilder spokenHere,
+        Painted.Node parent)
     {
-        ArrayRange<RenderTreeFrame> frames = GetCurrentRenderTreeFrames(componentId);
-        WalkRange(frames.Array, 0, frames.Count, into, spokenHere, parent);
+        ArrayRange<RenderTreeFrame> frames = framesOf(componentId);
+        WalkRange(framesOf, frames.Array, 0, frames.Count, into, spokenHere, parent);
     }
 
     /// <summary>One pass over a frame range, honouring the subtree lengths the renderer wrote — so an
     /// element's attributes are ITS attributes and the text under it is ITS text, which is what lets a control
     /// be named and a class list be attached to the element that wears it.</summary>
-    private void WalkRange(
+    private static void WalkRange(
+        Func<int, ArrayRange<RenderTreeFrame>> framesOf,
         RenderTreeFrame[] all, int start, int end, Painted into, StringBuilder spokenHere, Painted.Node parent)
     {
         int at = start;
@@ -317,7 +333,7 @@ internal sealed class DeskBench : Renderer
                     parent.Children.Add(node);
 
                     var inside = new StringBuilder();
-                    WalkRange(all, child, subtreeEnd, into, inside, node);
+                    WalkRange(framesOf, all, child, subtreeEnd, into, inside, node);
                     node.Spoken = inside.ToString().Trim();
                     into.Element(element, attributes, node.Spoken);
                     spokenHere.Append(inside);
@@ -346,7 +362,7 @@ internal sealed class DeskBench : Renderer
                 case RenderTreeFrameType.Component:
                 {
                     into.Components.Add(frame.ComponentType?.Name ?? "?");
-                    WalkComponent(frame.ComponentId, into, spokenHere, parent);
+                    Walk(framesOf, frame.ComponentId, into, spokenHere, parent);
                     at += Math.Max(1, frame.ComponentSubtreeLength);
                     break;
                 }

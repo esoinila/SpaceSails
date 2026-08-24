@@ -58,12 +58,11 @@ public partial class Map
 
     protected override Task OnAfterRenderAsync(bool firstRender)
     {
-        // #992 · The one thing here that runs on EVERY paint rather than only the first: a step editor that
-        // has just unfolded is brought inside the (now scrolling) flight-plan list. It has to happen after
-        // the render, because until then the editor is not in the DOM to be scrolled to — and it is a
-        // no-op on every paint that did not open one.
-        BringOpenStepIntoViewIfAsked();
-
+        // #997 · The "bring the open step into view" pass that used to run here on EVERY paint is now the
+        // CappedScrollPanel's own: the panel is the thing with the scroll in it, so the panel is where the
+        // after-render comparison belongs. #992's rule survives the move unchanged — ask whether WHICH
+        // editor is open has changed since the last paint, rather than setting a flag at each of the five
+        // places an editor can be opened from and forgetting it at the fifth.
         if (!firstRender || _started)
         {
             return Task.CompletedTask;

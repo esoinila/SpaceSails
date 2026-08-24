@@ -277,9 +277,14 @@ public sealed class EveryTextReadsTests
 
         // Every member of the family, read off the block itself rather than typed in here again.
         string head = css[family..css.IndexOf('{', family)];
+        // `::deep` is a legal way to open a selector in this file, and has been since M27 (Map.razor.css
+        // reaches into the TrackingPost child component that way). #997 put the rep's pitch inside an
+        // OverlayShell, so `.view-object` is drawn by a component now and its membership of this family
+        // has to be written `::deep .view-object` or it matches nothing at all. A guard that counted only
+        // the dot-first members would have quietly stopped watching that card — and gone on passing.
         string[] members = head.Split(',')
             .Select(s => s.Trim())
-            .Where(s => s.StartsWith('.'))
+            .Where(s => s.StartsWith('.') || s.StartsWith("::deep ", StringComparison.Ordinal))
             .ToArray();
         Assert.True(members.Length >= 10,
             $"the #735 family lists {members.Length} card(s) — there were ten, so this guard is reading the "

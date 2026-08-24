@@ -1,0 +1,150 @@
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #997 · THE OVERLAY SHELL'S OWN CSS — and ALL of it, in this one file.
+
+   The split with Map.razor.css is the same split the component makes: this file owns the CHROME and the
+   MECHANISM (the head row, the tile, the stacking backstop); the page owns every surface's own geometry
+   and colour, reached from Map.razor.css with `::deep`.
+
+   EVERY RULE HERE IS DELIBERATELY WEAK. A scoped rule compiles to `.overlay-shell-head[b-xxxx]` — one
+   class plus one attribute — which is exactly the specificity of Map.razor.css's `::deep .map-dossier`
+   (`[b-map] .map-dossier`). A tie is settled by bundle order, and bundle order is alphabetical by path:
+   Components/ sorts BEFORE Pages/, so the page would win a tie today and lose it the day somebody renames
+   a folder. Nothing here is allowed to depend on that. Anything a page might reasonably want to override
+   is written inside `:where()`, which contributes NO specificity at all — so the page wins by a whole
+   class, in every bundle order, forever.
+
+   #996 is why the header of this file says so out loud: 213 rules were dead for a day because one brace
+   went missing and nothing could tell. EveryCssRuleIsClosedTests now watches the whole tree, this file
+   included.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* The surface itself contributes NOTHING by default. A shell wrapped around .map-scope must leave
+   .map-scope's own `position: absolute; right: .75rem; bottom: .75rem` to do all the work, or the
+   migration would have moved a pixel — and moving pixels is the one thing this refactor promised not to
+   do. The rules that follow are for shells that have no page rule of their own. */
+.overlay-shell-card,
+.overlay-shell-bare {
+    box-sizing: border-box;
+}
+
+/* #664's HOSTED presentation: the beat is drawn INSIDE a host card's frame, so the shell must not put a
+   box between them. `display: contents` is the only honest way to say "I am the mechanism, not a div":
+   the children become the host's own children for layout, which is what lets a hosted shell inherit the
+   host's flex column, its gaps and its sticky foot. */
+.overlay-shell-hosted {
+    display: contents;
+}
+
+/* ── The head row ───────────────────────────────────────────────────────────────────────────────────── */
+
+/* Title on the left, tools and the way out on the right. A page that wants something else says so in its
+   own HeadClass — every property here is in :where(), so a single class in Map.razor.css beats all of it. */
+:where(.overlay-shell-head) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+
+:where(.overlay-shell-title) {
+    min-width: 0;
+}
+
+:where(.overlay-shell-tools) {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 0 0 auto;
+}
+
+/* THE WAY OUT, WHEREVER IT SITS. Small, quiet and INSIDE its own surface's box — never hanging off a
+   corner. #992 made that a rule of the house after measuring the great port's plate at 1rem from the left
+   wall: a control that overhangs its surface is a control a narrow viewport can push under an edge, and a
+   way out the player cannot reach is the ruling failing quietly instead of loudly. */
+:where(.overlay-shell-dismiss, .overlay-shell-close) {
+    flex: 0 0 auto;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* ── The tile ───────────────────────────────────────────────────────────────────────────────────────── */
+
+/* A tucked shell is a BUTTON-SIZED thing, whatever the page had said about the open card's width. The
+   page's open-state class is off the element entirely while it is tucked (the root swaps class lists), so
+   this is not fighting anything — it is what is left. */
+:where(.overlay-shell-tucked) {
+    width: auto;
+    max-height: none;
+    overflow: visible;
+}
+
+:where(.overlay-shell-tile-btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* The corners a shell can be given when its page has no rule for its tile. Offsets match the two corners
+   this client already tucks into (.map-scope-tile and the dossier's), so a new instrument lands level
+   with the ones already there instead of a few pixels off them. */
+:where(.overlay-shell-corner-br, .overlay-shell-corner-bl, .overlay-shell-corner-bc, .overlay-shell-corner-tr) {
+    position: absolute;
+    pointer-events: auto;
+}
+
+:where(.overlay-shell-corner-br) {
+    right: 0.75rem;
+    bottom: 0.75rem;
+}
+
+:where(.overlay-shell-corner-bl) {
+    left: 0.75rem;
+    bottom: 0.75rem;
+}
+
+:where(.overlay-shell-corner-bc) {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0.75rem;
+}
+
+:where(.overlay-shell-corner-tr) {
+    right: 0.75rem;
+    top: 0.75rem;
+}
+
+/* ── Stacking ───────────────────────────────────────────────────────────────────────────────────────── */
+
+/* #960 · TWO SHELLS AT ONE ANCHOR TAKE TURNS, and the turn is taken in GEOMETRY. The owner's screenshot
+   that started this had the dossier lying across the navigation-target panel's text and half its buttons;
+   the answer he asked for was not a z-index ("selectable top window or movable windows? Maybe option to
+   minimize a window into a sugarcube tile") because the card underneath is one he is reading too.
+
+   So a shell that declares itself stacked is LIFTED clear of the floor by default, and the lift is a var
+   the page may set to its own measured number. .map-dossier-raised sets 18.25rem, which is the height of
+   the nav panel it rides above, measured; this 17.5rem default is only what an unmeasured new surface
+   gets — a lift that is visibly clear rather than a silent overlap. */
+:where(.overlay-shell-stacked) {
+    bottom: calc(var(--overlay-shell-floor, 0.75rem) + var(--overlay-shell-lift, 17.5rem));
+    max-height: min(26rem, calc(100vh - 24rem));
+    overflow-y: auto;
+}
+
+/* ── The choices on a critical-decision modal ───────────────────────────────────────────────────────── */
+
+/* One answer per line, because these are the eleven surfaces where the answer IS the way out and a row of
+   them competing for width is a row somebody misreads under pressure. */
+:where(.overlay-shell-choices) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.8rem;
+}
+
+:where(.overlay-shell-choice) {
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
