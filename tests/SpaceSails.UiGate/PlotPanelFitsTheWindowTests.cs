@@ -110,17 +110,25 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
 
         ILocator list = _page.Locator(".map-plot-nodes");
 
-        // The list is the scrolling element — the owner's own words for the fix.
+        // FIRST: the step list is a scrolling element at all — the owner's own words for the fix, and the
+        // half of #992 that no bounding box can state. On the unfixed layout this is 0 and stops here.
         int reached = await list.EvaluateAsync<int>(
-            "el => { el.scrollTop = el.scrollHeight; return el.scrollTop; }");
+            "el => { const t = el.scrollTop; el.scrollTop = el.scrollHeight; const r = el.scrollTop; "
+            + "el.scrollTop = t; return r; }");
         Assert.True(
             reached > 0,
             "the flight-plan step list will not scroll at all, so the half of the open editor below its fold "
             + "cannot be reached by any means — which is the sighting on #992 exactly.");
 
+        // THEN: what the captain actually does — scroll, and the control is there. Asked as
+        // ScrollIntoViewIfNeeded rather than by pinning a scrollTop: the browser scrolls whichever ancestors
+        // it has to (the list, and the panel behind it on a short window), which is the wheel under a hand,
+        // and the assertion is about where the pixels END UP, not about which box moved.
+        //
         // The burn editor's own remove control (the × beside the @ re-time), which on the owner's screenshot
         // was among the things below the bottom edge.
         ILocator remove = _page.Locator(".map-plan-step-open .map-plan-step-edit .btn-outline-danger").Last;
+        await remove.ScrollIntoViewIfNeededAsync(new() { Timeout = ActionTimeoutMs });
         if (await remove.BoundingBoxAsync() is not { } box)
         {
             throw new InvalidOperationException("the open step editor shows no remove control at all");
@@ -128,9 +136,9 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
 
         Assert.True(
             box.Y >= 0 && box.Y + box.Height <= ViewportHeight,
-            $"with the step list scrolled to its end, the open editor's remove control still sits "
-            + $"{box.Y:0}…{box.Y + box.Height:0} px down a {ViewportHeight} px window — the captain cannot "
-            + "take the step off the plan (#992, and #950's sighting before it).");
+            $"scrolled to it, the open editor's remove control still sits {box.Y:0}…{box.Y + box.Height:0} px "
+            + $"down a {ViewportHeight} px window — the captain cannot take the step off the plan (#992, and "
+            + "#950's sighting before it).");
 
         // …and Playwright's own actionability battery (visible · stable · enabled · not covered) agrees a
         // real press would land. Trial, so the step is not actually deleted here.
@@ -138,16 +146,16 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
 
         // The last row of the editor — the ±d/±h time steps — is the true bottom of what the owner lost.
         ILocator lastRow = _page.Locator(".map-plan-step-open .map-burn-steps").Last;
+        await lastRow.ScrollIntoViewIfNeededAsync(new() { Timeout = ActionTimeoutMs });
         if (await lastRow.BoundingBoxAsync() is not { } rowBox)
         {
             throw new InvalidOperationException("the open step editor shows no ± rows at all");
         }
 
         Assert.True(
-            rowBox.Y + rowBox.Height <= ViewportHeight,
-            $"the open editor's last ± row ends {rowBox.Y + rowBox.Height:0} px down a {ViewportHeight} px "
-            + "window even with the list scrolled to its end — the bottom of the editor is still off the "
-            + "screen (#992).");
+            rowBox.Y >= 0 && rowBox.Y + rowBox.Height <= ViewportHeight,
+            $"scrolled to it, the open editor's last ± row runs {rowBox.Y:0}…{rowBox.Y + rowBox.Height:0} px "
+            + $"down a {ViewportHeight} px window — the bottom of the editor is still off the screen (#992).");
     }
 
     /// <summary>
