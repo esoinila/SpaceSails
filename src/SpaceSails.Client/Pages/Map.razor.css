@@ -3755,7 +3755,6 @@
     50% { opacity: 0.95; transform: scale(1.05); }
     100% { opacity: 0.55; transform: scale(0.9); }
 }
-}
 
 /* #255 — the diegetic long-haul jump overlay. Full-screen theater over the frozen map; the one
    loading bar allowed to be a feature. Above every HUD layer, below nothing. */
@@ -6094,6 +6093,7 @@
     font-size: 1.1rem;
     font-style: italic;
     color: #e7f1ff;
+}
 /* ══════════════════════════════════════════════════════════════════════════════════════════════════════
    #973 L2 · THE REP'S PITCH CARD.
 
