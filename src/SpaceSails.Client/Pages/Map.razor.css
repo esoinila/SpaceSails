@@ -563,9 +563,28 @@
    glance and are the same height whatever the plan does — they keep their measured height. The Plotting
    panel is the one that gives, because it is the one with a scroll inside it. */
 .map-hud .btn-toolbar,
-.map-hud .map-readouts,
 .map-hud .map-frame {
     flex: 0 0 auto;
+}
+
+/* #994 · …AND WHO GIVES SECOND, WHEN THE PANEL HAS GIVEN EVERYTHING. Measured at 1280x720 on Nav: the
+   top stack takes 111 px and the toolbar, readouts and frame chip 424 more, so the column is already
+   full before the Plotting panel asks for a single pixel. Raise a story plate at the foot of it (168 px
+   of card and 88 px of floor) and there is a 271 px deficit — more than the panel has to give. Three
+   `flex: 0 0 auto` blocks over a shrinkable one do not shrink; they OVERFLOW, and the panel lands 93 px
+   below the box it was allotted, which is exactly where the plate is.
+
+   So the readouts are the second thing allowed to give. They are the right second choice for the same
+   reason the panel was the first: it is a wall of read-at-a-glance text with no control in it, so a
+   scroll costs a wrist and nothing else — where the toolbar and the frame chip are rows of buttons, and
+   a button you have to scroll to is #212's complaint again. `flex-shrink: 8` against the panel's 1 means
+   the readouts give first and the plan keeps its size; `min-height` is the floor that stops the block
+   collapsing into a sliver rather than scrolling. */
+.map-hud .map-readouts {
+    flex: 0 8 auto;
+    min-height: 7rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .map-hud .btn-toolbar,
