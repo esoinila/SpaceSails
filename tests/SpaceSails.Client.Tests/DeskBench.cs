@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging.Abstractions;
 using SpaceSails.Client.Pages;
 
@@ -194,9 +195,48 @@ internal sealed class DeskBench : Renderer
         }
 
         var painted = new Painted();
-        WalkComponent(_rootId, painted, new StringBuilder());
+        WalkComponent(_rootId, painted, new StringBuilder(), painted.Root);
         return painted;
     }
+
+    /// <summary>
+    /// #992 · <b>PRESS IT.</b> The renderer's own event channel, handed the handler id the render tree wrote
+    /// for a control — so this is the click a player's mouse makes, dispatched through the same
+    /// <c>DispatchEventAsync</c> the browser's JS side calls, and NOT the component's method reached by name.
+    ///
+    /// <para>That distinction is the whole reason the dismissibility law can be trusted. A test that invoked
+    /// <c>CloseStoryCard</c> by reflection would prove that a method called <c>Close…</c> clears a field; it
+    /// would say nothing about whether any control on the screen is WIRED to it, which is exactly the way a
+    /// pop-up ends up with no way out. Pressing the button the tree actually drew proves the wire.</para>
+    ///
+    /// <para>Whatever the handler raises lands in the renderer's error channel (<see cref="HandleException"/>)
+    /// rather than here — that is how <c>TrackingPost</c>'s browser gate has always arrived — so the caller
+    /// reads <see cref="EscapedPastTheGate"/> afterwards to see whether the press hurt anything.</para>
+    /// </summary>
+    public Task PressAsync(ulong handlerId) =>
+        Dispatcher.InvokeAsync(() => DispatchEventAsync(handlerId, null, new MouseEventArgs()));
+
+    /// <summary>#992 · Read one of the page's own fields by name, for a law that needs to know what a press
+    /// did to the state as well as to the markup.</summary>
+    public object? Field(string name) => Read(_map, name);
+
+    /// <summary>
+    /// #992 · <b>PUT THE PAGE IN THE STATE THAT RAISES THIS POP-UP.</b> A field write, by name, on the
+    /// shipping component.
+    ///
+    /// <para>Written down rather than apologised for: this is the one thing in the bench that is NOT the
+    /// shipping road. A pop-up's real road is a captain walking somewhere and pressing something, and there
+    /// is no off-browser way to walk. What the dismissibility law needs is the SURFACE on the screen, and the
+    /// surface is a pure function of the gate field — <c>@if (_showSatchel)</c> draws the same satchel however
+    /// <c>_showSatchel</c> came to be true. So the state is set here and everything the law then asserts —
+    /// that a control exists, that it is the one the markup wired, that pressing it takes the surface away —
+    /// runs entirely through the shipping render and the shipping handler.</para>
+    ///
+    /// <para>The safety on it is that the field is named: a gate that is renamed or deleted fails loudly here
+    /// with the name it used to have, instead of quietly raising nothing and passing a law about a surface
+    /// that was never on the screen (this repository's fifth named bug class).</para>
+    /// </summary>
+    public void Poke(string field, object? value) => TheField(field).SetValue(_map, value);
 
     // ── Reading the page back ────────────────────────────────────────────────────────────────────────
 
@@ -230,16 +270,17 @@ internal sealed class DeskBench : Renderer
 
     // ── The render tree, walked ──────────────────────────────────────────────────────────────────────
 
-    private void WalkComponent(int componentId, Painted into, StringBuilder spokenHere)
+    private void WalkComponent(int componentId, Painted into, StringBuilder spokenHere, Painted.Node parent)
     {
         ArrayRange<RenderTreeFrame> frames = GetCurrentRenderTreeFrames(componentId);
-        WalkRange(frames.Array, 0, frames.Count, into, spokenHere);
+        WalkRange(frames.Array, 0, frames.Count, into, spokenHere, parent);
     }
 
     /// <summary>One pass over a frame range, honouring the subtree lengths the renderer wrote — so an
     /// element's attributes are ITS attributes and the text under it is ITS text, which is what lets a control
     /// be named and a class list be attached to the element that wears it.</summary>
-    private void WalkRange(RenderTreeFrame[] all, int start, int end, Painted into, StringBuilder spokenHere)
+    private void WalkRange(
+        RenderTreeFrame[] all, int start, int end, Painted into, StringBuilder spokenHere, Painted.Node parent)
     {
         int at = start;
         while (at < end)
@@ -253,17 +294,32 @@ internal sealed class DeskBench : Renderer
                     string element = frame.ElementName;
                     var attributes = new Dictionary<string, string?>(StringComparer.Ordinal);
 
+                    // #992 · the handler IDS as well as the attribute names. An event-handler attribute
+                    // carries no string value — its payload is the id the renderer will match a dispatched
+                    // event against — so it has to be read off its own field or the tree remembers only that
+                    // "onclick" was written and nothing about what could press it.
+                    var handlers = new Dictionary<string, ulong>(StringComparer.Ordinal);
+
                     int child = at + 1;
                     while (child < subtreeEnd && all[child].FrameType == RenderTreeFrameType.Attribute)
                     {
                         into.Attributes.Add(all[child].AttributeName);
                         attributes[all[child].AttributeName] = all[child].AttributeValue as string;
+                        if (all[child].AttributeEventHandlerId != 0)
+                        {
+                            handlers[all[child].AttributeName] = all[child].AttributeEventHandlerId;
+                        }
+
                         child++;
                     }
 
+                    var node = new Painted.Node(element, attributes, handlers);
+                    parent.Children.Add(node);
+
                     var inside = new StringBuilder();
-                    WalkRange(all, child, subtreeEnd, into, inside);
-                    into.Element(element, attributes, inside.ToString().Trim());
+                    WalkRange(all, child, subtreeEnd, into, inside, node);
+                    node.Spoken = inside.ToString().Trim();
+                    into.Element(element, attributes, node.Spoken);
                     spokenHere.Append(inside);
                     at = subtreeEnd;
                     break;
@@ -275,6 +331,14 @@ internal sealed class DeskBench : Renderer
                     break;
 
                 case RenderTreeFrameType.Markup:
+                    // #992 · …and the blob is KEPT, not just spoken. Razor collapses a run of static HTML
+                    // with no dynamic content in it into ONE AddMarkupContent call, so those elements never
+                    // become Element frames and an element walk cannot see them at all. Found the hard way:
+                    // a deliberately-planted <div class="ghost-backdrop"> was invisible to the pop-up law's
+                    // DOM guard while the source guard named it at once. A guard that cannot see a whole
+                    // class of markup is a guard that cannot tell pass from fail, so the markup is handed
+                    // out and the law reads the classes in it too.
+                    into.MarkupBlobs.Add(frame.MarkupContent);
                     spokenHere.Append(frame.MarkupContent).Append(' ');
                     at++;
                     break;
@@ -282,7 +346,7 @@ internal sealed class DeskBench : Renderer
                 case RenderTreeFrameType.Component:
                 {
                     into.Components.Add(frame.ComponentType?.Name ?? "?");
-                    WalkComponent(frame.ComponentId, into, spokenHere);
+                    WalkComponent(frame.ComponentId, into, spokenHere, parent);
                     at += Math.Max(1, frame.ComponentSubtreeLength);
                     break;
                 }
@@ -331,6 +395,22 @@ internal sealed class DeskBench : Renderer
     {
         private static readonly string[] Controls = ["button", "input", "select", "textarea", "a"];
 
+        /// <summary>
+        /// #992 · THE PAGE AS A TREE, not as five flat lists.
+        ///
+        /// <para>The lists above answer "did the page draw X anywhere". The dismissibility law needs a harder
+        /// question answered — "is there a control INSIDE this surface that ends it" — and a flat list of
+        /// every class the page emitted cannot tell a ✕ that belongs to the card in front from a ✕ on the
+        /// panel behind it. So the walk keeps the nesting the renderer already wrote down, and the law asks
+        /// each surface about its own subtree.</para>
+        /// </summary>
+        public Node Root { get; } = new("#document", new Dictionary<string, string?>(StringComparer.Ordinal),
+                                        new Dictionary<string, ulong>(StringComparer.Ordinal));
+
+        /// <summary>#992 · Every run of static HTML the component emitted as one blob. See the note at the
+        /// Markup case in the walk: these elements are not in <see cref="Root"/> and never can be.</summary>
+        public List<string> MarkupBlobs { get; } = [];
+
         public List<string> Attributes { get; } = [];
 
         public List<string> Components { get; } = [];
@@ -374,6 +454,59 @@ internal sealed class DeskBench : Renderer
                     LitDeskTabs.Add(name);
                 }
             }
+        }
+
+        /// <summary>#992 · One element the page drew, with the nesting kept and the press-ids kept.</summary>
+        internal sealed class Node(
+            string element,
+            Dictionary<string, string?> attributes,
+            Dictionary<string, ulong> handlers)
+        {
+            public string Element { get; } = element;
+
+            public IReadOnlyDictionary<string, string?> Attributes { get; } = attributes;
+
+            /// <summary>Event-handler attribute name (<c>onclick</c>) → the id <see cref="DeskBench.PressAsync"/>
+            /// dispatches against. Empty on an element nothing can press.</summary>
+            public IReadOnlyDictionary<string, ulong> Handlers { get; } = handlers;
+
+            public List<Node> Children { get; } = [];
+
+            /// <summary>The text of this element's whole subtree, trimmed.</summary>
+            public string Spoken { get; set; } = "";
+
+            public string ClassList => Attributes.GetValueOrDefault("class") ?? "";
+
+            public IEnumerable<string> Classes =>
+                ClassList.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            /// <summary>Bootstrap's own way of saying "drawn but not on the screen". A surface wearing it is
+            /// not up, and a CONTROL wearing it is not a way out of anything.</summary>
+            public bool Hidden => Classes.Contains("d-none", StringComparer.Ordinal);
+
+            /// <summary>What a player could call this control out loud — its own words, else its title, else
+            /// its aria-label. The same reading <see cref="NamedControls"/> takes.</summary>
+            public string Name =>
+                (Spoken.Length > 0 ? Spoken
+                 : Attributes.GetValueOrDefault("title") ?? Attributes.GetValueOrDefault("aria-label") ?? "")
+                .Trim();
+
+            public bool HasClass(string css) => Classes.Contains(css, StringComparer.Ordinal);
+
+            public IEnumerable<Node> Descendants()
+            {
+                foreach (Node child in Children)
+                {
+                    yield return child;
+                    foreach (Node deeper in child.Descendants())
+                    {
+                        yield return deeper;
+                    }
+                }
+            }
+
+            /// <summary>Every element in the page, this one included.</summary>
+            public IEnumerable<Node> SelfAndDescendants() => new[] { this }.Concat(Descendants());
         }
     }
 }
