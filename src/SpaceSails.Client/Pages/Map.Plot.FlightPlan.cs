@@ -168,6 +168,35 @@ public partial class Map
         }
     }
 
+    /// <summary>#992 · The accordion state the last paint already scrolled to. Compared rather than flagged
+    /// ON PURPOSE: an editor opens from five places — this toggle, a fresh burn (<c>AddBurnAtScrub</c>), the
+    /// cast-off pair, a click on a ribbon node, and an arrival — and a flag set at four of them is a flag
+    /// somebody forgets at the fifth. The accordion holds exactly one open editor (PR-D2), so "which one is
+    /// open" IS the whole state, and asking whether it changed cannot be forgotten anywhere.</summary>
+    private FlightEditorKind _scrolledEditorKind = FlightEditorKind.None;
+    private PlanNode? _scrolledEditorNode;
+
+    /// <summary>#992 · Bring the open step's row inside the step list, once the editor is really in the DOM.
+    ///
+    /// <para>The list scrolls now (the panel is bound to the window), so a step opened near the bottom of a
+    /// long plan can unfold below the LIST's fold — the owner's sighting one scroller further in. A selector
+    /// rather than an ElementReference: exactly one row carries <c>map-plan-step-open</c> at a time, and the
+    /// class the CSS already keys off is the one honest handle on it.</para></summary>
+    private void BringOpenStepIntoViewIfAsked()
+    {
+        if (_openEditor == _scrolledEditorKind && ReferenceEquals(_selectedPlanNode, _scrolledEditorNode))
+        {
+            return;
+        }
+
+        _scrolledEditorKind = _openEditor;
+        _scrolledEditorNode = _selectedPlanNode;
+        if (_openEditor != FlightEditorKind.None)
+        {
+            RendererInterop.ScrollIntoView(".map-plan-step-open");
+        }
+    }
+
     // The NOW / next readout AND the full banner row list, built through the shared Core helper so the
     // banner, the Nav header, and the desk chips can never contradict (#159/#184). The queue below NOW
     // names every step still ahead top to bottom: each pending burn in time order, then the armed
