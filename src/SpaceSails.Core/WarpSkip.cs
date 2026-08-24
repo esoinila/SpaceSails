@@ -60,6 +60,11 @@ public static class WarpSkip
         /// <summary>The next scheduled / plotted burn.</summary>
         Burn,
 
+        /// <summary>#989 — the hour the plan lets go of the clamp. Its own kind because a captain waiting
+        /// at a berth for a departure he SCHEDULED is not waiting for "the next burn": the cast off spends
+        /// no reaction mass, and the wait it opens is exactly the dead time the skip exists to eat.</summary>
+        CastOff,
+
         /// <summary>The orbit-insert / dock arrival window.</summary>
         Arrival,
 

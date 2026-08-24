@@ -99,10 +99,13 @@ public sealed class TheCastOffIsAStepTests
         Assert.Equal(Berth, Get<string?>(map, "_dockedHavenId"));   // armed WITHOUT letting go of the clamp
         _out.WriteLine($"armed from the berth for the pass at {Get<double?>(map, "_armedArrivalPassSimTime")!.Value / Day:F1} d");
 
-        // The banner says who is leaving, and names the two departure rows below NOW.
-        AssertTheBannerSays(map, "casting off from Selene Gate");
-        AssertTheBannerSays(map, "cast off from Selene Gate");
+        // The banner says what she is doing — WAITING at the berth for a departure a minute out, which is
+        // #989's reading of a plan that has not let go yet — and names the clearance below NOW. Not the
+        // cast off twice: NOW is already carrying that row's countdown.
+        AssertTheBannerSays(map, "docked at Selene Gate");
+        AssertTheBannerSays(map, "the plan casts off in");
         AssertTheBannerSays(map, "clear the harbour");
+        AssertTheBannerNamesTheCastOffOnce(map);
 
         int tankAtArm = Get<int>(map, "_reactionMassPulses");
         int clearancePulses = PulsesOf(steps[1]);
@@ -293,6 +296,252 @@ public sealed class TheCastOffIsAStepTests
         Assert.False((bool)FieldOf(burn, "Executed")!, "…and never marked as flown.");
     }
 
+    // ── (4) #989 — A DEPARTURE IS SCHEDULED, NOT REQUESTED ─────────────────────────────────────────────
+    //
+    // Owner, docked at The Red Eye at 324d 16h 02m with the scrub 33 h out (2026-08-22): "Cast off time says
+    // in zero hours here even though the scrub is in 33 hours?" — both rows were stamped at NOW+1 min and
+    // NOW+2 min, and the banner echoed "casting off from The Red Eye in 0 h" while the ship sat on the clamp.
+    // Fable's ruling: the pair is placed AT THE SCRUB, like every other step added at scrub.
+
+    /// <summary>
+    /// (a) THE PAIR IS LAID WHERE THE FINGER IS. Scrub 33 h out, press ⚓ + Cast off: the clamp row takes the
+    /// scrub's own epoch (the clearance keeping its minute behind it), the rows count the real wait, and the
+    /// banner says she is WAITING at the berth — not "casting off in 0 h" while tied up.
+    ///
+    /// <para>RED on the commit before this fix: <c>AddCastOffAtTop</c> stamped <c>NodeEpochFloor()</c>, so the
+    /// undock landed 60 s out however far the scrub had been dragged, and <c>CastOffNowLine</c> said "casting
+    /// off … in 33 h" — the ship reporting an act it was not performing.</para>
+    /// </summary>
+    [Fact]
+    public void SCHEDULED_33_HOURS_OUT_TheCastOffSitsAtTheScrub_AndTheBannerSaysSheIsWaiting()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        double scrubOut = 33 * 3600.0;
+        Set(map, "_scrubOffsetSeconds", scrubOut);
+
+        Invoke(map, "AddCastOffAtTop");
+
+        object undock = FirstNodeOfKind(map, PlanStepKind.Undock);
+        object clear = FirstNodeOfKind(map, PlanStepKind.ClearHarbour);
+        _out.WriteLine($"scrub {scrubOut / 3600:F0} h → undock at {NodeEpochOf(undock) / 3600:F2} h, "
+                       + $"clearance at {NodeEpochOf(clear) / 3600:F2} h");
+
+        // THE FIX, stated: the clamp lets go at the scrub, and the pair keeps its own one-minute spacing.
+        Assert.Equal(Math.Floor(scrubOut), NodeEpochOf(undock), 3);
+        Assert.Equal(Math.Floor(scrubOut) + 60, NodeEpochOf(clear), 3);
+
+        // …so the row's own countdown reads the truth rather than "in 0 h".
+        var glance = (string)Invoke(map, "PlanStepGlanceLine", undock)!;
+        _out.WriteLine($"row: {glance}");
+        Assert.Contains("in 1 d", glance);
+        Assert.DoesNotContain("in 0 h", glance);
+
+        // And the banner: she is tied up, the captain has her, and the plan lets go at its own hour.
+        AssertTheBannerSays(map, "YOU HAVE THE SHIP");
+        AssertTheBannerSays(map, "docked at Selene Gate");
+        AssertTheBannerSays(map, "the plan casts off in 1 d");
+        AssertTheBannerDoesNotSay(map, "casting off from");
+        AssertTheBannerNamesTheCastOffOnce(map);
+    }
+
+    /// <summary>
+    /// (b) SHE WAITS, THEN SHE LEAVES — WITH NOBODY AT THE CONSOLE. The same scheduled departure, warped
+    /// through with zero input: she is still clamped a day later, the clamp lets go AT the epoch (measured,
+    /// within one of the frame loop's own quanta), and the clearance fires behind it.
+    /// </summary>
+    [Fact]
+    public void SCHEDULED_33_HOURS_OUT_SheStaysClampedUntilTheEpoch_ThenCastsOffAndClears()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        double scrubOut = 33 * 3600.0;
+        Set(map, "_scrubOffsetSeconds", scrubOut);
+        Invoke(map, "AddCastOffAtTop");
+        double epoch = NodeEpochOf(FirstNodeOfKind(map, PlanStepKind.Undock));
+        _clearanceNode = FirstNodeOfKind(map, PlanStepKind.ClearHarbour);
+
+        // Half a day in she must still be tied up — the wait is the feature, not a stall.
+        WarpThroughWithNoFurtherInput(map, Destination, 12 * 3600.0);
+        Assert.Equal(Berth, Get<string?>(map, "_dockedHavenId"));
+        AssertTheBannerSays(map, "the plan casts off in");
+
+        Flight flight = WarpThroughWithNoFurtherInput(map, Destination, epoch + 6 * 3600.0);
+        _out.WriteLine($"flown: {flight}; epoch was {epoch:F0}s");
+
+        Assert.NotNull(flight.CastOffSimTime);
+        Assert.True(Math.Abs(flight.CastOffSimTime!.Value - epoch) <= 2 * AdaptiveQuantumSeconds,
+            $"the clamp must let go AT the scheduled epoch ({epoch:F0}s); she came free at "
+            + $"{flight.CastOffSimTime.Value:F0}s.");
+        Assert.Null(Get<string?>(map, "_dockedHavenId"));
+        Assert.True(flight.ClearanceFired, "the out-thrust must fire behind the clamp release.");
+    }
+
+    /// <summary>
+    /// (c) A BURN CANNOT FIRE BEFORE THE CLAMP LETS GO. Scrub back inside a scheduled departure and drop a
+    /// burn there: the plan's SHAPE goes bad, the captain is woken once in the rule's own words, and warp is
+    /// dropped — the #965 machinery, reused whole.
+    ///
+    /// <para>RED before the fix: with the undock pinned 60 s out, no burn could ever precede it, and there
+    /// was no shape law to break — the plan stood green with a burn the clamp would have eaten.</para>
+    /// </summary>
+    [Fact]
+    public void A_BURN_PLACED_BEFORE_THE_CAST_OFF_BreaksThePlansShape_AndWakesTheCaptainOnce()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        Set(map, "_scrubOffsetSeconds", 33 * 3600.0);
+        Invoke(map, "AddCastOffAtTop");
+
+        // The plan is sound as laid — seed the one-shot watch on that, exactly as the arrival's does.
+        Invoke(map, "RefreshPlanShapeValidity");
+        Assert.Null(Get<string?>(map, "_shapeAlarm"));
+        Assert.Null(Invoke(map, "PlanShapeWarningLine"));
+
+        // Now scrub back inside the wait and add a burn there — a burn the clamp would eat.
+        Set(map, "_scrubOffsetSeconds", 10 * 3600.0);
+        Set(map, "Warp", 10000);
+        Invoke(map, "AddBurnAtScrub");
+        Assert.Equal(PlanStepKind.Burn, KindOf(PlanNodes(map)[0]));   // it really is ahead of the clamp
+
+        Invoke(map, "RefreshPlanShapeValidity");
+
+        var alarm = Get<string?>(map, "_shapeAlarm");
+        _out.WriteLine($"alarm: {alarm}");
+        Assert.NotNull(alarm);
+        Assert.Contains("before the clamp lets go", alarm);
+        Assert.Equal(CastOffRule.ShapeComplaint(CastOffRule.PlanShapeFault.CastOffNotFirst), alarm);
+        Assert.Equal(alarm, Invoke(map, "PlanShapeWarningLine"));
+        Assert.Equal(alarm, Property(map, "LoudPlanAlarm"));
+        Assert.Equal(1, Get<int>(map, "Warp"));   // never unseen at warp — the #147 idiom
+
+        // ONE shot: a second cadence with the same broken plan does not re-pop it.
+        Set(map, "_shapeAlarm", null);
+        Invoke(map, "RefreshPlanShapeValidity");
+        Assert.Null(Get<string?>(map, "_shapeAlarm"));
+
+        // …and taking the burn off puts the plan right again, which re-arms the alarm for next time.
+        Invoke(map, "DeleteNode", PlanNodes(map)[0]);
+        Invoke(map, "RefreshPlanShapeValidity");
+        Assert.Null(Invoke(map, "PlanShapeWarningLine"));
+    }
+
+    /// <summary>
+    /// (d) A SCRUB AT NOW STILL LEAVES NOW. The sighting's behaviour is not deleted, it is demoted to the
+    /// special case it always should have been: press with the scrub where it starts and the clamp lets go
+    /// at the plan's floor, a minute out, exactly as #955 shipped it.
+    /// </summary>
+    [Fact]
+    public void A_SCRUB_AT_NOW_StillCastsOffImmediately()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        Invoke(map, "AddCastOffAtTop");
+
+        object undock = FirstNodeOfKind(map, PlanStepKind.Undock);
+        Assert.Equal(60.0, NodeEpochOf(undock), 3);   // the plan's own floor: one minute out
+        Assert.Equal(120.0, NodeEpochOf(FirstNodeOfKind(map, PlanStepKind.ClearHarbour)), 3);
+
+        // A scrub dragged into the PAST is the same case — the control clamps, it never refuses.
+        Pages.Map past = AShipClampedAtSeleneGate();
+        Set(past, "_scrubOffsetSeconds", -5000.0);
+        Invoke(past, "AddCastOffAtTop");
+        Assert.Equal(60.0, NodeEpochOf(FirstNodeOfKind(past, PlanStepKind.Undock)), 3);
+    }
+
+    /// <summary>
+    /// (e) THE PAIR ADDS ONCE. Owner: <i>"2 cast-off in sequence sounds kind of silly — we should have some
+    /// logic check."</i> Pressing ⚓ + Cast off again is a no-op with one line — and the refusal is the plan
+    /// GRAMMAR's, not the button's private opinion, so the same law that refuses here is the one that judges
+    /// a plan nobody pressed anything on.
+    /// </summary>
+    [Fact]
+    public void THE_CAST_OFF_PAIR_AddsOnce_HoweverManyTimesItIsPressed()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        Set(map, "_scrubOffsetSeconds", 33 * 3600.0);
+        Invoke(map, "AddCastOffAtTop");
+        Assert.Equal(2, PlanNodes(map).Count);
+
+        // Press again, at the same scrub and at a different one: nothing is added, and the captain is told.
+        Set(map, "_pulse", PulseSlot.Empty);
+        Invoke(map, "AddCastOffAtTop");
+        Assert.Equal(2, PlanNodes(map).Count);
+        Assert.Equal(CastOffRule.ShapeComplaint(CastOffRule.PlanShapeFault.SecondCastOff),
+                     Get<PulseSlot>(map, "_pulse").Message);
+
+        Set(map, "_scrubOffsetSeconds", 60 * 3600.0);
+        Invoke(map, "AddCastOffAtTop");
+        Assert.Equal(2, PlanNodes(map).Count);
+        Assert.Equal(1, CountOfKind(map, PlanStepKind.Undock));
+        Assert.Equal(1, CountOfKind(map, PlanStepKind.ClearHarbour));
+
+        // …and a departure laid BEHIND a burn is refused by the same law, in the words that say why.
+        Pages.Map late = AShipClampedAtSeleneGate();
+        Set(late, "_scrubOffsetSeconds", 10 * 3600.0);
+        Invoke(late, "AddBurnAtScrub");
+        Set(late, "_scrubOffsetSeconds", 33 * 3600.0);
+        Set(late, "_pulse", PulseSlot.Empty);
+        Invoke(late, "AddCastOffAtTop");
+        Assert.Equal(0, CountOfKind(late, PlanStepKind.Undock));
+        Assert.Equal(CastOffRule.ShapeComplaint(CastOffRule.PlanShapeFault.CastOffNotFirst),
+                     Get<PulseSlot>(late, "_pulse").Message);
+    }
+
+    /// <summary>
+    /// (f) REMOVING EITHER ROW REMOVES THE PAIR. One press laid both, one press takes both — half a
+    /// departure is not a plan anybody meant to have, and it is what the owner's second screenshot found on
+    /// the board. Proven from BOTH rows, and proven not to touch the burns around them.
+    /// </summary>
+    [Fact]
+    public void REMOVING_EITHER_DEPARTURE_ROW_TakesThePairOffTogether()
+    {
+        foreach (PlanStepKind pressed in new[] { PlanStepKind.Undock, PlanStepKind.ClearHarbour })
+        {
+            Pages.Map map = AShipClampedAtSeleneGate();
+            Set(map, "_scrubOffsetSeconds", 40 * 3600.0);
+            Invoke(map, "AddBurnAtScrub");            // a burn AFTER the departure, which must survive
+            Set(map, "_scrubOffsetSeconds", 33 * 3600.0);
+            Invoke(map, "AddCastOffAtTop");
+            Assert.Equal(3, PlanNodes(map).Count);
+
+            Invoke(map, "DeleteNode", FirstNodeOfKind(map, pressed));
+
+            _out.WriteLine($"pressed ✖ on {pressed}: {PlanNodes(map).Count} row(s) left");
+            Assert.Equal(0, CountOfKind(map, PlanStepKind.Undock));
+            Assert.Equal(0, CountOfKind(map, PlanStepKind.ClearHarbour));
+            Assert.Equal(1, CountOfKind(map, PlanStepKind.Burn));   // the burn is not collateral
+
+            // …and with the departure gone the banner names no departure at all.
+            AssertTheBannerDoesNotSay(map, "cast off");
+            AssertTheBannerDoesNotSay(map, "clear the harbour");
+        }
+    }
+
+    /// <summary>
+    /// (g) THE REHEARSAL LEAVES FROM THE BERTH AS IT WILL BE. A berth 33 h out has swung a long way round
+    /// its body; the plotted course — which is what #969's plan-time arm rehearses, and what the arrival's
+    /// ✓/✗ is judged on — must start from THERE, not from where the berth stands tonight.
+    /// </summary>
+    [Fact]
+    public void THE_PLOTTED_COURSE_StartsFromTheBerthAtTheUndockEpoch_NotAtNow()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        double scrubOut = 33 * 3600.0;
+        Set(map, "_scrubOffsetSeconds", scrubOut);
+        Invoke(map, "AddCastOffAtTop");
+
+        var ephemeris = Get<ICelestialEphemeris>(map, "_ephemeris");
+        double epoch = NodeEpochOf(FirstNodeOfKind(map, PlanStepKind.Undock));
+        var start = (ShipState)Invoke(map, "PlanStartState")!;
+
+        Assert.Equal(epoch, start.SimTime, 3);
+        double offBerthThen = (start.Position - ephemeris.Position(Berth, epoch)).Length;
+        double offBerthNow = (start.Position - ephemeris.Position(Berth, 0)).Length;
+        _out.WriteLine($"plan start {offBerthThen:E2} m off the berth at the epoch, {offBerthNow:E2} m off it at now");
+
+        Assert.True(offBerthThen < BerthState.BerthOffsetMeters * 2,
+            "the plan must start ON the berth as it will be at the epoch.");
+        Assert.True(offBerthNow > 100 * offBerthThen,
+            "…and the berth really does move in 33 h, or this test proves nothing.");
+    }
+
     // ── The bench ──────────────────────────────────────────────────────────────────────────────────────
 
     private readonly record struct Flight(
@@ -379,13 +628,9 @@ public sealed class TheCastOffIsAStepTests
     private object? _clearanceNode;
     private object? _transferNode;
 
-    /// <summary>
-    /// A ship CLAMPED at Selene Gate with the owner's plan on the board: ⚓ + Cast off (the undock and the
-    /// clearance), then one transfer burn solved with the game's own departure solver from the state the
-    /// PLOTTED course delivers three weeks out — which is to say, from after the cast-off, exactly as the
-    /// ribbon draws it. Nothing is armed.
-    /// </summary>
-    private Pages.Map AShipClampedAtSeleneGateWithACastOffAndATransferToMars()
+    /// <summary>A ship CLAMPED at Selene Gate with an empty board and the scrub at now — the bar stool the
+    /// owner plans his voyages from. Everything else in this file is built on top of it.</summary>
+    private Pages.Map AShipClampedAtSeleneGate()
     {
         _clearanceFired = false;
         _transferFired = false;
@@ -411,8 +656,23 @@ public sealed class TheCastOffIsAStepTests
         Set(map, "SimTime", 0.0);
         Set(map, "_dockedHavenId", Berth);
         Set(map, "_dockOffset", berth.Position - ephemeris.Position(Berth, 0));
+        return map;
+    }
 
-        // ⚓ + Cast off — the button, pressed.
+    /// <summary>
+    /// A ship CLAMPED at Selene Gate with the owner's plan on the board: ⚓ + Cast off (the undock and the
+    /// clearance), then one transfer burn solved with the game's own departure solver from the state the
+    /// PLOTTED course delivers three weeks out — which is to say, from after the cast-off, exactly as the
+    /// ribbon draws it. Nothing is armed.
+    /// </summary>
+    private Pages.Map AShipClampedAtSeleneGateWithACastOffAndATransferToMars()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        var ephemeris = Get<ICelestialEphemeris>(map, "_ephemeris");
+
+        // ⚓ + Cast off — the button, pressed, with the scrub where it starts: at NOW. (#989 keeps this
+        // reading working — a scrub at now still departs immediately; it is the SCHEDULED departure that
+        // stopped lying about its hour.)
         Invoke(map, "AddCastOffAtTop");
         Invoke(map, "ReprojectTrajectory");
         Invoke(map, "ReprojectThePassesOnTheirCadence", 1000.0);
@@ -523,6 +783,38 @@ public sealed class TheCastOffIsAStepTests
             + string.Join(" | ", System.Linq.Enumerable.Select(status.Rows, r => r.Text)));
     }
 
+    private void AssertTheBannerDoesNotSay(Pages.Map map, string phrase)
+    {
+        var status = (FlightPlanStatus)Invoke(map, "FlightNowNext")!;
+        foreach (FlightPlanRow row in status.Rows)
+        {
+            Assert.False(row.Text.Contains(phrase, StringComparison.OrdinalIgnoreCase),
+                $"the banner must NOT carry \"{phrase}\"; it had: "
+                + string.Join(" | ", System.Linq.Enumerable.Select(status.Rows, r => r.Text)));
+        }
+    }
+
+    /// <summary>#989's second sighting as an assertion: the owner read <i>"NOW: casting off from The Red Eye
+    /// in 0 h · NEXT: ⚓ cast off from The Red Eye in 0 h"</i> — one live row, spoken from two slots. No row
+    /// of the banner may name the departure more than once, however many rows the banner has.</summary>
+    private void AssertTheBannerNamesTheCastOffOnce(Pages.Map map)
+    {
+        var status = (FlightPlanStatus)Invoke(map, "FlightNowNext")!;
+        int mentions = 0;
+        foreach (FlightPlanRow row in status.Rows)
+        {
+            if (row.Text.Contains("cast", StringComparison.OrdinalIgnoreCase)
+                && row.Text.Contains("off", StringComparison.OrdinalIgnoreCase))
+            {
+                mentions++;
+            }
+        }
+
+        Assert.True(mentions == 1,
+            $"the departure must be named exactly once in the banner, not {mentions} times: "
+            + string.Join(" | ", System.Linq.Enumerable.Select(status.Rows, r => r.Text)));
+    }
+
     // ── Reflection plumbing (the TheArrivalIsArmedThenNotOnlyNow / TheBerthEndsTheVoyage idiom) ─────────
 
     private static IReadOnlyList<object> PlanNodes(Pages.Map map)
@@ -549,6 +841,19 @@ public sealed class TheCastOffIsAStepTests
     }
 
     private static PlanStepKind KindOf(object node) => (PlanStepKind)FieldOf(node, "Kind")!;
+
+    private static int CountOfKind(Pages.Map map, PlanStepKind kind)
+    {
+        int n = 0;
+        foreach (object node in PlanNodes(map))
+        {
+            if (KindOf(node) == kind)
+            {
+                n++;
+            }
+        }
+        return n;
+    }
 
     private static int PulsesOf(object node) => (int)FieldOf(node, "Pulses")!;
 

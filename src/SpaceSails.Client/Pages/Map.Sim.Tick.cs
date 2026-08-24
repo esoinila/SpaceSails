@@ -464,6 +464,10 @@ public partial class Map
             // #952: does the plan still END SAFELY? Judged on the freshly rebuilt passes, so a mid-flight
             // edit or a missed burn flips the arrive row to ✗ and wakes the captain once.
             RefreshArriveValidity();
+            // #989: …and can the plan be FLOWN as written at all? A cast off that is no longer the first
+            // step, or a second one standing behind it, is a plan the ship cannot obey — judged on the same
+            // cadence and woken with the same one-shot alarm, because both are "nobody is flying the ship".
+            RefreshPlanShapeValidity();
         }
     }
 

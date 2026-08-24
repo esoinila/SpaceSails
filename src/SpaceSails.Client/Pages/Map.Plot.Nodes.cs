@@ -420,6 +420,16 @@ public partial class Map
 
     private void DeleteNode(PlanNode node)
     {
+        // #989: the two departure rows are ONE act — one press laid them, one press takes them away. Routed
+        // here as well as at the button so no other caller can ever leave half a departure standing (an ⚓
+        // with no clearance drops her into the harbour's traffic; a 🚀 with no ⚓ thrusts against a clamp
+        // that never let go), which is the shape the owner's second #989 screenshot caught.
+        if (node.Kind != PlanStepKind.Burn)
+        {
+            RemoveTheDeparturePair();
+            return;
+        }
+
         _planNodes.Remove(node);
         // PR-D2: if the deleted step was the open one, collapse the accordion so nothing dangles.
         if (ReferenceEquals(node, _selectedPlanNode))

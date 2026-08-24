@@ -34,14 +34,29 @@ public partial class Map
         var candidates = new List<WarpSkip.Candidate>(6);
 
         // The soonest pending burn — a plotted node OR the armed transfer schedule's next unfired burn.
+        // #989: the ⚓ cast off is lifted out of that pile into its own candidate. A departure scheduled a
+        // day and a half out opens exactly the dead wait this control exists to eat ("⏭ Long coast ahead —
+        // skip it" now offers the berth's own wait), and a captain sitting on the clamp is not waiting for
+        // "the next burn" — the cast off spends nothing.
         double? nextBurn = null;
+        double? nextCastOff = null;
         foreach (PlanNode node in _planNodes)
         {
-            if (!node.Stale && !node.Executed && node.SimTime > now)
+            if (node.Stale || node.Executed || node.SimTime <= now)
+            {
+                continue;
+            }
+
+            if (node.Kind == PlanStepKind.Undock)
+            {
+                nextCastOff = nextCastOff is { } c ? Math.Min(c, node.SimTime) : node.SimTime;
+            }
+            else
             {
                 nextBurn = nextBurn is { } b ? Math.Min(b, node.SimTime) : node.SimTime;
             }
         }
+        candidates.Add(new WarpSkip.Candidate(nextCastOff, WarpSkip.EventKind.CastOff));
         if (_armedTransferSchedule is { } sch && _armedTransferBurnsFired < sch.Burns.Count)
         {
             double e = sch.Burns[_armedTransferBurnsFired].SimTime;
@@ -85,6 +100,9 @@ public partial class Map
     private string SkipEventLabel(WarpSkip.EventKind kind) => kind switch
     {
         WarpSkip.EventKind.Burn => "the next burn",
+        WarpSkip.EventKind.CastOff => _dockedHavenId is not null
+            ? $"casting off from {BodyName(_dockedHavenId)}"
+            : "the cast off",
         WarpSkip.EventKind.Arrival => _armedOrbitBodyId is not null
             ? $"the {BodyName(_armedOrbitBodyId)} arrival window"
             : "the arrival window",
