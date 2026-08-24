@@ -590,7 +590,7 @@
 .map-hud .btn-toolbar,
 .map-hud .map-readouts,
 .map-hud .map-frame,
-.map-hud .map-plot {
+.map-hud ::deep .map-plot {
     pointer-events: auto;
 }
 
@@ -628,7 +628,11 @@
     line-height: 1.15;
 }
 
-.map-plot {
+/* ::deep — #997 put the panel inside a CappedScrollPanel, so this div is drawn by that component and a
+   plain `.map-plot` rule (which compiles to `.map-plot[b-map]`) would no longer match it. The rule still
+   belongs here: what is left in it is the panel's IDENTITY — how wide the Plotting panel is — while the
+   arithmetic that used to sit under it is the component's, once, for every panel that needs it. */
+::deep .map-plot {
     /* #838 — owner: "that panel could be bigger to fit all the buttons properly." It could not fit them:
        at 32rem the open step editor had ~28.6rem of usable width (panel − card padding − step indent −
        editor padding) and its one row already asked for ~29.9rem (mode 2 + ↺ 2.1 + heading 8.5 + ↻ 2.1 +
@@ -654,38 +658,21 @@
 
        flex 0 1 auto: the panel is the one thing in the HUD allowed to shrink (see .map-hud above), and
        min-height:0 is what lets it. overflow-y stays as the BACKSTOP — on a short window the step list
-       reaches its own floor and the whole panel pages rather than losing its head. */
-    flex: 0 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
+       reaches its own floor and the whole panel pages rather than losing its head.
 
-/* Everything above the step list — the title, the scrub, the path length, the pass line, the flight-plan
-   head and the compose row — is the panel's HEAD and keeps its measured height. Only the list gives. */
-.map-plot > * {
-    flex: 0 0 auto;
-}
+       #997 · ALL FIVE OF THOSE DECLARATIONS ARE NOW `.capped-scroll`'s, in Components/CappedScrollPanel
+       .razor.css, together with `.map-plot > *`'s `flex: 0 0 auto` and the step list's own
+       `flex: 1 1 auto; min-height: 6rem; overflow-y: auto; overscroll-behavior: contain`. Nothing about
+       them changed — they were measured for THIS panel and they are still the measurement. What changed is
+       that the next panel with a head and a scrolling body inherits them instead of guessing at a constant,
+       which is the whole of the bug #950 and #992 were: a written-down `14rem` standing in for a 34rem
+       chrome, on a panel where the cap could never once fire.
 
-.map-plot-nodes {
-    /* PR-D2: only one step editor expands at a time now (accordion), but that one editor is taller than
-       an old always-inline row — give the list room so the open editor shows without immediately scrolling.
-       #838 added the quick-select row and its frame note, so the open editor is ~2 lines taller again.
-       #926 added the nudge pair and the trip-frame offer — another ~3 lines when the offer stands — so the
-       list grows rather than shrinking the words on it (#782: the pressure valve is SCROLL, never size).
-
-       #992 · THE STEP LIST IS THE SCROLLING ELEMENT. Owner: "Let's make the step list start scroll when it
-       gets high enough." It no longer carries a written-down 28rem — it takes whatever the panel has left
-       after its head, which is whatever the window has left after the top stack and the readouts, and it
-       scrolls inside that. The 6rem floor is what keeps a very short window honest: the list stops giving
-       there and the panel's own overflow takes over, so the list can never be squeezed to nothing.
-       overscroll-behavior keeps a flick at the end of the plan inside the plan instead of paging the HUD. */
-    flex: 1 1 auto;
-    min-height: 6rem;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+       The step list keeps its `.map-plot-nodes` name — the component wears it on the scrolling element
+       (BodyClass) — because that name is what PlotPanelFitsTheWindowTests locates in a real browser, and a
+       refactor that renamed the handle its own guard holds would be a refactor that had to move the guard.
+       The floor travels as `BodyFloor="6rem"`: how short is too short stays this panel's judgement (about
+       two steps and a scrollbar), what to do about it is the component's. */
 }
 
 /* #838 · the four quick selects — forward, back, up, down. A 4-column grid rather than a flex row so
@@ -935,7 +922,7 @@
     gap: 0.5rem;
 }
 
-.map-scope {
+::deep .map-scope {
     position: absolute;
     right: 0.75rem;
     bottom: 0.75rem;
@@ -944,14 +931,14 @@
 
 /* #963 — the minimised scope: a button-sized tile in the corner the window vacated, so the switch that
    used to shout from the top of the screen now lives exactly where the instrument is. */
-.map-scope-tile {
+::deep .map-scope-tile {
     position: absolute;
     right: 0.75rem;
     bottom: 0.75rem;
     pointer-events: auto;
 }
 
-.map-scope-min {
+::deep .map-scope-min {
     line-height: 1;
     padding-left: 0.4rem;
     padding-right: 0.4rem;
@@ -1680,7 +1667,7 @@
 
 /* M29: the target dossier — the tactical target's own box, floating bottom-center ABOVE the
    desk layers (z 20 > desk 15) so Nav and Sensors read the same book. */
-.map-dossier {
+::deep .map-dossier {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
@@ -1696,7 +1683,7 @@
    want this spot, and in the owner's screenshot the dossier lay across the nav panel's text and buttons.
    The nav panel keeps the floor (it is the one with the arm-the-arrival button); the dossier rides above it,
    clear of the capped panel below. Declared AFTER .map-dossier on purpose — same specificity, later wins. */
-.map-dossier-raised {
+::deep .map-dossier-raised {
     bottom: 18.25rem;
     max-height: min(26rem, calc(100vh - 24rem));
     overflow-y: auto;
@@ -1704,14 +1691,14 @@
 
 /* …and either way the card can be tucked into a tile of its own (owner: "option to minimize a window into
    a sugarcube tile and back would avoid the moving-windows can of worms"). No dragging. */
-.map-dossier-tile {
+::deep .map-dossier-tile {
     width: auto;
     max-width: 22rem;
     overflow: visible;
     max-height: none;
 }
 
-.map-dossier-min {
+::deep .map-dossier-min {
     line-height: 1;
     padding-left: 0.35rem;
     padding-right: 0.35rem;
@@ -2698,7 +2685,7 @@
     cursor: zoom-out;
 }
 
-.view-object {
+::deep .view-object {
     width: min(40rem, 94vw);
     /* The cap used to live here alone, and a cap with no scroll is a card that CLIPS: see the card-family
        block at the foot of this file (#735), which now owns the height, the scroll and the pinned foot for
@@ -2737,7 +2724,7 @@
     font-style: italic;
 }
 
-.view-object-close {
+::deep .view-object-close {
     align-self: center;
     margin-top: 0.2rem;
     padding: 0.35rem 1.4rem;
@@ -2749,7 +2736,7 @@
     cursor: pointer;
 }
 
-.view-object-close:hover {
+::deep .view-object-close:hover {
     background: rgba(255, 180, 90, 0.26);
 }
 
@@ -5341,7 +5328,7 @@
    instead of sitting at the foot of the window. `position: relative` keeps its z-index working from inside
    the column, and the column makes no stacking context of its own, so the plate stacks against .map-page's
    children exactly as it did while it was one of them. */
-.story-plate {
+::deep .story-plate {
     position: relative;
     align-self: flex-start;
     flex: 0 0 auto;
@@ -5371,7 +5358,7 @@
    child re-enables its own" idiom .map-topstack has used since #402. It sits INSIDE the plate's own box
    rather than hanging off a corner of it: a control that overhangs its surface is a control that can be
    pushed off the viewport edge, and this plate is already anchored 1rem from the left wall. */
-.story-plate-close {
+::deep .story-plate-close {
     flex: 0 0 auto;
     align-self: flex-start;
     padding: 0 0.3rem;
@@ -5384,8 +5371,8 @@
     pointer-events: auto;
 }
 
-.story-plate-close:hover,
-.story-plate-close:focus-visible {
+::deep .story-plate-close:hover,
+::deep .story-plate-close:focus-visible {
     color: #ffd9a0;
     border-color: rgba(255, 180, 90, 0.75);
 }
@@ -5579,7 +5566,7 @@
    added here deliberately, which is the moment somebody asks whether its way out is reachable. The guard
    that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate. */
 .busted-card,
-.view-object,
+::deep .view-object,
 .convergence-card,
 .deck-offer-card,
 .treasure-map-card,
@@ -5622,7 +5609,7 @@
 .busted-card .busted-close-row,
 .busted-card .busted-close,
 .busted-card > .busted-options,
-.view-object > .view-object-close,
+::deep .view-object > .view-object-close,
 .convergence-card > .convergence-close,
 .deck-offer-card > .deck-offer-actions,
 .deck-offer-card > .deck-bank-actions,
@@ -5683,7 +5670,7 @@
     --card-foot-scrim: rgba(10, 7, 9, 0.99);
 }
 
-.view-object {
+::deep .view-object {
     --card-foot-scrim: rgb(12, 16, 23);
 }
 

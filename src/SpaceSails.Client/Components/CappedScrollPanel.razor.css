@@ -1,0 +1,57 @@
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #997 · #993'S ARITHMETIC, ONCE.
+
+   Every property in this file was measured for the Plotting panel and written down in a forty-line comment
+   beside it. The measurement is still true and the comment still exists in Map.razor.css; what has changed
+   is that the next panel that needs a head-and-a-scrolling-body no longer gets a fresh guess at a constant.
+
+   THE SHAPE OF THE BUG IT PREVENTS, in the owner's own words: "UI at scrub planning is clipped from below
+   … I cannot remove the insertion step." The panel had `max-height: calc(100vh - 14rem)`, a constant
+   standing in for the chrome above it. On the Nav desk that chrome is 34 rem. The cap resolved to 881 px
+   against a 701 px panel and never once engaged, from the day it was written. Nothing here guesses at a
+   height: flex measures it.
+
+   Specificity, deliberately: everything a page might reasonably want to override is in `:where()`, which
+   contributes none — so a page's single class beats it in any bundle order. What is NOT in `:where()` is
+   the arithmetic itself, because a page that overrode `min-height: 0` would be re-opening #950. */
+
+/* THE PANEL. `flex: 0 1 auto` — it is the thing in its column allowed to shrink — and `min-height: 0` is
+   the load-bearing half: without it a flex item refuses to shrink below its content, which is precisely
+   how a panel walks off the bottom of the screen. `overflow-y` is the BACKSTOP, not the mechanism: on a
+   very short window the body reaches its floor, stops giving, and the whole panel pages rather than
+   squeezing the list to nothing. */
+.capped-scroll {
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+/* THE BODY — the one child that gives, and the only one with a scroll in it.
+
+   `min-height` is a FLOOR and not a size: the body takes whatever the panel has left after the head, and
+   stops giving there. The floor arrives as a custom property the page sets on the panel, so how short is
+   too short is the page's judgement (the flight plan's is 6 rem — about two steps and a scrollbar) while
+   what to do about it is this file's.
+
+   `overscroll-behavior: contain` keeps a flick at the end of the list inside the list, instead of paging
+   whatever the panel is floating over. */
+.capped-scroll-body {
+    flex: 1 1 auto;
+    min-height: var(--capped-scroll-floor, 6rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* The head keeps its measured height, however many rows it turns out to have.
+
+   `::deep` because the head's rows are the PAGE's markup, handed in as a fragment: Blazor scopes a rule to
+   the component that rendered the element, and these elements were rendered by the page. The one child
+   this must not catch is the body — hence the `:not()`, which is cheaper to read than a rule that sets
+   `flex: 0 0 auto` on the scroller and another that puts it back. */
+.capped-scroll > ::deep *:not(.capped-scroll-body) {
+    flex: 0 0 auto;
+}

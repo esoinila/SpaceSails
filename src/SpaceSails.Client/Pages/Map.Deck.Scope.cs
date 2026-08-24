@@ -38,9 +38,12 @@ public partial class Map
     //
     // Remembered for the session (a field, like FollowShip): a captain who tucks the scope away expects it to
     // stay tucked away until he says otherwise.
+    //
+    // #997 · The field stays — the tick reads it, and an eyepiece nobody can see is an eyepiece nobody
+    // should be drawing — but the TOGGLE is gone. The OverlayShell owns the gesture now, for this window
+    // and for the dossier alike, and the page is bound to its answer (@bind-Minimized) rather than
+    // keeping a second switch of its own beside it.
     private bool _scopeMinimized;
-
-    private void ToggleScopeMinimized() => _scopeMinimized = !_scopeMinimized;
 
     /// <summary>What the minimised tile names, so the tile is an instrument and not a mystery button: the same
     /// priority <see cref="PickScopeTarget"/> resolves — a manual pick, then a selected contact, then the
