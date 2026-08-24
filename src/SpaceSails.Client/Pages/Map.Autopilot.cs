@@ -212,6 +212,12 @@ public partial class Map
     // insert burn resolves the ballistic impact, so that impact is the plan working, not news. A plan
     // whose OWN path goes subsurface leaves this an Impact pass, and the alarm shouts red immediately.
     private ClosestApproach.Pass? _autopilotPlanClosestPass;
+    // #962: the same rehearsed plan, cached per BODY — how close the plan's own path came to each world
+    // it passed. The collision alarm above asks "does the plan hit anything"; the #180 park-degradation
+    // watchdog asks the other question of the same numbers — "did the plan clear the body this ship is
+    // BOUND to" — because an osculating conic is not the course of a ship the autopilot is still flying.
+    // Cached with the path and the pass (the #219 one-arm law): all three live and die together.
+    private IReadOnlyDictionary<string, double>? _autopilotPlanBodyClearance;
 
     // ---- #179: disarming the autopilot is what dropped the owner off orbit; confirm it once. The
     // first disarm click arms this pending flag (with a short expiry) and asks; a second click within
@@ -265,6 +271,7 @@ public partial class Map
         _armedArrivalPassSimTime = null; // #969: the plan-time promise dies with the arm that made it
         _autopilotPlanPath = null;
         _autopilotPlanClosestPass = null; // #196: plan gone — the alarm returns to the ballistic course
+        _autopilotPlanBodyClearance = null; // #962: …and the park watchdog returns to the raw conic
         _armedTransferSchedule = null;
         _armedTransferSummary = null;
         _armedTransferBurnsFired = 0;
@@ -286,9 +293,30 @@ public partial class Map
     private void CachePlanForAlarm(string bodyId, AutopilotRehearsal.RehearsalResult r)
     {
         _autopilotPlanPath = r.Path;
-        _autopilotPlanClosestPass = _ephemeris is null
-            ? null
-            : AutopilotRehearsal.PlanCollisionPass(r, _ephemeris, bodyId);
+        if (_ephemeris is null)
+        {
+            _autopilotPlanClosestPass = null;
+            _autopilotPlanBodyClearance = null;
+            return;
+        }
+
+        // One judged pass list, read two ways (#962): the worst of them is the collision alarm's plan
+        // pass, and the per-body distances are what the park-degradation watchdog checks the bound body
+        // against. Same scan, same arrival treatment, one arm-time cost.
+        IReadOnlyList<ClosestApproach.Pass> passes = AutopilotRehearsal.PlanPasses(r, _ephemeris, bodyId);
+        ClosestApproach.Pass? worst = null;
+        var clearance = new Dictionary<string, double>(passes.Count, StringComparer.Ordinal);
+        foreach (ClosestApproach.Pass pass in passes)
+        {
+            clearance[pass.BodyId] = pass.Distance;
+            if (worst is null || pass.Severity < worst.Value.Severity)
+            {
+                worst = pass;
+            }
+        }
+
+        _autopilotPlanClosestPass = worst;
+        _autopilotPlanBodyClearance = clearance;
     }
 
     // #146: does this arm ride a cheap in-well transfer rather than the legacy approach loop? The target
@@ -912,6 +940,7 @@ public partial class Map
                 _armedSpentPulses = 0;
                 _autopilotPlanPath = null;
                 _autopilotPlanClosestPass = null; // #196: park reached — the plan is consumed; ballistic alarm resumes
+                _autopilotPlanBodyClearance = null; // #962: …and the park watchdog is the keeping rule's now
                 _armedTransferSchedule = null;
                 _armedTransferSummary = null;
                 _armedTransferBurnsFired = 0;
@@ -1243,16 +1272,27 @@ public partial class Map
             ? OrbitRule.ParkStabilityVerdict.NotBound
             : OrbitRule.ParkStability(_ship, bodyPos, bodyVel, body, hill);
 
-        // Friday §0: while the autopilot is KEEPING the orbit, the #180 degradation alert is the
-        // BACKSTOP, not the defense — it must stay silent for the forced-eccentricity brush that
-        // keeping trims away every quarter period (at a deep well like Enceladus the apoapsis routinely
-        // touches the band ceiling, TideRisk, between trims). So downgrade TideRisk to Stable while
-        // kept. A true Subsurface (impact imminent) still shouts red even while keeping — the one
-        // failure keeping should never mask.
-        if (_orbitKept && verdict == OrbitRule.ParkStabilityVerdict.TideRisk)
-        {
-            verdict = OrbitRule.ParkStabilityVerdict.Stable;
-        }
+        // WHICH SHIP THIS WATCHDOG IS ALLOWED TO JUDGE — Friday §0 + #962, settled in Core against
+        // concrete numbers (OrbitDegradeAlertRule). A KEPT park's between-trim brush at the band ceiling
+        // is the keeper working, not decay; and a ship the autopilot is FLYING along a rehearsed path
+        // that cleared this very body has no park to degrade at all — her osculating conic is a
+        // prediction about a coast the next approach burn is about to erase. Both deferrals stay
+        // falsifiable: a plan that did not itself clear the floor here, or a ship gone deeper toward the
+        // body than the plan ever went, is judged raw and shouts.
+        // (The plan question is only ASKED on a risk verdict, and AutopilotFlyingApproach — which walks
+        // the body list through OrbitInfo — is the last term of it, so the quiet tick stays a comparison.)
+        bool risk = verdict is OrbitRule.ParkStabilityVerdict.TideRisk or OrbitRule.ParkStabilityVerdict.Subsurface;
+        verdict = OrbitDegradeAlertRule.Evaluate(
+            verdict,
+            keepingHoldsOrbit: _orbitKept,
+            autopilotFlyingRehearsedPath: risk && body is not null
+                && _autopilotPlanPath is { Count: >= 2 } && AutopilotFlyingApproach,
+            planClosestApproach: body is not null && _autopilotPlanBodyClearance is { } cleared
+                && cleared.TryGetValue(body.Id, out double planPass)
+                    ? planPass
+                    : double.NaN,
+            shipDistanceNow: body is null ? 0 : (_ship.Position - bodyPos).Length,
+            surfaceFloor: body is null ? 0 : OrbitRule.SurfaceParkRadii * body.BodyRadius);
 
         bool IsRisk(OrbitRule.ParkStabilityVerdict v) =>
             v is OrbitRule.ParkStabilityVerdict.TideRisk or OrbitRule.ParkStabilityVerdict.Subsurface;
@@ -1305,8 +1345,17 @@ public partial class Map
         // choice; the orbit/autopilot button recomputes the exact bill when pressed.
         int reparkCost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
 
+        // #962, second half: the offer must be a choice the captain HAS. The owner was shown
+        // "re-park (≈48 p) or leave" while the banner one line above read "AUTOPILOT HAS THE SHIP" —
+        // a manual insertion there is a burn that fights the plan still being flown. A ship under the
+        // autopilot is told what has the helm instead. "Under the autopilot" means at the HELM — flying
+        // the approach, or holding the park. A #969 plan-time arm still waiting for its pass is not that
+        // (the captain's own plotted burns fly the ship through the hold), so there she keeps the bill.
+        bool autopilotHasTheShip = AutopilotFlyingApproach || _orbitKept;
+        string offer = OrbitDegradeAlertRule.Offer(autopilotHasTheShip, reparkCost);
+
         _orbitDegradeSeverity = subsurface ? 2 : 1;
-        _orbitDegradeWarning = $"⚠ orbit degrading at {body.Name} — {reason}; re-park (≈{reparkCost} p) or leave";
+        _orbitDegradeWarning = $"⚠ orbit degrading at {body.Name} — {reason}; {offer}";
         Warp = 1; // auto-drop so the decay isn't blown past at warp
         LogAutopilotEvent(_orbitDegradeWarning);
         ShowPulseMessage(_orbitDegradeWarning);

@@ -937,6 +937,20 @@ public sealed partial class DeckView
                 float pw = 3.0f * scale, ph = 2.0f * scale;
                 float plateBottom = sy - 0.8f * scale;      // clears the bot box (half 0.55·scale) with a gap
                 float plateTop = plateBottom - ph;
+
+                // #986 F2 · …EXCEPT WHERE THE SHIP IS TALKING. The top-centre band belongs to the mothership's
+                // orbit line and the machine's stall banner (SpaceSails.Core.CommsBand, the #324 law). A bot
+                // parked near the top of the frame — the sentry at the Tilt's airlock does exactly this — put
+                // its alarm-red digits straight through those words. So a readout that would reach into the
+                // band is seated just BELOW the band instead: never above its bot's mark, never over the
+                // ship's line, and still the same plate read from across the map. The band is measured for
+                // both lines whether or not the second is up, so a counter does not hop as the machine
+                // complains — and a bot anywhere but the very top of the frame is untouched by this.
+                if (plateTop < CommsBand.ReservedBottom)
+                {
+                    plateTop = (float)Math.Max(CommsBand.ReservedBottom, sy + (0.8f * scale));
+                    plateBottom = plateTop + ph;
+                }
                 FillRect(sx - pw / 2, plateTop, pw, ph, new RgbaColor(16, 10, 10, 225));
                 float baseY = (plateTop + plateBottom) / 2f + fontPx * 0.35f; // optical centre for the fixed-px glyphs
                 _renderer.DrawText(sx, baseY, counter, digit,
@@ -1220,6 +1234,21 @@ public sealed partial class DeckView
             DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact, state.HitsTaken, surface?.BloodSplash ?? 0);
         }
 
+        // #986 F2 · …AND THE PLATE THAT MAKES "NEVER BURIED" TRUE. The two lines below were drawn as bare
+        // ink on bare pixels while every other line the #324 law protects — the nerve gauge, the #612 air bar
+        // and its source chip — sits on a dark plate. On the Tilt's ground the sentry at the airlock projects
+        // to the top centre and its alarm-red magazine readout struck straight through "holds the ship,".
+        // One plate, under both lines, in the same ink the other plates use; the band it is measured to
+        // (SpaceSails.Core.CommsBand) is the SAME band DrawTheSentries keeps its counters out of, so this
+        // does not simply trade the ship's buried line for the sentry's.
+        string? orbitText = surface is { OrbitComms: { Length: > 0 } ol } ? ol : null;
+        string? stallText = state.StallBanner is { Length: > 0 } sb ? sb : null;
+        if (orbitText is not null || stallText is not null)
+        {
+            (double px, double py, double pw, double ph) = CommsBand.PlateFor(widthPx / 2.0, orbitText, stallText);
+            FillRect((float)px, (float)py, (float)pw, (float)ph, new RgbaColor(6, 11, 10, 205));
+        }
+
         // #327 the ship calls home: the mothership's orbit line, painted plainly across the TOP-CENTRE —
         // the one channel the owner's Miranda maroon never had. Never buried (the #324 visibility law):
         // calm teal while it holds, amber as it slips, a pulsing red for the last call and the maroon.
@@ -1242,7 +1271,8 @@ public sealed partial class DeckView
                 double f = floor + (1.0 - floor) * (0.5 + 0.5 * Math.Sin(simTime * flickerHz));
                 color = new RgbaColor(170, 180, 190, (byte)(255 * Math.Clamp(f, 0.0, 1.0)));
             }
-            _renderer.DrawText(widthPx / 2f, 20, orbitLine, color, "13px monospace", TextAlign.Center);
+            _renderer.DrawText(widthPx / 2f, (float)CommsBand.BaselineY(0), orbitLine, color,
+                $"{CommsBand.LinePx:0}px monospace", TextAlign.Center);
         }
 
         // #825 · THE MACHINE'S OWN BANNER, on its own line, under the ship's. The owner had "SIGNAL BREAKING
@@ -1253,9 +1283,9 @@ public sealed partial class DeckView
         // already talking so neither fact ever paints over the other.
         if (state.StallBanner is { Length: > 0 } stall)
         {
-            float y = surface is { OrbitComms: { Length: > 0 } } ? 38 : 20;
+            float y = (float)CommsBand.BaselineY(orbitText is null ? 0 : 1);
             _renderer.DrawText(widthPx / 2f, y, stall,
-                new RgbaColor(255, 190, 100, 235), "13px monospace", TextAlign.Center);
+                new RgbaColor(255, 190, 100, 235), $"{CommsBand.LinePx:0}px monospace", TextAlign.Center);
         }
 
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or
