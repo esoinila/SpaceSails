@@ -1530,33 +1530,6 @@
         </div>
     }
 
-    @* The plate: same picture, same words, no keyboard stolen and no world stopped. The PANEL is still not
-       clickable — a thing you must dismiss is a thing that blocked you — but #992 gives it the one control
-       the owner's ruling asks of every surface in this file: "there should not be a pop-up that cannot be
-       closed or minimized" (owner ruling 2026-08-24). The ✕ re-enables its own pointer-events and nothing
-       else does, so the plate goes on passing every other click through to the room behind it. The great
-       port's own plate is what made the case: ArrivalTube.Title(GreatPort) is "🛬 THE LONG WALK IN", it
-       carries the longest of the three captions, and it lands bottom-left across the captain's-remote
-       button for the whole of StoryBeats.PlateSeconds. *@
-    @if (_storyPlate is { } flash)
-    {
-        var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
-        <div class="story-plate" aria-live="polite">
-            @if (flashCopy.Art is { Length: > 0 })
-            {
-                <img class="story-plate-art" src="@flashCopy.Art" alt=""
-                     onerror="this.style.display='none'" />
-            }
-            <div class="story-plate-words">
-                <div class="story-plate-title">@flashCopy.Title</div>
-                <div class="story-plate-caption">@flashCopy.Caption</div>
-            </div>
-            <button type="button" class="story-plate-close" aria-label="Close"
-                    title="Take it down now — it would go on its own in a few seconds"
-                    @onclick="() => Dismiss(CloseStoryPlate)">✕</button>
-        </div>
-    }
-
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
        #973 L2 · HARLAN FESS, NEBULA MUTUAL. The salesman has crossed the floor and is standing at the
        table — he is not sitting, because he was not invited, and there is no eighth way to open a sitting
@@ -6189,9 +6162,53 @@
         }
     </div>
     }
-    </div>@* /.map-flowcolumn — the window-tall pair: the top stack, then the Nav HUD in what is left (#992).
-              It closes HERE, around those two only: everything below is absolutely positioned against
-              .map-page, and pulling it inside a pointer-events:none column would cost it its clicks. *@
+    @* #994 · THE PLATE IS THE LAST THING IN THE COLUMN, NOT A LAYER OVER IT.
+
+       It used to be absolutely positioned against .map-page at left 1rem / bottom 5.5rem, which put it on
+       top of whatever the left column had grown into. Measured at 1280x720 with the owner's own four-step
+       plan open, the plate ran y 465…633 and the Plotting panel y 520…720: 480 x 113 px of the panel — the
+       step list and the open editor in it — sat behind an opaque card for the whole of
+       StoryBeats.PlateSeconds. A z-index cannot fix that; only geometry can.
+
+       So the plate joins the flow column as its LAST item, and .map-hud — `flex: 1 1 auto` — takes what is
+       left instead of all of it. That is #992's own arithmetic, unchanged: "the Plotting panel is the one
+       thing allowed to give, because it is the one with a scroll in it." The plate lands on exactly the
+       pixels it always landed on (bottom-left, 1rem in, 5.5rem up) and no constant anywhere has to agree
+       with its height — the browser measures it, which is the whole point of putting it in the flow.
+
+       It is still a pointer-events:none card whose ✕ re-enables its own, so it can sit inside a
+       pointer-events:none column without losing the one control #992 gave it. *@
+        @* The plate: same picture, same words, no keyboard stolen and no world stopped. The PANEL is still not
+           clickable — a thing you must dismiss is a thing that blocked you — but #992 gives it the one control
+           the owner's ruling asks of every surface in this file: "there should not be a pop-up that cannot be
+           closed or minimized" (owner ruling 2026-08-24). The ✕ re-enables its own pointer-events and nothing
+           else does, so the plate goes on passing every other click through to the room behind it. The great
+           port's own plate is what made the case: ArrivalTube.Title(GreatPort) is "🛬 THE LONG WALK IN", it
+           carries the longest of the three captions, and it lands bottom-left across the captain's-remote
+           button for the whole of StoryBeats.PlateSeconds. *@
+        @if (_storyPlate is { } flash)
+        {
+            var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
+            <div class="story-plate" aria-live="polite">
+                @if (flashCopy.Art is { Length: > 0 })
+                {
+                    <img class="story-plate-art" src="@flashCopy.Art" alt=""
+                         onerror="this.style.display='none'" />
+                }
+                <div class="story-plate-words">
+                    <div class="story-plate-title">@flashCopy.Title</div>
+                    <div class="story-plate-caption">@flashCopy.Caption</div>
+                </div>
+                <button type="button" class="story-plate-close" aria-label="Close"
+                        title="Take it down now — it would go on its own in a few seconds"
+                        @onclick="() => Dismiss(CloseStoryPlate)">✕</button>
+            </div>
+        }
+
+    </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
+              (#992), then the story plate at the foot of it (#994). It closes HERE, around those three
+              only: everything below is absolutely positioned against .map-page, and pulling it inside a
+              pointer-events:none column would cost it its clicks. *@
 
     @if (_activeDesk == ShipDesk.Nav)
     {

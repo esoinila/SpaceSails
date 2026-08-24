@@ -563,9 +563,28 @@
    glance and are the same height whatever the plan does — they keep their measured height. The Plotting
    panel is the one that gives, because it is the one with a scroll inside it. */
 .map-hud .btn-toolbar,
-.map-hud .map-readouts,
 .map-hud .map-frame {
     flex: 0 0 auto;
+}
+
+/* #994 · …AND WHO GIVES SECOND, WHEN THE PANEL HAS GIVEN EVERYTHING. Measured at 1280x720 on Nav: the
+   top stack takes 111 px and the toolbar, readouts and frame chip 424 more, so the column is already
+   full before the Plotting panel asks for a single pixel. Raise a story plate at the foot of it (168 px
+   of card and 88 px of floor) and there is a 271 px deficit — more than the panel has to give. Three
+   `flex: 0 0 auto` blocks over a shrinkable one do not shrink; they OVERFLOW, and the panel lands 93 px
+   below the box it was allotted, which is exactly where the plate is.
+
+   So the readouts are the second thing allowed to give. They are the right second choice for the same
+   reason the panel was the first: it is a wall of read-at-a-glance text with no control in it, so a
+   scroll costs a wrist and nothing else — where the toolbar and the frame chip are rows of buttons, and
+   a button you have to scroll to is #212's complaint again. `flex-shrink: 8` against the panel's 1 means
+   the readouts give first and the plan keeps its size; `min-height` is the floor that stops the block
+   collapsing into a sliver rather than scrolling. */
+.map-hud .map-readouts {
+    flex: 0 8 auto;
+    min-height: 7rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .map-hud .btn-toolbar,
@@ -3755,7 +3774,6 @@
     50% { opacity: 0.95; transform: scale(1.05); }
     100% { opacity: 0.55; transform: scale(0.9); }
 }
-}
 
 /* #255 — the diegetic long-haul jump overlay. Full-screen theater over the frozen map; the one
    loading bar allowed to be a feature. Above every HUD layer, below nothing. */
@@ -5308,11 +5326,26 @@
 
 /* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
    universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
-   the modals, pointer-events NONE so it can never eat a click during a fight. */
+   the modals, pointer-events NONE so it can never eat a click during a fight.
+
+   #994 · "does not block the playing" was a claim about CLICKS, and the plate kept it — it has never eaten
+   one. It was not keeping it about PIXELS. Absolutely positioned at bottom 5.5rem it lay on top of whatever
+   the left column had grown into: measured at 1280x720 with a four-step plan open, plate y 465…633 against
+   Plotting panel y 520…720, i.e. 480 x 113 px of the step list and its open editor behind an opaque card for
+   the whole of StoryBeats.PlateSeconds.
+
+   It is the LAST ITEM IN .map-flowcolumn now (see Map.razor), so the two can no longer share a pixel: the
+   plate takes its own measured height off the bottom of the column and .map-hud — `flex: 1 1 auto` — gets
+   what is left, which is #992's arithmetic exactly. `margin-top: auto` is for the seven desks that raise no
+   .map-hud at all: with nothing above it to grow, the plate would otherwise ride up under the tab bar
+   instead of sitting at the foot of the window. `position: relative` keeps its z-index working from inside
+   the column, and the column makes no stacking context of its own, so the plate stacks against .map-page's
+   children exactly as it did while it was one of them. */
 .story-plate {
-    position: absolute;
-    left: 1rem;
-    bottom: 5.5rem;
+    position: relative;
+    align-self: flex-start;
+    flex: 0 0 auto;
+    margin: auto 0 5.5rem 1rem;
     z-index: calc(var(--z-desks-popups) + 40);
     display: flex;
     gap: 0.6rem;
@@ -6094,6 +6127,7 @@
     font-size: 1.1rem;
     font-style: italic;
     color: #e7f1ff;
+}
 /* ══════════════════════════════════════════════════════════════════════════════════════════════════════
    #973 L2 · THE REP'S PITCH CARD.
 

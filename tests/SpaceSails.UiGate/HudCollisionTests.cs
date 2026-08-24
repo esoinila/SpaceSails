@@ -229,6 +229,129 @@ public sealed class HudCollisionTests : IAsyncLifetime
                     + string.Join("\n  ", collisions));
     }
 
+    /// <summary>
+    /// #994 · THE DESK-CHIP STRIP IS ON THE SCREEN, ON EVERY DESK.
+    ///
+    /// <para>An unclosed <c>.old-crew-reply</c> rule in <c>Map.razor.css</c> (#975) made the browser read the
+    /// whole of <c>DeskChips.razor.css</c> as nested children of it, so <c>.desk-chip-strip</c> fell back to
+    /// <c>position: static</c> and laid out as a full-width in-flow block BELOW the fold — measured at
+    /// 1280×720, a 1280×384 box at y 720. It was drawn, it was visible, it was enabled, and no player could
+    /// see it on any desk.</para>
+    ///
+    /// <para><b>Why the two gates above could not see it.</b> They measure named controls against each other;
+    /// a control that walks off the bottom of the world collides with nothing at all and passes every overlap
+    /// test ever written. So this asks the other question — is it WHERE IT WAS PUT — and asks it on every
+    /// desk, because the strip is the one piece of furniture all eight share.</para>
+    ///
+    /// <para>RED PROOF: take the closing brace off <c>.old-crew-reply</c> again and every desk fails, naming
+    /// a strip 1280 px wide at y 720.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_desk_chip_strip_is_positioned_and_on_the_screen_on_every_desk()
+    {
+        await _page.SetViewportSizeAsync(1280, 720);
+        await BootIntoTheDeck();
+
+        var offences = new List<string>();
+        int measured = 0;
+
+        foreach (string tab in new[] { "Captain", "Nav", "Sensors", "War room", "Trade", "Comms", "Galley", "Deck" })
+        {
+            await _page.Locator("button.desk-tab", new() { HasTextString = tab }).First.ClickAsync();
+            await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = tab }).First.WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+            ILocator strip = _page.Locator(".desk-chip-strip").First;
+            await strip.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+            string position = await strip.EvaluateAsync<string>("el => getComputedStyle(el).position");
+            if (position != "absolute")
+            {
+                offences.Add($"{tab}: the strip computes `position: {position}` — its own stylesheet is not "
+                             + "applying, so it is an in-flow block and not an edge strip");
+            }
+
+            var box = await strip.BoundingBoxAsync();
+            Assert.True(box is { Width: > 0, Height: > 0 },
+                        $"{tab}: the desk-chip strip has no box at all — this gate measured nothing");
+            measured++;
+
+            if (box!.Y + box.Height <= 0 || box.Y >= 720 || box.X + box.Width <= 0 || box.X >= 1280)
+            {
+                offences.Add($"{tab}: the strip is laid out at ({box.X:0},{box.Y:0}) {box.Width:0}×{box.Height:0}"
+                             + " — entirely off a 1280×720 screen, which is where a strip goes when its own "
+                             + "rules are dead (#994)");
+            }
+        }
+
+        Assert.Equal(8, measured);
+        Assert.True(offences.Count == 0,
+                    "the desk-chip strip is not where DeskChips.razor.css puts it (#994):\n  "
+                    + string.Join("\n  ", offences));
+    }
+
+    /// <summary>
+    /// #994 item 2 · THE STORY PLATE AND THE PLOTTING PANEL NEVER SHARE A PIXEL.
+    ///
+    /// <para><b>The sighting.</b> Measured on the real page at 1280×720: <c>.story-plate</c> ran y 465…633 and
+    /// <c>.map-plot</c> y 520…720, so 480×113 px of the Plotting panel — the step list and whatever editor was
+    /// open in it — sat behind an opaque card (<c>rgba(8,11,17,.92)</c>) for the whole of
+    /// <c>StoryBeats.PlateSeconds</c>. The plate cannot eat a click (<c>pointer-events: none</c>) and never
+    /// did; what it ate was the pixels, and #212's law does not care which.</para>
+    ///
+    /// <para><b>Why here.</b> The same family as #482/#199/#559/#986: two surfaces, each correct, in one
+    /// place. The plate's height is its caption's — the great port's own runs to three lines — so there is no
+    /// constant to check, only a laid-out box.</para>
+    ///
+    /// <para><b>Staging.</b> The plate the Sol boot raises at the berth is real and lasts 7 SIM seconds, so
+    /// the drive PAUSES the sim before opening the panel — the captain's own control, and the plate then
+    /// cannot expire in the middle of a measurement. Both premises are asserted out loud, so a boot that
+    /// stops raising a plate fails this gate instead of passing it while proving nothing.</para>
+    ///
+    /// <para>RED PROOF: publish the parent commit — the plate absolutely positioned at bottom 5.5rem — and
+    /// this fails, naming the overlap in pixels.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_story_plate_never_covers_the_plotting_panel()
+    {
+        await _page.SetViewportSizeAsync(1280, 720);
+        await BootIntoTheDeck();
+
+        await _page.Locator("button.desk-tab", new() { HasTextString = "Nav" }).First.ClickAsync();
+        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Nav" }).First.WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // Stop the clock first: the plate expires on SIM time, and a measurement that races a countdown is a
+        // flake waiting to happen. Pause is a control the captain has anyway.
+        await _page.Locator("button", new() { HasTextString = "Pause" }).First.ClickAsync();
+        await _page.Locator("button", new() { HasTextString = "Plot" }).First.ClickAsync();
+
+        ILocator plate = _page.Locator(".story-plate");
+        ILocator panel = _page.Locator(".map-plot");
+
+        // Both premises, out loud. If the berth stops telling its story, or Plot stops opening a panel, this
+        // gate has measured nothing and must say so rather than going green.
+        await panel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+        Assert.True(await plate.CountAsync() > 0 && await plate.IsVisibleAsync(),
+                    "no story plate is on the screen at the berth — the Sol boot used to raise one, and "
+                    + "without it this gate has nothing to measure the Plotting panel against (#994).");
+
+        if (await plate.BoundingBoxAsync() is not { } a || await panel.BoundingBoxAsync() is not { } b)
+        {
+            throw new InvalidOperationException("the plate or the panel has no box — nothing was measured");
+        }
+
+        float ox = Math.Min(a.X + a.Width, b.X + b.Width) - Math.Max(a.X, b.X);
+        float oy = Math.Min(a.Y + a.Height, b.Y + b.Height) - Math.Max(a.Y, b.Y);
+
+        Assert.True(
+            ox <= 0 || oy <= 0,
+            $"the story plate (x {a.X:0}…{a.X + a.Width:0}, y {a.Y:0}…{a.Y + a.Height:0}) is lying on the "
+            + $"Plotting panel (x {b.X:0}…{b.X + b.Width:0}, y {b.Y:0}…{b.Y + b.Height:0}) — {ox:0}×{oy:0} px "
+            + "of the plan is behind an opaque card. The plate is a story, the panel is the work; neither may "
+            + "be spent on the other's pixels (#994 item 2).");
+    }
+
     private static bool Overlaps(
         (string Name, float X, float Y, float W, float H) a, (float X, float Y, float W, float H) b) =>
         a.X < b.X + b.W && a.X + a.W > b.X && a.Y < b.Y + b.H && a.Y + a.H > b.Y;
