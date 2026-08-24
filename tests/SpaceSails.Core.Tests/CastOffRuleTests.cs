@@ -123,4 +123,107 @@ public sealed class CastOffRuleTests
         string done = CastOffRule.ClearanceWhy(CastOffRule.ClearRangeMeters * 2);
         Assert.Contains("already clear", done);
     }
+
+    // ===== #989 — THE PLAN GRAMMAR: A SHIP LEAVES A BERTH ONCE =====
+
+    /// <summary>
+    /// THE GOOD SHAPE, ACCEPTED. The owner's own sentence — cast off, clear the harbour, then the burns —
+    /// is well-formed, and so are the two states a departure passes through on its way out: the plan of a
+    /// free-flying ship with no departure in it at all, and the minute between the clamp letting go (the ⚓
+    /// row retired, and so no longer live) and the clearance firing.
+    /// </summary>
+    [Fact]
+    public void THE_GOOD_SHAPE_IsAccepted()
+    {
+        Assert.Equal(CastOffRule.PlanShapeFault.None, CastOffRule.CheckShape(
+            [PlanStepKind.Undock, PlanStepKind.ClearHarbour, PlanStepKind.Burn], clamped: true));
+
+        Assert.Equal(CastOffRule.PlanShapeFault.None, CastOffRule.CheckShape(
+            [PlanStepKind.Burn, PlanStepKind.Burn], clamped: false));
+
+        // Mid-departure: the clamp has let go, the out-thrust has not fired yet. She is FREE with a live
+        // clearance row — the feature working, and it must never read as a malformed plan.
+        Assert.Equal(CastOffRule.PlanShapeFault.None, CastOffRule.CheckShape(
+            [PlanStepKind.ClearHarbour, PlanStepKind.Burn], clamped: false));
+
+        // An empty plan is a plan with nothing wrong with it.
+        Assert.Equal(CastOffRule.PlanShapeFault.None, CastOffRule.CheckShape([], clamped: true));
+    }
+
+    /// <summary>
+    /// TWO CAST-OFFS IN A ROW ARE NOT A PLAN. Owner, off the second #989 screenshot: <i>"2 cast-off in
+    /// sequence sounds kind of silly — we should have some logic check."</i> This is that check: a second
+    /// departure of either row is refused, wherever in the list it stands.
+    /// </summary>
+    [Fact]
+    public void A_SECOND_CAST_OFF_IsRefused()
+    {
+        Assert.Equal(CastOffRule.PlanShapeFault.SecondCastOff, CastOffRule.CheckShape(
+            [PlanStepKind.Undock, PlanStepKind.ClearHarbour, PlanStepKind.Undock, PlanStepKind.ClearHarbour],
+            clamped: true));
+
+        Assert.Equal(CastOffRule.PlanShapeFault.SecondClearance, CastOffRule.CheckShape(
+            [PlanStepKind.Undock, PlanStepKind.ClearHarbour, PlanStepKind.ClearHarbour], clamped: true));
+    }
+
+    /// <summary>NOTHING GOES AHEAD OF THE CLAMP. A burn plotted before the cast off is a burn the clamp
+    /// eats — the plan says one thing and the ship does another, which is this repo's third named bug
+    /// class. And the clearance belongs to the departure it was laid with, not three rows down.</summary>
+    [Fact]
+    public void THE_PAIR_MustBeTheFirstStepsInThePlan()
+    {
+        Assert.Equal(CastOffRule.PlanShapeFault.CastOffNotFirst, CastOffRule.CheckShape(
+            [PlanStepKind.Burn, PlanStepKind.Undock, PlanStepKind.ClearHarbour], clamped: true));
+
+        Assert.Equal(CastOffRule.PlanShapeFault.ClearanceOutOfPlace, CastOffRule.CheckShape(
+            [PlanStepKind.Undock, PlanStepKind.Burn, PlanStepKind.ClearHarbour], clamped: true));
+    }
+
+    /// <summary>A CAST OFF NEEDS A CLAMP. A ship already under way cannot let go of a berth she is not
+    /// tied to — a row like that is a step no executor will ever run.</summary>
+    [Fact]
+    public void A_CAST_OFF_InThePlanOfAFreeShip_IsRefused()
+    {
+        Assert.Equal(CastOffRule.PlanShapeFault.CastOffWhileFree, CastOffRule.CheckShape(
+            [PlanStepKind.Undock, PlanStepKind.ClearHarbour], clamped: false));
+
+        Assert.False(CastOffRule.ShapeIsWellFormed([PlanStepKind.Undock], clamped: false));
+        Assert.True(CastOffRule.ShapeIsWellFormed([PlanStepKind.Undock], clamped: true));
+    }
+
+    /// <summary>EVERY FAULT HAS ITS ONE SENTENCE. A plan flipped invalid for a reason nobody can read is
+    /// no better than one flipped silently — so the words are total over the enum, and a value that is not
+    /// a named fault is a cast integer and gets no plausible sentence.</summary>
+    [Fact]
+    public void EVERY_PLAN_SHAPE_FAULT_HasItsWords()
+    {
+        foreach (CastOffRule.PlanShapeFault fault in Enum.GetValues<CastOffRule.PlanShapeFault>())
+        {
+            string said = CastOffRule.ShapeComplaint(fault);
+            Assert.False(string.IsNullOrWhiteSpace(said), $"{fault} has no words");
+        }
+
+        Assert.Contains("only leave this berth once", CastOffRule.ShapeComplaint(CastOffRule.PlanShapeFault.SecondCastOff));
+        Assert.Contains("before the clamp lets go", CastOffRule.ShapeComplaint(CastOffRule.PlanShapeFault.CastOffNotFirst));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => CastOffRule.ShapeComplaint((CastOffRule.PlanShapeFault)99));
+    }
+
+    /// <summary>#989 — THE TWO BANNER STATES ARE TWO SENTENCES. A ship still tied up is WAITING; only a
+    /// ship whose epoch has come is CASTING OFF. One sentence trying to be both is what read "casting off
+    /// from The Red Eye in 0 h" while the ship sat at her berth for another day and a half.</summary>
+    [Fact]
+    public void THE_WAITING_LINE_AndTheCastingOffLine_AreDifferentSentences()
+    {
+        string waiting = CastOffRule.WaitingAtTheBerth("The Red Eye", "in 1 d 9 h");
+        Assert.Contains("YOU HAVE THE SHIP", waiting);
+        Assert.Contains("docked at The Red Eye", waiting);
+        Assert.Contains("the plan casts off in 1 d 9 h", waiting);
+        Assert.DoesNotContain("casting off", waiting);
+
+        string now = CastOffRule.CastingOffNow("The Red Eye");
+        Assert.Contains("AUTOPILOT HAS THE SHIP", now);
+        Assert.Contains("casting off", now);
+        Assert.NotEqual(waiting, now);
+    }
 }

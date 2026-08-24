@@ -181,6 +181,13 @@ public partial class Map
         foreach (PlanNode node in _planNodes)
         {
             if (node.Stale || node.Executed || node.SimTime <= SimTime) continue;
+            // #989 · NO STEP IS SAID TWICE. The owner: "there is something wonky with deletion of cast off
+            // events also… there are two in a row now" — NOW read "casting off from The Red Eye in 0 h" and
+            // NEXT read "⚓ cast off from The Red Eye in 0 h". Not a stale queue (NOW is derived from THIS
+            // list, and always was): the same live row, spoken from two slots. The row whose countdown NOW
+            // is already carrying is dropped here, so NEXT becomes the clearance — which is the honest
+            // answer to "what does she do after the clamp lets go".
+            if (NowLineCarriesTheCastOff(node)) continue;
             pending.Add(node);
         }
         pending.Sort((a, b) => a.SimTime.CompareTo(b.SimTime));
