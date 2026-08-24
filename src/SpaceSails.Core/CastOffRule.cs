@@ -115,9 +115,21 @@ public static class CastOffRule
     public const string ArmNeedsCastOff =
         "add ⚓ + Cast off to the top of the plan and she casts off by herself when it starts";
 
-    /// <summary>The NOW line while the plan is casting her off — the pilot banner's own words.</summary>
+    /// <summary>The NOW line while the plan is casting her off — the pilot banner's own words. Said only
+    /// when the clamp is letting go THIS INSTANT; a departure still ahead reads
+    /// <see cref="WaitingAtTheBerth"/> instead, because a ship still tied up is not casting off.</summary>
     public static string CastingOffNow(string havenName) =>
         $"🛰 AUTOPILOT HAS THE SHIP — NOW: casting off from {havenName}";
+
+    /// <summary>
+    /// #989 · <b>THE NOW LINE WHILE THE DEPARTURE IS STILL AHEAD.</b> Owner, docked at The Red Eye with the
+    /// scrub 33 h out (2026-08-22): <i>"Cast off time says in zero hours here even though the scrub is in 33
+    /// hours?"</i> A SCHEDULED departure is a wait, and the banner says the wait: she is tied up, the captain
+    /// has the ship, and the plan lets go at its own hour. Calling that "casting off now" was the sim doing
+    /// one thing while a sentence reported another — this repo's third named bug class.
+    /// </summary>
+    public static string WaitingAtTheBerth(string havenName, string inWhen) =>
+        $"🧭 YOU HAVE THE SHIP — docked at {havenName} · ⚓ the plan casts off {inWhen}";
 
     /// <summary>The banner / desk label for a step of this kind. TOTAL over
     /// <see cref="PlanStepKind"/> on purpose: a kind with no words is a kind the captain cannot read, and
@@ -154,4 +166,102 @@ public static class CastOffRule
     private static string FormatDistance(double metres) => ArrivalStepRule.FormatDistance(metres);
 
     private static string FormatSpeed(double mps) => ArrivalStepRule.FormatSpeed(mps);
+
+    // ===== #989 — THE PLAN GRAMMAR: A SHIP LEAVES A BERTH ONCE =====
+    //
+    // Owner, off the second screenshot (2026-08-22): "there is something wonky with deletion of cast off
+    // events also… there are two in a row now", and then the ruling: "2 cast-off in sequence sounds kind of
+    // silly — we should have some logic check."
+    //
+    // A button guard would have been the cheap answer and the wrong one: the shape a plan is ALLOWED to have
+    // is a law about the plan, not about the press that made it, and a plan can reach a bad shape without any
+    // press at all (an old vault, a re-timed row that overtook the cast off, a burn dropped in front of the
+    // clamp). So the law is HERE, pure, over the list of live step kinds — and the client reads the same
+    // function twice: once to refuse an add, once every cadence to judge what is on the board.
+
+    /// <summary>What is wrong with a plan's shape, or <see cref="None"/> when nothing is.</summary>
+    public enum PlanShapeFault
+    {
+        /// <summary>Well-formed: at most one departure pair, first, and only while she is clamped.</summary>
+        None,
+
+        /// <summary>Two ⚓ cast-off rows. She can only leave a berth once.</summary>
+        SecondCastOff,
+
+        /// <summary>Two 🚀 clearance rows for one departure.</summary>
+        SecondClearance,
+
+        /// <summary>Something is plotted AHEAD of the clamp letting go — a burn the clamp would eat.</summary>
+        CastOffNotFirst,
+
+        /// <summary>The clearance is not the step straight after the cast off it belongs to.</summary>
+        ClearanceOutOfPlace,
+
+        /// <summary>A cast-off row in the plan of a ship that is already under way.</summary>
+        CastOffWhileFree,
+    }
+
+    /// <summary>
+    /// <b>Is this plan's shape legal?</b> Judged over the LIVE steps in plan order — what is still standing
+    /// and still ahead, struck and flown rows excluded, because a departure that has already happened is not
+    /// a second departure.
+    ///
+    /// <para>The three clauses, in the owner's words and in this order: <i>at most one cast-off pair</i>;
+    /// <i>the pair is the FIRST steps when present</i>; <i>a cast off is present only while she is clamped</i>.
+    /// The clearance is deliberately NOT bound by that last one — between the clamp letting go and the
+    /// out-thrust firing she is free with a live 🚀 row, and that minute is the feature working, not a
+    /// malformed plan.</para>
+    /// </summary>
+    /// <param name="liveSteps">The still-live step kinds, in the order they will be flown.</param>
+    /// <param name="clamped">Is the ship on the clamp right now?</param>
+    public static PlanShapeFault CheckShape(IReadOnlyList<PlanStepKind> liveSteps, bool clamped)
+    {
+        int castOffs = 0, clearances = 0, castOffAt = -1, clearanceAt = -1;
+        for (int i = 0; i < liveSteps.Count; i++)
+        {
+            if (liveSteps[i] == PlanStepKind.Undock)
+            {
+                castOffs++;
+                if (castOffAt < 0) castOffAt = i;
+            }
+            else if (liveSteps[i] == PlanStepKind.ClearHarbour)
+            {
+                clearances++;
+                if (clearanceAt < 0) clearanceAt = i;
+            }
+        }
+
+        if (castOffs > 1) return PlanShapeFault.SecondCastOff;
+        if (clearances > 1) return PlanShapeFault.SecondClearance;
+        if (castOffAt < 0) return PlanShapeFault.None;              // no departure: nothing here to judge
+        if (!clamped) return PlanShapeFault.CastOffWhileFree;
+        if (castOffAt != 0) return PlanShapeFault.CastOffNotFirst;
+        if (clearanceAt >= 0 && clearanceAt != castOffAt + 1) return PlanShapeFault.ClearanceOutOfPlace;
+        return PlanShapeFault.None;
+    }
+
+    /// <summary>Convenience over <see cref="CheckShape"/> for the places that only want the bit.</summary>
+    public static bool ShapeIsWellFormed(IReadOnlyList<PlanStepKind> liveSteps, bool clamped) =>
+        CheckShape(liveSteps, clamped) == PlanShapeFault.None;
+
+    /// <summary>
+    /// The one sentence the captain hears for a fault — the refusal when he presses, and the alarm when a
+    /// plan on the board goes bad. TOTAL over <see cref="PlanShapeFault"/>: a fault with no words would be a
+    /// plan flipped ✗ for a reason nobody can read.
+    /// </summary>
+    public static string ShapeComplaint(PlanShapeFault fault) => fault switch
+    {
+        PlanShapeFault.None => "the plan's shape is sound",
+        PlanShapeFault.SecondCastOff =>
+            "⚓ She can only leave this berth once — the plan already casts her off.",
+        PlanShapeFault.SecondClearance =>
+            "🚀 One departure, one clearance — the plan already carries the out-thrust that clears the harbour.",
+        PlanShapeFault.CastOffNotFirst =>
+            "⚓ Nothing in this plan can happen before the clamp lets go — the cast off has to be its first step.",
+        PlanShapeFault.ClearanceOutOfPlace =>
+            "🚀 The clearance belongs to the cast off — it has to be the step straight after it.",
+        PlanShapeFault.CastOffWhileFree =>
+            "⚓ She is already under way — a cast off left standing in the plan is a clamp that is not there.",
+        _ => throw new ArgumentOutOfRangeException(nameof(fault), fault, "no words for this plan-shape fault"),
+    };
 }

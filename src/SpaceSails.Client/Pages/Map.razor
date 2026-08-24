@@ -5672,6 +5672,15 @@
                 }
                 else
                 {
+                    @* #989 · THE PLAN'S SHAPE, SAID AT THE DESK. Owner: "2 cast-off in sequence sounds kind of
+                       silly — we should have some logic check." The check is Core's (CastOffRule.CheckShape),
+                       and it is the SAME call that refuses a second pair at the button and that wakes the
+                       captain once when a plan on the board goes bad. Here it is simply readable: a plan that
+                       cannot be flown as written says so above the steps, in the rule's own words. *@
+                    @if (PlanShapeWarningLine() is { } _shapeWarning)
+                    {
+                        <div class="text-warning small mb-1">✗ @_shapeWarning</div>
+                    }
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
@@ -5723,10 +5732,38 @@
                                             }
                                             else
                                             {
-                                                <div class="small mb-1 text-secondary">The clamp lets go when the plan starts — nothing to set. She leaves with the berth's own shove and the thrust below carries her clear.</div>
+                                                @* #989 · WHEN SHE LEAVES IS THE ONE THING A DEPARTURE HAS TO SET.
+                                                   Owner, docked at The Red Eye with the scrub 33 h out: "Cast off
+                                                   time says in zero hours here even though the scrub is in 33
+                                                   hours?" The pair is laid AT the scrub now, and these are the
+                                                   standard ±d/±h faces every other step's time buttons wear —
+                                                   except that they move the whole ACT: the clearance rides along
+                                                   at its own gap behind and is re-solved against the berth's new
+                                                   place (NudgeDepartureEpoch). *@
+                                                <div class="small mb-1 text-secondary">The clamp lets go at the hour below — nothing else to set. She leaves with the berth's own shove and the thrust that follows carries her clear.</div>
+                                                <div class="map-burn-steps" role="group" aria-label="Step the departure's hour along the plan">
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(-1, true)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, -1, true)">@NodeFrame.NudgeEpochLabel(-1, true)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(-1, false)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, -1, false)">@NodeFrame.NudgeEpochLabel(-1, false)</button>
+                                                    <span class="map-burn-epoch-readout text-nowrap" title="When the clamp lets go">@FormatSimTime(node.SimTime)</span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(1, false)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, 1, false)">@NodeFrame.NudgeEpochLabel(1, false)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(1, true)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, 1, true)">@NodeFrame.NudgeEpochLabel(1, true)</button>
+                                                </div>
                                             }
+                                            @* #989 · THE PAIR COMES OFF AS ONE. One press laid both rows; one
+                                               press takes both away. Half a departure is not a plan anybody
+                                               meant to have — and the owner's second sighting is what a plan
+                                               that quietly lost half of one looks like. *@
                                             <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1"
-                                                    title="Take this step off the plan" @onclick="() => DeleteNode(node)">✖ remove</button>
+                                                    title="Take the cast off off the plan — the clamp release and the clearance come off together"
+                                                    @onclick="RemoveTheCastOff">✖ remove the cast off (both rows)</button>
                                         </div>
                                     }
                                 </div>
@@ -6187,16 +6224,21 @@
        transition (ArrivalStepRule.ShouldWarn owns that law and is unit-tested), never frame after frame,
        and re-arms only by the plan ending safely again. It reuses the rescue offer's modal shell so it
        lands in the established modal z-band rather than inventing another one. *@
-    @if (_arriveAlarm is { } _planBreak && !_arriveAlarmDismissed)
+    @* #989 folds the plan's SHAPE into the same wake-up call, through the same shell and the same
+       one-shot law: a plan that cannot be flown as written (a cast off that is no longer the plan's first
+       step, a second one behind it) is the same "nobody is flying the ship" moment as a plan that no
+       longer ends safely, and a captain asleep at warp has no other way to learn it. One modal, two
+       reasons — never a second pop-up inventing its own z-band. *@
+    @if (LoudPlanAlarm is { } _planBreak)
     {
-        <div class="rescue-backdrop" @onclick="DismissArriveAlarm">
+        <div class="rescue-backdrop" @onclick="DismissLoudPlanAlarm">
             <div class="rescue-card" @onclick:stopPropagation="true">
-                <div class="rescue-hail">⚠ THE FLIGHT PLAN NO LONGER ENDS SAFELY</div>
-                <div class="rescue-quote">"She's off the plan, captain. Nothing at the far end of this course but the dark."</div>
+                <div class="rescue-hail">@LoudPlanAlarmHail</div>
+                <div class="rescue-quote">@LoudPlanAlarmQuote</div>
                 <div class="rescue-terms">
                     <div class="rescue-fee">@_planBreak</div>
                 </div>
-                <button type="button" class="btn btn-warning mt-2" @onclick="DismissArriveAlarm">I have the ship</button>
+                <button type="button" class="btn btn-warning mt-2" @onclick="DismissLoudPlanAlarm">I have the ship</button>
             </div>
         </div>
     }

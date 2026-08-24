@@ -168,6 +168,24 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// ledger, the pen, the canvas buffer and the call counts are byte-identical on all thirty rows, and
     /// <c>EveryFrameHashesTheSameTests</c>' draw transcripts and <c>EveryRoundFingerprintsTheSameTests</c>
     /// did not move at all — the alarm this lane quiets shouts on nothing any of these worlds does.</para>
+    ///
+    /// <para><b>#989 · AND ALL THIRTY AGAIN, field count 721 → 724.</b> The same state-shape signature, three
+    /// fields wide: the plan-SHAPE alarm's own state (<c>_shapeAlarm</c>, <c>_shapeAlarmDismissed</c>,
+    /// <c>_shapeWasWellFormed</c>) — the #965 one-shot machinery, applied to the question <i>can this plan be
+    /// flown as written at all</i> now that a cast off can be SCHEDULED and so can end up behind a burn. The
+    /// <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run on the base (73e2785) and on this lane, and on
+    /// <b>all thirty</b> rows the diff is the same three lines, and every one of them is an ADDITION — never
+    /// a change, never a removal:</para>
+    /// <code>544a545,547
+    /// &gt; _shapeAlarm=∅
+    /// &gt; _shapeAlarmDismissed=no
+    /// &gt; _shapeWasWellFormed=yes</code>
+    /// <para>The first two are at their defaults everywhere (no world here holds a malformed plan) and the
+    /// third reads <c>yes</c> everywhere, which is the guard reporting that it RAN and found nothing wrong —
+    /// a <c>no</c> on any of these rows would have been a real bug, not a re-pin. The ledger, the pen, the
+    /// canvas buffer and the call counts are byte-identical on all thirty, the committed-text diff is 30
+    /// files × 1 line and that line is the sweep's own, and no other fingerprint suite moved at all: the full
+    /// client run's only red was this class's thirty rows.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]
