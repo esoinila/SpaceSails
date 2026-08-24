@@ -417,6 +417,26 @@ export function vaultWrite(key, json) {
     }
 }
 
+/** #992 · Bring the first element matching `selector` inside its own scrollers.
+ *
+ *  The flight plan's step list scrolls now (the panel is bound to the window), so opening a step near the
+ *  bottom of a long plan could put that step's editor below the LIST's fold — the owner's complaint one
+ *  scroller further in. `block: 'nearest'` is the smallest honest motion: a step already fully in view is
+ *  not moved at all, and one hanging off an edge is brought just inside it. Instant, not smooth — the
+ *  editor's buttons have to be pressable the moment the row opens, and a running animation is a moving
+ *  target for a captain and for a guard alike. Best-effort: a selector that matches nothing is a no-op,
+ *  never a throw into the render loop. */
+export function scrollIntoView(selector) {
+    try {
+        const el = document.querySelector(selector);
+        if (el) {
+            el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+        }
+    } catch {
+        // Decoration: a browser that will not scroll for us still leaves the list scrollable by hand.
+    }
+}
+
 /** Put text on the clipboard — the [copy] behind the Captain's crash note. Best-effort: a browser that
  *  denies clipboard access (or an insecure origin) falls back to a hidden textarea + execCommand, and if
  *  that fails too we simply report false rather than throwing into the game. */

@@ -4996,6 +4996,26 @@
        they claim real document-flow height, and the Nav toolbar/readout HUD (.map-hud) below is in flow
        too, a 2–3 row banner PUSHES the toolbar down instead of floating over it — a status surface can
        never again hide a control (#123). *@
+    @* #992 · THE FLOW COLUMN IS BOUND TO THE WINDOW. Owner, docked at The Red Eye with a four-step plan
+       and the last step's editor open: the Plotting panel ran off the bottom of the window and the ±p /
+       ±d / ±h rows could not be reached at all. #950's cap on .map-plot was `100vh - 14rem` — a CONSTANT
+       guess at how much chrome stands above the panel — and the Nav HUD puts far more than 14rem there
+       (the tab bar and the banner, then the toolbar, the readouts block and the frame chip), so the cap
+       sat some 300 px below the fold and never once engaged.
+
+       This is that same fact MEASURED instead of guessed. .map-topstack and .map-hud are the only two
+       in-flow children of the map page (#195 put them there), so wrapping the pair in one column that is
+       exactly the window tall lets flex do the arithmetic: the top stack claims whatever height its
+       banner really needs, the HUD gets the rest, and the Plotting panel inside it can only ever be as
+       tall as what is left. A four-row banner tomorrow moves the cap by itself.
+
+       Deliberately UNPOSITIONED (no `position`, no `z-index`): the two children keep their own positioned
+       boxes in .map-page's stacking context exactly as before, so nothing that paints over the HUD (cards,
+       backdrops, the scope) changes layer. pointer-events:none because this box covers the whole window
+       and the canvas has to stay grabbable through it — the same bargain the two children already make,
+       each re-enabling its own controls. *@
+    <div class="map-flowcolumn">
+
     <div class="map-topstack">
 
     @* Station tab bar (StationDesks.md rule 3): visible aboard on every desk — the keyboard-shortcut
@@ -6168,7 +6188,13 @@
             </div>
         }
     </div>
+    }
+    </div>@* /.map-flowcolumn — the window-tall pair: the top stack, then the Nav HUD in what is left (#992).
+              It closes HERE, around those two only: everything below is absolutely positioned against
+              .map-page, and pulling it inside a pointer-events:none column would cost it its clicks. *@
 
+    @if (_activeDesk == ShipDesk.Nav)
+    {
     @* M25: the navigation-target panel — its own box, plain words. States exactly what the
        plotted course's nearest point to the destination needs before auto-orbit can take over:
        "the whole point of navigation there" (owner). *@
