@@ -668,6 +668,13 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
             ["StackedClass"] = "overlay-shell",
             ["DismissClass"] = "overlay-shell-dismiss",
             ["CloseClass"] = "overlay-shell-close",
+            // #997 wave 7 · the second way out of a Bare foot, and the row the page names for the shell to
+            // draw them into. Both are elements the shell emits wearing the page's own vocabulary
+            // (`busted-logbook`, `deck-shuttle-actions`), so both are read here for the same reason wave 5
+            // had to start reading DismissClass: a reader that saw only the root would go on passing while
+            // `.busted-logbook` and `.deck-shuttle-actions` quietly stopped reaching anything.
+            ["BesideClass"] = "overlay-shell-beside",
+            ["WaysClass"] = "overlay-shell-ways",
             ["TileButtonClass"] = "overlay-shell-tile-btn",
             ["HeadClass"] = "overlay-shell-head",
             ["TitleClass"] = "overlay-shell-title",
