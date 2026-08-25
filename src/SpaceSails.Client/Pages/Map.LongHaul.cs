@@ -737,10 +737,15 @@ public partial class Map
     /// expects it to stay tucked away until he says otherwise."</i> A crossing that re-inflated a card the
     /// player had deliberately put away would be the ruling failing on the second jump instead of the
     /// first.</para>
+    ///
+    /// <para>#997 wave 2 · The GESTURE is no longer written here. <c>OverlayShell</c> owns the –, the tile
+    /// and the round trip; this field is only what the page REMEMBERS between crossings, bound into the
+    /// shell with <c>@bind-Minimized</c>. The bespoke <c>ToggleVoidCardTucked</c> that used to live on this
+    /// line is deleted, along with the separate tile element it needed — a tile drawn as its own sibling had
+    /// to be kept agreeing with the sheet about which year it is, and now there is nothing to agree
+    /// with.</para>
     /// </summary>
     private bool _voidCardTucked;
-
-    private void ToggleVoidCardTucked() => _voidCardTucked = !_voidCardTucked;
 
     // ===== #304 — THE ARRIVAL BRAKE ASKS (owner 2026-07-18: "let's have it ask, it is hard to remember in
     // the heat of the moment otherwise"). The #262/#284 arrival brake was fired-by-hand-or-forgotten; now it
