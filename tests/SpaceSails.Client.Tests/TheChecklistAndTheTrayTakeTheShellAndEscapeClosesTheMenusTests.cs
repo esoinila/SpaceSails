@@ -278,8 +278,14 @@ public sealed class TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTes
     /// <para><i>let the dice lie</i> is the first worded way out in this client that is NOT a <c>.btn</c>,
     /// so it falls straight back into the rule wave 7 wrote the carve-out for, and it would have come out
     /// shorter than it was drawn. The tray states the height it always had; one class beats a
-    /// <c>:where()</c> of none. This guard holds the statement, because the symptom is three pixels and
-    /// nothing in the client would ever say so.</para>
+    /// <c>:where()</c> of none.</para>
+    ///
+    /// <para><b>TWO pixels, measured in a real Chrome rather than guessed:</b> with the statement the
+    /// button is <b>24 px</b> tall (<c>line-height: normal</c>); with it removed the shell's rule computes
+    /// <c>line-height: 12.48px</c> and the button is <b>22 px</b>. Smaller than wave 7's eight because the
+    /// tray's face is <c>0.78rem</c> against a Bootstrap button's, and that is exactly why this guard
+    /// exists: two pixels on one button is a thing no reviewer and no screenshot would ever catch, and it
+    /// is still the migration moving something it promised not to move.</para>
     /// </summary>
     [Fact]
     public void TheTraysWayOutStatesTheHeightItWasAlwaysDrawnWith()

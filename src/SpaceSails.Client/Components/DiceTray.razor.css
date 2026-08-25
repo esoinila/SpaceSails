@@ -108,8 +108,13 @@
    off `…wake up`, off the shelf, off `Close hatch`. Wave 7 answered it for Bootstrap `.btn` dismisses by
    carving them out — a `.btn` already has a line-height of its own and the shell stopped overwriting it.
    This is the FIRST worded way out in the client that is not a `.btn`, so it falls straight back into that
-   rule, and `let the dice lie` would come out shorter than it was drawn. One class beats a `:where()` of
-   none, so the tray states the height it always had rather than the shell deciding one for it. */
+   rule. One class beats a `:where()` of none, so the tray states the height it always had rather than the
+   shell deciding one for it.
+
+   TWO PIXELS, measured in a real Chrome and not guessed: with this line the button is 24 px tall; without
+   it the shell's rule computes `line-height: 12.48px` and the button is 22 px. Smaller than wave 7's eight
+   because this face is 0.78rem against a Bootstrap button's — which is the whole reason it is written down
+   rather than eyeballed. Pinned by TheTraysWayOutStatesTheHeightItWasAlwaysDrawnWith. */
 ::deep .dice-tray-close {
     background: transparent;
     border: 1px solid #b9942f;
