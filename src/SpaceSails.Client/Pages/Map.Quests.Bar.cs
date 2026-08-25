@@ -323,6 +323,10 @@ public partial class Map
             && UnlockedHatchesFor(st).Any(h => HavenInterior.HatchGrowsWing(st, h));
         var warmed = new List<string>();
         var volunteered = new List<string>();
+        // #1006 · ONE ROUND, ONE MEMORY. The vague-colour pick is salted per speaker (Core.RoomColor), and
+        // this round-scoped memory is what stops two regulars reading the same card in the same breath —
+        // see RoomColor.Round for what happens when the room outgrows the four-line pool.
+        var colour = new RoomColor.Round();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (DeckPlan.ConsoleSpot c in _deckPlan.Consoles)
         {
@@ -355,7 +359,7 @@ public partial class Map
                 bool known = _contacts.For(giver).HasHistory;
                 ulong seed = DiceRule.Seed($"round-tip:{giver}:{_dockedHavenId}", (long)SimTime);
                 TipTier tier = RoundTips.Volunteer(seed, _contacts.For(giver).Goodwill, known);
-                if (VolunteeredTipLine(giver, GiverDisplay(giver), tier) is { } tip)
+                if (VolunteeredTipLine(giver, GiverDisplay(giver), tier, colour) is { } tip)
                 {
                     Overhear(tip, giver);
                     volunteered.Add(tip);
@@ -386,22 +390,13 @@ public partial class Map
     // The line a round-loosened regular volunteers, by how good their roll turned out. Solid/Choice hand
     // real intel (the same #308 OpensUp material — a dark-running ship, a heat warning, a price whisper);
     // vague is atmosphere only. Null when they stay quiet.
-    private string? VolunteeredTipLine(string giver, string display, TipTier tier) => tier switch
+    private string? VolunteeredTipLine(
+        string giver, string display, TipTier tier, RoomColor.Round colour) => tier switch
     {
         TipTier.Choice or TipTier.Solid => $"🍻 {display}, loosened by the round, leans in: {OpenIntelLine(giver)}",
-        TipTier.Vague => $"🍻 {display} raises the glass: {VagueColorLine()}",
+        TipTier.Vague => $"🍻 {display} raises the glass: {colour.LineFor(giver, SimTime)}",
         _ => null,
     };
-
-    private static readonly string[] VagueColor =
-    [
-        "“Quiet season. Too quiet, if you ask me.”",
-        "“Watch the docks after dark. That's all I'll say.”",
-        "“Somebody always owes somebody out here.”",
-        "“The good runs dried up. Or the good runners got careful.”",
-    ];
-
-    private string VagueColorLine() => VagueColor[(int)((SimTime / 60) % VagueColor.Length)];
 
     // Ask the barkeep what they've heard — a cheap tip line for flavor (deterministic per sim-hour).
     private void AskBarkeepForRumor()
