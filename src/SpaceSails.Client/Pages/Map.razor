@@ -6799,36 +6799,45 @@
     @if (_showTutorial)
     {
         int activeTrack = ActiveTutorialIndex();
-        <div class="map-tutorial">
-            <div class="card bg-dark bg-opacity-75 text-light">
-                <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                    @* The checklist for the active lesson — the picker itself lives in the Captain's
-                       Tutorials tab now (starting a lesson IS a captain's order), so this card is a
-                       pure progress tracker that rides the map where the hunt actually plays out. *@
-                    <span class="fw-bold small">@(activeTrack >= 0 ? TutorialTracks[activeTrack].Title : "Ship's articles")</span>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the lesson checklist" @onclick="ToggleTutorial"></button>
-                </div>
-                <div class="card-body p-2 small">
-                    @if (activeTrack >= 0)
-                    {
-                        for (int i = TutorialTracks[activeTrack].Start; i < TutorialTracks[activeTrack].Start + TutorialTracks[activeTrack].Length; i++)
-                        {
-                            bool done = _tutorialStep > i;
-                            bool current = _tutorialStep == i;
-                            <div class="@(done ? "text-secondary" : current ? "fw-bold text-info" : "")">
-                                @(done ? "✓" : "•") @TutorialSteps[i]
-                            </div>
-                        }
-                        <div class="text-secondary fst-italic mt-1">Pick another lesson at the Captain's desk (0) → Tutorials.</div>
-                    }
-                    else
-                    {
-                        <div class="text-warning">You're a pirate now — the whole system's yours to work.</div>
-                        <div class="text-secondary fst-italic mt-1">Replay any lesson at the Captain's desk (0) → Tutorials.</div>
-                    }
-                </div>
-            </div>
-        </div>
+        @* The checklist for the active lesson — the picker itself lives in the Captain's Tutorials tab
+           now (starting a lesson IS a captain's order), so this card is a pure progress tracker that
+           rides the map where the hunt actually plays out.
+
+           #997 wave 11 · Card · Close, and the plainest migration left in the client: a head with a name
+           on the left and a ✕ on the right IS the shell's oldest shape. TWO ELEMENTS BECAME ONE — the
+           anchor `.map-tutorial` and the `.card` it wrapped are the same box (the card filled the
+           anchor's 22 rem and nothing sat between them), which is the shape #963's scope already wears
+           one card along: `class="map-scope card bg-dark …"`. `::deep .map-tutorial` is what keeps the
+           anchor's `position: absolute` reaching a root the SHELL draws now.
+
+           The ✕ is wired to ToggleTutorial and NOT to Dismiss(ToggleTutorial): the toolbar switch above
+           toggles the same field, so the two controls stay one verb, and this migration moves nothing. *@
+        <OverlayShell class="map-tutorial card bg-dark bg-opacity-75 text-light"
+                      Dismiss="OverlayDismiss.Close" OnClose="ToggleTutorial"
+                      Title="@(activeTrack >= 0 ? TutorialTracks[activeTrack].Title : "Ship's articles")"
+                      TitleClass="fw-bold small"
+                      HeadClass="card-header py-1 d-flex justify-content-between align-items-center"
+                      BodyClass="card-body p-2 small"
+                      DismissClass="btn-close btn-close-white"
+                      DismissLabel="Close" DismissTitle="Close the lesson checklist">
+            @if (activeTrack >= 0)
+            {
+                for (int i = TutorialTracks[activeTrack].Start; i < TutorialTracks[activeTrack].Start + TutorialTracks[activeTrack].Length; i++)
+                {
+                    bool done = _tutorialStep > i;
+                    bool current = _tutorialStep == i;
+                    <div class="@(done ? "text-secondary" : current ? "fw-bold text-info" : "")">
+                        @(done ? "✓" : "•") @TutorialSteps[i]
+                    </div>
+                }
+                <div class="text-secondary fst-italic mt-1">Pick another lesson at the Captain's desk (0) → Tutorials.</div>
+            }
+            else
+            {
+                <div class="text-warning">You're a pirate now — the whole system's yours to work.</div>
+                <div class="text-secondary fst-italic mt-1">Replay any lesson at the Captain's desk (0) → Tutorials.</div>
+            }
+        </OverlayShell>
     }
     }
     @* The scope lives OUTSIDE the Nav-desk if: Blazor must never destroy this canvas — a

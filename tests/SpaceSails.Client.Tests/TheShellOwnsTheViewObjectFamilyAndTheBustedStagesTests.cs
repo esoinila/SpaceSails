@@ -549,16 +549,25 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
     /// <c>.scuttle-epitaph</c> are modifier classes on vent-board roots this wave migrated, and all three
     /// were missed by hand. They carry a max-width and nothing else, so the only symptom would have been
     /// three cards quietly growing wider than they were drawn to be.</para>
+    ///
+    /// <para><b>#997 wave 11 · IT READS TWO PAIRS OF FILES NOW, and that is what crossing a component
+    /// boundary cost.</b> The dice tray is a child component with its own <c>.razor</c> and its own scoped
+    /// <c>.css</c>, and the scoping rule is not a page rule — <c>.dice-tray-card[b-dicetray]</c> dies for
+    /// exactly the same reason <c>.lift-panel[b-map]</c> does the moment the shell draws it. A guard that
+    /// only ever read <c>Map.razor.css</c> would have been green over a tray with no border, no ground and
+    /// no <c>pointer-events</c> in a backdrop that passes clicks. So the pair is the parameter.</para>
     /// </summary>
-    [Fact]
-    public void EveryRuleWhoseTargetTheShellDrawsIsWrittenWithDeep()
+    [Theory]
+    [InlineData("Pages", "Map.razor", "Map.razor.css")]
+    [InlineData("Components", "DiceTray.razor", "DiceTray.razor.css")]
+    public void EveryRuleWhoseTargetTheShellDrawsIsWrittenWithDeep(string folder, string page, string css)
     {
-        string razor = Path.Combine(ClientSource(), "Pages", "Map.razor");
-        string sheet = Path.Combine(ClientSource(), "Pages", "Map.razor.css");
+        string razor = Path.Combine(ClientSource(), folder, page);
+        string sheet = Path.Combine(ClientSource(), folder, css);
 
         IReadOnlyList<Shell> shells = ClassesTheShellDraws(File.ReadAllText(razor));
         Assert.True(shells.Count > 0,
-            "no <OverlayShell> in Map.razor names a class at all. Either the page has stopped using the "
+            $"no <OverlayShell> in {page} names a class at all. Either the page has stopped using the "
             + "shell or this guard has stopped being able to read it — both are worth knowing.");
 
         var dead = new List<string>();
@@ -620,12 +629,12 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
         }
 
         Assert.True(dead.Count == 0,
-            $"{dead.Count} rule(s) in Map.razor.css target an element OverlayShell draws and are not written "
+            $"{dead.Count} rule(s) in {css} target an element OverlayShell draws and are not written "
             + $"with ::deep:\n  - {string.Join("\n  - ", dead)}\n\nBlazor pins the page's scope attribute to "
             + "the LAST compound selector, and the shell's elements do not carry it — so each of these "
             + "compiles to a selector that matches nothing. The rule is present, correct and dead, which is "
             + "#996's shape and the one this migration is most able to commit. Write it "
-            + "`::deep .thing { … }` (that is `[b-map] .thing`, matched through the page-scoped ancestor "
+            + "`::deep .thing { … }` (that is `[b-scope] .thing`, matched through the scoped ancestor "
             + "above it) — or, if the element really is the page's own markup inside ChildContent, work out "
             + "which end of the selector moved, because it is not this one.");
     }

@@ -9,8 +9,20 @@
 
 @if (Event is { } ev)
 {
+    @* #997 wave 11 · THE MIGRATION CROSSES A COMPONENT BOUNDARY, and this is the whole of what that cost.
+
+       The tray is a Bare shell — no head row, the way out is the card's LAST DIRECT CHILD — which is
+       #996's story-plate idiom and the plainest shape the mechanism has. The backdrop stays the PAGE's
+       (this component's): it is a click-catcher, not a card, and `StopClicks` is how the card goes on
+       swallowing its own clicks so the backdrop behind it cannot close it under the captain's hand.
+
+       WHAT CROSSING THE BOUNDARY ACTUALLY MEANT: `::deep` in DiceTray.razor.css instead of in
+       Map.razor.css, and the dead-rule guard taught to read a second stylesheet. Nothing threaded, no
+       parameter added, no scoped rule moved out of the component that owns it. *@
     <div class="dice-tray" @onclick="Dismiss">
-        <div class="dice-tray-card" @onclick:stopPropagation="true">
+        <OverlayShell class="dice-tray-card" Frame="OverlayFrame.Bare" StopClicks="true"
+                      Dismiss="OverlayDismiss.Close" OnClose="Dismiss"
+                      DismissClass="dice-tray-close" DismissFace="let the dice lie">
             <div class="dice-tray-cap">🎲 @ev.Source · @ev.DieLabel</div>
 
             <div class="dice-tray-dice">
@@ -29,9 +41,7 @@
             {
                 <div class="dice-tray-detail">@ev.Detail</div>
             }
-
-            <button type="button" class="dice-tray-close" @onclick="Dismiss">let the dice lie</button>
-        </div>
+        </OverlayShell>
     </div>
 }
 

@@ -382,8 +382,19 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the pick-candidate chooser and the three context menus", "map-body-menu", Docked,
             Exit.AControl, null,
             "needs a pointer hit against a drawn body, contact or patch of sky."),
-        new("the dice tray", "dice-tray", Docked, Exit.AControl, null,
-            "a child component gated on a DiceTray.Event handed down from a roll."),
+        // #997 wave 11 · DRIVEN NOW. The reason this row carried was true about the CARD and wrong about the
+        // road to it: the tray is gated on a DiceEvent handed down from a roll, and #305 wrote exactly one
+        // seam for handing one down — RaiseDiceEvent, the entry every dice-scripted system is meant to
+        // adopt. So the driver takes that seam rather than poking `_diceTrayEvent` behind it, which is the
+        // stronger of the two: a shared entry that stopped reaching the tray fails in this law rather than
+        // nowhere. Nothing about the cast needs a sim — a DiceEvent is pure Core data.
+        //
+        // It is also the first row on this list whose surface is drawn by a CHILD COMPONENT, and the law
+        // needed nothing new to reach it: DeskBench's walk follows a Component frame into its own tree, so
+        // the tray's card has always been visible to guards 1 and 2. Only the driver was missing.
+        new("the dice tray", "dice-tray", Docked, Exit.AControl,
+            b => b.Call("RaiseDiceEvent",
+                        TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTests.ARoll())),
         new("the shuttle-bay hatch and the load-out", "deck-shuttle-card", Ashore, Exit.AControl, null,
             "needs shuttle stops in reach of the berth — the bench's own documented horizon (see DeskBench)."),
         new("the selfie offer", "selfie-offer", Ashore, Exit.EveryControlCloses, null,
@@ -493,9 +504,14 @@ public sealed class EveryPopUpCanBeDismissedTests
         // ceiling with slack in it cannot catch the next row that creeps under it — which is this number's
         // whole job — so it is pulled down onto the count. It is TIGHT now: undrive any single row and this
         // goes red, which is the red proof wave 10's PR quotes.
+        //
+        // #997 wave 11 · TWELVE BECAME ELEVEN, and it is the same kind of step as the dossier's rather than
+        // bookkeeping. The dice tray's reason named the right gate and the wrong obstacle: a DiceEvent is
+        // pure Core data and #305 shipped one seam for handing one to the tray, so the road was there all
+        // along and nobody had walked it. Still TIGHT — undrive any single row and this goes red.
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 12,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 12. If a row genuinely "
+        Assert.True(undriven <= 11,
+            $"{undriven} register rows have no driver, and the written-down ceiling is 11. If a row genuinely "
             + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
             + "the commit; the point of the number is that it cannot creep.");
     }

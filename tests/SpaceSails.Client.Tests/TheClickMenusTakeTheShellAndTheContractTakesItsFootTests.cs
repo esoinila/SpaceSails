@@ -449,14 +449,14 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
 
     // Spelled exactly as the dismissibility law spells them, so a surface driven here and the same surface
     // driven there can never be standing in two different places.
-    private const string Docked = "/map?dock=selene-gate&body=luna&site=1";
+    internal const string Docked = "/map?dock=selene-gate&body=luna&site=1";
     private const string Ashore = "/map?dock=the-tilt&site=0&land=1";
-    private const string FreeFlying = "/map?start=wreck";
+    internal const string FreeFlying = "/map?start=wreck";
 
-    private static DeskBench.Painted.Node? TheMenu(DeskBench.Painted painted) =>
+    internal static DeskBench.Painted.Node? TheMenu(DeskBench.Painted painted) =>
         TheCard(painted, "map-body-menu");
 
-    private static DeskBench.Painted.Node? TheCard(DeskBench.Painted painted, string root) =>
+    internal static DeskBench.Painted.Node? TheCard(DeskBench.Painted painted, string root) =>
         painted.Root.Descendants().FirstOrDefault(n => n.HasClass(root) && !n.Hidden);
 
     private static string Spoken(DeskBench.Painted.Node node) =>
@@ -466,7 +466,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     /// and a guard that read "the first .map-body-menu on the screen" would answer about whichever is
     /// earliest in the tree — one surface reported under another's name, which is this repository's first
     /// named bug class.</summary>
-    private static async Task<DeskBench.Painted.Node> Raise(DeskBench bench, string what)
+    internal static async Task<DeskBench.Painted.Node> Raise(DeskBench bench, string what)
     {
         bench.Poke("_pickMenu", null);
         bench.Poke("_bodyMenuBody", null);
