@@ -12,7 +12,7 @@ using Xunit;
 namespace SpaceSails.Client.Tests;
 
 /// <summary>
-/// #997 wave 3 · <b>THE SHELL OWNS THE CARD FAMILY, AND THE COLLECTOR'S DEMAND.</b>
+/// #997 waves 3 and 4 · <b>THE SHELL OWNS THE CARD FAMILY, ITS BORROWERS, AND THE COLLECTOR'S DEMAND.</b>
 ///
 /// <para>The dismissibility law (<see cref="EveryPopUpCanBeDismissedTests"/>) asks whether a surface can be
 /// got rid of. What a MIGRATION can break is narrower and this file asks that instead, in two halves.</para>
@@ -29,6 +29,12 @@ namespace SpaceSails.Client.Tests;
 /// it was written for, and driving it found what #997 found on the rep's card: the register's claim about it
 /// was false. Its three answers do not close it — they turn its page. Every chain still ENDS in a close, and
 /// that is proved here by following each one to the end rather than by believing a flag.</item>
+/// <item><b>The borrowers.</b> Wave 4. Thirteen more cards wore <c>.view-object-close</c> on a root that is
+/// NOT <c>.view-object</c> — seven vent boards, the operating log, both treasure maps, the lift's car panel,
+/// the bar table and the satchel. They are on the shell now and they KEPT THEIR ROOTS: the shell is the
+/// mechanism, the root class is the identity, and the alias law wants that name stable. The count that used
+/// to hold this line has been replaced by a NAMED list with reasons, because a count says how many and never
+/// says which.</item>
 /// </list>
 /// </summary>
 public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
@@ -109,35 +115,132 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
     }
 
     /// <summary>
-    /// THE REST OF THE FAMILY'S FOOT-WEARERS ONLY EVER GET FEWER.
+    /// THE ONLY FOOT STILL TYPED BY HAND IS THE ONE STRAGGLER NAMED HERE.
     ///
-    /// <para>Fifteen buttons in this client wear <c>.view-object-close</c> on a card that is NOT rooted on
-    /// <c>.view-object</c>: the vent boards (the atmosphere panel, the scuttling panel, her own hull, the
-    /// charge board, the pressure door, the operating log, the epitaph), the satchel and its wallet fan, the
-    /// lift's car panel, the locked door, the treasure map and the bar table. They borrow the family's button
-    /// and its wording without borrowing its root, so #735's sticky foot never reached them and the shell has
-    /// nothing to hang off yet — each needs its own card class taken through the migration, which is a
-    /// separate wave with its own before-and-after.</para>
+    /// <para>#997 wave 3 wrote this down as a CEILING of fifteen — a number anybody could make smaller.
+    /// Wave 4 made it smaller thirteen times and then replaced the number, because a count says how many and
+    /// never says <b>which</b>, and which is the thing worth holding. Every remaining hand-typed
+    /// <c>.view-object-close</c> in this client must be one of the stragglers named below, WITH ITS REASON.
+    /// A new card that borrows the family's button without its root fails here by file and line, and the
+    /// only ways to make it pass are to migrate it or to write down why it cannot be.</para>
     ///
-    /// <para>Written down rather than left implicit, in this register's own idiom: anybody may make the
-    /// number smaller, and making it bigger costs an edit to this line.</para>
+    /// <para><b>And the fifteen were fourteen.</b> Wave 3's count read <c>class="…"</c> off every line of
+    /// every <c>.razor</c>, comments included — and Map.razor's own migration comment quotes the string
+    /// <c>&lt;button class="view-object-close"&gt;</c> as an illustration of what was being deleted. So one
+    /// of the fifteen was a sentence ABOUT the work rather than a card. The walk below skips razor comments,
+    /// which is the difference between counting markup and counting text that looks like markup.</para>
     /// </summary>
     [Fact]
-    public void TheOtherCardsWearingTheFamilysFootOnlyEverGetFewer()
+    public void TheOnlyFootStillTypedByHandIsTheOneStragglerNamedHere()
     {
-        int borrowed = RazorFiles()
-            .SelectMany(File.ReadAllLines)
-            .Sum(line => Regex.Matches(line, "class=\"([^\"]*)\"")
-                .Count(m => m.Groups[1].Value
-                    .Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries)
-                    .Contains("view-object-close", StringComparer.Ordinal)));
+        var byHand = new List<string>();
 
-        Assert.True(borrowed <= 15,
-            $"{borrowed} buttons wear .view-object-close on a card of another root, and the written-down "
-            + "ceiling is 15. Migrating one of those cards onto the shell makes this number smaller; a NEW "
-            + "card borrowing the family's button without its root makes it bigger, and that is the moment "
-            + "to ask whether it should have the family's root instead.");
+        foreach (string file in RazorFiles())
+        {
+            string[] lines = File.ReadAllLines(file);
+            string shortName = Path.GetFileName(file);
+            bool inComment = false;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                bool opens = line.Contains("@*", StringComparison.Ordinal);
+                bool closes = line.Contains("*@", StringComparison.Ordinal);
+                bool commented = inComment || opens;
+                inComment = inComment ? !closes : (opens && !closes);
+                if (commented)
+                {
+                    continue;   // a razor comment is TEXT, whatever it looks like
+                }
+
+                foreach (Match attribute in Regex.Matches(line, "class=\"([^\"]*)\""))
+                {
+                    if (!attribute.Groups[1].Value
+                            .Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries)
+                            .Contains("view-object-close", StringComparer.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(TagOwning(lines, i, attribute.Index), "OverlayShell",
+                                      StringComparison.Ordinal))
+                    {
+                        continue;   // the shell drew it; the class is the alias law's, not a hand-roll
+                    }
+
+                    byHand.Add($"{shortName}:{i + 1}  ({WhichCard(file, i + 1)})");
+                }
+            }
+        }
+
+        var unexplained = byHand
+            .Where(found => !TheNamedStragglers.ContainsKey(CardIn(found)))
+            .ToList();
+
+        Assert.True(unexplained.Count == 0,
+            $"{unexplained.Count} button(s) wear .view-object-close and were typed by hand:\n  - "
+            + string.Join("\n  - ", unexplained)
+            + "\n\nThe family's foot is the shell's now (Frame=\"OverlayFrame.Bare\" plus "
+            + "DismissClass=\"view-object-close\"), and #997 wave 4 put every card that borrows it on the "
+            + "shell but one. A NEW hand-rolled foot is a card taking the family's wording and its look "
+            + "without the direct-child relation #735's sticky foot is written against. Give it a shell — "
+            + "or, if it genuinely cannot take one, name it in TheNamedStragglers with the reason, which is "
+            + "the edit that makes somebody say why out loud.");
+
+        // …and the list only ever gets shorter. A straggler that HAS been migrated must leave the list, or
+        // its written-down reason rots into a sentence about a card that is no longer shaped that way.
+        var stale = TheNamedStragglers.Keys
+            .Where(named => !byHand.Any(found => CardIn(found) == named))
+            .ToList();
+
+        Assert.True(stale.Count == 0,
+            $"{stale.Count} straggler(s) are named here and no longer wear a hand-typed foot: "
+            + string.Join(" · ", stale)
+            + ". Take them off the list — a written-down reason for a card that has moved on is worse than "
+            + "no reason at all.");
     }
+
+    /// <summary>
+    /// THE STRAGGLERS, BY NAME AND WITH THE REASON. One.
+    ///
+    /// <para>Wave 4 took the other thirteen: seven vent boards, the operating log, both treasure maps, the
+    /// lift's car panel, the bar table and the satchel.</para>
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> TheNamedStragglers =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["the locked door"] =
+                "#603's locked door is the one card in this set whose way out is not the LAST thing in it. "
+                + "Its way out is one of TWO buttons standing side by side in `.locked-door-actions`, beside "
+                + "the brighter `🎒 Check your items` the door exists to advertise. A Bare shell draws its "
+                + "dismiss as the card's last DIRECT child — that is the whole point of the frame and the "
+                + "reason every other card in this wave could take it — so shelling this one would lift the "
+                + "button out of that row and drop it on its own line underneath. That is a control moving "
+                + "on the screen, which this migration does not do. It gets a shell when the row does.",
+        };
+
+    /// <summary>Which CARD a hand-rolled foot belongs to: the nearest root above it that names itself. The
+    /// list is keyed on the card rather than on a line number, because a line number moves whenever anything
+    /// above it is edited and a reason that drifts onto the wrong card is a lie.</summary>
+    private static string WhichCard(string file, int line)
+    {
+        string[] lines = File.ReadAllLines(file);
+        for (int back = Math.Min(line - 1, lines.Length - 1); back >= 0 && line - back < 80; back--)
+        {
+            Match root = Regex.Match(lines[back],
+                "<div class=\"(locked-door|satchel|lift-panel|vent-board|treasure-map-card|deck-offer-card)"
+                + "[\" ]");
+            if (root.Success)
+            {
+                return "the " + root.Groups[1].Value.Replace('-', ' ');
+            }
+        }
+
+        return "an unnamed card";
+    }
+
+    private static string CardIn(string found) =>
+        found[(found.LastIndexOf('(') + 1)..].TrimEnd(')');
 
     private static int CountOf(string line, string needle)
     {
@@ -245,6 +348,174 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
             "art/selfie-the-tilt.jpg", 1, 12, "spot"),
         _ => true,
     });
+
+    // ── #997 wave 4: the cards that BORROWED the family's foot, read off what was drawn ───────────────
+
+    /// <summary>
+    /// EVERY BORROWED FOOT IS THE SHELL'S OWN NOW — AND EVERY CARD KEPT ITS NAME.
+    ///
+    /// <para>Thirteen cards wore <c>.view-object-close</c> on a root that is not <c>.view-object</c>: seven
+    /// vent boards, the operating log, both treasure maps, the lift's car panel, the bar table and the
+    /// satchel. Wave 4 put them on the shell WITHOUT taking their roots away — a vent board is a vent board
+    /// and not a view-object, the shell is the mechanism and the root class is the identity, and the alias
+    /// law (#995) wants the name stable because its completeness guard reads the markup as typed.</para>
+    ///
+    /// <para>So this asks all four things at once, which is what a migration can break: the card still wears
+    /// ITS OWN class, it is the shell's, it is <c>Bare</c> (the frame that keeps the way out a DIRECT child —
+    /// <c>Hosted</c> would pass every source guard in this file and put a <c>display: contents</c> div
+    /// between them), its way out still says the word it always said, and pressing it takes the card
+    /// down.</para>
+    ///
+    /// <para><b>The wording is asserted as a literal on purpose.</b> These cards' feet are not ✕ — they say
+    /// "Step away", "Not yet", "Log it", "Close". That is this family's idiom and the migration's whole
+    /// claim is that not one of those words moved, so the words are written here where a change to them
+    /// costs an edit to a test rather than passing unnoticed.</para>
+    /// </summary>
+    [Theory]
+    [InlineData("the wreck's atmosphere board", FreeFlying, "vent-board", "_showVentPanel", "Step away")]
+    [InlineData("her own hull's board", FreeFlying, "vent-board", "_showShipBoard", "Step away")]
+    [InlineData("the hull-charge board", FreeFlying, "vent-board", "_showChargeBoard", "Step away")]
+    [InlineData("her scuttling charges", FreeFlying, "vent-board", "_showShipScuttlePanel", "Step away")]
+    [InlineData("the scuttling panel", FreeFlying, "vent-board", "_showScuttlePanel", "Step away")]
+    [InlineData("the scuttle epitaph", FreeFlying, "vent-board", "_scuttleEpitaph", "Log it")]
+    [InlineData("the treasure map", FreeFlying, "treasure-map-card", "_showWreckChoice", "Not yet")]
+    [InlineData("the lift's car panel", Ashore, "lift-panel", "_showLiftPanel", "Close")]
+    [InlineData("the satchel", Ashore, "satchel", "_showSatchel", "Close")]
+    public async Task EveryCardThatBorrowedTheFamilysFootWearsTheShellsOwnAndKeepsItsName(
+        string name, string world, string root, string gate, string wording)
+    {
+        using DeskBench bench = await DeskBench.BootAsync(world);
+        RaiseTheBorrower(bench, gate);
+
+        DeskBench.Painted painted = await bench.RenderAsync();
+        DeskBench.Painted.Node card = painted.Root.Descendants()
+            .FirstOrDefault(n => n.HasClass(root) && !n.Hidden)
+            ?? throw new Xunit.Sdk.XunitException(
+                $"{name}: setting {gate} drew nothing wearing .{root}. The driver and the markup's gate have "
+                + "come apart; one of them has moved.");
+
+        Assert.True(card.HasClass("overlay-shell"),
+            $"{name}: its card is on the screen and it is not the shell's — #997 wave 4 put every card that "
+            + "borrows .view-object-close on OverlayShell, and this one has come back off it.");
+        Assert.True(card.HasClass("overlay-shell-bare"),
+            $"{name}: the shell drew it as something other than Bare. Bare is what keeps the way out a "
+            + "DIRECT child of the card, which is the relation #735's sticky feet are written against and "
+            + "the only reason .treasure-map-card > .view-object-close still reaches anything.");
+        Assert.True(card.HasClass(root),
+            $"{name}: the card has lost its own class. The shell is the MECHANISM and .{root} is the "
+            + "IDENTITY — a vent board is a vent board, not a view-object — and #995's completeness guard "
+            + "reads that name off the markup as typed.");
+
+        DeskBench.Painted.Node foot = card.Children
+            .FirstOrDefault(n => n.HasClass("view-object-close") && !n.Hidden)
+            ?? throw new Xunit.Sdk.XunitException(
+                $"{name}: its way out is not a DIRECT child of the card. Something has come between them, "
+                + "and everything #735 pins on this family is written against that exact relation.");
+
+        Assert.Equal(wording, foot.Name);
+
+        Assert.True(foot.Handlers.ContainsKey("onclick"),
+            $"{name}: the way out is drawn and nothing is wired to it — a control that LOOKS like a way out "
+            + "and is not one, which is what the owner's ruling of 2026-08-24 forbids.");
+
+        await bench.PressAsync(foot.Handlers["onclick"]);
+        DeskBench.Painted after = await bench.RenderAsync();
+        Assert.DoesNotContain(after.Root.Descendants(), n => n.HasClass(root) && !n.Hidden);
+    }
+
+    /// <summary>Put one of the borrowers on the screen. Five of the nine are a single bool; the four built on
+    /// a hull need the hull, and it is Core's own <see cref="Derelict.Wreck"/> rather than a stand-in, so
+    /// everything the card prints past the gate is the shipping content.</summary>
+    private static void RaiseTheBorrower(DeskBench bench, string gate)
+    {
+        if (gate is "_showVentPanel" or "_showScuttlePanel" or "_showWreckChoice")
+        {
+            bench.Poke("_wreck", new Derelict.Wreck(
+                "shell-wave-4", "Borrowed Foot", Derelict.WreckCause.HullBreach, 250_000, 40.0));
+        }
+
+        bench.Poke(gate, gate switch
+        {
+            // The epitaph IS its own text, and _scuttleHeardIt stays false, which is the "Log it" face.
+            "_scuttleEpitaph" => "Something in her went quiet a long way off.",
+            _ => true,
+        });
+    }
+
+    /// <summary>
+    /// …AND THE ONE OF THE THIRTEEN THAT IS NOT A THING BUT A ROOM: THE BAR TABLE.
+    ///
+    /// <para>Its own theory, because it is the only borrower whose gate is a POSTURE. The card is drawn by
+    /// <c>SeatedTable is { } tab</c> and only on the branch where somebody came to YOU (#865's fork: a seat
+    /// you chose is a strip, a person who crosses the room to you is a card), so it is stood up the way
+    /// #997 wave 3 stood up the collector's demand — the page's own state object, filled with Core's own
+    /// scene, and everything past that is the shipping markup.</para>
+    ///
+    /// <para>The claim it proves is the same as the theory above and it matters most here: the card still
+    /// wears <c>deck-offer-card table-card</c>, which is what #784's own guard reads to know the seated
+    /// frame forked correctly, and its way out still says <b>Close</b> under the title the owner wrote for
+    /// it — <i>"Stand up. It costs nothing and it never will."</i></para>
+    /// </summary>
+    [Fact]
+    public async Task TheBarTableWearsTheShellsOwnFootAndStillSaysStandUpCostsNothing()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(Ashore);
+
+        Type talkType = typeof(Map).GetNestedType("TableTalk", BindingFlags.NonPublic)
+                        ?? throw new InvalidOperationException(
+                            "Map.TableTalk is gone — this guard cannot seat a captain without it.");
+        object talk = Activator.CreateInstance(talkType, nonPublic: true)!;
+        SetOn(talkType, talk, "Key", "watch:shell-wave-4:0");
+        SetOn(talkType, talk, "Index", 0);
+        SetOn(talkType, talk, "Who", CanteenTable.Who.Hand);
+        SetOn(talkType, talk, "Plate", "THE HAND");
+        SetOn(talkType, talk, "Scene", CanteenTable.SceneFor(CanteenTable.Who.Hand));
+        SetOn(talkType, talk, "Solo", false);
+
+        // #865's fork: TheyCameToYou is what makes this a CARD rather than the docked strip.
+        SetOn(talkType, talk, "TheyCameToYou", true);
+
+        object seating = bench.Peek("_seating")
+                         ?? throw new InvalidOperationException("Map._seating is gone.");
+        seating.GetType().GetProperty("Table", BindingFlags.Public | BindingFlags.Instance)!
+            .SetValue(seating, talk);
+
+        DeskBench.Painted painted = await bench.RenderAsync();
+        DeskBench.Painted.Node card = painted.Root.Descendants()
+            .FirstOrDefault(n => n.HasClass("table-card") && !n.Hidden)
+            ?? throw new Xunit.Sdk.XunitException(
+                "seating the captain at a table somebody came to drew nothing wearing .table-card. Either "
+                + "the seated fork has moved or TableTalk no longer has the fields this stands it up with.");
+
+        Assert.True(card.HasClass("overlay-shell") && card.HasClass("overlay-shell-bare"),
+            "the bar table is not the shell's Bare frame. #735 pins the offer family's action rows as DIRECT "
+            + "children of .deck-offer-card; anything that wraps them unsticks the lot.");
+        Assert.True(card.HasClass("deck-offer-card"),
+            "the table has lost the offer card's class. #784's own guard reads the string "
+            + "\"deck-offer-card table-card\" out of the conversation branch to know the seated frame forked "
+            + "the right way — the shell is the mechanism, that pair of names is the identity.");
+
+        DeskBench.Painted.Node foot = card.Children
+            .FirstOrDefault(n => n.HasClass("view-object-close") && !n.Hidden)
+            ?? throw new Xunit.Sdk.XunitException(
+                "the table's way out is not a DIRECT child of the card.");
+
+        Assert.Equal("Close", foot.Name);
+        Assert.Equal("Stand up. It costs nothing and it never will.",
+                     foot.Attributes.GetValueOrDefault("title"));
+
+        await bench.PressAsync(foot.Handlers["onclick"]);
+        DeskBench.Painted after = await bench.RenderAsync();
+        Assert.DoesNotContain(after.Root.Descendants(), n => n.HasClass("table-card") && !n.Hidden);
+    }
+
+    private static void SetOn(Type owner, object instance, string name, object value)
+    {
+        PropertyInfo property = owner.GetProperty(name, BindingFlags.Public | BindingFlags.Instance)
+                                ?? throw new InvalidOperationException($"TableTalk.{name} is gone.");
+        (property.GetSetMethod(nonPublic: true) ?? property.SetMethod)!
+            .Invoke(instance, [value]);
+    }
 
     // ── The collector's demand: the ByDecision mode, on the surface it was written for ────────────────
 

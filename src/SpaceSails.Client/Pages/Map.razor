@@ -566,6 +566,35 @@
        overload … in cases where we want to be sure." The third road: it pays NOTHING, which is the only
        reason it can mean anything. No confirmation dialog — the panel states her worth first, and the keys
        are the confirmation. *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #997 wave 4 · THE CARDS THAT BORROWED THE FAMILY'S FOOT — and this is the first of the thirteen.
+
+       Wave 3 put every card ROOTED on `.view-object` on the shell and then wrote down what was left: thirteen
+       more cards wearing a `<button class="view-object-close">` on a root of their OWN — the vent boards, the
+       operating log, both treasure maps, the lift's car panel, the bar table and the satchel. They took the
+       family's button and the family's wording without taking its root, so they were hand-rolling the same
+       three lines the other ten had been.
+
+       THEY KEEP THEIR ROOTS. A vent board is a vent board and not a view-object: the shell is the MECHANISM
+       and the root class is the IDENTITY, and #995's completeness guard reads that name off this markup as
+       typed, so it has to stay a lowercase class attribute exactly where it was. What changes is who draws
+       the way out. Same three parameters as wave 3 — `Frame="OverlayFrame.Bare"` (the dismiss stays a DIRECT
+       child, which is what `.treasure-map-card > .view-object-close` and every other #735 pin is written
+       against), `StopClicks="true"` (the stopPropagation that was typed on the div), and
+       `Dismiss="OverlayDismiss.Close"` wired to the page's own close verb, the same one the backdrop behind
+       it already calls.
+
+       NOT ONE WORD MOVED, again: "Step away", "Not yet", "Log it", "Back to the board", "Close" and the
+       wallet's own keep-it line are the exact strings their own buttons carried, and the two that carried a
+       `title` still carry it. Nothing here is standing anywhere either, so wave 2's stranding rule is not
+       needed on any of them — every one is a board, a panel, a map or a bag, and putting it down is already
+       what its button did.
+
+       THE ONE THAT DID NOT COME. #603's locked door keeps its hand-rolled button, and the guard names it
+       with the reason: its way out is one of TWO buttons standing side by side in `.locked-door-actions`,
+       beside the brighter "Check your items" the door exists to advertise. Bare draws the dismiss as the
+       card's LAST DIRECT CHILD — which is the whole point of the frame — so shelling it would lift that
+       button out of the row and drop it on its own line. That is a control moving on the screen. *@
     @if (_showScuttlePanel && _wreck is { } scWreck)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttlePanel)">
@@ -2332,7 +2361,12 @@
     @if (_showSatchel)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
-            <div class="satchel" @onclick:stopPropagation="true">
+            @* One Close for both pages: the satchel shuts the same way whichever half of it you are
+               reading, and I still toggles it (#688) regardless of the page. *@
+            <OverlayShell class="satchel" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          OnClose="() => Dismiss(CloseSatchel)">
                 <div class="view-object-title">
                     @(_satchelPage switch
                     {
@@ -3250,12 +3284,7 @@
                     </div>
                 }
                 }
-
-                @* One Close for both pages: the satchel shuts the same way whichever half of it you are
-                   reading, and I still toggles it (#688) regardless of the page. *@
-                <button type="button" class="view-object-close"
-                        @onclick="() => Dismiss(CloseSatchel)">Close</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 

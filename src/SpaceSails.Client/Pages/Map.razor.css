@@ -4844,7 +4844,7 @@
 .locked-door-try:hover { background: #e8cb9c; }
 
 /* #603 · THE SATCHEL. */
-.satchel {
+::deep .satchel {
     width: min(32rem, 94vw);
     max-height: 92vh;
     display: flex;
