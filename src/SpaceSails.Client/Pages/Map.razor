@@ -3995,7 +3995,22 @@
        so honestly; nothing in range keeps the door shut. Same overlay family as the deck-offer-card. *@
     @if (_deckMode && _shuttleBayStops is { } shuttleStops)
     {
-        <div class="deck-shuttle-card">
+        @* #997 wave 7 · THE LAST ROOT IN #735's CAP LIST TAKES THE SHELL, AND THE FOOT STAYS A ROW.
+           #1007 named this one for wave 7: the only card in the capped-and-scrolling block still written
+           without `::deep`, and the only one whose way out is a lone button inside a foot the page centres
+           (`.deck-shuttle-actions`). A Bare shell's dismiss is the card's LAST DIRECT CHILD, which would
+           have lifted "Close hatch" out of that foot and left it against the card's left margin — the exact
+           shape that kept wave 6's logbook off the shell. So the shell learned the other half of #1007's
+           own condition instead: WaysClass hands the page's foot the dismiss it draws. Same div, same
+           class, same centring, same button — the shell wires it now, and its audit knows the ✕ has a verb.
+
+           THE OTHER `.deck-shuttle-card` — the load-out (#313/#488) — is NOT migrated, and the reason is
+           pinned by a guard rather than left in this sentence: see
+           TheShellOwnsTheDeathRowsAndTheShuttleHatchTests. *@
+        <OverlayShell class="deck-shuttle-card" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                      WaysClass="deck-shuttle-actions"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Close hatch"
+                      OnClose="() => Dismiss(CloseShuttleBayDoor)">
             <div class="deck-shuttle-title">🛸 Board the shuttle — where to?</div>
             @if (shuttleStops.Count == 0)
             {
@@ -4122,10 +4137,7 @@
                 </div>
             }
 
-            <div class="deck-shuttle-actions">
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => Dismiss(CloseShuttleBayDoor)">Close hatch</button>
-            </div>
-        </div>
+        </OverlayShell>
     }
 
     @* #313: the boarding panel — cargo, not a confession. An OPTIONAL 'load a chest' step (coin dial +
@@ -7591,20 +7603,22 @@
                                law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
                                was quietly going round it. Both faults are one fix: read the seam. *@
                             <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
-                            <div class="busted-close-row">
-                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
-                            @* #951 · THE OTHER TRUE ANSWER TO A DEATH. Owner, having undocked and flown a
-                               periapsis under Selene Gate's own surface: "I undocked from station and died. I
-                               want an option to load previous game here like in the beginning." The card
-                               offered exactly one verb. "…wake up" is canon and does not move — the captain IS
-                               revived from a brain backup, and the clinic bill and the succession hang off it —
-                               but beside it now stands the answer a player who banked a moment actually wants:
-                               that was not the run I meant to keep. It opens the SAME logbook the boot door
-                               opens (Continue on the newest autosave, every banked berth listed), because
-                               there is one save surface in this game and this is it. *@
-                            <button type="button" class="btn btn-outline-light busted-logbook" title="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
-                                    @onclick="OpenLogbookFromDeath">📖 Load a saved voyage</button>
-                            </div>
+                            @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                               The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                               and #951 put it on all four death panels — which makes it the way out every player who dies
+                               meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                               still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                               second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                               Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                               before, handed to the shell instead of to a `<button>`. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="…wake up"
+                                          OnClose="() => PressAndRefocus(BustedResurrect)"
+                                          BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                          BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                          OnBeside="OpenLogbookFromDeath">
+                                @* #951 — the same door, on this death's own card: `…wake up` is canon and does not move, and beside it stands the answer a player who banked a moment actually wants. It opens the SAME logbook the boot door opens, because there is one save surface in this game and this is it. *@
+                            </OverlayShell>
                         </div>
                         break;
 
@@ -7625,12 +7639,22 @@
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
                             <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
-                            <div class="busted-close-row">
-                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
-                            @* #951 — the same door, on this death's own card. *@
-                            <button type="button" class="btn btn-outline-light busted-logbook" title="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
-                                    @onclick="OpenLogbookFromDeath">📖 Load a saved voyage</button>
-                            </div>
+                            @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                               The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                               and #951 put it on all four death panels — which makes it the way out every player who dies
+                               meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                               still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                               second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                               Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                               before, handed to the shell instead of to a `<button>`. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="…wake up"
+                                          OnClose="() => PressAndRefocus(BustedResurrect)"
+                                          BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                          BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                          OnBeside="OpenLogbookFromDeath">
+                                @* #951 — the same door, on this death's own card: `…wake up` is canon and does not move, and beside it stands the answer a player who banked a moment actually wants. It opens the SAME logbook the boot door opens, because there is one save surface in this game and this is it. *@
+                            </OverlayShell>
                         </div>
                         break;
 
@@ -7644,12 +7668,22 @@
                             </div>
                             <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
                             <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
-                            <div class="busted-close-row">
-                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
-                            @* #951 — the same door, on this death's own card. *@
-                            <button type="button" class="btn btn-outline-light busted-logbook" title="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
-                                    @onclick="OpenLogbookFromDeath">📖 Load a saved voyage</button>
-                            </div>
+                            @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                               The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                               and #951 put it on all four death panels — which makes it the way out every player who dies
+                               meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                               still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                               second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                               Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                               before, handed to the shell instead of to a `<button>`. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="…wake up"
+                                          OnClose="() => PressAndRefocus(BustedResurrect)"
+                                          BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                          BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                          OnBeside="OpenLogbookFromDeath">
+                                @* #951 — the same door, on this death's own card: `…wake up` is canon and does not move, and beside it stands the answer a player who banked a moment actually wants. It opens the SAME logbook the boot door opens, because there is one save surface in this game and this is it. *@
+                            </OverlayShell>
                         </div>
                         break;
 
@@ -7763,13 +7797,22 @@
                                 </div>
                             </div>
                         }
-                        <div class="busted-close-row">
-                        <button type="button" class="btn btn-light busted-close" @onclick="() => Dismiss(CloseBusted)">Board the rustbucket</button>
-                        @* #951 — and here too, at the last page of the death chain: the new captain's rustbucket
-                           is one way on, a moment you banked is the other. *@
-                        <button type="button" class="btn btn-outline-light busted-logbook" title="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
-                                @onclick="OpenLogbookFromDeath">📖 Load a saved voyage</button>
-                        </div>
+                        @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                           The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                           and #951 put it on all four death panels — which makes it the way out every player who dies
+                           meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                           still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                           second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                           Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                           before, handed to the shell instead of to a `<button>`. *@
+                        <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                      DismissClass="btn btn-light busted-close" DismissFace="Board the rustbucket"
+                                      OnClose="() => Dismiss(CloseBusted)"
+                                      BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                      BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                      OnBeside="OpenLogbookFromDeath">
+                            @* #951 — and here too, at the last page of the death chain: the new captain's rustbucket is one way on, a moment you banked is the other. *@
+                        </OverlayShell>
                         break;
                 }
             </OverlayShell>

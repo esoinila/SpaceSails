@@ -148,6 +148,25 @@ public sealed class EveryPopUpCanBeDismissedTests
         ["seated-dock"] =
             "#865's answer to this exact complaint, already shipped: the sitting is a STRIP precisely so it "
             + "does not blind the captain to the room. Leaving the table is a move on it.",
+
+        // ── FABLE'S RULING, WAVE 7 (#997) ────────────────────────────────────────────────────────────
+        // The front door came off TheRegister and landed here. It sat there as Exit.EveryControlCloses,
+        // UNDRIVEN — nothing had ever pressed a control on it — and #1007 disproved the claim from the
+        // other side, by pressing: TheFrontDoorOffersNoCloseAtAllAndNotEveryControlOnItIsOne opens the ▸
+        // dev-starts chevron and the door is still standing. So the row was not a row that needed a driver;
+        // it was a row in the wrong book. Moving it lowers TheUndrivenListOnlyEverGetsShorter's ceiling
+        // from 15 to 14 — a deliberate edit to a written-down count, made by the wave that means to make it.
+        //
+        // THE KEY IS SHARED, AND THAT IS SAID OUT LOUD RATHER THAN TIDIED AWAY. Four surfaces are drawn on
+        // `.start-picker-backdrop`; three of them — the logbook, the bank sheet, the import consent — ARE
+        // pop-ups and keep their register rows, so the recogniser goes on finding this class registered and
+        // this entry exempts nothing by itself. It is the RULING, written where the reasons live, and the
+        // guard that holds it is TheFrontDoorIsNotAPopUpAndTheSheetsOverItStillAre in
+        // TheShellOwnsTheDeathRowsAndTheShuttleHatchTests.
+        ["start-picker-backdrop"] =
+            "The front door is the game's threshold, not a pop-up over play — there is no game behind it to "
+            + "return to, so a way out would be a door to nowhere. Its sheets (the logbook, the bank sheet, "
+            + "the consent) are pop-ups and have their ways out.",
     };
 
     // ── The register ──────────────────────────────────────────────────────────────────────────────────
@@ -365,9 +384,6 @@ public sealed class EveryPopUpCanBeDismissedTests
             "needs a pointer hit against a drawn body, contact or patch of sky."),
         new("the dice tray", "dice-tray", Docked, Exit.AControl, null,
             "a child component gated on a DiceTray.Event handed down from a roll."),
-        new("the front door / start picker", "start-picker-backdrop", Docked, Exit.EveryControlCloses, null,
-            "the boot's own picker; every berth and dev start on it navigates away, and the bench boots PAST "
-            + "it by construction."),
         new("the shuttle-bay hatch and the load-out", "deck-shuttle-card", Ashore, Exit.AControl, null,
             "needs shuttle stops in reach of the berth — the bench's own documented horizon (see DeskBench)."),
         new("the selfie offer", "selfie-offer", Ashore, Exit.EveryControlCloses, null,
@@ -438,9 +454,14 @@ public sealed class EveryPopUpCanBeDismissedTests
     [Fact]
     public void TheUndrivenListOnlyEverGetsShorter()
     {
+        // #997 wave 7 · FIFTEEN BECAME FOURTEEN, and by a row LEAVING rather than by one being driven.
+        // The front door was never a pop-up; it is the threshold, and it now says so in NotPopUpsAndWhy in
+        // Fable's own words (Fable's ruling, wave 7 — see the entry there for the reason and for why the
+        // class it is keyed on is still registered by the three real sheets that share it). Lowering a
+        // ceiling is always allowed; this one is lowered because the row it counted is gone.
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 15,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 15. If a row genuinely "
+        Assert.True(undriven <= 14,
+            $"{undriven} register rows have no driver, and the written-down ceiling is 14. If a row genuinely "
             + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
             + "the commit; the point of the number is that it cannot creep.");
     }
