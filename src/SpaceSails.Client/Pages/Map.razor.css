@@ -113,7 +113,7 @@
 /* #304 — the arrival-brake consent card: the deck-offer-card family, but a heat-of-arrival tint and a
    z-index just above the other deck cards (still below the distress lifeline and the full-screen gates), so
    a brake ask in the heat of arrival is never buried under a stray context menu. #299 band = ArrivalBrakeCard. */
-.arrival-brake-card {
+::deep .arrival-brake-card {
     border-color: rgba(255, 150, 90, 0.6);
     box-shadow: 0 0.5rem 2rem rgba(255, 90, 40, 0.25), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
     z-index: calc(var(--z-desks-popups) + 90);
@@ -123,7 +123,7 @@
    her apart from the warm bar cards; the "quiet" variant (the TELL — the room hushes) deepens the glow and
    the line, a cue that this one MIGHT be true. Never definitive: the hush lies sometimes, the sifting is
    the player's. OracleCard / oracle-quiet. */
-.oracle-card {
+::deep .oracle-card {
     border-color: rgba(170, 140, 255, 0.5);
     box-shadow: 0 0.5rem 2rem rgba(90, 60, 180, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
 }
@@ -161,7 +161,7 @@
 
 /* The TELL, rendered: when the room goes quiet the whole card cools and the line stills — a faint chill the
    player learns to notice but can never fully trust. */
-.oracle-card.oracle-quiet {
+::deep .oracle-card.oracle-quiet {
     border-color: rgba(150, 200, 255, 0.7);
     box-shadow: 0 0 2.5rem rgba(120, 170, 255, 0.28), 0 0.5rem 2rem rgba(0, 0, 0, 0.6);
 }
@@ -202,7 +202,7 @@
    on top of each other and none of them could be read. The table card learned the same lesson at #746
    (.table-actions) and named it there; a law that has to be remembered per card is a law that gets
    forgotten on the next card, so it moves up to the family. Nothing that fits on one line moves. */
-.deck-offer-actions {
+::deep .deck-offer-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -211,7 +211,7 @@
 
 /* PR-WIRE — the favor-bank card (deposit / withdraw / borrow). Rides the same overlay family as the
    offer card; left-aligned rows since it's a working ledger, not a single pitch. */
-.deck-bank-card {
+::deep .deck-bank-card {
     text-align: left;
     border-color: rgba(255, 212, 121, 0.5);
 }
@@ -1684,6 +1684,39 @@
     border: 1px solid rgba(150, 255, 210, 0.45);
     width: 30rem;
     max-width: calc(100% - 1.5rem);
+    /* #997 wave 9 · THE COLUMN THE CAPPED SCROLL NEEDS, AND THE CEILING THIS CARD NEVER HAD.
+
+       The ceiling first, because it is a bug rather than a refactor: this card is anchored to the BOTTOM of
+       the glass and grows UPWARD, and until now nothing capped it in the unstacked state. A hunter with
+       terms, an autosteal box and a long history made a dossier taller than a short window, and what went
+       off the screen was the TOP of it — the title, the – and the ✕. #735's own shape, on a card #735's
+       gate had never been pointed at. `100vh - 1.5rem` is the anchor's own 0.75rem doubled, so the card
+       stops exactly where its own bottom margin says the glass ends.
+
+       Then the column: the head keeps its height, the body gives. The arithmetic itself belongs to
+       CappedScrollPanel and is NOT restated here — what is here is only the three facts the panel cannot
+       know from inside, which are that this card is a column, how tall it may be, and which of its two
+       children is the head. */
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 1.5rem);
+}
+
+/* The head does not give. It is the SHELL's element, so this is `::deep` for the same reason every rule in
+   this family is, and it is one property rather than a copy of #993's comment: what remains after it is
+   what `.capped-scroll` inside is allowed to have. */
+::deep .map-dossier > .overlay-shell-head {
+    flex: 0 0 auto;
+}
+
+/* …and the shell's own body is not a box here — the panel inside it is. `display: contents` is the same
+   move `.overlay-shell-hosted` makes for a hosted beat and it is exactly one property: the CappedScrollPanel
+   becomes a direct flex child of this column, so it can be the item that shrinks. The alternative was to
+   write `flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column` onto `.overlay-shell-body`,
+   which is #993's arithmetic said a second time in a second place — the thing CappedScrollPanel exists to
+   stop. Bootstrap's `d-none` is `!important`, so the tucked state still hides this. */
+::deep .map-dossier > .overlay-shell-body {
+    display: contents;
 }
 
 /* #960 — WINDOWS AT THE BOTTOM CENTRE TAKE TURNS. The target dossier and the navigation-target panel both
@@ -2859,7 +2892,7 @@
 }
 
 /* The peak-moment nudge — a small, non-blocking offer at the bottom of the deck. */
-.selfie-offer {
+::deep .selfie-offer {
     position: absolute;
     left: 50%;
     bottom: 4.5rem;
@@ -2938,7 +2971,7 @@
     backdrop-filter: blur(2px);
 }
 
-.pin-pad {
+::deep .pin-pad {
     width: min(19rem, 92vw);
     display: flex;
     flex-direction: column;
@@ -3015,7 +3048,7 @@
     background: #a6ffd0;
 }
 
-.pin-pad-cancel {
+::deep .pin-pad-cancel {
     align-self: center;
     margin-top: 0.2rem;
     padding: 0.3rem 1.4rem;
@@ -3027,7 +3060,7 @@
     cursor: pointer;
 }
 
-.pin-pad-cancel:hover {
+::deep .pin-pad-cancel:hover {
     background: rgba(224, 228, 236, 0.1);
 }
 
@@ -5660,7 +5693,7 @@
 .busted-card > .busted-options,
 ::deep .view-object > .view-object-close,
 ::deep .convergence-card > .convergence-close,
-.deck-offer-card > .deck-offer-actions,
+::deep .deck-offer-card > .deck-offer-actions,
 .deck-offer-card > .deck-bank-actions,
 .treasure-map-card > .busted-options,
 ::deep .treasure-map-card > .view-object-close,

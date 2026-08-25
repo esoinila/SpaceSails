@@ -613,7 +613,14 @@
        Hold declines and snoozes, re-raising while the window remains. Same .deck-offer-card overlay family. *@
     @if (_worldReady && !_deckMode && _brakeGate.Asking)
     {
-        <div class="deck-offer-card arrival-brake-card">
+        @* #997 wave 9 · The third of this wave's plain decisions, and the same shape as the stand-up card and
+           the selfie nudge: two answers and nothing else on the card, and both of them end this ask — Fire
+           runs the settle path (Gate → Fired) and Hold snoozes it (Gate → Held), so `_brakeGate.Asking` is
+           false either way and the gate above closes. Pressed both ways in this wave's guard, on a gate poked
+           to Asking rather than believed from this comment. The answers stay the page's own markup: two
+           colours, and the fire button's face changes with the kind of arrival. *@
+        <OverlayShell class="deck-offer-card arrival-brake-card"
+                      Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
             <div class="deck-offer-giver">🛬 Arrival brake — @_brakeDestName</div>
             <div class="deck-offer-blurb">@ArrivalBrakeAskText()</div>
             <div class="deck-offer-actions">
@@ -624,7 +631,7 @@
                         title="Hold the brake — you have the ship; it'll ask again while you're still coming in hot"
                         @onclick="DeclineArrivalBrake">Hold — I'll shed by hand</button>
             </div>
-        </div>
+        </OverlayShell>
     }
 
     @* #488 · THE SCUTTLING PANEL. Owner: "we could have a self-destruct option in the ship, like reactor
@@ -2433,7 +2440,24 @@
     @if (TheStandUpConfirmIsUp)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
-            <div class="deck-offer-card stand-up-card" @onclick:stopPropagation="true">
+            @* #997 wave 9 · A DECISION, AND THE SHELL HAS A WORD FOR THAT. Wave 5 walked past this card and
+               left it to the lore lane; #1004 landed and the lane is closed, and what is left is the plainest
+               ByDecision in the client — a question and its two answers, both of which really are a way out
+               (StandUpFromTable and KeepYourSeat each clear Seating.StandUpAsk, which is the whole of the
+               gate above). No ✕: this card has never carried one, and the critical-decision exception is
+               exactly the shape it already is. Proved by PRESSING both, in this wave's own guard, rather than
+               believed from this comment.
+
+               THE TWO ANSWERS STAY THE PAGE'S OWN MARKUP, for #1001's reason as the bank sheet restated it in
+               wave 6: they wear different colours (btn-warning on the stand, btn-outline-light on the stay)
+               and `ChoiceClass` is one class list for all of them, so routing them through `Choices` would
+               repaint two buttons and lift them out of `.deck-offer-actions` into the shell's own column.
+               This migration does not move a pixel.
+
+               `Bare`, because the card has no head row to give up. `StopClicks` is the stopPropagation that
+               was typed on the div — the backdrop behind it closes on a click and this card must not. *@
+            <OverlayShell class="deck-offer-card stand-up-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
                 <div class="deck-offer-giver">@SpaceSails.Core.SeatedPosture.StandUpAsk</div>
                 @if (StandingUpCostsARest)
                 {
@@ -2445,7 +2469,7 @@
                     <button type="button" class="btn btn-sm btn-outline-light"
                             @onclick="() => Dismiss(KeepYourSeat)">@SpaceSails.Core.SeatedPosture.StandUpNo</button>
                 </div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -3509,13 +3533,18 @@
        non-blocking. Take it (captures the themed shot) or wave it off for the session. *@
     @if (_selfieOffer is { } selfieOffer)
     {
-        <div class="selfie-offer">
+        @* #997 wave 9 · The second of this wave's plain decisions, and the same three facts as the stand-up
+           card: two answers, both of them a way out (AcceptSelfieOffer and DeclineSelfieOffer each clear
+           _selfieOffer, which is the whole of the gate above), no ✕ it has ever had, and the answers stay the
+           page's own markup because they wear different colours. No `StopClicks`: this nudge sits over the
+           deck on its own anchor, with no backdrop behind it for a click to fall through to. *@
+        <OverlayShell class="selfie-offer" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
             <span class="selfie-offer-text">📸 @selfieOffer.Label — grab a selfie for the record?</span>
             <div class="selfie-offer-actions">
                 <button type="button" class="btn btn-sm btn-info" title="Strike a pose — it goes in the legend ledger" @onclick="AcceptSelfieOffer">Take the shot</button>
                 <button type="button" class="btn btn-sm btn-outline-light" title="Not this time" @onclick="DeclineSelfieOffer">Not now</button>
             </div>
-        </div>
+        </OverlayShell>
     }
 
     @* Hatch keypad: brought up by knocking on the specific locked hatch a crack job sent you to. Key in
@@ -3523,7 +3552,20 @@
     @if (_pinJob is { } pinJob)
     {
         <div class="pin-backdrop" @onclick="CancelPin">
-            <div class="pin-pad" @onclick:stopPropagation="true">
+            @* #997 wave 9 · THE KEYPAD'S Cancel IS THE SHELL'S DISMISS. The plainest Close left in the client:
+               one way out, last direct child of the pad, wired to the same CancelPin the backdrop behind it
+               already calls. Wave 4's three parameters and nothing else — `Bare` (the pad's own
+               `.pin-pad-hatch` IS its head and the shell must not put a second one above it),
+               `StopClicks="true"` (the stopPropagation that was typed on this div), and the Close.
+
+               NOT ONE WORD MOVED: "Cancel" and its title are the exact strings the hand-typed button carried.
+               And it keeps its own height — `.pin-pad-cancel` is not a `.btn`, so the shell's chrome rule
+               gives it `line-height: 1`, which is the same number its own `font: 600 .85rem/1 monospace` was
+               already setting. Measured in the browser and written up in the PR, not assumed. *@
+            <OverlayShell class="pin-pad" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close" OnClose="CancelPin"
+                          DismissClass="pin-pad-cancel" DismissFace="Cancel"
+                          DismissTitle="Back off — leave the hatch locked">
                 <div class="pin-pad-hatch">@(_pinHatch?.Label ?? "LOCKED HATCH")</div>
                 <div class="pin-pad-sub">ENTER ACCESS CODE</div>
                 <div class="pin-pad-display">@PinDisplay</div>
@@ -3543,8 +3585,7 @@
                 {
                     <div class="panel-outcome">@pinSaid</div>
                 }
-                <button type="button" class="pin-pad-cancel" title="Back off — leave the hatch locked" @onclick="CancelPin">Cancel</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -3610,7 +3651,17 @@
     @if (_deckMode && _patronDrink is { } patron && CurrentKeep is { } patronKeep)
     {
         string patronDisplay = GiverDisplay(patron);
-        <div class="deck-offer-card">
+        @* #997 wave 9 · A Close WHOSE WAY OUT IS THE WHOLE OF A ROW THE PAGE HAS A RULE FOR — wave 7's
+           `WaysClass`, on the first card in this family to want it. `Done` is this table's only way out and
+           it stands alone in `.deck-offer-actions`, which #780 pins sticky with a scrim and #735 lists among
+           the family's pinned feet. So the SHELL draws the row and the page NAMES it, which leaves the button
+           in the same box wearing the same dress, and the drink flow above it goes on being what it was: a
+           set of controls that are not ways out, which is precisely why this is a Close and not a decision. *@
+        <OverlayShell class="deck-offer-card" Frame="OverlayFrame.Bare"
+                      Dismiss="OverlayDismiss.Close" OnClose="() => Dismiss(ClosePatronTable)"
+                      WaysClass="deck-offer-actions"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
+                      DismissTitle="Sit back — leave the table">
             <div class="deck-offer-giver">◈ @patronDisplay</div>
             @if (_patronDrinkBlurb is { } patronLine)
             {
@@ -3622,10 +3673,7 @@
             }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr · @patronKeep.BarName</div>
             @ContactDrinkOffer(patron, patronDisplay, patronKeep)
-            <div class="deck-offer-actions">
-                <button type="button" class="btn btn-sm btn-outline-light" title="Sit back — leave the table" @onclick="() => Dismiss(ClosePatronTable)">Done</button>
-            </div>
-        </div>
+        </OverlayShell>
     }
 
     @* PR-WIRE — the favor bank card (FridaySecondPlan §0). Opened at a contact's table with 'b' (in
@@ -3637,7 +3685,14 @@
         int _bankMissions = _contacts.For(bank.ContactId).MissionsCompleted;
         bool _bankTrusted = ContactSheets.WillStake(_bankMissions);
         TrustTier _bankTier = ContactSheets.TrustFor(_bankMissions);
-        <div class="deck-offer-card deck-bank-card">
+        @* #997 wave 9 · The same shape as the patron's table, one card along: `Done` alone in
+           `.deck-offer-actions` is the ledger's only way out, and every other control on it — deposit,
+           withdraw, repay, the favor wire — leaves the ledger standing. A Close whose row the page names. *@
+        <OverlayShell class="deck-offer-card deck-bank-card" Frame="OverlayFrame.Bare"
+                      Dismiss="OverlayDismiss.Close" OnClose="CloseBank"
+                      WaysClass="deck-offer-actions"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
+                      DismissTitle="Close the ledger and step back">
             <div class="deck-offer-giver">💰 @bank.DisplayName's ledger @(bank.ViaWire ? "· 🕸 wire" : "· 🤝 in person")</div>
             <div class="deck-bank-balance small">
                 @if (_bankBal > 0)
@@ -3706,10 +3761,7 @@
             {
                 <div class="deck-bank-notice small">@notice</div>
             }
-            <div class="deck-offer-actions">
-                <button type="button" class="btn btn-sm btn-outline-light" title="Close the ledger and step back" @onclick="CloseBank">Done</button>
-            </div>
-        </div>
+        </OverlayShell>
     }
 
     @* #247 — the barkeep's counter menu. Owner ashore: "How do I get a drink at the Rusty bar here?"
@@ -3972,7 +4024,22 @@
        is yours. Same overlay family as the deck-offer-card. *@
     @if (_deckMode && _oracleOpen && _oracleLine is { } oline)
     {
-        <div class="deck-offer-card oracle-card @(oline.RoomGoesQuiet ? "oracle-quiet" : "")">
+        @* #997 wave 9 · THE SECOND CONSUMER OF `FootHost`, and it is here for the same reason the logbook
+           was: her foot is a row whose OTHER controls are not ways out. 🌀 Keep listening turns the dial one
+           line on and 🥃 Buy her a drink widens the channel — both leave her card standing, and the second is
+           drawn only where there is a counter to buy from. A shell that drew this row would have to know
+           that; a shell that HANDS the row its button has to know neither. Same div, same rule, same order —
+           `Done` is still the last button of `.deck-offer-actions`, and it is now the shell's dismiss, which
+           is what puts it inside the audit and inside the dismissibility law's reach. *@
+        @* The hush is a class on the ROOT, and a component attribute takes one expression rather than markup
+           mixed with C# — so both branches spell the card's own name out, which is #1002's vent-board idiom
+           and the shape the completeness guard reads the class list off. *@
+        <OverlayShell class="@(oline.RoomGoesQuiet ? "deck-offer-card oracle-card oracle-quiet" : "deck-offer-card oracle-card")"
+                      Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                      OnClose="() => Dismiss(CloseOracle)"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
+                      DismissTitle="Leave her to her muttering">
+            <ChildContent>
             <div class="deck-offer-giver">🌀 @Core.OracleRant.FullName</div>
             @* #528 · THE CORNER, PAINTED. A backdrop rather than a plate: this card is a conversation the
                captain stays inside, turning the dial line by line, and a modal opening over it every time
@@ -3992,17 +4059,20 @@
             <div class="deck-offer-reward">
                 Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr@(_oracleDrinks > 0 ? $" · you've stood her {_oracleDrinks} glass{(_oracleDrinks == 1 ? "" : "es")}" : "")
             </div>
-            <div class="deck-offer-actions">
-                <button type="button" class="btn btn-sm btn-outline-info" title="Let her keep talking — turn the dial one line on" @onclick="NextOracleLine">🌀 Keep listening</button>
-                @if (CurrentKeep is { } orKeep)
-                {
-                    <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < orKeep.DrinkPrice)"
-                            title="@($"Stand the oracle a {orKeep.DrinkName} — {orKeep.DrinkPrice} cr. A drunk oracle is more prophetic.")"
-                            @onclick="BuyOracleDrink">🥃 Buy her a drink · @orKeep.DrinkPrice cr</button>
-                }
-                <button type="button" class="btn btn-sm btn-outline-light" title="Leave her to her muttering" @onclick="() => Dismiss(CloseOracle)">Done</button>
-            </div>
-        </div>
+            </ChildContent>
+            <FootHost Context="theWayOutOfHerCorner">
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Let her keep talking — turn the dial one line on" @onclick="NextOracleLine">🌀 Keep listening</button>
+                    @if (CurrentKeep is { } orKeep)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < orKeep.DrinkPrice)"
+                                title="@($"Stand the oracle a {orKeep.DrinkName} — {orKeep.DrinkPrice} cr. A drunk oracle is more prophetic.")"
+                                @onclick="BuyOracleDrink">🥃 Buy her a drink · @orKeep.DrinkPrice cr</button>
+                    }
+                    @theWayOutOfHerCorner
+                </div>
+            </FootHost>
+        </OverlayShell>
     }
 
     @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
@@ -6794,6 +6864,35 @@
                       OpenTitle="Open the dossier back up">
             <TitleContent>📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></TitleContent>
             <ChildContent>
+            @* #997 wave 9 · THE SECOND CONSUMER OF `CappedScrollPanel` (#997/#993), and the one it was
+               described by: a head that keeps its measured height over ONE body that takes what is left and
+               scrolls there. The head here is the SHELL'S — 📖 her name and her stamp on the left, the – and
+               the ✕ on the right — and until now it scrolled away with everything else, because the only cap
+               this card had was `.map-dossier-raised`'s `max-height … overflow-y: auto` ON THE ROOT.
+
+               TWO THINGS THAT WERE TRUE BEFORE AND ARE NOT NOW, both measured in a browser and written up in
+               the PR:
+
+               · RAISED and long, the whole card scrolled — so the way out went up past the top edge of its
+                 own box and the captain scrolled to find a ✕. Now the head does not move and only her file
+                 does.
+               · UNSTACKED and long, the card had NO CAP AT ALL. It is anchored `bottom: .75rem` and grows
+                 UPWARD, so a dossier with terms and an autosteal box and a long history simply ran off the
+                 top of the window, taking the head — and both ways out — off the glass with it. That is
+                 #735's own bug wearing a different card's clothes, and it is why this wave extends the
+                 tall-card gate to cover this surface too.
+
+               THE PANEL IS INSIDE THE SHELL AND NOT AROUND IT, because the ROOT has to stay the shell's: the
+               tile round-trip and #971's stacking are class swaps on that element, and a `display: contents`
+               host around it would leave `.map-dossier-tile` and `.map-dossier-raised` with no box to move.
+               So `.map-dossier` becomes the flex column, the shell's head is its first item, and the shell's
+               own body is `display: contents` (Map.razor.css, beside the rule) so the panel is the second —
+               one property, rather than #993's arithmetic written out a second time on `.overlay-shell-body`.
+
+               `HasContent` is left at its default: unlike the Plotting panel this card has no empty state —
+               a dossier that exists has a status line — so the body is always drawn and always has something
+               in it. No `Header`: the head this panel keeps is the shell's, one element up. *@
+            <CappedScrollPanel class="map-dossier-scroll" BodyClass="map-dossier-file" BodyFloor="6rem">
             <div>@dossier.StatusLine</div>
             @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
                glance — "ex-AURORA QUEEN · three owners deep". The full ledger lives on her comms dossier. *@
@@ -6861,6 +6960,7 @@
                 <button type="button" class="btn btn-sm btn-outline-light py-0"
                         title="Take this target to the war room" @onclick="() => SwitchDeskFromClick(ShipDesk.WarRoom)">⚔ war room</button>
             </div>
+            </CappedScrollPanel>
             </ChildContent>
         </OverlayShell>
     }
