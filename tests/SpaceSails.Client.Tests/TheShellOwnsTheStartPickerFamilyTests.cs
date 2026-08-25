@@ -26,14 +26,15 @@ namespace SpaceSails.Client.Tests;
 /// <item><b>the import consent</b> — #310's ask before a file becomes the live game.</item>
 /// </list>
 ///
-/// <para><b>Two of the four migrate and two do not, and that split is the point of this file.</b> The bank
-/// sheet and the import consent are decisions: no ✕, because every answer each of them offers is itself a
-/// close — the critical-decision exception, and it is proved here by PRESSING all five answers rather than
-/// taken from a parameter. The front door and the logbook are ONE element with one class attribute drawn
-/// twice, and neither of the shell's three shapes fits it: the logbook's way out is the third button of a
-/// three-button row (a <c>Bare</c> shell's dismiss is the card's LAST DIRECT CHILD, which would lift it out
-/// of that row), and the front door has no way out at all because there is nothing behind it to go back to.
-/// They are named below with that reason, and the two guards at the bottom of this file pin the reason
+/// <para><b>Three of the four are the shell's and one is not, and that split is the point of this file.</b>
+/// The bank sheet and the import consent are decisions: no ✕, because every answer each of them offers is
+/// itself a close — the critical-decision exception, proved here by PRESSING all five answers rather than
+/// taken from a parameter. The logbook joined them in #997 wave 8: its way out is still the third button of
+/// <c>.save-surface-foot</c>, beside ⬇ Export and ⬆ Import, and the shell now HANDS that row the dismiss
+/// it draws (<c>FootHost</c>) instead of drawing a lone one below it. The front door alone stays the page's
+/// own, and not because the shell cannot reach it — because it has no way out at all: there is nothing
+/// behind it to go back to, which is Fable's wave-7 ruling that it is the game's threshold rather than a
+/// pop-up. It is named below with that reason, and the guards at the bottom of this file pin the reason
 /// itself — a straggler whose stated reason has quietly stopped being true is worse than no reason.</para>
 ///
 /// <para>The dismissibility law (<see cref="EveryPopUpCanBeDismissedTests"/>) asks whether a surface can be
@@ -108,10 +109,15 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
                         continue;
                     }
 
-                    // A shell: read THIS tag — the one whose attribute we are standing on, found by walking
-                    // back from this line, never by searching the file for the class list (two shells in
-                    // this family wear the same one, and the first hit is the hand-rolled straggler).
-                    if (!TheTagAt(lines, i).Contains("OverlayDismiss.ByDecision", StringComparison.Ordinal))
+                    // A shell: read THIS element — the one whose attribute we are standing on, found by
+                    // walking back from this line, never by searching the file for the class list (two
+                    // shells in this family wear the same one, and the first hit is the hand-rolled front
+                    // door). The whole element and not just its opening tag, because the second shape this
+                    // family is allowed to take is declared by a CHILD (<FootHost>) rather than by an
+                    // attribute.
+                    string element = TheElementAt(lines, i);
+                    if (!element.Contains("OverlayDismiss.ByDecision", StringComparison.Ordinal)
+                        && !element.Contains("<FootHost", StringComparison.Ordinal))
                     {
                         wrongShape.Add($"{shortName}:{i + 1}  class=\"{list}\"");
                     }
@@ -143,40 +149,45 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
             + "than no reason at all.");
 
         Assert.True(wrongShape.Count == 0,
-            $"{wrongShape.Count} start-picker shell(s) are not ByDecision:\n  - "
+            $"{wrongShape.Count} start-picker shell(s) are neither a ByDecision nor a page-drawn foot:\n  - "
             + string.Join("\n  - ", wrongShape)
-            + "\n\nA Close here would draw a ✕ as the LAST DIRECT CHILD of a save sheet — under the answer "
-            + "row, in a family that has never carried one and has no rule written for it. The two sheets "
-            + "on this root are decisions: every answer they offer is itself a close, which is what the "
-            + "press guard in this file establishes. If a sheet has really earned a ✕, say so here first.");
+            + "\n\nA plain Close here would draw a ✕ as the LAST DIRECT CHILD of a save sheet — under the "
+            + "answer row, in a family that has never carried one and has no rule written for it. This "
+            + "family is allowed exactly two shapes. The two sheets are DECISIONS: every answer they offer "
+            + "is itself a close, which is what the press guard in this file establishes. The logbook is a "
+            + "Close whose way out the page's own `.save-surface-foot` HOSTS (#997 wave 8's FootHost), so "
+            + "the button lands in the row it has always been in. If a third sheet has really earned a "
+            + "loose ✕, say so here first.");
     }
 
     /// <summary>
-    /// THE STRAGGLER, BY NAME AND WITH THE REASON — one class attribute, two surfaces.
+    /// THE STRAGGLER, BY NAME AND WITH THE REASON — and by #997 wave 8 it is ONE surface rather than two.
     ///
     /// <para>Keyed on the class list exactly as typed, because that list IS the surface's identity under the
-    /// alias law and it is the one thing about it a refactor is not allowed to move.</para>
+    /// alias law and it is the one thing about it a refactor is not allowed to move. Two elements in
+    /// Map.razor wear this list now — the front door's <c>&lt;div&gt;</c> and the logbook's
+    /// <c>&lt;OverlayShell&gt;</c> — and only the first of them is hand-rolled, which is what leaves this
+    /// entry standing and its reason down to one half.</para>
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> TheNamedStragglers =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["start-picker save-surface"] =
-                "the front door AND the in-game logbook: one element with one class attribute, drawn twice "
-                + "off the SaveLoadSurface fragment, so they migrate together or not at all. Not at all, "
-                + "and for two reasons that are facts about the markup rather than shortcuts. (1) THE "
-                + "LOGBOOK'S WAY OUT IS THE THIRD BUTTON OF A ROW: its Close sits in .save-surface-foot "
-                + "beside \"⬇ Export this moment\" and \"⬆ Import file\" — one flex row, three buttons — "
-                + "and a Bare shell draws its dismiss as the card's LAST DIRECT CHILD, which is the whole "
-                + "point of the frame and would lift Close out of that row onto a line of its own below the "
-                + "foot. That is a control moving on the screen, which this migration does not do. (2) THE "
-                + "FRONT DOOR HAS NO WAY OUT AT ALL, because there is nothing behind it to go back to — you "
-                + "leave it by starting or loading a game. So neither of the other two shapes fits either: "
-                + "a Close would draw a ✕ this door has never had, and a ByDecision would claim that every "
-                + "control on it is itself a close, which is false on both surfaces (⬆ Import, 📥 file, 🗑, "
-                + "the ▸ dev-starts chevron and the ✏ pencil all leave the surface standing). Both halves "
-                + "of that reason are pinned to the render tree by the two guards at the foot of this file. "
-                + "It gets a shell when the logbook's Close stops sharing a row, or when the shell learns "
-                + "to hand a page's own foot the dismiss it draws.",
+                "the FRONT DOOR, and only the front door: wave 6 named this key for two surfaces on the "
+                + "grounds that they were one element drawn twice off the SaveLoadSurface fragment, and "
+                + "#997 wave 8 took that reason away — the shared part is now SaveLoadInside, the logbook "
+                + "has its own <OverlayShell> root, and its Close is the shell's dismiss standing in the "
+                + "page's own `.save-surface-foot` (FootHost). What is left is the half that was never "
+                + "about the markup: THE FRONT DOOR HAS NO WAY OUT AT ALL, because there is nothing behind "
+                + "it to go back to — you leave it by starting or loading a game. So none of the shell's "
+                + "three shapes fits it. A Close would draw a ✕ this door has never had; a Minimize would "
+                + "tuck the threshold into a corner of a game that has not started; and a ByDecision would "
+                + "claim that every control on it is itself a close, which is false (⬆ Import a save file, "
+                + "📥 file, 🗑, the ▸ dev-starts chevron and the ✏ pencil all leave the door standing). "
+                + "That is not a surface waiting for a shell — it is Fable's wave-7 ruling in markup: the "
+                + "front door is the game's THRESHOLD and not a pop-up over play, which is why it sits in "
+                + "EveryPopUpCanBeDismissedTests' NotPopUpsAndWhy rather than in its register. Pinned by "
+                + "TheFrontDoorOffersNoCloseAtAllAndNotEveryControlOnItIsOne at the foot of this file.",
         };
 
     private static string Normalised(string classList) =>
@@ -268,19 +279,27 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
     // ── The straggler's reason, pinned to the render tree ─────────────────────────────────────────────
 
     /// <summary>
-    /// THE LOGBOOK'S WAY OUT IS STILL THE THIRD BUTTON OF A ROW — which is the whole reason it keeps it.
+    /// THE LOGBOOK IS THE SHELL'S, AND ITS WAY OUT IS STILL THE THIRD BUTTON OF THE PAGE'S OWN ROW.
     ///
-    /// <para>A straggler is only honest while its reason is true, and this one's reason is a fact about the
-    /// DOM rather than about a sentence. So the fact is asserted: the foot is a row of three controls, the
-    /// last of them is <i>Close</i>, and it closes the drawer. The day somebody makes Close the only thing
-    /// in that foot, this fails and the surface is ready for its shell.</para>
+    /// <para>Wave 6 named this surface a straggler because a <c>Bare</c> shell draws its dismiss as the
+    /// card's LAST DIRECT CHILD, and that would have lifted <i>Close</i> out of <c>.save-surface-foot</c>
+    /// and dropped it on a line of its own below the row. #997 wave 8's <c>FootHost</c> is the answer to
+    /// exactly that: the PAGE goes on drawing the row — its own element, its own scope attribute, and only
+    /// once the reactor is warm — and the shell hands it the way out to put in it.</para>
     ///
-    /// <para>It also pins what the straggler COSTS, so the cost is visible rather than forgotten: the
-    /// hand-rolled classless wrapper carrying <c>@@onclick:stopPropagation</c> between the backdrop and the
-    /// surface — the div <c>StopClicks="true"</c> exists to delete.</para>
+    /// <para>So this guard asks for both halves at once, because either alone would be the migration
+    /// failing quietly: the button is the SHELL'S (it wears <c>overlay-shell-dismiss</c>, so the audit and
+    /// the dismissibility law both reach it) and it is still exactly where it was (the third and last
+    /// control of a foot it shares with ⬇ Export and ⬆ Import, neither of which is a way out). And it is
+    /// PRESSED, because a way out that does not close is the thing this whole lane exists to catch.</para>
+    ///
+    /// <para>It also asks for what the straggler used to COST: the classless wrapper carrying
+    /// <c>@@onclick:stopPropagation</c> between the backdrop and the surface. <c>StopClicks="true"</c> owns
+    /// that now, so the surface is the backdrop's own child — one div fewer, and the behaviour identical
+    /// (a click on the sheet must not fall through to the backdrop, which closes the drawer).</para>
     /// </summary>
     [Fact]
-    public async Task TheLogbooksWayOutIsStillTheThirdButtonOfARow()
+    public async Task TheLogbookIsTheShellsAndItsWayOutIsStillTheThirdButtonOfTheRow()
     {
         using DeskBench bench = await DeskBench.BootAsync(Docked);
         OnlyThisStartPickerSurface(bench, "_showSaveDrawer");
@@ -290,32 +309,54 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
             ?? throw new Xunit.Sdk.XunitException(
                 "the logbook: _showSaveDrawer was raised and nothing wearing .start-picker came back.");
 
-        Assert.False(card.HasClass("overlay-shell"),
-            "the logbook is drawn through OverlayShell now. Good — but then it is no longer a straggler: "
-            + "take it out of TheNamedStragglers and give this guard the shape it actually has.");
+        Assert.True(card.HasClass("overlay-shell"),
+            "the logbook is on the screen and it is not the shell's — #997 wave 8 put it on OverlayShell, "
+            + "and it has come back off.");
+        Assert.True(card.HasClass("overlay-shell-bare"),
+            "the logbook's shell drew it as something other than Bare. Hosted's `display: contents` would "
+            + "put a wrapper between this root and .save-surface-foot, and Card would wrap the page's own "
+            + ".start-picker-title in an overlay-shell-head that no rule in Map.razor.css is written for.");
+        Assert.True(card.HasClass("start-picker") && card.HasClass("save-surface"),
+            "the logbook has lost its own class. The shell is the MECHANISM and .start-picker is the "
+            + "IDENTITY — #992's completeness guard reads that name off the markup as typed, and the whole "
+            + "of this surface's skin hangs off it.");
 
         DeskBench.Painted.Node foot = card.Descendants()
             .FirstOrDefault(n => n.HasClass("save-surface-foot") && !n.Hidden)
             ?? throw new Xunit.Sdk.XunitException("the logbook has no .save-surface-foot at all.");
 
+        Assert.False(foot.HasClass("overlay-shell-ways"),
+            "the logbook's foot is drawn by the SHELL now. That is the other half of wave 7's mechanism "
+            + "(WaysClass) and it is the wrong half for this surface: the shell would have to know that "
+            + "the row carries ⬇ Export and ⬆ Import, and that it exists only once _worldReady. FootHost "
+            + "is what lets the page keep drawing its own row.");
+
         List<DeskBench.Painted.Node> row = foot.Children
             .Where(n => !n.Hidden && (n.Handlers.ContainsKey("onclick") || n.Element == "a"))
             .ToList();
 
-        Assert.True(row.Count > 1,
-            $"the logbook's foot is down to {row.Count} control(s). The ONLY reason this surface is a "
-            + "straggler is that its Close shares a flex row with ⬇ Export and ⬆ Import, so a Bare shell's "
-            + "last-direct-child dismiss would move it. If the row is gone, so is the reason: migrate it "
-            + "(#997 wave 6) rather than leaving a written-down excuse that is no longer true.");
+        Assert.True(row.Count == 3,
+            $"the logbook's foot is a row of {row.Count} control(s) and it has always been three: ⬇ Export "
+            + "this moment, ⬆ Import file, and Close. If the row has really changed, say so here — the "
+            + "whole point of hosting the shell's dismiss in it is that the row is the page's own.");
 
         DeskBench.Painted.Node close = row[^1];
         Assert.Equal("Close", close.Name);
+        Assert.True(close.HasClass("overlay-shell-dismiss"),
+            "the logbook's Close is the last button of the page's own row, but it is not the SHELL'S — it "
+            + "has gone back to being a hand-typed button. Then the surface is a shell with a ✕ nobody "
+            + "draws, and the audit that watches for a way out wired to nothing cannot see this one.");
+        foreach (string dressed in new[] { "btn", "btn-sm", "btn-outline-info" })
+        {
+            Assert.True(close.HasClass(dressed),
+                $"the logbook's Close has lost `{dressed}`. The shell owns the MECHANISM; the page's own "
+                + "DismissClass owns how the button looks, and this migration does not repaint a control.");
+        }
 
-        // …and the wrapper the straggler pays for: a classless div carrying the stopPropagation that
-        // StopClicks="true" would have owned.
+        // …and the wrapper the straggler used to pay for is gone: the surface is the backdrop's own child.
         DeskBench.Painted.Node backdrop = painted.Root.Descendants()
             .First(n => n.HasClass("start-picker-backdrop") && !n.Hidden);
-        Assert.DoesNotContain(backdrop.Children, n => n.HasClass("start-picker"));
+        Assert.Contains(backdrop.Children, n => n.HasClass("start-picker"));
 
         await bench.PressAsync(close.Handlers["onclick"]);
         DeskBench.Painted after = await bench.RenderAsync();
@@ -572,6 +613,35 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
         }
 
         return tag.ToString();
+    }
+
+    /// <summary>The whole <c>&lt;OverlayShell&gt;…&lt;/OverlayShell&gt;</c> the attribute on
+    /// <paramref name="line"/> belongs to: from the line that opens the tag to the line that closes the
+    /// element. Read whole rather than as a tag because one of the two shapes this family is allowed —
+    /// a way out hosted by the page's own foot — is declared by a child element, not by an attribute.
+    /// <para>Nothing in this client nests an OverlayShell inside another, so the first closing tag is this
+    /// one's; if that ever stops being true, this reads short rather than long, which fails loudly.</para>
+    /// </summary>
+    private static string TheElementAt(string[] lines, int line)
+    {
+        int start = line;
+        while (start >= 0 && !lines[start].Contains("<OverlayShell", StringComparison.Ordinal))
+        {
+            start--;
+        }
+
+        if (start < 0)
+        {
+            return "";
+        }
+
+        int end = start;
+        while (end < lines.Length && !lines[end].Contains("</OverlayShell>", StringComparison.Ordinal))
+        {
+            end++;
+        }
+
+        return string.Join('\n', lines[start..Math.Min(end + 1, lines.Length)]);
     }
 
     private static IEnumerable<string> RazorFiles() =>

@@ -133,28 +133,28 @@
     }
     </div>;
 
-        // #997 wave 6 · THE ONE ROOT OF THIS FAMILY THAT KEEPS ITS OWN WAY OUT, and it is TWO surfaces: the
-        // front door and the in-game logbook are ONE element with one class attribute, drawn twice off this
-        // fragment, so they migrate together or not at all. Not at all, for two reasons that are facts about
-        // the markup rather than shortcuts.
+        // #997 wave 8 · THE INSIDE OF THE SAVE SURFACE — everything the front door and the in-game logbook
+        // really do share, which is the title, the blurb and the rack of berths. It is a <text> and not a
+        // <div> because the two surfaces no longer share a ROOT: wave 6 named them one straggler on the
+        // grounds that they were one element drawn twice, and the shell's new FootHost is what took that
+        // reason away.
         //
-        // THE LOGBOOK'S WAY OUT IS THE THIRD BUTTON OF A ROW. Its Close sits in the foot beside "⬇ Export
-        // this moment" and "⬆ Import file" — one flex row, three buttons, Close the last of them. A Bare
-        // shell draws its dismiss as the card's LAST DIRECT CHILD, which is the whole point of the frame;
-        // that would lift Close out of the row it shares and drop it on a line of its own below the foot.
-        // That is a control moving on the screen, which this migration does not do.
+        // THE LOGBOOK IS THE SHELL'S NOW. Its way out is still the third button of `.save-surface-foot`,
+        // beside "⬇ Export this moment" and "⬆ Import file" — neither of which is a way out — and it is
+        // still the PAGE that draws that row, once the reactor is warm. What changed is that the shell can
+        // now be HANDED a row instead of drawing one: FootHost gives the page the way out as a fragment and
+        // the page puts it exactly where Close has always stood. Nothing moves; the button simply belongs to
+        // the mechanism that audits it, and the classless stopPropagation wrapper the straggler used to pay
+        // for goes with it (StopClicks).
         //
-        // AND THE FRONT DOOR HAS NO WAY OUT AT ALL, because there is nothing behind it to go back to — you
-        // leave it by starting or loading a game. So neither of the other two shapes fits either: Close
-        // would draw a ✕ this door has never had, and ByDecision would be a claim that every control on it
-        // is itself a close, which is false on BOTH surfaces (⬆ Import, 📥 file, 🗑, the ▸ dev-starts
-        // chevron and the ✏ pencil all leave the surface standing). #1005's own lesson is that a false
-        // ByDecision claim is the bug, not the migration.
-        //
-        // It gets a shell when the logbook's Close stops sharing a row — or when the shell learns to hand a
-        // page's own foot the dismiss it draws. Named in TheNamedStragglers with this paragraph.
-        RenderFragment<bool> SaveLoadSurface = inGame =>
-    @<div class="start-picker save-surface">
+        // AND THE FRONT DOOR STAYS THE PAGE'S OWN, because it has no way out at all: there is nothing behind
+        // it to go back to — you leave it by starting or loading a game. Neither of the shell's other shapes
+        // fits it either — a Close would draw a ✕ this door has never had, and a ByDecision would claim that
+        // every control on it is itself a close, which is false (⬆ Import, 📥 file, 🗑, the ▸
+        // dev-starts chevron and the ✏ pencil all leave the door standing). It is not a pop-up over play
+        // but the game's threshold, which is Fable's wave-7 ruling and why it sits in NotPopUpsAndWhy.
+        RenderFragment<bool> SaveLoadInside = inGame =>
+    @<text>
         <div class="start-picker-title">@(inGame ? "🧭 Ship's logbook — saves" : "🛰 Space Sails")</div>
         <div class="start-picker-sub">
             @(inGame
@@ -369,45 +369,61 @@
                     }
                 </div>
             }
-
-            <div class="save-surface-foot">
-                @if (inGame)
-                {
-                    <button type="button" class="btn btn-sm btn-outline-light"
-                            title="Download the LIVE game right now as a .json file you keep against a server wipe — it asks for a title and a note first, and the file carries them"
-                            @onclick="BeginExportMoment">⬇ Export this moment</button>
-                    <button type="button" class="btn btn-sm btn-outline-light"
-                            title="Load a vault .json file — it becomes the live game at once (it asks before replacing your voyage)"
-                            @onclick="ImportVault">⬆ Import file</button>
-                    <button type="button" class="btn btn-sm btn-outline-info"
-                            title="Close the logbook and return to the ship"
-                            @onclick="CloseSaveDrawer">Close</button>
-                }
-                else
-                {
-                    <button type="button" class="btn btn-sm btn-outline-light"
-                            title="Load a vault .json file as a new voyage"
-                            @onclick="ImportVault">⬆ Import a save file</button>
-                    <a class="btn btn-sm btn-outline-info" href="/"
-                       title="Back to the front page — the scenario chooser and the Captain's Guide">🏠 Front page &amp; other scenarios</a>
-                }
-            </div>
         }
-    </div>;
+    </text>;
     }
 
+    @* THE FRONT DOOR — the page's own element, and the one surface in this file that is not a pop-up at all
+       (Fable's ruling, wave 7: it is the game's threshold, and a way out of it would be a door to nowhere).
+       Its foot carries ⬆ Import a save file and the link home; neither of them ends the door. *@
     @if (_showStartPicker)
     {
         <div class="start-picker-backdrop">
-            @SaveLoadSurface(false)
+            <div class="start-picker save-surface">
+                @SaveLoadInside(false)
+                @if (_worldReady)
+                {
+                    <div class="save-surface-foot">
+                        <button type="button" class="btn btn-sm btn-outline-light"
+                                title="Load a vault .json file as a new voyage"
+                                @onclick="ImportVault">⬆ Import a save file</button>
+                        <a class="btn btn-sm btn-outline-info" href="/"
+                           title="Back to the front page — the scenario chooser and the Captain's Guide">🏠 Front page &amp; other scenarios</a>
+                    </div>
+                }
+            </div>
         </div>
     }
+    @* THE SHIP'S LOGBOOK — the same inside, a shell around it, and its Close is the shell's dismiss standing
+       in the page's own row (FootHost, #997 wave 8). `Bare` because the surface has no head row to give up:
+       `.start-picker-title` is the page's own centred div with the page's own rule, and Hosted's
+       `display: contents` would put a wrapper between this root and `.save-surface-foot`. `StopClicks` is
+       the wrapper wave 6 had to pay for and this one deletes: the backdrop closes the drawer, so a click on
+       the surface must not fall through to it. *@
     else if (_showSaveDrawer)
     {
         <div class="start-picker-backdrop" @onclick="CloseSaveDrawer">
-            <div @onclick:stopPropagation="true">
-                @SaveLoadSurface(true)
-            </div>
+            <OverlayShell class="start-picker save-surface" Frame="OverlayFrame.Bare" StopClicks="true"
+                          OnClose="CloseSaveDrawer" DismissClass="btn btn-sm btn-outline-info"
+                          DismissFace="Close" DismissTitle="Close the logbook and return to the ship">
+                <ChildContent>
+                    @SaveLoadInside(true)
+                </ChildContent>
+                <FootHost Context="theWayOut">
+                    @if (_worldReady)
+                    {
+                        <div class="save-surface-foot">
+                            <button type="button" class="btn btn-sm btn-outline-light"
+                                    title="Download the LIVE game right now as a .json file you keep against a server wipe — it asks for a title and a note first, and the file carries them"
+                                    @onclick="BeginExportMoment">⬇ Export this moment</button>
+                            <button type="button" class="btn btn-sm btn-outline-light"
+                                    title="Load a vault .json file — it becomes the live game at once (it asks before replacing your voyage)"
+                                    @onclick="ImportVault">⬆ Import file</button>
+                            @theWayOut
+                        </div>
+                    }
+                </FootHost>
+            </OverlayShell>
         </div>
     }
 

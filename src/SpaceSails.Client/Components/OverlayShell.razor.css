@@ -63,8 +63,28 @@
    way out the player cannot reach is the ruling failing quietly instead of loudly. */
 :where(.overlay-shell-dismiss, .overlay-shell-close, .overlay-shell-beside) {
     flex: 0 0 auto;
-    line-height: 1;
     cursor: pointer;
+}
+
+/* …AND `line-height: 1` IS FOR THE GLYPH, NEVER FOR A WORDED BUTTON. #997 wave 7 measured the cost of not
+   saying so: the rule above was written for a bare ✕, where one line-height is exactly the box you want,
+   and applying it to a Bootstrap `.btn` with words on it takes EIGHT PIXELS off a button that had them
+   before the migration — `…wake up` 38 px → 30 px, the shelf 36 px → 28 px, `Close hatch` 31 px → 25 px.
+   Nineteen `.btn`-dressed dismisses across waves 1–6 were wearing that quietly.
+
+   `:not(.btn)` and not a second rule handing `.btn` its height back: a button dressed as a Bootstrap button
+   already HAS a line-height — `--bs-btn-line-height`, from Bootstrap's own `.btn` rule — and the honest fix
+   is for this file to stop overwriting it, not to restate it. Still inside `:where()`, so the whole
+   selector still contributes ZERO specificity and a page that really wants its own line-height on a way out
+   goes on winning by a whole class.
+
+   AND THE `:not` IS ITSELF INSIDE A `:where`, which is not a flourish: `:not(.btn)` contributes the
+   specificity of its argument — one whole class — so the plain form would have compiled to a rule
+   heavier than `::deep .thing` instead of lighter than everything, and this file's one law is that
+   nothing here may win a tie. `:where(:not(.btn))` matches exactly the same elements and weighs nothing.
+   Pinned by TheShellsStylesheetNeverSetsLineHeightOnAButton, which parses this file. */
+:where(.overlay-shell-dismiss, .overlay-shell-close, .overlay-shell-beside):where(:not(.btn)) {
+    line-height: 1;
 }
 
 /* #997 wave 7 · THE ROW A PAGE'S FOOT ALREADY IS. Drawn only when the page named one (WaysClass) or when
