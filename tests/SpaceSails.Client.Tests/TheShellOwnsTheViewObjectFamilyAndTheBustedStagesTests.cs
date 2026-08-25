@@ -420,7 +420,11 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
 
         await bench.PressAsync(foot.Handlers["onclick"]);
         DeskBench.Painted after = await bench.RenderAsync();
-        Assert.DoesNotContain(after.Root.Descendants(), n => n.HasClass(root) && !n.Hidden);
+
+        Assert.True(after.Root.Descendants().All(n => !n.HasClass(root) || n.Hidden),
+            $"{name}: \"{wording}\" was pressed and the card is still on the screen. The shell's dismiss "
+            + "runs whatever OnClose is wired to and nothing else — a way out wired to something that is not "
+            + "this card's close verb is a control that looks like a way out and is not one.");
     }
 
     /// <summary>Put one of the borrowers on the screen. Five of the nine are a single bool; the four built on
@@ -506,7 +510,10 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
 
         await bench.PressAsync(foot.Handlers["onclick"]);
         DeskBench.Painted after = await bench.RenderAsync();
-        Assert.DoesNotContain(after.Root.Descendants(), n => n.HasClass("table-card") && !n.Hidden);
+
+        Assert.True(after.Root.Descendants().All(n => !n.HasClass("table-card") || n.Hidden),
+            "the table's Close was pressed and the captain is still sitting there. Standing up is the one "
+            + "move this card promises costs nothing.");
     }
 
     private static void SetOn(Type owner, object instance, string name, object value)
