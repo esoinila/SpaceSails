@@ -51,7 +51,7 @@ public partial class Map
     // WHICH BUTTONS. The test is not "does it move the ship" — ⚓ Dock and ⚓ Match & clamp move her too. It is
     // whether pressing it NOW produces a DIFFERENT outcome from the one the plan would fly: a shortcut, not an
     // early trigger. A bare cast-off leaves out the harbour-speed departure the ⚓ + Cast off step lays; an
-    // insertion here-and-now circularises at whatever radius she happens to hold instead of the rehearsed
+    // insertion here-and-now circularizes at whatever radius she happens to hold instead of the rehearsed
     // arrival the #965 arrive step arms; an arm off the current coast points the autopilot from wherever she
     // is rather than from where the plan puts her. Those four are dressed as emergencies. ⚓ Dock and
     // ⚓ Match & clamp are not: alongside and inside the clamp window they do the very thing the plan's dock
@@ -63,10 +63,10 @@ public partial class Map
         "Emergency cast-off — the clamp just lets go, no clearance, no plan. " +
         "⚓ + Cast off plans the departure properly.";
 
-    /// <summary>The hover on <c>Enter orbit</c>: the window is open, so a press circularises AT THIS RADIUS,
+    /// <summary>The hover on <c>Enter orbit</c>: the window is open, so a press circularizes AT THIS RADIUS,
     /// this instant. Live state — it names the body it would tie her to and what the press spends.</summary>
     private static string EmergencyInsertionTip(OrbitAssistInfo oi) =>
-        $"Emergency insertion at {oi.Body.Name} — she circularises here and now, at this radius, for " +
+        $"Emergency insertion at {oi.Body.Name} — she circularizes here and now, at this radius, for " +
         $"{oi.Cost} p, with nothing rehearsed. 🗺 Plot + an arrive-orbit step arms the arrival properly.";
 
     /// <summary>The hover on <c>🛰 Autopilot to stable park</c> — the #180 fork, where the current radius is
