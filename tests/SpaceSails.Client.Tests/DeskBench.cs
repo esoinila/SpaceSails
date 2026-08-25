@@ -238,6 +238,23 @@ internal sealed class DeskBench : Renderer
     /// </summary>
     public void Poke(string field, object? value) => TheField(field).SetValue(_map, value);
 
+    /// <summary>
+    /// #973 · <b>CALL ONE OF THE PAGE'S OWN METHODS</b>, by name, on the shipping component — for a beat
+    /// whose real road cannot be walked off a browser.
+    ///
+    /// <para>Same standing as <see cref="Poke"/> and the same safety: the name is written down, so a method
+    /// that is renamed or deleted fails loudly here with the name it used to have rather than quietly
+    /// asserting nothing. Prefer <see cref="PressAsync"/> wherever a control on the drawn page reaches the
+    /// beat — pressing the button the tree actually drew proves the wire as well as the rule.</para>
+    /// </summary>
+    public object? Call(string method, params object?[] args)
+    {
+        MethodInfo found = typeof(Map).GetMethod(method, Hidden)
+            ?? throw new InvalidOperationException(
+                $"Map has no {method} — this bench drives it by name, and that name has moved.");
+        return found.Invoke(_map, args);
+    }
+
     /// <summary>The other half of <see cref="Poke"/>, and it exists for one question: did pressing a piece of
     /// CHROME move the WORLD. A shell that tucks a card away must leave the crossing on the clock it was
     /// already running, and the only way to say that out loud is to read the fields back by the names the
