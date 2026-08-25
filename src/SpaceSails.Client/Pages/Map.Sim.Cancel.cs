@@ -104,6 +104,41 @@ public partial class Map
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
+        // #997 wave 11 · THE FOUR CLICK MENUS — FABLE'S RULING, WAVE 11.
+        //
+        // #1012 migrated them into one mechanism and reported, without changing anything, that this is the
+        // one family this chain has never listed: every other card in the client obeys the cancel key, and
+        // these four sat there ignoring it. That is #351's own complaint — the owner's, verbatim, "No way
+        // to close this dialog? Where is cancel?" — one family over, and the owner's standing pop-up ruling
+        // (2026-08-24) plus plain consistency decide it. They join the law.
+        //
+        // WHAT IT ACTUALLY FIXES, and it is worse than "a key did nothing". Escape's fall-through is
+        // SwitchDesk(Nav), so pressing it over an open menu at the Sensors desk MOVED THE CAPTAIN TO A
+        // DIFFERENT DESK and left the menu's gate set. Which of the two bad endings you got depended on
+        // which menu it was, and both are measured in the guard (delist a line and watch):
+        //
+        //   * the chooser, the body menu and the contact menu draw on Nav too, so they FOLLOWED him there —
+        //     still wearing the inline anchor of a click he had made on another desk's map;
+        //   * the open-sky menu draws on Sensors ONLY, so it vanished off the glass with `_skyMenuWorld`
+        //     still holding a point — and came straight back the moment he returned to Sensors.
+        //
+        // The key did not do nothing. It did something else, and then lied about it.
+        //
+        // LAST IN THE CHAIN, because a click menu is the least modal thing in it: it is a list hanging off
+        // a spot on the map, and anything else that is open is over it. Among the four the order is REVERSE
+        // PAINT ORDER — the sky menu is written last in Map.razor and therefore drawn on top of the three
+        // above it, so it is peeled first. In practice at most one is ever up (a pointer-down anywhere
+        // closes the others, Map.Sim.Controls; choosing from the chooser clears the chooser on the way into
+        // the menu it opens), so this order is a rule rather than a workaround — but "topmost first" has to
+        // mean one thing in this file, and paint order is the only honest reading of it.
+        //
+        // Each calls the menu's OWN house closer, which is what the ✕ the shell draws calls too. They are
+        // deliberately absent from the Enter chain below: a menu is a LIST of things the captain may do,
+        // and a key that picked one of them for him is the exact thing that chain refuses to do.
+        if (_skyMenuWorld is not null) { CloseSkyMenu(); return true; }
+        if (_shipMenuId is not null) { CloseShipMenu(); return true; }
+        if (_bodyMenuBody is not null) { CloseBodyMenu(); return true; }
+        if (_pickMenu is not null) { ClosePickMenu(); return true; }
         return false;
     }
 
