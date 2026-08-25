@@ -197,7 +197,10 @@ public class TheDeathCardOffersTheShelfTests
         // The owner's screenshot: eight rows reading "The Tilt · day 0". The row must lead with the title
         // (Core's one derivation, so the drawer and the front door cannot drift), and still carry the
         // provenance he asked to keep — captain, place, day, real-world stamp, build.
-        string row = Between(Razor("Map.razor"), "RenderFragment<(string ThreadId, string Id, SaveSlotMeta?", "RenderFragment<bool> SaveLoadSurface");
+        // The closing anchor is the fragment that follows the row's own — renamed SaveLoadSurface →
+        // SaveLoadInside by #997 wave 8, when the logbook took its shell and the two save surfaces stopped
+        // sharing a root. Nothing about the ROW moved; only the name of what comes after it.
+        string row = Between(Razor("Map.razor"), "RenderFragment<(string ThreadId, string Id, SaveSlotMeta?", "RenderFragment<bool> SaveLoadInside");
         Assert.Contains("SaveSlotLabels.TitleOf(m)", row, StringComparison.Ordinal);
         Assert.Contains("m.CaptainName", row, StringComparison.Ordinal);
         Assert.Contains("m.Where", row, StringComparison.Ordinal);

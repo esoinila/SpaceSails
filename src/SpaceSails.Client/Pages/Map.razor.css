@@ -3673,22 +3673,6 @@
     margin-top: 0.6rem;
 }
 
-/* #997 wave 7 · A WORDED BUTTON KEEPS ITS OWN HEIGHT, and this line exists because a browser said so.
-   The shell's chrome rule gives every way out `line-height: 1` — right for the bare ✕ glyph it was written
-   for, and eight pixels too short for a Bootstrap `.btn` with words on it. Measured on the Impact panel at
-   1264 × 1165: `…wake up` 38 px tall before, 30 px after; the shelf 36 px before, 28 px after. So these
-   three say their own, read off Bootstrap's own variable rather than a number copied out of it, and the
-   death rows and the hatch land exactly where they landed.
-
-   NOT written for the nineteen other `.btn`-dressed dismisses waves 1–6 migrated. The same eight pixels are
-   presumably off those too, and that is a finding for the owner and a browser — not something to fix under
-   a refactor that promised to move nothing. Reported in the PR, in #1005's idiom. */
-::deep .busted-close,
-::deep .busted-logbook,
-::deep .deck-shuttle-actions > .overlay-shell-dismiss {
-    line-height: var(--bs-btn-line-height, 1.5);
-}
-
 /* The freeze-frame — homage, not film: two silhouetted rogues bursting into muzzle-flash light,
    sepia, held. The <art> slots are placeholders the grok image lane fills (see image manifest). */
 .busted-freeze {

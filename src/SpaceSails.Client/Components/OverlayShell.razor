@@ -73,7 +73,16 @@
            it, so `.deck-shuttle-actions`' centring keeps working on a button the shell now owns. Left
            unnamed with one way out, nothing is drawn around it and the dismiss is the card's last direct
            child exactly as it has been since #996 — which is what twenty-odd sticky feet are pinned to. *@
-        @if (TheWayOutSitsInARow)
+        @* #997 wave 8 · …AND SOMETIMES THE ROW IS ONE THE PAGE ALREADY DREW. WaysClass' other half, and the
+           last shape of #1007's condition: the logbook's Close shares `.save-surface-foot` with ⬇ Export and
+           ⬆ Import, which are not ways out at all. The shell cannot draw that row — two of its three
+           controls are the page's own, and one of them only exists once the reactor is warm — so the page
+           draws it and the shell hands it the way out to put in it. *@
+        @if (FootHost is not null)
+        {
+            @FootHost(theWaysOut)
+        }
+        else if (TheWayOutSitsInARow)
         {
             <div class="overlay-shell-ways @WaysClass">@theWaysOut</div>
         }
@@ -272,6 +281,26 @@
     /// simply the last thing in the prose, because a wrapper there would unstick every one of them.</summary>
     [Parameter] public string? WaysClass { get; set; }
 
+    /// <summary>
+    /// #997 wave 8 · THE PAGE'S OWN FOOT, HANDED THE WAY OUT THE SHELL DRAWS.
+    ///
+    /// <para>The mirror of <see cref="WaysClass"/>, and the two are alternatives rather than layers: with
+    /// <c>WaysClass</c> the SHELL draws the row and the page only names it; with this the PAGE draws the
+    /// row — its own element, its own scope attribute, its own conditions — and is handed the ways out as
+    /// a fragment to place wherever in it they belong.</para>
+    ///
+    /// <para>Written for the shape wave 6 and wave 7 both stopped at: a foot whose other controls are not
+    /// ways out. The logbook's <i>Close</i> is the third button of <c>.save-surface-foot</c>, beside
+    /// <i>⬇ Export this moment</i> and <i>⬆ Import file</i> — and that row is drawn only once
+    /// <c>_worldReady</c>. A shell that drew the row would have to know both facts; a shell that hands the
+    /// row its button has to know neither.</para>
+    ///
+    /// <para>It is handed <b>every</b> way out, not just the dismiss, so that a surface with a second one
+    /// keeps them together in the order the shell writes them — the same fragment <c>WaysClass</c> wraps.
+    /// </para>
+    /// </summary>
+    [Parameter] public RenderFragment<RenderFragment>? FootHost { get; set; }
+
     [Parameter] public string? ChoicesClass { get; set; }
 
     [Parameter] public string? ChoiceClass { get; set; }
@@ -422,6 +451,27 @@
             DesignFault($"{Me()} draws a second way out reading \"{BesideFace}\" and nothing is wired to "
                         + "OnBeside — the same quiet failure as a ✕ with no verb behind it, one button "
                         + "further along the row.");
+        }
+
+        if (FootHost is not null && Frame != OverlayFrame.Bare)
+        {
+            DesignFault($"{Me()} hands its way out to a page-drawn foot and is not a Bare frame. On a "
+                        + "Card the dismiss belongs to the head row and on a Hosted one the host owns the "
+                        + "foot — either way the button would be drawn somewhere the page did not put it.");
+        }
+
+        if (FootHost is not null && WaysClass is { Length: > 0 })
+        {
+            DesignFault($"{Me()} names a row for the shell to draw (WaysClass) AND a foot of its own to "
+                        + "draw the way out into (FootHost). They are two answers to one question, and the "
+                        + "shell can only obey the second — so the row named in WaysClass is never drawn.");
+        }
+
+        if (FootHost is not null && Dismiss == OverlayDismiss.ByDecision && !OnBeside.HasDelegate)
+        {
+            DesignFault($"{Me()} draws its own foot for a way out the shell never makes: a ByDecision "
+                        + "surface has no dismiss, and nothing is wired to OnBeside either. The foot would "
+                        + "be handed an empty fragment and the row would come out one control short.");
         }
 
         if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: 0 })
