@@ -205,12 +205,14 @@ a level-up costing 2,000 credits and doubling every level thereafter. See the Tr
   Reorder with ▲▼, jump a task to the very next pass with ⏫, cancel one-shots with ✕. The
   wedge it is scanning *right now* is drawn on the sky, filling in brighter as the exposure
   completes.
-- **Trade lanes** draw as faint labeled corridors on the map (Venus–Earth, Earth–Mars,
-  onward to Jupiter and Saturn). Click inside one to **sweep it now** or post a **standing
-  lane watch** — that's how you find the secretive haulers the Comms departures board can't
-  tell you about. Click empty sky and the **Open Sky** menu prices a scan of that patch (the
-  patch follows your zoom) — and a scan always resolves *something*: debris, rocks, cold
-  pods, sometimes a derelict. Near a lane, the menu says so and offers the lane instead.
+- **Trade lanes** are not drawn on the sky any more (they used to be faint labeled corridors,
+  and nobody ever found anything with them), but they are still places you can *watch*. Click
+  empty sky and the **Open Sky** menu prices a scan of that patch (the patch follows your
+  zoom) — and a scan always resolves *something*: debris, rocks, cold pods, sometimes a
+  derelict. When the patch sits near a known lane — Venus–Earth, Earth–Mars, onward to
+  Jupiter and Saturn — the menu names it and offers to **sweep the lane instead**, or to post
+  a **standing lane watch**. That is how you find the secretive haulers the Comms departures
+  board can't tell you about.
 - A **rosette** shows your detection envelope live as an egg-shape relative to the sun:
   pointed straight at the sun you're nearly blind (8% of the telescope's 6×10¹¹ m base
   range); anti-sunward you see the full range — the pirate's best hunting angle. The
