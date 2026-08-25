@@ -32,6 +32,18 @@
     RenderFragment theWayOutBeside =
         @<button type="button" class="overlay-shell-beside @BesideClass"
                  aria-label="@BesideLabel" title="@BesideTitle" @onclick="PressTheBeside">@BesideFace</button>;
+
+    RenderFragment theWaysOut =
+        @<text>
+            @if (Dismiss != OverlayDismiss.ByDecision)
+            {
+                @theDismiss
+            }
+            @if (OnBeside.HasDelegate)
+            {
+                @theWayOutBeside
+            }
+        </text>;
 }
 <div class="@RootClassList" @attributes="Splat" @onclick:stopPropagation="StopClicks">
     @if (Dismiss == OverlayDismiss.Minimize)
@@ -63,20 +75,11 @@
            child exactly as it has been since #996 — which is what twenty-odd sticky feet are pinned to. *@
         @if (TheWayOutSitsInARow)
         {
-            <div class="overlay-shell-ways @WaysClass">
-                @if (Dismiss != OverlayDismiss.ByDecision)
-                {
-                    @theDismiss
-                }
-                @if (OnBeside.HasDelegate)
-                {
-                    @theWayOutBeside
-                }
-            </div>
+            <div class="overlay-shell-ways @WaysClass">@theWaysOut</div>
         }
-        else if (Dismiss != OverlayDismiss.ByDecision)
+        else
         {
-            @theDismiss
+            @theWaysOut
         }
     }
     else
@@ -302,11 +305,13 @@
 
     private string TileFace => $"{TileGlyph} {TileLabel}".Trim();
 
-    /// <summary>A row is drawn when the page named one, or when there are two ways out to put in it — two
-    /// buttons loose at the end of a card are two buttons the page's own foot rule cannot reach as one.
+    /// <summary>A row is drawn ONLY when the page named one — and the browser is why that is not "…or when
+    /// there are two ways out". The first cut wrapped a second way out on sight, which put an unnamed
+    /// `.overlay-shell-ways` INSIDE `.busted-close-row`: one flex child instead of two, so the row's own
+    /// `gap: .5rem` had nothing left to sit between and the two buttons on every death card came out touching.
+    /// Measured, not reasoned about. The page knows whether its foot is a row; the shell does not guess.
     /// </summary>
-    private bool TheWayOutSitsInARow =>
-        WaysClass is { Length: > 0 } || OnBeside.HasDelegate;
+    private bool TheWayOutSitsInARow => WaysClass is { Length: > 0 };
 
     private string OpenLabel => TileLabel is { Length: > 0 } named ? $"Open {named}" : "Open it back up";
 
