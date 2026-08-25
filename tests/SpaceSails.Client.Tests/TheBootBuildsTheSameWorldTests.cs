@@ -139,6 +139,14 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "6a4b129978d9daefb94c6ea180e403b0",
             ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "ea6c18f84913e458270be6d047c86a7a",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "bcd7871bd3de8b5f4190908f6558dca0",
+            // #997 wave 10 · The new dev start (?target=collector, the dossier's own door). Read off the
+            // dump and diffed against the pinned list: this is the ONLY line the dump adds, and no other
+            // moved — the 32nd BootQuery field is a field the parse answers, not a world the boot builds.
+            // …and it hashes the SAME as /map?dock=the-space-bar, which is correct and worth saying out
+            // loud: ?dock= and ?target= are BOTH spent after the browser gate (ApplyTheStartPoint and
+            // SeedTheArcsAndTheJobs), so this sweep sees neither the berth nor the muscle. What the two
+            // URLs answer differently is pinned next door, in TheBootReadsTheSameQueryTests.
+            ["/map?dock=selene-gate&target=collector"] = "d081c4a19a015c970e5e221106844c6c",
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "9cbd17823f70268c211883e90f29e9a3",
             ["/map?dock=the-space-bar"] = "d081c4a19a015c970e5e221106844c6c",
             ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "b2121d4dfe90b824db0c63673b911739",
