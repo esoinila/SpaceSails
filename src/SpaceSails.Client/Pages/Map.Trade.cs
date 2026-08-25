@@ -80,62 +80,53 @@ public partial class Map
     private int CargoCapacity => 10 + 10 * _holdLevel;
     private static int UpgradePrice(int level) => 2000 * (1 << level);
 
-    // ---- SundaySecondPlan PR-B: the sky shows its state (Sensors-desk overlays) ----
-    // Trade lanes as selectable areas, the wedge the telescope is on RIGHT NOW with its sweep
-    // progress, the expanding search circle where a lost dark ship must still be, and a bracket
-    // flash on a tracked ship the moment its scheduled custody pass runs.
+    // ---- The lanes, after #953: geometry for the telescope, nothing for the eye ----
+    //
+    // SundaySecondPlan PR-B drew a translucent quad and a name label per anchor pair, and made the corridor
+    // a click target of its own. #971 took the click target away ("the routes as a whole should not even be
+    // selectable, since they just colour the page in that option") and hid the drawing by default. This
+    // ruling archived the display outright — owner, 2026-08-25: "we have never used them to find anything."
+    // The three inks, the quad build and DrawTradeCorridors are GONE; ShipLanes.Archived is where the
+    // decision is written down.
+    //
+    // What survives is the geometry, because it is not decoration: a lane names the two sweep actions in the
+    // open-sky menu, and the telescope pass they enqueue puts real contacts in the tracking ledger.
 
-    private static readonly RgbaColor CorridorFillColor = new(80, 200, 220, 14);
-    private static readonly RgbaColor CorridorEdgeColor = new(80, 200, 220, 60);
-    private static readonly RgbaColor CorridorLabelColor = new(140, 210, 220, 150);
-    private IReadOnlyList<CorridorRegion> _mapCorridors = [];
-    private double _mapCorridorsBuiltAt = double.NegativeInfinity;
-    // #953 — there is no selected lane any more, and so no brighter state: the owner's ruling took the
-    // whole corridor off the click picker ("they just colour the page"). What is left is the drawn lane,
-    // which is off by default on every desk now (MapLayerTree.DefaultHidden).
+    private IReadOnlyList<CorridorRegion> _laneGeometry = [];
+    private double _laneGeometryBuiltAt = double.NegativeInfinity;
 
-    private void DrawTradeCorridors()
+    /// <summary>The lanes as they lie right now, rebuilt at most hourly of sim time (the anchors are planets
+    /// — an hour does not move them far enough to matter, and this is asked on every click).
+    ///
+    /// <para>#953 — this cache used to be filled INSIDE the corridor draw, so it was only ever populated when
+    /// the Trade lanes layer was switched on. Once #971 hid that layer by default, <see cref="NearLaneFor"/>
+    /// searched an empty list on every desk and the two lane sweeps in the open-sky menu could not appear at
+    /// all unless a captain first ticked a decoration layer he was never shown. The geometry the ACTIONS need
+    /// is now built by the actions' own path, where it belongs, and the drawing it used to ride on is gone.</para>
+    /// </summary>
+    private IReadOnlyList<CorridorRegion> LaneGeometry()
     {
         if (_ephemeris is null)
         {
-            return;
+            return [];
         }
 
-        if (SimTime - _mapCorridorsBuiltAt > 3600)
+        if (SimTime - _laneGeometryBuiltAt > 3600)
         {
-            _mapCorridors = TradeCorridors.Regions(_ephemeris, SimTime);
-            _mapCorridorsBuiltAt = SimTime;
+            _laneGeometry = TradeCorridors.Regions(_ephemeris, SimTime);
+            _laneGeometryBuiltAt = SimTime;
         }
 
-        Span<float> quad = stackalloc float[8];
-        foreach (CorridorRegion lane in _mapCorridors)
-        {
-            Vector2d axis = lane.B - lane.A;
-            if (axis.LengthSquared == 0)
-            {
-                continue;
-            }
-
-            Vector2d dir = axis.Normalized();
-            Vector2d perp = new(-dir.Y, dir.X);
-            (quad[0], quad[1]) = _camera.WorldToScreen(lane.A + perp * lane.Radius);
-            (quad[2], quad[3]) = _camera.WorldToScreen(lane.B + perp * lane.Radius);
-            (quad[4], quad[5]) = _camera.WorldToScreen(lane.B - perp * lane.Radius);
-            (quad[6], quad[7]) = _camera.WorldToScreen(lane.A - perp * lane.Radius);
-
-            _renderer!.DrawPolygon(quad, CorridorFillColor, CorridorEdgeColor, 1f);
-
-            (float mx, float my) = _camera.WorldToScreen(lane.Midpoint);
-            _renderer.DrawText(mx, my - 6, lane.Name, CorridorLabelColor, "11px sans-serif", TextAlign.Center);
-        }
+        return _laneGeometry;
     }
 
-    /// <summary>The lane nearest a sky point, when it counts as "near" — the guideline hint
-    /// ("this empty spot sits by the Earth–Mars lane; scan the lane instead?").</summary>
+    /// <summary>The lane nearest a sky point, when it counts as "near" — what names the open-sky menu's
+    /// sweep actions ("this empty spot sits by the Earth–Mars lane; sweep the lane instead?").</summary>
     private CorridorRegion? NearLaneFor(Vector2d point)
     {
-        if (_mapCorridors.Count > 0
-            && TradeCorridors.TryNearest(_mapCorridors, point, out CorridorRegion lane, out double distance)
+        IReadOnlyList<CorridorRegion> lanes = LaneGeometry();
+        if (lanes.Count > 0
+            && TradeCorridors.TryNearest(lanes, point, out CorridorRegion lane, out double distance)
             && distance <= lane.Radius * TradeCorridors.NearLaneFactor)
         {
             return lane;

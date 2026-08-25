@@ -34,6 +34,56 @@ public partial class Map
         return $"{what} — the sky pauses so you can scrub the path ahead, add burns at the scrub, and arm the arrival.{aim}";
     }
 
+    // ───────────────────────── #963 · THE DIRECT NAV ACTIONS ARE EMERGENCY GEAR ─────────────────────────
+    //
+    // Owner's ruling, 2026-08-25. Of the bare 🚀 Undock: it is "archaic compared to the combo of undock +
+    // harbour speed"; he once cast off with a press and died colliding, and "it made perfect sense"; "flying
+    // adrift in formation is kind of crazy maneuver". Of the family: the direct buttons "mislead the player
+    // to not use the proper workflow". And of what they are FOR: "a boarding party approaches, we undock
+    // without plan and work it out."
+    //
+    // So none of them is removed and none of them grows a confirmation — an emergency you have to confirm is
+    // not an emergency, and the owner LIKED dying honestly. What changes is what they LOOK like and what they
+    // SAY. They wear btn-outline-danger: quiet red, the only red on a nav row whose loud amber (#971) belongs
+    // to Plot and + Add burn, so the eye reads "break glass" rather than "press me first". And each hovers a
+    // sentence in the captain's voice naming the shortcut being taken and the workflow it skips.
+    //
+    // WHICH BUTTONS. The test is not "does it move the ship" — ⚓ Dock and ⚓ Match & clamp move her too. It is
+    // whether pressing it NOW produces a DIFFERENT outcome from the one the plan would fly: a shortcut, not an
+    // early trigger. A bare cast-off leaves out the harbour-speed departure the ⚓ + Cast off step lays; an
+    // insertion here-and-now circularises at whatever radius she happens to hold instead of the rehearsed
+    // arrival the #965 arrive step arms; an arm off the current coast points the autopilot from wherever she
+    // is rather than from where the plan puts her. Those four are dressed as emergencies. ⚓ Dock and
+    // ⚓ Match & clamp are not: alongside and inside the clamp window they do the very thing the plan's dock
+    // arrival does, at the very moment it would do it, so red would be a lie about the risk. (Written down in
+    // TheDirectNavActionsAreEmergenciesTests, which pins the line with its reason.)
+
+    /// <summary>The hover on the bare 🚀 Undock — the owner's own sentence, kept word for word.</summary>
+    private static string EmergencyUndockTip() =>
+        "Emergency cast-off — the clamp just lets go, no clearance, no plan. " +
+        "⚓ + Cast off plans the departure properly.";
+
+    /// <summary>The hover on <c>Enter orbit</c>: the window is open, so a press circularises AT THIS RADIUS,
+    /// this instant. Live state — it names the body it would tie her to and what the press spends.</summary>
+    private static string EmergencyInsertionTip(OrbitAssistInfo oi) =>
+        $"Emergency insertion at {oi.Body.Name} — she circularises here and now, at this radius, for " +
+        $"{oi.Cost} p, with nothing rehearsed. 🗺 Plot + an arrive-orbit step arms the arrival properly.";
+
+    /// <summary>The hover on <c>🛰 Autopilot to stable park</c> — the #180 fork, where the current radius is
+    /// tide-chaotic and the press hands her to the autopilot rather than parking her somewhere the sun will
+    /// strip. Still an emergency: the descent starts from wherever she happens to be.</summary>
+    private string EmergencyDescentTip(OrbitAssistInfo oi) =>
+        $"Emergency descent at {oi.Body.Name} — this radius is tide-chaotic (Lab 16), so the autopilot takes " +
+        $"her down to the stable park at {FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))} from " +
+        "wherever she is now, unplanned. 🗺 Plot + an arrive-orbit step flies the approach properly.";
+
+    /// <summary>The hover on <c>Auto-orbit</c> — arming the capture off the current coast, with no plan behind
+    /// it. Only the ARM press is an emergency: standing an armed autopilot down is the safe direction, and
+    /// that state keeps its own dress and its own words.</summary>
+    private static string EmergencyCaptureTip(OrbitAssistInfo oi) =>
+        $"Emergency capture — the autopilot grabs {oi.Body.Name} off the coast she is on, ≈{oi.ApproachCost} p, " +
+        "with no plan behind it. 🗺 Plot + an arrive-orbit step arms the same capture properly.";
+
     /// <summary>#956 — the camera follows the DESTINATION instead of the ship. Owner: "Let's have a follow
     /// nav destination option here in addition to follow ship." Mutually exclusive with
     /// <see cref="FollowShip"/>: two follows are one fight over the same camera.</summary>

@@ -5002,11 +5002,11 @@
         </div>
     }
 
-    @* PR-C: the trade-lane menu — the corridor the owner drew by hand, now a clickable region.
-       Replaces the tracking post's "— manual aim —" dropdown: the lane IS the control. *@
     @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
-       as a whole should not even be selectable, since they just colour the page in that option"). Its two
-       actions — sweep once, standing watch — live in the open-sky menu above, under the lane it names. *@
+       as a whole should not even be selectable, since they just colour the page in that option"), and the
+       drawn corridor went with it on the archive ruling ("we have never used them to find anything"). Its
+       two actions — sweep once, standing watch — kept their jobs: they aim the telescope and the pass they
+       book puts real contacts in the ledger. They live in the open-sky menu below, under the lane it names. *@
 
     @* PR-C: the open-sky menu — even empty space answers. What a scan here would take, and the
        guideline hint when the spot sits near a known lane. *@
@@ -5269,8 +5269,14 @@
                but too hot it becomes ⚓ Match & clamp, quoting the terminal-match burn (visible paused). *@
             @if (_dockedHavenId is not null)
             {
-                <button type="button" class="btn btn-sm btn-warning me-2" @onclick="Undock"
-                        title="Release the dock clamps and fly off">🚀 Undock</button>
+                @* #963 · EMERGENCY GEAR, DRESSED AS SUCH. Owner, 2026-08-25: the bare undock is "archaic
+                   compared to the combo of undock + harbour speed"; he cast off with this press once and died
+                   colliding, and "it made perfect sense"; "flying adrift in formation is kind of crazy
+                   maneuver". It stays, and it stays unconfirmed — an emergency you must confirm is not one,
+                   and dying honestly is the point. It is quiet red instead of amber, and it says what it is.
+                   See Map.NavToolbar for the ruling and for which siblings share the dress. *@
+                <button type="button" class="btn btn-sm btn-outline-danger me-2" @onclick="Undock"
+                        title="@EmergencyUndockTip()">🚀 Undock</button>
             }
             else if (_dockAffordance.CanClampNow)
             {
@@ -5380,9 +5386,12 @@
                             </span>
                             @if (oi.WindowOpen && oi.RadiusInStableBand)
                             {
-                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-success" : "btn-outline-secondary")"
+                                @* #963 · a sibling of the bare undock: this circularizes AT THIS RADIUS this
+                                   instant, which is not what the plan's arrive-orbit step (#965) would fly.
+                                   Emergency dress, unchanged behaviour. *@
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
                                         disabled="@(!oi.CanEngage || NavLockedByDock)"
-                                        title="@(NavLockedByDock ? DockNavLockTip : "Circularize into orbit now — the autopilot holds the park")" @onclick="EnterOrbit">
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyInsertionTip(oi))" @onclick="EnterOrbit">
                                     Enter orbit (@oi.Cost p / O)
                                 </button>
                             }
@@ -5392,9 +5401,9 @@
                                    owner's ≈0.53-Hill Enceladus park that silently stripped). NEVER circularize
                                    here silently; the button hands the descent to the autopilot, which parks at
                                    the tide-stable radius. The O-key (EnterOrbit) follows the same logic. *@
-                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock ? "btn-info" : "btn-outline-secondary")"
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
                                         disabled="@NavLockedByDock"
-                                        title="@(NavLockedByDock ? DockNavLockTip : $"this radius is tide-chaotic (Lab 16) — the autopilot descends to the stable park at {FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}")"
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyDescentTip(oi))"
                                         @onclick="EnterOrbit">
                                     🛰 Autopilot to stable park (≈@oi.ApproachCost p)
                                 </button>
@@ -5410,9 +5419,12 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                @* #963 · the ARM press is the emergency (it points the autopilot from wherever
+                                   she is, instead of from where the plan puts her). Standing an armed
+                                   autopilot back down is the safe direction and keeps its own green dress. *@
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-outline-danger" : "btn-outline-secondary")"
                                         disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
-                                        title="@(NavLockedByDock ? DockNavLockTip : "Arm the autopilot to capture into orbit when she's in range")" @onclick="EnterOrbit">
+                                        title="@(NavLockedByDock ? DockNavLockTip : oi.Armed ? "Arm the autopilot to capture into orbit when she's in range" : EmergencyCaptureTip(oi))" @onclick="EnterOrbit">
                                     @(oi.Armed
                                         ? (_disarmConfirmBodyId == oi.Body.Id
                                             ? "Disarm? click again"

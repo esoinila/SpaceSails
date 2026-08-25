@@ -1036,13 +1036,15 @@ public partial class Map
     }
 
     // ---- SundaySecondPlan PR-C: point at the sky and ask ----
-    // On the Sensors desk every click answers with scan options: ships (fixed or not), planets,
-    // trade lanes, and empty sky all open scan-contextual menus that enqueue telescope work.
+    // On the Sensors desk every click answers with scan options: ships (fixed or not), planets and empty
+    // sky all open scan-contextual menus that enqueue telescope work.
 
-    // #953 — the LANE is no longer one of the things a click can mean. _corridorMenuLane, its anchor,
-    // CloseCorridorMenu and the CorridorAt hit-test went with the per-lane menu (owner's ruling: "the
-    // routes as a whole should not even be selectable, since they just colour the page"). Its two sweep
-    // actions live in the open-sky menu below, under the lane that menu already names.
+    // #953 — the LANE is not one of the things a click can mean, and now it is not one of the things the
+    // sky is painted with either. _corridorMenuLane, its anchor, CloseCorridorMenu and the CorridorAt
+    // hit-test went with the per-lane menu (owner: "the routes as a whole should not even be selectable,
+    // since they just colour the page"); the drawing followed it out on the archive ruling (ShipLanes).
+    // The two sweep actions stayed — they find ships — and live in the open-sky menu below, under the lane
+    // that menu names from geometry the page still keeps.
     private Vector2d? _skyMenuWorld;
     private double _skyMenuX, _skyMenuY, _skyMenuRadius;
     private bool _suppressClickMenu;
