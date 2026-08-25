@@ -1114,10 +1114,35 @@
            pattern is in the spar is bought with a bad throw, never given with a good one.
          · Nothing here explains anything. It never confirms what Nebula keeps, and it never says a word
            about the Old Ones. *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #997 wave 3 · THE .view-object FAMILY IS ON THE SHELL — all of it, and this is the first of the ten.
+
+       Twelve cards in this client are rooted on `.view-object`. #997 put the rep's pitch on the shell and
+       #997 wave 2 put the walk-in beside him; the other TEN went on hand-rolling the same three lines each
+       — a `@@onclick:stopPropagation` to hold the scrim off, a `<button class="view-object-close">`, and a
+       `</div>`. Ten copies of one gesture is how the minimise came to be written three times.
+
+       So every one of them takes the same three parameters, and this comment is the only one written:
+       `Frame="OverlayFrame.Bare"` (the family's foot is pinned by `::deep .view-object > .view-object-close`
+       — the way out has to be a DIRECT child of the card, which is what Bare guarantees and what Hosted's
+       `display: contents` would silently break), `StopClicks="true"` (the stopPropagation that was typed on
+       the div), and `Dismiss="OverlayDismiss.Close"` wired to the page's OWN close verb — the same method
+       the backdrop behind it already calls.
+
+       NOT ONE WORD MOVED. Each card's face and title are the exact string its own button carried, because
+       this family's idiom is a WORDED way out and not a ✕ — "Get your eyes off it", "…go on", "Stow it",
+       "Pocket it", "Leave it". And not one of the ten needed wave 2's stranding rule: the walk-in's ✕ had
+       to run her own "no" because closing her card would have left a woman at the table with nothing left
+       to answer. Nothing here is standing anywhere. Every one of these cards is a THING the captain picked
+       up, walked up to or switched on, and putting it down is already what its button did. *@
     @if (_archiveCard is { } vision)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseArchiveCard)">
-            <div class="view-object archive-vision" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object archive-vision" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Get your eyes off it"
+                          DismissTitle="Get your eyes off it"
+                          OnClose="() => Dismiss(CloseArchiveCard)">
                 <div class="view-object-title">@vision.Title</div>
                 <img class="view-object-img" src="@vision.Art" alt="@vision.Title" onerror="this.style.display='none'" />
                 <div class="archive-band">@vision.BandLine</div>
@@ -1127,9 +1152,7 @@
                     <div class="archive-collar">@collar</div>
                 }
                 <div class="archive-dice">🎲 @vision.Dice</div>
-                <button type="button" class="view-object-close" title="Get your eyes off it"
-                        @onclick="() => Dismiss(CloseArchiveCard)">Get your eyes off it</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1509,7 +1532,10 @@
     {
         var toldCopy = StoryBeatCopy(told.Beat, told.Subject);
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryCard)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="…go on"
+                          OnClose="() => Dismiss(CloseStoryCard)">
                 <div class="view-object-title">@toldCopy.Title</div>
                 @if (toldCopy.Art is { Length: > 0 })
                 {
@@ -1527,8 +1553,7 @@
                 {
                     <div class="reveal-outcome">@toldOutcome</div>
                 }
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseStoryCard)">…go on</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1649,13 +1674,15 @@
     @if (_shipEpitaph is { } castaway)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipEpitaph)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="…take the berth"
+                          OnClose="() => Dismiss(CloseShipEpitaph)">
                 <div class="view-object-title">☢ SHE IS GONE, AND YOU ARE NOT</div>
                 <div class="view-object-caption">@castaway.Went</div>
                 <div class="view-object-caption">@castaway.Survives</div>
                 <div class="view-object-caption">@castaway.Rescue</div>
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipEpitaph)">…take the berth</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1744,12 +1771,15 @@
     @if (_wreckLook is { } look)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseWreckLook)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step back"
+                          DismissTitle="Step back"
+                          OnClose="() => Dismiss(CloseWreckLook)">
                 <div class="view-object-title">@look.Title</div>
                 <img class="view-object-img" src="@look.Art" alt="@look.Title" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@look.Caption</div>
-                <button type="button" class="view-object-close" title="Step back" @onclick="() => Dismiss(CloseWreckLook)">Step back</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1857,12 +1887,15 @@
     @if (_kioskCard is { } buy)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseKioskCard)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Stow it"
+                          DismissTitle="Stow it in the sling"
+                          OnClose="() => Dismiss(CloseKioskCard)">
                 <div class="view-object-title">🧾 @buy.Item</div>
                 <img class="view-object-img" src="@buy.Art" alt="@buy.Item" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@buy.Line</div>
-                <button type="button" class="view-object-close" title="Stow it in the sling" @onclick="() => Dismiss(CloseKioskCard)">Stow it</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -3263,7 +3296,11 @@
     @if (_viewObject is { } vo)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Put it back down and step away"
+                          OnClose="() => Dismiss(CloseViewObject)">
                 <div class="view-object-title">@vo.Label</div>
                 @* A card with no wired art at all (the lifeboat muster) shows caption-only; a card whose
                    art is wired but not yet painted (the text-only dedication plaques) renders the img and
@@ -3303,8 +3340,7 @@
                 {
                     <div class="reveal-outcome">@voOutcome</div>
                 }
-                <button type="button" class="view-object-close" title="Put it back down and step away" @onclick="() => Dismiss(CloseViewObject)">Close</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -3315,7 +3351,11 @@
     @if (_selfieShot is { } shot)
     {
         <div class="view-object-backdrop selfie-backdrop" @onclick="CloseSelfieShot">
-            <div class="view-object selfie-frame" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object selfie-frame" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Put the camera away"
+                          OnClose="CloseSelfieShot">
                 <div class="view-object-title">@shot.Title</div>
                 <div class="selfie-stage">
                     @if (shot.VistaArt is { Length: > 0 } vista)
@@ -3330,8 +3370,7 @@
                     <div class="view-object-caption selfie-caption">@selfieCap</div>
                 }
                 <div class="selfie-foot">📸 Filed in the legend ledger · day @shot.SimDay</div>
-                <button type="button" class="view-object-close" title="Put the camera away" @onclick="CloseSelfieShot">Close</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -4396,7 +4435,10 @@
     @if (_showCaptainsRemote)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseCaptainsRemote)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Pocket it"
+                          OnClose="() => Dismiss(CloseCaptainsRemote)">
                 <div class="view-object-title">@(_designateOpen ? ShootTheLock.PanelTitle : SilentRunning.PanelTitle)</div>
                 <div class="view-object-caption">@(_designateOpen ? ShootTheLock.PanelBlurb : SilentRunning.PanelBlurb)</div>
 
@@ -4534,8 +4576,7 @@
                     <div class="panel-outcome">@remoteSaid</div>
                 }
 
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseCaptainsRemote)">Pocket it</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -4545,7 +4586,10 @@
     @if (_showDoorBoard)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseDoorBoard)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step back"
+                          OnClose="() => Dismiss(CloseDoorBoard)">
                 <div class="view-object-title">🎛 DOOR BOARD — VANTAR LABS</div>
                 <div class="view-object-caption">
                     Every door in the mountain, on one wall. @(_hasVantarCard
@@ -4578,8 +4622,7 @@
                 }
 
                 <div class="vent-sub">@LockedDoor.WhichSideLine</div>
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseDoorBoard)">Step back</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -4590,7 +4633,10 @@
     @if (_showAlarmPanel)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseAlarmPanel)">
-            <div class="view-object" @onclick:stopPropagation="true">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Leave it"
+                          OnClose="() => Dismiss(CloseAlarmPanel)">
                 <div class="view-object-title">@LabSecurity.PanelTitle</div>
                 <div class="view-object-caption">@LabSecurity.OfferLine(LabSecurity.HackTarget, LabHackStack)</div>
 
@@ -4626,8 +4672,7 @@
                 }
 
                 <div class="vent-sub">@LabSecurity.LockdownLine</div>
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseAlarmPanel)">Leave it</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7180,7 +7225,34 @@
     @if (_busted is { } bust && !_showSaveDrawer)
     {
         <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd ? "busted-sepia" : "")">
-            <div class="busted-card" @onclick:stopPropagation="true">
+            @* ═══════════════════════════════════════════════════════════════════════════════════════════
+               #997 wave 3 · THE LAST MODE, ON THE ONE SURFACE IT WAS BUILT FOR.
+
+               `ByDecision` is the critical-decision exception: no ✕, because every answer IS a way out.
+               #997 shipped it, #992's audit named eleven surfaces that claim it, and until now not one of
+               them had ever been drawn through it — the mode was proved against a test double and nothing
+               else. This is the surface it was written for, and #997's own `Restages` names it by name.
+
+               AND THE CLAIM IS FALSE ON THIS CARD IN A WAY WORTH SAYING OUT LOUD, which is the second time
+               the migration has caught that (#997 found the rep's card registered as something it is not).
+               Read the stages: SUBMIT, BRIBE and RESIST do not close this panel — they TURN ITS PAGE, to
+               Confiscated, to BribedOff, to the Bolivia. The register had the row down as "every control
+               closes it" and, being undriven, nothing had ever pressed one. What is true is narrower and
+               better: every answer ADVANCES, and every chain ends on a card whose single control closes it
+               — "Take the hit", "Fly on", "Board the rustbucket". That is a STAGED decision, which is the
+               whole reason `Restages` exists, and it is stated here rather than asserted from a flag:
+               TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests presses every control of every stage
+               and follows each chain to its close.
+
+               A BARE frame, for the family's reason: `.busted-card > .busted-options` and the close row are
+               pinned by #735's sticky foot, and a wrapper between the card and them would unstick both.
+
+               NO ✕, and none is added. A captain who has been grappled has to answer the collector; the
+               words, the stakes, the dice and the buttons on this panel are exactly as they were. What the
+               shell owns here is that there is no ✕ ON PURPOSE and the audit knows it, rather than a ✕
+               being absent because nobody wrote one. *@
+            <OverlayShell class="busted-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision" Restages="true">
                 @switch (bust.Phase)
                 {
                     case BustedEncounter.Stage.Demand:
@@ -7531,7 +7603,7 @@
                         </div>
                         break;
                 }
-            </div>
+            </OverlayShell>
         </div>
     }
 

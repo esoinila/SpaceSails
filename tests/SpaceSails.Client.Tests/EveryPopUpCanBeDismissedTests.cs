@@ -317,9 +317,23 @@ public sealed class EveryPopUpCanBeDismissedTests
             b => b.Poke("_showTutorial", true), At: ShipDesk.Nav),
 
         // ── In the register, not yet driven. Each names the world this bench cannot build. ───────────
-        new("the BUSTED / death panel", "busted-backdrop", FreeFlying, Exit.EveryControlCloses, null,
-            "needs a live collector's demand (_busted is a staged record built by the combat lane); the "
-            + "stage machine, not the gate, is what would have to be stood up."),
+        // #997 wave 3 · DRIVEN NOW — and it is entered at the COLLECTOR'S TERMS rather than at the demand,
+        // which is a finding rather than a dodge.
+        //
+        // The demand's three answers do not close this panel; they turn its page. SUBMIT goes to
+        // Confiscated, BRIBE to BribedOff, RESIST to a won roll, a lost one or the Bolivia — so this row's
+        // old EveryControlCloses was the same false claim #997 found on the rep's card, believed for the
+        // same reason: nothing had ever pressed it. What is true is that BUSTED is a STAGED decision, which
+        // is what OverlayShell's `Restages` says by name, and that every chain ends on a card whose single
+        // control really is a way out.
+        //
+        // This law knows two Exits and has no word for a stage, so the row asks it the question it CAN
+        // answer — of the Confiscated card, where "Take the hit" is the one control and it closes — and the
+        // staged claim is proved next door by pressing every answer of every stage and following each chain
+        // to its end: TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests.
+        new("the BUSTED / death panel (the collector's terms)", "busted-backdrop", FreeFlying,
+            Exit.EveryControlCloses,
+            b => TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests.StageTheDemand(b, "Confiscated")),
         new("the arrival-brake card", "deck-offer-card", FreeFlying, Exit.EveryControlCloses, null,
             "needs _brakeGate.Asking, which is ArrivalBrake.Advance's own timing verdict on a ship that is "
             + "coming in hot — a sim state, not a field."),
@@ -425,8 +439,8 @@ public sealed class EveryPopUpCanBeDismissedTests
     public void TheUndrivenListOnlyEverGetsShorter()
     {
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 16,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 16. If a row genuinely "
+        Assert.True(undriven <= 15,
+            $"{undriven} register rows have no driver, and the written-down ceiling is 15. If a row genuinely "
             + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
             + "the commit; the point of the number is that it cannot creep.");
     }
