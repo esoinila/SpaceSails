@@ -166,11 +166,21 @@ public sealed class TheShipLanesAreArchivedTests
     {
         var leftovers = new List<string>();
 
-        foreach (string file in Directory.EnumerateFiles(
-                     Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories)
+        string client = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
+        int scanned = 0;
+
+        foreach (string file in Directory.EnumerateFiles(client, "*.*", SearchOption.AllDirectories)
                  .Where(f => f.EndsWith(".cs", StringComparison.Ordinal)
-                             || f.EndsWith(".razor", StringComparison.Ordinal)))
+                             || f.EndsWith(".razor", StringComparison.Ordinal))
+                 // Written source only. A build artefact under obj/ is generated FROM the files below, so
+                 // reading it says nothing new — and a stale one from an older build would redden this guard
+                 // for a reason that has nothing to do with the code.
+                 .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                                         StringComparison.Ordinal)
+                             && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+                                            StringComparison.Ordinal)))
         {
+            scanned++;
             string text = File.ReadAllText(file);
             foreach (string gone in new[] { "DrawTradeCorridors", "routes.lanes", "CorridorFillColor" })
             {
@@ -180,6 +190,10 @@ public sealed class TheShipLanesAreArchivedTests
                 }
             }
         }
+
+        // …and the sweep really walked the client. A filter that matched nothing would report no leftovers
+        // just as cheerfully as a clean tree.
+        Assert.True(scanned > 100, $"only {scanned} client source files were read — this sweep has shrunk");
 
         Assert.True(leftovers.Count == 0,
             "#953 · the lane display was archived, so nothing in the client should still draw it or gate it:\n  - "

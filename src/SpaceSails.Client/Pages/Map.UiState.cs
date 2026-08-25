@@ -754,7 +754,9 @@ public partial class Map
         {
             if (!_hiddenLayersByDesk.TryGetValue(_activeDesk, out HashSet<string>? hidden))
             {
-                // Per-desk defaults live in Core (preserves the lanes-off default; sensors sees all).
+                // Per-desk defaults live in Core. #953 archived the one layer that used to start
+                // hidden (the trade lanes), so today every desk opens on the whole tree — but the seam
+                // stays, because the next layer that wants a per-desk default has nowhere else to go.
                 hidden = MapLayerTree.DefaultHidden(_activeDesk == ShipDesk.Sensors);
                 _hiddenLayersByDesk[_activeDesk] = hidden;
             }

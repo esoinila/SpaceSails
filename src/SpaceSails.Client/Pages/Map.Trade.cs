@@ -92,8 +92,10 @@ public partial class Map
     // What survives is the geometry, because it is not decoration: a lane names the two sweep actions in the
     // open-sky menu, and the telescope pass they enqueue puts real contacts in the tracking ledger.
 
-    private IReadOnlyList<CorridorRegion> _laneGeometry = [];
-    private double _laneGeometryBuiltAt = double.NegativeInfinity;
+    // The field names are left as they were: EveryFrameLeavesTheSameFingerprintTests renders this page's
+    // fields whole, so a rename alone would move all thirty committed sweep hashes and say nothing.
+    private IReadOnlyList<CorridorRegion> _mapCorridors = [];
+    private double _mapCorridorsBuiltAt = double.NegativeInfinity;
 
     /// <summary>The lanes as they lie right now, rebuilt at most hourly of sim time (the anchors are planets
     /// — an hour does not move them far enough to matter, and this is asked on every click).
@@ -111,13 +113,13 @@ public partial class Map
             return [];
         }
 
-        if (SimTime - _laneGeometryBuiltAt > 3600)
+        if (SimTime - _mapCorridorsBuiltAt > 3600)
         {
-            _laneGeometry = TradeCorridors.Regions(_ephemeris, SimTime);
-            _laneGeometryBuiltAt = SimTime;
+            _mapCorridors = TradeCorridors.Regions(_ephemeris, SimTime);
+            _mapCorridorsBuiltAt = SimTime;
         }
 
-        return _laneGeometry;
+        return _mapCorridors;
     }
 
     /// <summary>The lane nearest a sky point, when it counts as "near" — what names the open-sky menu's
