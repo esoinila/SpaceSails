@@ -143,7 +143,10 @@ public partial class Map
         }
 
         RendererInterop.PlayCue("rum"); // a warm cue under the toast (silent if audio is off)
-        ShowPulseMessage("🥂 " + line);
+
+        // #973 · …and if the void's weather is in this room tonight, the bond's topic names it. The TOAST
+        // only — the durable line above is untouched, because hearing the weather writes nothing anywhere.
+        ShowPulseMessage("🥂 " + line + TheWeatherIsWhatTheyWereTalkingAbout());
 
         _bondLastMs = nowMs;
         _bondIndex++;

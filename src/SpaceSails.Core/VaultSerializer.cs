@@ -73,6 +73,7 @@ public static class VaultSerializer
     private const string SecOldCrew = "oldcrew";           // #973 L5a · the four who knew the old face
     private const string SecCrossings = "crossings";       // #973 L5a · ⚖ what he said of it, and who heard
     private const string SecHeldMemories = "heldmemories"; // #978 · the sheets that are not documents
+    private const string SecWeather = "insuranceweather"; // #973 · what the bars say about the insurance men
     private const string SecSatchel = "satchel";          // #603 · everything carried on foot
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
@@ -108,6 +109,7 @@ public static class VaultSerializer
         AddSection(sections, SecOldCrew, vault.OldCrew);
         AddSection(sections, SecCrossings, vault.Crossings);
         AddSection(sections, SecHeldMemories, vault.HeldMemories);
+        AddSection(sections, SecWeather, vault.InsuranceWeather);
         AddSection(sections, SecSatchel, vault.Satchel);
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
@@ -255,6 +257,7 @@ public static class VaultSerializer
             OldCrew = Harvest<OldCrewSection>(sections, SecOldCrew, warnings),
             Crossings = Harvest<CrossingsSection>(sections, SecCrossings, warnings),
             HeldMemories = Harvest<HeldMemoriesSection>(sections, SecHeldMemories, warnings),
+            InsuranceWeather = Harvest<InsuranceWeatherSection>(sections, SecWeather, warnings),
             Satchel = Harvest<SatchelSection>(sections, SecSatchel, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),

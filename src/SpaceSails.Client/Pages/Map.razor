@@ -1894,7 +1894,37 @@
     @if (_wreckOutcome is { } salvageOutcome)
     {
         <div class="mission-celebration-backdrop" @onclick="() => Dismiss(DismissWreckOutcome)">
-            <div class="treasure-map-card" @onclick:stopPropagation="true">
+            @* ══ #997 wave 5 · THE BEAT CARDS. One comment for all thirteen, on the first of them.
+               ══════════════════════════════════════════════════════════════════════════════════════════
+               These are the surfaces that STOP THE GAME TO TELL YOU SOMETHING: the celebration family
+               (a payday, a map, a brief, a reveal, a storyboard), the convergence band (the two mysteries,
+               and the four things a captain is told once and never again) and the rescue band. Every one of
+               them was the same three things typed again: a scrim that closes it, a stopPropagation to keep
+               a click on the card off that scrim, and one worded verb at the foot. Waves 1-4 did this for
+               the .view-object family and its borrowers; this is the rest.
+
+               THE THREE PARAMETERS, and they mean the same here as they did there:
+
+                 · Frame="OverlayFrame.Bare" — the way out stays a DIRECT child of the card. That is the
+                   relation #735's pinned foot is written against on every one of these roots
+                   (`.convergence-card > .convergence-close`, `.expedition-brief-card > button:last-child`,
+                   `.rescue-card > .rescue-options`), and Hosted's `display: contents` would put a div
+                   between them while the markup went on looking right.
+                 · StopClicks="true" — the stopPropagation that was typed on the div, thirteen times.
+                 · Dismiss="OverlayDismiss.Close" wired to the page's OWN verb — the same method the
+                   backdrop behind it already calls, so there is still exactly one road out of each card.
+
+               AND NOT ONE WORD MOVED. Every face below is the exact string its own button carried.
+               `Bare` draws the dismiss as the card's last DIRECT child, which is where twelve of the
+               thirteen already had it; on the first-ground family (the lesson, the map-just-grew, the tube
+               and the air) the button was typed ABOVE its footnote and put back under it by `order: 1`, so
+               being last in the DOM now is the same pixel — and it is the reading order the #735 block
+               already claims that card has. The one card of the fourteen that could not take a shell is
+               named in TheShellOwnsTheBeatCardsTests.TheNamedStragglers, with its reason. ═════════════ *@
+            <OverlayShell class="treasure-map-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Back to the shuttle"
+                          OnClose="() => Dismiss(DismissWreckOutcome)">
                 <div class="view-object-title">
                     @(salvageOutcome.ContactEarned ? "📋 FILED" : salvageOutcome.CargoIsHot ? "🏴 STRIPPED" : "📋 FILED")
                 </div>
@@ -1912,9 +1942,7 @@
                 {
                     <div class="tm-bearing">@Derelict.ContactLine(signedBy)</div>
                 }
-                <button type="button" class="btn btn-warning btn-sm mt-2"
-                        @onclick="() => Dismiss(DismissWreckOutcome)">Back to the shuttle</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -3703,16 +3731,23 @@
             }
             @* Overheard here (#119 receipt idiom): the tips/rumors you've heard at this counter, kept where
                a round-loosened tongue's words can be re-read — they may not hide and may not auto-vanish. *@
+            @* #973 · …AND THE VOID'S WEATHER BLOWS THROUGH IT. Owner 2026-08-25: the walking insurance men
+               are "the thing people talk about in the bars that unites them, a bit like talking about the
+               weather on planet side." So one of Fable's eight lines can be in this strip — and the strip
+               STAYS three lines: it takes a slot from whatever this counter said longest ago rather than
+               growing a fourth row. After a round for the room has made it everybody's topic the block is
+               the topic and the room's answer to it. Core owns the words, the law and the composition
+               (InsuranceWeather); Map.Weather.cs owns the visit. *@
             @{
-                IReadOnlyList<Core.OverheardLine> overheard = OverheardHere(3);
+                IReadOnlyList<string> overheard = TheOverheardBlock();
             }
             @if (overheard.Count > 0)
             {
                 <div class="bar-overheard small">
                     <div class="bar-overheard-head">Overheard here</div>
-                    @foreach (Core.OverheardLine o in overheard)
+                    @foreach (string o in overheard)
                     {
-                        <div class="bar-overheard-line">@o.Text</div>
+                        <div class="bar-overheard-line">@o</div>
                     }
                 </div>
             }
@@ -4211,7 +4246,11 @@
     @if (_treasureMapCard is { } map)
     {
         <div class="mission-celebration-backdrop" @onclick="DismissMapCard">
-            <div class="treasure-map-card" @onclick:stopPropagation="true">
+            <OverlayShell class="treasure-map-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Into the ledger 🗺"
+                          DismissTitle="Tuck the map into the Captain's ledger"
+                          OnClose="DismissMapCard">
                 <div class="tm-art" style="background-image: @TreasureMapArtCss(map.BodyId);">
                     <div class="tm-x">✗</div>
                 </div>
@@ -4223,8 +4262,7 @@
                     <div class="tm-bearing">🐕 @map.ReeverLevel Reever@(map.ReeverLevel == 1 ? "" : "s") haunt this ground — the most dangerous lock in the system.</div>
                 }
                 <div class="tm-flavor">✗ marks the spot. (The barflies swear it never does — out here, they're wrong every time.)</div>
-                <button type="button" class="btn btn-warning btn-sm mt-2" title="Tuck the map into the Captain's ledger" @onclick="DismissMapCard">Into the ledger 🗺</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -4234,7 +4272,11 @@
     @if (_expeditionBriefCard is { } brief)
     {
         <div class="mission-celebration-backdrop" @onclick="DismissExpeditionBrief">
-            <div class="expedition-brief-card" @onclick:stopPropagation="true">
+            <OverlayShell class="expedition-brief-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-success btn-sm mt-2" DismissFace="Sounds lovely — file it 📋"
+                          DismissTitle="File the brief and take the gig"
+                          OnClose="DismissExpeditionBrief">
                 <div class="eb-art" style="background-image: @ExpeditionBriefArtCss(brief.Kind);">
                     <div class="eb-stamp">FULLY BENIGN<span>(pending)</span></div>
                 </div>
@@ -4242,8 +4284,7 @@
                 <div class="eb-site">Site: @brief.SiteName</div>
                 <div class="eb-body">@brief.Body</div>
                 <div class="eb-flavor">Brought to you by the charter service. Terms apply. Sanity not included.</div>
-                <button type="button" class="btn btn-success btn-sm mt-2" title="File the brief and take the gig" @onclick="DismissExpeditionBrief">Sounds lovely — file it 📋</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -4252,7 +4293,11 @@
     @if (_expeditionRevealCard is { } reveal)
     {
         <div class="mission-celebration-backdrop expedition-reveal-backdrop" @onclick="DismissExpeditionReveal">
-            <div class="expedition-reveal-card" @onclick:stopPropagation="true">
+            <OverlayShell class="expedition-reveal-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-danger btn-sm mt-2" DismissFace="Hold the line 🫥"
+                          DismissTitle="There is no unseeing it"
+                          OnClose="DismissExpeditionReveal">
                 <div class="er-art" style="background-image: @ExpeditionBriefArtCss(reveal.Kind);">
                     <div class="er-scrim"></div>
                     <div class="er-stamp">THE BRIEF WAS A LIE</div>
@@ -4260,8 +4305,7 @@
                 <div class="er-headline">@reveal.Headline</div>
                 <div class="er-site">@reveal.SiteName</div>
                 <div class="er-body">@reveal.Body</div>
-                <button type="button" class="btn btn-danger btn-sm mt-2" title="There is no unseeing it" @onclick="DismissExpeditionReveal">Hold the line 🫥</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -4273,15 +4317,22 @@
         var panel = story[_deflectionStoryIndex];
         bool last = _deflectionStoryIndex == story.Count - 1;
         <div class="mission-celebration-backdrop" @onclick="AdvanceDeflectionStory">
-            <div class="expedition-brief-card" @onclick:stopPropagation="true">
+            @* THE ONE STAGED CLOSE IN THIS WAVE, said out loud. This card's way out reads "Next ▸" until
+               the last panel and "Close 🫡" on it, and pressing it turns the page rather than ending the
+               surface — the same shape as the BUSTED demand's answers (#997 wave 3). It stays a
+               `Dismiss.Close` and it needs no `Restages` opt-out, because a Close makes no claim about
+               ending the surface in one press: only ByDecision does, and Restages is that mode's word.
+               What the shell guarantees here is what it guarantees everywhere — the button is wired to the
+               page's own verb and it is a direct child of the card. *@
+            <OverlayShell class="expedition-brief-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="@($"btn btn-{(last ? "success" : "secondary")} btn-sm mt-2")"
+                          DismissFace="@(last ? "Close 🫡" : "Next ▸")"
+                          OnClose="AdvanceDeflectionStory">
                 <div class="eb-art" style="background-image: @DeflectionPanelArtCss(panel);"></div>
                 <div class="eb-body">@panel.Caption</div>
                 <div class="eb-flavor">Panel @(_deflectionStoryIndex + 1) of @story.Count</div>
-                <button type="button" class="btn btn-@(last ? "success" : "secondary") btn-sm mt-2"
-                        @onclick="AdvanceDeflectionStory" @onclick:stopPropagation="true">
-                    @(last ? "Close 🫡" : "Next ▸")
-                </button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -5040,11 +5091,11 @@
         </div>
     }
 
-    @* PR-C: the trade-lane menu — the corridor the owner drew by hand, now a clickable region.
-       Replaces the tracking post's "— manual aim —" dropdown: the lane IS the control. *@
     @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
-       as a whole should not even be selectable, since they just colour the page in that option"). Its two
-       actions — sweep once, standing watch — live in the open-sky menu above, under the lane it names. *@
+       as a whole should not even be selectable, since they just colour the page in that option"), and the
+       drawn corridor went with it on the archive ruling ("we have never used them to find anything"). Its
+       two actions — sweep once, standing watch — kept their jobs: they aim the telescope and the pass they
+       book puts real contacts in the ledger. They live in the open-sky menu below, under the lane it names. *@
 
     @* PR-C: the open-sky menu — even empty space answers. What a scan here would take, and the
        guideline hint when the spot sits near a known lane. *@
@@ -5307,8 +5358,14 @@
                but too hot it becomes ⚓ Match & clamp, quoting the terminal-match burn (visible paused). *@
             @if (_dockedHavenId is not null)
             {
-                <button type="button" class="btn btn-sm btn-warning me-2" @onclick="Undock"
-                        title="Release the dock clamps and fly off">🚀 Undock</button>
+                @* #963 · EMERGENCY GEAR, DRESSED AS SUCH. Owner, 2026-08-25: the bare undock is "archaic
+                   compared to the combo of undock + harbour speed"; he cast off with this press once and died
+                   colliding, and "it made perfect sense"; "flying adrift in formation is kind of crazy
+                   maneuver". It stays, and it stays unconfirmed — an emergency you must confirm is not one,
+                   and dying honestly is the point. It is quiet red instead of amber, and it says what it is.
+                   See Map.NavToolbar for the ruling and for which siblings share the dress. *@
+                <button type="button" class="btn btn-sm btn-outline-danger me-2" @onclick="Undock"
+                        title="@EmergencyUndockTip()">🚀 Undock</button>
             }
             else if (_dockAffordance.CanClampNow)
             {
@@ -5418,9 +5475,12 @@
                             </span>
                             @if (oi.WindowOpen && oi.RadiusInStableBand)
                             {
-                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-success" : "btn-outline-secondary")"
+                                @* #963 · a sibling of the bare undock: this circularizes AT THIS RADIUS this
+                                   instant, which is not what the plan's arrive-orbit step (#965) would fly.
+                                   Emergency dress, unchanged behaviour. *@
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
                                         disabled="@(!oi.CanEngage || NavLockedByDock)"
-                                        title="@(NavLockedByDock ? DockNavLockTip : "Circularize into orbit now — the autopilot holds the park")" @onclick="EnterOrbit">
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyInsertionTip(oi))" @onclick="EnterOrbit">
                                     Enter orbit (@oi.Cost p / O)
                                 </button>
                             }
@@ -5430,9 +5490,9 @@
                                    owner's ≈0.53-Hill Enceladus park that silently stripped). NEVER circularize
                                    here silently; the button hands the descent to the autopilot, which parks at
                                    the tide-stable radius. The O-key (EnterOrbit) follows the same logic. *@
-                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock ? "btn-info" : "btn-outline-secondary")"
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
                                         disabled="@NavLockedByDock"
-                                        title="@(NavLockedByDock ? DockNavLockTip : $"this radius is tide-chaotic (Lab 16) — the autopilot descends to the stable park at {FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}")"
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyDescentTip(oi))"
                                         @onclick="EnterOrbit">
                                     🛰 Autopilot to stable park (≈@oi.ApproachCost p)
                                 </button>
@@ -5448,9 +5508,12 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                @* #963 · the ARM press is the emergency (it points the autopilot from wherever
+                                   she is, instead of from where the plan puts her). Standing an armed
+                                   autopilot back down is the safe direction and keeps its own green dress. *@
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-outline-danger" : "btn-outline-secondary")"
                                         disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
-                                        title="@(NavLockedByDock ? DockNavLockTip : "Arm the autopilot to capture into orbit when she's in range")" @onclick="EnterOrbit">
+                                        title="@(NavLockedByDock ? DockNavLockTip : oi.Armed ? "Arm the autopilot to capture into orbit when she's in range" : EmergencyCaptureTip(oi))" @onclick="EnterOrbit">
                                     @(oi.Armed
                                         ? (_disarmConfirmBodyId == oi.Body.Id
                                             ? "Disarm? click again"
@@ -6466,14 +6529,16 @@
     @if (LoudPlanAlarm is { } _planBreak)
     {
         <div class="rescue-backdrop" @onclick="DismissLoudPlanAlarm">
-            <div class="rescue-card" @onclick:stopPropagation="true">
+            <OverlayShell class="rescue-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-warning mt-2" DismissFace="I have the ship"
+                          OnClose="DismissLoudPlanAlarm">
                 <div class="rescue-hail">@LoudPlanAlarmHail</div>
                 <div class="rescue-quote">@LoudPlanAlarmQuote</div>
                 <div class="rescue-terms">
                     <div class="rescue-fee">@_planBreak</div>
                 </div>
-                <button type="button" class="btn btn-warning mt-2" @onclick="DismissLoudPlanAlarm">I have the ship</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -6500,7 +6565,21 @@
     {
         IReadOnlyList<RescueOffer.FeeLine> _rescueLines = RescueFeeLines();
         <div class="rescue-backdrop" @onclick="CloseRescueOffer">
-            <div class="rescue-card" @onclick:stopPropagation="true">
+            @* THE SECOND ByDecision SURFACE IN THE CLIENT, and #992's audit is right about this one. Both
+               answers really do end it: 🛟 Accept runs AcceptRescue (tow, tank, hold gone, offer closed) and
+               Decline runs CloseRescueOffer — which is the SAME verb the scrim behind it runs, and the
+               .map-adrift lifeline above stands the offer back up, so declining strands nobody. No dismiss
+               is drawn. The two answers stay the page's own markup inside `.rescue-options` rather than
+               going through the shell's `Choices`, for #997 wave 3's reason: routing them would flatten
+               each button's title and its two-line face into one string, and that is a change to the words.
+
+               …and unlike the rep's card (#997 wave 1) and the collector's demand (wave 3), where that
+               exact claim turned out to be FALSE the moment somebody pressed one, this one is now proved by
+               pressing: Adrift is `_reactionMassPulses == 0 && !_docked`, two fields rather than the
+               unreachable sim state its register row records, so the offer can be stood up and both of its
+               answers taken. TheShellOwnsTheBeatCardsTests does it. *@
+            <OverlayShell class="rescue-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
                 <div class="rescue-hail">🛟 ADRIFT — OUT OF REACTION MASS</div>
                 <div class="rescue-quote">"We're dry, captain. Not a pulse left, and no pump in reach. Shall I whistle for a tow?"</div>
                 <div class="rescue-terms">
@@ -6524,7 +6603,7 @@
                         Decline — stay adrift
                     </button>
                 </div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7229,7 +7308,11 @@
     @if (_celebration is { } party)
     {
         <div class="mission-celebration-backdrop" @onclick="DismissCelebration">
-            <div class="mission-celebration" @onclick:stopPropagation="true">
+            <OverlayShell class="mission-celebration" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Raise a glass 🍻"
+                          DismissTitle="Toast the payday and clear the fanfare"
+                          OnClose="DismissCelebration">
                 <div class="mc-fanfare">🎉 CONTRACT COMPLETE 🎉</div>
                 <div class="mc-title">@party.Title</div>
                 <div class="mc-giver">◈ @party.GiverName</div>
@@ -7246,8 +7329,7 @@
                         ? $"A new name in your logbook — your first job for {party.GiverName}."
                         : $"Job #{party.MissionsWithGiver} for {party.GiverName}. You've got a history now.")
                 </div>
-                <button type="button" class="btn btn-warning btn-sm mt-2" title="Toast the payday and clear the fanfare" @onclick="DismissCelebration">Raise a glass 🍻</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7653,7 +7735,10 @@
     @if (_convergenceRevealOpen)
     {
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseConvergenceReveal)">
-            <div class="convergence-card" @onclick:stopPropagation="true">
+            <OverlayShell class="convergence-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-light convergence-close" DismissFace="…sit with that"
+                          OnClose="() => Dismiss(CloseConvergenceReveal)">
                 <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
                 <div class="convergence-head">Two mysteries. One truth.</div>
                 <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
@@ -7669,8 +7754,7 @@
                    the game repeated itself to the player's face. Core owns the line now, and a guard pins
                    that no sentence of it appears in the body (#422 story pass). *@
                 <div class="convergence-foot">@ArcConvergence.ConvergenceFoot</div>
-                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseConvergenceReveal)">…sit with that</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7682,7 +7766,15 @@
     @if (_groundLessonOpen)
     {
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundLesson)">
-            <div class="convergence-card ground-lesson-card" @onclick:stopPropagation="true">
+            @* THE FIRST-GROUND FAMILY, and the one place in this wave where the button MOVES IN THE DOM.
+               It was typed above `.ground-lesson-foot` and put back under it by `order: 1` (#735's block:
+               "the footnote keeps its place in the prose, above the way on"). Bare draws the dismiss as the
+               card's last child, which is where that rule already puts it on the screen — so the pixel is
+               unchanged and the DOM finally reads the way the CSS comment says it does. *@
+            <OverlayShell class="convergence-card ground-lesson-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-light convergence-close" DismissFace="@GroundLesson.Dismiss"
+                          OnClose="() => Dismiss(CloseGroundLesson)">
                 <div class="convergence-stamp">@GroundLesson.Stamp</div>
                 <div class="convergence-head">@GroundLesson.Head</div>
                 <div class="ground-lesson-levers">
@@ -7703,9 +7795,8 @@
                         <li>@law</li>
                     }
                 </ul>
-                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundLesson)">@GroundLesson.Dismiss</button>
                 <div class="ground-lesson-foot">@GroundLesson.Foot</div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7718,7 +7809,10 @@
     @if (_groundGrewOpen)
     {
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundGrew)">
-            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+            <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-light convergence-close" DismissFace="@GroundGrows.Dismiss"
+                          OnClose="() => Dismiss(CloseGroundGrew)">
                 <div class="convergence-stamp">@GroundGrows.Stamp</div>
                 <img class="ground-grows-art" src="@GroundGrows.ArtFile" alt=""
                      onerror="this.style.display='none'" />
@@ -7729,9 +7823,8 @@
                         <li>@beat</li>
                     }
                 </ul>
-                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundGrew)">@GroundGrows.Dismiss</button>
                 <div class="ground-lesson-foot">@GroundGrows.Foot</div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7743,7 +7836,10 @@
     @if (_tubeRearmOpen)
     {
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTubeRearm)">
-            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+            <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-light convergence-close" DismissFace="@TubeRearm.Dismiss"
+                          OnClose="() => Dismiss(CloseTubeRearm)">
                 <div class="convergence-stamp">@TubeRearm.Stamp</div>
                 <img class="ground-grows-art" src="@TubeRearm.ArtFile" alt=""
                      onerror="this.style.display='none'" />
@@ -7754,9 +7850,8 @@
                         <li>@beat</li>
                     }
                 </ul>
-                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseTubeRearm)">@TubeRearm.Dismiss</button>
                 <div class="ground-lesson-foot">@TubeRearm.Foot</div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7767,7 +7862,10 @@
     @if (_airCardOpen)
     {
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseAirCard)">
-            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+            <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-light convergence-close" DismissFace="@AirCard.Dismiss"
+                          OnClose="() => Dismiss(CloseAirCard)">
                 <div class="convergence-stamp">@AirCard.Stamp</div>
                 <img class="ground-grows-art" src="@AirCard.ArtFile" alt=""
                      onerror="this.style.display='none'" />
@@ -7778,9 +7876,8 @@
                         <li>@beat</li>
                     }
                 </ul>
-                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseAirCard)">@AirCard.Dismiss</button>
                 <div class="ground-lesson-foot">@AirCard.Foot</div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -7790,6 +7887,16 @@
        is the one moment in the game that is about his own face. *@
     @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
     {
+        @* #997 wave 5 · THE ONE CARD OF THE FOURTEEN THAT KEEPS ITS OWN WAY OUT, with the reason, and it is
+           a fact about the ✕ rather than a shortcut. `.convergence-x` is a FLOAT: its own rule says so —
+           "the card is position: static, so this floats to the right of the flow it sits at the top of" —
+           and a float lands beside the line box it is declared next to. It is the FIRST thing in the card
+           for that reason. Bare draws the dismiss as the card's LAST direct child, which is the whole point
+           of the frame and why the other twelve could take it, so shelling this one would float the ✕ down
+           beside the card's last line instead of into its top-right corner. That is a control moving on the
+           screen, which this migration does not do. And it is the only card here with TWO ways out (the ✕,
+           and "Leave it there" once he has answered), which is a shape a Bare shell has no room for.
+           It gets a shell when the corner ✕ stops depending on source order. *@
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTheFaceScene)">
             <div class="convergence-card old-crew-card" @onclick:stopPropagation="true">
                 @* #992 · A VISIBLE WAY OUT OF THE ANSWER PHASE (owner ruling 2026-08-24). Walking away

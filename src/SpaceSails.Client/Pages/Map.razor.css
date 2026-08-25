@@ -862,7 +862,7 @@
     pointer-events: auto;
 }
 
-.rescue-card {
+::deep .rescue-card {
     max-width: min(34rem, 92vw);
     max-height: 90vh;
     overflow-y: auto;
@@ -3028,7 +3028,7 @@
     pointer-events: auto;
 }
 
-.mission-celebration {
+::deep .mission-celebration {
     max-width: min(30rem, 90vw);
     padding: 1.25rem 1.5rem;
     text-align: center;
@@ -3281,13 +3281,13 @@
     margin: 0.2rem 1rem;
 }
 
-.treasure-map-card .btn {
+::deep .treasure-map-card .btn {
     margin-bottom: 1rem;
 }
 
 /* #370 · THE RESEARCH BRIEF card — the charter service's sugar-coated pitch. Treasure-map card family
    (big image slot over sales copy), in reassuring corporate green. */
-.expedition-brief-card {
+::deep .expedition-brief-card {
     max-width: min(34rem, 92vw);
     padding: 0;
     overflow: hidden;
@@ -3363,7 +3363,7 @@
     margin: 0.2rem 1rem;
 }
 
-.expedition-brief-card .btn {
+::deep .expedition-brief-card .btn {
     margin-bottom: 1rem;
 }
 
@@ -3374,7 +3374,7 @@
     z-index: calc(var(--z-modal) + 45); /* above the brief and treasure card — the reveal interrupts */
 }
 
-.expedition-reveal-card {
+::deep .expedition-reveal-card {
     max-width: min(34rem, 92vw);
     padding: 0;
     overflow: hidden;
@@ -3440,7 +3440,7 @@
     margin: 0.15rem 1.1rem 0.4rem;
 }
 
-.expedition-reveal-card .btn {
+::deep .expedition-reveal-card .btn {
     margin-bottom: 1rem;
 }
 
@@ -3962,7 +3962,7 @@
     pointer-events: auto;
 }
 
-.convergence-card {
+::deep .convergence-card {
     max-width: min(38rem, 93vw);
     padding: 1.4rem 1.6rem 1.2rem;
     text-align: center;
@@ -4057,7 +4057,7 @@
    convergence card's frame (one staged card idiom for the game's staged moments) but drops its cold blue
    for regolith amber, and goes LEFT-aligned inside: this card is read for instruction, not for awe, and
    centred instruction is hard to scan. */
-.ground-lesson-card {
+::deep .ground-lesson-card {
     max-width: min(42rem, 94vw);
     border-color: rgba(240, 190, 110, 0.5);
     box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(240, 190, 110, 0.2);
@@ -4139,7 +4139,7 @@
 /* #563 — the map-just-grew card. Same frame as the first-ground lesson (they are siblings: the two things
    a captain is told once and never again), but keyed cold-green rather than amber, because this one is not
    a warning — it is the game handing you a bigger world than you thought you had. */
-.ground-grows-card {
+::deep .ground-grows-card {
     max-width: min(40rem, 94vw);
     border-color: rgba(120, 210, 180, 0.5);
     box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 210, 180, 0.18);
@@ -5590,12 +5590,12 @@
    that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate. */
 ::deep .busted-card,
 ::deep .view-object,
-.convergence-card,
+::deep .convergence-card,
 ::deep .deck-offer-card,
 ::deep .treasure-map-card,
-.expedition-brief-card,
-.expedition-reveal-card,
-.rescue-card,
+::deep .expedition-brief-card,
+::deep .expedition-reveal-card,
+::deep .rescue-card,
 ::deep .vent-read-card,
 .deck-shuttle-card {
     /* min(92vh, 100%): the screen, less a margin — and never taller than the backdrop that centres it,
@@ -5633,14 +5633,14 @@
 .busted-card .busted-close,
 .busted-card > .busted-options,
 ::deep .view-object > .view-object-close,
-.convergence-card > .convergence-close,
+::deep .convergence-card > .convergence-close,
 .deck-offer-card > .deck-offer-actions,
 .deck-offer-card > .deck-bank-actions,
 .treasure-map-card > .busted-options,
 ::deep .treasure-map-card > .view-object-close,
 ::deep .treasure-map-card > button:last-child,
-.expedition-brief-card > button:last-child,
-.expedition-reveal-card > button:last-child,
+::deep .expedition-brief-card > button:last-child,
+::deep .expedition-reveal-card > button:last-child,
 .rescue-card > .rescue-options,
 .deck-shuttle-card > .deck-shuttle-actions {
     position: sticky;
@@ -5659,14 +5659,14 @@
    themselves out as a column and the button takes the last slot: the footnote keeps its place in the prose,
    above the way on. The DOM order is untouched — the button is still the last thing a screen reader
    reaches, and the markup still reads the way the card was written. */
-.ground-lesson-card,
-.ground-grows-card {
+::deep .ground-lesson-card,
+::deep .ground-grows-card {
     display: flex;
     flex-direction: column;
 }
 
-.ground-lesson-card > .convergence-close,
-.ground-grows-card > .convergence-close {
+::deep .ground-lesson-card > .convergence-close,
+::deep .ground-grows-card > .convergence-close {
     order: 1;
     align-self: center;
 }
@@ -5689,7 +5689,7 @@
    a sticky element happens to be sitting at, and a well that says "the card ends here" is the right thing
    to say about a card whose whole problem was that nobody could tell where it ended. */
 ::deep .busted-card,
-.rescue-card {
+::deep .rescue-card {
     --card-foot-scrim: rgba(10, 7, 9, 0.99);
 }
 
@@ -5701,15 +5701,15 @@
     --card-foot-scrim: rgb(23, 17, 10);
 }
 
-.expedition-brief-card {
+::deep .expedition-brief-card {
     --card-foot-scrim: rgb(10, 20, 14);
 }
 
-.expedition-reveal-card {
+::deep .expedition-reveal-card {
     --card-foot-scrim: rgb(18, 7, 7);
 }
 
-.convergence-card {
+::deep .convergence-card {
     --card-foot-scrim: rgb(12, 15, 22);
 }
 
