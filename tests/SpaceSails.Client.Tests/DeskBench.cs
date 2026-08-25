@@ -220,6 +220,13 @@ internal sealed class DeskBench : Renderer
     /// did to the state as well as to the markup.</summary>
     public object? Field(string name) => Read(_map, name);
 
+    /// <summary>#953 · Call one of the page's own private methods by name — for a law whose subject is not a
+    /// control on the screen but something the page DOES with the world it booted (paint the solar map, name
+    /// the lane nearest a point). Same safety as <see cref="Poke"/>: a renamed method fails loudly here with
+    /// the name it used to have. Whatever it raises arrives wrapped in a <c>TargetInvocationException</c>,
+    /// which is what lets a caller tell the documented browser gate from a real failure.</summary>
+    public object? Call(string method, params object?[] args) => Method(method).Invoke(_map, args);
+
     /// <summary>
     /// #992 · <b>PUT THE PAGE IN THE STATE THAT RAISES THIS POP-UP.</b> A field write, by name, on the
     /// shipping component.
