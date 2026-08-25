@@ -23,8 +23,8 @@ public partial class Map
 
     /// <summary>Which world, where in it, and the jobs and money you arrive holding — <c>?scenario=</c>,
     /// <c>?start=</c>, <c>?dock=</c>, <c>?fuel=</c>, <c>?credits=</c>, <c>?fetch=</c>, <c>?reveal=</c>,
-    /// <c>?crack=</c>, <c>?tip=</c>, <c>?hoard=</c>, <c>?sling=</c>, <c>?skim=</c>, <c>?backroom=</c> and
-    /// <c>?simhours=</c>.</summary>
+    /// <c>?crack=</c>, <c>?tip=</c>, <c>?hoard=</c>, <c>?sling=</c>, <c>?skim=</c>, <c>?backroom=</c>,
+    /// <c>?target=</c> and <c>?simhours=</c>.</summary>
     private bool ReadTheWorldAndTheJobs(string pair, BootQuery q)
     {
         // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
@@ -99,6 +99,28 @@ public partial class Map
             if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
             {
                 q.RevealCheats.Add(candidate);
+            }
+        }
+        else if (pair.StartsWith("target=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #997 wave 10 dev cheat: /map?target=<contact-id> boots with the tactical UI pointed at a
+            // contact and her DOSSIER open on the glass. `?reveal=` charts a body; this points at a ship,
+            // and it is the same kind of cheat — what the sky already holds when you arrive.
+            //
+            // WHY IT HAD TO EXIST. #960's dossier is gated on a tactical target, and the only two roads to
+            // one are a contact in sensor reach or a collector bought by a robbery — a sim state with no
+            // URL behind it. Waves 7, 8 and 9 each MEASURED that card by hand and each said so out loud;
+            // #1010's own §6 named the missing cheat as the reason #735's browser gate could not cover it.
+            //
+            //   /map?target=npc-0                       a scheduled hauler, her file open
+            //   /map?target=collector&dock=selene-gate  send the muscle first, then read her terms
+            //
+            // Sanitised the same way ?reveal= and ?dock= are — this becomes a lookup key against two live
+            // rosters, and an id is a slug.
+            string candidate = Uri.UnescapeDataString(pair["target=".Length..]).ToLowerInvariant();
+            if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+            {
+                q.TargetCheat = candidate;
             }
         }
         else if (pair.StartsWith("crack=", StringComparison.OrdinalIgnoreCase))

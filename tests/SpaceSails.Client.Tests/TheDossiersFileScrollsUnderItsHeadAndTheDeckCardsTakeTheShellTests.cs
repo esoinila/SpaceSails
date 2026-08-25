@@ -313,22 +313,24 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["deck-offer-card"] =
-                "TWO cards still wear the bare family class: the STRANGER'S CONTRACT (Take the job / Pass) "
-                + "and the BARKEEP'S COUNTER. Neither is a plain shape and each is a different reason.\n"
-                + "  · The stranger's contract looks like this wave's other decisions and is not one: its "
-                + "`.deck-offer-actions` row is FOLLOWED by #355's drink flow, whose controls (offer a "
-                + "glass, cancel the offer) leave the card standing. So `ByDecision` would be the claim "
-                + "\"every answer this surface offers is itself a close\", and that claim would be false — "
-                + "which is the exact fault #1005 caught on the rep's card and #1001 on the collector's "
-                + "demand. It wants a `FootHost` and a look at whether the drink flow belongs above the "
-                + "foot rather than below it, which is a layout question and not a refactor.\n"
+                "The BARKEEP'S COUNTER, and the bar's own rumour card behind it, still wear the bare "
+                + "family class.\n"
+                + "  · #997 wave 10 · THE STRANGER'S CONTRACT CAME OFF THIS LIST, and its reason was "
+                + "answered rather than argued away. This entry said the card wanted \"a FootHost and a "
+                + "look at whether the drink flow belongs above the foot rather than below it\"; #780 had "
+                + "already answered that question at the counter, where the menu's six priced items were "
+                + "sliding under `.deck-offer-actions`' sticky 12rem scrim. The drink flow moved above the "
+                + "row for the same reason, and once the row is nothing but ways out it wants wave 7's "
+                + "`WaysClass` (Take the job as the dismiss, Pass beside it) rather than a `FootHost`, "
+                + "which is the mechanism for a foot whose OTHER controls are not ways out.\n"
                 + "  · The barkeep's counter is the biggest foot in the client — the house pour, the menu "
                 + "toggle, a round for the room, a rumour, two room prices, the stool's own ladder, and "
                 + "`Done` last — and #780 moved its menu ABOVE that row after the sticky foot's scrim "
                 + "painted over six priced items. `FootHost` would fit the markup, but the card's foot is "
                 + "conditional on `keep.SelfService` and on the posture, and it is the one card in this "
-                + "family a bar-behaviour change would touch. Named for wave 10 with its reason rather "
-                + "than taken cheaply here.",
+                + "family a bar-behaviour change would touch. Named for wave 11 with its reason rather "
+                + "than taken cheaply — it is the one card left in this family whose migration is also a "
+                + "bar-behaviour question, and those belong to the owner.",
         };
 
     private static string Normalised(string classList) =>

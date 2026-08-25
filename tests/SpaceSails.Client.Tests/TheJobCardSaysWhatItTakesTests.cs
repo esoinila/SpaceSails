@@ -290,15 +290,31 @@ public sealed class TheJobCardSaysWhatItTakesTests
     }
 
 
-    /// <summary>The bar stranger's contract card, sliced out of Map.razor the way #838's guards slice a
-    /// panel: from its opening div to the actions row that closes it.</summary>
+    /// <summary>
+    /// The bar stranger's contract card, sliced out of Map.razor the way #838's guards slice a panel.
+    ///
+    /// <para>#997 wave 10 · It is an <c>&lt;OverlayShell&gt;</c> now, so both of the old anchors are gone:
+    /// the root is no longer <c>&lt;div class="deck-offer-card"&gt;</c>, and the actions row it used to end
+    /// at is drawn by the shell rather than typed. Anchoring on the class alone found the RUMOUR card's
+    /// plain <c>&lt;div class="deck-offer-card"&gt;</c> further down the file and reported this card's whole
+    /// plain block missing — a guard handed the wrong world, which is this repo's fifth named bug class,
+    /// rather than a card that had changed at all.</para>
+    ///
+    /// <para>So the slice is anchored on the verb only this card has — <c>OnClose="AcceptOffer"</c>, taking
+    /// the job — walked back to the tag carrying it and forward to that tag's own close. Two shells in this
+    /// file wear <c>deck-offer-card</c> on a Bare frame (this one and the patron's table); only one of them
+    /// accepts an offer.</para>
+    /// </summary>
     private static string OfferCardMarkup()
     {
         string map = CodeOnly(Source("Pages", "Map.razor"));
-        int start = map.IndexOf("<div class=\"deck-offer-card\">", StringComparison.Ordinal);
+        int verb = map.IndexOf("OnClose=\"AcceptOffer\"", StringComparison.Ordinal);
+        Assert.True(verb >= 0,
+            "the bar's offer card no longer takes the job: OnClose=\"AcceptOffer\" is gone from Map.razor.");
+        int start = map.LastIndexOf("<OverlayShell", verb, StringComparison.Ordinal);
         Assert.True(start >= 0, "the bar's offer card is gone from Map.razor");
-        int end = map.IndexOf("deck-offer-actions", start, StringComparison.Ordinal);
-        Assert.True(end > start, "the offer card no longer closes with its actions row");
+        int end = map.IndexOf("</OverlayShell>", verb, StringComparison.Ordinal);
+        Assert.True(end > start, "the offer card's shell is never closed");
         return map[start..end];
     }
 

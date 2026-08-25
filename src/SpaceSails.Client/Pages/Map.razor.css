@@ -1197,8 +1197,14 @@
     box-shadow: 0 0 0 1px rgba(255, 220, 150, 0.35), 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
-/* M24: planet click menu — anchored at the click point, above the canvas. */
-.map-body-menu {
+/* M24: planet click menu — anchored at the click point, above the canvas.
+   #997 wave 10 · ::deep because OverlayShell draws this root now. Without it the rule compiles to
+   `.map-body-menu[b-map]`, matches nothing, and the menu loses its `position: absolute` — every one of
+   the four falls back into the document flow at the top-left of the page, wearing the inline left/top the
+   page still writes and ignoring both of them. It also loses the z-index the band gate pins, which is the
+   half CssZBandSyncTests would still be green over: that gate parses this file for the declaration and
+   never asks whether the selector can match. */
+::deep .map-body-menu {
     position: absolute;
     z-index: calc(var(--z-map-chrome) + 10);
     pointer-events: auto;

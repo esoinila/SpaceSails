@@ -227,6 +227,20 @@ internal sealed class DeskBench : Renderer
     /// which is what lets a caller tell the documented browser gate from a real failure.</summary>
     public object? Call(string method, params object?[] args) => Method(method).Invoke(_map, args);
 
+    /// <summary>#997 wave 10 · <see cref="Call"/>, from inside the renderer's own dispatcher.
+    ///
+    /// <para>A page method that ends in <c>StateHasChanged</c> — which most of the ones that CHANGE
+    /// something do — throws <c>"The current thread is not associated with the Dispatcher"</c> when it is
+    /// reached from a plain reflection invoke, and Blazor is right to say so: a state change belongs on the
+    /// renderer's thread. So this hands the call to the same dispatcher <see cref="PressAsync"/> and
+    /// <see cref="SwitchAsync"/> use, and waits for it. That is what lets a SYNCHRONOUS driver — the
+    /// dismissibility register's <c>Raise</c> — put the page in a state through a shipping method instead of
+    /// by poking the fields that method would have written, which is the stronger of the two: a cheat that
+    /// stopped raising its card then fails in the law rather than nowhere.</para>
+    /// </summary>
+    public object? CallOnTheDispatcher(string method, params object?[] args) =>
+        Dispatcher.InvokeAsync(() => Method(method).Invoke(_map, args)).GetAwaiter().GetResult();
+
     /// <summary>
     /// #992 · <b>PUT THE PAGE IN THE STATE THAT RAISES THIS POP-UP.</b> A field write, by name, on the
     /// shipping component.
