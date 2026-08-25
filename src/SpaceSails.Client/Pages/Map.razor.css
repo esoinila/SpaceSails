@@ -93,7 +93,7 @@
 
 /* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
    the pulse toast, but interactive (Take / Pass), so it captures pointer events. */
-.deck-offer-card {
+::deep .deck-offer-card {
     position: absolute;
     top: 9rem;
     left: 50%;
@@ -3223,7 +3223,7 @@
 }
 
 /* The full-screen treasure-map artifact — celebration family, but built around a big image slot. */
-.treasure-map-card {
+::deep .treasure-map-card {
     max-width: min(34rem, 92vw);
     padding: 0;
     overflow: hidden;
@@ -4483,7 +4483,7 @@
 /* ── The pressure gauge on a loaded door ────────────────────────────────────────────────────────────
    The needle sits hard over on its stop and does not move. That IS the readout: there is no nuance in
    ten tonnes, and a dial pinned at MAX says it faster than any sentence. */
-.pressure-door { max-width: 30rem; }
+::deep .pressure-door { max-width: 30rem; }
 
 .pd-gauge {
     display: flex;
@@ -4582,7 +4582,7 @@
 
 /* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
    The scuttling panel and the card you read afterwards from your own cockpit. */
-.scuttle-panel, .scuttle-epitaph { max-width: 34rem; }
+::deep .scuttle-panel, ::deep .scuttle-epitaph { max-width: 34rem; }
 
 .scuttle-art {
     display: block;
@@ -4633,7 +4633,7 @@
     z-index: calc(var(--z-desks-popups) + 140);
 }
 
-.vent-read-card {
+::deep .vent-read-card {
     max-width: 42rem;
     text-align: center;
 }
@@ -4659,7 +4659,7 @@
 
 /* When something is warm in there the card itself takes the warning colour, so the answer registers
    before a word of it is read. */
-.vent-read-card.alive { border-color: rgba(232, 180, 92, 0.55); }
+::deep .vent-read-card.alive { border-color: rgba(232, 180, 92, 0.55); }
 
 .vent-read-foot {
     font-size: 0.98rem;
@@ -4692,7 +4692,7 @@
 /* #600 · THE LIFT PANEL. Owner, after a car that only ever went down: "we should have elevator panel with
    UI then". Built on the view-object backdrop like the valve board, because a captain standing in a lift
    with the doors open is doing the same thing as a captain standing at a board: reading, and choosing. */
-.lift-panel {
+::deep .lift-panel {
     width: min(30rem, 94vw);
     max-height: 92vh;
     display: flex;
@@ -4844,7 +4844,7 @@
 .locked-door-try:hover { background: #e8cb9c; }
 
 /* #603 · THE SATCHEL. */
-.satchel {
+::deep .satchel {
     width: min(32rem, 94vw);
     max-height: 92vh;
     display: flex;
@@ -5485,7 +5485,7 @@
    The barkeep card's family (deck-offer-card), with a cooler edge: a company canteen is not a bar, and the
    warm amber of a berth's counter would say the wrong thing about a room where everybody is on somebody
    else's clock. Wider than an offer card because a table has a row of MOVES rather than one pitch. */
-.table-card {
+::deep .table-card {
     border-color: rgba(160, 200, 220, 0.45);
     box-shadow: 0 0.5rem 2rem rgba(40, 90, 120, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
     max-width: min(40rem, 94vw);
@@ -5591,12 +5591,12 @@
 ::deep .busted-card,
 ::deep .view-object,
 .convergence-card,
-.deck-offer-card,
-.treasure-map-card,
+::deep .deck-offer-card,
+::deep .treasure-map-card,
 .expedition-brief-card,
 .expedition-reveal-card,
 .rescue-card,
-.vent-read-card,
+::deep .vent-read-card,
 .deck-shuttle-card {
     /* min(92vh, 100%): the screen, less a margin — and never taller than the backdrop that centres it,
        which on a short phone viewport is the smaller of the two. */
@@ -5611,11 +5611,11 @@
    off the bottom, which is the same bug wearing the fix's clothes. The table (#746) is the exception that
    proves the rule — it drops the anchor (position: static) to sit inside a modal backdrop's own centring,
    so it takes the family cap instead. */
-.deck-offer-card {
+::deep .deck-offer-card {
     max-height: calc(100vh - 11rem);
 }
 
-.deck-offer-card.table-card {
+::deep .deck-offer-card.table-card {
     max-height: min(92vh, 100%);
 }
 
@@ -5637,8 +5637,8 @@
 .deck-offer-card > .deck-offer-actions,
 .deck-offer-card > .deck-bank-actions,
 .treasure-map-card > .busted-options,
-.treasure-map-card > .view-object-close,
-.treasure-map-card > button:last-child,
+::deep .treasure-map-card > .view-object-close,
+::deep .treasure-map-card > button:last-child,
 .expedition-brief-card > button:last-child,
 .expedition-reveal-card > button:last-child,
 .rescue-card > .rescue-options,
@@ -5697,7 +5697,7 @@
     --card-foot-scrim: rgb(12, 16, 23);
 }
 
-.treasure-map-card {
+::deep .treasure-map-card {
     --card-foot-scrim: rgb(23, 17, 10);
 }
 
@@ -5713,7 +5713,7 @@
     --card-foot-scrim: rgb(12, 15, 22);
 }
 
-.deck-offer-card {
+::deep .deck-offer-card {
     --card-foot-scrim: rgba(6, 9, 15, 0.92);
 }
 
