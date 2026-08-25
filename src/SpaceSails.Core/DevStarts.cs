@@ -353,6 +353,13 @@ public static class DevStarts
         new("💰", "A fat purse",
             "The Sol start with 50,000 credits in the purse, for pricing anything without grinding for it.",
             "/map?credits=50000"),
+        // #997 wave 10 · THE DOSSIER, WITH A DOOR ON IT AT LAST. #960's card is gated on a tactical target,
+        // and until this the only two roads to one were a contact in sensor reach or a collector bought by a
+        // robbery — so three waves of the shell migration MEASURED that card by hand and each said so out
+        // loud. A collector's is the fullest file the game draws: her warrant, her nerve, what ends the hunt.
+        new("📖", "The target dossier — a collector's own file",
+            "Docked at Selene Gate with muscle already fitting out at the nearest policed world and her dossier open on the Nav glass. The card #962 wrote the collector's terms onto, and the first URL that can raise it — – tucks it into a tile, ✕ drops the target (#960, #997).",
+            "/map?dock=selene-gate&target=collector"),
 
         // --- The long stories, without the playthrough ---------------------------------------------------
         new("❄", "PROJEKTI KAAMOS — the front door",

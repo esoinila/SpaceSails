@@ -388,10 +388,31 @@ public sealed class EveryPopUpCanBeDismissedTests
             "needs shuttle stops in reach of the berth — the bench's own documented horizon (see DeskBench)."),
         new("the selfie offer", "selfie-offer", Ashore, Exit.EveryControlCloses, null,
             "raised by walking into a view worth a photograph."),
-        new("the target dossier", "map-dossier", Docked, Exit.AControl, null,
-            "needs a tactical target; #960 gave it both a ✕ and a minimise and TheDossierCardCarriesItsOwn"
-            + "SayingsTests owns its contents."),
+        // #997 wave 10 · DRIVEN NOW, and by a URL rather than by a poke. The reason this row sat undriven
+        // was true when it was written — the dossier is gated on a tactical target, and the only two roads
+        // to one were a contact in sensor reach or a collector bought by a robbery, neither of which a URL
+        // could reach. `?target=` is that road (Map.Npc.SeedTargetCheat), so the WORLD raises the card and
+        // the driver's whole job is to put it back up between presses: the law re-raises per control, and
+        // the ✕ it presses first drops the target the boot set.
+        //
+        // The driver calls the SHIPPING cheat rather than poking `_interestTargetId`, which is the stronger
+        // of the two: a cheat that stopped raising this card would fail here rather than nowhere.
+        new("the target dossier", "map-dossier", Docked + "&target=collector", Exit.AControl,
+            PointTheGlassAtHerAgain, At: ShipDesk.Nav),
     ];
+
+    /// <summary>#997 wave 10 · Re-point the tactical UI at the collector <c>?target=collector</c> already
+    /// sent, through the cheat's own contact-id road — so no second hunter is spawned per press and the
+    /// path this exercises is the one a dev URL takes.</summary>
+    private static void PointTheGlassAtHerAgain(DeskBench bench)
+    {
+        var muscle = (List<HunterState>)bench.Peek("_hunters")!;
+        Assert.True(muscle.Count > 0,
+            "?target=collector sent no muscle at all, so there is no dossier for this row to raise. Either "
+            + "SpawnHunterForHeatEvent found nothing policed within reach of Selene Gate — which would be a "
+            + "world change worth knowing about — or the cheat has stopped calling it.");
+        bench.CallOnTheDispatcher("SeedTargetCheat", muscle[0].Id);
+    }
 
     // ── Guard 1 · the completeness guard, read off the markup as typed ────────────────────────────────
 
@@ -459,9 +480,15 @@ public sealed class EveryPopUpCanBeDismissedTests
         // Fable's own words (Fable's ruling, wave 7 — see the entry there for the reason and for why the
         // class it is keyed on is still registered by the three real sheets that share it). Lowering a
         // ceiling is always allowed; this one is lowered because the row it counted is gone.
+        //
+        // #997 wave 10 · FOURTEEN BECAME THIRTEEN, and this time by a row being DRIVEN — the first
+        // reason on this list that was a missing DEV DOOR rather than a world the bench cannot build.
+        // The target dossier's row said "needs a tactical target", which was true and is now answerable
+        // from a URL (?target=, Map.Npc.SeedTargetCheat), so the row has a driver and the ruling is proved
+        // of that card by pressing rather than named and left.
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 14,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 14. If a row genuinely "
+        Assert.True(undriven <= 13,
+            $"{undriven} register rows have no driver, and the written-down ceiling is 13. If a row genuinely "
             + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
             + "the commit; the point of the number is that it cannot creep.");
     }
