@@ -216,6 +216,30 @@ internal sealed class DeskBench : Renderer
     public Task PressAsync(ulong handlerId) =>
         Dispatcher.InvokeAsync(() => DispatchEventAsync(handlerId, null, new MouseEventArgs()));
 
+    /// <summary>
+    /// #997 wave 11 · <b>TYPE A KEY AT THE PAGE.</b> <see cref="PressAsync"/>'s sibling, and it exists for
+    /// the same reason: the cancel-key law is a chain of <c>if</c>s in <c>Map.Sim.Cancel.cs</c>, and a test
+    /// that called <c>TryDismissTopOverlay</c> by reflection would prove that a method peels a card and
+    /// nothing at all about whether the ESCAPE KEY reaches it.
+    ///
+    /// <para>So this dispatches a real <see cref="KeyboardEventArgs"/> through the renderer's own event
+    /// channel at the <c>onkeydown</c> handler id the render tree wrote — which is <c>.map-page</c>'s, the
+    /// one focusable div the whole game's keyboard hangs off (Map.razor:14). The road a key takes is then
+    /// exactly the player's: <c>OnKeyDown</c> → the desk digits → Enter → <c>Escape</c> →
+    /// <c>TryDismissTopOverlay</c>, every gate above it included.</para>
+    /// </summary>
+    public Task TypeAsync(ulong handlerId, string key) =>
+        Dispatcher.InvokeAsync(() => DispatchEventAsync(handlerId, null, new KeyboardEventArgs { Key = key }));
+
+    /// <summary>The page's own keyboard host — the <c>tabindex="0"</c> div every key in the game arrives
+    /// at. A tree that has stopped drawing one is a page that has gone deaf, which is worth failing over
+    /// rather than skipping.</summary>
+    public static ulong TheKeyboard(Painted painted) =>
+        painted.Root.SelfAndDescendants()
+            .Where(node => node.Handlers.ContainsKey("onkeydown") && node.HasClass("map-page"))
+            .Select(node => node.Handlers["onkeydown"])
+            .FirstOrDefault();
+
     /// <summary>#992 · Read one of the page's own fields by name, for a law that needs to know what a press
     /// did to the state as well as to the markup.</summary>
     public object? Field(string name) => Read(_map, name);

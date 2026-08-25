@@ -16,7 +16,15 @@
     pointer-events: none; /* the backdrop passes clicks; only the card catches them */
 }
 
-.dice-tray-card {
+/* #997 wave 11 · ::deep, and it is the FIRST time this migration has written one outside Map.razor.css.
+   The reason is identical and that is the point: Blazor scopes a stylesheet to the component that RENDERED
+   the element, so the moment OverlayShell draws this card the div carries the shell's scope attribute
+   instead of this component's and `.dice-tray-card[b-dicetray]` matches nothing. Written `::deep` it is
+   `[b-dicetray] .dice-tray-card`, matched through the backdrop above it — which this component still
+   draws, and which is why the idiom reaches at all. Without it the tray loses its whole frame: no gold
+   border, no black ground, no width cap, and `pointer-events: auto` gone from the one element in a
+   `pointer-events: none` backdrop that is supposed to catch a click. */
+::deep .dice-tray-card {
     pointer-events: auto;
     max-width: min(92vw, 30rem);
     background: #14100a;
@@ -93,18 +101,28 @@
     margin-bottom: 0.6rem;
 }
 
-.dice-tray-close {
+/* ::deep for the reason above — the shell draws this button now.
+
+   …AND `line-height: normal` IS NOT DECORATION. #997 wave 7 measured the cost of the shell's
+   `:where(.overlay-shell-dismiss…):where(:not(.btn)) { line-height: 1 }` on a WORDED button: eight pixels
+   off `…wake up`, off the shelf, off `Close hatch`. Wave 7 answered it for Bootstrap `.btn` dismisses by
+   carving them out — a `.btn` already has a line-height of its own and the shell stopped overwriting it.
+   This is the FIRST worded way out in the client that is not a `.btn`, so it falls straight back into that
+   rule, and `let the dice lie` would come out shorter than it was drawn. One class beats a `:where()` of
+   none, so the tray states the height it always had rather than the shell deciding one for it. */
+::deep .dice-tray-close {
     background: transparent;
     border: 1px solid #b9942f;
     border-radius: 2px;
     color: #b9942f;
     font-family: inherit;
     font-size: 0.78rem;
+    line-height: normal;
     padding: 0.25rem 0.8rem;
     cursor: pointer;
 }
 
-.dice-tray-close:hover {
+::deep .dice-tray-close:hover {
     background: #b9942f;
     color: #14100a;
 }

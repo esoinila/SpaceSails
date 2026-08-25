@@ -104,6 +104,35 @@ public partial class Map
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
+        // #997 wave 11 · THE FOUR CLICK MENUS — FABLE'S RULING, WAVE 11.
+        //
+        // #1012 migrated them into one mechanism and reported, without changing anything, that this is the
+        // one family this chain has never listed: every other card in the client obeys the cancel key, and
+        // these four sat there ignoring it. That is #351's own complaint — the owner's, verbatim, "No way
+        // to close this dialog? Where is cancel?" — one family over, and the owner's standing pop-up ruling
+        // (2026-08-24) plus plain consistency decide it. They join the law.
+        //
+        // WHAT IT ACTUALLY FIXES, and it is worse than "a key did nothing". Escape's fall-through is
+        // SwitchDesk(Nav). So Escape over an open sky menu at the Sensors desk used to move the captain to
+        // a different desk and LEAVE THE MENU STANDING — the menu draws on Nav, Sensors and the War Room
+        // alike, so it followed him there, still anchored to a click he made on another desk's sky. The key
+        // did not do nothing; it did something else.
+        //
+        // LAST IN THE CHAIN, because a click menu is the least modal thing in it: it is a list hanging off
+        // a spot on the map, and anything else that is open is over it. Among the four the order is REVERSE
+        // PAINT ORDER — the sky menu is written last in Map.razor and therefore drawn on top of the three
+        // above it, so it is peeled first. In practice at most one is ever up (a pointer-down anywhere
+        // closes the others, Map.Sim.Controls; choosing from the chooser clears the chooser on the way into
+        // the menu it opens), so this order is a rule rather than a workaround — but "topmost first" has to
+        // mean one thing in this file, and paint order is the only honest reading of it.
+        //
+        // Each calls the menu's OWN house closer, which is what the ✕ the shell draws calls too. They are
+        // deliberately absent from the Enter chain below: a menu is a LIST of things the captain may do,
+        // and a key that picked one of them for him is the exact thing that chain refuses to do.
+        if (_skyMenuWorld is not null) { CloseSkyMenu(); return true; }
+        if (_shipMenuId is not null) { CloseShipMenu(); return true; }
+        if (_bodyMenuBody is not null) { CloseBodyMenu(); return true; }
+        if (_pickMenu is not null) { ClosePickMenu(); return true; }
         return false;
     }
 

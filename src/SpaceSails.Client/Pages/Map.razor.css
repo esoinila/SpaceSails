@@ -804,7 +804,12 @@
     pointer-events: auto;
 }
 
-.map-tutorial {
+/* #997 wave 11 · ::deep because OverlayShell draws this root now. Without it the rule compiles to
+   `.map-tutorial[b-map]`, matches nothing, and the checklist loses its anchor outright — every
+   declaration in this block is here, so it falls out of the bottom-left corner into the document flow
+   at the top of the Nav column and takes whatever width the column gives it. Present, correct and dead
+   (#996), and nothing in the client would say so. */
+::deep .map-tutorial {
     position: absolute;
     bottom: 0.75rem;
     left: 0.75rem;
