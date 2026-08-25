@@ -28,6 +28,10 @@
     RenderFragment theSecondaryClose =
         @<button type="button" class="overlay-shell-close @CloseClass"
                  aria-label="@CloseLabel" title="@CloseTitle" @onclick="PressTheClose">@CloseFace</button>;
+
+    RenderFragment theWayOutBeside =
+        @<button type="button" class="overlay-shell-beside @BesideClass"
+                 aria-label="@BesideLabel" title="@BesideTitle" @onclick="PressTheBeside">@BesideFace</button>;
 }
 <div class="@RootClassList" @attributes="Splat" @onclick:stopPropagation="StopClicks">
     @if (Dismiss == OverlayDismiss.Minimize)
@@ -47,7 +51,30 @@
            `.view-object > .view-object-close` — both need the dismiss to be a DIRECT child, so a wrapper
            here would be a wrapper that quietly unstuck twenty cards' buttons. *@
         @ChildContent
-        @if (Dismiss != OverlayDismiss.ByDecision)
+        @* #997 wave 7 · THE WAY OUT IS SOMETIMES TWO, AND SOMETIMES IT SITS IN A ROW THE PAGE NAMED.
+           Both halves come off ONE finding of wave 6: the shapes this migration could not reach were the
+           ones whose foot is a ROW rather than a lone button. #1007 wrote down the condition by name — the
+           straggler "gets a shell when the shell learns to hand a page's own foot the dismiss it draws" —
+           and the death panels, met by every player, are that shape four times over.
+
+           WaysClass is the page's own name for the row; the shell draws the row and puts its ways out in
+           it, so `.deck-shuttle-actions`' centring keeps working on a button the shell now owns. Left
+           unnamed with one way out, nothing is drawn around it and the dismiss is the card's last direct
+           child exactly as it has been since #996 — which is what twenty-odd sticky feet are pinned to. *@
+        @if (TheWayOutSitsInARow)
+        {
+            <div class="overlay-shell-ways @WaysClass">
+                @if (Dismiss != OverlayDismiss.ByDecision)
+                {
+                    @theDismiss
+                }
+                @if (OnBeside.HasDelegate)
+                {
+                    @theWayOutBeside
+                }
+            </div>
+        }
+        else if (Dismiss != OverlayDismiss.ByDecision)
         {
             @theDismiss
         }
@@ -217,6 +244,31 @@
 
     [Parameter] public string? CloseTitle { get; set; }
 
+    /// <summary>
+    /// #997 wave 7 · THE SECOND WAY OUT, BESIDE THE FIRST.
+    ///
+    /// <para>Not the dossier's <see cref="OnClose"/> — that one is the second VERB on a Minimize card (a –
+    /// that tucks and a ✕ that ends), drawn in the head row and wired to the same close the dismiss is. This
+    /// is a second way out of a <see cref="OverlayFrame.Bare"/> surface's foot, with its own verb: the death
+    /// panels' <i>📖 Load a saved voyage</i> beside <i>…wake up</i>, which #951 put on all four of them.</para>
+    ///
+    /// <para>It draws only when something is wired to it, so no surface grows a control by omission.</para>
+    /// </summary>
+    [Parameter] public EventCallback OnBeside { get; set; }
+
+    [Parameter] public string? BesideClass { get; set; }
+
+    [Parameter] public string? BesideFace { get; set; }
+
+    [Parameter] public string? BesideLabel { get; set; }
+
+    [Parameter] public string? BesideTitle { get; set; }
+
+    /// <summary>The page's own name for the ROW the shell draws its ways out into. Named on a surface whose
+    /// foot is a row the page already has a rule for; left null on the twenty-odd cards whose way out is
+    /// simply the last thing in the prose, because a wrapper there would unstick every one of them.</summary>
+    [Parameter] public string? WaysClass { get; set; }
+
     [Parameter] public string? ChoicesClass { get; set; }
 
     [Parameter] public string? ChoiceClass { get; set; }
@@ -249,6 +301,12 @@
             : Extra.Where(pair => pair.Key != "class").ToDictionary(pair => pair.Key, pair => pair.Value);
 
     private string TileFace => $"{TileGlyph} {TileLabel}".Trim();
+
+    /// <summary>A row is drawn when the page named one, or when there are two ways out to put in it — two
+    /// buttons loose at the end of a card are two buttons the page's own foot rule cannot reach as one.
+    /// </summary>
+    private bool TheWayOutSitsInARow =>
+        WaysClass is { Length: > 0 } || OnBeside.HasDelegate;
 
     private string OpenLabel => TileLabel is { Length: > 0 } named ? $"Open {named}" : "Open it back up";
 
@@ -302,6 +360,8 @@
 
     private Task PressTheClose() => OnClose.HasDelegate ? OnClose.InvokeAsync() : Task.CompletedTask;
 
+    private Task PressTheBeside() => OnBeside.HasDelegate ? OnBeside.InvokeAsync() : Task.CompletedTask;
+
     private async Task Choose(Choice choice)
     {
         _decided = true;
@@ -343,6 +403,20 @@
         {
             DesignFault($"{Me()} minimises into a tile with no face on it. A tile with no glyph and no label "
                         + "is a mystery button in a corner.");
+        }
+
+        if (OnBeside.HasDelegate && BesideFace is not { Length: > 0 })
+        {
+            DesignFault($"{Me()} offers a second way out with no face on it. An unlabelled button beside the "
+                        + "one the captain can read is a control nobody can tell apart from a rendering "
+                        + "fault.");
+        }
+
+        if (BesideFace is { Length: > 0 } && !OnBeside.HasDelegate)
+        {
+            DesignFault($"{Me()} draws a second way out reading \"{BesideFace}\" and nothing is wired to "
+                        + "OnBeside — the same quiet failure as a ✕ with no verb behind it, one button "
+                        + "further along the row.");
         }
 
         if (Dismiss == OverlayDismiss.ByDecision && Choices is { Count: 0 })

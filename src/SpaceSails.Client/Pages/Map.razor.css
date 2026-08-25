@@ -408,8 +408,13 @@
 }
 
 /* The shuttle-bay airlock pop-up (#163): same card family as the bar offer, but a scrollable list of
-   berths in shuttle range. */
-.deck-shuttle-card {
+   berths in shuttle range.
+
+   #997 wave 7 · `::deep` because ONE of the two cards on this root is the shell's now (the hatch) and one
+   is not (the load-out, #313). Written plainly this compiles to `.deck-shuttle-card[b-map]` and stops
+   matching the shelled one; written `::deep` it is `[b-map] .deck-shuttle-card` — a descendant of the
+   page's own deck markup — and reaches both, whichever component drew them. #1007's idiom, second outing. */
+::deep .deck-shuttle-card {
     position: absolute;
     top: 8rem;
     left: 50%;
@@ -509,7 +514,9 @@
     color: #b7c0cf;
 }
 
-.deck-shuttle-actions {
+/* The hatch's foot is the shell's row now (WaysClass), the load-out's is still the page's own — same
+   rule reaches both, for the reason above. */
+::deep .deck-shuttle-actions {
     display: flex;
     justify-content: center;
 }
@@ -3660,7 +3667,9 @@
     margin: 0.15rem 0;
 }
 
-.busted-close {
+/* The death card's way out, wherever it is drawn from: the shell's dismiss on the four panels that end in
+   a row (wave 7), the page's own button on the four that end in one control. `::deep` reaches both. */
+::deep .busted-close {
     margin-top: 0.6rem;
 }
 
@@ -5614,7 +5623,7 @@
 ::deep .expedition-reveal-card,
 ::deep .rescue-card,
 ::deep .vent-read-card,
-.deck-shuttle-card {
+::deep .deck-shuttle-card {
     /* min(92vh, 100%): the screen, less a margin — and never taller than the backdrop that centres it,
        which on a short phone viewport is the smaller of the two. */
     max-height: min(92vh, 100%);
@@ -5646,8 +5655,8 @@
    the button's own top edge and all of it falls below: reach any higher and it swallows the footnote the
    first-ground cards print just above their button, which is the second thing the browser showed me. Each
    card names its own colour below; the fallback is the dark every card in this family is a shade of. */
-.busted-card .busted-close-row,
-.busted-card .busted-close,
+::deep .busted-card .busted-close-row,
+::deep .busted-card .busted-close,
 .busted-card > .busted-options,
 ::deep .view-object > .view-object-close,
 ::deep .convergence-card > .convergence-close,
@@ -5660,7 +5669,7 @@
 ::deep .expedition-brief-card > button:last-child,
 ::deep .expedition-reveal-card > button:last-child,
 .rescue-card > .rescue-options,
-.deck-shuttle-card > .deck-shuttle-actions {
+::deep .deck-shuttle-card > .deck-shuttle-actions {
     position: sticky;
     bottom: 0;
     z-index: 3;
@@ -5740,7 +5749,7 @@
     --card-foot-scrim: rgba(6, 9, 15, 0.92);
 }
 
-.deck-shuttle-card {
+::deep .deck-shuttle-card {
     --card-foot-scrim: rgba(6, 9, 15, 0.94);
 }
 
@@ -6083,7 +6092,7 @@
    it immediately: an outlined button with no readable text inside it, because a 12rem spread drawn from a
    z-index:3 element covers a plain sibling entirely. So the row is added to that selector list above and
    the button inside a row gives its own scrim up; one foot, one scrim, two verbs on top of it. */
-.busted-close-row {
+::deep .busted-close-row {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6093,7 +6102,7 @@
 }
 
 /* Inside a row, the button is just a button — the row is the pinned foot now. */
-.busted-card .busted-close-row .busted-close {
+::deep .busted-card .busted-close-row .busted-close {
     position: static;
     box-shadow: none;
     margin-top: 0;
@@ -6101,15 +6110,15 @@
 
 /* Readable against the sepia backdrop without competing with the white "…wake up": the logbook is the
    quieter of the two verbs, but it must be legible, which btn-outline-light alone was not here. */
-.busted-logbook {
+::deep .busted-logbook {
     font-size: 0.9rem;
     border-color: rgba(243, 226, 196, 0.65);
     color: #f3e2c4;
     background: rgba(20, 14, 8, 0.55);
 }
 
-.busted-logbook:hover,
-.busted-logbook:focus-visible {
+::deep .busted-logbook:hover,
+::deep .busted-logbook:focus-visible {
     border-color: #f3e2c4;
     background: rgba(243, 226, 196, 0.16);
     color: #fff6e4;

@@ -61,10 +61,18 @@
    corner. #992 made that a rule of the house after measuring the great port's plate at 1rem from the left
    wall: a control that overhangs its surface is a control a narrow viewport can push under an edge, and a
    way out the player cannot reach is the ruling failing quietly instead of loudly. */
-:where(.overlay-shell-dismiss, .overlay-shell-close) {
+:where(.overlay-shell-dismiss, .overlay-shell-close, .overlay-shell-beside) {
     flex: 0 0 auto;
     line-height: 1;
     cursor: pointer;
+}
+
+/* #997 wave 7 · THE ROW A PAGE'S FOOT ALREADY IS. Drawn only when the page named one (WaysClass) or when
+   there are two ways out to hold. `display: flex` and nothing else on purpose: every foot this reaches
+   already has a rule of its own — `.busted-close-row` centres and wraps and sets its own gap,
+   `.deck-shuttle-actions` centres — and a second opinion here would be a pixel this migration moved. */
+:where(.overlay-shell-ways) {
+    display: flex;
 }
 
 /* ── The tile ───────────────────────────────────────────────────────────────────────────────────────── */
