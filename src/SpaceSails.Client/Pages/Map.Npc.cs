@@ -487,6 +487,20 @@ public partial class Map
 
         ShowPulseMessage($"🧪 Test: 📖 {ContactCallsign(id)} is the tactical target — her dossier is on the "
                          + "glass, bottom-centre. – tucks it into a tile, ✕ drops the target.");
+
+        // #997 wave 10 · THE ONE THING THE OFF-BROWSER BENCH CANNOT SEE, said out loud where a playtester
+        // will read it. `?target=collector&dock=<berth>` boots a dossier that is GONE a tick later, and
+        // that is the game being right rather than the cheat being wrong: a haven is precisely where a
+        // collector loses the scent (#580 / EncounterRule.ApplyBreakOff), so she breaks off, leaves
+        // `_hunters`, and DossierFor has nothing to draw. It cost a browser walk to find, because the
+        // bench runs no sim ticks at all — so the warning is the line the captain is left holding.
+        if (_dockedHavenId is not null && _hunters.Any(hunter => hunter.Id == id))
+        {
+            ShowPulseMessage(
+                $"🧪 DEV ?target={asked}: her file is up, and it will not stay. You are berthed at a HAVEN, "
+                + "which is exactly where a collector loses the scent — she breaks off within a tick or two "
+                + "and the dossier goes with her. Cast off, or boot free-flying: /map?start=wreck&target=collector");
+        }
     }
 
     private readonly record struct DossierInfo(

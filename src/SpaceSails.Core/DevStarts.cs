@@ -357,9 +357,11 @@ public static class DevStarts
         // and until this the only two roads to one were a contact in sensor reach or a collector bought by a
         // robbery — so three waves of the shell migration MEASURED that card by hand and each said so out
         // loud. A collector's is the fullest file the game draws: her warrant, her nerve, what ends the hunt.
+        // FREE-FLYING and not docked, which a browser walk had to teach: a haven is exactly where a
+        // collector loses the scent (#580), so `&dock=` boots a dossier that breaks off a tick later.
         new("📖", "The target dossier — a collector's own file",
-            "Docked at Selene Gate with muscle already fitting out at the nearest policed world and her dossier open on the Nav glass. The card #962 wrote the collector's terms onto, and the first URL that can raise it — – tucks it into a tile, ✕ drops the target (#960, #997).",
-            "/map?dock=selene-gate&target=collector"),
+            "Alongside the derelict roadster with muscle already dispatched and her dossier open on the Nav glass: her warrant, her nerve, and the three things that end the hunt. The card #962 wrote the collector's terms onto, and the first URL that can raise it — – tucks it into a tile, ✕ drops the target (#960, #997).",
+            "/map?start=wreck&target=collector"),
 
         // --- The long stories, without the playthrough ---------------------------------------------------
         new("❄", "PROJEKTI KAAMOS — the front door",

@@ -352,11 +352,18 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     /// <para>The whole point of the cheat, asked of a real boot rather than of the method: the URL alone —
     /// no poke, no field write — must leave the dossier on the glass at the desk that draws it, and the
     /// card must be the COLLECTOR's (the fullest file the game has, #962's terms) rather than a stub.</para>
+    ///
+    /// <para><b>Free-flying, and a browser walk is why.</b> The first cut of this cheat's own dev start was
+    /// <c>&amp;dock=selene-gate</c> and it passed here — this bench runs no sim ticks at all. In a real
+    /// Chrome the dossier came up and was GONE a second later, which is the game being right rather than
+    /// the cheat being wrong: a haven is exactly where a collector loses the scent (#580), so she breaks
+    /// off, leaves <c>_hunters</c>, and <c>DossierFor</c> has nothing to draw. The world moved here; the
+    /// warning the cheat now prints for the docked case is pinned next door.</para>
     /// </summary>
     [Fact]
     public async Task TheTargetCheatBootsWithACollectorsDossierOnTheGlass()
     {
-        using DeskBench bench = await DeskBench.BootAsync(Docked + "&target=collector");
+        using DeskBench bench = await DeskBench.BootAsync(FreeFlying + "&target=collector");
 
         Assert.True(bench.ActiveDesk is ShipDesk.Nav or ShipDesk.Sensors,
             $"?target= left the captain at the {bench.ActiveDesk} desk, where the dossier is not drawn at "
@@ -366,7 +373,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
         DeskBench.Painted.Node file = TheCard(await bench.RenderAsync(), "map-dossier")
             ?? throw new Xunit.Sdk.XunitException(
                 "?target=collector booted no dossier. Either no muscle was sent (SpawnHunterForHeatEvent "
-                + "found nothing policed within reach of Selene Gate) or DossierFor has stopped answering "
+                + "found nothing policed within reach of the wreck) or DossierFor has stopped answering "
                 + "for a hunter — and the second is #962's own bug, which is that a hunter is never in "
                 + "_npcStates.");
 
@@ -378,6 +385,33 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
 
         await bench.PressAsync(cross.Handlers["onclick"]);
         Assert.Null(TheCard(await bench.RenderAsync(), "map-dossier"));
+    }
+
+    /// <summary>
+    /// …AND AT A BERTH IT SAYS THE FILE WILL NOT STAY, WHICH ONLY A BROWSER COULD HAVE TAUGHT.
+    ///
+    /// <para>The cheat's first dev start was <c>?dock=selene-gate&amp;target=collector</c>, and it was green
+    /// on this bench. In a real Chrome the dossier came up and then vanished: a haven is where a collector
+    /// loses the scent (#580 / <c>EncounterRule.ApplyBreakOff</c>), so within a tick or two she breaks off,
+    /// leaves <c>_hunters</c>, and <c>DossierFor</c> has nothing left to draw. The bench could not see it
+    /// because the bench runs NO sim ticks — its own documented horizon, and the honest reading of a green
+    /// run here.</para>
+    ///
+    /// <para>The answer was not to weaken the game. It was to move the dev start free-flying and to have
+    /// the cheat SAY so at a berth, and this guard holds the saying — because a warning that goes missing
+    /// is a playtester back where wave 10 started: watching a card disappear and not knowing that was the
+    /// rules working.</para>
+    /// </summary>
+    [Fact]
+    public async Task TheTargetCheatWarnsThatAHavenIsWhereACollectorLosesYou()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(Docked + "&target=collector");
+        Assert.Contains("berthed at a HAVEN", bench.Pulse, StringComparison.Ordinal);
+        Assert.Contains("start=wreck&target=collector", bench.Pulse, StringComparison.Ordinal);
+
+        // …and it is NOT said where it would be false. The wreck is nobody's harbour.
+        using DeskBench adrift = await DeskBench.BootAsync(FreeFlying + "&target=collector");
+        Assert.DoesNotContain("berthed at a HAVEN", adrift.Pulse, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -417,6 +451,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     // driven there can never be standing in two different places.
     private const string Docked = "/map?dock=selene-gate&body=luna&site=1";
     private const string Ashore = "/map?dock=the-tilt&site=0&land=1";
+    private const string FreeFlying = "/map?start=wreck";
 
     private static DeskBench.Painted.Node? TheMenu(DeskBench.Painted painted) =>
         TheCard(painted, "map-body-menu");

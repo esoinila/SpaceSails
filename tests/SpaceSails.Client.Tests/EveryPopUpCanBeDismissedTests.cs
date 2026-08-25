@@ -397,7 +397,7 @@ public sealed class EveryPopUpCanBeDismissedTests
         //
         // The driver calls the SHIPPING cheat rather than poking `_interestTargetId`, which is the stronger
         // of the two: a cheat that stopped raising this card would fail here rather than nowhere.
-        new("the target dossier", "map-dossier", Docked + "&target=collector", Exit.AControl,
+        new("the target dossier", "map-dossier", FreeFlying + "&target=collector", Exit.AControl,
             PointTheGlassAtHerAgain, At: ShipDesk.Nav),
     ];
 
@@ -409,7 +409,7 @@ public sealed class EveryPopUpCanBeDismissedTests
         var muscle = (List<HunterState>)bench.Peek("_hunters")!;
         Assert.True(muscle.Count > 0,
             "?target=collector sent no muscle at all, so there is no dossier for this row to raise. Either "
-            + "SpawnHunterForHeatEvent found nothing policed within reach of Selene Gate — which would be a "
+            + "SpawnHunterForHeatEvent found nothing policed within reach of the wreck — which would be a "
             + "world change worth knowing about — or the cheat has stopped calling it.");
         bench.CallOnTheDispatcher("SeedTargetCheat", muscle[0].Id);
     }
