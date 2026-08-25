@@ -69,6 +69,88 @@ public static class RoundTips
 }
 
 /// <summary>
+/// #1006 · THE ROOM DOES NOT PAINT ITSELF ONE COLOUR.
+///
+/// <para>The vague colour a round-loosened regular offers is atmosphere, not intel (<see cref="TipTier.Vague"/>)
+/// — but it is atmosphere spoken by a PERSON, and before this the whole room read the same card: the line
+/// was picked off the sim-hour alone, so every regular at the bar said it in the same breath.</para>
+///
+/// <para>The pick is now SALTED PER SPEAKER on the shared <see cref="DiceRule"/> (never a private random —
+/// determinism is law in Core), keeping the stability the old code claimed: the hour is still the only clock
+/// in the seed, so the same regular says the same line for the whole sim-hour.</para>
+///
+/// <para><b>The pool is <see cref="PoolSize"/> lines and a bar can seat more regulars than that.</b> Within
+/// one round a <see cref="Round"/> walks a collision forward to the next unspoken line, so no two regulars
+/// read the same card in the same breath while the pool lasts. Once every line has been spoken the wheel
+/// turns over and the next speaker draws from the full pool again — a repeat is then ALLOWED but never
+/// FORCED, because that speaker's own salted pick decides, not the speaker before them.</para>
+/// </summary>
+public static class RoomColor
+{
+    /// <summary>The pool of vague-colour lines. Atmosphere only — a stranger's best offering.</summary>
+    public static readonly IReadOnlyList<string> Lines =
+    [
+        "“Quiet season. Too quiet, if you ask me.”",
+        "“Watch the docks after dark. That's all I'll say.”",
+        "“Somebody always owes somebody out here.”",
+        "“The good runs dried up. Or the good runners got careful.”",
+    ];
+
+    /// <summary>How many different vague-colour lines exist. A room with more regulars than this MUST
+    /// repeat somebody — the guarantee is "distinct while the pool lasts", not "always distinct".</summary>
+    public static int PoolSize => Lines.Count;
+
+    /// <summary>The sim-hour a sim-time falls in — the one clock in the seed, so a regular's line holds
+    /// steady for the hour rather than changing while the captain reads it.</summary>
+    public static long HourOf(double simTime) => (long)(simTime / 60);
+
+    /// <summary>Which line THIS speaker reaches for this hour, before any collision walk. Salted per
+    /// speaker id on the shared dice rule, so two regulars are independent streams off the same hour.</summary>
+    public static int IndexFor(string speakerId, long simHour)
+        => (int)(DiceRule.Seed($"room-colour:{speakerId}", simHour) % (ulong)Lines.Count);
+
+    /// <summary>The line this speaker says this hour, ignoring the room (the single-speaker law).</summary>
+    public static string LineFor(string speakerId, double simTime)
+        => Lines[IndexFor(speakerId, HourOf(simTime))];
+
+    /// <summary>
+    /// ONE ROUND OF DRINKS — the little bit of memory that keeps the room from painting itself one colour.
+    /// Hand every speaker in the same round the same <see cref="Round"/> and each gets their own salted
+    /// line, walked forward past anything already said this round while unspoken lines remain.
+    /// </summary>
+    public sealed class Round
+    {
+        private readonly HashSet<int> _spoken = [];
+
+        /// <summary>How many lines have been spoken since the wheel last turned over.</summary>
+        public int SpokenCount => _spoken.Count;
+
+        /// <summary>The line <paramref name="speakerId"/> says in this round at <paramref name="simTime"/>.</summary>
+        public string LineFor(string speakerId, double simTime)
+        {
+            int i = IndexFor(speakerId, HourOf(simTime));
+
+            // The room outgrew the pool: the wheel turns over, and this speaker draws from all of it again.
+            // Their own salted pick decides — so a repeat of the line just said is possible, never forced.
+            if (_spoken.Count >= Lines.Count)
+            {
+                _spoken.Clear();
+            }
+
+            // Walk forward to the first line nobody has said yet this round. Bounded by the pool, and the
+            // clear above guarantees at least one free slot, so this always lands.
+            for (int step = 0; step < Lines.Count && _spoken.Contains(i); step++)
+            {
+                i = (i + 1) % Lines.Count;
+            }
+
+            _spoken.Add(i);
+            return Lines[i];
+        }
+    }
+}
+
+/// <summary>
 /// The captain's "overheard at the bar" book (#119 receipt/ledger idiom, for intel). Owner 2026-07-18:
 /// the words a player paid a round to hear "may not hide" and must not "autodisappear" — so every bar
 /// tip/rumor is APPENDED here, durable and revisitable, and round-trips through the Vault
