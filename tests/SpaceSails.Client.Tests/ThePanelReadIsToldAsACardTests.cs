@@ -159,12 +159,23 @@ public sealed class ThePanelReadIsToldAsACardTests
         int backdrop = block.IndexOf("class=\"view-object-backdrop\"", StringComparison.Ordinal);
         int modal = block.IndexOf("class=\"view-object\"", StringComparison.Ordinal);
         int caption = block.IndexOf("view-object-caption", StringComparison.Ordinal);
-        int closes = block.IndexOf("view-object-close", StringComparison.Ordinal);
+
+        // #997 wave 3 · THE CARD'S END, read off its closing tag rather than off its BUTTON. This guard used
+        // to bracket the caption between the card's opening class and `view-object-close`, which was the same
+        // line as long as the foot was the last thing typed inside the card. The foot is the shell's now and
+        // its class is named on the card's OPENING tag (DismissClass="view-object-close"), so that anchor
+        // moved to the top of the block and the sandwich inverted. The question this guard is really asking —
+        // is the caption inside the card's own subtree, or under the backdrop's blur — is unchanged, and the
+        // card's closing tag answers it without depending on which child happens to be last.
+        int closes = block.IndexOf("</OverlayShell>", StringComparison.Ordinal);
 
         Assert.True(backdrop >= 0 && modal > backdrop,
             "the view-object card is no longer a modal inside a backdrop — this guard needs re-reading.");
+        Assert.True(closes > modal,
+            "the view-object card is no longer drawn through OverlayShell — this guard needs re-reading " +
+            "(#997 wave 3 put every .view-object card in the client on the shell).");
         Assert.True(caption > modal && caption < closes,
-            "the story card's caption is rendered outside <div class=\"view-object\"> — a line under the " +
+            "the story card's caption is rendered outside the view-object card — a line under the " +
             "backdrop's blur is in the DOM and not on the screen (#736/#680).");
 
         // The caption slot is the card's, and it is the ConsoleSpot's own Caption — the field the raise

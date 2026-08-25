@@ -2743,7 +2743,7 @@
 /* THE ARCHIVE NODE'S VISIONS — the wreck cards are lamp-amber because a captain is standing in a room
    with a lamp. These are not a room; they are what a mind with no eyes made of a place. So the frame goes
    cold, which is the same distinction art-manifest-visions.md draws for the canvases themselves. */
-.archive-vision {
+::deep .archive-vision {
     border-color: rgba(150, 200, 235, 0.4);
     background: #080b12;
 }
@@ -2752,13 +2752,13 @@
     color: #cfe6f7;
 }
 
-.archive-vision .view-object-close {
+::deep .archive-vision .view-object-close {
     background: rgba(150, 200, 235, 0.12);
     border-color: rgba(150, 200, 235, 0.42);
     color: #cfe6f7;
 }
 
-.archive-vision .view-object-close:hover {
+::deep .archive-vision .view-object-close:hover {
     background: rgba(150, 200, 235, 0.24);
 }
 
@@ -2793,7 +2793,7 @@
 
 /* THE CAPTAIN'S SELFIE (#400) — the framed shot: the vista, the captain's #368 portrait disc composited
    into the corner (v1's "no image processing" composite), the boast, and the ledger stamp. */
-.selfie-frame {
+::deep .selfie-frame {
     border-color: rgba(120, 200, 255, 0.4);
 }
 
@@ -3461,7 +3461,7 @@
     background: radial-gradient(circle at 50% 40%, rgba(90, 60, 25, 0.9), rgba(10, 7, 3, 0.97));
 }
 
-.busted-card {
+::deep .busted-card {
     max-width: min(34rem, 92vw);
     padding: 1.25rem 1.5rem;
     text-align: center;
@@ -5588,7 +5588,7 @@
    Named rather than globbed, in the house idiom of the HUD-collision gate: a NEW modal card has to be
    added here deliberately, which is the moment somebody asks whether its way out is reachable. The guard
    that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate. */
-.busted-card,
+::deep .busted-card,
 ::deep .view-object,
 .convergence-card,
 .deck-offer-card,
@@ -5688,7 +5688,7 @@
    below the action row — the one honest option, since no single colour can match a gradient at the height
    a sticky element happens to be sitting at, and a well that says "the card ends here" is the right thing
    to say about a card whose whole problem was that nobody could tell where it ended. */
-.busted-card,
+::deep .busted-card,
 .rescue-card {
     --card-foot-scrim: rgba(10, 7, 9, 0.99);
 }
