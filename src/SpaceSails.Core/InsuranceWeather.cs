@@ -12,7 +12,7 @@ namespace SpaceSails.Core;
 // So this is not a new NPC and not a new card. It is EIGHT SENTENCES and the law that decides when
 // one of them is in the air, and it sits beside `BarIntel` because it is the same idiom: what the
 // room says when nobody was asked. The lines are Fable's, verbatim, and this file is the only place
-// they exist — a second copy in a client file would be the first named bug class with a glass in it.
+// they exist — a second listing in a client file would be the first named bug class with a glass in it.
 //
 // WHAT THE WEATHER IS NOT. It is not intel: nothing here is worth coin, nothing opens a door, and
 // hearing a line writes nothing into any book — with exactly one exception, the lapsed cousin, and
