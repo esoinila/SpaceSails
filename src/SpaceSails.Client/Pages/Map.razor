@@ -4509,13 +4509,21 @@
     {
         @* #253: header + one row per candidate, flipped away from the near edge. *@
         var pickAt = ClampMenu(_pickMenuX, _pickMenuY, pickList.Count);
-        @* #997 wave 10 · THE MENU FAMILY'S FIRST CARD, and the answer to the question #1010 asked before
-           anybody assumed it: a click menu IS a card with a head and a way out. Its ROWS are not ways out
-           — they are the actions the click meant — and the one control that ends it has always been the ✕
-           in this head row. So this is the shell's plainest shape, Card · Close, and it is a Close and
-           never a ByDecision: some rows in this family close their menu (this chooser's every candidate
-           does) and others deliberately do not (the arm toggle, the aerobrake, the cycler), so "every
-           answer this surface offers is itself a close" would be a claim that is FALSE for the family. *@
+        @* #997 wave 10 · THE MENU FAMILY'S FIRST CARD, and #1010's pre-question answered before anybody
+           assumed it. A click menu IS a card: a head with a name and a way out, over a body. Its rows are
+           not ways out — they are the actions the click MEANT — so all four take the shell's plainest and
+           oldest shape, Card · Close, and the family wanted no new shell mode at all.
+
+           AND IT IS A Close AND NOT A ByDecision, THOUGH THE BEHAVIOUR WOULD ALLOW ONE — a ruling rather
+           than an oversight, so it is written where the decision was made. Pressed, EVERY row of every menu
+           in this family does end its menu (measured, not assumed: 🎯 Set destination, 🛰 arm, 🚀 long haul,
+           ❄ the cycler, 🪂 aerobrake, 🔭 scan and this chooser's own rows all clear their gate on the way
+           out), so the critical-decision exception's own behaviour test would pass here. It is still the
+           wrong shape. `ByDecision` says no ✕ is NEEDED because every answer is itself a close, and the
+           shell then draws none — which would leave a captain who opened a menu by accident with no way to
+           shut it except to set a destination, arm an insertion or spend a telescope pass. A menu is not a
+           question; it is a list of things you MAY do, and "none of them" has to stay sayable.
+           Pinned by TheClickMenusTakeTheShellAndTheContractTakesItsFootTests. *@
         <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
                       style="@MenuAnchorStyle(pickAt)"
                       Dismiss="OverlayDismiss.Close" OnClose="ClosePickMenu"
@@ -5110,10 +5118,9 @@
     {
         @* #253/#290: up to four action rows on Nav (set dest · arm · 🚀 long haul · 🪂 aerobrake), two on Sensors. *@
         var bodyAt = ClampMenu(_bodyMenuX, _bodyMenuY, 4);
-        @* #997 wave 10 · Card · Close, on the menu with the longest list in the family — and the one that
-           proves the family is not a ByDecision: 🎯 Set destination and 🚀 Long haul close it, while the
-           🛰 arm toggle, the ❄ cycler and the 🪂 aerobrake are deliberately toggles that leave it standing
-           so the captain can read what he just armed. The ✕ is the way out and always was. *@
+        @* #997 wave 10 · Card · Close, on the longest list in the family. Every row here ends the menu and
+           the ✕ is still the only one that ends it without spending something — see the chooser above for
+           why that makes this a Close rather than the critical-decision exception. *@
         <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
                       style="@MenuAnchorStyle(bodyAt)"
                       Dismiss="OverlayDismiss.Close" OnClose="CloseBodyMenu"
@@ -5219,7 +5226,7 @@
         @* #253: a vitals line plus up to three actions (interest · track · scan). *@
         var shipAt = ClampMenu(_shipMenuX, _shipMenuY, 4);
         @* #997 wave 10 · Card · Close. The vitals line and the three actions are the page's own children of
-           the shell's body, in the order they were typed — nothing here is a way out but the ✕. *@
+           the shell's body, in the order they were typed; the ✕ is the shell's. *@
         <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
                       style="@MenuAnchorStyle(shipAt)"
                       Dismiss="OverlayDismiss.Close" OnClose="CloseShipMenu"
