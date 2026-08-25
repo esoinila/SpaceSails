@@ -113,10 +113,16 @@ public partial class Map
         // (2026-08-24) plus plain consistency decide it. They join the law.
         //
         // WHAT IT ACTUALLY FIXES, and it is worse than "a key did nothing". Escape's fall-through is
-        // SwitchDesk(Nav). So Escape over an open sky menu at the Sensors desk used to move the captain to
-        // a different desk and LEAVE THE MENU STANDING — the menu draws on Nav, Sensors and the War Room
-        // alike, so it followed him there, still anchored to a click he made on another desk's sky. The key
-        // did not do nothing; it did something else.
+        // SwitchDesk(Nav), so pressing it over an open menu at the Sensors desk MOVED THE CAPTAIN TO A
+        // DIFFERENT DESK and left the menu's gate set. Which of the two bad endings you got depended on
+        // which menu it was, and both are measured in the guard (delist a line and watch):
+        //
+        //   * the chooser, the body menu and the contact menu draw on Nav too, so they FOLLOWED him there —
+        //     still wearing the inline anchor of a click he had made on another desk's map;
+        //   * the open-sky menu draws on Sensors ONLY, so it vanished off the glass with `_skyMenuWorld`
+        //     still holding a point — and came straight back the moment he returned to Sensors.
+        //
+        // The key did not do nothing. It did something else, and then lied about it.
         //
         // LAST IN THE CHAIN, because a click menu is the least modal thing in it: it is a list hanging off
         // a spot on the map, and anything else that is open is over it. Among the four the order is REVERSE

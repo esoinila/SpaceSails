@@ -313,11 +313,14 @@ public sealed class TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTes
     /// test.</para>
     ///
     /// <para><b>The second assertion is the bug, and it is worse than a key doing nothing.</b> Escape's
-    /// fall-through in <c>OnKeyDown</c> is <c>SwitchDesk(Nav)</c>. So before this wave, Escape over an open
-    /// sky menu at the Sensors desk MOVED THE CAPTAIN TO A DIFFERENT DESK and left the menu standing —
-    /// these menus draw on Nav, Sensors and the War Room alike, so it followed him there, still anchored to
-    /// a click he had made on another desk's sky. The desk is asserted unchanged, which is the half a
-    /// "the menu closed" test would have missed.</para>
+    /// fall-through in <c>OnKeyDown</c> is <c>SwitchDesk(Nav)</c>, so before this wave the key MOVED THE
+    /// CAPTAIN TO A DIFFERENT DESK and left the menu's gate set. Which bad ending he got depended on which
+    /// menu it was, and the red proof for this guard shows both: the chooser, the body menu and the contact
+    /// menu draw on Nav as well, so they FOLLOWED him there wearing the inline anchor of a click made on
+    /// another desk's map; the open-sky menu draws on Sensors only, so it vanished off the glass with
+    /// <c>_skyMenuWorld</c> still holding a point and came back the moment he returned. Hence the desk is
+    /// asserted unchanged — the half a "did the menu close?" test would have missed, and the half that says
+    /// the key was not merely inert.</para>
     /// </summary>
     [Theory]
     [InlineData("the pick-candidate chooser", "_pickMenu")]
