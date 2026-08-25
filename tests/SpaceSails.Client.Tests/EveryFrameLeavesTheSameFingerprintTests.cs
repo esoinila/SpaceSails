@@ -186,6 +186,30 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// canvas buffer and the call counts are byte-identical on all thirty, the committed-text diff is 30
     /// files × 1 line and that line is the sweep's own, and no other fingerprint suite moved at all: the full
     /// client run's only red was this class's thirty rows.</para>
+    ///
+    /// <para><b>#953 · TWENTY WERE RE-RECORDED — not thirty, and the ten that held still are the proof.</b>
+    /// The first re-pin in this ledger that is a <i>removal</i> rather than an addition, and the field count
+    /// did not move at all (725 → 725): no field was added or taken away, one field's CONTENTS changed. The
+    /// owner archived the ship-lane overlay (<i>"we have never used them to find anything"</i>), so
+    /// <c>MapLayerTree.DefaultHidden</c> stopped seeding the one leaf that used to start hidden, and the
+    /// page's <c>_hiddenLayersByDesk</c> is one entry lighter wherever a desk materialised its set. The
+    /// <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run on the base (b4b5cb6) and on this lane, and on
+    /// <b>every one of the twenty</b> the diff is the same single line:</para>
+    /// <code>248c248
+    /// &lt; _hiddenLayersByDesk={ShipDesk.Nav: ["routes.lanes"]}
+    /// ---
+    /// &gt; _hiddenLayersByDesk={ShipDesk.Nav: []}</code>
+    /// <para>The other <b>ten are byte-identical</b> — all five <c>HerOwnDeckInFlight</c> rows and all five
+    /// <c>TheElectricUniverse</c> ones, the worlds that never ask the Nav desk for a layer and so never build
+    /// its hidden set at all. That is the honest signature of a per-desk default changing and nothing else: a
+    /// lane draw that had really been ripped out of a painted frame would have moved the pen and the canvas
+    /// buffer on the map worlds, and a state field added or dropped would have moved the count. The
+    /// committed-text diff is 20 files, one line each, and that line is the sweep's own;
+    /// <c>EveryFrameHashesTheSameTests</c>' draw transcripts and <c>EveryRoundFingerprintsTheSameTests</c> did
+    /// not move at all — which is exactly the claim: <b>the archived overlay was already switched off in every
+    /// one of these worlds, so deleting it changed no pixel anywhere.</b> (The two lane-cache fields kept
+    /// their names for the same reason this note exists: a rename would have moved all thirty hashes and said
+    /// nothing.)</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

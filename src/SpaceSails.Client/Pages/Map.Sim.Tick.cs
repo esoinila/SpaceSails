@@ -606,14 +606,11 @@ public partial class Map
         AnchorThePlotFrameToItsBody();
 
         DrawStreams();
-        if (LayerVisible("routes.lanes"))
-        {
-            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes). #953: OFF by default on
-            // EVERY desk, the sensors chief included. The owner opened his onto a sky "covered in faint
-            // lines with no intersection" — "It must always be much more filtered and off by default. This
-            // is just ugly here by default." One checkbox still brings them back, per desk.
-            DrawTradeCorridors();
-        }
+        // #953 · THE TRADE-LANE CORRIDORS ARE NOT PAINTED HERE ANY MORE. SundaySecondPlan PR-B drew a quad
+        // and a name label per anchor pair; #971 hid them by default after the owner's "covered in faint
+        // lines with no intersection"; this ruling retired the display outright — "we have never used them
+        // to find anything." One flag records it (ShipLanes.Archived) and the lane GEOMETRY still serves the
+        // telescope's lane sweeps; nothing on this stack draws it.
         DrawShipTrajectory();
         // #405 Routes → Flight plan & burns: the plotted autopilot path + its burn nodes (DrawNodeMarkers,
         // below). The ship's own live trajectory ribbon (DrawShipTrajectory, above) stays — that's the
