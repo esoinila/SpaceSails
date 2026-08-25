@@ -524,6 +524,167 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
             .Invoke(instance, [value]);
     }
 
+    // ── …and the rules that used to reach them ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// EVERY RULE WHOSE TARGET THE SHELL NOW DRAWS IS WRITTEN WITH <c>::deep</c>.
+    ///
+    /// <para><b>This is #996's bug class, aimed at the migration most likely to commit it.</b> Blazor scopes
+    /// a stylesheet to the component that RENDERED the element: <c>.lift-panel { … }</c> in Map.razor.css
+    /// compiles to <c>.lift-panel[b-map]</c>, and the moment OverlayShell draws that div the div carries the
+    /// SHELL's scope attribute instead. The rule is then present, correct, and dead. Nothing warns, nothing
+    /// fails; the card simply loses its border and its width, and only a pair of eyes on the screen would
+    /// ever know — which is exactly how #996 came to be holding 213 dead rules.</para>
+    ///
+    /// <para>So this reads the two files against each other. Every class the page writes onto an
+    /// <c>&lt;OverlayShell&gt;</c> is a class the shell draws; every rule in the page's stylesheet whose
+    /// TARGET — its last compound selector, the one Blazor pins the scope attribute to — names one of them
+    /// must be written <c>::deep</c>, which compiles to <c>[b-map] .lift-panel</c> and matches again.</para>
+    ///
+    /// <para>An ANCESTOR is a different question and deliberately not asked: <c>.treasure-map-card .btn</c>
+    /// still matches, because the scope lands on <c>.btn</c> — the page's own markup inside ChildContent —
+    /// and the ancestor is matched by class alone. Only the target has to move.</para>
+    ///
+    /// <para><b>It caught three on the way in.</b> <c>.pressure-door</c>, <c>.scuttle-panel</c> and
+    /// <c>.scuttle-epitaph</c> are modifier classes on vent-board roots this wave migrated, and all three
+    /// were missed by hand. They carry a max-width and nothing else, so the only symptom would have been
+    /// three cards quietly growing wider than they were drawn to be.</para>
+    /// </summary>
+    [Fact]
+    public void EveryRuleWhoseTargetTheShellDrawsIsWrittenWithDeep()
+    {
+        string razor = Path.Combine(ClientSource(), "Pages", "Map.razor");
+        string sheet = Path.Combine(ClientSource(), "Pages", "Map.razor.css");
+
+        IReadOnlyList<IReadOnlySet<string>> drawn = ClassesTheShellDraws(File.ReadAllText(razor));
+        Assert.True(drawn.Count > 0,
+            "no <OverlayShell> in Map.razor names a class at all. Either the page has stopped using the "
+            + "shell or this guard has stopped being able to read it — both are worth knowing.");
+
+        var dead = new List<string>();
+
+        foreach (string selector in Selectors(WithoutComments(File.ReadAllText(sheet))))
+        {
+            if (selector.StartsWith("::deep", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string target = selector
+                .Split([' ', '\t', '>', '+', '~'], StringSplitOptions.RemoveEmptyEntries)
+                .LastOrDefault() ?? "";
+
+            var wanted = Regex.Matches(target, @"\.([A-Za-z0-9_-]+)")
+                .Select(found => found.Groups[1].Value)
+                .ToHashSet(StringComparer.Ordinal);
+
+            // EVERY class in the compound, not any of them. `.vent-read-line.alive` names a class the shell
+            // draws (`alive`, off the operating log's own ternary) on an element the PAGE draws — together
+            // they can only ever match the page's markup, which keeps the scope attribute it always had. It
+            // is only a compound that COULD match the shell's own element that has to move.
+            if (wanted.Count > 0 && drawn.Any(wanted.IsSubsetOf))
+            {
+                dead.Add(selector);
+            }
+        }
+
+        Assert.True(dead.Count == 0,
+            $"{dead.Count} rule(s) in Map.razor.css target an element OverlayShell draws and are not written "
+            + $"with ::deep:\n  - {string.Join("\n  - ", dead)}\n\nBlazor pins the page's scope attribute to "
+            + "the LAST compound selector, and the shell's elements do not carry it — so each of these "
+            + "compiles to a selector that matches nothing. The rule is present, correct and dead, which is "
+            + "#996's shape and the one this migration is most able to commit. Write it "
+            + "`::deep .thing { … }` (that is `[b-map] .thing`, matched through the page-scoped ancestor "
+            + "above it) — or, if the element really is the page's own markup inside ChildContent, work out "
+            + "which end of the selector moved, because it is not this one.");
+    }
+
+    /// <summary>Every class the page writes onto an <c>&lt;OverlayShell&gt;</c>. The class may be a plain
+    /// list or a C# expression (the operating log picks its own between two literals), so this takes the
+    /// class attribute whole and reads the names out of whichever shape it turns out to be.</summary>
+    private static IReadOnlyList<IReadOnlySet<string>> ClassesTheShellDraws(string razor)
+    {
+        var drawn = new List<IReadOnlySet<string>>();
+
+        for (int at = razor.IndexOf("<OverlayShell", StringComparison.Ordinal);
+             at >= 0;
+             at = razor.IndexOf("<OverlayShell", at + 1, StringComparison.Ordinal))
+        {
+            int marker = razor.IndexOf(" class=\"", at, StringComparison.Ordinal);
+            if (marker < 0)
+            {
+                continue;
+            }
+
+            int from = marker + " class=\"".Length;
+            string value = razor[from] == '@'
+                ? razor[from..Balanced(razor, from)]
+                : razor[from..razor.IndexOf('"', from)];
+
+            var wearing = new HashSet<string>(StringComparer.Ordinal);
+            if (value.StartsWith('@'))
+            {
+                // An expression: the class names are the string literals inside it, and they are all one
+                // card either way — the operating log's ternary picks a warning colour, not a new element.
+                foreach (Match literal in Regex.Matches(value, "\"([^\"]*)\""))
+                {
+                    wearing.UnionWith(literal.Groups[1].Value
+                        .Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries));
+                }
+            }
+            else
+            {
+                wearing.UnionWith(value.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries)
+                    .Where(css => !css.StartsWith('@')));
+            }
+
+            if (wearing.Count > 0)
+            {
+                drawn.Add(wearing);
+            }
+        }
+
+        return drawn;
+    }
+
+    /// <summary>The end of a razor <c>@(…)</c> attribute value: the parenthesis that closes the one it opens
+    /// with. Quotes inside it are part of the expression, which is precisely why the closing quote cannot be
+    /// found by looking for the next one.</summary>
+    private static int Balanced(string razor, int from)
+    {
+        int depth = 0;
+        for (int at = from; at < razor.Length; at++)
+        {
+            depth += razor[at] == '(' ? 1 : 0;
+            depth -= razor[at] == ')' ? 1 : 0;
+            if (depth == 0 && razor[at] == ')')
+            {
+                return at + 1;
+            }
+        }
+
+        return razor.IndexOf('"', from);
+    }
+
+    private static string WithoutComments(string css) =>
+        Regex.Replace(css, @"/\*.*?\*/", " ", RegexOptions.Singleline);
+
+    /// <summary>Every selector in the sheet, one per comma — what it says it is styling.</summary>
+    private static IEnumerable<string> Selectors(string css)
+    {
+        foreach (Match rule in Regex.Matches(css, @"(?m)^([^{}@]+)\{"))
+        {
+            foreach (string one in rule.Groups[1].Value.Split(','))
+            {
+                string trimmed = one.Trim();
+                if (trimmed.Length > 0)
+                {
+                    yield return trimmed;
+                }
+            }
+        }
+    }
+
     // ── The collector's demand: the ByDecision mode, on the surface it was written for ────────────────
 
     /// <summary>

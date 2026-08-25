@@ -4483,7 +4483,7 @@
 /* ── The pressure gauge on a loaded door ────────────────────────────────────────────────────────────
    The needle sits hard over on its stop and does not move. That IS the readout: there is no nuance in
    ten tonnes, and a dial pinned at MAX says it faster than any sentence. */
-.pressure-door { max-width: 30rem; }
+::deep .pressure-door { max-width: 30rem; }
 
 .pd-gauge {
     display: flex;
@@ -4582,7 +4582,7 @@
 
 /* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
    The scuttling panel and the card you read afterwards from your own cockpit. */
-.scuttle-panel, .scuttle-epitaph { max-width: 34rem; }
+::deep .scuttle-panel, ::deep .scuttle-epitaph { max-width: 34rem; }
 
 .scuttle-art {
     display: block;
