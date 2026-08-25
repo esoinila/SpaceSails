@@ -569,7 +569,10 @@
     @if (_showScuttlePanel && _wreck is { } scWreck)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttlePanel)">
-            <div class="vent-board scuttle-panel" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board scuttle-panel" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseScuttlePanel)">
                 <div class="view-object-title">☢ SCUTTLING PANEL — @scWreck.ShipName.ToUpperInvariant()</div>
 
                 <img class="scuttle-art" src="art/scuttle-panel.jpg" alt=""
@@ -621,9 +624,7 @@
                         }
                     </div>
                 }
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseScuttlePanel)">Step away</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -634,15 +635,15 @@
     @if (_scuttleEpitaph is { } epitaph)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttleEpitaph)">
-            <div class="vent-board scuttle-epitaph" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board scuttle-epitaph" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="@(_scuttleHeardIt ? "Sit with that" : "Log it")"
+                          OnClose="() => Dismiss(CloseScuttleEpitaph)">
                 <div class="view-object-title">☢ SHE IS GONE</div>
                 <img class="scuttle-art" src="art/scuttle-she-goes.jpg" alt=""
                      onerror="this.style.display='none'" />
                 <div class="scuttle-epitaph-text @(_scuttleHeardIt ? "heard" : "")">@epitaph</div>
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseScuttleEpitaph)">
-                    @(_scuttleHeardIt ? "Sit with that" : "Log it")
-                </button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -654,7 +655,11 @@
     {
         bool alive = readShown.Sign == HullVenting.LifeSign.SomethingAlive;
         <div class="view-object-backdrop vent-read-backdrop" @onclick="() => Dismiss(CloseVentReadCard)">
-            <div class="vent-board vent-read-card @(alive ? "alive" : "")" @onclick:stopPropagation="true">
+            <OverlayShell class="@(alive ? "vent-board vent-read-card alive" : "vent-board vent-read-card")"
+                          StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="@(alive ? "Back to the board" : "Close the log")"
+                          OnClose="() => Dismiss(CloseVentReadCard)">
                 <div class="view-object-title">📟 @readRoom — OPERATING LOG</div>
 
                 <div class="vent-read-die">d20 @readShown.Roll.Face</div>
@@ -667,11 +672,7 @@
                     cycled. It records that something in there is warm and moving. It has never been able to
                     tell you WHAT.
                 </div>
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseVentReadCard)">
-                    @(alive ? "Back to the board" : "Close the log")
-                </button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -685,7 +686,10 @@
         var pdVacuumSide = pdSpace.Vented;
         var pdLoaded = HullVenting.DoorHeldByPressure(pdSpace, _spinePressurised);
         <div class="view-object-backdrop" @onclick="() => Dismiss(ClosePressureDoorCard)">
-            <div class="vent-board pressure-door" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board pressure-door" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(ClosePressureDoorCard)">
                 <div class="view-object-title">
                     @(pdLoaded ? $"⛔ {pdName} — THE DOOR IS LOADED" : $"🚪 {pdName} — HATCH")
                 </div>
@@ -739,9 +743,7 @@
                         </div>
                     </div>
                 }
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(ClosePressureDoorCard)">Step away</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -752,7 +754,10 @@
     @if (_showVentPanel && _wreck is { } ventWreck)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseVentPanel)">
-            <div class="vent-board" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseVentPanel)">
                 <div class="view-object-title">⚙ ATMOSPHERE CONTROL — @ventWreck.ShipName.ToUpperInvariant()</div>
                 <div class="vent-sub">
                     Mechanical valves, local control. Shut a door before you blow the room behind it.
@@ -1097,9 +1102,7 @@
                         }
                     </div>
                 }
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseVentPanel)">Step away</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1170,7 +1173,10 @@
     @if (_showShipBoard)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipBoard)">
-            <div class="vent-board" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseShipBoard)">
                 <div class="view-object-title">⚙ ATMOSPHERE CONTROL — HER OWN HULL</div>
                 <div class="vent-sub">
                     @ShipBreathingLine()
@@ -1422,9 +1428,7 @@
                         }
                     </div>
                 }
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipBoard)">Step away</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1440,7 +1444,10 @@
     @if (_showChargeBoard)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseChargeBoard)">
-            <div class="vent-board" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseChargeBoard)">
                 <div class="view-object-title">⚡ HULL CHARGE — HER OWN POTENTIAL</div>
 
                 @if (_plasma is null)
@@ -1513,9 +1520,7 @@
                 {
                     <div class="vent-message">@chargeMsg</div>
                 }
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseChargeBoard)">Step away</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1699,7 +1704,10 @@
     @if (_showShipScuttlePanel)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipScuttlePanel)">
-            <div class="vent-board" @onclick:stopPropagation="true">
+            <OverlayShell class="vent-board" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseShipScuttlePanel)">
                 <div class="view-object-title">☢ SCUTTLING CHARGES — HER OWN KEEL</div>
 
                 @if (_shipChargesSeconds is { } shipBurn)
@@ -1759,9 +1767,7 @@
                 {
                     <div class="vent-message">@shipScuttleMsg</div>
                 }
-
-                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipScuttlePanel)">Step away</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1796,7 +1802,11 @@
     @if (_showWreckChoice && _wreck is { } salvageWreck)
     {
         <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseWreckChoice)">
-            <div class="treasure-map-card wreck-choice" @onclick:stopPropagation="true">
+            <OverlayShell class="treasure-map-card wreck-choice" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Not yet"
+                          DismissTitle="Decide later"
+                          OnClose="() => Dismiss(CloseWreckChoice)">
                 <div class="view-object-title">📋 THE @salvageWreck.ShipName.ToUpperInvariant()</div>
                 @* Her portrait, if the away team has actually looked at what killed her. Before that the
                    card stays text-only — you do not get the picture for free. *@
@@ -1847,9 +1857,7 @@
                         @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.StripAndSayNothing)
                     </button>
                 </div>
-                <button type="button" class="view-object-close" title="Decide later"
-                        @onclick="() => Dismiss(CloseWreckChoice)">Not yet</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -1914,7 +1922,11 @@
     @if (_showLiftPanel && _surface is { } liftEx)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
-            <div class="lift-panel" @onclick:stopPropagation="true">
+            <OverlayShell class="lift-panel" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Step out of the car"
+                          OnClose="() => Dismiss(CloseLiftPanel)">
                 <div class="view-object-title">🛗 CAR PANEL</div>
                 @* #801 · WHICH car. The line is the panel's own no longer: two cars serve this band and
                    only one of them climbs out, so the sentence under the title is decided beside the stops
@@ -1978,10 +1990,7 @@
                         </button>
                     }
                 </div>
-
-                <button type="button" class="view-object-close" title="Step out of the car"
-                        @onclick="() => Dismiss(CloseLiftPanel)">Close</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -2191,7 +2200,11 @@
     else
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseTable)">
-            <div class="deck-offer-card table-card" @onclick:stopPropagation="true">
+            <OverlayShell class="deck-offer-card table-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Stand up. It costs nothing and it never will."
+                          OnClose="() => Dismiss(CloseTable)">
                 <div class="deck-offer-giver">@tab.Plate</div>
 
                 @* #783 · THE TABLE YOU ARE AT, DRAWN ON THE PANEL YOU ARE AT IT THROUGH. Owner, live at a
@@ -2283,11 +2296,7 @@
                         }
                     </div>
                 }
-
-                <button type="button" class="view-object-close"
-                        title="Stand up. It costs nothing and it never will."
-                        @onclick="() => Dismiss(CloseTable)">Close</button>
-            </div>
+            </OverlayShell>
         </div>
     }
     }   @* …and the seated region closes. Two frames, one occupation of one table. *@
@@ -3262,7 +3271,10 @@
     @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
     {
         <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseTheWalletFan)">
-            <div class="treasure-map-card wallet-fan" @onclick:stopPropagation="true">
+            <OverlayShell class="treasure-map-card wallet-fan" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="@SpaceSails.Core.WalletChoice.KeepItLine"
+                          OnClose="() => Dismiss(CloseTheWalletFan)">
                 <div class="view-object-title">@SpaceSails.Core.WalletChoice.ChooserLabel</div>
                 <div class="tm-caption">@SpaceSails.Core.WalletChoice.ChooserHint</div>
 
@@ -3286,10 +3298,7 @@
                         </button>
                     }
                 </div>
-
-                <button type="button" class="view-object-close"
-                        @onclick="() => Dismiss(CloseTheWalletFan)">@SpaceSails.Core.WalletChoice.KeepItLine</button>
-            </div>
+            </OverlayShell>
         </div>
     }
 
