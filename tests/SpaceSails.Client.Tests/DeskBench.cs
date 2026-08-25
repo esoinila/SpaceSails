@@ -238,6 +238,12 @@ internal sealed class DeskBench : Renderer
     /// </summary>
     public void Poke(string field, object? value) => TheField(field).SetValue(_map, value);
 
+    /// <summary>The other half of <see cref="Poke"/>, and it exists for one question: did pressing a piece of
+    /// CHROME move the WORLD. A shell that tucks a card away must leave the crossing on the clock it was
+    /// already running, and the only way to say that out loud is to read the fields back by the names the
+    /// page gave them. Same safety as Poke: a renamed field fails loudly here instead of quietly.</summary>
+    public object? Peek(string field) => TheField(field).GetValue(_map);
+
     // ── Reading the page back ────────────────────────────────────────────────────────────────────────
 
     public static ShipDesk[] TabBarOrder =>

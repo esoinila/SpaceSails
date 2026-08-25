@@ -323,9 +323,14 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the arrival-brake card", "deck-offer-card", FreeFlying, Exit.EveryControlCloses, null,
             "needs _brakeGate.Asking, which is ArrivalBrake.Advance's own timing verdict on a ship that is "
             + "coming in hot — a sim state, not a field."),
-        new("the walk-in HOSTED card", "view-object-backdrop", Docked, Exit.EveryControlCloses, null,
-            "needs a captain SEATED ALONE at a docked bar top with her body already at the table; there is "
-            + "no off-browser way to walk anybody across a floor."),
+        // #997 wave 2 · DRIVEN NOW, and the reason it could not be before was half right. Walking her across
+        // a floor is genuinely out of reach off-browser — but her CARD is gated on one field, and the law's
+        // question is about the card. So the row raises the card the same way the walk-in guard raises her
+        // mid-crossing state, and the ruling is proved of her by pressing rather than believed from a list.
+        // Her exit moved from EveryControlCloses to AControl in the same breath: #997 gave her the shell's
+        // dismiss, which is a way out that is not one of her two answers.
+        new("the walk-in HOSTED card", "view-object-backdrop", Docked, Exit.AControl,
+            b => b.Poke("_walkInCard", (WalkIn.Who?)WalkIn.Who.Ilse)),
         new("the rep's pitch (Harlan Fess)", "view-object-backdrop", Docked, Exit.EveryControlCloses, null,
             "same room, same reason — his card is raised on the landing frame of a crossing."),
         new("the rescue / tow offer", "rescue-backdrop", FreeFlying, Exit.EveryControlCloses, null,
@@ -420,8 +425,8 @@ public sealed class EveryPopUpCanBeDismissedTests
     public void TheUndrivenListOnlyEverGetsShorter()
     {
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 17,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 17. If a row genuinely "
+        Assert.True(undriven <= 16,
+            $"{undriven} register rows have no driver, and the written-down ceiling is 16. If a row genuinely "
             + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
             + "the commit; the point of the number is that it cannot creep.");
     }

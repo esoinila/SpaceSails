@@ -3764,13 +3764,26 @@
 
 /* #255 — the diegetic long-haul jump overlay. Full-screen theater over the frozen map; the one
    loading bar allowed to be a feature. Above every HUD layer, below nothing. */
-.jump-overlay {
+/* #997 wave 2 · reached with `::deep` because OverlayShell draws this div now — a scoped rule compiles to
+   `.jump-overlay[b-map]` and would stop matching the moment a component rendered the element, which is
+   exactly the shape of #996's 213 dead rules. `::deep` compiles to `[b-map] .jump-overlay` and matches
+   again. The CHILDREN below (.jump-overlay-title, -year, -bar, -fill, -bound, -note, -nostop) are still the
+   page's own markup and still carry b-map, so their rules are left exactly as they were. */
+
+/* GRID, AND IT IS NOT A REDECORATION. The sheet centred one child with flex; the shell hands it two — the
+   head row that carries the way out, and the body that carries the words. Putting both in the SAME grid
+   cell keeps the way out sitting on the inner card's own top-right corner, which is where #992 measured it
+   and where it must stay: a control anchored to the viewport instead is a control a narrow screen can push
+   under an edge. `place-content: center` is what flex's centring was; `place-items: center` is what its
+   `align-items`/`justify-content` were. The cell is sized by the body, because the head is one small
+   button. */
+::deep .jump-overlay {
     position: fixed;
     inset: 0;
     z-index: calc(var(--z-modal) + 40);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-content: center;
+    place-items: center;
     background: radial-gradient(ellipse at center, rgba(10, 16, 30, 0.86) 0%, rgba(2, 4, 9, 0.97) 70%);
     backdrop-filter: blur(3px);
     animation: jump-fade-in 0.4s ease-out;
@@ -3785,19 +3798,29 @@
     to { opacity: 1; }
 }
 
-.jump-overlay-inner {
+::deep .jump-overlay-inner {
+    grid-area: 1 / 1;
     position: relative;
     max-width: min(90vw, 34rem);
     padding: 2rem 2.5rem;
 }
 
-/* #992 · THE WAY OUT OF THE VOID SHEET (owner ruling 2026-08-24). It hangs off the INNER card and not off
-   the viewport, so on a narrow screen it travels with the words it belongs to instead of being pushed under
-   the edge — the whole point of the ruling is a control the player can actually reach. */
-.jump-overlay-min {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+/* The head row lands in the body's own cell, pinned to its top-right corner and inset by the half-rem the
+   absolutely-positioned button used to carry itself. It never grows the cell: it holds one – and shrinks
+   to it. */
+::deep .jump-overlay-head {
+    grid-area: 1 / 1;
+    align-self: start;
+    justify-self: end;
+    margin: 0.5rem;
+}
+
+/* #992 · THE WAY OUT OF THE VOID SHEET (owner ruling 2026-08-24). It sits on the INNER card and not on the
+   viewport, so on a narrow screen it travels with the words it belongs to instead of being pushed under the
+   edge — the whole point of the ruling is a control the player can actually reach. #997 wave 2 keeps it in
+   exactly that place by grid rather than by `position: absolute`: it is the shell's dismiss now, drawn in
+   the shell's head row, and the head row is laid into the body's own cell above. */
+::deep .jump-overlay-min {
     min-width: 1.75rem;
     padding: 0 0.4rem;
     color: rgba(223, 232, 255, 0.8);
@@ -3811,8 +3834,8 @@
     cursor: pointer;
 }
 
-.jump-overlay-min:hover,
-.jump-overlay-min:focus-visible {
+::deep .jump-overlay-min:hover,
+::deep .jump-overlay-min:focus-visible {
     color: #8fd0ff;
     border-color: rgba(143, 208, 255, 0.85);
 }
@@ -3820,7 +3843,7 @@
 /* …and the tile it becomes. Top-right of the viewport rather than the scope's bottom-right corner: the
    crossing is not a Nav instrument and it must not land on top of the scope tile, which the captain can now
    see again precisely because this sheet went away. */
-.jump-overlay-tile {
+::deep .jump-overlay-tile {
     position: fixed;
     top: 0.75rem;
     right: 0.75rem;
