@@ -3703,16 +3703,23 @@
             }
             @* Overheard here (#119 receipt idiom): the tips/rumors you've heard at this counter, kept where
                a round-loosened tongue's words can be re-read — they may not hide and may not auto-vanish. *@
+            @* #973 · …AND THE VOID'S WEATHER BLOWS THROUGH IT. Owner 2026-08-25: the walking insurance men
+               are "the thing people talk about in the bars that unites them, a bit like talking about the
+               weather on planet side." So one of Fable's eight lines can be in this strip — and the strip
+               STAYS three lines: it takes a slot from whatever this counter said longest ago rather than
+               growing a fourth row. After a round for the room has made it everybody's topic the block is
+               the topic and the room's answer to it. Core owns the words, the law and the composition
+               (InsuranceWeather); Map.Weather.cs owns the visit. *@
             @{
-                IReadOnlyList<Core.OverheardLine> overheard = OverheardHere(3);
+                IReadOnlyList<string> overheard = TheOverheardBlock();
             }
             @if (overheard.Count > 0)
             {
                 <div class="bar-overheard small">
                     <div class="bar-overheard-head">Overheard here</div>
-                    @foreach (Core.OverheardLine o in overheard)
+                    @foreach (string o in overheard)
                     {
-                        <div class="bar-overheard-line">@o.Text</div>
+                        <div class="bar-overheard-line">@o</div>
                     }
                 </div>
             }

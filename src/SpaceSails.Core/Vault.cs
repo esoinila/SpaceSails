@@ -92,6 +92,13 @@ public sealed class Vault
     /// a captain nobody ever asked about his face.</summary>
     public CrossingsSection? Crossings { get; init; }
 
+    /// <summary>#973 · THE VOID'S WEATHER — how many times this thread has heard each of the eight lines
+    /// about the walking insurance men, and, per station, how many visits it has had and which of them a line
+    /// was last in the air on. Its own independently optional section; a file written before the weather
+    /// simply lacks it and wakes with all eight lines unheard, which is the truth about a room nobody has
+    /// stood in yet.</summary>
+    public InsuranceWeatherSection? InsuranceWeather { get; init; }
+
     /// <summary>#973 · THE HELD MEMORIES — the sheets in the black book that are not documents. Its own
     /// independently optional section; a pre-#973 file lacks it and the seeded pages come back on first
     /// load.</summary>
@@ -528,6 +535,19 @@ public sealed record HeldMemoriesSection
 {
     /// <summary>The sheets, in the order they entered the book.</summary>
     public IReadOnlyList<string> Sheets { get; init; } = [];
+}
+
+/// <summary>#973 · The void's weather (<see cref="InsuranceWeather"/>). Opaque pipe-separated rows, the house
+/// idiom: the file carries how OFTEN a line was heard and never the sentence, so an edited save can never make
+/// the room say something nobody wrote. A row this build cannot parse is dropped rather than thrown over.</summary>
+public sealed record InsuranceWeatherSection
+{
+    /// <summary>One row per line the captain has heard at all: <c>lineId|times</c>.</summary>
+    public IReadOnlyList<string> Heard { get; init; } = [];
+
+    /// <summary>One row per station the captain has drunk at: <c>stationId|visits|lastSaidAtVisit</c>, where
+    /// the last field is −1 for a station the weather has never blown through.</summary>
+    public IReadOnlyList<string> Stations { get; init; } = [];
 }
 
 public sealed record AuthoritiesSection
