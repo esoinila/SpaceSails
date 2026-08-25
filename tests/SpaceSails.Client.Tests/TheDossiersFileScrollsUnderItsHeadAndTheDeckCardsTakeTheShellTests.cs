@@ -349,8 +349,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
     /// <item>the selfie nudge's <i>Take the shot</i> runs <c>RendererInterop.PlayCue</c>, a
     /// <c>[JSImport]</c> and therefore DeskBench's documented browser gate. It throws off a browser AFTER
     /// <c>_selfieOffer</c> is cleared, so the card really is gone and the press really did work — but the
-    /// throw escapes the handler and this bench cannot tell that apart from a fault. Taken in a real
-    /// browser and written up in the PR;</item>
+    /// throw escapes the handler and this bench cannot tell that apart from a fault;</item>
     /// <item>the arrival brake's <i>Fire the brake</i> needs a real BRAKE WINDOW and not merely a gate:
     /// <c>FireArrivalBrake</c> returns early when <c>BrakeWindowBody()</c> is null, and that window is
     /// <c>ArrivalBrake.Advance</c>'s own timing verdict on a ship coming in hot — a sim state, which is
@@ -359,7 +358,8 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
     /// button, so it is asked in source instead — next door, where it can be answered honestly.</item>
     /// </list>
     /// <para>Both are still asserted DRAWN AND WIRED on every run of the theory, so one of them going
-    /// missing fails here rather than nowhere. Said out loud, in #1005's idiom.</para>
+    /// missing fails here rather than nowhere — and neither was walked to in a live browser either, which
+    /// is said in the PR rather than glossed. Said out loud, in #1005's idiom.</para>
     /// </summary>
     [Theory]
     [InlineData("the stand-up confirm", "stand-up-card", "Stand", "_seating")]
