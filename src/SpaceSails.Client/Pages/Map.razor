@@ -480,64 +480,66 @@
        ticking up, and a charming note that the bus does not stop out here. No cancel is offered.
 
        #992 · …and no cancel is offered STILL, because cancelling a crossing is a decision about the world
-       and the tick loop is frozen behind _jumpInProgress so the void is never integrated. What #992 adds is
-       a decision about the SCREEN: the card tucks into a corner tile (the scope's #963 idiom, the dossier's
-       #960 gesture) and the map comes back, while the crossing runs on exactly the clock it always ran on.
-       Owner ruling 2026-08-24: "there should not be a pop-up that cannot be closed or minimized" — and this
-       full-viewport fixed sheet, whose own comment used to end the sentence at "No cancel is offered", was
-       the only surface in this file with no control in it at all. *@
-    @if (_jumpActive && !_voidCardTucked)
+       and the tick loop is frozen behind _jumpInProgress so the void is never integrated. What #992 added is
+       a decision about the SCREEN: the sheet tucks into a corner tile and the map comes back, while the
+       crossing runs on exactly the clock it always ran on.
+
+       #997 wave 2 · …AND THE GESTURE IS NOT ITS OWN ANY MORE. #992 hand-rolled that minimise, which made it
+       the THIRD independent implementation of one idea after #963's scope and #960's dossier: a third gate
+       written into the open card's @@if, a third bespoke – button, and a tile drawn as a SEPARATE sibling
+       element that had to be kept agreeing with the sheet about which year it is. All three are gone. The
+       shell owns the gesture; the tile is the SAME element with its class list swapped, so sheet and tile
+       cannot disagree because there is only one of them; and _voidCardTucked is now only what the page
+       REMEMBERS rather than a thing it also has to draw. The sheet keeps its own class, its own geometry
+       and its own words, and it still offers no cancel — that decision is about the world, not the screen. *@
+    @if (_jumpActive)
     {
-        <div class="jump-overlay">
-            <div class="jump-overlay-inner">
-                <button type="button" class="jump-overlay-min" aria-label="Minimise the crossing"
-                        title="Tuck the crossing into a tile — it keeps its own clock and the map comes back"
-                        @onclick="ToggleVoidCardTucked">–</button>
-                <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
-                <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
-                <div class="jump-overlay-bar">
-                    <div class="jump-overlay-fill" style="width:@(_jumpTotalYears > 0 ? (int)(100.0 * Math.Clamp(_jumpYear, 0, _jumpTotalYears) / _jumpTotalYears) : 100)%"></div>
-                </div>
-                <div class="jump-overlay-bound">@LongHaul.VoidBound(_jumpDestName)</div>
-                <div class="jump-overlay-note">@_jumpFlavor</div>
-                <div class="jump-overlay-nostop">@LongHaul.VoidNoStop</div>
+        <OverlayShell class="jump-overlay"
+                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_voidCardTucked"
+                      HeadClass="jump-overlay-head" BodyClass="jump-overlay-inner"
+                      DismissClass="jump-overlay-min" DismissFace="–"
+                      DismissLabel="Minimise the crossing"
+                      DismissTitle="Tuck the crossing into a tile — it keeps its own clock and the map comes back"
+                      TileClass="jump-overlay-tile" TileGlyph="🚀"
+                      TileLabel="@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)"
+                      TileButtonClass="btn btn-sm btn-outline-info"
+                      OpenTitle="Open the crossing back up">
+            <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
+            <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
+            <div class="jump-overlay-bar">
+                <div class="jump-overlay-fill" style="width:@(_jumpTotalYears > 0 ? (int)(100.0 * Math.Clamp(_jumpYear, 0, _jumpTotalYears) / _jumpTotalYears) : 100)%"></div>
             </div>
-        </div>
+            <div class="jump-overlay-bound">@LongHaul.VoidBound(_jumpDestName)</div>
+            <div class="jump-overlay-note">@_jumpFlavor</div>
+            <div class="jump-overlay-nostop">@LongHaul.VoidNoStop</div>
+        </OverlayShell>
     }
 
     @* #261 — the COMPUTED skip's short beat: a jump-scale coast is reckoned in closed form (or chunked with
        yields), never integrated into a frozen tab. A mundane fast-forward, not the long haul's dramatic
-       CROSSING THE VOID — so it says "COAST CONSUMED" and lets out in a beat. #992 gives it the same tile,
-       off the same switch: it wears the same full-viewport class, so it inherited the same fault. *@
-    @if (_coastSkipActive && !_voidCardTucked)
-    {
-        <div class="jump-overlay">
-            <div class="jump-overlay-inner">
-                <button type="button" class="jump-overlay-min" aria-label="Minimise the coast"
-                        title="Tuck the coast into a tile — it keeps its own clock and the map comes back"
-                        @onclick="ToggleVoidCardTucked">–</button>
-                <div class="jump-overlay-title">⏭ @WarpSkip.CoastConsumedTitle</div>
-                <div class="jump-overlay-bound">@WarpSkip.CoastConsumedBound(_coastSkipLabel)</div>
-                <div class="jump-overlay-note">@WarpSkip.CoastComputingNote(_coastSkipDays)</div>
-            </div>
-        </div>
-    }
+       CROSSING THE VOID — so it says "COAST CONSUMED" and lets out in a beat. #992 gave it the same tile off
+       the same switch: it wears the same full-viewport class, so it inherited the same fault.
 
-    @* #992 · THE TUCKED CROSSING — a button-sized tile in a corner the full sheet was covering anyway, naming
-       what is still running so the tile is an instrument and not a mystery button (the scope tile's own law).
-       Clicking it opens the sheet back up. It reads the SAME fields the sheet reads, so the tile and the card
-       can never disagree about which year it is. *@
-    @if (_voidCardTucked && (_jumpActive || _coastSkipActive))
+       The two sheets are never up together — a coast skip is started from the live loop and both paths set
+       _jumpInProgress first, which freezes the tick that would have started the other. They share the tucked
+       flag for the captain's sake, not the renderer's: a captain who put the void away expects it to stay
+       away on the next crossing too, which is the scope's own stated reason for remembering. *@
+    @if (_coastSkipActive)
     {
-        <div class="jump-overlay-tile">
-            <button type="button" class="btn btn-sm btn-outline-info"
-                    title="Open the crossing back up"
-                    @onclick="ToggleVoidCardTucked">
-                @(_jumpActive
-                    ? $"🚀 {LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)}"
-                    : $"⏭ {WarpSkip.CoastConsumedBound(_coastSkipLabel)}")
-            </button>
-        </div>
+        <OverlayShell class="jump-overlay"
+                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_voidCardTucked"
+                      HeadClass="jump-overlay-head" BodyClass="jump-overlay-inner"
+                      DismissClass="jump-overlay-min" DismissFace="–"
+                      DismissLabel="Minimise the coast"
+                      DismissTitle="Tuck the coast into a tile — it keeps its own clock and the map comes back"
+                      TileClass="jump-overlay-tile" TileGlyph="⏭"
+                      TileLabel="@WarpSkip.CoastConsumedBound(_coastSkipLabel)"
+                      TileButtonClass="btn btn-sm btn-outline-info"
+                      OpenTitle="Open the crossing back up">
+            <div class="jump-overlay-title">⏭ @WarpSkip.CoastConsumedTitle</div>
+            <div class="jump-overlay-bound">@WarpSkip.CoastConsumedBound(_coastSkipLabel)</div>
+            <div class="jump-overlay-note">@WarpSkip.CoastComputingNote(_coastSkipDays)</div>
+        </OverlayShell>
     }
 
     @* #304 — THE ARRIVAL BRAKE ASKS (owner 2026-07-18: "it is hard to remember in the heat of the moment").
@@ -1600,7 +1602,31 @@
     @if (_walkInCard is { } sheAsks)
     {
         <div class="view-object-backdrop rep-backdrop">
-            <div class="view-object rep-card" @onclick:stopPropagation="true">
+            @* #997 wave 2 · THE SHELL, AND NOTHING SHE SAYS MOVES. This card shares its markup with the rep's
+               pitch a hundred lines above — same .view-object family, same .rep-card, same scrim — and after
+               #997 the rep was on the shell and she was the odd one out. She is on it now: the scrim is held
+               off by the shell's own StopClicks (the @@onclick:stopPropagation that used to be typed on this
+               div), and her way out is the shell's dismiss.
+
+               A BARE frame, for the rep's own reason: .view-object is a flex column whose foot is pinned by
+               `::deep .view-object > .view-object-close`, so the way out has to be a DIRECT child of the
+               card. #664's `Presentation.Hosted` — the sense in which this card is a HOST, the beat drawn on
+               it rather than raising a plate beside it — is untouched by that and is not the same axis:
+               OverlayFrame.Hosted is `display: contents`, which would dissolve this card's own box and
+               unstick its foot. What hosts the beat is the card; what the shell owns is the way out.
+
+               AND THE WAY OUT IS HER NO. She is standing at your table: a ✕ that only took the panel away
+               would leave a woman at your elbow with nothing left to answer and no way to answer it — the
+               inverse of the empty-chair card #973 already refuses. So the dismiss runs the same verb her
+               own "no" runs, which is #979's polite exit entire: her line is pulsed, the card goes, and she
+               leaves the table with the chair and the plate handed back. Her two answers, her portrait and
+               every word on this card are exactly as they were. *@
+            <OverlayShell class="view-object rep-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Let her go"
+                          DismissLabel="Let her go — the same as saying no"
+                          DismissTitle="Let her go without taking the job — she says her piece and walks back to the counter"
+                          OnClose="() => Dismiss(() => AnswerTheWalkIn(false))">
                 <div class="view-object-title">@SpaceSails.Core.WalkIn.Name(sheAsks)</div>
                 <img class="view-object-img rep-portrait"
                      src="@SpaceSails.Core.WalkIn.PortraitArt(sheAsks)"
@@ -1613,7 +1639,7 @@
                     <button type="button" class="rep-offer"
                             @onclick="() => Dismiss(() => AnswerTheWalkIn(false))">@SpaceSails.Core.WalkIn.No</button>
                 </div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
