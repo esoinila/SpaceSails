@@ -139,6 +139,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "6a4b129978d9daefb94c6ea180e403b0",
             ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "ea6c18f84913e458270be6d047c86a7a",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "bcd7871bd3de8b5f4190908f6558dca0",
+            // #997 wave 10 · see /map?start=wreck&target=collector further down — the new dev start moved
+            // free-flying after a browser walk, and the reason is written there.
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "9cbd17823f70268c211883e90f29e9a3",
             ["/map?dock=the-space-bar"] = "d081c4a19a015c970e5e221106844c6c",
             ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "b2121d4dfe90b824db0c63673b911739",
@@ -193,6 +195,15 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?spread=1"] = "1fde2e0abebea22f28b886d1a98a1be9",
             ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "4d73bf59ce8dc9496efd0e17f5f6467c",
             ["/map?start=wreck&fetch=active"] = "d081c4a19a015c970e5e221106844c6c",
+            // #997 wave 10 · The new dev start: ?target=collector, the dossier's own door. Read off the
+            // dump and diffed against the pinned list — this is the ONLY line the dump adds, and no other
+            // moved: the 32nd BootQuery field is something the PARSE answers, not a world the boot builds.
+            //
+            // It hashes the same as its neighbours, which is correct and worth saying out loud rather than
+            // glossing: ?start= and ?target= are BOTH spent after the browser gate (ApplyTheStartPoint and
+            // SeedTheArcsAndTheJobs), so this sweep sees neither the roadster nor the muscle. What these
+            // URLs answer differently is pinned next door, in TheBootReadsTheSameQueryTests.
+            ["/map?start=wreck&target=collector"] = "d081c4a19a015c970e5e221106844c6c",
             ["/map?stool=1&neighbour=0"] = "acd52c6aea3a389e635a7e239aca7d42",
             ["/map?stool=1&neighbour=1"] = "1cee407a0490ecad6e9effdbcd3d7d29",
             ["/map?tablescene=free&approach=1"] = "93e8b401a0a38b07f9dbd947377cfdc0",

@@ -174,6 +174,15 @@ public partial class Map
         {
             RevealBody(id, $"🧪 Test: {BodyName(id)} charted.");
         }
+
+        // #997 wave 10 · ?target=<contact-id> — point the tactical UI at a contact so her dossier is on the
+        // glass at boot. LAST in this stage on purpose: `?target=collector` sends the muscle, and the
+        // muscle fits out at the nearest policed body to where the ship is NOW — which is only settled once
+        // every start and every arc above has finished moving her.
+        if (q.TargetCheat is not null)
+        {
+            SeedTargetCheat(q.TargetCheat);
+        }
     }
 
     /// <summary>The two seeded approaches, which suppress the picker because picking a berth would

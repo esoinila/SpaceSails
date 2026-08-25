@@ -44,6 +44,7 @@ public partial class Map
         public string? CrackCheat;
         public string? TipCheat;
         public string? HoardCheat;
+        public string? TargetCheat; // #997 wave 10 /map?target=<contact-id>|collector: point the tactical UI at a contact so her dossier is up at boot
         public string? SlingCheat;
         public string? SkimCheat;
         public string? BackroomCheat;

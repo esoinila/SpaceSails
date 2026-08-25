@@ -538,6 +538,8 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?credits=N`** | **Boot with N credits in the purse (#288).** |
 | `?simhours=N` | Jump the sim clock to N hours at boot. |
 | `?reveal=<bodyId>` | Chart a hidden body at boot (repeatable). |
+| **`?target=<contact-id>`** | **Point the tactical UI at a contact and open her DOSSIER on the Nav glass at boot (#997 wave 10).** Ids look like `npc-0`, `pod-1`, `hunter-0`; BOTH rosters are searched (a hunter is never in the traffic list — #962), and a wrong id answers with the ids this sky actually holds. Traffic is handed the fix a completed telescope pass would have entered, and the next sweep re-decides whether she is still live. |
+| **`?target=collector`** | **Send the muscle first, then read her file.** Spawns a collector down the shipping heat-event road (nearest policed body, news wire and all) and opens her dossier — the fullest card the game draws: warrant, hiding, nerve, sail. The one URL behind #960's card; before it, three waves of the shell migration measured that card by hand. |
 | `?ellipse=1` | Append a visibly eccentric demo body (Kepler rails). |
 | `?sling=<bodyId>` / `?skim=<bodyId>` | Boot onto an approach arc with a close pass / atmosphere graze. |
 | `?expedition=1\|mining` | Spawn an away-team gig ALREADY ACCEPTED, its rock parked in shuttle range (#370). |

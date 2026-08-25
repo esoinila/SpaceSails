@@ -3601,7 +3601,30 @@
        canvas while ashore, with Take / Pass. Same overlay family as the deck-pulse-toast. *@
     @if (_deckMode && _pendingOffer is { } offer)
     {
-        <div class="deck-offer-card">
+        @* #997 wave 10 · THE STRANGER'S CONTRACT, and #1010's blocker answered by #780's own ruling.
+           #1009 named this card a straggler for a reason that was right: its two answers ARE both closes,
+           but the card ALSO carries #355's drink flow, whose controls are not — so `ByDecision` would be
+           the claim "every answer this surface offers is itself a close" and that claim would be false.
+           It is a Close with two ways out instead: `Take the job` is the dismiss and `Pass` is wave 7's
+           second one beside it, in `.deck-offer-actions` — the row #735 pins sticky and #780 wraps.
+
+           …AND THE DRINK FLOW MOVED ABOVE THE FOOT, which is the layout question #1010 left open and the
+           ONE thing on this card that is not chrome. #780 answered it once already, at the counter: the
+           menu's six priced items were rendering UNDER `.deck-offer-actions`' sticky 12rem scrim and read
+           as a greyed-out panel behind glass, so the menu moved above the row. This card had the identical
+           latent bug — a known face's drink flow rendered after the same sticky row — and the answer is
+           the same answer. It is also what the shell's `WaysClass` requires (the row it draws is the last
+           thing in a Bare surface), so the migration and the fix are one edit. The patron's table one card
+           along has read this way since wave 9. *@
+        <OverlayShell class="deck-offer-card" Frame="OverlayFrame.Bare"
+                      Dismiss="OverlayDismiss.Close" WaysClass="deck-offer-actions"
+                      OnClose="AcceptOffer"
+                      DismissClass="btn btn-sm btn-warning"
+                      DismissFace="@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")"
+                      DismissTitle="Take the stranger's offer — it lands in your logbook"
+                      OnBeside="DeclineOffer"
+                      BesideClass="btn btn-sm btn-outline-light" BesideFace="Pass"
+                      BesideTitle="Wave the offer off — no hard feelings">
             <div class="deck-offer-giver">◈ @offer.Giver</div>
             @* #959 · THE PLAIN BLOCK, BEFORE THE VOICE. Owner: "We need to know before we decide if we
                accept or not." So the four lines Core computes — the verb from a fixed vocabulary, what
@@ -3630,18 +3653,15 @@
                         ? _offerPlain[3]
                         : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")
             </div>
-            <div class="deck-offer-actions">
-                <button type="button" class="btn btn-sm btn-warning" title="Take the stranger's offer — it lands in your logbook" @onclick="AcceptOffer">@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")</button>
-                <button type="button" class="btn btn-sm btn-outline-light" title="Wave the offer off — no hard feelings" @onclick="DeclineOffer">Pass</button>
-            </div>
             @* #355 — the drink offer belongs IN the conversation: while a KNOWN face's contract is on the
                table, the same offer-a-drink flow the counter card hosts sits right here too. A stranger's
-               first contract has no ledger history yet, so PresentBarContacts stays empty and this is quiet. *@
+               first contract has no ledger history yet, so PresentBarContacts stays empty and this is quiet.
+               #997 wave 10 · ABOVE the answers now, not below them — #780's ruling, see the card's head. *@
             @if (CurrentKeep is { } offerKeep && PresentBarContacts().Any(c => c.Giver.Equals(offer.Giver, StringComparison.OrdinalIgnoreCase)))
             {
                 @ContactDrinkOffer(offer.Giver, GiverDisplay(offer.Giver), offerKeep)
             }
-        </div>
+        </OverlayShell>
     }
 
     @* #355 — the patron's OWN-TABLE drink card (doorway two). Press E at a known face drinking here and,
@@ -4489,13 +4509,28 @@
     {
         @* #253: header + one row per candidate, flipped away from the near edge. *@
         var pickAt = ClampMenu(_pickMenuX, _pickMenuY, pickList.Count);
-        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(pickAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(pickAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-secondary me-2">Which one?</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this chooser"
-                        @onclick="ClosePickMenu"></button>
-            </div>
+        @* #997 wave 10 · THE MENU FAMILY'S FIRST CARD, and #1010's pre-question answered before anybody
+           assumed it. A click menu IS a card: a head with a name and a way out, over a body. Its rows are
+           not ways out — they are the actions the click MEANT — so all four take the shell's plainest and
+           oldest shape, Card · Close, and the family wanted no new shell mode at all.
+
+           AND IT IS A Close AND NOT A ByDecision, THOUGH THE BEHAVIOUR WOULD ALLOW ONE — a ruling rather
+           than an oversight, so it is written where the decision was made. Pressed, EVERY row of every menu
+           in this family does end its menu (measured, not assumed: 🎯 Set destination, 🛰 arm, 🚀 long haul,
+           ❄ the cycler, 🪂 aerobrake, 🔭 scan and this chooser's own rows all clear their gate on the way
+           out), so the critical-decision exception's own behaviour test would pass here. It is still the
+           wrong shape. `ByDecision` says no ✕ is NEEDED because every answer is itself a close, and the
+           shell then draws none — which would leave a captain who opened a menu by accident with no way to
+           shut it except to set a destination, arm an insertion or spend a telescope pass. A menu is not a
+           question; it is a list of things you MAY do, and "none of them" has to stay sayable.
+           Pinned by TheClickMenusTakeTheShellAndTheContractTakesItsFootTests. *@
+        <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+                      style="@MenuAnchorStyle(pickAt)"
+                      Dismiss="OverlayDismiss.Close" OnClose="ClosePickMenu"
+                      HeadClass="d-flex justify-content-between align-items-center mb-1"
+                      Title="Which one?" TitleClass="text-secondary me-2"
+                      DismissClass="btn-close btn-close-white btn-sm"
+                      DismissLabel="Close" DismissTitle="Close this chooser">
             <div class="d-grid gap-1">
                 @foreach (PickCandidate pick in pickList)
                 {
@@ -4509,7 +4544,7 @@
             <button type="button" class="btn btn-link btn-sm p-0 mt-1 map-pick-filter-hint"
                     title="Open the 🗺 Layers panel to filter what the map draws on this desk"
                     @onclick="OpenLayersFromPick">🗺 crowded? filter the map</button>
-        </div>
+        </OverlayShell>
     }
 
     @* 🗺 Layers (owner: "filter what is being shown on the map screens"): per-desk checkbox
@@ -5083,13 +5118,16 @@
     {
         @* #253/#290: up to four action rows on Nav (set dest · arm · 🚀 long haul · 🪂 aerobrake), two on Sensors. *@
         var bodyAt = ClampMenu(_bodyMenuX, _bodyMenuY, 4);
-        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(bodyAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(bodyAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold me-2">@menuBody.Name</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this body's menu"
-                        @onclick="CloseBodyMenu"></button>
-            </div>
+        @* #997 wave 10 · Card · Close, on the longest list in the family. Every row here ends the menu and
+           the ✕ is still the only one that ends it without spending something — see the chooser above for
+           why that makes this a Close rather than the critical-decision exception. *@
+        <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+                      style="@MenuAnchorStyle(bodyAt)"
+                      Dismiss="OverlayDismiss.Close" OnClose="CloseBodyMenu"
+                      HeadClass="d-flex justify-content-between align-items-center mb-1"
+                      Title="@menuBody.Name" TitleClass="fw-bold me-2"
+                      DismissClass="btn-close btn-close-white btn-sm"
+                      DismissLabel="Close" DismissTitle="Close this body's menu">
             <div class="d-grid gap-1">
                 @* PR-C desk separation (F7): navigation verbs live on the Nav desk; the same
                    click on Sensors talks scanning. Navigation is done at the Navigation desk. *@
@@ -5178,7 +5216,7 @@
                     </button>
                 }
             </div>
-        </div>
+        </OverlayShell>
     }
 
     @* M29: the contact menu — clicking a ship selects it for the scope AND offers the real
@@ -5187,13 +5225,15 @@
     {
         @* #253: a vitals line plus up to three actions (interest · track · scan). *@
         var shipAt = ClampMenu(_shipMenuX, _shipMenuY, 4);
-        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(shipAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(shipAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold me-2">@menuNpc.Ship.Callsign</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this contact's menu"
-                        @onclick="CloseShipMenu"></button>
-            </div>
+        @* #997 wave 10 · Card · Close. The vitals line and the three actions are the page's own children of
+           the shell's body, in the order they were typed; the ✕ is the shell's. *@
+        <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+                      style="@MenuAnchorStyle(shipAt)"
+                      Dismiss="OverlayDismiss.Close" OnClose="CloseShipMenu"
+                      HeadClass="d-flex justify-content-between align-items-center mb-1"
+                      Title="@menuNpc.Ship.Callsign" TitleClass="fw-bold me-2"
+                      DismissClass="btn-close btn-close-white btn-sm"
+                      DismissLabel="Close" DismissTitle="Close this contact's menu">
             @if (menuNpc.CurrentlyObserved)
             {
                 <div class="text-secondary mb-1">
@@ -5235,7 +5275,7 @@
                     </button>
                 }
             </div>
-        </div>
+        </OverlayShell>
     }
 
     @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
@@ -5250,13 +5290,15 @@
     {
         @* #253: a scan-cost line plus the scan action (and, near a lane, a sweep). *@
         var skyAt = ClampMenu(_skyMenuX, _skyMenuY, 4);
-        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(skyAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(skyAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold me-2">✨ Open sky</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this patch's menu"
-                        @onclick="CloseSkyMenu"></button>
-            </div>
+        @* #997 wave 10 · Card · Close — the fourth and last of the family, and the one that shows the head
+           is CHROME rather than a name: "✨ Open sky" is a title over a patch of nothing. *@
+        <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+                      style="@MenuAnchorStyle(skyAt)"
+                      Dismiss="OverlayDismiss.Close" OnClose="CloseSkyMenu"
+                      HeadClass="d-flex justify-content-between align-items-center mb-1"
+                      Title="✨ Open sky" TitleClass="fw-bold me-2"
+                      DismissClass="btn-close btn-close-white btn-sm"
+                      DismissLabel="Close" DismissTitle="Close this patch's menu">
             <div class="text-secondary mb-1">
                 @FormatDistance((skyPoint - _ship.Position).Length) out ·
                 patch radius @FormatDistance(_skyMenuRadius) · @ScanCostText(skyPoint, _skyMenuRadius)
@@ -5283,7 +5325,7 @@
                     </button>
                 }
             </div>
-        </div>
+        </OverlayShell>
     }
 
     @* #195 (owner ruling: the NOW/NEXT banner covered the toolbar's 'checklist' and '?' buttons):

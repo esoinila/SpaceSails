@@ -392,6 +392,117 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>
+    /// #997 wave 10 · <c>/map?target=&lt;contact-id&gt;</c> — THE DOSSIER, REACHABLE FROM A URL AT LAST.
+    ///
+    /// <para>#960's card is gated on a tactical target, and the two roads to one are a contact in sensor
+    /// reach or a collector bought by a robbery. Neither is a field a URL could set, so three waves of the
+    /// shell migration measured this card by hand and each said so out loud rather than dressing the
+    /// measurement up as a playthrough. This is the road they were missing, and it is the same shape
+    /// <c>?reveal=</c> has: the sky already holds her when you arrive.</para>
+    ///
+    /// <para><b>BOTH ROSTERS ARE WALKED, and that is not tidiness.</b> A hunter is never in
+    /// <c>_npcStates</c>, and #962 is the issue that got filed when 📡 <i>sharpen fix</i> resolved its
+    /// subject through <c>FindNpc</c> alone: every collector id fell out of the first guard and the button
+    /// did nothing, in silence. <see cref="DossierFor"/> reads both; so does this.</para>
+    ///
+    /// <para><b>What it pays for, rather than pretends.</b> Traffic has to have been SEEN before the dossier
+    /// has anything honest to draw — <c>DossierFor</c> returns null on a contact with no observation, and
+    /// that refusal is right. So the cheat enters the fix a completed telescope pass would have entered:
+    /// her own state, at this instant, through the same <see cref="Observation"/> the sweep and the ledger
+    /// take. The next sweep re-decides whether she is still live, exactly as it does for every other
+    /// contact — nothing here is pinned true.</para>
+    /// </summary>
+    private void SeedTargetCheat(string asked)
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+
+        string id = asked;
+        if (string.Equals(asked, "collector", StringComparison.Ordinal))
+        {
+            // The one contact no scenario ships with: hired muscle. Sent down the SHIPPING road — the same
+            // SpawnHunterForHeatEvent a robbery calls, fitting out at the nearest policed body, with its own
+            // news wire entry — because a hand-planted hunter would be a dossier about a ship the sim has
+            // never heard of. A pure outer-reaches berth has nobody to send, and says so (#212's idiom).
+            int before = _hunters.Count;
+            SpawnHunterForHeatEvent();
+            if (_hunters.Count == before)
+            {
+                ShowPulseMessage(
+                    "🧪 DEV ?target=collector: nothing policed within reach of here to send muscle — there is "
+                    + "no cavalry to call. Try &dock=selene-gate, or name a contact id instead.");
+                return;
+            }
+
+            id = _hunters[^1].Id;
+        }
+
+        if (FindNpc(id) is { } contact)
+        {
+            if (!SheIsOnHerRouteByNow(contact) || contact.Arrived)
+            {
+                ShowPulseMessage(
+                    $"🧪 DEV ?target={asked}: {contact.Ship.Callsign} is not in the sky at this hour — she has "
+                    + "either not sailed yet or is already alongside. Add &simhours=N to move the clock.");
+                return;
+            }
+
+            var fix = new Observation(id, SimTime, contact.State.Position, contact.State.Velocity);
+            contact.LastObservation = fix;
+            contact.ObservationCount++;
+            contact.CurrentlyObserved = true;
+            _trackingPost?.ApplyObservation(fix);
+        }
+        else if (!_hunters.Any(hunter => hunter.Id == id))
+        {
+            string outThere = string.Join(" · ", _npcStates.Take(6).Select(n => n.Ship.Id)
+                .Concat(_hunters.Select(h => h.Id)));
+            ShowPulseMessage(
+                $"🧪 DEV ?target={asked}: nothing out there answers to that id. This sky holds {outThere}"
+                + " — or use ?target=collector to have muscle sent after you.");
+            return;
+        }
+
+        // InterestFromMenu's own guard, and for its reason: SetInterestTarget is a TOGGLE, so calling it on
+        // a target that is already the interest would stand the dossier DOWN.
+        if (_interestTargetId != id)
+        {
+            SetInterestTarget(id);
+        }
+
+        // A tucked dossier is not an open one, and this cheat's whole promise is that the card is up.
+        _dossierMinimized = false;
+
+        // …and the card is drawn on the Nav and Sensors desks only, so a cheat that pointed the tactical UI
+        // at her and left the captain in a station corridor would be a cheat that did nothing. Same idiom as
+        // ?ashore=1 walking the walk — and skipped for a captain who is off-ship or on his way down a
+        // gravity well, because SwitchDesk rightly refuses that and would answer with its own refusal line.
+        if (!_landCheat && _surface is null && _activeDesk is not (ShipDesk.Nav or ShipDesk.Sensors))
+        {
+            SwitchDesk(ShipDesk.Nav);
+        }
+
+        ShowPulseMessage($"🧪 Test: 📖 {ContactCallsign(id)} is the tactical target — her dossier is on the "
+                         + "glass, bottom-centre. – tucks it into a tile, ✕ drops the target.");
+
+        // #997 wave 10 · THE ONE THING THE OFF-BROWSER BENCH CANNOT SEE, said out loud where a playtester
+        // will read it. `?target=collector&dock=<berth>` boots a dossier that is GONE a tick later, and
+        // that is the game being right rather than the cheat being wrong: a haven is precisely where a
+        // collector loses the scent (#580 / EncounterRule.ApplyBreakOff), so she breaks off, leaves
+        // `_hunters`, and DossierFor has nothing to draw. It cost a browser walk to find, because the
+        // bench runs no sim ticks at all — so the warning is the line the captain is left holding.
+        if (_dockedHavenId is not null && _hunters.Any(hunter => hunter.Id == id))
+        {
+            ShowPulseMessage(
+                $"🧪 DEV ?target={asked}: her file is up, and it will not stay. You are berthed at a HAVEN, "
+                + "which is exactly where a collector loses the scent — she breaks off within a tick or two "
+                + "and the dossier goes with her. Cast off, or boot free-flying: /map?start=wreck&target=collector");
+        }
+    }
+
     private readonly record struct DossierInfo(
         string Name, string Detail, string StatusLine,
         double Distance, double RelSpeed, double Closing,
@@ -527,6 +638,32 @@ public partial class Map
     // to ~1 fps, and NPC accuracy needs are meters-scale at dt=60. The ≤59 s overshoot past the
     // player's SimTime is subpixel at map zoom. Also heals a mid-frame activation (the ship
     // starts from InitialState and immediately catches up).
+    /// <summary>
+    /// #997 wave 10 · A SCHEDULED CONTACT IS NOT IN THE SKY UNTIL HER DEPARTURE IS BEHIND US, and this is
+    /// the two lines <see cref="StepNpcs"/> has always used to put her there — lifted rather than copied,
+    /// because <c>?target=</c> needs the same answer at boot and a second spelling of it is the fourth
+    /// named bug class waiting to happen.
+    ///
+    /// <para>True when she is flying now (already active, or activated by this call); false when her
+    /// departure is still in the future, which is the answer that makes the caller skip her.</para>
+    /// </summary>
+    private bool SheIsOnHerRouteByNow(NpcState npc)
+    {
+        if (npc.Active)
+        {
+            return true;
+        }
+
+        if (_ship.SimTime < npc.Ship.ActivationTime)
+        {
+            return false;
+        }
+
+        npc.Active = true;
+        npc.State = npc.Ship.InitialState;
+        return true;
+    }
+
     private void StepNpcs()
     {
         foreach (NpcState npc in _npcStates)
@@ -536,15 +673,9 @@ public partial class Map
                 continue;
             }
 
-            if (!npc.Active)
+            if (!SheIsOnHerRouteByNow(npc))
             {
-                if (_ship.SimTime < npc.Ship.ActivationTime)
-                {
-                    continue;
-                }
-
-                npc.Active = true;
-                npc.State = npc.Ship.InitialState;
+                continue;
             }
 
             if (npc.Ship.DepotBodyId is not null)

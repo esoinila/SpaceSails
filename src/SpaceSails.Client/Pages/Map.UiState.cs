@@ -331,6 +331,17 @@ public partial class Map
             MenuBoxWidthPx, MenuChromePx + rows * MenuRowPx,
             _viewportWidth, _viewportHeight);
 
+    /// <summary>#997 wave 10 · The clamped anchor as the one inline declaration the four click menus wear.
+    ///
+    /// <para>It is a method rather than four <c>style="left: @@(…)px; top: @@(…)px"</c> attributes because a
+    /// COMPONENT attribute may not mix markup and C# (RZ9986) and <see cref="Components.OverlayShell"/> draws
+    /// these roots now. The rendering is the one the four menus have always written — <c>F0</c>, invariant —
+    /// said once instead of eight times, and <c>MenuLayoutTests</c> owns the numbers that go into it.</para>
+    /// </summary>
+    private static string MenuAnchorStyle((double X, double Y) at) =>
+        $"left: {at.X.ToString("F0", CultureInfo.InvariantCulture)}px; "
+        + $"top: {at.Y.ToString("F0", CultureInfo.InvariantCulture)}px";
+
     // Dev cheat (/map?fetch=intel|active|picked): drop a fetch job straight into the ledger at a
     // stage, so a playtester can test each leg without flying the ones between.
     //   intel  = the new first stage: accepted, wreck HIDDEN, transponder fix in the Comms ledger.
