@@ -20,7 +20,7 @@ public class MapLayerTreeTests
     [Fact]
     public void HiddenLeaf_IsNotVisible()
     {
-        Assert.False(MapLayerTree.IsVisible(Hidden("routes.lanes"), "routes.lanes"));
+        Assert.False(MapLayerTree.IsVisible(Hidden("routes.plan"), "routes.plan"));
     }
 
     // ---- Threats-never-hidden safety invariant ----
@@ -110,35 +110,38 @@ public class MapLayerTreeTests
         Assert.Equal(MapLayerTree.TriState.On, MapLayerTree.GroupStateOf(hidden, traffic));
     }
 
-    // ---- Per-desk defaults (#953: the lanes start off EVERYWHERE) ----
+    // ---- Per-desk defaults (#953: the lanes are archived, so there is nothing left to hide) ----
 
-    [Fact]
-    public void DefaultHidden_NonSensorsDesk_HidesTradeLanesOnly()
+    /// <summary>#953 · THE LANES ARE NOT DEFAULTED OFF ANY MORE, THEY ARE GONE. #971 shipped every desk with
+    /// the trade lanes hidden, after the owner opened his sensors desk onto a sky "covered in faint lines with
+    /// no intersection". The follow-up ruling archived the overlay outright — "we have never used them to find
+    /// anything" — so the hidden set is empty and every desk opens on the whole tree. What replaced the
+    /// default is a leaf that does not exist; <c>TheShipLanesAreArchivedTests</c> proves nothing draws it.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void DefaultHidden_HidesNothing_BecauseTheOneHiddenLayerWasArchived(bool sensorsDesk)
     {
-        var hidden = MapLayerTree.DefaultHidden(isSensorsDesk: false);
-        Assert.Equal(new HashSet<string> { "routes.lanes" }, hidden);
-        Assert.False(MapLayerTree.IsVisible(hidden, "routes.lanes"));
-        Assert.True(MapLayerTree.IsVisible(hidden, "routes.plan"));
-    }
+        var hidden = MapLayerTree.DefaultHidden(sensorsDesk);
 
-    /// <summary>#953 · THE SENSORS CHIEF IS NOT HANDED A SKY FULL OF LINES EITHER. This desk was the one
-    /// exception — it opened on every layer, lanes included — and the owner's screenshot of it is the
-    /// issue: "The ship lanes display is a mess… It must always be much more filtered and off by default.
-    /// This is just ugly here by default." One checkbox still brings them back, per desk.</summary>
-    [Fact]
-    public void DefaultHidden_SensorsDesk_AlsoStartsWithTheLanesOff()
-    {
-        var hidden = MapLayerTree.DefaultHidden(isSensorsDesk: true);
-        Assert.False(MapLayerTree.IsVisible(hidden, "routes.lanes"));
-
-        // …and ONLY the lanes: the working sky the chief actually needs is untouched.
+        Assert.Empty(hidden);
         foreach (string key in MapLayerTree.AllLeafKeys)
         {
-            if (key != "routes.lanes")
-            {
-                Assert.True(MapLayerTree.IsVisible(hidden, key), $"{key} should still open visible");
-            }
+            Assert.True(MapLayerTree.IsVisible(hidden, key), $"{key} should open visible");
         }
+    }
+
+    /// <summary>…and the row itself is off the panel, so no captain is offered a checkbox that turns nothing
+    /// on. The rest of the Routes family is named in the same breath: a tree that had lost the whole family
+    /// would otherwise satisfy "no lane row" perfectly.</summary>
+    [Fact]
+    public void TheRoutesFamilyOffersNoTradeLanesRow()
+    {
+        Assert.True(ShipLanes.Archived);
+
+        MapLayerTree.Group routes = MapLayerTree.Groups.Single(g => g.Key == "routes");
+        Assert.Equal(["routes.plan", "routes.rails"], routes.Leaves.Select(l => l.Key));
+        Assert.DoesNotContain("routes.lanes", MapLayerTree.AllLeafKeys);
     }
 
     /// <summary>#963 · The 🛬 the owner could not read ("what is the small symbol next to ganymede… it
@@ -159,13 +162,22 @@ public class MapLayerTreeTests
     // ---- Legacy key migration ----
 
     [Theory]
-    [InlineData("lanes", "routes.lanes")]
     [InlineData("scans", "sensors.scans")]
     public void MigrateLegacyKey_MapsFlatKeyIntoTheTree(string oldKey, string expectedFirst)
     {
         IReadOnlyList<string> mapped = MapLayerTree.MigrateLegacyKey(oldKey);
         Assert.Contains(expectedFirst, mapped);
         Assert.All(mapped, m => Assert.Contains(m, MapLayerTree.AllLeafKeys));
+    }
+
+    /// <summary>#953 · An old note asking for "lanes" is asking for a layer that no longer exists, and the
+    /// migration says so by landing nowhere. Answering with a key the tree does not carry would hand a caller
+    /// a hidden-set entry that gates nothing — which is the same quiet nonsense as a checkbox that turns
+    /// nothing on.</summary>
+    [Fact]
+    public void MigrateLegacyKey_Lanes_LandsNowhere_BecauseTheLayerWasArchived()
+    {
+        Assert.Empty(MapLayerTree.MigrateLegacyKey("lanes"));
     }
 
     [Fact]

@@ -220,6 +220,13 @@ internal sealed class DeskBench : Renderer
     /// did to the state as well as to the markup.</summary>
     public object? Field(string name) => Read(_map, name);
 
+    /// <summary>#953 · Call one of the page's own private methods by name — for a law whose subject is not a
+    /// control on the screen but something the page DOES with the world it booted (paint the solar map, name
+    /// the lane nearest a point). Same safety as <see cref="Poke"/>: a renamed method fails loudly here with
+    /// the name it used to have. Whatever it raises arrives wrapped in a <c>TargetInvocationException</c>,
+    /// which is what lets a caller tell the documented browser gate from a real failure.</summary>
+    public object? Call(string method, params object?[] args) => Method(method).Invoke(_map, args);
+
     /// <summary>
     /// #992 · <b>PUT THE PAGE IN THE STATE THAT RAISES THIS POP-UP.</b> A field write, by name, on the
     /// shipping component.
@@ -237,23 +244,6 @@ internal sealed class DeskBench : Renderer
     /// that was never on the screen (this repository's fifth named bug class).</para>
     /// </summary>
     public void Poke(string field, object? value) => TheField(field).SetValue(_map, value);
-
-    /// <summary>
-    /// #973 · <b>CALL ONE OF THE PAGE'S OWN METHODS</b>, by name, on the shipping component — for a beat
-    /// whose real road cannot be walked off a browser.
-    ///
-    /// <para>Same standing as <see cref="Poke"/> and the same safety: the name is written down, so a method
-    /// that is renamed or deleted fails loudly here with the name it used to have rather than quietly
-    /// asserting nothing. Prefer <see cref="PressAsync"/> wherever a control on the drawn page reaches the
-    /// beat — pressing the button the tree actually drew proves the wire as well as the rule.</para>
-    /// </summary>
-    public object? Call(string method, params object?[] args)
-    {
-        MethodInfo found = typeof(Map).GetMethod(method, Hidden)
-            ?? throw new InvalidOperationException(
-                $"Map has no {method} — this bench drives it by name, and that name has moved.");
-        return found.Invoke(_map, args);
-    }
 
     /// <summary>The other half of <see cref="Poke"/>, and it exists for one question: did pressing a piece of
     /// CHROME move the WORLD. A shell that tucks a card away must leave the crossing on the clock it was

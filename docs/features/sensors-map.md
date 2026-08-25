@@ -36,9 +36,12 @@ dock-market upgrade now sets both ledger slots (1→4) *and* pass speed (+50%/le
 
 ## The sky shows its state (map overlays, Sensors desk only)
 
-- **Trade lanes** — every anchor pair (Venus/Earth/Mars/Jupiter/Saturn) draws as a faint
-  filled corridor with a label (`TradeCorridors.Regions`: segment between the bodies *now*,
-  lane radius = max(1.2×10¹⁰ m, 5% of length)). The selected lane brightens.
+- ~~**Trade lanes**~~ — *archived (#953).* The anchor-pair corridors used to draw as faint
+  filled bands with labels, and #971 hid them by default. They are no longer painted and no
+  longer offered as a layer at all: *"we have never used them to find anything."* The
+  geometry lives on (`TradeCorridors.Regions`: segment between the bodies *now*, lane radius
+  = max(1.2×10¹⁰ m, 5% of length)) because the lane **sweeps** still aim by it —
+  `ShipLanes.Archived` is the one flag that records the decision.
 - **The live scan wedge** — whatever the telescope is on right now, drawn from the ship and
   honestly range-limited by the sun-relative envelope; the swept-so-far portion fills in
   brighter, with a `📡 label · N%` line.

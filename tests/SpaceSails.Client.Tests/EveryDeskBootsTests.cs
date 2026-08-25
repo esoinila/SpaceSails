@@ -110,6 +110,10 @@ public sealed class EveryDeskBootsTests
         new("on the KAAMOS ice moon, Hive floor 23", "/map?kaamos=hq&arrivalphase=2&land=1&floor=23", Docked: false, OnSurface: true),
     ];
 
+    /// <summary>The matrix's world states, for a law that wants the same five worlds without keeping a copy of
+    /// them (#953's lane archive sweeps them with a pen). One table, so a sixth world joins both at once.</summary>
+    internal static IEnumerable<string> EveryWorldUrl() => TheWorlds.Select(w => w.Url);
+
     // ── The law ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>THE SWEEP. Every desk, in every world, rendered — and every failure collected rather than
