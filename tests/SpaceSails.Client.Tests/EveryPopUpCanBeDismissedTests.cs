@@ -481,14 +481,21 @@ public sealed class EveryPopUpCanBeDismissedTests
         // class it is keyed on is still registered by the three real sheets that share it). Lowering a
         // ceiling is always allowed; this one is lowered because the row it counted is gone.
         //
-        // #997 wave 10 · FOURTEEN BECAME THIRTEEN, and this time by a row being DRIVEN — the first
-        // reason on this list that was a missing DEV DOOR rather than a world the bench cannot build.
-        // The target dossier's row said "needs a tactical target", which was true and is now answerable
-        // from a URL (?target=, Map.Npc.SeedTargetCheat), so the row has a driver and the ruling is proved
-        // of that card by pressing rather than named and left.
+        // #997 wave 10 · FOURTEEN BECAME TWELVE, and only ONE of those two steps is an achievement.
+        //
+        // The target dossier is driven now, and it is the first reason on this list that turned out to be a
+        // missing DEV DOOR rather than a world the bench cannot build. Its row said "needs a tactical
+        // target"; that was true, and it is answerable from a URL now (?target=, Map.Npc.SeedTargetCheat),
+        // so the ruling is proved of that card by pressing rather than named and left.
+        //
+        // The other step is bookkeeping, and it is said out loud rather than pocketed: the ceiling has been
+        // 14 with only 13 rows under it since wave 7, so it carried a spare notch nobody had used. A
+        // ceiling with slack in it cannot catch the next row that creeps under it — which is this number's
+        // whole job — so it is pulled down onto the count. It is TIGHT now: undrive any single row and this
+        // goes red, which is the red proof wave 10's PR quotes.
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 13,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 13. If a row genuinely "
+        Assert.True(undriven <= 12,
+            $"{undriven} register rows have no driver, and the written-down ceiling is 12. If a row genuinely "
             + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
             + "the commit; the point of the number is that it cannot creep.");
     }
