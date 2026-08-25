@@ -1991,7 +1991,14 @@
     backdrop-filter: blur(2px);
 }
 
-.start-picker {
+/* #997 wave 6 · ::deep, and the reason it reaches BOTH the shelled and the un-shelled surfaces on this one
+   class. Two of the four .start-picker surfaces are drawn by OverlayShell now (the bank sheet and the import
+   consent) and two are still the page's own (the front door and the logbook — named stragglers, with the
+   reason, in Map.razor). Written plainly this rule compiles to `.start-picker[b-map]` and stops matching the
+   shell's two. Written with ::deep it compiles to `[b-map] .start-picker`, a DESCENDANT selector, and
+   .start-picker-backdrop above every one of the four is the page's own element carrying b-map — so all four
+   are reached through it. One rule, one skin, four surfaces, whichever component draws them. */
+::deep .start-picker {
     width: min(34rem, 94vw);
     max-height: 88vh;
     overflow-y: auto;
@@ -2180,8 +2187,10 @@
     font-size: 0.85rem;
 }
 
-/* #310 — the save/load surface (front door + in-game drawer share these). */
-.save-surface {
+/* #310 — the save/load surface (front door + in-game drawer share these). ::deep for the reason given on
+   .start-picker above: the bank sheet and the import consent wear this class on an element OverlayShell
+   draws, and the page-scoped attribute is pinned to the last compound selector. */
+::deep .save-surface {
     /* #948 — the shelf grew a headline per row, and a clipped headline is the exact complaint this lane
        set out to fix ("Captain Erno of the Lo…" is no more findable than "The Tilt · day 0"). The surface
        takes the width it needs on a real screen and still yields on a narrow one. */
@@ -5587,11 +5596,19 @@
 
    Named rather than globbed, in the house idiom of the HUD-collision gate: a NEW modal card has to be
    added here deliberately, which is the moment somebody asks whether its way out is reachable. The guard
-   that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate. */
+   that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate.
+
+   #997 wave 5 MEASURED the celebration fanfare in a browser and found it was not on this list, alone of the
+   six cards in its own backdrop family — a full-screen card with a growing body (the fanfare, the title, the
+   giver, the thanks, the payment line, the parrot, the history — seven sections and every release adds to
+   them) and neither the cap nor the pinned foot its five siblings have. It is the exact card this block was
+   written about, and it had simply never been named here. Wave 6 names it. This is #735's own design applied
+   to the card it was always meant to cover, not a new rule. */
 ::deep .busted-card,
 ::deep .view-object,
 ::deep .convergence-card,
 ::deep .deck-offer-card,
+::deep .mission-celebration,
 ::deep .treasure-map-card,
 ::deep .expedition-brief-card,
 ::deep .expedition-reveal-card,
@@ -5639,6 +5656,7 @@
 .treasure-map-card > .busted-options,
 ::deep .treasure-map-card > .view-object-close,
 ::deep .treasure-map-card > button:last-child,
+::deep .mission-celebration > button:last-child,
 ::deep .expedition-brief-card > button:last-child,
 ::deep .expedition-reveal-card > button:last-child,
 .rescue-card > .rescue-options,
@@ -5703,6 +5721,11 @@
 
 ::deep .expedition-brief-card {
     --card-foot-scrim: rgb(10, 20, 14);
+}
+
+/* The fanfare's own darkness: the BOTTOM stop of its gradient, alpha and all, read off the rule above. */
+::deep .mission-celebration {
+    --card-foot-scrim: rgba(8, 11, 18, 0.98);
 }
 
 ::deep .expedition-reveal-card {
@@ -5933,8 +5956,10 @@
     text-overflow: clip;
 }
 
-/* The bank/export/edit sheet: two fields and the promise that a banked berth stays banked. */
-.bank-sheet {
+/* The bank/export/edit sheet: two fields and the promise that a banked berth stays banked. ::deep because
+   #997 wave 6 put this sheet on OverlayShell — the card is the shell's element, the fields inside it are
+   still the page's own and keep their scope attribute untouched. */
+::deep .bank-sheet {
     max-width: 34rem;
 }
 

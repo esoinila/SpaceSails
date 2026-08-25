@@ -133,6 +133,26 @@
     }
     </div>;
 
+        // #997 wave 6 · THE ONE ROOT OF THIS FAMILY THAT KEEPS ITS OWN WAY OUT, and it is TWO surfaces: the
+        // front door and the in-game logbook are ONE element with one class attribute, drawn twice off this
+        // fragment, so they migrate together or not at all. Not at all, for two reasons that are facts about
+        // the markup rather than shortcuts.
+        //
+        // THE LOGBOOK'S WAY OUT IS THE THIRD BUTTON OF A ROW. Its Close sits in the foot beside "⬇ Export
+        // this moment" and "⬆ Import file" — one flex row, three buttons, Close the last of them. A Bare
+        // shell draws its dismiss as the card's LAST DIRECT CHILD, which is the whole point of the frame;
+        // that would lift Close out of the row it shares and drop it on a line of its own below the foot.
+        // That is a control moving on the screen, which this migration does not do.
+        //
+        // AND THE FRONT DOOR HAS NO WAY OUT AT ALL, because there is nothing behind it to go back to — you
+        // leave it by starting or loading a game. So neither of the other two shapes fits either: Close
+        // would draw a ✕ this door has never had, and ByDecision would be a claim that every control on it
+        // is itself a close, which is false on BOTH surfaces (⬆ Import, 📥 file, 🗑, the ▸ dev-starts
+        // chevron and the ✏ pencil all leave the surface standing). #1005's own lesson is that a false
+        // ByDecision claim is the bug, not the migration.
+        //
+        // It gets a shell when the logbook's Close stops sharing a row — or when the shell learns to hand a
+        // page's own foot the dismiss it draws. Named in TheNamedStragglers with this paragraph.
         RenderFragment<bool> SaveLoadSurface = inGame =>
     @<div class="start-picker save-surface">
         <div class="start-picker-title">@(inGame ? "🧭 Ship's logbook — saves" : "🛰 Space Sails")</div>
@@ -404,7 +424,31 @@
     @if (_bankPrompt is { } bankKind)
     {
         <div class="start-picker-backdrop">
-            <div class="start-picker save-surface bank-sheet">
+            @* #997 wave 6 · THE TWO SHEETS OF THIS FAMILY THAT REALLY ARE DECISIONS — this one and the
+               import consent below. They are the only two of the four `.start-picker` surfaces that any of
+               the shell's three shapes fits; the front door and the logbook are named as stragglers at their
+               own root above, with the reason.
+
+               `ByDecision` is the critical-decision exception: no ✕, because every answer the surface offers
+               is itself a close. That is true here, and it is proved by PRESSING rather than taken from this
+               comment (TheShellOwnsTheStartPickerFamilyTests) — CommitBankPrompt runs CancelBankPrompt before
+               it writes anything, and CancelBankPrompt clears _bankPrompt and nothing else, so both roads end
+               the sheet. The title and the note are FIELDS, not answers, and a field is not a way out.
+
+               The two answers stay the page's own markup inside `.save-surface-foot-center` rather than going
+               through the shell's `Choices`, for #1001's reason: they wear different colours (btn-success on
+               the commit, btn-outline-light on the cancel) and the commit changes its face with the kind of
+               sheet this is, while `ChoiceClass` is one class list for all of them. Routing them would
+               repaint two buttons, and this migration does not move a pixel.
+
+               `Bare` because the sheet has no head row to give up — `.start-picker-title` is the page's own
+               centred div with the page's own rule — and because `Hosted`'s `display: contents` would put a
+               wrapper between this root and `.save-surface-foot`.
+
+               No `StopClicks`: this backdrop carries no @@onclick, so there is nothing behind the sheet for a
+               click on it to fall through to. *@
+            <OverlayShell class="start-picker save-surface bank-sheet"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
                 <div class="start-picker-title">@BankPromptHeading</div>
                 <div class="start-picker-sub">
                     @(bankKind == BankPromptKind.Edit
@@ -435,7 +479,7 @@
                             title="Change nothing — go back to the logbook"
                             @onclick="CancelBankPrompt">Cancel</button>
                 </div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
@@ -444,7 +488,12 @@
     @if (_importConfirming)
     {
         <div class="start-picker-backdrop">
-            <div class="start-picker save-surface">
+            @* #997 wave 6 · The second of the two, and the same three parameters for the same reasons (see
+               the bank sheet above). Its three answers all really do end it: ConfirmImportBankingFirst and
+               ConfirmImportReplace both run ApplyPendingImport, which clears _importConfirming on its way in,
+               and CancelImport clears it outright — pressed, one per run, in this wave's own guard. *@
+            <OverlayShell class="start-picker save-surface"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
                 <div class="start-picker-title">Board this saved voyage?</div>
                 @* #312: the label is read FROM THE FILE'S CONTENTS, never its name — a renamed file still
                    says what it is before the captain commits to boarding it. *@
@@ -471,7 +520,7 @@
                             title="Keep flying the current voyage — cancel the import"
                             @onclick="CancelImport">Cancel</button>
                 </div>
-            </div>
+            </OverlayShell>
         </div>
     }
 
