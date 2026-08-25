@@ -475,6 +475,9 @@ public partial class Map
             // …the captain's crossings (the-captains-character.md §3), and the held-memory sheets.
             Crossings = BuildCrossingsSection(),
             HeldMemories = BuildHeldMemoriesSection(),
+            // #973 · the void's weather: how often each of the eight lines has been heard and which visit it
+            // last blew through each station on. Counts and ordinals — the file never carries a sentence.
+            InsuranceWeather = BuildTheWeatherSection(),
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
@@ -1012,6 +1015,10 @@ public partial class Map
         // somebody does not become unknown again — least of all across a save — so the knowing rides the
         // file rather than waiting for the player to lay the same two papers down a second time.
         RestoreWalkInSection(vault.WalkIn);
+
+        // #973 · The void's weather. A sentence the captain has worn out stays worn out across a save, and a
+        // station the room was on about last time is still on something else today.
+        RestoreTheWeatherSection(vault.InsuranceWeather);
 
         // #973 L5a · The old crew, the crossings and the held memories. A seeding that comes back short is
         // re-rolled from the thread id on first read — the roll is deterministic, so a pre-#973 save wakes

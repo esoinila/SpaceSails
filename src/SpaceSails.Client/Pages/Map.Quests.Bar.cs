@@ -88,6 +88,7 @@ public partial class Map
         CloseOracleFromBar(); // #425: the counter and the oracle's corner are the same one-card-at-a-time family
         _barMenu = keep;
         _barNotice = keep.Greeting;
+        TheWeatherComesIn();   // #973 · what this room is talking about today, decided once a visit
     }
 
     // ── #756 · THE OTHER DOORWAY ONTO THE SAME COUNTER ──────────────────────────────────────────────────
@@ -116,6 +117,7 @@ public partial class Map
         _barMenu = counter;
         _barNotice = counter.Greeting;
         _showBarMenu = true;
+        TheWeatherComesIn();          // #973 · …and what the room is talking about today
         TheRoomSaysItBack(counter);   // #781 · and what the room has to say about you, if it has anything
     }
 
@@ -370,9 +372,14 @@ public partial class Map
         string receipt = PourRum($"{keep.DrinkName}, all round — {keep.DrinkFlavor}", NerveModel.DrinkKind.BarSpecial);
         string cheers = warmed.Count > 0 ? $" {string.Join(", ", warmed)} raise a glass to you." : "";
         string tips = volunteered.Count > 0 ? "  " + string.Join("  ", volunteered) : "";
-        _barNotice = tab.Line + cheers + tips;
+
+        // #973 · …and the loosened room turns to the weather. Never a second draw: the line already in the
+        // air this visit is the one that gets said out loud, which is why this returns words rather than
+        // choosing any (Map.Weather.cs).
+        string weather = TheRoundMakesItTheRoomsTopic(loosenTongues);
+        _barNotice = tab.Line + cheers + tips + weather;
         // The words the player paid a round to hear ride the durable book (above) AND a lingering toast.
-        ShowPulseMessage($"{receipt}{cheers}{tips} (−{tab.Cost:N0} cr)");
+        ShowPulseMessage($"{receipt}{cheers}{tips}{weather} (−{tab.Cost:N0} cr)");
         RequestVaultSave(); // #225: the purse moved, goodwill booked, the overheard book grew
     }
 

@@ -210,6 +210,31 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// one of these worlds, so deleting it changed no pixel anywhere.</b> (The two lane-cache fields kept
     /// their names for the same reason this note exists: a rename would have moved all thirty hashes and said
     /// nothing.)</para>
+    ///
+    /// <para><b>#973 · AND ALL THIRTY ONCE MORE, field count 725 → 733.</b> The same state-shape signature,
+    /// eight fields wide: the VOID'S WEATHER (<c>Map.Weather.cs</c>) — which station this visit's bar talk
+    /// belongs to, how many times each station has been stood in and which visit a line last blew through it
+    /// on, whether this visit has asked, and what it is on today. The <c>SPACESAILS_SWEEP_DUMP</c>
+    /// dump-and-diff was run on the base (c192ecc, after #953's own twenty were re-pinned) and on this lane,
+    /// and on <b>all thirty</b> rows the diff is
+    /// the same eight lines, and every one of them is an ADDITION — <b>zero lines removed, zero changed</b>:</para>
+    /// <code>715a716,723
+    /// &gt; _weatherAsked=no
+    /// &gt; _weatherHeard={}
+    /// &gt; _weatherLastSaid={}
+    /// &gt; _weatherSaidId=∅
+    /// &gt; _weatherShared=no
+    /// &gt; _weatherSpeaker=∅
+    /// &gt; _weatherStation="luna"
+    /// &gt; _weatherStationVisits={"luna": 0}</code>
+    /// <para>Six of the eight are at their defaults on every row — none of these worlds opens a counter, so
+    /// nothing is ever drawn and nothing is ever heard. The two that are not are the visit CLOCK, and they
+    /// read the ground the captain is actually standing on: the fold rides <c>EnsureRepVisit</c>, so a world
+    /// on Luna counts one visit to Luna and no line is in the air on it. An empty <c>_weatherStationVisits</c>
+    /// on these rows would have meant the fold never ran, which is a real bug and not a re-pin. The ledger,
+    /// the pen, the canvas buffer and the call counts are byte-identical on all thirty, the committed-text
+    /// diff is 30 files × 1 line and that line is the sweep's own, and the full client run's only red was
+    /// this class's thirty rows.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

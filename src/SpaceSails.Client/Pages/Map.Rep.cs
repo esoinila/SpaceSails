@@ -111,6 +111,12 @@ public sealed partial class Map
         }
 
         _repVisitBody = bodyId;
+
+        // #973 · …and the VOID'S WEATHER folds with him. One fold, because the rota that decides whether he
+        // walked this room and the rule that decides whether the room is talking about him have to mean the
+        // same room and the same visit — see Map.Weather.cs.
+        EnsureTheWeathersVisit(bodyId);
+
         _repCard = null;
         _repSaid = null;
         _repBleeding = false;
