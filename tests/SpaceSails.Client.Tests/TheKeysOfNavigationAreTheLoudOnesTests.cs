@@ -68,14 +68,23 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
         Assert.Contains("ScopeTileTargetName()", razor);
 
         // The tile sits where the window it replaces sat — same corner, or the switch has moved again.
+        //
+        // #997 · `right` stopped being a literal `0.75rem` — it now clears the desk-chip-strip's own
+        // column (--desk-chip-strip-clearance), clamped so a phone-width screen never pushes the card off
+        // its own left edge. The literal is gone, but the invariant this test is actually about — the
+        // window and its tile share ONE right edge, so tucking never moves the corner — still holds, and
+        // is asserted directly rather than by re-copying whatever expression happens to compute it today.
         string css = Css();
         string scopeRule = Between(css, ".map-scope {", "}");
         string tileRule = Between(css, ".map-scope-tile {", "}");
-        foreach (string edge in new[] { "right: 0.75rem;", "bottom: 0.75rem;" })
-        {
-            Assert.Contains(edge, scopeRule);
-            Assert.Contains(edge, tileRule);
-        }
+
+        Assert.Contains("bottom: 0.75rem;", scopeRule);
+        Assert.Contains("bottom: 0.75rem;", tileRule);
+
+        string scopeRight = Between(scopeRule, "right:", ";");
+        string tileRight = Between(tileRule, "right:", ";");
+        Assert.Equal(scopeRight, tileRight);
+        Assert.Contains("desk-chip-strip-clearance", scopeRight);
     }
 
     /// <summary>The scope opens WIDE, as it always did — minimising is something the captain does, never
