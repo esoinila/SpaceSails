@@ -81,11 +81,55 @@ wrong-world test class from MEMORY, verbatim.
 3. Re-point `CaptureBrakeTests` at the real Rusty Roadstead.
 4. Play it headless from the owner's geometry and watch the dock arm.
 
+## THE FIX (committed)
+
+`scenarios/sol.json`: `cinder-roost` 8000 → **20252**, `the-space-bar` 7200 → **39910**,
+`the-tilt` 14000 → **59065** — Kepler's period for each berth's own radius about its own
+parent. Radii, phases and everything else untouched, so the map looks the same.
+
+New guard `tests/SpaceSails.Core.Tests/EveryBerthRidesAGravityRailTests.cs` (8 cases):
+Kepler on every rail in sol/sol-eu/oops; "flying quiet alongside a haven is inside the
+clamp"; the wheel's declared exemption berths nobody; and the owner's own read flown.
+
+`CaptureBrakeTests` docblock corrected — it called `derelict-roadster` "The Rusty
+Roadstead"; that mis-naming is why the real berth had no test.
+`NearestDoesNotFlickerTests` read its own copy of the 7,200 s literal; it now reads the
+rail.
+
+### Proof it can fail (house law)
+
+Put 8000 / 7200 / 14000 back and run the class — 3 of 8 go RED, verified 2026-08-30:
+
+    EveryRailInTheSolFamilyIsGravitys(sol.json)  FAIL
+      cinder-roost:  period 8000 s but Kepler says 20252 s — rail 11781 m/s, Newton 4654
+      the-space-bar: period 7200 s but Kepler says 39910 s — rail 10472 m/s, Newton 1889
+      the-tilt:      period 14000 s but Kepler says 59065 s — rail 35904 m/s, Newton 8510
+    FlyingQuietAlongsideAHaven_IsInsideTheClamp(sol.json)  FAIL
+      The Rusty Roadstead: a ship flying its orbit still reads 8583 m/s; clamp shears above 8000
+      The Tilt:            27394 m/s
+    AtTheOwnersRead_TheAutopilotTakesTheDock  FAIL
+      "The owner was 2.6 km/s off Mars; the berth beside it should not read 10043 m/s."
+
+With the fix: 8/8 pass.
+
+### The scene, flown (headless)
+
+At the owner's own read — sim 178d 10h 48m, 3.60 M km behind Mars, closing at 2.6 km/s:
+
+| | before | after |
+|---|---|---|
+| berth's speed about Mars | 10,472 m/s | 1,889 m/s |
+| ship's rel speed at the berth | 10,043 m/s | 1,841 m/s |
+| a ship at rest in Mars' frame can clamp | **0 / 720** samples of the rail | **720 / 720** |
+| plain arm-time rehearsal | refuses | **Deliverable, Captured, 68 p** |
+
+No correction burn is needed at all: the press the owner made simply works.
+
 ## STATUS
 
 - [x] diagnosis (this file)
-- [ ] law test RED on old data
-- [ ] data fix
-- [ ] headless replay of the owner's scenario
+- [x] law test RED on old data (numbers above)
+- [x] data fix
+- [x] headless replay of the owner's scenario
 - [ ] full Core + Client suites
 - [ ] PR
