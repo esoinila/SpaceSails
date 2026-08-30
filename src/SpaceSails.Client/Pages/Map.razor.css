@@ -19,6 +19,25 @@
     --map-control-top: 3.2rem;
     --map-control-height: 1.9rem;
 
+    /* #997 · THE OTHER CORNER, MEASURED ONCE. `.desk-chip-strip` (DeskChips.razor.css) is a 9.5rem
+       column docked 0.5rem off the right edge — a 10rem-wide reservation, plus 1rem of margin so a
+       desk's own right-hand content never brushes the chips' hairline. `.desk-layer` used this as an
+       11rem literal in one place; `.map-scope`, `.map-scope-tile` and `.parrot-perch` used their OWN
+       literals (0.75rem / 0.9rem off the edge) that were never told the strip existed, so the scope's
+       card sat squarely inside the strip's column and the last chip painted over the Scope's own
+       `◀ AUTO ▶` / `–` header row (148×32 px, issue #997). One number now, read by every one of them —
+       move the strip and the scope, its tile and the parrot move with it, the same move #986 F1 made
+       for the top edge.
+
+       MEASURED at 1280×720 (Nav desk) before this change: `.map-readouts` runs x 12…1117, and the
+       scope's card — even at its OLD 0.75rem offset — already sits almost directly under it (y
+       173…389 vs the scope's y 386…708, a 3 px hairline). Moving the scope's `right` from 0.75rem to
+       this variable shifts it from x 978…1268 to x 814…1104 — further under the readouts' horizontal
+       span, not less — but the two never share a row: the readouts end at y 389 and the scope begins
+       at y 386, so the only shared pixels are the same 3 px hairline as before the move. No new
+       overlap; the two are stacked, not side by side. */
+    --desk-chip-strip-clearance: 11rem;
+
     /* Clearance under the whole top stack. 5.75rem was tuned for the ONE-row banner; the #190 voice runs
        2–3 rows ("YOU HAVE THE SHIP / NOW: …/ NEXT: …"), which slid every desk's own header row — the owner
        caught the Captain's Orders/Status/Tutorials/Ledger toggle — underneath it. 8.25rem clears the 3-row
@@ -946,9 +965,12 @@
     gap: 0.5rem;
 }
 
+/* #997 · `right` reads --desk-chip-strip-clearance (declared on .map-page) instead of a literal
+   0.75rem — the scope no longer sits in the desk-chip-strip's own column (see the variable's
+   comment on .map-page for the measurement). */
 ::deep .map-scope {
     position: absolute;
-    right: 0.75rem;
+    right: var(--desk-chip-strip-clearance);
     bottom: 0.75rem;
     pointer-events: auto;
 }
@@ -957,7 +979,7 @@
    used to shout from the top of the screen now lives exactly where the instrument is. */
 ::deep .map-scope-tile {
     position: absolute;
-    right: 0.75rem;
+    right: var(--desk-chip-strip-clearance);
     bottom: 0.75rem;
     pointer-events: auto;
 }
@@ -1463,8 +1485,10 @@
     justify-content: center;
     /* Extra right padding clears the desk-chip-strip's column (9.5rem wide, 0.5rem off the
        edge) so a desk's own right-hand content (e.g. the Comms desk's traffic board) never
-       renders underneath the chips. */
-    padding: 2rem 11rem 2rem 2rem;
+       renders underneath the chips. #997: the literal is --desk-chip-strip-clearance now
+       (declared once on .map-page), the same number .map-scope/.map-scope-tile/.parrot-perch
+       read as their own `right` below. */
+    padding: 2rem var(--desk-chip-strip-clearance) 2rem 2rem;
     box-sizing: border-box;
 }
 
@@ -1647,9 +1671,11 @@
 
 /* ---- M28: the ship's parrot — a perch above the scope, visible on every desk. ---- */
 
+/* #997 · `right` reads --desk-chip-strip-clearance too — the perch's own comment already called it
+   "above the scope", so it moves with whatever the scope does. */
 .parrot-perch {
     position: absolute;
-    right: 0.9rem;
+    right: var(--desk-chip-strip-clearance);
     bottom: 23.5rem;
     z-index: calc(var(--z-map-chrome) + 16);
     pointer-events: none;

@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Playwright;
 
 namespace SpaceSails.UiGate;
@@ -484,9 +485,107 @@ public sealed class HudCollisionTests : IAsyncLifetime
                     + string.Join("\n  ", collisions));
     }
 
+    /// <summary>
+    /// #997 · THE DESK-CHIP STRIP DOES NOT PAINT OVER THE SCOPE'S OWN CONTROLS.
+    ///
+    /// <para><b>The sighting.</b> Walking every desk in a real browser for #994 found two literals that had
+    /// never been told about each other: <c>.desk-chip-strip</c> (DeskChips.razor.css) docks a 9.5rem column
+    /// 0.5rem off the right edge, and <c>.map-scope</c>/<c>.map-scope-tile</c>/<c>.parrot-perch</c>
+    /// (Map.razor.css) each anchored themselves 0.75–0.9rem off the SAME edge, with no idea the strip's
+    /// column existed. Measured at 1280×720: the strip ran x 1120…1272, and the scope's card at its old
+    /// offset ran x 978…1268 — a 148×32 px overlap where the last chip (Galley) painted over the Scope
+    /// card's own header row (<c>◀ AUTO ▶</c> and the <c>–</c> minimise), so a click aimed at the scope's
+    /// controls switched desk instead. The parrot's perch (33×36 px) sat behind a chip the same way.</para>
+    ///
+    /// <para><b>The fix.</b> A single <c>--desk-chip-strip-clearance: 11rem</c> on <c>.map-page</c>, read by
+    /// <c>.desk-layer</c>'s right padding AND by <c>.map-scope</c>/<c>.map-scope-tile</c>/<c>.parrot-perch</c>
+    /// as their own <c>right</c> — the same move #986 F1 made for the top edge, one number instead of four
+    /// that agree by accident.</para>
+    ///
+    /// <para><b>The other collision this could have traded for.</b> The scope moving to <c>right: 11rem</c>
+    /// sits it further under <c>.map-readouts</c>' own horizontal span (x 12…1117 at 1280×720) than before —
+    /// but the two are stacked, not side by side: the readouts end at y≈389 and the scope begins at y≈386,
+    /// a ≤4 px hairline shared before AND after this change. This gate does not assert that hairline away
+    /// (it is not the bug #997 is about and was never zero), but it does assert the strip/scope/perch
+    /// collision that #997 IS about.</para>
+    ///
+    /// <para>RED PROOF: put the literal <c>right: 0.75rem</c> back on <c>.map-scope</c> (or
+    /// <c>.map-scope-tile</c>, or <c>right: 0.9rem</c> on <c>.parrot-perch</c>) in place of
+    /// <c>var(--desk-chip-strip-clearance)</c> and this fails, naming the exact pixels the strip steals.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_desk_chip_strip_never_covers_the_scopes_own_controls()
+    {
+        await _page.SetViewportSizeAsync(1280, 720);
+        await BootIntoNav();
+
+        ILocator strip = _page.Locator(".desk-chip-strip").First;
+        await strip.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        ILocator scope = _page.Locator(".map-scope").First;
+        await scope.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        var boxes = new List<(string Name, float X, float Y, float W, float H)>();
+        foreach ((string name, ILocator locator) in new (string, ILocator)[]
+                 {
+                     (".desk-chip-strip", strip),
+                     (".map-scope", scope),
+                     (".parrot-perch", _page.Locator(".parrot-perch").First),
+                 })
+        {
+            if (await locator.CountAsync() == 0 || !await locator.IsVisibleAsync())
+            {
+                continue;   // the parrot is a flourish, not a guarantee — absence is not this gate's concern
+            }
+            if (await locator.BoundingBoxAsync() is { Width: > 0, Height: > 0 } box)
+            {
+                boxes.Add((name, box.X, box.Y, box.Width, box.Height));
+            }
+        }
+
+        Assert.True(boxes.Any(b => b.Name == ".desk-chip-strip") && boxes.Any(b => b.Name == ".map-scope"),
+                    "the strip or the scope had no box at all on Nav — this gate measured nothing");
+
+        var collisions = new List<string>();
+        (string Name, float X, float Y, float W, float H) stripBox = boxes.First(b => b.Name == ".desk-chip-strip");
+        foreach ((string Name, float X, float Y, float W, float H) other in boxes.Where(b => b.Name != ".desk-chip-strip"))
+        {
+            if (Overlaps(other, (stripBox.X, stripBox.Y, stripBox.W, stripBox.H)))
+            {
+                collisions.Add($"{other.Name} at ({other.X:0},{other.Y:0}) {other.W:0}×{other.H:0} sits under "
+                                + $"the desk-chip strip at ({stripBox.X:0},{stripBox.Y:0}) {stripBox.W:0}×{stripBox.H:0}");
+            }
+        }
+
+        Assert.True(collisions.Count == 0,
+                    "the desk-chip strip is painting over the scope's own controls (#997):\n  "
+                    + string.Join("\n  ", collisions));
+    }
+
     private static bool Overlaps(
         (string Name, float X, float Y, float W, float H) a, (float X, float Y, float W, float H) b) =>
         a.X < b.X + b.W && a.X + a.W > b.X && a.Y < b.Y + b.H && a.Y + a.H > b.Y;
+
+    /// <summary>Boot the published artifact and get onto the Nav desk, where the scope lives.</summary>
+    private async Task BootIntoNav()
+    {
+        await _page.GotoAsync(_host.BaseUrl + "/", new() { Timeout = BootTimeoutMs });
+        await _page.Locator("a.btn-primary[href*='scenario=sol']").ClickAsync();
+
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+
+        await _page.Locator(".start-picker-backdrop").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+        await _page.Locator(".start-picker-newvoyage").ClickAsync();
+
+        await _page.Locator(".desk-tab-bar").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        await _page.Locator("button.desk-tab", new() { HasTextString = "Nav" }).First.ClickAsync();
+        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Nav" }).First.WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+    }
 
     /// <summary>Boot the published artifact and get onto the deck, where the HUD lives.</summary>
     private async Task BootIntoTheDeck()
