@@ -8327,11 +8327,21 @@
         {
             <div class="old-crew-history small text-secondary">@display — @sharedHistory</div>
         }
+        @* #1013 · A CONTACT ROW IS NOT THE CARD'S OWN FOOT. `.deck-offer-actions` is `position: sticky;
+           bottom: 0` (the pinned way-out row, #735/#780) — fine for the ONE true foot at the end of a
+           card, wrong for these: PresentBarContacts can hand the counter several people in the room at
+           once, each drawing one of these blocks, so a full room drew as many sticky bottom:0 siblings as
+           there were faces. Every one of them raced the real foot for the exact same pinned rectangle, and
+           whichever the browser struck last painted its 12rem scrim (the scrim meant to darken the FOOT's
+           OWN backdrop) straight over the previous face's row — "Round for the room" read as struck through
+           by "Offer a drink". `.contact-offer-row` keeps the same flex/wrap/gap/centre rule (below) and
+           drops only the sticky/scrim half, so a room of contacts scrolls as body prose and the card's foot
+           is the only thing still pinned. *@
         @if (TheyWouldNoticeTheFace(giver))
         {
             @* …and they are looking at the face before they are looking at the glass. Nothing else about
                this person is available until the captain has said one of the three things. *@
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <button type="button" class="btn btn-sm btn-outline-light"
                         title="@($"{display} is looking at a face they have never seen before")"
                         @onclick="@(() => OpenTheFaceScene(giver))">🪞 @display is looking at you</button>
@@ -8339,7 +8349,7 @@
         }
         else if (_pendingContactDrink == giver)
         {
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
                         title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — they pick their own pour; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
@@ -8356,7 +8366,7 @@
         }
         else if (_roundThisVisit)
         {
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <span class="bar-toasted small">🍻 @display toasted you with the room@(knownFav is { } kf ? $" · drinks {kf.Name}" : "")</span>
                 <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
                         title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
@@ -8365,7 +8375,7 @@
         }
         else
         {
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <button type="button" class="btn btn-sm btn-warning"
                         title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
                         @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>
