@@ -542,6 +542,41 @@ every top in every bar** on a real route; the band fits the buffer; a walked dec
 the cache; and the approach fires on somebody who is still there and delivers nothing to a captain who has
 gone.
 
+## #1016 — and then the chair turned out to have nothing to sit down TO
+
+The eighth seat shipped, the owner sat in it at The Stormwatch Bar aboard The Red Eye, pressed **Work the
+case** on the strip, and nothing happened at all: *"I do not see the detective book here when I work the
+case? Some kind of bug?"* Every organ of the seated dig had been written, back in #784, as a fact about a
+`SurfaceExcursion` — because at the time every seat in the game was on one. A berth has none, so:
+`OpenTheSpread` returned on its first line (a live, dead, silent button); the write-up register lived on the
+excursion, so every reader answered *no* and every writer dropped its write; the darkroom hold lived there
+too and was stepped only out of `StepSurface`, which returns on its own first line off an excursion; and
+`FileNoteAbout` needed a body and a site to name the place, so even a dig that ran would have filed nothing.
+
+**Owner's ruling, 2026-08-30:** *"Maybe it might be good idea to refactor the working the case etc table
+options to not be tied to any location? Kind of clean separation from the arriving random encounters that
+are more place tied events."* So:
+
+- **The seat verbs are location-free.** `OpenTheSpread`, `WriteItUp`, `CanWriteUp`, `CaseHasBegun` and the
+  row's own verb gate on POSTURE and PRIVACY only — `SpreadRefusal`, which reads `SeatedIn`/`SeatedAlone`
+  and has never asked for a ground. The bar-desk rule, the shared-bench rule and the company rule all still
+  refuse out loud, at every seat, exactly as they did.
+- **The register is the CASE's, not the ground's.** One page-level set (`_workedUp`), keyed by the one key
+  builder, vault-persisted beside the satchel and the book (`WorkedUpSection`). The semantics change is the
+  ruling: a sheet dug once is in the book for good, wherever you dug it — it used to be forgotten with the
+  shuttle.
+- **The hold is the page's.** Still exactly one clock, one `Processing` arithmetic and one progress bar;
+  stepped from the surface tick when there is an excursion and from the walked frame's `_surface is null`
+  branch when there is not (beside the sit beat, which #973 L5b split ashore for the identical reason). In a
+  berth the bar the captain watches is the STRIP's — there is no `SurfaceHud` off an excursion, and a
+  station bar must not grow a motion fan to carry a rectangle.
+- **The book knows where it is.** `WhereYouAreStanding` gained *"on the haven's deck"* and *"aboard your own
+  boat"*, and `TheBooksNameForHere` files a berth's entries under the station and the bar's own name.
+- **What stays place-tied is untouched:** the arrival rolls, the walkers, the approach, the watch and the
+  room's own encounters. That is the other half of the ruling and not one line of it moved.
+- **Dev cheat:** `/map?barcase=1` — ashore, sat at a free top through the same `[E]` a player presses, three
+  finds in the sleeve, no excursion anywhere. Guards: `TheCaseIsNotTiedToAPlaceTests`.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat

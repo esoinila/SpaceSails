@@ -221,7 +221,7 @@ public partial class Map
             FireCharge(ex, plan, manual: true); // the captain triggers it — the angle is whatever it is
             return;
         }
-        if (ex.AnyChannel)
+        if (AnySlowThingUnderYourHands)
         {
             return;
         }

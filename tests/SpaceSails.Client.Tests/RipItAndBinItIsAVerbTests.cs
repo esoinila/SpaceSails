@@ -163,7 +163,9 @@ public sealed class RipItAndBinItIsAVerbTests
         string code = CodeOnly(act);
         foreach (string hand in new[]
         {
-            "_fieldNotes", "_caseThreads", "WrittenUpProperly", "CaseThreads.Erase", ".Ground.Leave",
+            // #1016 · the write-up register is `_workedUp` on the page now (the case's, not the ground's) —
+            // the name it is forbidden to touch moved with it.
+            "_fieldNotes", "_caseThreads", "_workedUp", "CaseThreads.Erase", ".Ground.Leave",
             "SetItDown", "_notesExpanded", "_penHoldingId",
         })
         {

@@ -621,6 +621,65 @@ public partial class Map
         return null;
     }
 
+    /// <summary>#1016 QA · <c>?barcase=1</c> — the owner's own bug, in one URL. Set in Map.Sim's cheat
+    /// parse, which turns <c>?ashore=1</c> on with it: a case worked in a bar needs a bar to be standing
+    /// in.</summary>
+    private bool _barCaseCheat;
+
+    /// <summary>
+    /// #1016 QA · <b>SIT THE CAPTAIN AT A TOP IN THE DOCKED BAR, WITH PAPERS IN THE SLEEVE.</b>
+    ///
+    /// <para>The exact seat the owner filed this issue from — a takeable top in a station bar, a sleeve with
+    /// something in it, and the strip's <b>Work the case</b> button one press away. Until #973 L5b there was
+    /// no such seat to boot into, and until this issue there was nothing behind the button when you got
+    /// there; the shortest honest route to the bug was launch, dock, walk ship → airlock → tube →
+    /// immigration hall → bar, find a free top, and already be carrying paperwork off a moon. That is not a
+    /// route anybody re-runs, which is a large part of why a dead button survived a whole lane.</para>
+    ///
+    /// <para>It walks the LAST leg only, and through the room's own verb: the tops are the bar's published
+    /// list, the chair is <c>HavenInterior.BesideATop</c>'s sounding (asked inside <c>TheBarTopUnderfoot</c>,
+    /// never measured here), and the sit itself is <c>Seating.TryTakeBarTop</c> — the same [E] a player
+    /// presses. A cheat that assembled its own sitting would be demonstrating a seat that does not ship,
+    /// which is this repo's first named bug class wearing a dev row.</para>
+    ///
+    /// <para>Called straight after the ashore walk, which is what puts a deck under the captain's feet.</para>
+    /// </summary>
+    private void SitAtABarTopIfAsked()
+    {
+        if (!_barCaseCheat)
+        {
+            return;
+        }
+
+        if (TheDockedBar() is not { } bar || bar.Tops.Count == 0)
+        {
+            ShowPulseMessage(
+                "🧪 DEV ?barcase=1: this berth has no bar with tops in it. Try &dock=the-space-bar.");
+            return;
+        }
+
+        SeedTheSpreadFinds();
+
+        // A bar top is drawn and does not collide (#973 L5b), so the console under the captain's feet is the
+        // one they are standing on — which is exactly the question [E] asks of the room.
+        foreach (DeckReachability.Point top in bar.Tops)
+        {
+            StandCaptainAt(top.X, top.Y, "you stop at a free top");
+            if (TryTakeBarTop())
+            {
+                ShowPulseMessage(
+                    "🧪 DEV ?barcase=1: sat at a top in "
+                    + (HavenInterior.BarNameOf(bar.BodyId) ?? "the bar")
+                    + " with three finds in the sleeve — and NO excursion under you (#1016). Press \"Work "
+                    + "the case\" on the strip, then dig a paper: the bar fills on the strip, the book takes "
+                    + "the entry, and the register remembers it across a save.");
+                return;
+            }
+        }
+
+        ShowPulseMessage("🧪 DEV ?barcase=1: no top in this room had a place at it to stand.");
+    }
+
     /// <summary>
     /// #973 L0 · THE CAPTAIN, ALONE, AT A TOP IN THIS BAR — the seat family's own two answers, asked and never
     /// re-derived.

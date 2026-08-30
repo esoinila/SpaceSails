@@ -45,14 +45,24 @@ public partial class Map
 
     /// <summary>#784 · The strip's own way in, and the mouse's. Forces the spread page rather than toggling,
     /// because the button says what it opens — and says WHY NOT on the page itself when the seat refuses,
-    /// since a control that opens onto an unexplained empty list is #603's founding sin with a lid on
-    /// it.</summary>
+    /// since a control that opens onto an unexplained empty list is #603's founding sin with a lid on it.
+    ///
+    /// <para><b>#1016 · AND THE GROUND HAS NO SAY IN IT.</b> This method opened with
+    /// <c>if (_surface is null) return;</c> — a line nobody had reason to doubt while every seat in the game
+    /// was on an excursion. #973 L5b built the eighth seat in a DOCKED BAR, which has no excursion, and the
+    /// bail made the strip's own button live and dead: the owner sat at a top in The Stormwatch Bar, pressed
+    /// <b>Work the case</b>, and nothing happened at all — no book, no refusal, no sentence, which is #603's
+    /// founding sin with the lid screwed down.</para>
+    ///
+    /// <para>Owner's ruling, 2026-08-30: <i>"Maybe it might be good idea to refactor the working the case etc
+    /// table options to not be tied to any location? Kind of clean separation from the arriving random
+    /// encounters that are more place tied events."</i> So the gate here is POSTURE AND PRIVACY and nothing
+    /// else — which is what it always should have been, because those two are the only things the page itself
+    /// says out loud (<see cref="SpreadRefusal"/>, which reads <c>SeatedIn</c>/<c>SeatedAlone</c> and has
+    /// never asked for a ground). The encounters, the approach rolls, the walkers and the watch stay exactly
+    /// as place-tied as they were: none of them is in this file.</para></summary>
     private void OpenTheSpread()
     {
-        if (_surface is null)
-        {
-            return;
-        }
         _satchelTarget = null;
         _satchelOutcome = SpreadRefusal;
         _satchelPage = SatchelPage.Spread;
@@ -183,9 +193,13 @@ public partial class Map
 
     /// <summary>#690 · The ground underfoot, named the way the BOOK names it — through
     /// <see cref="Core.FieldNotes.PlaceLabel"/> and never re-derived here, so the filter can never drift off
-    /// the labels <see cref="FileNote"/> wrote. Null off a surface, where there is no ground to be on.</summary>
-    private string? PlaceUnderfoot() =>
-        _surface is { } ex ? Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name) : null;
+    /// the labels <see cref="FileNote"/> wrote.
+    ///
+    /// <para>#1016 · It used to be null off a surface, "where there is no ground to be on" — and the NOTES
+    /// tab's HERE reading was consequently empty in every room the captain could sit down in ashore, one
+    /// press after they had filed something into it. One answer now (<see cref="TheBooksNameForHere"/>),
+    /// asked by the writer and the filter alike.</para></summary>
+    private string PlaceUnderfoot() => TheBooksNameForHere();
 
     /// <summary>#690 · What the NOTES tab shows on this ground: the one book, filtered by the ledger's own
     /// grouping. Read-only — the book is capped and durable by its own laws and the satchel just holds it
@@ -259,7 +273,7 @@ public partial class Map
         // question "is there a gist" is asked ONCE, by Core, here and at the far end alike.
         if (LeftBehind.GistOf(item, standing) is { Length: > 0 })
         {
-            BeginProcessing(ex, Core.Processing.Work.File, item, standing, at: null);
+            BeginProcessing(Core.Processing.Work.File, item, standing, at: null);
             return;
         }
 
@@ -454,10 +468,53 @@ public partial class Map
         _surface is { } ex && ex.Ground.AnythingInReach(ex.Floor, _avatarX, _avatarY);
 
     /// <summary>#688 · Where the captain is, in their own words, for the line that says where a thing was
-    /// left. Underground it is a floor with a number painted on it; up top it is the ground.</summary>
-    private string WhereYouAreStanding() => _surface is { Floor: < 0 } ex
-        ? $"on the floor of B{-ex.Floor}"
-        : "on the regolith at your feet";
+    /// left. Underground it is a floor with a number painted on it; up top it is the ground.
+    ///
+    /// <para>#1016 · <b>AND THERE ARE TWO MORE PLACES A CASE CAN BE WORKED NOW.</b> Off an excursion this
+    /// answered <i>"on the regolith at your feet"</i> — a sentence about a moon, printed for a captain sitting
+    /// in a station bar or in her own galley, which is #562's class exactly: the prose reporting one world
+    /// while the sim is standing in another. It was invisible while the seat verbs were gated on a ground and
+    /// arrived the moment they stopped being. The two clauses are Fable's own words and the disposition
+    /// clause folds them in without a seam: <see cref="LeftBehind.GistOf"/> writes <i>"read through
+    /// {where} and copied out"</i> for a kept sheet and <i>"read and left {where}"</i> for a photographed
+    /// one, so each of the four readings is a sentence somebody would say out loud.</para>
+    ///
+    /// <para>ASKED TOP-DOWN, ground first: an excursion is the most specific thing the captain can be
+    /// standing on, and a captain who is on one is never also ashore in a berth.</para></summary>
+    private string WhereYouAreStanding() =>
+        _surface is { Floor: < 0 } ex ? $"on the floor of B{-ex.Floor}"
+        : _surface is not null ? "on the regolith at your feet"
+        // Past the tube, in the station's own rooms — the flag the deck keeps (`RefreshAshore`), never a
+        // coordinate re-measured here.
+        : _dockedHavenId is not null && _ashore ? "on the haven's deck"
+        : "aboard your own boat";
+
+    /// <summary>
+    /// #1016 · WHAT THE BOOK CALLS THE PLACE THE CAPTAIN IS IN — the one answer
+    /// <see cref="FileNoteAbout"/> writes onto an entry and <see cref="PlaceUnderfoot"/> filters the NOTES
+    /// tab by, so the two can never name one place differently.
+    ///
+    /// <para>It was <c>_surface</c>'s alone, which is why filing a note off an excursion did not merely land
+    /// in the wrong drawer — <c>FileNoteAbout</c> RETURNED, and the entry a dig had just spent twenty seconds
+    /// on was dropped on the floor. The dig at a bar top would have filled its bar, said its line and written
+    /// nothing at all.</para>
+    ///
+    /// <para>Built through <see cref="Core.FieldNotes.PlaceLabel"/> in every arm, never assembled here, so a
+    /// berth's grouping is the same shape a moon's is and the ledger's own <c>PerPlace</c> reading needs to
+    /// learn nothing about a station. A berth is named by its BODY and its bar (<i>The Red Eye · The
+    /// Stormwatch Bar</i>); the boat is named the way the game names her everywhere else.</para></summary>
+    private string TheBooksNameForHere()
+    {
+        if (_surface is { } ex)
+        {
+            return Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name);
+        }
+        if (_dockedHavenId is { } berth && _ashore)
+        {
+            return Core.FieldNotes.PlaceLabel(DockedStationName(), HavenInterior.BarNameOf(berth));
+        }
+        return Core.FieldNotes.PlaceLabel(Core.FieldNotes.YourOwnBoat, null);
+    }
 
     // ── #587 · THE FIELD BOOK ──────────────────────────────────────────────────────────────────────────
     //
@@ -606,13 +663,16 @@ public partial class Map
     /// parameter would quietly change that signature for all of them.</para></summary>
     private void FileNoteAbout(string text, string glyph, string subjects)
     {
-        if (_surface is not { } ex || string.IsNullOrWhiteSpace(text))
+        // #1016 · The excursion clause that used to stand here was the quiet half of the dead button: a dig
+        // at a bar top can fill its bar and say its line, and the entry it was FOR would have been dropped
+        // right here for want of a moon. What a note needs is a sentence and a name for the place, and both
+        // exist wherever the captain is standing.
+        if (string.IsNullOrWhiteSpace(text))
         {
             return;
         }
 
-        var note = new Core.FieldNote(
-            text, SimTime, Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name), glyph, subjects);
+        var note = new Core.FieldNote(text, SimTime, TheBooksNameForHere(), glyph, subjects);
         _fieldNotes = [.. Core.FieldNotes.Append(_fieldNotes, note)];
         TheThreadBadgeGoesOnTheCard(note);
     }

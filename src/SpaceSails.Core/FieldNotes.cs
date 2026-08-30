@@ -120,6 +120,13 @@ public static class FieldNotes
         return [];
     }
 
+    /// <summary>#1016 · What the book calls the one place that is not a body: the captain's own boat. Since
+    /// the owner's ruling that the case verbs are not tied to a location, an entry can be dug at her own
+    /// table between ports — and it has to group under something a reader recognises. The name lives here,
+    /// beside the format it is fed to, rather than being typed into whichever page happened to file
+    /// first.</summary>
+    public const string YourOwnBoat = "your own boat";
+
     /// <summary>How a place is named in the book: the body and the site, which together are what a captain
     /// would say out loud. Built here so the client cannot invent a second format.</summary>
     public static string PlaceLabel(string? bodyName, string? siteName)

@@ -169,13 +169,30 @@ public sealed class TheNotebookIsInTheSatchelTests
         // The filter's one real trap. The book files a note under FieldNotes.PlaceLabel(body, site); a tab
         // that built "Miranda · The Ridge Camp" for itself would match today and drift the first time the
         // label changes — the repo's first named bug class (two sources of truth) aimed at a string.
-        string place = Expression("Map.Surface.Satchel.cs", "private string? PlaceUnderfoot()");
+        //
+        // #1016 · THE ANSWER GREW TWO MORE ARMS AND STAYED ONE ANSWER. `PlaceUnderfoot` used to be null off
+        // an excursion, "where there is no ground to be on" — which meant the HERE reading was empty in
+        // every room the captain can now sit down and work a case in, one press after filing something into
+        // it. The naming moved to `TheBooksNameForHere`, which the WRITER (`FileNoteAbout`) and this filter
+        // both ask, so the law is stronger than it was: not "the tab uses the label" but "the tab and the
+        // pen use the same one member". Every arm of it must still go through Core's format.
+        string place = Method("Map.Surface.Satchel.cs", "private string TheBooksNameForHere()");
+        int arms = Regex.Matches(place, @"FieldNotes\.PlaceLabel\(").Count;
 
-        Assert.True(place.Contains("FieldNotes.PlaceLabel(", StringComparison.Ordinal),
-            "the NOTES tab re-derives the name of the ground it is standing on instead of asking " +
-            "FieldNotes.PlaceLabel — two formats for one place (#690).");
+        Assert.True(arms >= 3,
+            $"the book's own naming has only {arms} arms through FieldNotes.PlaceLabel — a ground, a berth "
+            + "and the boat are three places a case can be worked, and one of them is naming itself (#1016).");
         Assert.False(place.Contains(" · ", StringComparison.Ordinal),
             "the NOTES tab spells the book's place separator out by hand (#690).");
+
+        // …and the filter asks THAT rather than a second copy of it.
+        Assert.Contains("TheBooksNameForHere()",
+            Expression("Map.Surface.Satchel.cs", "private string PlaceUnderfoot()"), StringComparison.Ordinal);
+
+        // …and so does the pen. This is the half #1016 was filed on: the writer bailed off an excursion, so
+        // a dig at a bar top filled its bar, said its line, and filed nothing at all.
+        Assert.Contains("TheBooksNameForHere()",
+            Method("Map.Surface.Satchel.cs", "private void FileNoteAbout("), StringComparison.Ordinal);
 
         string satchel = SatchelBlock();
         Assert.True(satchel.Contains("PlaceUnderfoot()", StringComparison.Ordinal)

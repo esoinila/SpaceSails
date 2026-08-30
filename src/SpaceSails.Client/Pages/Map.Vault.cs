@@ -461,6 +461,14 @@ public partial class Map
             Satchel = _satchel.Count > 0
                 ? new SatchelSection { Items = [.. _satchel.Select(i => i.Stored)] }
                 : null,
+            // #1016 · …and which of those sheets are already in the book in the captain's own hand. Opaque
+            // keys, for the satchel's own reason one line up: the file carries the FACT and every sentence
+            // the book prints about a sheet is rebuilt from the paper at read time. Durable because the
+            // owner's ruling makes this the CASE's register rather than the GROUND's — a sheet dug once is
+            // dug for good, wherever it was dug, and a register that died with the shuttle was the ground's.
+            WorkedUp = _workedUp.Count > 0
+                ? new WorkedUpSection { Sheets = [.. _workedUp] }
+                : null,
             // #973 L1 · the filing line's marks on the Captain's ledger: which pages this captain does not
             // remember writing, which have been read at already, and the hidden originals of the ones that
             // came back wrong. Opaque rows — the file carries the FACT, never the sentences.
@@ -1033,6 +1041,20 @@ public partial class Map
             if (Core.Satchel.Item.TryParse(stored, out Core.Satchel.Item item))
             {
                 _satchel = [.. Core.Satchel.Add(_satchel, item)];
+            }
+        }
+
+        // #1016 · …AND WHICH OF THEM ARE ALREADY IN THE BOOK. The one register every reader and writer of the
+        // dig goes through, restored as it was written: a key this build does not recognise is KEPT rather
+        // than dropped (unlike the satchel above, which has to be able to build an object out of its row) —
+        // an unknown key costs one string and can only ever say "already dug" about a sheet nothing in this
+        // build can be holding, while dropping it would silently re-open a case the captain had closed.
+        _workedUp.Clear();
+        foreach (string sheet in vault.WorkedUp?.Sheets ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(sheet))
+            {
+                _workedUp.Add(sheet);
             }
         }
 

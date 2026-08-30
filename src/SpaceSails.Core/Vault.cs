@@ -112,6 +112,12 @@ public sealed class Vault
     /// which is still read on load so an older save's cards are not lost — a captain who earned a card
     /// eleven floors down does not lose it to a refactor.</summary>
     public SatchelSection? Satchel { get; init; }
+
+    /// <summary>#1016 · Which sheets this captain has already dug out at a table. Its own independently
+    /// optional section; a pre-#1016 file simply lacks it and wakes with an empty register, which is the
+    /// truth about a case nobody has worked yet — and about every save written while the register still
+    /// lived on the excursion and died with the shuttle.</summary>
+    public WorkedUpSection? WorkedUp { get; init; }
     public KaamosSection? Kaamos { get; init; }
     public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
@@ -477,6 +483,31 @@ public sealed record SatchelSection
 {
     /// <summary>Items, in whatever order they were written.</summary>
     public IReadOnlyList<string> Items { get; init; } = [];
+}
+
+/// <summary>
+/// #1016 · <b>THE CASE'S OWN REGISTER: which sheets have been dug out at a table.</b>
+///
+/// <para>Owner, 2026-08-30, on finding "Work the case" dead at a bar top in a docked haven: <i>"Maybe it
+/// might be good idea to refactor the working the case etc table options to not be tied to any location?
+/// Kind of clean separation from the arriving random encounters that are more place tied events."</i></para>
+///
+/// <para>It lived on the <c>SurfaceExcursion</c> until that ruling, which made it a fact about a WALK: dig a
+/// pay sheet on B1, fly home, and the book still held the entry while the register that knew the sheet was
+/// worked had been thrown away with the shuttle. Worse, a captain sitting in a station bar had no excursion
+/// at all, so every reader of it answered "no" and every writer of it dropped the write on the floor. A
+/// register that belongs to the case belongs to the captain, and a captain's things ride the vault.</para>
+///
+/// <para>Stored as the opaque keys the register is keyed on (<c>Kind:Id</c>, built by the one key builder,
+/// <c>Map.WrittenUpKey</c>) — the same shape <see cref="SatchelSection"/> and <see cref="FilingSection"/> use
+/// and for the same reason: the file carries the FACT (this sheet is in the book in the captain's own hand)
+/// and never a sentence, because every word the book prints about a sheet is rebuilt from the paper at read
+/// time. A key this build cannot recognise costs nothing to carry, so nothing is dropped.</para></summary>
+public sealed record WorkedUpSection
+{
+    /// <summary>One key per sheet already dug out. A set on the page, so the order this list happens to be
+    /// in is not a fact about anything.</summary>
+    public IReadOnlyList<string> Sheets { get; init; } = [];
 }
 
 /// <summary>#973 L1 · The filing line's marks. Stored as opaque row strings

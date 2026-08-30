@@ -205,7 +205,10 @@ public sealed partial class Map
     /// </summary>
     private void RipItUp(Core.Satchel.Item item)
     {
-        if (_surface is not { } atTheBin)
+        // #1016 · The ground stays the first gate HERE, and it is the right one: a bin is a fixture in a
+        // room in a building, and the whole verb is answered by <see cref="BinWithinReach"/> two clauses
+        // down. What the ruling untied from a location is the case's own verbs, not the bucket's.
+        if (_surface is null)
         {
             return;
         }
@@ -236,8 +239,7 @@ public sealed partial class Map
         // below is the only place in the game a document is destroyed, and every rung ends in it.
         if (bin.Tier == RipAndBin.Tier.SecureDisposal)
         {
-            BeginProcessing(
-                atTheBin, Core.Processing.Work.Shred, item, WhereYouAreStanding(), at: null);
+            BeginProcessing(Core.Processing.Work.Shred, item, WhereYouAreStanding(), at: null);
             return;
         }
 
@@ -283,7 +285,7 @@ public sealed partial class Map
 
         // ── THE EVIDENCE GOES, AND NOTHING ELSE DOES ────────────────────────────────────────────────────
         //
-        // ONE line, touching ONE list. _fieldNotes, _caseThreads and ex.WrittenUpProperly are not mentioned
+        // ONE line, touching ONE list. _fieldNotes, _caseThreads and _workedUp are not mentioned
         // in this method and must never be: the book keeps what you dug out of the sheet, the red lines you
         // drew between entries stay drawn, and the seated register still knows this document was written up.
         // Nothing here goes to the ground either (#615's Leave is the other verb) — the sheet stops existing.

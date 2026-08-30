@@ -404,10 +404,13 @@ public partial class Map
             // and with nothing filed — the same promise every other interruption of #696's hold makes, spoken in
             // the seated register (Processing.Interruption.StoodUp). Done BEFORE the table goes, so the line
             // still has the strip to land on.
-            if (_host.Surface is { Processing.Work: Core.Processing.Work.Write } ex)
-            {
-                _host.AbandonProcessing(ex, Core.Processing.Interruption.StoodUp);
-            }
+            //
+            // #1016 · …AND IT ASKS THE HOLD RATHER THAN A GROUND. This read `_host.Surface is
+            // { Processing.Work: Write }`, which made "was the captain digging" a question about a moon: at the
+            // eighth seat (#973 L5b, a top in a docked bar) there is no excursion, so standing up out of a
+            // half-dug sheet ended the dig SILENTLY and left the captain wondering where their twenty seconds
+            // went. The work this seam ends is named in the ask now, and the page answers it.
+            _host.AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.StoodUp);
 
             // #820 · Read, then the table goes, then the body moves. See the summary.
             (double X, double Y)? step = Table?.StepOff;
@@ -840,10 +843,7 @@ public partial class Map
             // up… putting things away is a beat, not an instant." The privacy predicate that licensed the spread
             // reads Solo, and Solo is about to become false — so the hold ends HERE, before the flag flips, and
             // it ends the way privacy ending should end it: sleeve shut, book blank, nothing filed.
-            if (ex.Processing is { Work: Core.Processing.Work.Write })
-            {
-                _host.AbandonProcessing(ex, Core.Processing.Interruption.CompanyArrived);
-            }
+            _host.AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.CompanyArrived);
 
             t.Solo = false;
 
