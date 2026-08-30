@@ -76,6 +76,33 @@ public static class SittingAlone
             ? "a top in the bar, the room still lit behind you"
             : $"a top in {barName!.Trim()}, the room still lit behind you";
 
+    // ── #1016 · …AND WHERE IT IS WHEN THE ROOM IS YOUR OWN BOAT ───────────────────────────────────────
+    //
+    // Owner, live on 7 Deck with three drawn tops he could not pull a chair out at: "Why no table here to
+    // sit at?", "Why no table in cabin either?", and the ruling that names the lane —
+    // "I expect to have a bar table like this in this ships galley also.... feature complete."
+    //
+    // Two settings and one plate, because the ship is TWO rooms and they are not the same room. A cantina
+    // top is a top in a room with a window and a counter in it; a cabin desk is a room with a DOOR, which
+    // is the whole of why the spread is unconditional at one and not the other. Neither may borrow the
+    // canteen's constant: a strip announcing "a table in the upper canteen" while the captain sits aboard
+    // his own boat is this repository's "the sim doing one thing while a SENTENCE reports another" class,
+    // and it is the exact fault #973 L5b caught one room over.
+
+    /// <summary>#1016 · A top in the ship's own cantina. Owner-facing name for the room is CANTINA on the
+    /// deck plan and "galley" in his own words; the sentence uses the one the plan draws, because the strip
+    /// and the label must agree about which room the captain is in.</summary>
+    public const string ShipCantinaSetting = "a top in your own cantina, the boat humming under it";
+
+    /// <summary>#1016 · …and the desk in CABIN 1, which is the one seat aboard with a leaf between it and
+    /// the rest of the ship. The door is the sentence's own fact and the privacy rung's at the same time.</summary>
+    public const string ShipCabinSetting = "the desk in your own cabin, the door a step away";
+
+    /// <summary>#1016 · Whose desk it is. Built out of <see cref="Glyph"/> exactly as
+    /// <see cref="OwnTablePlate"/> is, so the family cannot end up with two chairs that are drawn
+    /// differently.</summary>
+    public const string OwnDeskPlate = Glyph + " YOUR OWN DESK";
+
     // ── THE MOVES ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Hold the table and let the room decide. The passive verb, and the only one a solo table
@@ -398,6 +425,42 @@ public static class SittingAlone
         "The hall carries on somewhere past the panelling, a long way off, like weather.",
     ];
 
+    /// <summary>
+    /// #1016 · AND WHAT WAITING IS LIKE ABOARD YOUR OWN SHIP — a cantina with nobody else in it.
+    ///
+    /// <para>Its own pool and not the emptied hall's, for the reason every pool in this file is its own: the
+    /// quiet pool counts eighty chairs and a card machine, and a captain sitting at one of three tops on a
+    /// boat with a crew of droids would be told about a room three hundred thousand kilometres away. NOBODY
+    /// EVER COMES to either of the ship's seats — there is nobody aboard to cross the floor — so these lines
+    /// are not a wait that failed, they are what the ship sounds like when it does not need you.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> NobodyCameShipCantina =
+    [
+        "A while goes by. The boat ticks and settles around you the way she always does, and none of it " +
+        "needs you.",
+        "You wait. Somewhere aft a pump runs its minute and quits. The chair opposite stays yours.",
+    ];
+
+    /// <summary>#1016 · …and the same silence with a door between you and it. A cabin is the ship's cabinet
+    /// rung, and the pool says so the way <see cref="NobodyCameCabinet"/> does: without ever stating it as a
+    /// rule.</summary>
+    public static readonly IReadOnlyList<string> NobodyCameShipCabin =
+    [
+        "A while goes by. The cabin holds exactly the amount of noise you brought into it.",
+        "The boat carries on somewhere past the bulkhead, a long way off, like weather.",
+    ];
+
+    /// <summary>#1016 · Which silence a beat aboard gets. No watch is consulted and that is not an omission:
+    /// the ship's own rooms are not filled by a rota, so the ONLY thing that varies is which beat this is —
+    /// a captain who waits twice is told two different things and the room does not loop.</summary>
+    /// <param name="cabin">Whether this is the berth's desk rather than a cantina top.</param>
+    /// <param name="beat">How many times you have waited at this seat this sitting, from zero.</param>
+    public static string NobodyCameAboard(bool cabin, int beat)
+    {
+        IReadOnlyList<string> pool = cabin ? NobodyCameShipCabin : NobodyCameShipCantina;
+        return pool[(int)(((beat % pool.Count) + pool.Count) % pool.Count)];
+    }
+
     /// <summary>Every line in all three pools, for the canon grep. The guard walks THIS, so a line added tomorrow
     /// is checked tomorrow.</summary>
     public static IEnumerable<string> AllProse()
@@ -414,6 +477,19 @@ public static class SittingAlone
         {
             yield return s;
         }
+        // #1016 · …and the ship's own two, walked by the same grep the hall's three are. A pool the sweep
+        // cannot see is a pool that is checked by nobody, which is why this list exists at all.
+        foreach (string s in NobodyCameShipCantina)
+        {
+            yield return s;
+        }
+        foreach (string s in NobodyCameShipCabin)
+        {
+            yield return s;
+        }
+        yield return ShipCantinaSetting;
+        yield return ShipCabinSetting;
+        yield return OwnDeskPlate;
         yield return TookTheTableLine;
         yield return StoodUpLine;
         // #783 · the other register, checked by the same grep the wary one is.

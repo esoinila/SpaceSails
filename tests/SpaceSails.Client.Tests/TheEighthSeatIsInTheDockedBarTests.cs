@@ -49,6 +49,14 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
     /// <para>And every one of those consoles is <b>on</b> one of the room's own published tops, never
     /// somewhere a table is not: the console the press lands on and the table the walker is sent to have to
     /// be the same piece of furniture, or the captain sits down at a top nobody can cross to.</para>
+    ///
+    /// <para>#1016 · <b>THE SWEEP IS THE BAR'S OWN NOW, and that is a narrowing of the SUBJECT and not of
+    /// the law.</b> A docked complex is the SHIP's plan with a station welded onto it, and it keeps every
+    /// console she has (<c>BuildComplex</c> seeds itself from <c>DeckPlan.Ship.Consoles</c>) — so since her
+    /// own cantina grew takeable tops, a bare sweep for <c>BarTop</c> on a docked deck reads two rooms thirty
+    /// du apart and calls them one. Every clause below still holds for every top the BAR publishes; the
+    /// boat's are held by <c>TheShipHasSeatsAboardTests</c> and by the deck audit, which walks this very
+    /// plan.</para>
     /// </summary>
     [Fact]
     public void EveryBarPublishesATopTheCaptainCanTake()
@@ -58,8 +66,7 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
             DeckPlan deck = HavenInterior.DockedDeck(body)!;
             IReadOnlyList<DeckReachability.Point> tops = HavenInterior.BarBand(body)!.Value.Tops;
 
-            DeckPlan.ConsoleSpot[] takeable =
-                [.. deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.BarTop)];
+            DeckPlan.ConsoleSpot[] takeable = [.. TheBarsOwnTakeableTops(deck, tops)];
 
             Assert.True(takeable.Length > 0,
                         $"{body}'s bar has {tops.Count} tops and not one of them can be taken — [E] there "
@@ -71,6 +78,14 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
             }
         }
     }
+
+    /// <summary>#1016 · The takeable-top consoles of THIS BAR — the ones standing on a top the bar band
+    /// published — as against the ship's own cantina tops, which travel into every docked complex on the
+    /// captain's own deck plan.</summary>
+    private static IEnumerable<DeckPlan.ConsoleSpot> TheBarsOwnTakeableTops(
+        DeckPlan deck, IReadOnlyList<DeckReachability.Point> tops) =>
+        deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.BarTop
+                                 && tops.Any(t => Math.Abs(t.X - c.X) < 0.5 && Math.Abs(t.Y - c.Y) < 0.5));
 
     /// <summary>
     /// A TOP SOMEBODY IS ALREADY AT IS NOT OFFERED — the room's regulars, the Magpie and the oracle keep
@@ -92,7 +107,13 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
                 DeckPlan deck = HavenInterior.DockedDeck(body, null, simTime)!;
                 DeckPlan.ConsoleSpot[] all = [.. deck.Consoles];
 
-                foreach (DeckPlan.ConsoleSpot top in all.Where(c => c.Kind == DeckPlan.ConsoleKind.BarTop))
+                // #1016 · THE BAR'S OWN TOPS, not the ship's. See EveryBarPublishesATopTheCaptainCanTake:
+                // her cantina's seats ride into every docked complex on her own plan, and they stand beside
+                // her galley desk by the room's own design (the deck audit's label law is what holds them
+                // apart, and it walks this same deck). The clause below is about a press that could grab a
+                // PERSON instead of a chair, which is a fact about a bar.
+                foreach (DeckPlan.ConsoleSpot top in
+                    TheBarsOwnTakeableTops(deck, HavenInterior.BarBand(body)!.Value.Tops))
                 {
                     foreach (DeckPlan.ConsoleSpot other in all)
                     {
@@ -561,11 +582,17 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
         ]);
 
     /// <summary>Sit the captain at the first top in this bar that answers [E]. Which one it is depends on the
-    /// rota, so the bench asks the room rather than naming a chair.</summary>
+    /// rota, so the bench asks the room rather than naming a chair.
+    ///
+    /// <para>#1016 · …and it asks THIS BAR. The captain's own cantina tops travel into the docked deck ahead
+    /// of the station's own consoles, so an unfiltered walk would have sat him down on his own boat and
+    /// every assertion about a berth below it would have been about the wrong room.</para></summary>
     private static bool SitAtAFreeTop(Pages.Map map)
     {
         var deck = (DeckPlan)Field(map, "_deckPlan")!;
-        foreach (DeckPlan.ConsoleSpot spot in deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.BarTop))
+        string berth = (string)Field(map, "_dockedHavenId")!;
+        foreach (DeckPlan.ConsoleSpot spot in
+            TheBarsOwnTakeableTops(deck, HavenInterior.BarBand(berth)!.Value.Tops))
         {
             Set(map, "_avatarX", (double)spot.X);
             Set(map, "_avatarY", (double)spot.Y);

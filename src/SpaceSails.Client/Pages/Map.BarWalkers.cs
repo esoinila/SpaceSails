@@ -566,10 +566,23 @@ public partial class Map
     /// (<c>HavenInterior.BesideATop</c>), never a coordinate the seat measured (§13.15).</param>
     /// <param name="ChairY"><inheritdoc cref="ChairX"/></param>
     /// <param name="Seats">How many the top seats — the room's own number.</param>
-    /// <param name="Room">What this bar is called, for the one clause that says where the captain is sitting.
-    /// A canteen's setting is a constant; a berth's is per-station, so it travels with the answer.</param>
+    /// <param name="Setting">Where the captain is sitting, in the scene's own words — the one clause the
+    /// strip's company line is built out of. A canteen's setting is a constant; a berth's is per-station and
+    /// the ship's are her own two rooms, so the finished sentence travels with the answer rather than being
+    /// reassembled by a chair that would have to know which building it is in.</param>
+    /// <param name="Plate">#1016 · What the panel calls this seat — <c>YOUR OWN TABLE</c> at a top,
+    /// <c>YOUR OWN DESK</c> at the one in the captain's berth. Carried for the same reason
+    /// <paramref name="Setting"/> is: it is the ROOM's word for its own furniture.</param>
+    /// <param name="Quiet">#1016 · Whether this seat is behind a door — the one fact the exposure ladder
+    /// reads (<c>Seating.SeatedIn</c>), and therefore whether the case may be spread here unconditionally. A
+    /// station bar is one loud room with a window in it and answers false; a cabin has a leaf a step away
+    /// and answers true.</param>
+    /// <param name="Aboard">#1016 · Whether this seat is on the captain's OWN SHIP rather than ashore. Two
+    /// things hang off it and nothing else does: nobody ever crosses the floor to it (there is nobody
+    /// aboard to do the crossing), and the silence when you wait is the boat's own rather than a hall's.</param>
     private readonly record struct BarTopUnderfoot(
-        int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Room);
+        int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Setting,
+        string Plate, bool Quiet, bool Aboard);
 
 
     /// <summary>
@@ -587,38 +600,62 @@ public partial class Map
     /// <para><b>The chair is sounded with nobody excluded, and that is the right way round.</b> The captain
     /// is the FIRST body at this top — the woman who crosses the floor to it afterwards is the one who has to
     /// be told about him, which is what <see cref="BesideThisTopClearOfTheCaptain"/> is for.</para>
+    ///
+    /// <para><b>#1016 · ONE MEMBER, THREE ROOMS.</b> Owner, on 7 Deck: <i>"Why no table here to sit at?"</i>,
+    /// <i>"Why no table in cabin either?"</i>, <i>"I expect to have a bar table like this in this ships
+    /// galley also.... feature complete."</i> Her cantina tops and her cabin desk are the same VERB as a top
+    /// in a station bar, so they are answered by the same member rather than by a ninth thing a chair asks
+    /// the page for — the ratchet on <see cref="ISeatHost"/> says the list may only shrink, and this lane had
+    /// no argument for growing it. The ship's half of the answer lives next door in
+    /// <c>Map.ShipSeats.cs</c>.</para>
+    ///
+    /// <para><b>And the two rooms can be on ONE DECK at the same time</b>, which is why the fall-through is
+    /// written the way it is rather than as an <c>else</c>. A docked complex is welded onto the ship's own
+    /// plan and keeps every console she has (<c>HavenInterior.BuildComplex</c> seeds itself from
+    /// <c>DeckPlan.Ship.Consoles</c>), so a captain clamped on can walk down the tube and sit in his own
+    /// cantina — and a press there is a <c>BarTop</c> that matches no top the BAR published. Answering null
+    /// on that would be the ship's seats going dead the moment she docked, which is the one state a player
+    /// would find in the first minute.</para>
     /// </summary>
     private BarTopUnderfoot? TheBarTopUnderfoot()
     {
-        if (TheDockedBar() is not { } bar
-            || _deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
-                { Kind: DeckPlan.ConsoleKind.BarTop } spot)
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { } spot
+            || spot.Kind is not (DeckPlan.ConsoleKind.BarTop or DeckPlan.ConsoleKind.ShipDesk))
         {
             return null;
         }
 
-        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
-        for (int i = 0; i < bar.Tops.Count; i++)
+        if (spot.Kind == DeckPlan.ConsoleKind.BarTop && TheDockedBar() is { } bar)
         {
-            DeckReachability.Point top = bar.Tops[i];
-            if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
+            IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+            for (int i = 0; i < bar.Tops.Count; i++)
             {
-                continue;
-            }
+                DeckReachability.Point top = bar.Tops[i];
+                if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
+                {
+                    continue;
+                }
 
-            // No place at it, so there is no seat here — answered as an absence rather than by sitting the
-            // captain down inside the counter, which is §13.15's own sentence about measured coordinates.
-            if (BesideThisTop(top, walls) is not { } chair)
-            {
-                return null;
-            }
+                // No place at it, so there is no seat here — answered as an absence rather than by sitting
+                // the captain down inside the counter, which is §13.15's own sentence about measured
+                // coordinates.
+                if (BesideThisTop(top, walls) is not { } chair)
+                {
+                    return null;
+                }
 
-            return new BarTopUnderfoot(
-                i, $"bar:{bar.BodyId}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y, HavenInterior.BarTopSeats,
-                HavenInterior.BarNameOf(bar.BodyId) ?? "");
+                return new BarTopUnderfoot(
+                    i, $"bar:{bar.BodyId}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y,
+                    HavenInterior.BarTopSeats,
+                    SittingAlone.BarSetting(HavenInterior.BarNameOf(bar.BodyId) ?? ""),
+                    SittingAlone.OwnTablePlate,
+                    // A station bar is one loud room with a window in it: no cabinets, no curtains, nothing
+                    // to dog. And it is ashore, so the room's own people can and do cross the floor to it.
+                    Quiet: false, Aboard: false);
+            }
         }
 
-        return null;
+        return TheShipsOwnSeatUnderfoot(spot);
     }
 
     /// <summary>#1016 QA · <c>?barcase=1</c> — the owner's own bug, in one URL. Set in Map.Sim's cheat
@@ -690,7 +727,15 @@ public partial class Map
     /// teleporting a card at a captain who cannot sit down is the opposite of the practice the owner asked
     /// for. When the haven bar grows a top the captain can take, this one predicate starts answering true and
     /// the rest of the walk is already built.</para>
+    ///
+    /// <para><b>#1016 · AND A SEAT ON YOUR OWN BOAT IS NOT A SEAT IN THIS BAR.</b> A docked complex is the
+    /// ship's own plan with a station welded onto it, so a captain clamped on can walk down the tube and take
+    /// a top in his own cantina — and every other clause here would say yes to that. The two walkers who read
+    /// this predicate are both gated on <see cref="InTheBar"/> as well and would not have moved; the flag is
+    /// added anyway, because a predicate that is only right because of where its callers happen to be checked
+    /// is the shape of a bug rather than of a law. Sitting alone is a choice to be findable BY THIS ROOM.</para>
     /// </summary>
     private bool TheCaptainIsSittingAloneInTheBar() =>
-        CaptainIsSeated && SeatedAlone && SeatedTable is { Bench: false, Office: false };
+        CaptainIsSeated && SeatedAlone
+        && SeatedTable is { Bench: false, Office: false, Aboard: false };
 }
