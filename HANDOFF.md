@@ -22,8 +22,8 @@ and Map.Surface.Satchel.cs still records as declined. (b) destroys nothing.
    same as `rep-backdrop`/`selfie-backdrop`, so the pop-up law's recogniser still sees a registered root).
 4. `Map.Sim.Cancel.cs`: Esc chain is paint order top-down now — the `.convergence-backdrop` family (1420)
    leads, then `_showSatchel` (1330, **first time Esc has ever reached the satchel**), then `_storyCard`
-   (1320) and the rest. Enter chain mirrored; `if (_showSatchel) return false;` stops Enter falling through
-   the pocket onto a card nobody can see.
+   (1320) and the rest. Enter chain mirrored; `if (_showSatchel) return false;` sits **above** #784's
+   stand-up confirm and stops Enter falling through the pocket onto a card — or a seat — nobody can see.
 5. `RescueLifeline`: the forward-guard stand-in is built at the band's new ceiling (1330).
 6. `CssZBandSyncTests`: `.satchel-backdrop` in the Overlays theory data + in the lifeline out-ranks sweep.
 7. **Guard** `tests/SpaceSails.UiGate/TheSatchelPaintsOverTheCardTests.cs` (2 tests, Playwright).
