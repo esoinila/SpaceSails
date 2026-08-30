@@ -245,6 +245,12 @@ public sealed class HudCollisionTests : IAsyncLifetime
     ///
     /// <para>RED PROOF: take the closing brace off <c>.old-crew-reply</c> again and every desk fails, naming
     /// a strip 1280 px wide at y 720.</para>
+    ///
+    /// <para><b>#1021 · SEVEN DESKS, NOT EIGHT.</b> The Galley chip is still on the bar and is no longer a
+    /// desk: pressing it raises a pop-up card over whatever desk you are already at and never lights, so the
+    /// wait below — "the tab I clicked is now the lit one" — is a wait that would never come back. It is off
+    /// this list because there is no eighth desk to sit down at, not because the strip stopped mattering
+    /// there: the strip is drawn by the desk UNDER the card and is measured on all seven of those.</para>
     /// </summary>
     [Fact]
     public async Task The_desk_chip_strip_is_positioned_and_on_the_screen_on_every_desk()
@@ -255,7 +261,7 @@ public sealed class HudCollisionTests : IAsyncLifetime
         var offences = new List<string>();
         int measured = 0;
 
-        foreach (string tab in new[] { "Captain", "Nav", "Sensors", "War room", "Trade", "Comms", "Galley", "Deck" })
+        foreach (string tab in new[] { "Captain", "Nav", "Sensors", "War room", "Trade", "Comms", "Deck" })
         {
             await _page.Locator("button.desk-tab", new() { HasTextString = tab }).First.ClickAsync();
             await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = tab }).First.WaitForAsync(
@@ -284,7 +290,7 @@ public sealed class HudCollisionTests : IAsyncLifetime
             }
         }
 
-        Assert.Equal(8, measured);
+        Assert.Equal(7, measured);   // #1021: the Galley is a card now, not the eighth desk
         Assert.True(offences.Count == 0,
                     "the desk-chip strip is not where DeskChips.razor.css puts it (#994):\n  "
                     + string.Join("\n  ", offences));

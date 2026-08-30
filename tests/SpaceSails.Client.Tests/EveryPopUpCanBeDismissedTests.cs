@@ -273,6 +273,26 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the satchel / notebook / spread", "view-object-backdrop", Ashore, Exit.AControl,
             b => b.Poke("_showSatchel", true)),
 
+        // #1021 · THE GALLEY, WHICH IS A POP-UP NOW AND SO ARRIVES IN THIS LAW ON ITS FIRST DAY. Owner, of
+        // the full-screen desk it replaces: "this UI MUST GO!… keep the features but I want it done in
+        // pop-up style like the work the case is." A desk answered to nobody here; a card answers to the
+        // ruling of 2026-08-24 like every other card, and it is raised through the SHIPPING desk switch
+        // rather than by poking `_galleyCardOpen` — SwitchDesk is documented as the one place a desk switch
+        // happens, all three of the card's doors funnel through it, and a fork that stopped raising the card
+        // then fails in this law rather than nowhere.
+        //
+        // Exit.AControl and not EveryControlCloses, deliberately: "Pour a tot" is a control on this card and
+        // is not a way out, which is exactly the claim the decision exception would have made falsely.
+        //
+        // THE OPEN VERB AND NOT THE TOGGLE, and the difference is this law's own mechanics rather than a
+        // preference. Raise() runs again before EVERY press, so a driver wired to the 6-key's toggle would
+        // have SHUT the card between finding its ✕ and pressing it, and reported a card whose way out does
+        // nothing. (Found by running it.) The toggle is a real behaviour and it is proved next door, by
+        // typing the key: TheGalleyIsACardNotADeskTests.
+        new("the galley card — the news wire and the rum locker", "view-object-backdrop", Docked,
+            Exit.AControl,
+            b => b.CallOnTheDispatcher("OpenGalleyCard")),
+
         new("the ship's own atmosphere board", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_showShipBoard", true)),
 
