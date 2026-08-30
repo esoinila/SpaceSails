@@ -78,12 +78,17 @@ public partial class Map
             // the counter's pour is asked through the one member the rest engine runs on, so the panel cannot
             // say "cold glass" on a beat the short rest had already called dry.
             bool drink = _host.APourInFrontOfYou;
-            bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, top.Watch);
+            // #1016 · ABOARD ALWAYS READS RELAXED — the third argument is the law's, not this file's
+            // (SitReadsAsRelaxed's own docblock carries the ruling): a busy rota hour ashore was putting the
+            // captain's back to the wall of his own empty cantina.
+            bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, top.Watch, top.Aboard);
             // …AND IT SAYS WHERE IT IS. The strip's company clause is built out of the scene's own Setting,
             // and a canteen's is a constant three hundred thousand kilometres from this room: a woman standing
             // at a top in The Stormwatch Bar was announced as being at "a table in the upper canteen". One
             // substitution on the shipped scene, so every other word of it is the one the canteen top gets.
-            Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink) with
+            // #1016 · Aboard rides into the scene too, so the glass sentences are the boat's own — the
+            // counter's still and the canteen's building both live somewhere the boat is not.
+            Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink, top.Aboard) with
             {
                 Setting = top.Setting,
             };
