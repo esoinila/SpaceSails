@@ -231,7 +231,7 @@ public partial class Map
     // ── Forcing the hidden door [E]: a channeled progress bar (the #393 door-force idiom), abortable. ──
     private void SecretDoorInteract()
     {
-        if (_surface is not { } ex || ex.AnyChannel || ex.Lab is not { HasLab: true })
+        if (_surface is not { } ex || AnySlowThingUnderYourHands || ex.Lab is not { HasLab: true })
         {
             return;
         }

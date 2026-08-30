@@ -66,6 +66,7 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?ashore=1&kaamos=bounce"] = "474263ef36bf6879ef784a4224f9d3e4",
             ["/map?ashore=1&start=space-bar"] = "641ea84c6ff694e570f2100a3e1fa791",
             ["/map?badge=1"] = "5c45561aa3057f7f7f7114c146d83318",
+            ["/map?barcase=1"] = "9d19343c45cb656c3ad31e7dace6b58a",
             ["/map?bond=1"] = "d9b2f1c468710f58b4f5c014bda24ded",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "fb8a0aa4837f119785e10cae360e52e1",
             ["/map?converge=1"] = "971a4d049e223c642dc6a90d2cc57653",

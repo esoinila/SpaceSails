@@ -714,4 +714,55 @@ public sealed class YouCanTakeATableAloneTests
             "Brass pillars on a freight stop. I stopped asking the questions I like the answers to.",
             CanteenRegulars.Barks);
     }
+
+    /// <summary>
+    /// #1016 · ABOARD, THE SENTENCES ARE THE BOAT'S OWN — no still below B4, no building, no wary watch.
+    ///
+    /// <para>The #1019 crew sat at a top in the ship's own cantina with a tot poured and was told about
+    /// <i>"somewhere below B4, a still"</i> — a basement three hundred million kilometres from the boat
+    /// (bug class three: the sim doing one thing while a sentence reports another). And on a busy rota hour
+    /// the same seat read WARY — back to the wall, hands where they can be seen — in a room with nobody
+    /// aboard to see them. Two laws close both: aboard always reads relaxed, and the glass aboard gets the
+    /// locker's sentence.</para>
+    ///
+    /// <para><b>Proven RED</b> twice, one revert per law: dropping the <c>aboard</c> clause from
+    /// <c>SitReadsAsRelaxed</c> fails the every-watch walk on the busiest hour; dropping the aboard fork
+    /// from <c>SitLine</c> fails on the still riding aboard.</para>
+    /// </summary>
+    [Fact]
+    public void ABOARD_TheSitIsAlwaysARestAndTheGlassIsTheLockers()
+    {
+        for (long w = 0; w < Watches; w++)
+        {
+            Assert.True(SittingAlone.SitReadsAsRelaxed(false, w, aboard: true),
+                $"watch {w} puts the captain's back to the wall of his own empty cantina.");
+        }
+
+        // The clause has to be DOING something: at least one watch ashore is a watch, or the aboard arm
+        // above is selecting a world where everything was already a rest (bug class five).
+        Assert.Contains(false,
+            Enumerable.Range(0, Watches).Select(w => SittingAlone.SitReadsAsRelaxed(false, w)));
+
+        // With a pour, both sentences are the boat's — and neither of the shore's rides along.
+        string aboardGlass = SittingAlone.SitLine(relaxed: true, drinkInHand: true, aboard: true);
+        Assert.Equal(SittingAlone.RelaxedSitAboardLine + " " + SittingAlone.TheDrinkAboardLine, aboardGlass);
+        Assert.DoesNotContain("B4", aboardGlass, StringComparison.Ordinal);
+        Assert.DoesNotContain("building", aboardGlass, StringComparison.OrdinalIgnoreCase);
+
+        // Dry aboard is the shipped dry line ON PURPOSE — it owns no venue, so it needs no fork. Pinned so
+        // a later hand does not fork it for symmetry and hand the canon sweep a twin with nothing in it.
+        Assert.Equal(
+            SittingAlone.RelaxedSitDryLine,
+            SittingAlone.SitLine(relaxed: true, drinkInHand: false, aboard: true));
+
+        // Ashore is word-for-word what it was before the boat learned to say anything.
+        Assert.Equal(
+            SittingAlone.RelaxedSitLine + " " + SittingAlone.TheDrinkLine,
+            SittingAlone.SitLine(relaxed: true, drinkInHand: true));
+
+        // And both new sentences are in the canon sweep, so tomorrow's forbidden-word rulings read them too.
+        string[] swept = [.. SittingAlone.AllProse()];
+        Assert.Contains(SittingAlone.TheDrinkAboardLine, swept);
+        Assert.Contains(SittingAlone.RelaxedSitAboardLine, swept);
+    }
 }

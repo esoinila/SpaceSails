@@ -80,6 +80,27 @@ public partial class Map
             return;
         }
 
+        // #1021 · THE GALLEY IS NOT A DESK ANY MORE, AND THIS IS THE ONLY PLACE THAT HAS TO KNOW IT.
+        //
+        // Owner: "this UI MUST GO!... keep the features but I want it done in pop-up style like the work the
+        // case is." The full-screen Galley screen is gone from the desk band; what 6 raises is a card over
+        // whatever is already on the glass, so the room behind it stays visible — which is the other half of
+        // the complaint ("no ... visibility to the bar surroundings").
+        //
+        // FORKED HERE, ABOVE EVERYTHING, because this method is documented as the one place a desk switch
+        // happens: the digit keys, the "6 Galley" tab, the right-rail Galley chip and the captain's status
+        // board all funnel through it, so all four become doors onto the card by arriving here and none of
+        // them needs to know that. `_activeDesk` is deliberately NOT written — the captain stays sitting
+        // where they were sitting, which is what makes this a pop-up and not a desk with a smaller frame.
+        //
+        // …and it does not put the deck down either. Pressing 6 on the deck used to walk you off it; now the
+        // card opens over the deck you are standing on, which at the CANTINA is the whole point.
+        if (desk == ShipDesk.Galley)
+        {
+            ToggleGalleyCard();   // #688's law: the key that opens it closes it
+            return;
+        }
+
         if (desk == ShipDesk.Deck)
         {
             if (!_deckMode)
@@ -87,6 +108,7 @@ public partial class Map
                 ToggleDeck();
             }
             _activeDesk = ShipDesk.Deck;
+            CloseGalleyCard();
             return;
         }
 
@@ -101,6 +123,10 @@ public partial class Map
         {
             _openCaptainToTutorials = false;
         }
+        // #1021 · …and the card does not follow the captain to the next desk. A number key means "take me
+        // there", and a pop-up that came along wearing the anchor of the desk it was raised on is #1012's
+        // own finding one family over — a card that followed him somewhere and lied about where it was.
+        CloseGalleyCard();
         _activeDesk = desk;
     }
 
@@ -126,7 +152,12 @@ public partial class Map
         if (_activeDesk != ShipDesk.WarRoom) chips.Add(WarRoomChip());
         if (_activeDesk != ShipDesk.Trade) chips.Add(TradeChip());
         if (_activeDesk != ShipDesk.Comms) chips.Add(CommsChip());
-        if (_activeDesk != ShipDesk.Galley) chips.Add(GalleyChip());
+        // #1021 · THE GALLEY CHIP IS ALWAYS ON THE STRIP NOW, and the `if` that used to guard it is gone
+        // rather than left standing as a condition that can no longer be false. The rule the others follow
+        // is "every desk but the one you are sitting at", and nobody sits at the galley any more — it is a
+        // card over whatever desk you ARE at. The chip stays because it is chrome and a door (clicking it
+        // raises the card), which is exactly what the owner kept: "keep the features".
+        chips.Add(GalleyChip());
         return chips;
     }
 

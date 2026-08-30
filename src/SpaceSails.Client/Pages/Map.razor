@@ -3405,6 +3405,69 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #1021 · THE GALLEY, AS A CARD.
+
+       Owner, of the full-screen Galley desk, verbatim: "We want to keep the news feed... refactor it so it
+       can be elsewhere also, but this UI MUST GO!... This was our first version, it has no gen AI or
+       visibility to the bar surroundings. So keep the features but I want it done in pop-up style like the
+       work the case is."
+
+       "LIKE THE WORK THE CASE IS" IS A SPECIFICATION, and it is the card twenty lines above this one: a
+       click-to-close backdrop, StopClicks so the card does not shut under the captain's own hand, an
+       OverlayFrame.Bare shell whose way out is its last direct child, and the room STILL THERE behind it.
+       That last clause is the owner's second complaint answered without drawing anything: opened at the
+       deck's CANTINA console the card hangs over the cantina's own art, which is the "visibility to the bar
+       surroundings" the blacked-out desk never had. No new picture; the room was always there, the desk was
+       just standing in front of it.
+
+       THE FEATURES, VERBATIM AND IN ORDER. Nothing on this card is new prose — the rum locker's heading,
+       its tot count, its two-state steady-legs line, "Pour a tot" and its tooltip, and the wire's own words
+       are all lifted from Stations/Galley.razor, which this replaces. The pour is the SAME PourRumFromGalley
+       the desk called, which is the same PourRum the deck's own locker calls: one rum ledger, and now three
+       doors onto it that cannot disagree about the tot count.
+
+       THE LOCKER LEADS AND THE WIRE SCROLLS UNDER IT. On a desk the two sat side by side because there was
+       a screen's width to fill; on a card there is not, so the order is the one a captain wants — the thing
+       you PRESS is above the thing you READ, and the wire's list is the only part that gives (its
+       CappedScrollPanel lives inside NewsWirePanel). The card's own cap is 92vh, the satchel's, so the page
+       itself never scrolls. *@
+    @if (_galleyCardOpen)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseGalleyCard)">
+            @* `text-light` is the desk's own, carried over: Stations/Galley.razor's root was
+               `class="galley-desk text-light"`, and the tot count and the locker heading are drawn with no
+               colour of their own. Dropped, they inherit the page's body grey and the card reads a shade
+               dimmer than the screen it replaces — measured in a browser, not reasoned about. *@
+            <OverlayShell class="galley-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Shut the galley card — Esc and 6 do the same"
+                          OnClose="() => Dismiss(CloseGalleyCard)">
+                <div class="view-object-title">🍹 THE GALLEY</div>
+
+                <div class="galley-card-rum">
+                    <div class="fw-bold mb-2">The rum locker 🍹</div>
+                    <div class="mb-1">Tots poured: @_rumTots</div>
+                    <div class="mb-2 @(RumWobbleActive ? "text-warning fw-bold" : "text-secondary")">
+                        @(RumWobbleActive ? "Deck's tilty — steady on. 🍹" : "Steady legs, for now.")
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2" title="Pour a tot of rum from the locker — steadies the crew's legs when the deck goes tilty" @onclick="PourRumFromGalley">
+                        Pour a tot
+                    </button>
+                    @if (_lastRumLine is not null)
+                    {
+                        <div class="fst-italic text-info small">@_lastRumLine</div>
+                    }
+                </div>
+
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays)"
+                    ItemCount="GalleyFeedItemCount" />
+            </OverlayShell>
+        </div>
+    }
+
     @* #836 · THE FLETCH WALLET, FANNED WHILE HE CROSSES THE FLOOR. Owner: "I think I should be able to pick
        the badge I show the guard... like Fletch ... suppose we have 4 different ID's ... one of them real".
 
@@ -5366,8 +5429,15 @@
         <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
             @foreach (ShipDesk desk in TabBarOrder)
             {
+                @* #1021 · The Galley chip is still on the bar and is no longer a desk — pressing it raises
+                   the galley CARD over whatever is showing (and presses again to shut it), so its hint says
+                   that rather than promising a screen the band no longer has. #195's law: every control
+                   states what pressing it will do. It never lights, because nothing it does makes it the
+                   desk you are sitting at — the tab bar goes on carrying exactly one lit tab. *@
                 <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
-                        title="Switch to the @DeskLabel(desk) desk"
+                        title="@(desk == ShipDesk.Galley
+                                 ? "Open the galley over this desk — the news wire and the rum locker (press again to shut it)"
+                                 : $"Switch to the {DeskLabel(desk)} desk")"
                         @onclick="() => SwitchDeskFromClick(desk)">
                     @DeskKeyLabel(desk) @DeskLabel(desk)
                 </button>
@@ -7033,7 +7103,10 @@
                 OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" />
         </div>
     </div>
-    @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
+    @* #1021 · ShipDesk.Galley came off this list with the branch below it. The enum member stays (removing
+       it would renumber Deck and Captain under every keyed and persisted thing that reads them) — what has
+       gone is its ability to be `_activeDesk` at all. *@
+    @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Captain)
     {
         @* The war room dims instead of blanking (long-shots PR): the live map behind it IS the
            orrery view for cross-system firing solutions — DrawFirePlan draws the transfer.
@@ -7295,21 +7368,18 @@
                        tight-beam and laser ranging were always per-contact actions, so they live
                        in the contact's detail now; the market is the dark-web node's detail. *@
                     <div class="desk-comms-room">
-                        <div class="comms-ticker">
-                            <span class="comms-ticker-label fw-bold small">News wire 📡</span>
-                            @{ IReadOnlyList<NewsWire.NewsItem> wire = NewsFeed(CommsTickerAmbientDays); }
-                            @if (wire.Count == 0)
-                            {
-                                <span class="comms-ticker-item text-secondary small">No whispers yet.</span>
-                            }
-                            else
-                            {
-                                @foreach (NewsWire.NewsItem item in wire.Take(CommsTickerItemCount))
-                                {
-                                    <span class="comms-ticker-item small">@item.Headline</span>
-                                }
-                            }
-                        </div>
+                        @* #1021 · THE TICKER IS THE WIRE COMPONENT'S SECOND CONSUMER, and it is the half of
+                           this issue that proves the refactor rather than claiming it. Owner: "keep the news
+                           feed... refactor it so it can be elsewhere also." A component with one caller is a
+                           file move; this strip is the elsewhere. Its markup and its `.comms-ticker*` rules
+                           moved into NewsWirePanel word for word (the rules had to MOVE rather than be
+                           reached with ::deep — Blazor scopes a stylesheet to the component that rendered
+                           the element, and the strip is drawn there now), so the comms room is unchanged on
+                           the glass and the two readings of one feed live in one file. *@
+                        <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                            Shape="SpaceSails.Client.Pages.Stations.NewsWirePanel.WireShape.Ticker"
+                            SimTime="SimTime" Feed="NewsFeed(CommsTickerAmbientDays)"
+                            ItemCount="CommsTickerItemCount" />
                         <div class="desk-comms-grid">
                             <div class="desk-side-panel comms-traffic-panel card bg-dark bg-opacity-50 text-light">
                                 <div class="card-header py-1"><span class="fw-bold small">Contacts &amp; intel</span></div>
@@ -7476,10 +7546,11 @@
                         </div>
                     </div>
                 }
-                else if (_activeDesk == ShipDesk.Galley)
-                {
-                    <SpaceSails.Client.Pages.Stations.Galley SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays).Take(GalleyFeedItemCount).ToList()" RumTots="_rumTots" WobbleActive="RumWobbleActive" LastRumLine="@_lastRumLine" OnPourRum="PourRumFromGalley" />
-                }
+                @* #1021 · THE GALLEY BRANCH USED TO BE HERE, and it is gone. Owner: "this UI MUST GO!" The
+                   news wire and the rum locker are a pop-up card now (search `.galley-card` in this file);
+                   `SwitchDesk(ShipDesk.Galley)` raises it and never writes `_activeDesk`, so this band has
+                   nothing left to draw for that value and the gate above no longer lists it.
+                   TheGalleyIsACardNotADeskTests asks the band the question directly. *@
                 else if (_activeDesk == ShipDesk.Captain)
                 {
                     <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"

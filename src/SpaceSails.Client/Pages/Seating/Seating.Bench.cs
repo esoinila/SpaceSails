@@ -154,10 +154,7 @@ public partial class Map
         /// </summary>
         private void SomebodyTakesTheOtherEnd(SurfaceExcursion ex, TableTalk t)
         {
-            if (ex.Processing is { Work: Core.Processing.Work.Write })
-            {
-                _host.AbandonProcessing(ex, Core.Processing.Interruption.CompanyArrived);
-            }
+            _host.AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.CompanyArrived);
 
             t.SharedSeat = true;
             t.Plate = ParkBenches.SharedPlate;

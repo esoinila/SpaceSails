@@ -20,7 +20,7 @@ public partial class Map
         {
             return;
         }
-        if (ex.AnyChannel)
+        if (AnySlowThingUnderYourHands)
         {
             return; // already channeling (dig or door-force) — stepping away aborts, [E] doesn't re-trigger
         }
@@ -51,7 +51,7 @@ public partial class Map
     // console is in reach (Map.Deck); a no-op off the surface.
     private void SurfaceGroundInteract()
     {
-        if (_surface is not { } ex || ex.AnyChannel)
+        if (_surface is not { } ex || AnySlowThingUnderYourHands)
         {
             return;
         }

@@ -135,8 +135,15 @@ public partial class Map
         // ── THE SYSTEMS A SEAT SPENDS THROUGH, ASKED FOR THEIR ANSWER ─────────────────────────────────────
 
         /// <summary>#696's hold, ended out loud with nothing filed. Three seats end privacy: standing up, somebody
-        /// taking the chair opposite, somebody taking the other end of a plank.</summary>
-        void AbandonProcessing(SurfaceExcursion ex, Core.Processing.Interruption why);
+        /// taking the chair opposite, somebody taking the other end of a plank.
+        ///
+        /// <para>#1016 · The excursion it used to take is gone and the WORK it ends is named instead. The hold is
+        /// the page's now — a seat in a docked bar has no excursion, and a captain who stood up out of a half-dug
+        /// sheet there was walking away from a clock this family could not see, let alone end. The
+        /// discrimination the three seams need (a DIG ends; a leave or a shredding is not privacy being revoked)
+        /// is the first argument, so the seat asks for an ANSWER rather than reaching through a ground for the
+        /// machinery — and this family's ask on the page stays exactly the size it was.</para></summary>
+        void AbandonProcessing(Core.Processing.Work only, Core.Processing.Interruption why);
 
         /// <summary>The nerve, moved by a table going wrong — through the ordinary gauge and never anonymously
         /// (#480), which is why the label is a parameter rather than a default.</summary>

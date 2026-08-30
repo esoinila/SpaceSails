@@ -437,11 +437,14 @@ public partial class Map
         public bool Buried { get; set; }                 // the carried chest went into the ground
         public DigChannel? Channel { get; set; }
 
-        // #696 · The document under the captain's hands right now, if any. It rides on the EXCURSION and not
-        // on the component, so that the one interruption nothing could sensibly listen for — the shuttle
-        // lifting — takes the hold with it rather than leaving a clock ticking over an excursion that no
-        // longer exists. Never saved: a half-photographed sheet is not a possession.
-        public ProcessingHold? Processing { get; set; }
+        // #696 → #1016 · THE HOLD USED TO LIVE HERE, and it does not any more. It rode the excursion so that
+        // the one interruption nothing could sensibly listen for — the shuttle lifting — took the clock with
+        // it. Owner's ruling of 2026-08-30 ("refactor the working the case etc table options to not be tied
+        // to any location") moved it onto the PAGE (`_processing`, Map.Surface.Darkroom.cs), because a
+        // captain sitting at a bar top in a docked berth has no excursion at all and the dig has to take its
+        // twenty seconds there too. Nothing was duplicated: there is still exactly one hold in the game, and
+        // the lift-off interruption is still the explicit ProcessingIsInterrupted(LiftedOff) it always was,
+        // fired on the way out (below), rather than a field that happened to be thrown away with the object.
 
         // Lane-1 · the tide clock (owner, 2026-07-18): the deep hands up a Reever every seeded gap, for
         // the whole excursion, with no fixed total. TideSeconds accrues real time; when it crosses the
@@ -902,10 +905,13 @@ public partial class Map
         public Dictionary<long, int> RestPipsEased { get; } = [];   // nerve pips handed back this watch
         public Dictionary<long, int> RestHitsKnit { get; } = [];    // blows knitted this watch
 
-        // #784 · …and which carried things have been written up PROPERLY (seated, in the captain's own hand)
-        // rather than photographed and left. Excursion-scoped like the rest of this block: the BOOK is what
-        // is durable, and it keeps the note; this only stops the pen offering to write the same page twice.
-        public HashSet<string> WrittenUpProperly { get; } = [];
+        // #784 → #1016 · THE WRITE-UP REGISTER USED TO LIVE HERE, and it does not any more. It was
+        // excursion-scoped ("the BOOK is what is durable"), which quietly made "have I dug this sheet" a
+        // question about a WALK: fly home with the paper still in the sleeve and the pen offered to write the
+        // same page again, while the book already had it. Owner's ruling of 2026-08-30 — "refactor the
+        // working the case etc table options to not be tied to any location" — makes it the CASE's, so it
+        // is one page-level set (`_workedUp`, Map.Seated.cs) that rides the vault beside the satchel and the
+        // book. There is no second register: every reader and writer goes through the one accessor pair.
 
         // #743/#746 · Whether the staff mess has already had its chit beat. Once per excursion, in the DEAD
         // AIR family: the first time you show a pass to an empty room and eat is the beat, and every time
@@ -979,10 +985,15 @@ public partial class Map
         // #696 · AND THE DARKROOM IS ONE OF THEM. A captain photographing a pay sheet has both hands full;
         // more to the point, all of these draw the SAME progress bar (#562), so two at once would be one bar
         // reporting one of them and the captain watching the wrong clock. The exclusion runs both ways —
-        // BeginProcessing refuses while a channel is up, and every [E] that starts a channel already asks
-        // this property.
+        // BeginProcessing refuses while a channel is up, and every [E] that starts a channel already asks it.
+        //
+        // #1016 · …and the question is asked one level up now. The GROUND's channels are still this list; the
+        // darkroom hold left the excursion for the page (a bar top in a docked berth has no excursion and the
+        // dig has to take its seconds there too), so the property every starter actually asks is
+        // Map.AnySlowThingUnderYourHands, which is this OR the one hold. Splitting it that way is what
+        // keeps a single answer to "is a bar already filling" on every ground the captain can stand on.
         public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
-            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null || Processing is not null;
+            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──

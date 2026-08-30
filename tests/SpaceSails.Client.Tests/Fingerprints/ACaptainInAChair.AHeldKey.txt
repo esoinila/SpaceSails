@@ -29,7 +29,7 @@ the avatar            = -84.51666666667
 the avatar (y)        = -248.1
 the avatar's heading  = 0
 the route             = ∅
-the seat              = TableTalk(Bark=∅, Bench=yes, BenchIndex=0, Cabinet=0, CubicleKey=∅, DrinkInHand=no, Free=0, Index=4000, Joined=yes, Key=… 1082 chars, sha256 650479f6e385515e
+the seat              = TableTalk(Aboard=no, Bark=∅, Bench=yes, BenchIndex=0, Cabinet=0, CubicleKey=∅, DrinkInHand=no, Free=0, Index=4000, Joine… 1111 chars, sha256 c19865f2e5f60881
 the nerve             = 100
 the tracker           = ChirpState(Armed=yes, ClearSeconds=5.983333333333)
 the guards            = [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
@@ -38,8 +38,8 @@ the traffic           = [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, 
 the hunters           = []
 the ordnance          = []
 the ghost             = ∅
-the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5129 chars, sha256 39d2a45b67dcb908
+the surface           = SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
 the pulse cooldown    = -1
-sweep                 = 733 fields, sha256 de220c6d0bbe5f31e216a08bc6b7c3b83dc81eb72386fa40ac84e4091d801372
+sweep                 = 737 fields, sha256 79275ac50aba6172b9a267c8ee56ee644a38eec3ddde4d863500033e938931c5
 walked-view pen       = 211920 calls, sha256 b8d5466a64a27ac46d0b9defd95f6588c4fed46783ec332c344326073837948b
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

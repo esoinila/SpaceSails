@@ -92,7 +92,7 @@ public partial class Map
     // ── Forcing a sealed door [E]: a channeled progress bar, abortable by stepping away. ──
     private void SealedDoorInteract()
     {
-        if (_surface is not { Expedition: true } ex || ex.AnyChannel)
+        if (_surface is not { Expedition: true } ex || AnySlowThingUnderYourHands)
         {
             return;
         }

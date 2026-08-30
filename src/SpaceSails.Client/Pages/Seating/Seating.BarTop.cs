@@ -18,6 +18,14 @@ namespace SpaceSails.Client.Pages;
 /// <c>EverySeatTheCaptainTakesFingerprintsTheSameTests.ThereIsOnePlaceASittingIsOpened</c> moves <b>7 → 8</b>
 /// and says so.</para>
 ///
+/// <para><b>#1016 · AND IT IS THE SHIP'S TWO SEATS AS WELL NOW.</b> Owner, on 7 Deck: <i>"Why no table here
+/// to sit at?"</i>, <i>"Why no table in cabin either?"</i>, <i>"I expect to have a bar table like this in
+/// this ships galley also.... feature complete."</i> Her cantina tops and the desk in CABIN 1 are the same
+/// verb in a different room, so they come through this one method rather than a ninth site — the count in
+/// <c>ThereIsOnePlaceASittingIsOpened</c> stays at EIGHT, and what a room disagrees with another room about
+/// (its plate, its setting, whether it is behind a door, whether anybody could ever walk up) travels on
+/// <c>BarTopUnderfoot</c>, which is the page's answer. See <c>Map.ShipSeats.cs</c>.</para>
+///
 /// <h3>What is different about a berth, and it is exactly three things</h3>
 ///
 /// <para><b>There is no excursion.</b> Every other verb in this family opens on <c>_host.Surface</c>; this one
@@ -70,14 +78,19 @@ public partial class Map
             // the counter's pour is asked through the one member the rest engine runs on, so the panel cannot
             // say "cold glass" on a beat the short rest had already called dry.
             bool drink = _host.APourInFrontOfYou;
-            bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, top.Watch);
+            // #1016 · ABOARD ALWAYS READS RELAXED — the third argument is the law's, not this file's
+            // (SitReadsAsRelaxed's own docblock carries the ruling): a busy rota hour ashore was putting the
+            // captain's back to the wall of his own empty cantina.
+            bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, top.Watch, top.Aboard);
             // …AND IT SAYS WHERE IT IS. The strip's company clause is built out of the scene's own Setting,
             // and a canteen's is a constant three hundred thousand kilometres from this room: a woman standing
             // at a top in The Stormwatch Bar was announced as being at "a table in the upper canteen". One
             // substitution on the shipped scene, so every other word of it is the one the canteen top gets.
-            Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink) with
+            // #1016 · Aboard rides into the scene too, so the glass sentences are the boat's own — the
+            // counter's still and the canteen's building both live somewhere the boat is not.
+            Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink, top.Aboard) with
             {
-                Setting = SittingAlone.BarSetting(top.Room),
+                Setting = top.Setting,
             };
 
             // #820 · the snap, at the room's own published place beside this top. Never measured here.
@@ -96,7 +109,10 @@ public partial class Map
                 // nudge's opinion on whether the room agrees.
                 StepOff = (top.ChairX, top.ChairY),
                 Who = CanteenTable.Who.None,
-                Plate = SittingAlone.OwnTablePlate,
+                // #1016 · THE ROOM'S OWN WORD FOR ITS OWN FURNITURE. A top is YOUR OWN TABLE and the desk in
+                // the captain's berth is YOUR OWN DESK — carried on the answer for the same reason the
+                // setting is, because the room knows what it is called and a chair does not.
+                Plate = top.Plate,
                 Scene = sat,
                 Seats = top.Seats,
                 // One of them is yours now. The room can see you sitting alone, which is the whole premise —
@@ -104,11 +120,26 @@ public partial class Map
                 Free = System.Math.Max(0, top.Seats - 1),
                 // A station bar is one loud room with a window in it: no cabinets, no curtains, nothing to
                 // dog. Both flags are the room's honest answer and not a default nobody thought about.
-                Quiet = false,
+                //
+                // #1016 · …AND THE ROOM IS THE ONE THAT ANSWERS NOW, because there are three of them. A
+                // berth's bar and the ship's own cantina are loud rooms and say false; the desk in CABIN 1
+                // is behind a door and says true, which is the exposure rung `SeatedIn` reads and therefore
+                // whether the case may be spread there unconditionally. Cabinet stays 0 everywhere here: a
+                // cabinet NUMBER is a leaf in a hall whose counter watches it close, and neither a station
+                // bar nor a boat has one.
+                Quiet = top.Quiet,
                 Cabinet = 0,
+                // #1016 · WHOSE FLOOR THIS IS. Two things hang off it and nothing else does: nobody ever
+                // crosses it to your table, and the silence when you wait is the boat's own.
+                Aboard = top.Aboard,
                 Solo = true,
                 Relaxed = relaxed,
                 DrinkInHand = drink,
+                // #1016 · …and the SHIFT travels with the sitting, because there is no excursion here to
+                // hold it. It is the one thing a fruitless wait has to ask a clock (which of the room's two
+                // silences this is), and it is the same frozen number the register above was decided on, so
+                // the opening line and the silence after it cannot come to two views of one hour.
+                Watch = top.Watch,
                 // Nobody to ask. #746's ask-to-join beat is the answer to a person, and the room does not put
                 // a takeable top under one — the table is simply taken, and the taking is the opening line.
                 Joined = true,

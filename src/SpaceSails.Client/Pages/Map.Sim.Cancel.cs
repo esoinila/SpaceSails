@@ -102,6 +102,17 @@ public partial class Map
         // nothing.
         if (WalletFanIsUp) { CloseTheWalletFan(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
+        // #1021 · THE GALLEY CARD. Here, with the cards the captain RAISED — above the click menus, which are
+        // the least modal thing in this chain, and below every card that opens without being asked for (a
+        // story beat, a death, a question about the seat you are in), because a card you went and got is
+        // never the loudest thing on the glass.
+        //
+        // It is in this chain and deliberately NOT in the Enter chain below. That chain's discipline is
+        // "only cards that ask nothing", which this card passes — but its second half is that Enter presses
+        // "the visible primary action of a card that has EXACTLY ONE", and this one has two: a way out and a
+        // tot of rum. A key that poured the rum for the captain would be the forbidden shape (#735), and a
+        // key that closed the card past a button it could equally have pressed would be a coin toss.
+        if (_galleyCardOpen) { CloseGalleyCard(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
         // #997 wave 11 · THE FOUR CLICK MENUS — FABLE'S RULING, WAVE 11.

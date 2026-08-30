@@ -455,7 +455,7 @@ public sealed class SittingDownIsAStateTests
         // NOTHING IS FILED HERE. The whole point of the hold is that an interruption has nothing to undo,
         // so a FileNote in this method would be an entry that survived a stand-up.
         Assert.DoesNotContain("FileNote(", body, StringComparison.Ordinal);
-        int begins = body.IndexOf("BeginProcessing(ex, Core.Processing.Work.Write", StringComparison.Ordinal);
+        int begins = body.IndexOf("BeginProcessing(Core.Processing.Work.Write", StringComparison.Ordinal);
         Assert.True(begins > gate, "the clock starts before the gate is asked — or does not start at all.");
 
         // …and the gate itself asks CORE, for both halves. The client decides what "seated" and "alone"
@@ -470,8 +470,11 @@ public sealed class SittingDownIsAStateTests
         int lands = seated.IndexOf("private void TheWriteUpLands(", StringComparison.Ordinal);
         string landing = seated[lands..seated.IndexOf("private bool CanWriteUp(", StringComparison.Ordinal)];
         Assert.Contains("FileNote(gist, SeatedPosture.WriteGlyph);", landing, StringComparison.Ordinal);
+        // #1016 · The register is the CASE's now — one page-level set, keyed the same way, riding the vault
+        // — because the owner ruled the table verbs are not tied to a location. The ORDER is the law and it
+        // is untouched: the set agrees first, and only then does the book take the entry.
         Assert.True(
-            landing.IndexOf("ex.WrittenUpProperly.Add(", StringComparison.Ordinal)
+            landing.IndexOf("TheRegisterTakesTheSheet(", StringComparison.Ordinal)
                 < landing.IndexOf("FileNote(", StringComparison.Ordinal),
             "the entry is filed before the once-per-item set has agreed to it.");
 

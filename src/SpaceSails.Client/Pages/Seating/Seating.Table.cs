@@ -397,17 +397,22 @@ public partial class Map
         /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
         /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can
         /// put a line of its own on the screen, so it may not run while the strip is still up. Watched go red as
-        /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para></summary>
+        /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para>
+        ///
+        /// <para><b>#784 · STANDING UP WITH A WRITE-UP HALF DUG ABANDONS IT</b>, out loud and with nothing
+        /// filed — the same promise every other interruption of #696's hold makes, spoken in the seated
+        /// register (<c>Processing.Interruption.StoodUp</c>). Done BEFORE the table goes, so the line still has
+        /// the strip to land on.</para>
+        ///
+        /// <para>#1016 · <b>…AND IT ASKS THE HOLD RATHER THAN A GROUND.</b> This read <c>_host.Surface is
+        /// { Processing.Work: Write }</c>, which made "was the captain digging" a question about a MOON: at the
+        /// eighth seat (#973 L5b, a top in a docked bar) there is no excursion, so standing up out of a
+        /// half-dug sheet ended the dig silently and left a clock running over a sitting that no longer
+        /// existed. The work this seam ends is named in the ask now, and the page answers it.</para></summary>
         public void CloseTable()
         {
-            // #784 · A SPREAD IS A SPREAD ON A TABLE. Standing up with a write-up half dug abandons it, out loud
-            // and with nothing filed — the same promise every other interruption of #696's hold makes, spoken in
-            // the seated register (Processing.Interruption.StoodUp). Done BEFORE the table goes, so the line
-            // still has the strip to land on.
-            if (_host.Surface is { Processing.Work: Core.Processing.Work.Write } ex)
-            {
-                _host.AbandonProcessing(ex, Core.Processing.Interruption.StoodUp);
-            }
+            // #784/#1016 · A SPREAD IS A SPREAD ON A TABLE, wherever the table is. See the summary.
+            _host.AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.StoodUp);
 
             // #820 · Read, then the table goes, then the body moves. See the summary.
             (double X, double Y)? step = Table?.StepOff;
@@ -497,9 +502,26 @@ public partial class Map
         // Three one-liners so the razor never has to hold a SurfaceExcursion or a TableTalk in a local. Same
         // discipline the rest of this page uses: the markup asks questions, it does not compute answers.
 
-        /// <summary>Is this move on offer?</summary>
+        /// <summary>
+        /// Is this move on offer?
+        ///
+        /// <para><b>#1016 · AND A SEAT WITH NO BUILDING UNDER IT ANSWERS PROPERLY NOW.</b> This used to open
+        /// on <c>_host.Surface</c>, which meant every button on a sitting that has no excursion behind it
+        /// rendered DISABLED: the eighth seat (#973 L5b's top in a docked station's bar) shipped with a strip
+        /// whose SIT A WHILE and Stand up were both greyed out, and the ship's own two would have inherited
+        /// it. A control that is drawn and does nothing is #603's founding complaint, and the seat was not
+        /// the thing that was wrong — the gate was.</para>
+        ///
+        /// <para>What such a seat's scene actually offers is Core's answer, unchanged: the two moves of
+        /// <see cref="SittingAlone.TheTable"/>, neither of which has a requirement to check. The room's own
+        /// clauses (a LOUD file shutting the ask, a move already made this watch) are checked where there IS
+        /// a room, because they are facts about one.</para>
+        /// </summary>
         public bool TableMoveOnOffer(Encounter.Move move) =>
-            _host.Surface is { } ex && Table is { } t && TableMoveAvailable(ex, t, move);
+            Table is { } t
+            && (_host.Surface is { } ex
+                ? TableMoveAvailable(ex, t, move)
+                : Encounter.Available(move, _host.Credits, _host.Satchel, [], t.Said));
 
         /// <summary>Why not, said out loud on the disabled control.</summary>
         public string TableMoveRefusal(Encounter.Move move) =>
@@ -524,10 +546,20 @@ public partial class Map
         /// </summary>
         private void TableMove(string moveId)
         {
-            if (_host.Surface is not { } ex || Table is not { } t)
+            if (Table is not { } t)
             {
                 return;
             }
+
+            // #973 L5b/#1016 · THE EXCURSION IS NULLABLE FROM HERE DOWN, and that is the whole of what a seat
+            // OFF a landing needed. Two of this scene's moves are about the CHAIR — stand up, and wait to see
+            // who comes — and neither has ever consulted a building: the eighth seat (a top in a docked
+            // station's bar) and the ship's own two (a cantina top, the desk in CABIN 1) are sittings with no
+            // `ex` behind them at all, and a guard that returned on the first line left them with a panel of
+            // dead buttons. Everything BELOW the wait is genuinely the hall's business — a round bought on a
+            // tab, a paper put on a table, an ask that hardens a top for the watch — and every one of those
+            // is keyed on the excursion's own ledgers, so they stay behind it.
+            SurfaceExcursion? ex = _host.Surface;
 
             // Leaving is free and never penalised. First, so nothing below can ever grow a price on it.
             if (moveId == CanteenTable.Leave)
@@ -569,6 +601,13 @@ public partial class Map
             if (moveId == SittingAlone.Wait)
             {
                 TableWaited(ex, t);
+                return;
+            }
+
+            // …and the rest of the scene IS the hall. Nothing below this line is a question a chair can
+            // answer on a boat.
+            if (ex is null)
+            {
                 return;
             }
 
@@ -709,16 +748,45 @@ public partial class Map
         /// <para>AND THE WATCH IS NOT TOUCHED. A wait is a beat inside the frozen shift (#709), never a nudge to
         /// the clock — a wait that re-dated the room would make the drawn room and the pressed room two rooms,
         /// which is this project's third named bug class.</para>
+        ///
+        /// <para>#1016 · <b>…except at the seats that have no room.</b> A top in a docked station's bar and
+        /// the ship's own two have no <c>SurfaceExcursion</c> behind them, so there is no room's ledger to
+        /// count in — the counter for those lives on the sitting (<c>TableTalk.Waits</c>). It is safe there
+        /// for the very reason the ledger exists: the number is what the APPROACH is seeded on, and nobody
+        /// ever crosses a floor to a seat aboard your own boat, so there is no roll to re-press your way
+        /// into. All the number does there is stop two silence lines saying the same one twice.</para>
         /// </summary>
-        private void TableWaited(SurfaceExcursion ex, TableTalk t)
+        private void TableWaited(SurfaceExcursion? ex, TableTalk t)
         {
-            ex.TableWaits.TryGetValue(t.Key, out int beat);
-            ex.TableWaits[t.Key] = beat + 1;
+            int beat;
+            if (ex is not null)
+            {
+                ex.TableWaits.TryGetValue(t.Key, out beat);
+                ex.TableWaits[t.Key] = beat + 1;
+            }
+            else
+            {
+                // #1016 · ABOARD, THE COUNTER IS THE SITTING'S. The room's ledger is an excursion's, and a
+                // boat has none. It is safe to keep it here for exactly one reason, and it is the reason the
+                // ledger existed: the beat number is what the APPROACH is seeded on, so a captain who stood
+                // up to reroll it would have got a free re-press. Nobody ever comes to a seat on your own
+                // ship, so there is no roll to reroll — all the number does aboard is stop the two silence
+                // lines saying the same one twice.
+                beat = t.Waits;
+                t.Waits = beat + 1;
+            }
 
             // #784 · THE BEAT IS ALSO A SHORT REST. Owner: "Sitting down relaxes and heals" / "it is like short
             // rest in TTRPG." The wait already IS the seated watch-beat, so the recovery hangs off it rather
             // than off a second clock — Map.Seated.cs owns the arithmetic and the ceiling.
-            string? rested = _host.RestOneSeatedBeat(ex, beat);
+            //
+            // #1016 · AND ABOARD IT IS SKIPPED, STATED RATHER THAN HIDDEN. The short rest's pips are counted
+            // in `ex.RestPipsEased`, per watch, on the excursion — the ship has no excursion, so a sit in her
+            // cantina gives the body nothing back today. That is a real gap and it is named here: the honest
+            // v1 is that the seat works, the wait says its line, and the ledger is not written, because the
+            // alternative is a SECOND rest ledger on the page and two answers to "how much has this watch
+            // given back" is the fault this file has already had once with a drink in it.
+            string? rested = ex is null ? null : _host.RestOneSeatedBeat(ex, beat);
 
             // #793 · …AND ON A BENCH THE BEAT IS ALSO A LOOK. Owner: "it is a good gumshoe move to see if anyone
             // is following us by foot, as they would need to stop moving also." Sitting still is what makes the
@@ -735,14 +803,26 @@ public partial class Map
             // #817 · …and NOBODY COMES INTO AN OFFICE. The staff of this building are somewhere else on a shift
             // this facility no longer runs; a stranger crossing a private suite to offer the captain work would
             // be the canteen's own scene played in a room whose whole tell is that it is empty.
-            bool comes = !t.Office
+            //
+            // #1016 · …AND NOBODY COMES ABOARD YOUR OWN SHIP, for the office's reason with a hull round it.
+            // Her crew is three droids on a fixed patrol; a haulier crossing the captain's own cantina to
+            // ask about her brother would be the canteen's scene played in the one room in the game where
+            // the player knows exactly who is aboard. It is asked FIRST because it is also the answer where
+            // there is no excursion to ask anything else of.
+            bool comes = !t.Aboard
+                && ex is not null
+                && !t.Office
                 && (!t.Bench || ParkBenches.TheOtherEndIsFree(t.SharedSeat))
                 && !ex.TableApproached.Contains(t.Key)
                 && (_host.ApproachCheat
                     ?? SittingAlone.SomebodyComes(
                         ex.Stop.Body.Id, ex.Floor, t.Index, ex.CanteenWatch, beat, t.Quiet));
 
-            if (!comes)
+            // …and the second clause is the compiler being told what the first one already guarantees: a
+            // room that could send somebody over is a room, and a room is an excursion. Written out rather
+            // than asserted, because a nullable that is "obviously" not null is how this repository has been
+            // surprised before.
+            if (!comes || ex is null)
             {
                 // #680/#736 · NOTHING HAPPENING IS AN ANSWER, and it is said on the panel the captain pressed,
                 // through the one ending every other answer at this table uses. A wait that produced silence
@@ -766,13 +846,23 @@ public partial class Map
                             // #821 · …and a CUBICLE is not an office either. A chair creaking down the row and
                             // lamps over a garden, read from inside a locked WC, would be the room's answer
                             // describing a room the captain is not in — #740's fault with a partition round it.
-                            t.CubicleKey is { Length: > 0 }
+                            // #1016 · …and A BOAT is not a building at all. Owner, on 7 Deck: "Why no table
+                            // here to sit at?" / "Why no table in cabin either?" A hall's eighty chairs and
+                            // an office's turned-off shift are both somebody else's room; what a captain
+                            // sitting in his own cantina hears is his own boat, and the cabin hears it
+                            // through a door. Quiet is which of the two, exactly as it is one line down.
+                            t.Aboard
+                                ? SittingAlone.NobodyCameAboard(t.Quiet, beat)
+                                : t.CubicleKey is { Length: > 0 }
                                 ? CubicleLock.NothingHappens(beat)
                                 : t.Office
                                 ? RingOffice.NobodyCame(beat)
                                 : t.Bench
                                     ? ParkBenches.NobodyCame(beat)
-                                    : SittingAlone.NobodyCame(ex.CanteenWatch, beat, t.Quiet),
+                                    // …and the shift is the ROOM's where there is a room, and the sitting's
+                                    // own frozen one at the seats that have no excursion behind them.
+                                    : SittingAlone.NobodyCame(
+                                        ex?.CanteenWatch ?? t.Watch, beat, t.Quiet),
                             seen),
                         rested)));
                 return;
@@ -840,10 +930,7 @@ public partial class Map
             // up… putting things away is a beat, not an instant." The privacy predicate that licensed the spread
             // reads Solo, and Solo is about to become false — so the hold ends HERE, before the flag flips, and
             // it ends the way privacy ending should end it: sleeve shut, book blank, nothing filed.
-            if (ex.Processing is { Work: Core.Processing.Work.Write })
-            {
-                _host.AbandonProcessing(ex, Core.Processing.Interruption.CompanyArrived);
-            }
+            _host.AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.CompanyArrived);
 
             t.Solo = false;
 
@@ -1097,10 +1184,19 @@ public partial class Map
         /// <para>Applies everything the answer carries: the chit into the wallet, the name in somebody's book,
         /// the ask shutting, the table hardening, the fitter opening, the temp overhearing, the pips. Nothing
         /// about WHAT a band grants is decided here; a guard forces a band and pins the state that appears.</para>
+        ///
+        /// <para><b>#1016 · AND IT IS STILL THE ONE PLACE WHEN THERE IS NO BUILDING.</b> The seats that have
+        /// no <c>SurfaceExcursion</c> behind them — a top in a docked station's bar, and the ship's own two —
+        /// reach exactly one answer, the wait beat's silence, and it carries nothing but a line. Everything
+        /// below that is written into the ROOM's ledgers (a move made this watch, an ask shut, a table
+        /// hardened) and a room is what those seats do not have. So the excursion is nullable and each write
+        /// is skipped rather than the caller being given a second ending: #680's law is that an outcome
+        /// becomes words in ONE place, and a room-less copy of this method would be a second one.</para>
         /// </summary>
-        private void TableAnswered(SurfaceExcursion ex, TableTalk t, string moveId, CanteenTable.Answer said)
+        private void TableAnswered(
+            SurfaceExcursion? ex, TableTalk t, string moveId, CanteenTable.Answer said)
         {
-            ex.TableMoves.Add(MoveKey(t, moveId));
+            ex?.TableMoves.Add(MoveKey(t, moveId));
             // #749 · …and the conversation's own memory, which is what an ANSWER is allowed to answer. The room
             // keeps the first for the watch; this one stands up when you do.
             t.Said.Add(moveId);
@@ -1111,21 +1207,21 @@ public partial class Map
             }
             if (said.ClosesTheAsk)
             {
-                ex.TableAskShut.Add(t.Key);
+                ex?.TableAskShut.Add(t.Key);
             }
             if (said.HardensTable)
             {
-                ex.TableHardened.Add(t.Key);
+                ex?.TableHardened.Add(t.Key);
             }
-            if (said.OpensFitter)
+            if (said.OpensFitter && ex is not null)
             {
                 ex.TableFitterOpen = true;
             }
-            if (said.ArmsTheTemp)
+            if (said.ArmsTheTemp && ex is not null)
             {
                 ex.TableTempOverheard = true;
             }
-            if (said.TeachesTheHouse)
+            if (said.TeachesTheHouse && ex is not null)
             {
                 ex.TableHouseWays = true;
             }
@@ -1150,7 +1246,13 @@ public partial class Map
             // #731 v2 · …AND THIS IS THE MOMENT SHE MIGHT STAND UP. Last, deliberately: the line she has just
             // said stays on the panel while she crosses the hall, which is exactly what somebody leaving in
             // the middle of a conversation leaves behind them.
-            SheMightLeadYouIn(ex, t);
+            //
+            // Nobody has stood up at a seat with no building round it, because nobody sat down opposite: the
+            // one answer those seats reach is the silence of a wait nobody came to.
+            if (ex is not null)
+            {
+                SheMightLeadYouIn(ex, t);
+            }
         }
 
         /// <summary>

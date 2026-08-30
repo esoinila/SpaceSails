@@ -79,6 +79,19 @@ public sealed class DeckPlan
         // about. #973 L0's own file said what was missing out loud: "the bar's seven tops are drawn dressing
         // with no chairs and no console", so [E] at one answered nothing. This is the console.
         BarTop,
+        // #1016 · …AND THE SAME CONSOLE IS THE SHIP'S OWN CANTINA TOPS. Owner, on 7 Deck: "Why no table
+        // here to sit at?" and "I expect to have a bar table like this in this ships galley also....
+        // feature complete." Her three drawn tops were dressing with nothing over them, which is the SAME
+        // absence #973 L0 wrote down one room over — so it is the same kind, the same verb and the same
+        // sitting, and the page's one answer (`TheBarTopUnderfoot`) says which room the press was in.
+        //
+        // #1016 · THE DESK IN THE CAPTAIN'S BERTH. Its own kind and not a re-used BarTop, for the reason
+        // every split in this list is: it is a different FIXTURE in a different room — a desk in a berth
+        // with a door, not a top in a room with a counter — and the two must be able to disagree about
+        // their plate, their setting, their privacy rung and what the room says when nobody comes. It is
+        // still the same VERB (the sitting is opened in the one place sittings are opened), which is why
+        // the dispatch arm below it is shared rather than copied.
+        ShipDesk,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.
@@ -329,6 +342,23 @@ public sealed class DeckPlan
 
     public const double InteractRadius = 3.0;
     public const double AvatarRadius = 0.7;
+
+    /// <summary>
+    /// HOW FAR APART TWO CONSOLES MUST STAND FOR THEIR LABELS TO BE SEPARATELY READABLE.
+    ///
+    /// <para>The deck audit's own law — <c>ConsoleCrowdingTests.NoTwoConsolesShareADoorstep</c>, which the
+    /// owner enforced by eye twice before it went into CI (<i>"see the two crowded consoles at the back of
+    /// our ship... add a CI check to catch all such cases"</i>). Well under twice the interact radius on
+    /// purpose: a dense bridge (helm, nav post, scope, three desks) is a deliberate design and must stay
+    /// legal; what must not happen is two dots on top of each other.</para>
+    ///
+    /// <para>#1016 · IT IS A CONSTANT HERE RATHER THAN IN THE TEST because a plan now has to be able to obey
+    /// it while it is being BUILT: the ship's cantina publishes a takeable-top console on every drawn top
+    /// that is far enough from the room's existing fixtures, and one of the three is not. A threshold typed
+    /// into the builder beside the one in the audit is two numbers for one law, which is §13.15 with a
+    /// console on it.</para>
+    /// </summary>
+    public const double LabelClearance = 2.0;
 
     /// <summary>The SHUTTLE-BAY HATCH on the ship's bottom hull (#295): the wild-side threshold the
     /// down-tube mates to, mirroring the top airlock hatch that mates the station tube. The bare ship
@@ -1040,6 +1070,19 @@ public sealed class DeckPlan
             // WELL-RESTED satiety stops it being the steady-hands grind (CabinComforts owns that law).
             new(ConsoleKind.Bunk, 12.75f, -6.5f, "BUNK 🛏"),
 
+            // #1016 · DESK ✍ — the other half of the same berth. Owner, on 7 Deck: "Why no table in cabin
+            // either?" A bunk is where you stop being awake; a desk is where you work, and the captain's
+            // own cabin is the one room aboard with a DOOR between it and the corridor, which is what makes
+            // it the ship's cabinet rung (the case may be spread there unconditionally).
+            //
+            // POSITION READ FROM CORE, exactly like the CHARGE DUMP two screens up and for the reason
+            // written there: two numbers for one console is the exact shape of every console collision this
+            // ship has had. ShipLayout.CabinDeskStation derives it from CABIN 1's own bounds and explains
+            // why the corner is the right one — it is the placement that puts the CHAIR nearer this console
+            // than the bunk, so [E] from the seat never turns in for the night.
+            new(ConsoleKind.ShipDesk,
+                (float)ShipLayout.CabinDeskStation.X, (float)ShipLayout.CabinDeskStation.Y, "DESK ✍"),
+
             // The gangway to a docked haven (go-ashore, 2026-07-07; moved to the airlock vestibule
             // 2026-07-08). In the docked complex you walk the tube; on the bare ship, pressing E here
             // just teaches "clamp on first" (see InteractAtConsole's Airlock case).
@@ -1129,6 +1172,46 @@ public sealed class DeckPlan
             ConsoleKind.ShipScuttle,
             (float)ShipLayout.ScuttleStation.X, (float)ShipLayout.ScuttleStation.Y,
             "☢ SCUTTLING CHARGES"));
+
+        // ── #1016 · A TOP THE CAPTAIN CAN TAKE, IN HIS OWN CANTINA ───────────────────────────────────
+        //
+        // Owner, on 7 Deck with the three tops drawn in front of him: "Why no table here to sit at?" — and
+        // the ruling that names the lane, "I expect to have a bar table like this in this ships galley
+        // also.... feature complete." They were dressing: drawn furniture with no console over them, so [E]
+        // there answered nothing at all. That is an ABSENCE rather than a refusal, and it is the one kind
+        // of no a player cannot read (#757's lesson in the Hive, #973 L0's in a station bar, and now here).
+        //
+        // OFF THE SAME LIST THE PEN DRAWS, never a retyped coordinate: `tables` above IS the furniture, so
+        // a top that moves takes its seat with it. §13.15 — two numbers for one fixture is this ship's own
+        // named console bug, and she has had four of them.
+        //
+        // AND NOT ON A TOP THAT WOULD SMEAR A LABEL. The middle top sits 1.5 du under the CANTINA console
+        // (11, 7.5), which is the desk that opens the galley card and must go on doing exactly that; the
+        // other two clear it by the full interact radius. So the room's own audit law decides which tops
+        // get a seat — asked of the console list ITSELF, after everything else is in it, exactly as the
+        // haven bar asks it — rather than a hand-picked pair, and a fixture that moves tomorrow is re-judged
+        // tomorrow. The seat that is not published is the honest answer for that top: its chair would be
+        // inside the galley desk's own prompt.
+        foreach (TableTop top in tables)
+        {
+            bool crowded = false;
+            foreach (ConsoleSpot spot in consoles)
+            {
+                double dx = spot.X - top.X;
+                double dy = spot.Y - top.Y;
+                if ((dx * dx) + (dy * dy) < LabelClearance * LabelClearance)
+                {
+                    crowded = true;
+                    break;
+                }
+            }
+
+            if (!crowded)
+            {
+                consoles.Add(new ConsoleSpot(
+                    ConsoleKind.BarTop, top.X, top.Y, SpaceSails.Core.SittingAlone.FreeTablePlate));
+            }
+        }
 
         // #537 · AND HER OWN SHIELDING IS FILLED TOO. Owner: "we should cover those narrow spaces … all of
         // them." All of them means hers as well — and on the ship it matters for a second reason: she is the

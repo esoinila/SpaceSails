@@ -409,22 +409,22 @@ public sealed class TheCabinetDrawsItsCurtainTests
         Assert.Equal(CabinetPrivacy.BarkThatKnows(cabinet), BarkOfTheSeat(map!));
     }
 
-    /// <summary>The processing hold on the excursion, or null when nothing is being dug — the shipping
-    /// clock, asked so the guard above can wait for the far end instead of guessing a frame count.</summary>
-    private static object? TheHold(Pages.Map map)
-    {
-        object ex = Get(map, "_surface")!;
-        return ex.GetType().GetProperty("Processing", Hidden)!.GetValue(ex);
-    }
+    /// <summary>The processing hold, or null when nothing is being dug — the shipping clock, asked so the
+    /// guard above can wait for the far end instead of guessing a frame count.
+    ///
+    /// <para>#1016 · It is the PAGE's now and no longer the excursion's. The law this helper serves is
+    /// untouched (wait for the real far end, never a frame count); what moved is where the one hold lives,
+    /// because a captain digging at a top in a docked bar has no excursion to hang a clock on.</para></summary>
+    private static object? TheHold(Pages.Map map) => Get(map, "_processing");
 
     /// <summary>What the captain has actually dug out — proof the write-up landed, so a red line below is
-    /// about the cabinet and not about a dig that never ran.</summary>
-    private static HashSet<string> TheWrittenUpRegister(Pages.Map map)
-    {
-        object ex = Get(map, "_surface")!;
-        return (HashSet<string>)ex.GetType()
-            .GetProperty("WrittenUpProperly", Hidden)!.GetValue(ex)!;
-    }
+    /// about the cabinet and not about a dig that never ran.
+    ///
+    /// <para>#1016 · The register is the CASE's now (one page-level set, vault-persisted) rather than the
+    /// excursion's, per the owner's ruling that the table verbs are not tied to a location. Same set, same
+    /// keys, one owner up.</para></summary>
+    private static HashSet<string> TheWrittenUpRegister(Pages.Map map) =>
+        (HashSet<string>)Get(map, "_workedUp")!;
 
     /// <summary>
     /// #758 · A LEAK COMES BACK AS SOMEBODY WHO KNOWS TOO MUCH, ONCE.

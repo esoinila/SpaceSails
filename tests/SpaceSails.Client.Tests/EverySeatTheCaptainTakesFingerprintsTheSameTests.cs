@@ -350,25 +350,41 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// <para><b>Proved rather than asserted.</b> Every one of the sixteen transcripts was dumped, the five new
     /// lines struck out of it and the old room clause put back, and the result hashed: all sixteen reproduce
     /// their OLD digest byte for byte. Nothing else about any sitting moved.</para>
+    ///
+    /// <para>#1016 · <b>ALL SIXTEEN AGAIN, and it is the same STATE-SHAPE kind of change with the same
+    /// proof.</b> Owner, on 7 Deck: <i>"Why no table here to sit at?"</i>, <i>"Why no table in cabin
+    /// either?"</i>, <i>"I expect to have a bar table like this in this ships galley also.... feature
+    /// complete."</i> The ship's two seats have no <c>SurfaceExcursion</c> behind them, so three facts moved
+    /// onto the sitting itself — <c>Aboard</c> (whose floor this is, which decides that nobody ever crosses
+    /// it and which silence a wait gets), <c>Waits</c> (the beat counter, which is the ROOM's ledger where
+    /// there is a room) and <c>Watch</c> (the frozen shift, likewise). Every row here is ashore on a Hive
+    /// floor, so all three are at their defaults in all sixteen: <c>Aboard = False</c>, <c>Waits = 0</c>,
+    /// <c>Watch = 0</c>.</para>
+    ///
+    /// <para><b>Proved the same way, and it is the whole of the diff.</b> The property sweep in
+    /// <see cref="Transcribe"/> was temporarily filtered to skip those three names and the suite re-run
+    /// against the OLD pins: <b>all sixteen reproduce byte for byte, 4/4 green</b>. So the only difference
+    /// between the two sides is three added lines at their defaults — no line removed, none changed, and no
+    /// seat read, pulse or card moved at all.</para>
     /// </remarks>
     private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
     {
-        ["a chair in a ring office"] = "80bc925eae015344a152ebed054b4d1f292df8063593c747cc5a54ab457aed53",
-        ["a cubicle, with the catch still open"] = "edfc3f729fdbbf4a33e2d04ebf7107204356d00448c2fbf543bd6ee160d4636d",
-        ["a free top in a cabinet"] = "1c9a833964fc6aba27a2877cd43e9fa7db46580238b1594f27970682a24fa0e5",
-        ["a free top in the hall"] = "e32b07addca197cca1e7ba0acf2f1b0012b0c9fc9a6e3f6b8537db9a1ffe4f9a",
-        ["a park bench"] = "d7a927c62724c045fc668dac8a2f3d04ed973579046eeee0c378da0e2be3a150",
-        ["a park bench with somebody on the far end"] = "a5d31eea0b88b70ba2a931fa5f4f01a8373705ef6a674af41235d324f9b0a140",
-        ["a stool at a chamber worktop"] = "7cb60c5cac757c06eb826f61cfb88056772e2979458a8066ef6f31935ff57889",
-        ["a top somebody is already at"] = "a2f0a75c2b9ccddf8658a55d7902005b42f4180d8def5caa2f9c4c6779214ca7",
-        ["a chair in a ring office (with a pour in front of you)"] = "12fc6d21654c2b953d3710f42c29aa4d11cbd18be799dc7c3ab8db94d57e16f3",
-        ["a cubicle, with the catch still open (with a pour in front of you)"] = "e169b0e4bb9a2e36a2ba2c8420121bdd38d72398476d7b755c1e35b252c5e325",
-        ["a free top in a cabinet (with a pour in front of you)"] = "5b09192fcb0e67a339bc8bef58d2b8e81701a54d7740135254b9d69cba0fd1ac",
-        ["a free top in the hall (with a pour in front of you)"] = "718deaecd05d72e6d37f9a776a4e54e17c23855febc0de708b1b091d462bb6cc",
-        ["a park bench (with a pour in front of you)"] = "b5647de2910e7c70daad51dea4eff91a365dec1b5e3f9f2c2558acebed81a944",
-        ["a park bench with somebody on the far end (with a pour in front of you)"] = "eebda863c350441f99e4840a340ccd082f405443f02adf5260fea35f7fd58f35",
-        ["a stool at a chamber worktop (with a pour in front of you)"] = "0b5c7bde7845d60cb2e5ab531af7d6dbbb06e8e8a0afc4566c936218850125a2",
-        ["a top somebody is already at (with a pour in front of you)"] = "47e26636eea85647987573649a020839b377ea2b617fbd19354ef49a61993fc6",
+        ["a chair in a ring office"] = "c30bfb1ac6c76e961ce40257e17508fa5dda1671425c621e1574ffb6d973e655",
+        ["a cubicle, with the catch still open"] = "745a236442d53c3704ffc65b02290363f69c4592eab0a298e77e760f6fe7fb4d",
+        ["a free top in a cabinet"] = "79f9e4d2647a9d961fd08345ec7038dfb33c5b3806fe313ccb2b30d68c58f644",
+        ["a free top in the hall"] = "398b3bc777f98e6f642c7579c2c7cb80afca2a6da4e850f6a964ead10724d742",
+        ["a park bench"] = "bccbab6b18ddf5fb30403e7c8e9aa9771fd64eda619ac879b3fb4d62430dc6c8",
+        ["a park bench with somebody on the far end"] = "6729c10af20cff94d3885a40822c0a8618a5a1bb821123b295985f567f154215",
+        ["a stool at a chamber worktop"] = "223a7e4780de1b17984630347387e775dcbbea142ec268b94e7755ba78bed2fa",
+        ["a top somebody is already at"] = "18d3e32c88c5f54b0f5ed48241b0321bfc65a4356cbb5067ff5956c1770cdf40",
+        ["a chair in a ring office (with a pour in front of you)"] = "f5b9f1fe6dfd071eece574bd25ffcf6675106a83911e962118702ff540597a70",
+        ["a cubicle, with the catch still open (with a pour in front of you)"] = "9e90e0ba5bc1deac80802c6f18a5892a63d0b3a2d35cda0f22e5c1c17181b27b",
+        ["a free top in a cabinet (with a pour in front of you)"] = "caad548f1511b29cde6cb360e00235122bfb08ade5512d3569df44db05707049",
+        ["a free top in the hall (with a pour in front of you)"] = "243bf2051ce058704d790b40cc530afd51ecea39046062d32f7258471cf5fdde",
+        ["a park bench (with a pour in front of you)"] = "dcfb7cea4606bf894b344a2a63226305cb9cee03faf80263eee4d379d362bc39",
+        ["a park bench with somebody on the far end (with a pour in front of you)"] = "f00675e11c4aba0d3dcd954652d4b0c69b6a767d2676d1be34ddeaf803d25410",
+        ["a stool at a chamber worktop (with a pour in front of you)"] = "d122152afed728939746cdc2f7ef4dea709a301d55e27542108fd684ad7559a8",
+        ["a top somebody is already at (with a pour in front of you)"] = "97597e98bc48c2629e660300cc29edc1a014ca00e88b16fc3c3b3ec064fba664",
     };
 
     /// <summary>
@@ -508,6 +524,16 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// <c>SurfaceExcursion</c> on a Hive floor — there is no berth in it, no docked deck and therefore no
     /// <c>BarTop</c> console to press. The sitting it opens is fingerprinted end to end by
     /// <c>TheEighthSeatIsInTheDockedBarTests</c> instead, which docks a berth and presses the top.</para>
+    ///
+    /// <para><b>#1016 · AND THE COUNT STAYS AT EIGHT WHILE THE SHIP GROWS TWO SEATS, which is the point.</b>
+    /// Owner, on 7 Deck: <i>"Why no table here to sit at?"</i>, <i>"Why no table in cabin either?"</i>, <i>"I
+    /// expect to have a bar table like this in this ships galley also.... feature complete."</i> A top in her
+    /// cantina and the desk in CABIN 1 are the same VERB as a top in a station bar, so they come through
+    /// <c>Seating.BarTop.cs · TryTakeBarTop</c> and build no ninth <c>new TableTalk</c>: what differs between
+    /// the three rooms — the plate, the setting, whether it is behind a door, whether anybody could ever walk
+    /// up — travels on the page's answer (<c>BarTopUnderfoot</c>) as VALUES. That is #870 lane 6d's own rule
+    /// kept rather than bent, and it is why this number did not move. Those two sittings are driven end to
+    /// end by <c>TheShipHasSeatsAboardTests</c>.</para>
     ///
     /// <para><b>#731 v2 · 6 → 7, and the seventh is <c>Seating.Table.cs · SheLedYouHere</c>.</b> A contact
     /// stands up mid-sentence, crosses the hall and holds a booth door open; the press that would otherwise

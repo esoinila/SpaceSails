@@ -203,7 +203,70 @@ public static class ShipLayout
         ("the builder's plate", BuildersPlateStation),
         ("the scuttling charges", ScuttleStation),
         ("the gangway placard", PlacardStation),
+        ("the cabin desk", CabinDeskStation),
     ];
+
+    // ── #1016 · A DESK IN THE CAPTAIN'S OWN BERTH ────────────────────────────────────────────────────
+    //
+    // Owner, on 7 Deck, looking at a cabin with a bunk in it and nothing else: "Why no table in cabin
+    // either?" — and, of the ship as a whole, "I expect to have a bar table like this in this ships galley
+    // also.... feature complete."
+    //
+    // IN CORE, LIKE HER OTHER STATIONS, AND FOR THE SAME REASON THE CHARGE DUMP IS. Four console collisions
+    // have shipped on this ship out of client literals, and the comment about the last of them in
+    // `DeckPlan.BuildShip` says it in the plainest terms there are: "two numbers for one console, which is
+    // the exact shape of every console collision this ship has had. One of them has to be the truth; a test
+    // can only walk the one in Core."
+
+    /// <summary>#1016 · Which berth carries the desk. CABIN 1 is the TIDY one — the berth that already has
+    /// the bunk in it, and the one the captain sleeps in.</summary>
+    public const string DeskCabin = "CABIN 1";
+
+    /// <summary>#1016 · How far a berth's own fittings stand off its walls. One deck unit clears the
+    /// captain's own body (0.7 du) with room to walk past, which is about all a 3.5 du berth can afford.</summary>
+    private const float BerthFittingInset = 1f;
+
+    /// <summary>#1016 · How many a top in her cantina seats. Four, like the station bars' — the owner's own
+    /// framing of the ask was <i>"a bar table like this in this ships galley"</i>, and it is the same
+    /// furniture. Stated once, because the panel says it in chairs and a second count would be the strip and
+    /// the picture disagreeing about how alone the captain is.</summary>
+    public const int CantinaTopSeats = 4;
+
+    /// <summary>#1016 · …and how many the desk in her berth seats. One. A desk is a place for the person
+    /// whose berth it is, and a panel offering a spare chair in a room with a bunk in it would be inventing
+    /// company this boat does not carry.</summary>
+    public const int CabinDeskSeats = 1;
+
+    /// <summary>
+    /// #1016 · HER DESK, in the forward-outboard corner of <see cref="DeskCabin"/> — <b>derived from the
+    /// berth's own bounds and never typed</b>.
+    ///
+    /// <para><b>The corner is the whole of the placement, and it is a decision about the CHAIR.</b> Her bunk
+    /// stands mid-berth (it is <see cref="Inside"/> of this very room, which is where
+    /// <c>DeckPlan.BuildShip</c> put it), and a seat's chair square is sounded one body-width off the
+    /// fixture on the first side the stone allows. In the corner the hull and the berth divider refuse three
+    /// of those four sides, so the chair lands INBOARD — two and a half du from the bunk against one and
+    /// four-tenths from the desk. That is what makes [E] answer the desk from the chair rather than putting
+    /// the captain to bed. <c>ConsoleCrowdingTests</c> holds the label clearance between the two; the
+    /// nearest-console law does the rest.</para>
+    /// </summary>
+    public static DeckReachability.Point CabinDeskStation
+    {
+        get
+        {
+            foreach (Room r in Rooms)
+            {
+                if (string.Equals(r.Name, DeskCabin, System.StringComparison.Ordinal))
+                {
+                    return new(r.X1 - BerthFittingInset, r.Y0 + BerthFittingInset);
+                }
+            }
+
+            throw new System.InvalidOperationException(
+                $"#1016 · there is no compartment called {DeskCabin} aboard, so the desk has no berth to "
+                + "stand in. Rename the constant in the same commit as the room.");
+        }
+    }
 
     /// <summary>The bridge repeater — the panel a derelict has and cannot power. On her it works, so the
     /// captain can shut the ship from the helm and only has to walk aft when the bus is out.
