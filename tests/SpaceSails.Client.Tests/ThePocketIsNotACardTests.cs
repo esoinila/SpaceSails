@@ -178,21 +178,29 @@ public sealed class ThePocketIsNotACardTests
     /// <summary>
     /// AND THE KEYBOARD'S YES STOPS AT THE POCKET RATHER THAN REACHING PAST IT. The satchel is a PAGE of
     /// many controls, not a card with one visible action, so Enter presses nothing on it — that is this
-    /// chain's founding refusal. But falling through would be worse than doing nothing: Enter would
-    /// acknowledge an arrival card the captain cannot see, spend the beat, and nothing on his screen would
-    /// move.
+    /// chain's founding refusal. But falling through would be worse than doing nothing: below the pocket sit
+    /// an arrival card Enter would acknowledge and a seat Enter would stand the captain out of, and the
+    /// pocket paints over both, so the key would spend a beat or take a chair while the only thing on the
+    /// screen did not move.
     /// </summary>
-    /// <remarks>RED if the <c>_showSatchel</c> guard is deleted, and RED if it is turned into a rung that
-    /// closes the satchel (a key that answers a card it was not asked about).</remarks>
+    /// <remarks>RED if the <c>_showSatchel</c> guard is deleted, RED if it is moved below the #784 stand-up
+    /// confirm, and RED if it is turned into a rung that closes the satchel (a key that answers a card it
+    /// was not asked about).</remarks>
     [Fact]
     public void TheEnterChainStopsAtThePocketAndPressesNothingOnIt()
     {
         string confirm = Method("Map.Sim.Cancel.cs", "private bool TryConfirmTopOverlay()");
 
         int pocket = RungAt(confirm, "if (_showSatchel) { return false; }", "the satchel's stop");
+        int standUp = RungAt(confirm, "if (TheStandUpConfirmIsUp)", "the stand-up confirm");
         int story = RungAt(confirm, "if (_storyCard is not null)", "the story card");
         int viewObject = RungAt(confirm, "if (_viewObject is not null)", "the view-object card");
 
+        Assert.True(pocket < standUp,
+            "#784's stand-up confirm is the one question Enter may answer, and the reason given is that the "
+            + "captain just asked it with his own hand on the keyboard. A satchel opened over the confirm "
+            + "(1330 over 1250) is a captain who has since gone and done something else, so the pocket "
+            + "stops the chain first (#1027).");
         Assert.True(pocket < story && pocket < viewObject);
         Assert.DoesNotContain("CloseSatchel", confirm, StringComparison.Ordinal);
     }

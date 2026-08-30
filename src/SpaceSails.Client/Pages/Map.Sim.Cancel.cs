@@ -220,6 +220,18 @@ public partial class Map
             }
         }
 
+        // #1027 · THE POCKET STOPS THIS CHAIN AND PRESSES NOTHING, and it stops it ABOVE the stand-up
+        // confirm as well as above the cards.
+        //
+        // It is not a row here — it is a PAGE of many controls (rip, bin, offer, turn to the notebook)
+        // rather than a card with exactly one visible action, which is this key's founding refusal. But
+        // falling THROUGH it would be worse than doing nothing. Below this line sit an arrival card Enter
+        // would acknowledge and a seat Enter would stand the captain out of, and the pocket (1330) paints
+        // over both: the key would spend a beat or take a chair while the only thing on the screen did not
+        // move. Above the #784 exception on purpose — that exception is justified by the captain having
+        // just asked the question with his own hand on the keyboard, and a satchel opened over the confirm
+        // is a captain who has since gone and done something else.
+        if (_showSatchel) { return false; }
         // #784 · THE ONE QUESTION THIS KEY IS ALLOWED TO ANSWER, and the exception is worth stating rather
         // than smuggling. Every other card in this method asks nothing; the stand-up confirm asks something.
         // It is here because of WHERE IT CAME FROM: it is raised by a KEY (#847 left Esc on the docked strip
@@ -241,13 +253,6 @@ public partial class Map
         if (_groundGrewOpen) { CloseGroundGrew(); return true; }
         if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
         if (_airCardOpen) { CloseAirCard(); return true; }
-        // #1027 · THE POCKET STOPS THIS CHAIN AND PRESSES NOTHING. It is in the Esc chain and it is not a
-        // row here, because it is a PAGE of many controls (rip, bin, offer, turn to the notebook) rather
-        // than a card with exactly one visible action — this key's founding refusal. But it now paints over
-        // every card below this line, so falling THROUGH it would be worse than doing nothing: Enter would
-        // acknowledge an arrival card the captain cannot see, spend the beat, and the only thing on his
-        // screen would not have moved. The chain ends here, having done nothing, which is the honest answer.
-        if (_showSatchel) { return false; }
         if (_storyCard is not null) { CloseStoryCard(); return true; }
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
