@@ -217,6 +217,25 @@ public static class SittingAlone
         "The pour is cold and it is honest about what it is. Somewhere below B4, a still is doing its quiet " +
         "best for you.";
 
+    /// <summary>
+    /// #1016 · …AND THE SAME GLASS ABOARD YOUR OWN BOAT, where B4 is three hundred million kilometres away.
+    ///
+    /// <para>Found by the #1019 crew playing it and left for the canon hand, correctly: the line above rode
+    /// to the ship's own cantina and told the captain about a still in a basement the boat has never been
+    /// near. Same beat, same two-sentence rhythm, right world — the pour aboard is the rum locker's
+    /// (<c>PourRum</c> is the one funnel), and the locker's whole character is that it is yours.</para>
+    /// </summary>
+    public const string TheDrinkAboardLine =
+        "The pour is cold and it is honest about what it is. It came out of your own locker, and nobody " +
+        "waters what they pour for themselves.";
+
+    /// <summary>#1016 · The rest with a glass, aboard. <see cref="RelaxedSitLine"/> ends on <i>nobody in
+    /// this building</i>, and a boat is not a building — the clause aboard is the boat's, and <i>she</i> is
+    /// the ship, which is how this game has always said it.</summary>
+    public const string RelaxedSitAboardLine =
+        "It feels good to sit down for a change. You put your boots up on the spare chair and let the cold " +
+        "glass sweat into your hand, and for as long as it lasts, she asks nothing of you.";
+
     /// <summary>Standing up after a rest, which is not the same sentence as standing up from a watch.</summary>
     public const string StoodUpRelaxedLine =
         "You put the chair back the way it was. The minute is over, and it was a good minute.";
@@ -235,8 +254,13 @@ public static class SittingAlone
     /// </summary>
     /// <param name="drinkInHand">Whether a pour bought at the counter is still in the captain's hand.</param>
     /// <param name="watch">The shift, frozen when the floor was drawn (#709).</param>
-    public static bool SitReadsAsRelaxed(bool drinkInHand, long watch) =>
-        drinkInHand || Fill(watch) < BusyAt;
+    /// <param name="aboard">#1016 · Whether this seat is on the captain's own ship — in which case the sit
+    /// ALWAYS reads relaxed. The watch clause above is a question about how full a public room is, and the
+    /// boat's rooms are not filled by anybody's rota: a busy hour ashore was putting the captain's back to
+    /// the wall of his own empty cantina, hands where they could be seen by nobody. Your own boat is the
+    /// rest register by construction; the glass only decides whether it gets its own sentence.</param>
+    public static bool SitReadsAsRelaxed(bool drinkInHand, long watch, bool aboard = false) =>
+        aboard || drinkInHand || Fill(watch) < BusyAt;
 
     // WHOSE DRINK, AND WHOSE REST — the seam with #784, stated once so nobody collapses the two.
     //
@@ -262,8 +286,13 @@ public static class SittingAlone
     /// <para>THE ONE PLACE the opening sentence is chosen. <see cref="TheTable"/>'s opening is this call and
     /// not a second copy of this ternary, because a scene whose first line disagreed with the line the panel
     /// prints is this project's third named bug class with prose in it.</para></summary>
-    public static string SitLine(bool relaxed, bool drinkInHand) =>
+    /// <param name="aboard">#1016 · On the captain's own ship the glass sentences are the boat's — the
+    /// counter's still and the canteen's building both live somewhere else. The dry rest is one line in both
+    /// worlds on purpose: <i>"for as long as nobody needs you, nobody needs you"</i> owns no venue, and a
+    /// second copy of it with a boat in it would be a fork with nothing on it.</param>
+    public static string SitLine(bool relaxed, bool drinkInHand, bool aboard = false) =>
         !relaxed ? TookTheTableLine
+        : drinkInHand && aboard ? RelaxedSitAboardLine + " " + TheDrinkAboardLine
         : drinkInHand ? RelaxedOpening(true) + " " + TheDrinkLine
         : RelaxedOpening(false);
 
@@ -303,11 +332,14 @@ public static class SittingAlone
     /// the line you get up on, and the picture the panel wears. <see cref="SitReadsAsRelaxed"/> is the one
     /// place that is decided; this only carries the answer into the scene.</param>
     /// <param name="drinkInHand">Whether there is a bought pour in hand, which adds its own sentence.</param>
-    public static Encounter.Scene TheTable(bool relaxed = false, bool drinkInHand = false) => new(
+    /// <param name="aboard">#1016 · Whether the table is on the captain's own ship, which picks the boat's
+    /// glass sentences over the counter's — see <see cref="SitLine"/>. The scene is otherwise the shipped
+    /// one, because the POSTURE is the same posture everywhere it exists.</param>
+    public static Encounter.Scene TheTable(bool relaxed = false, bool drinkInHand = false, bool aboard = false) => new(
         "canteen:table:alone",
         OwnTablePlate,
         Setting,
-        SitLine(relaxed, drinkInHand),
+        SitLine(relaxed, drinkInHand, aboard),
         [
             new(Wait, LabelOf(Wait)),
             new(Stand, LabelOf(Stand), Says: StoodUp(relaxed)),
@@ -497,6 +529,8 @@ public static class SittingAlone
         yield return RelaxedSitLine;
         yield return RelaxedSitDryLine;
         yield return TheDrinkLine;
+        yield return TheDrinkAboardLine;
+        yield return RelaxedSitAboardLine;
         yield return StoodUpRelaxedLine;
         yield return ApproachOpening;
         yield return WaveInLine;
