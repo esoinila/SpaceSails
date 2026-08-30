@@ -1,0 +1,68 @@
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #1021 · THE WIRE'S OWN LOOK, IN THE WIRE'S OWN FILE.
+
+   The ticker rules below are Map.razor.css's, moved WORD FOR WORD — every declaration, in order. They had
+   to move rather than be reached with `::deep`: Blazor scopes a stylesheet to the component that RENDERED
+   the element, and the strip is drawn here now. Moving them keeps the comms room byte-identical on the
+   glass and puts the rules where the markup they dress lives.
+
+   The `.news-wire*` rules are Galley.razor.css's list rules, minus the two the desk needed and the card
+   does not: the desk's `max-height: 40vh` (the guessed constant CappedScrollPanel now measures instead —
+   #993) and the desk's own `overflow-y`, which is the panel's job.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── The ticker: the comms room's top strip. A flex child of `.desk-comms-room`, so it declares its own
+   `flex: 0 0 auto` and the room's column keeps working across the component boundary. ─────────────────── */
+.comms-ticker {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.comms-ticker-label {
+    flex: 0 0 auto;
+    margin-right: 0.5rem;
+}
+
+.comms-ticker-item {
+    flex: 0 0 auto;
+    color: rgba(220, 230, 240, 0.85);
+}
+
+.comms-ticker-item + .comms-ticker-item {
+    padding-left: 1.25rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ── The long read: today's headline over the dated scrollback. The panel itself is a CappedScrollPanel,
+   which brings its own flex arithmetic — this only says how the words look. ───────────────────────────── */
+.news-wire {
+    min-width: 0;
+}
+
+.news-wire-headline {
+    font-size: 1.3rem;
+}
+
+/* #754's phone, measured at 390 x 700 with the card up: the headline is the tallest thing in the panel's
+   head, and at 1.3rem a three-clause wire item took five lines and left the dated scrollback two rows.
+   Trimmed on a narrow screen only — the desk-width reading is unchanged — and nowhere near #782's
+   readable floor of 0.875rem. */
+@media (max-width: 480px) {
+    .news-wire-headline {
+        font-size: 1.05rem;
+    }
+}
+
+/* The list's own scroll is `.capped-scroll-body`'s (the panel measures what is left after the head and
+   gives it here), so the only thing this rule owes it is a floor that is not zero on a phone. */
+.news-wire-list {
+    min-width: 0;
+}

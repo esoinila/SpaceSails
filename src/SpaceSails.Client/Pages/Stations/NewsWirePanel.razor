@@ -1,0 +1,140 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Client.Components
+@using SpaceSails.Core
+
+@* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #1021 · THE NEWS WIRE, AS A THING THAT CAN BE ANYWHERE.
+
+   Owner, on the Galley desk: "We want to keep the news feed... refactor it so it can be elsewhere also,
+   but this UI MUST GO!... This was our first version, it has no gen AI or visibility to the bar
+   surroundings. So keep the features but I want it done in pop-up style like the work the case is."
+
+   The wire was never the problem — the SCREEN it was nailed to was. So the wire comes off the screen and
+   becomes a component, and the desk it was nailed to is gone (Map.razor's desk band no longer has a Galley
+   branch; SwitchDesk(Galley) raises the pop-up card instead).
+
+   TWO CONSUMERS, WHICH IS THE WHOLE POINT OF A REFACTOR NOBODY CAN CHECK OTHERWISE. A component with one
+   caller is a file move wearing a component's clothes; #1021 asked for the feed to be able to live
+   ELSEWHERE, and the only honest proof of that is a second elsewhere it already lives in:
+
+     · <see cref="WireShape.Wire"/>  — the long scrollback: today's headline, then "Earlier on the wire"
+       under it, dated in sim-days. This is what the old full-screen Galley drew and what the pop-up card
+       (Map.razor, `.galley-card`) draws now.
+     · <see cref="WireShape.Ticker"/> — the Comms desk's one-line strip across the top of the comms room.
+       Its markup and its `.comms-ticker*` rules moved here WORD FOR WORD, scoped stylesheet and all, so
+       the comms room is byte-identical on the glass and the two readings of one feed now sit in one file.
+
+   WHY TWO SHAPES IN ONE COMPONENT RATHER THAN TWO COMPONENTS. The house already answers this:
+   <see cref="OverlayFrame"/> gives OverlayShell three disjoint bodies for one mechanism, for the reason
+   that the MECHANISM — what a surface is, what it may say, where its data comes from — is the shared part
+   and the box around it is not. Same here: one feed, one empty-state decision, one item-count rule, two
+   boxes. A ticker that drifted out of step with the long list would be the same feed telling two stories.
+
+   NO NEW PLAYER-FACING PROSE LIVES HERE. Every string on this page — "News wire 📰", "News wire 📡",
+   "No word from the wire today.", "No whispers yet.", "Earlier on the wire", the day labels — is lifted
+   verbatim from Stations/Galley.razor and from Map.razor's comms ticker. #1021 moved a UI; it wrote none.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
+@if (Shape == WireShape.Ticker)
+{
+    <div class="comms-ticker">
+        <span class="comms-ticker-label fw-bold small">News wire 📡</span>
+        @if (Shown.Count == 0)
+        {
+            <span class="comms-ticker-item text-secondary small">No whispers yet.</span>
+        }
+        else
+        {
+            @foreach (NewsWire.NewsItem item in Shown)
+            {
+                <span class="comms-ticker-item small">@item.Headline</span>
+            }
+        }
+    </div>
+}
+else
+{
+    @* #997/#993's CappedScrollPanel, and it is the house answer to the half of #1021 the owner did not
+       have to say out loud: a card is not a desk, so the wire may not push the card's own way out off the
+       bottom of a phone. The head — the label, today's headline, the "Earlier" rule — keeps its measured
+       height; the dated list is the ONE child that gives, and it scrolls there. The old desk guessed at
+       `max-height: 40vh` on the list, which is exactly the constant #993 was written to stop guessing.
+
+       `HasContent` is asked rather than assumed: a wire with nothing under today's headline has no list,
+       and a body element drawn anyway would stand an empty scroller its own floor tall under the heading. *@
+    <CappedScrollPanel class="news-wire" BodyClass="news-wire-list" BodyFloor="4rem"
+                       HasContent="@(Shown.Count > 1)">
+        <Header>
+            <div class="fw-bold mb-2">News wire 📰</div>
+            @if (Shown.Count == 0)
+            {
+                <div class="text-secondary">No word from the wire today.</div>
+            }
+            else
+            {
+                <div class="news-wire-headline mb-2">@Shown[0].Headline</div>
+                @if (Shown.Count > 1)
+                {
+                    <div class="fw-bold mb-1 text-secondary small">Earlier on the wire</div>
+                }
+            }
+        </Header>
+        <ChildContent>
+            <ul class="list-unstyled mb-0">
+                @foreach (NewsWire.NewsItem item in Shown.Skip(1))
+                {
+                    <li class="text-secondary small mb-1"><span class="text-info">@DayLabel(item.SimTime)</span> — @item.Headline</li>
+                }
+            </ul>
+        </ChildContent>
+    </CappedScrollPanel>
+}
+
+@code {
+    private const double SecondsPerDay = 86400.0;
+
+    /// <summary>Which reading of the wire this is. Named on the tag rather than inferred from the caller,
+    /// because a component that guessed at its own shape would be a component whose two consumers could
+    /// silently swap boxes when somebody moved one of them.</summary>
+    public enum WireShape
+    {
+        /// <summary>Today's headline over the dated scrollback — the pop-up card's long read.</summary>
+        Wire,
+
+        /// <summary>The one-line strip across the top of the comms room.</summary>
+        Ticker,
+    }
+
+    [Parameter] public WireShape Shape { get; set; } = WireShape.Wire;
+
+    /// <summary>The blended news feed (player events + ambient flavor), newest first — built by Map.razor's
+    /// NewsFeed helper so the card and the ticker always read from one source of truth. Handed in WHOLE:
+    /// how many of it to show is <see cref="ItemCount"/>'s business and therefore this component's, which is
+    /// the only way the two shapes can be told apart by a parameter rather than by their callers' slicing.
+    /// </summary>
+    [Parameter, EditorRequired] public IReadOnlyList<NewsWire.NewsItem> Feed { get; set; } = [];
+
+    /// <summary>How many lines this reading shows. The ticker takes the freshest few (Map's
+    /// CommsTickerItemCount); the card takes the long scrollback (GalleyFeedItemCount). How many DAYS of
+    /// ambient flavor were blended in behind them is the caller's — it is a question about the feed, asked
+    /// before it gets here.</summary>
+    [Parameter] public int ItemCount { get; set; } = int.MaxValue;
+
+    /// <summary>The current sim-time the day labels are relative to. Unused by the ticker, which prints no
+    /// dates — required all the same, because a wire that could be drawn without one is a wire whose next
+    /// shape gets its dates wrong.</summary>
+    [Parameter, EditorRequired] public double SimTime { get; set; }
+
+    private IReadOnlyList<NewsWire.NewsItem> Shown =>
+        Feed.Count <= ItemCount ? Feed : Feed.Take(ItemCount).ToList();
+
+    /// <summary>"today" / "yesterday" / "Nd ago", relative to the current sim-day — pure arithmetic, no
+    /// wall-clock, matching the determinism rule the wire itself follows.</summary>
+    private string DayLabel(double itemSimTime)
+    {
+        long today = (long)Math.Floor(SimTime / SecondsPerDay);
+        long day = (long)Math.Floor(itemSimTime / SecondsPerDay);
+        long delta = today - day;
+        return delta <= 0 ? "today" : delta == 1 ? "yesterday" : $"{delta}d ago";
+    }
+}

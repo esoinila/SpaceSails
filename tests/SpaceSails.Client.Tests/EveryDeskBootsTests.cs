@@ -80,7 +80,23 @@ public sealed class EveryDeskBootsTests
     /// flips <c>_deckMode</c> rather than raising a panel. That is a fact about the game, not a hole in this
     /// law, so the row says so out loud, <see cref="ARootThatIsAlwaysThereProvesNothing"/> excuses exactly
     /// this row, and the cell is checked on <c>_deckMode</c> instead — which is the thing the Deck desk IS.</param>
-    private sealed record Desk(ShipDesk Which, string RootClass, string WhatTheRootIs, bool OwnsNoDomRoot = false);
+    /// <param name="RaisesACardInstead">#1021 · THE GALLEY IS NOT A DESK ANY MORE. Owner, of the
+    /// full-screen Galley screen: <i>"this UI MUST GO!… keep the features but I want it done in pop-up style
+    /// like the work the case is."</i> <c>SwitchDesk(ShipDesk.Galley)</c> raises a pop-up card and never
+    /// writes <c>_activeDesk</c>, so the three questions this sweep asks of a desk — is its tab lit, is the
+    /// page at it, is its root on screen — are all the WRONG questions of this row, and asking them anyway
+    /// is how a guard ends up green on a world it never checked.
+    ///
+    /// <para>The row stays in the matrix (it is still on the tab bar and still keyed to 6, and
+    /// <see cref="ATenthDeskCannotSkipTheLaw"/> compares this table against both) and is asked the three
+    /// questions that ARE true of it instead: the card is on the screen, the desk band drew nothing for it,
+    /// and the captain is still sitting where they were.</para></param>
+    private sealed record Desk(ShipDesk Which, string RootClass, string WhatTheRootIs,
+                               bool OwnsNoDomRoot = false, bool RaisesACardInstead = false);
+
+    /// <summary>#1021 · The class the vanished Galley DESK used to wear. Named here so the sweep can prove it
+    /// is gone from the glass rather than trusting that a deleted file cannot be drawn.</summary>
+    private const string TheDeskThatWasKilled = "galley-desk";
 
     private static readonly Desk[] TheDesks =
     [
@@ -90,7 +106,8 @@ public sealed class EveryDeskBootsTests
         new(ShipDesk.WarRoom,  "war-room-desk-grid", "the war room's grid over the dimmed map"),
         new(ShipDesk.Trade,    "desk-trade-grid",    "the trading floor, master-detail"),
         new(ShipDesk.Comms,    "desk-comms-room",    "the comms room"),
-        new(ShipDesk.Galley,   "galley-desk",        "the galley"),
+        new(ShipDesk.Galley,   "galley-card",        "the galley POP-UP (#1021 killed the desk)",
+                                                     RaisesACardInstead: true),
         new(ShipDesk.Deck,     "map-canvas",         "the canvas the deck is painted on", OwnsNoDomRoot: true),
     ];
 
@@ -200,6 +217,45 @@ public sealed class EveryDeskBootsTests
             yield break;
         }
 
+        // #1021 · THE ROW THAT IS NOT A DESK. Three different questions, none of them the desk questions,
+        // and all three of them things a mistake in this migration would break:
+        //
+        //   · the CARD is on the screen — the pop-up was raised and drawn wherever the captain was sitting;
+        //   · the desk band drew NOTHING wearing the dead desk's class — proof by absence, on the glass,
+        //     rather than by "the file was deleted so it cannot render";
+        //   · the captain did NOT move — `_activeDesk` is untouched, which is what makes this a pop-up.
+        //
+        // Note what is deliberately NOT asked: which tab is lit. Exactly one tab stays lit through this cell
+        // (the desk underneath), and asserting a lit "Galley" here would be asserting the very thing the
+        // issue removed.
+        if (desk.RaisesACardInstead)
+        {
+            if (!Visible(painted, desk.RootClass))
+            {
+                yield return $"nothing on screen wears .{desk.RootClass} ({desk.WhatTheRootIs}) — asking for "
+                           + "the galley raised no card at all (#1021)";
+            }
+
+            if (painted.ClassLists.Any(list => Has(list, TheDeskThatWasKilled)))
+            {
+                yield return $"the desk band drew .{TheDeskThatWasKilled} — the full-screen Galley desk the "
+                           + "owner asked to be gone (#1021: \"this UI MUST GO!\") is back on the glass";
+            }
+
+            if (bench.ActiveDesk == desk.Which)
+            {
+                yield return $"_activeDesk is {desk.Which}: the galley became the ACTIVE DESK again, so the "
+                           + "card is a desk wearing a card's clothes (#1021)";
+            }
+
+            if (painted.NamedControls.Count == 0)
+            {
+                yield return "the page carries no named control at all";
+            }
+
+            yield break;
+        }
+
         // (2) The page agrees which desk it is at.
         string[] litTabs = [.. painted.LitDeskTabs];
         if (litTabs.Length != 1)
@@ -297,7 +353,14 @@ public sealed class EveryDeskBootsTests
 
         foreach (Desk desk in TheDesks.Where(d => !d.OwnsNoDomRoot))
         {
-            ShipDesk elsewhere = desk.Which == ShipDesk.Nav ? ShipDesk.Galley : ShipDesk.Nav;
+            // #1021 · "ELSEWHERE" HAS TO BE A DESK, and the Galley is not one any more. This used to send Nav's
+            // own row to the Galley; asking for the Galley now raises a CARD and leaves the captain sitting
+            // exactly where they were, so `.map-hud` was still up — and the guard would have reported the Nav
+            // desk as a root that is always there, which is a guard failing on a world it was handed wrongly.
+            // Comms is the alternate: a real desk, with a root of its own, that nothing else in this sweep
+            // shares. The Galley's own row still goes to Nav, which is the honest question for a card: it must
+            // NOT be on the screen while a desk the captain switched to is.
+            ShipDesk elsewhere = desk.Which == ShipDesk.Nav ? ShipDesk.Comms : ShipDesk.Nav;
             await bench.SwitchAsync(elsewhere);
             DeskBench.Painted painted = await bench.RenderAsync();
             if (Visible(painted, desk.RootClass))

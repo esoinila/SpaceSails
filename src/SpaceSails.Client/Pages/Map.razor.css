@@ -1610,33 +1610,11 @@
     min-height: 0;
 }
 
-.comms-ticker {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    overflow-x: auto;
-    white-space: nowrap;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 0.5rem;
-    padding: 0.4rem 0.75rem;
-}
-
-.comms-ticker-label {
-    flex: 0 0 auto;
-    margin-right: 0.5rem;
-}
-
-.comms-ticker-item {
-    flex: 0 0 auto;
-    color: rgba(220, 230, 240, 0.85);
-}
-
-.comms-ticker-item + .comms-ticker-item {
-    padding-left: 1.25rem;
-    border-left: 1px solid rgba(255, 255, 255, 0.15);
-}
+/* #1021 · THE TICKER'S FOUR RULES MOVED TO Stations/NewsWirePanel.razor.css, word for word. They could not
+   stay here and be reached with ::deep: Blazor scopes a rule to the component that RENDERED the element,
+   the strip is drawn by that component now, and a rule follows the markup it dresses. The room's own column
+   above is untouched — the strip declares its `flex: 0 0 auto` on itself, so it is still the first child of
+   `.desk-comms-room` and sits exactly where it always did. */
 
 .desk-comms-grid {
     /* Master-detail: the lean contacts tree takes the narrow column, the selected node's
@@ -4904,6 +4882,44 @@
 }
 
 .locked-door-try:hover { background: #e8cb9c; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #1021 · THE GALLEY CARD — the satchel's geometry, because the owner asked for the satchel's grammar
+   ("done in pop-up style like the work the case is").
+
+   ::deep because OverlayShell draws this root, and a rule without it compiles to a selector that matches
+   nothing — #996's shape, and the one TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests' dead-rule
+   guard exists to catch.
+
+   WHAT IS NOT HERE, and it is the whole point of the issue: no `background: url('art/…')`. The old desk
+   painted the-space-bar-desk.jpg under a 0.82/0.88 scrim — a photograph of a bar, blacked out, standing in
+   front of the actual bar. The card is transparent to the ROOM instead: the backdrop is the house's
+   `.view-object-backdrop`, and at the CANTINA the cantina's own art is what is behind it.
+
+   `min-height: 0` is load-bearing, not tidiness: the wire inside is a CappedScrollPanel, and a flex item
+   that has not been told it may shrink below its content will not — which is how a panel walks off the
+   bottom of a phone (#950/#993). Height is measured here, not guessed at: 92vh caps the card, the locker
+   keeps its own height, and the dated list is the one thing that gives. */
+::deep .galley-card {
+    width: min(32rem, 94vw);
+    max-height: 92vh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+/* The locker keeps its measured height above the wire — it is the half of the card you PRESS, and a
+   pressable row that scrolls away is a control the captain has to go looking for. */
+.galley-card-rum {
+    flex: 0 0 auto;
+}
 
 /* #603 · THE SATCHEL. */
 ::deep .satchel {

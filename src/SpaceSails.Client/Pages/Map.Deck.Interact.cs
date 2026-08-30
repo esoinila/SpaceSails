@@ -99,7 +99,15 @@ public partial class Map
                 ShowPulseMessage("Scope alcove: sensors online");
                 break;
             case DeckPlan.ConsoleKind.Cantina:
-                SwitchDesk(ShipDesk.Galley);
+                // #1021 · THE CANTINA HANDS YOU THE CARD AND KEEPS THE ROOM. This press used to
+                // SwitchDesk(ShipDesk.Galley) — which took the captain off the deck they were standing on and
+                // put a photograph of a bar where the actual bar had been. Owner: "it has no gen AI or
+                // visibility to the bar surroundings." Opened from here the card hangs over the cantina's own
+                // art, which IS that visibility, and no new picture was drawn for it.
+                //
+                // It deliberately does NOT switch desks — _deckMode stays as it is and the deck is still
+                // under the card. TheGalleyIsACardNotADeskTests presses this console and holds both halves.
+                OpenGalleyCard();
                 ShowPulseMessage("Cantina: galley's this way");
                 break;
             case DeckPlan.ConsoleKind.Head:

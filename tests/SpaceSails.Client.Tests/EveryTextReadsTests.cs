@@ -79,9 +79,18 @@ public sealed class EveryTextReadsTests
             .ToList();
 
         // The anti-vacuous half: the sweep has to have SEEN the pictures it is clearing.
-        Assert.True(art.Count >= 2,
-            $"the sweep found {art.Count} CSS art ground(s) — the client ships at least two "
-            + "(.galley-desk and .busted-collector-hail), so this guard is reading the wrong files and "
+        //
+        // #1021 · TWO BECAME ONE, and by a picture LEAVING rather than by the law weakening. `.galley-desk`
+        // painted the-space-bar-desk.jpg under a 0.82/0.88 scrim — a photograph of a bar, blacked out,
+        // standing in front of the actual bar — and the owner's ruling on that desk was "this UI MUST GO!…
+        // it has no gen AI or visibility to the bar surroundings." The galley is a pop-up card now and the
+        // room BEHIND it is what the captain sees, so the rule went out with the desk and its picture with
+        // it. Lowering a floor is a deliberate edit to a written-down count, made here by the change that
+        // removes the ground it counted; the law itself is untouched and still holds `.busted-collector-hail`
+        // — and the moment a second CSS art ground is written, it holds that one too.
+        Assert.True(art.Count >= 1,
+            $"the sweep found {art.Count} CSS art ground(s) — the client ships at least one "
+            + "(.busted-collector-hail), so this guard is reading the wrong files and "
             + "would pass over a picture with dark words on it.");
 
         var bare = new List<string>();
@@ -368,7 +377,9 @@ public sealed class EveryTextReadsTests
     /// own file in a failure without threading a path through every call.</summary>
     private static string FileOf(string css) =>
         css.Contains(".map-canvas", StringComparison.Ordinal) ? "Map.razor.css"
-        : css.Contains(".galley-desk", StringComparison.Ordinal) ? "Galley.razor.css"
+        // #1021 · `.galley-desk` / Galley.razor.css was here and is gone with the desk. The wire it drew
+        // lives in NewsWirePanel.razor.css now, fingerprinted on the class only that sheet declares.
+        : css.Contains(".news-wire-headline", StringComparison.Ordinal) ? "NewsWirePanel.razor.css"
         : css.Contains(".boot-screen", StringComparison.Ordinal) ? "app.css"
         : "a client stylesheet";
 
