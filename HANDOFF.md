@@ -158,5 +158,5 @@ Both write-ups live in the two files' own docblocks.
 - [x] data fix
 - [x] headless replay of the owner's scenario
 - [x] full Core suite: **4065 passed / 0 failed** (25 m 54 s, run watched 2026-08-30)
-- [ ] full Client suite (running)
+- [x] full Client suite: **1365 passed / 0 failed** (15 m 15 s, after both re-pins)
 - [ ] PR
