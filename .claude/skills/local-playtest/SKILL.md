@@ -33,6 +33,12 @@ Use the `claude-in-chrome` tools (load them via ToolSearch in ONE batched call i
 - Console: `read_console_messages` with a `pattern` filter. Network: `read_network_requests`.
 - After a fix: rebuild, **kill + restart** the server, then reload the tab — and say so, since the reload resets the owner's game state.
 
+## The owner's tab is the owner's session — full stop
+
+- **Never point the owner's tab at anything else** — not a scratch page, not a dev artifact, not a different port. Navigating it away ends the excursion the owner was in (excursions are not persisted) and destroys whatever was being reported. Burned exactly this way 2026-08-01.
+- To check your **own** work, open a **fresh tab** with `tabs_create_mcp` and drive that one. Only take over the owner's tab after its state has been read.
+- **Never `dotnet build` against the checkout that is serving the tab.** The build rewrites the fingerprinted `_framework` assets under the running server and the tab dies on the next hard reload ("Failed to fetch dynamically imported module: dotnet.<hash>.js"). Build in a different worktree — or stop the server, build, and restart as ONE step, then tell the owner to hard-reload.
+
 ## Caveats (learned the hard way)
 
 - An MCP-driven tab that is not focused is `document.hidden`: rAF throttled, timers clamped — **performance numbers from it are worthless**. Judge feel only when the owner has the tab focused.
