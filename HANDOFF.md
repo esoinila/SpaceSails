@@ -125,6 +125,32 @@ At the owner's own read — sim 178d 10h 48m, 3.60 M km behind Mars, closing at 
 
 No correction burn is needed at all: the press the owner made simply works.
 
+## THE TWO SNAPSHOT RE-PINS (both proved by dump-and-diff)
+
+The first Client run was 1339 passed / 26 failed, all of them snapshot guards. Both were
+re-taken through their own documented hooks and the diffs are small enough to read.
+
+**`EveryFrameLeavesTheSameFingerprintTests` — 25 of 30 re-recorded.**
+`SPACESAILS_SWEEP_DUMP` on old literals vs new: all thirty texts, same 743 lines, same
+742 fields. `sweep` moved on 25 rows with EXACTLY ONE field line differing, `_passes`,
+and inside it exactly two of twenty-nine passes (`cinder-roost`, `the-space-bar`).
+`map-frame buffer` moved on the five `TheMapFrameInFlight` rows: counts unchanged (8364
+floats, 24 labels), label set unchanged at 22, only ⚓ Cinder Roost / ⚓ The Rusty
+Roadstead / ⚓ The Tilt moved. No ledger row, no `walked-view pen`, no call count.
+The five `TheElectricUniverse` rows (wheel.json) are byte-identical.
+
+**`TheBootBuildsTheSameWorldTests` — 81 of 82 re-pinned.**
+`SPACESAILS_BOOT_FINGERPRINT_DUMP`, 1,913 lines either way, exactly two field lines per
+URL: `_ephemeris` (the three OrbitPeriod tokens only) and `_npcStates` (3 of 34 records,
+only `InitialState.Velocity`, every Position byte-identical). Those three are the traders
+parked at the three berths, carried along at the berth's fake speed — 46,101 → 39,349 at
+Cinder Roost, 34,020 → 25,880 at the Roadstead, 41,344 → 14,401 at The Tilt. A ship
+"parked" at Uranus was outrunning Mercury. The equality partition is preserved exactly
+(63 distinct hashes both sides over the same 82 URLs, same groupings) and the ONE URL
+that did not move is `/map?scenario=sol-eu` — the scenario with none of these berths.
+
+Both write-ups live in the two files' own docblocks.
+
 ## STATUS
 
 - [x] diagnosis (this file)
