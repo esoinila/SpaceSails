@@ -290,6 +290,14 @@ public static class NerveModel
     /// <summary>Whether this pour count is at/past the tilty-legs threshold — drunk, and past helping.</summary>
     public static bool DrunkAt(int totNumber) => totNumber >= DrunkTotCount;
 
+    /// <summary>How long a spree holds together, in real milliseconds: pour again inside this gap and it is
+    /// the SAME spree (the tot count climbs toward <see cref="DrunkTotCount"/>); leave a longer gap and the
+    /// count starts over at one. It is written down here, beside the threshold it feeds, because it is the
+    /// other half of the same law — a tot count with no window is a number that only ever goes up. #1022
+    /// reads it too, so that one visit to the counter is one spree AND one sitting: the tender's memory and
+    /// the rum ledger cannot disagree about whether the captain ever left.</summary>
+    public const double SpreeGapMs = 90_000;
+
     /// <summary>The diminishing-repeat factor for the Nth pour of a spree: the first soothes full, the
     /// second half, the drunk third-and-after nothing. Keyed off the existing tot count.</summary>
     public static double RepeatFactor(int totNumber) => totNumber switch

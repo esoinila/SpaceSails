@@ -3446,6 +3446,35 @@
                           OnClose="() => Dismiss(CloseGalleyCard)">
                 <div class="view-object-title">🍹 THE GALLEY</div>
 
+                @* #1022 · THE MAN BEHIND THE COUNTER LEADS THE CARD.
+
+                   Owner, live: "The dialog, one imagines, is a set of phrases to keep the customer talking
+                   :-D ... but there is something heart warming in those scenes at the same time."
+
+                   The picture is the gen-AI art the owner said the first version lacked, and B-7V's plate
+                   and his current line sit under it, above the locker. Order matters and it is the same
+                   argument #1021 made about the locker and the wire: the thing that TALKS to you is the top
+                   of the card, the thing you PRESS is under it, and the thing you READ is what gives.
+
+                   Every word here is Core's (SpaceSails.Core.TheTender) — this markup chooses nothing, it
+                   only draws whichever line the sitting handed back. The rare register is drawn APART from
+                   his own voice: an announcement gets its own row, indented and italic, with the line
+                   underneath it in his ordinary voice. They arrive as one TheTender.Line, so there is no
+                   way to render the first without the second. *@
+                <div class="tender-head">
+                    <img class="tender-art" src="art/b7v-the-tender.jpg" alt="" aria-hidden="true"
+                         onerror="this.style.display='none'" />
+                    <div class="tender-plate">@SpaceSails.Core.TheTender.Plate</div>
+                    @if (_tenderLine is { } tender)
+                    {
+                        @if (tender.Announcement is { } announcement)
+                        {
+                            <div class="tender-announcement">@announcement</div>
+                        }
+                        <div class="tender-line">@tender.Text</div>
+                    }
+                </div>
+
                 <div class="galley-card-rum">
                     <div class="fw-bold mb-2">The rum locker 🍹</div>
                     <div class="mb-1">Tots poured: @_rumTots</div>
