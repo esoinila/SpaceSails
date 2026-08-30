@@ -176,7 +176,14 @@ public sealed class TheNotebookIsInTheSatchelTests
         // it. The naming moved to `TheBooksNameForHere`, which the WRITER (`FileNoteAbout`) and this filter
         // both ask, so the law is stronger than it was: not "the tab uses the label" but "the tab and the
         // pen use the same one member". Every arm of it must still go through Core's format.
+        //
+        // Cut at the method's OWN closing brace. `Method` runs to the next member declaration, which here
+        // carries the field book's section header — and that header has a "·" in its rule, so a guard that
+        // forbids the separator would be reading somebody else's prose and failing on it.
         string place = Method("Map.Surface.Satchel.cs", "private string TheBooksNameForHere()");
+        int endOfBody = place.IndexOf("\n    }", StringComparison.Ordinal);
+        Assert.True(endOfBody > 0, "TheBooksNameForHere no longer closes where this guard can see it.");
+        place = place[..endOfBody];
         int arms = Regex.Matches(place, @"FieldNotes\.PlaceLabel\(").Count;
 
         Assert.True(arms >= 3,

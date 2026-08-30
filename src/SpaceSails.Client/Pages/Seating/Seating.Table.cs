@@ -397,19 +397,21 @@ public partial class Map
         /// <para>THE ORDER OF THE THREE STATEMENTS BELOW IS THE WHOLE OF THIS COMMENT. The abandon line needs
         /// the strip to land on, so the table may not go first; <c>StandCaptainAt</c> rebuilds the deck and can
         /// put a line of its own on the screen, so it may not run while the strip is still up. Watched go red as
-        /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para></summary>
+        /// <c>THE_DIG … the table is gone before the abandon line has a strip to land on</c>.</para>
+        ///
+        /// <para><b>#784 · STANDING UP WITH A WRITE-UP HALF DUG ABANDONS IT</b>, out loud and with nothing
+        /// filed — the same promise every other interruption of #696's hold makes, spoken in the seated
+        /// register (<c>Processing.Interruption.StoodUp</c>). Done BEFORE the table goes, so the line still has
+        /// the strip to land on.</para>
+        ///
+        /// <para>#1016 · <b>…AND IT ASKS THE HOLD RATHER THAN A GROUND.</b> This read <c>_host.Surface is
+        /// { Processing.Work: Write }</c>, which made "was the captain digging" a question about a MOON: at the
+        /// eighth seat (#973 L5b, a top in a docked bar) there is no excursion, so standing up out of a
+        /// half-dug sheet ended the dig silently and left a clock running over a sitting that no longer
+        /// existed. The work this seam ends is named in the ask now, and the page answers it.</para></summary>
         public void CloseTable()
         {
-            // #784 · A SPREAD IS A SPREAD ON A TABLE. Standing up with a write-up half dug abandons it, out loud
-            // and with nothing filed — the same promise every other interruption of #696's hold makes, spoken in
-            // the seated register (Processing.Interruption.StoodUp). Done BEFORE the table goes, so the line
-            // still has the strip to land on.
-            //
-            // #1016 · …AND IT ASKS THE HOLD RATHER THAN A GROUND. This read `_host.Surface is
-            // { Processing.Work: Write }`, which made "was the captain digging" a question about a moon: at the
-            // eighth seat (#973 L5b, a top in a docked bar) there is no excursion, so standing up out of a
-            // half-dug sheet ended the dig SILENTLY and left the captain wondering where their twenty seconds
-            // went. The work this seam ends is named in the ask now, and the page answers it.
+            // #784/#1016 · A SPREAD IS A SPREAD ON A TABLE, wherever the table is. See the summary.
             _host.AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.StoodUp);
 
             // #820 · Read, then the table goes, then the body moves. See the summary.
