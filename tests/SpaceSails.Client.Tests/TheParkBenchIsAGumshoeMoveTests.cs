@@ -520,7 +520,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         string beat = bench[at..bench.IndexOf("\n        // ──", at, StringComparison.Ordinal)];
 
         int away = beat.IndexOf(
-            "AbandonProcessing(ex, Core.Processing.Interruption.CompanyArrived)", StringComparison.Ordinal);
+            "AbandonProcessing(Core.Processing.Work.Write, Core.Processing.Interruption.CompanyArrived)",
+            StringComparison.Ordinal);
         int shared = beat.IndexOf("t.SharedSeat = true;", StringComparison.Ordinal);
         Assert.True(away >= 0 && shared > away,
             "the papers are not put away BEFORE the bench stops being yours — an interruption that fires "

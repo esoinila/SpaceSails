@@ -104,8 +104,8 @@ public partial class Map : Map.ISeatHost
     // ── THE SYSTEMS A SEAT SPENDS THROUGH, ASKED FOR THEIR ANSWER ─────────────────────────────────────
 
     /// <inheritdoc/>
-    void ISeatHost.AbandonProcessing(SurfaceExcursion ex, Core.Processing.Interruption why) =>
-        AbandonProcessing(ex, why);
+    void ISeatHost.AbandonProcessing(Core.Processing.Work only, Core.Processing.Interruption why) =>
+        AbandonProcessing(only, why);
 
     /// <inheritdoc/>
     void ISeatHost.ApplyNerveShock(double rawAmount, string label) => ApplyNerveShock(rawAmount, label);

@@ -122,6 +122,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             // every one at its default, because a boot has not fired anything. Nothing about what the boot
             // DOES moved: the same query writes the same values it always did.
             ["/map?badge=1"] = "a9be5729e3525fee08b45b42df990ac1",
+            ["/map?barcase=1"] = "9d0921beaef3421946272e94762cfa64",
             ["/map?bond=1"] = "83b81e054ef64191bc072e525b73d708",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "6b04d611d0a8dc6f5393e2429bee73f7",
             ["/map?converge=1"] = "7c57c271ad96f80a9837c04eb9c57a09",

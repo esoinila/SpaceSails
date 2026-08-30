@@ -134,7 +134,7 @@ public partial class Map
     //    away. The tracker keeps sweeping the whole time, which is the actual price of the room. ──
     private void OutpostDoorInteract()
     {
-        if (_surface is not { } ex || ex.AnyChannel || ex.Outpost is not { HasOutpost: true })
+        if (_surface is not { } ex || AnySlowThingUnderYourHands || ex.Outpost is not { HasOutpost: true })
         {
             return;
         }

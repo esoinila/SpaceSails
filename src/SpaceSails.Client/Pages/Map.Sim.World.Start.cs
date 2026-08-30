@@ -57,6 +57,11 @@ public partial class Map
             ShowPulseMessage(StandAtTheBarThreshold()
                 ? $"🍸 Test: you are ashore in {_havenName} — the ship → tube → hall walk is already behind you. [E] works the tables, the counter and the corners."
                 : "🍸 Test: ?ashore=1 needs a berth with a walkable interior — this one has no bar to stand in. Try &dock=the-space-bar.");
+
+            // #1016 · …and ?barcase=1 walks one leg further: onto a free top, sat down, with papers in the
+            // sleeve. Immediately after the threshold, because it needs the deck the line above welded and
+            // the coordinates it just wrote.
+            SitAtABarTopIfAsked();
         }
 
         // #428 · ?nerve=N — seed the gauge BEFORE the landing cheat rides the shuttle down and before any

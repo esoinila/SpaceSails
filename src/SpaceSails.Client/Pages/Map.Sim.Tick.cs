@@ -583,6 +583,19 @@ public partial class Map
             if (_surface is null)
             {
                 SpendTheSitBeat(dtRealSeconds);
+
+                // #1016 · …AND SO IS THE DIG'S OWN CLOCK, one issue later and for the same reason. The
+                // darkroom hold (#696) was stepped out of `StepSurface` alone, which returns on its first
+                // line when there is no excursion — so a captain digging a sheet out at a bar top in a docked
+                // berth would have sat watching a bar that could never move. Owner, 2026-08-30: "refactor the
+                // working the case etc table options to not be tied to any location."
+                //
+                // Only where the surface clock cannot reach, so no tick is ever charged twice. There is no
+                // tank to charge first here, which is why the ordering law that governs the OTHER call site
+                // (StepProcessing strictly after StepSuitAir, so a hold can never finish a frame the suit was
+                // not charged for) has nothing to say about this one: a berth is pressurised and the air sim
+                // has already, correctly, stopped running.
+                StepProcessing(dtRealSeconds);
             }
             AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
             AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned

@@ -160,12 +160,19 @@ public sealed class ProcessingTheLootTakesTimeTests
         // this surface draws the ONE progress bar (#562), so two at once is a captain watching a clock that
         // belongs to something else — which is this repo's third named bug class with a timer on it. The
         // exclusion runs both ways: the hold asks the property, and the property counts the hold.
-        Assert.Contains("ex.AnyChannel", begin, StringComparison.Ordinal);
+        //
+        // #1016 · THE PROPERTY MOVED UP ONE LEVEL AND THE LAW DID NOT. The hold left the excursion for the
+        // page (a top in a docked bar has no excursion, and the dig has to take its seconds there too), so
+        // the excursion's own AnyChannel cannot count it any more — and a captain in a berth has no
+        // excursion to ask in the first place. `AnySlowThingUnderYourHands` is the ground's channels OR the
+        // one hold, and it is what every starter asks now. Both halves of the exclusion are still pinned:
+        // the hold asks the property, and the property counts the hold.
+        Assert.Contains("AnySlowThingUnderYourHands", begin, StringComparison.Ordinal);
         Assert.Matches(
             new System.Text.RegularExpressions.Regex(
-                @"AnyChannel\s*=>[^;]*Processing is not null",
+                @"AnySlowThingUnderYourHands\s*=>[^;]*_processing is not null",
                 System.Text.RegularExpressions.RegexOptions.Singleline),
-            Pages("Map.Surface.cs"));
+            Surface());
     }
 
     [Fact]
@@ -187,7 +194,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // And the clock is cleared BEFORE the effect fires, so the effect runs in a world with no hold in it.
         // A leave that re-entered LeaveItem would otherwise meet its own clock and refuse itself — the
         // document set down nowhere, and the captain looking at a pocket that still holds it.
-        int cleared = code.IndexOf("ex.Processing = null", StringComparison.Ordinal);
+        int cleared = code.IndexOf("_processing = null", StringComparison.Ordinal);
         int fired = code.IndexOf("SetItDown(", StringComparison.Ordinal);
         Assert.True(cleared >= 0 && cleared < fired,
             "CompleteProcessing fires the effect before clearing the hold — the far end can meet its own " +
@@ -250,7 +257,10 @@ public sealed class ProcessingTheLootTakesTimeTests
         // Riding the lift counts as walking away. A captain who steps into the car with a sheet half
         // photographed is not standing on the floor they started on, and a hold that survived a floor change
         // would file a gist naming a room the captain is no longer in (#691's line says WHERE).
-        Assert.Contains("ex.Floor != hold.Floor", step, StringComparison.Ordinal);
+        // #1016 · …asked of the ONE floor answer (`TheFloorUnderfoot`), because a hold can now run where
+        // there is no excursion to have a floor: a berth deck and the captain's own boat are not floors of a
+        // building and both answer zero, exactly as the docked bar's own walkers do. Same law, one hop.
+        Assert.Contains("TheFloorUnderfoot != hold.Floor", step, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -300,6 +310,8 @@ public sealed class ProcessingTheLootTakesTimeTests
         // always had — a second bar would be a second answer to "what is the captain busy with".
         string hud = Pages("Map.Surface.Hud.cs");
         Assert.Contains("Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)", hud, StringComparison.Ordinal);
+        // #1016 · …fed by the ONE hold, which is the page's now rather than the excursion's.
+        Assert.Contains("_processing is { } paper", hud, StringComparison.Ordinal);
 
         string glyph = Method("Map.Surface.Hud.cs", "private static string SurfaceChannelGlyph(");
         Assert.Contains("Core.Processing.Glyph", glyph, StringComparison.Ordinal);
@@ -308,13 +320,16 @@ public sealed class ProcessingTheLootTakesTimeTests
         // the cost the mechanic is made of, and a soothing colour over it would be the picture arguing with
         // the sim.
         string aid = Method("Map.Surface.Hud.cs", "private static bool SurfaceChannelIsAid(");
-        Assert.Contains("ex.Processing is null", aid, StringComparison.Ordinal);
+        // #1016 · The hold is handed IN rather than read off the excursion (it is the page's now, because
+        // a dig at a top in a docked bar has no excursion under it). The method is still static and still
+        // pure, which is the part of this law worth holding.
+        Assert.Contains("hold is null", aid, StringComparison.Ordinal);
 
         // And the bright line above the keybar outranks the chest while a hold runs: for those seconds the
         // only thing left to decide is whether the boots stay put, and "hold position" without a number is an
         // instruction to wait an unknown length of time while something walks towards you.
         string prompt = Method("Map.Surface.Hud.cs", "private string? BuildStandingPrompt(");
-        Assert.Contains("ex.Processing is { } paper", prompt, StringComparison.Ordinal);
+        Assert.Contains("_processing is { } paper", prompt, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.SecondsLeft(", prompt, StringComparison.Ordinal);
     }
 
@@ -389,7 +404,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // of air out on the regolith and a cheat that quietly charged for it would make the guard above flap.
         string begin = Method("Map.Surface.Darkroom.cs", "private void BeginProcessing(");
         Assert.Contains("ProcessingSeconds <= 0", begin, StringComparison.Ordinal);
-        Assert.Contains("CompleteProcessing(ex, hold);", begin, StringComparison.Ordinal);
+        Assert.Contains("CompleteProcessing(hold);", begin, StringComparison.Ordinal);
 
         // There is deliberately no cheat for what the hold costs in AIR, because nothing computes that.
         string cheats = CodeOnly(sim);

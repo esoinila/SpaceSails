@@ -324,6 +324,23 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
             q.AshoreCheat = candidate is "1" or "true" or "yes";
         }
+        else if (pair.StartsWith("barcase=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1016 dev cheat: /map?barcase=1 is ?ashore=1 with the last leg walked — sat down at a free top
+            // in the berth's bar, with three finds in the sleeve, which is the exact seat the owner filed
+            // this issue from. Owner, 2026-08-30: "Maybe it might be good idea to refactor the working the
+            // case etc table options to not be tied to any location?"
+            //
+            // It implies the ashore walk rather than spelling a route of its own, exactly as ?spread=
+            // implies ?tablescene= one room over, and it forces nothing about the bar: which berth, which
+            // top and who else is in the room are the station's own answers.
+            string bar = Uri.UnescapeDataString(pair["barcase=".Length..]).ToLowerInvariant();
+            if (bar is "1" or "true" or "yes")
+            {
+                _barCaseCheat = true;
+                q.AshoreCheat = true;
+            }
+        }
         else if (pair.StartsWith("oldcrew=", StringComparison.OrdinalIgnoreCase))
         {
             // #973 L5a dev cheat: /map?oldcrew=1 boots ashore (default The Space Bar, override with ?dock=)

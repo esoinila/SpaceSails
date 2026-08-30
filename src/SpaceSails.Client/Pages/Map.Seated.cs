@@ -175,11 +175,12 @@ public partial class Map
 
     private void WriteItUp(Core.Satchel.Item item)
     {
-        if (_surface is not { } ex)
-        {
-            return;
-        }
-
+        // #1016 · THE GROUND USED TO BE THE FIRST GATE, and it was the wrong first gate: a captain at a top in
+        // a docked bar has no excursion, so the pen was inert and silent there — the same dead press the
+        // strip's own door was making one file over. Owner: "refactor the working the case etc table options
+        // to not be tied to any location." The gates that remain are the two a captain can actually read on
+        // the page.
+        //
         // The gates, asked of Core, in the order a captain meets them: are you sitting, and is this a seat
         // you would lay evidence out on. The client decides only what "seated" and "alone" mean; it never
         // decides what a seat is FOR.
@@ -198,7 +199,7 @@ public partial class Map
             return;
         }
 
-        if (ex.WrittenUpProperly.Contains(WrittenUpKey(item)))
+        if (AlreadyWrittenUp(item))
         {
             SayItWhereTheyAreLooking(SeatedPosture.AlreadyWrittenLine);
             return;
@@ -213,7 +214,7 @@ public partial class Map
         // The entry lands at the far end, in TheWriteUpLands, and NOTHING is filed here: an interruption has
         // to have nothing to undo, which is #696's founding discipline and the reason the set is added to
         // there rather than up here where it would survive a stand-up.
-        BeginProcessing(ex, Core.Processing.Work.Write, item, standing, null);
+        BeginProcessing(Core.Processing.Work.Write, item, standing, null);
     }
 
     /// <summary>
@@ -229,7 +230,7 @@ public partial class Map
     /// draws as its latest line), and pulses otherwise. That is #680's law read correctly for a frame with no
     /// backdrop in it: the rule was never "never pulse", it was "never pulse under a blur".</para>
     /// </summary>
-    private void TheWriteUpLands(SurfaceExcursion ex, Core.Satchel.Item item, string standing)
+    private void TheWriteUpLands(Core.Satchel.Item item, string standing)
     {
         // kept: true — the SEATED disposition. Same fact, one different clause. A book entry reading "read
         // and left on the floor of B1" directly under a sentence saying "the sheet goes back in the sleeve"
@@ -240,7 +241,7 @@ public partial class Map
         {
             return;
         }
-        if (!ex.WrittenUpProperly.Add(WrittenUpKey(item)))
+        if (!TheRegisterTakesTheSheet(item))
         {
             return;
         }
@@ -263,7 +264,12 @@ public partial class Map
         //
         // Never at an empty booked room (there is nobody to file under) and never at a hall table (nobody
         // booked it): both are asked of the sitting rather than assumed.
-        if (_seating.Table is
+        //
+        // #1016 · …and it asks for the excursion rather than being handed one. A booked cabinet is a room in
+        // a building on a moon, so this clause simply does not fire in a berth or aboard the boat — which is
+        // the honest reading of the ruling's other half: what is place-tied STAYS place-tied.
+        if (_surface is { } ex
+            && _seating.Table is
             { Who: Core.CanteenTable.Who.Stranger, Plate: { Length: > 0 } them, Cabinet: > 0 } booked
             && RoomBooking.IsABookedSitting(booked.Scene.Id))
         {
@@ -288,9 +294,8 @@ public partial class Map
     /// in the book in your own hand is done — but a captain on their FEET, or in the wrong seat, still gets
     /// the control, because the refusal is how the law is taught.</summary>
     private bool CanWriteUp(Core.Satchel.Item item) =>
-        _surface is { } ex
-        && LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
-        && !ex.WrittenUpProperly.Contains(WrittenUpKey(item));
+        LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
+        && !AlreadyWrittenUp(item);
 
     /// <summary>What the pen's tooltip says — the hint when it will work, the refusal when it will not, so
     /// the price of a press is known before the press (#696's own discipline, one control over).</summary>
@@ -301,19 +306,15 @@ public partial class Map
     /// <summary>#784 · HAS THE CASE BEGUN — is any sheet still in the sleeve already in the book? The one
     /// fact the spread door's own words switch on (owner: the button should say "we change the thing we
     /// look at" once a sheet is done): begun means <see cref="SeatedSpread.SpreadAgainLabel"/>, untouched
-    /// means <see cref="SeatedSpread.SpreadLabel"/>. Read off <c>WrittenUpProperly</c> against the sleeve
-    /// as it stands — a worked paper that was since binned no longer argues the case is open here.</summary>
+    /// means <see cref="SeatedSpread.SpreadLabel"/>. Read off the register against the sleeve as it stands —
+    /// a worked paper that was since binned no longer argues the case is open here.</summary>
     private bool CaseHasBegun
     {
         get
         {
-            if (_surface is not { } ex)
-            {
-                return false;
-            }
             foreach (Core.Satchel.Item item in _satchel)
             {
-                if (ex.WrittenUpProperly.Contains(WrittenUpKey(item)))
+                if (AlreadyWrittenUp(item))
                 {
                     return true;
                 }
@@ -372,11 +373,37 @@ public partial class Map
     /// </summary>
     private static string WrittenUpKey(Core.Satchel.Item item) => $"{item.Kind}:{item.Id}";
 
-    /// <summary>#828 · Is this sheet already in the book in the captain's own hand? The bin picker's own
-    /// question, asked of the seated register's set rather than of a second one — the dig is the only thing
-    /// that puts a paper in here, and the picker only reads.</summary>
-    private bool AlreadyWrittenUp(Core.Satchel.Item item) =>
-        _surface is { } ex && ex.WrittenUpProperly.Contains(WrittenUpKey(item));
+    /// <summary>
+    /// #784 → #1016 · <b>THE REGISTER, AND IT IS THE CASE'S RATHER THAN THE GROUND'S.</b>
+    ///
+    /// <para>It was a <c>HashSet</c> on the <see cref="SurfaceExcursion"/> — "excursion-scoped like the rest
+    /// of that block", which read as modest housekeeping and was in fact a claim: that whether a sheet has
+    /// been dug is a fact about a WALK. It is not. Fly home with the paper still in the sleeve and the pen
+    /// offered to work it again while the book already held the page; sit down in a docked bar, where there
+    /// is no excursion, and every reader answered <i>no</i> while every writer dropped its write on the
+    /// floor.</para>
+    ///
+    /// <para>Owner, 2026-08-30: <i>"Maybe it might be good idea to refactor the working the case etc table
+    /// options to not be tied to any location? Kind of clean separation from the arriving random encounters
+    /// that are more place tied events."</i> So there is ONE set, it belongs to the captain, and it rides the
+    /// vault beside the satchel and the book (<c>WorkedUpSection</c>). <b>The semantics change and that is
+    /// the ruling:</b> a sheet dug once is in the book for good, wherever you dug it.</para>
+    ///
+    /// <para>Every hand goes through the two members below and through
+    /// <see cref="WrittenUpKey"/> — the dig's gate, the dig's landing, the row's verb, the tooltip, the case
+    /// door's label and the bin picker's leading flag. There is no second register anywhere that could come
+    /// to disagree with this one, which is the whole of why the field is not exposed.</para></summary>
+    private readonly HashSet<string> _workedUp = [];
+
+    /// <summary>#828/#1016 · Is this sheet already in the book in the captain's own hand? The bin picker's
+    /// own question, asked of the one register rather than of a second one — the dig is the only thing that
+    /// puts a paper in here, and every other caller only reads.</summary>
+    private bool AlreadyWrittenUp(Core.Satchel.Item item) => _workedUp.Contains(WrittenUpKey(item));
+
+    /// <summary>#1016 · The only write. False when the sheet was already in there, which is what makes a
+    /// second dig on one paper a no-op at the far end rather than a second book entry — the same answer
+    /// <c>HashSet.Add</c> always gave, named so that the one write site reads as a decision.</summary>
+    private bool TheRegisterTakesTheSheet(Core.Satchel.Item item) => _workedUp.Add(WrittenUpKey(item));
 
     // -- #870 lane 6c · THE VERBS' FORWARDERS, AND EVERY ONE OF THEM HAS A CALLER OUTSIDE THIS FAMILY -
     //

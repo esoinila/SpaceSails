@@ -534,13 +534,13 @@ public partial class Map
             // (inside the tube), so it can never actually contend; ordering it here keeps the hands-on
             // channels reading first.
             DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress
-                ?? (ex.Processing is { } paper
+                ?? (_processing is { } paper
                     ? Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)
                     : ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
             // #562: and it says which. A shovel over a magazine being racked would be exactly the class of
             // lie this lane exists to fix; the rearm is the ship HELPING you, so it reads cold-green.
-            ChannelGlyph: SurfaceChannelGlyph(ex),
-            ChannelIsAid: SurfaceChannelIsAid(ex),
+            ChannelGlyph: SurfaceChannelGlyph(ex, _processing),
+            ChannelIsAid: SurfaceChannelIsAid(ex, _processing),
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
             // #830 law 4 · The sentence and the sweep read the same list. This is the line that told a
@@ -610,7 +610,7 @@ public partial class Map
         // still be decided is whether the captain keeps their boots where they are — and the prompt says the
         // clock, because "hold position" without a number is an instruction to wait for an unknown length of
         // time while something walks towards you.
-        if (ex.Processing is { } paper)
+        if (_processing is { } paper)
         {
             return $"{Core.Processing.Glyph} PROCESSING — hold position " +
                 $"({Core.Processing.SecondsLeft(paper.Elapsed, ProcessingSeconds):F0} s). Step away and it is lost.";
@@ -631,12 +631,15 @@ public partial class Map
     /// <summary>#562 + #696 · WHICH slow thing the one bar is showing. A ladder rather than four inline
     /// conditions at the call site, because the glyph, the tint and the PROGRESS all have to pick the same
     /// winner — and three copies of one precedence order is the shape that drifts.</summary>
-    private static string SurfaceChannelGlyph(SurfaceExcursion ex) =>
+    /// <remarks>#1016 · The hold is handed in rather than read off the excursion — it left the excursion for
+    /// the page, because a captain digging at a top in a docked bar has no excursion to hang a clock on. Still
+    /// static and still pure: which winner it picks, and in what order, is untouched.</remarks>
+    private static string SurfaceChannelGlyph(SurfaceExcursion ex, ProcessingHold? hold) =>
         ex.Channel is not null || ex.DoorChannel is not null ? "⛏"
         // #784 · …and the seated register wears the PEN, not the camera. Core.Processing.GlyphFor is the one
         // place that choice is made — the control, the bar and the book entry all read it, so the glyph over
         // a captain's head can never say "photographing" while the sim writes into the field book (#562).
-        : ex.Processing is { } hold ? Core.Processing.GlyphFor(hold.Work)
+        : hold is not null ? Core.Processing.GlyphFor(hold.Work)
         : ex.RearmBotIndex is not null ? "🔫"
         : "⛏";
 
@@ -644,8 +647,10 @@ public partial class Map
     /// amber)? Only the rearm is help. The darkroom is emphatically not: standing still in the open for
     /// twenty seconds is the cost the whole mechanic is made of, and a soothing colour over it would be the
     /// picture arguing with the sim.</summary>
-    private static bool SurfaceChannelIsAid(SurfaceExcursion ex) =>
-        ex.Channel is null && ex.DoorChannel is null && ex.Processing is null && ex.RearmBotIndex is not null;
+    /// <remarks>#1016 · The hold is handed in, for <see cref="SurfaceChannelGlyph"/>'s reason one method
+    /// along. The answer is the same answer.</remarks>
+    private static bool SurfaceChannelIsAid(SurfaceExcursion ex, ProcessingHold? hold) =>
+        ex.Channel is null && ex.DoorChannel is null && hold is null && ex.RearmBotIndex is not null;
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
     // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.

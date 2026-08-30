@@ -264,7 +264,7 @@ public sealed class TheDisposalYouWatchTests
     /// law and is guarded in <c>SittingIsNotACutsceneTests</c>, and re-asserting it here would be a second
     /// answer to somebody else's question.</para>
     ///
-    /// <para><b>Proven RED</b> by script-deleting the <c>ex.WrittenUpProperly.Add(...)</c> line from
+    /// <para><b>Proven RED</b> by script-deleting the <c>TheRegisterTakesTheSheet(...)</c> line from
     /// <c>TheWriteUpLands</c> — a dig that files the entry and forgets it dug:</para>
     /// <code>
     /// Paper hive:doc:a: a sheet that has been dug still shows as unworked in the picker.
@@ -289,8 +289,10 @@ public sealed class TheDisposalYouWatchTests
                     StringComparison.Ordinal);
 
                 // THE DIG's far end — the entry lands and the register learns it.
-                Invoke(map, "TheWriteUpLands", Get(map, "_surface")!, item,
-                    Invoke<string>(map, "WhereYouAreStanding"));
+                // #1016 · No excursion is handed over any more — the write-up is the CASE's act and the
+                // register it writes into is the page's, so the far end takes the sheet and where you were
+                // standing, and nothing else.
+                Invoke(map, "TheWriteUpLands", item, Invoke<string>(map, "WhereYouAreStanding"));
                 dug++;
 
                 // AFTER: it is in the book, and the warning is gone. Both halves, because a flag that
@@ -332,8 +334,9 @@ public sealed class TheDisposalYouWatchTests
 
         if (worked)
         {
-            ((HashSet<string>)exType.GetProperty("WrittenUpProperly")!.GetValue(ex)!)
-                .Add($"{paper.Kind}:{paper.Id}");
+            // #1016 · The register is the CASE's now — one page-level set that rides the vault — because the
+            // owner ruled the table verbs are not tied to a location. Same keys, same law, one owner up.
+            ((HashSet<string>)Get(map, "_workedUp")!).Add($"{paper.Kind}:{paper.Id}");
         }
 
         Set(map, "_surface", ex);
@@ -354,11 +357,9 @@ public sealed class TheDisposalYouWatchTests
     private static void Step(Pages.Map map, double seconds) =>
         typeof(Pages.Map).GetMethod("StepProcessing", Hidden)!.Invoke(map, [seconds]);
 
-    private static object? TheHold(Pages.Map map)
-    {
-        object ex = Get(map, "_surface")!;
-        return ex.GetType().GetProperty("Processing")!.GetValue(ex);
-    }
+    /// <summary>#1016 · The one hold, on the page rather than on the excursion — a berth has no excursion
+    /// and the dig has to take its seconds there too.</summary>
+    private static object? TheHold(Pages.Map map) => Get(map, "_processing");
 
     private static object? TheHoldsWork(Pages.Map map) =>
         TheHold(map)?.GetType().GetProperty("Work")!.GetValue(TheHold(map));
@@ -372,12 +373,8 @@ public sealed class TheDisposalYouWatchTests
     private static IReadOnlyList<string> TheThreads(Pages.Map map) =>
         [.. ((List<CaseThreads.Thread>)Get(map, "_caseThreads")!).Select(t => t.ToString())];
 
-    private static IReadOnlyList<string> TheRegister(Pages.Map map)
-    {
-        object ex = Get(map, "_surface")!;
-        var set = (HashSet<string>)ex.GetType().GetProperty("WrittenUpProperly")!.GetValue(ex)!;
-        return [.. set.OrderBy(s => s, StringComparer.Ordinal)];
-    }
+    private static IReadOnlyList<string> TheRegister(Pages.Map map) =>
+        [.. ((HashSet<string>)Get(map, "_workedUp")!).OrderBy(s => s, StringComparer.Ordinal)];
 
     private static string? WhatWasSaid(Pages.Map map) => (string?)Get(map, "_satchelOutcome");
 

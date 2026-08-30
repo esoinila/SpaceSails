@@ -338,6 +338,18 @@ public static class DevStarts
         new("🪞", "You look different",
             "Ashore at the bar with the four who served with you working this berth and one captain already in the ground — the face scene, the photograph, and the three modifiers an old shipmate puts on a glass (#973 L5a).",
             "/map?oldcrew=1"),
+        // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work
+        // the case", and nothing happened at all — the seat verbs were every one of them gated on a
+        // SurfaceExcursion and a berth has none. Owner: "Maybe it might be good idea to refactor the working
+        // the case etc table options to not be tied to any location? Kind of clean separation from the
+        // arriving random encounters that are more place tied events." This is the seat he was in.
+        new("🗂🍸", "Working the case at a bar top, with no ground under you",
+            "Ashore at the berth's bar, sat down at a free top through the same [E] a player presses, with "
+            + "three finds in the sleeve and NO excursion anywhere in the world. Press \"Work the case\" on "
+            + "the strip and then dig a paper: the bar fills on the strip, the entry lands in the detective "
+            + "book filed under the bar's own name, the sheet stays in your sleeve — and the register "
+            + "remembers it across a save, because a sheet dug once is dug for good (#1016, #973 L5b).",
+            "/map?barcase=1"),
 
         // --- Set pieces --------------------------------------------------------------------------------
         // #777 · THE HAIL, AND IT IS COUNTED NOW. ?death=collector has existed since #621 with only a row in

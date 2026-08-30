@@ -313,7 +313,7 @@ public sealed class SittingIsNotACutsceneTests
         string surface = Surface();
 
         // ONE CHANNEL: the write starts #696's hold rather than a clock of its own.
-        Assert.Contains("BeginProcessing(ex, Core.Processing.Work.Write, item, standing, null);", seated,
+        Assert.Contains("BeginProcessing(Core.Processing.Work.Write, item, standing, null);", seated,
             StringComparison.Ordinal);
         Assert.DoesNotContain("_writeChannel", seated, StringComparison.Ordinal);
         Assert.DoesNotContain("SecondsPerWriteUp", seated + surface, StringComparison.Ordinal);
@@ -332,7 +332,7 @@ public sealed class SittingIsNotACutsceneTests
         string stepBody = surface[step..(step + 900)];
         int done = stepBody.IndexOf("Core.Processing.Done(hold.Elapsed, ProcessingSeconds)",
             StringComparison.Ordinal);
-        int fires = stepBody.IndexOf("CompleteProcessing(ex, hold);", StringComparison.Ordinal);
+        int fires = stepBody.IndexOf("CompleteProcessing(hold);", StringComparison.Ordinal);
         Assert.True(done > 0 && fires > done,
             "the hold completes without the clock being asked whether it is full.");
         Assert.Contains("hold.Elapsed += dtRealSeconds;", stepBody, StringComparison.Ordinal);
@@ -340,7 +340,7 @@ public sealed class SittingIsNotACutsceneTests
         int begin = surface.IndexOf("private void BeginProcessing(", StringComparison.Ordinal);
         string beginBody = surface[begin..step];
         int zero = beginBody.IndexOf("if (ProcessingSeconds <= 0)", StringComparison.Ordinal);
-        int instant = beginBody.IndexOf("CompleteProcessing(ex, hold);", StringComparison.Ordinal);
+        int instant = beginBody.IndexOf("CompleteProcessing(hold);", StringComparison.Ordinal);
         Assert.True(zero > 0 && instant > zero,
             "a hold completes at the moment it starts, with no cheat asked and no clock run.");
 
@@ -359,7 +359,7 @@ public sealed class SittingIsNotACutsceneTests
         int setDown = completeBody.IndexOf("SetItDown(ex, hold.Item", StringComparison.Ordinal);
         Assert.True(write > 0, "the far end has no arm for the seated register at all.");
         Assert.True(setDown > write, "the seated write-up falls through into the leave-it-behind ending.");
-        Assert.Contains("TheWriteUpLands(ex, hold.Item, hold.Standing);", completeBody,
+        Assert.Contains("TheWriteUpLands(hold.Item, hold.Standing);", completeBody,
             StringComparison.Ordinal);
 
         // …and the entry goes into the ONE book, through the one seam, glyphed with the pen.
@@ -454,7 +454,11 @@ public sealed class SittingIsNotACutsceneTests
         string fracBody = surface[frac..(frac + 260)];
         Assert.Contains("Core.Processing.Fraction(dug.Elapsed, ProcessingSeconds)", fracBody,
             StringComparison.Ordinal);
-        Assert.Contains("_surface is { Processing: { } dug }", fracBody, StringComparison.Ordinal);
+        // #1016 · The hold is the PAGE's, so the strip's fraction reads it directly. That is what makes the
+        // bar able to fill at a top in a docked bar, where there is no excursion for it to have hung on —
+        // and it is the only progress a berth has, since BuildSurfaceHud (and so the deck rectangle) returns
+        // null off an excursion by construction.
+        Assert.Contains("_processing is { } dug", fracBody, StringComparison.Ordinal);
 
         // THE DECK RECTANGLE STAYS. The owner asked for a second read, not for the first one to move —
         // "keep the deck rectangle (it's honest at a glance from afar)".

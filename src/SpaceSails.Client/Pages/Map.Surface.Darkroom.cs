@@ -32,10 +32,45 @@ public partial class Map
     /// keybar hint and the satchel's own leave hint can never be running different numbers.</summary>
     private double ProcessingSeconds => _processCheatSeconds ?? Core.Processing.SecondsPerDocument;
 
+    /// <summary>
+    /// #696 → #1016 · <b>THE ONE HOLD, AND IT IS THE PAGE'S NOW.</b>
+    ///
+    /// <para>It rode the <c>SurfaceExcursion</c> from #696 until the owner's ruling of 2026-08-30:
+    /// <i>"Maybe it might be good idea to refactor the working the case etc table options to not be tied to
+    /// any location? Kind of clean separation from the arriving random encounters that are more place tied
+    /// events."</i> The eighth seat (#973 L5b — a top in a docked station's bar) has no excursion, so a hold
+    /// that lived on one could not exist there: <c>OpenTheSpread</c> returned on its first line, the button
+    /// was live and dead, and the owner pressed <b>Work the case</b> in The Stormwatch Bar and got nothing.
+    /// </para>
+    ///
+    /// <para><b>Still exactly one clock.</b> Moving the field is the whole of the change — every reader and
+    /// every writer in the game asks this member, the arithmetic is still <see cref="Core.Processing"/>'s,
+    /// the bar is still the one bar, and the excursion-only costs stay excursion-only because they were never
+    /// in here to begin with (see <c>TheDarkroomHasNeverHeardOfTheTank</c>: the air prices sim time out on
+    /// the ground and prices nothing in a pressurised berth, without one line of this file knowing it).</para>
+    ///
+    /// <para>Never saved. A half-photographed sheet is not a possession — what IS durable is the register at
+    /// the far end (<c>_workedUp</c>), which is the thing this issue made a fact about the case.</para>
+    /// </summary>
+    private ProcessingHold? _processing;
+
+    /// <summary>#1016 · IS A BAR ALREADY FILLING UNDER THE CAPTAIN'S HANDS? The ground's channels
+    /// (<see cref="SurfaceExcursion.AnyChannel"/> — a dig, a door-force, a drill) OR the one darkroom hold,
+    /// which is no longer one of them because it is no longer the ground's. Every [E] that starts a slow
+    /// thing asks THIS, so the mutual exclusion #562 wrote is still one question with one answer on every
+    /// ground the captain can stand on — including the ones with no ground at all.</summary>
+    private bool AnySlowThingUnderYourHands =>
+        _processing is not null || _surface is { AnyChannel: true };
+
+    /// <summary>#1016 · Which floor the boots are on, for the one comparison a running hold makes. Under a
+    /// moon it is the excursion's; a berth deck and the captain's own boat are not floors of a building, and
+    /// they answer zero exactly as the docked bar's own walkers do (<c>BarIsNotAFloor</c>). Stated once, so
+    /// the hold's anchor and the check against it cannot be measured off two different ideas of a floor.</summary>
+    private int TheFloorUnderfoot => _surface?.Floor ?? 0;
+
     /// <summary>#696 · Take the document out and start the clock. The item is NOT removed and nothing is
     /// filed: everything happens at the far end, so an interruption has nothing to undo.</summary>
     private void BeginProcessing(
-        SurfaceExcursion ex,
         Core.Processing.Work work,
         Core.Satchel.Item item,
         string standing,
@@ -46,7 +81,7 @@ public partial class Map
         // One pair of hands. The satchel shuts on the way in, but the captain can open it again with I and
         // press the row a second time — and a control that does nothing and says nothing is indistinguishable
         // from a bug (#603), so the refusal is a sentence.
-        if (ex.Processing is { } already)
+        if (_processing is { } already)
         {
             SayItWhereTheyAreLooking(Core.Processing.AlreadyBusyLine(already.Work, already.Label));
             return;
@@ -55,8 +90,9 @@ public partial class Map
         // And a shovel already in the ground is the same objection wearing a different glyph: every channel
         // on this surface draws the ONE progress bar (#562), so two at once is a captain watching a clock
         // that belongs to something else. The dig, the door-force and the drill all ask this same property
-        // before they start.
-        if (ex.AnyChannel)
+        // before they start. (#1016 · the property counts the hold from one level up now — the hold is the
+        // page's, so a ground that has none still answers for the ground's own channels.)
+        if (AnySlowThingUnderYourHands)
         {
             return;
         }
@@ -68,11 +104,11 @@ public partial class Map
             Label = label,
             AnchorX = _avatarX,
             AnchorY = _avatarY,
-            Floor = ex.Floor,
+            Floor = TheFloorUnderfoot,
             Standing = standing,
             At = at,
         };
-        ex.Processing = hold;
+        _processing = hold;
 
         // The pocket goes away so the fan comes back. See the note above — this is the one place the #691
         // "satchel stays open" call is deliberately reversed, and the reason is that the vulnerability IS
@@ -86,7 +122,7 @@ public partial class Map
         // captain to stand still and then does not is a build whose prose has stopped being true.
         if (ProcessingSeconds <= 0)
         {
-            CompleteProcessing(ex, hold);
+            CompleteProcessing(hold);
             return;
         }
 
@@ -99,43 +135,54 @@ public partial class Map
     ///
     /// <para>There is no air arithmetic in this method and there must never be any. StepSurface calls
     /// StepSuitAir on the same tick with the same dt, whatever this returns, so the hold is priced by where
-    /// the captain is standing without one line here knowing that a tank exists.</para></summary>
+    /// the captain is standing without one line here knowing that a tank exists.</para>
+    ///
+    /// <para>#1016 · It is stepped from TWO frames now, and never from both on one tick: the surface tick
+    /// (after the tank, see StepSurface) whenever there IS an excursion, and the walked frame's
+    /// no-excursion branch (Map.Sim.Tick, beside the sit beat, which was split ashore for the same reason in
+    /// #973 L5b) when there is not. A berth has no suit to charge, which is why the ordering law that governs
+    /// the first call site has nothing to say about the second.</para></summary>
     private void StepProcessing(double dtRealSeconds)
     {
-        if (_surface is not { Processing: { } hold } ex)
+        if (_processing is not { } hold)
         {
             return;
         }
 
-        if (ex.Floor != hold.Floor
+        if (TheFloorUnderfoot != hold.Floor
             || Core.Processing.Wandered(hold.AnchorX, hold.AnchorY, _avatarX, _avatarY))
         {
-            AbandonProcessing(ex, Core.Processing.Interruption.Walked);
+            AbandonProcessing(Core.Processing.Interruption.Walked);
             return;
         }
 
         hold.Elapsed += dtRealSeconds;
         if (Core.Processing.Done(hold.Elapsed, ProcessingSeconds))
         {
-            CompleteProcessing(ex, hold);
+            CompleteProcessing(hold);
         }
     }
 
     /// <summary>#696 · The far end. The hold clears FIRST, so the effect it fires runs in a world with no
     /// hold in it — a leave that re-entered <see cref="LeaveItem"/> would otherwise meet its own clock and
     /// refuse itself.</summary>
-    private void CompleteProcessing(SurfaceExcursion ex, ProcessingHold hold)
+    private void CompleteProcessing(ProcessingHold hold)
     {
-        ex.Processing = null;
+        _processing = null;
         RendererInterop.PlayCue("board");
 
         // #784 · THE SEATED REGISTER'S FAR END. Same hold, same bar, same twenty seconds — a different
         // ending, because what a table buys is not a better fact: it is the sheet still being in your pocket
         // afterwards. So this returns WITHOUT calling SetItDown, which is the entire difference between
         // digging a paper out at a table and photographing it to leave it on the ground.
+        //
+        // #1016 · …and it is the ONE arm of this far end that asks for no ground. A write-up is a captain, a
+        // chair and a sheet; the three below all name something that is only out there (a bucket, a bulkhead
+        // with a reader on it, a square of regolith to put a thing down on), so they keep the excursion they
+        // have always needed and simply do not fire in a berth.
         if (hold.Work == Core.Processing.Work.Write)
         {
-            TheWriteUpLands(ex, hold.Item, hold.Standing);
+            TheWriteUpLands(hold.Item, hold.Standing);
             return;
         }
 
@@ -159,27 +206,48 @@ public partial class Map
             return;
         }
 
-        SetItDown(ex, hold.Item, hold.Standing);
+        if (_surface is { } ex)
+        {
+            SetItDown(ex, hold.Item, hold.Standing);
+        }
     }
 
     /// <summary>#696 · Cancel honestly. Nothing filed, nothing consumed, the paper still in the sleeve — and
     /// ONE line saying so, because a twenty-second investment that evaporates in silence reads as a lost
     /// press rather than as a decision the world took away from you.</summary>
-    private void AbandonProcessing(SurfaceExcursion ex, Core.Processing.Interruption why)
+    /// <summary>#1016 · End the hold <b>only if it is this kind of work</b>, out loud. The seat family's
+    /// three privacy seams — standing up, somebody taking the chair opposite, somebody taking the far end of a
+    /// plank — end a DIG and nothing else: a leave or a shredding is not privacy being revoked.
+    ///
+    /// <para>They used to make that discrimination by reading <c>Surface.Processing.Work</c>, which is a
+    /// reach through a GROUND into a clock, and it was a reach that answered "no dig" at the one seat with no
+    /// ground under it (#973 L5b's bar top) — so a captain who stood up mid-sheet in a berth lost their
+    /// twenty seconds in silence. One overload instead, so the seat asks for an ANSWER rather than for the
+    /// machinery, and the family's ask on <see cref="ISeatHost"/> stays exactly the size it was.</para></summary>
+    private void AbandonProcessing(Core.Processing.Work only, Core.Processing.Interruption why)
     {
-        if (ex.Processing is not { } hold)
+        if (_processing is { Work: { } running } && running == only)
+        {
+            AbandonProcessing(why);
+        }
+    }
+
+    /// <inheritdoc cref="AbandonProcessing(Core.Processing.Work, Core.Processing.Interruption)"/>
+    private void AbandonProcessing(Core.Processing.Interruption why)
+    {
+        if (_processing is not { } hold)
         {
             return;
         }
 
-        ex.Processing = null;
+        _processing = null;
         SayItWhereTheyAreLooking(Core.Processing.AbandonedLine(hold.Work, hold.Label, why));
     }
 
     /// <summary>#696 · What the satchel says while a hold runs, or null when nothing is under the captain's
     /// hands. Composed in Core so the dialog and the standing prompt cannot grow two vocabularies for one
     /// clock.</summary>
-    private string? ProcessingUnderway() => _surface is { Processing: { } hold }
+    private string? ProcessingUnderway() => _processing is { } hold
         ? Core.Processing.HoldLine(hold.Work, hold.Label,
             Core.Processing.SecondsLeft(hold.Elapsed, ProcessingSeconds))
         : null;
@@ -195,8 +263,17 @@ public partial class Map
     /// <para>It is <see cref="Core.Processing.Fraction"/> — the SAME call the deck rectangle is fed by (see
     /// <c>DigProgress</c> in the surface HUD) — so the strip's bar and the deck's rectangle cannot come to
     /// disagree about how far along one dig is. Two arithmetics for one clock is this repo's two-clocks
-    /// class, and it is cheaper to not have than to guard.</para></summary>
-    private double? ProcessingFraction() => _surface is { Processing: { } dug }
+    /// class, and it is cheaper to not have than to guard.</para>
+    ///
+    /// <para>#1016 · AND IT IS THE ONLY BAR A DOCKED BERTH HAS. There is no <c>SurfaceHud</c> off an
+    /// excursion — <c>BuildSurfaceHud</c> returns null on its first line — so the deck rectangle the surface
+    /// dig also wears simply is not drawn in a station bar, and manufacturing a hud to carry it would light
+    /// the moon's instruments (the motion fan, the nerve gauge, the regolith keybar) inside The Stormwatch
+    /// Bar. What the seated captain gets is the read the owner asked for when he asked for this bar at all —
+    /// <i>"it might be good to have it on the dialog… took me a while to notice it"</i> — at the strip's own
+    /// width, fed by the same <see cref="Core.Processing.Fraction"/>. Same clock, same fraction, same
+    /// markup.</para></summary>
+    private double? ProcessingFraction() => _processing is { } dug
         ? Core.Processing.Fraction(dug.Elapsed, ProcessingSeconds)
         : null;
 
@@ -218,13 +295,7 @@ public partial class Map
     /// once per walk per threshold (the warnings are one-shot), so it is a beat and never a lockout: the
     /// captain may start the same hold again on the next press and finish it on the reserve if that is the
     /// decision they want to take.</para></summary>
-    private void ProcessingIsInterrupted(Core.Processing.Interruption why)
-    {
-        if (_surface is { Processing: not null } ex)
-        {
-            AbandonProcessing(ex, why);
-        }
-    }
+    private void ProcessingIsInterrupted(Core.Processing.Interruption why) => AbandonProcessing(why);
 
     // ── #697 · THE WALLET IS ONE THING, AND IT COMES OUT ALL AT ONCE ────────────────────────────────────
     //
@@ -297,9 +368,9 @@ public partial class Map
         // presses share (#697) — putting a clock inside it would put a clock in front of a wallet fan too.
         // Nothing else about the ending moves: the far end calls it with the same three arguments this line
         // would have.
-        if (_surface is { } ex && item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        if (_surface is not null && item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
         {
-            BeginProcessing(ex, Core.Processing.Work.Read, item, WhereYouAreStanding(), at);
+            BeginProcessing(Core.Processing.Work.Read, item, WhereYouAreStanding(), at);
             return;
         }
 

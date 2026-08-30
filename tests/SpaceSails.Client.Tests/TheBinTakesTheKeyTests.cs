@@ -228,7 +228,7 @@ public sealed class TheBinTakesTheKeyTests
 
         foreach (string hand in new[]
         {
-            "Satchel.Remove", "FileNote(", "_fieldNotes", "_caseThreads", "WrittenUpProperly",
+            "Satchel.Remove", "FileNote(", "_fieldNotes", "_caseThreads", "_workedUp",
             "RequestVaultSave", "disabled=",
         })
         {
@@ -296,7 +296,9 @@ public sealed class TheBinTakesTheKeyTests
         SetProp(ex, "Site", new LandingSite(0, LandingSiteKind.WildPlain, "The Wild Plain", "", ""));
         SetProp(ex, "Floor", level);
 
-        var register = (HashSet<string>)exType.GetProperty("WrittenUpProperly")!.GetValue(ex)!;
+        // #1016 · The register is the CASE's now: one page-level set, vault-persisted, because the owner
+        // ruled the table verbs are not tied to a location. Same keys, same law, one owner up.
+        var register = (HashSet<string>)Get(map, "_workedUp")!;
         foreach (Satchel.Item item in worked)
         {
             register.Add($"{item.Kind}:{item.Id}");
