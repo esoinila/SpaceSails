@@ -4921,6 +4921,60 @@
     flex: 0 0 auto;
 }
 
+/* #1022 · THE TENDER'S HEAD — the picture, the plate, and whatever he is saying. Fixed like the locker
+   for the same reason: he is the top of the card, and a speaker who scrolls away is a speaker you stop
+   hearing. The card's own 92vh cap and the wire's CappedScrollPanel still absorb everything, so the page
+   itself never scrolls — measured at 390 x 700, which is where #1021 was measured. */
+.tender-head {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* 16:9, and CAPPED IN VIEWPORT HEIGHT rather than pixels: on a phone the picture gives way first, because
+   the words under it are the feature and the picture is the room they are said in. object-fit crops rather
+   than squashes, so the counter stays a counter at every width. */
+.tender-art {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 20vh;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(255, 180, 90, 0.25);
+}
+
+/* #782's floor, kept deliberately: 0.875rem is 14 px at the root size, which is the smallest the owner
+   asked to be able to read on a phone. A speaker's name is not decoration. */
+.tender-plate {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #e6b35c;
+}
+
+/* His own voice: what he says to you, across the counter. */
+.tender-line {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cfdae8;
+}
+
+/* THE OTHER REGISTER, drawn as a different thing entirely — indented off his own line, italic, and in the
+   brass of the fitting rather than the blue of the room. Nothing here explains it and nothing should: the
+   change of register IS the whole telling. */
+.tender-announcement {
+    margin: 0.15rem 0 0 0.9rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid rgba(214, 178, 112, 0.45);
+    font-style: italic;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    color: #d6b270;
+}
+
 /* #603 · THE SATCHEL. */
 ::deep .satchel {
     width: min(32rem, 94vw);
