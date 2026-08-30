@@ -28,6 +28,8 @@ public sealed class HudCollisionTests : IAsyncLifetime
 {
     private static readonly float BootTimeoutMs = 180_000;
 
+    private static readonly float ActionTimeoutMs = 30_000;
+
     /// <summary>
     /// The HUD controls that share the deck with the canvas gauges. Named rather than globbed so a NEW control
     /// has to be added here deliberately — which is the moment somebody asks where it goes, which is the moment
@@ -356,6 +358,130 @@ public sealed class HudCollisionTests : IAsyncLifetime
             + $"Plotting panel (x {b.X:0}…{b.X + b.Width:0}, y {b.Y:0}…{b.Y + b.Height:0}) — {ox:0}×{oy:0} px "
             + "of the plan is behind an opaque card. The plate is a story, the panel is the work; neither may "
             + "be spent on the other's pixels (#994 item 2).");
+    }
+
+    /// <summary>
+    /// #1013 · A ROOM FULL OF CONTACTS DOES NOT COVER THE COUNTER'S OWN FOOT.
+    ///
+    /// <para><b>The sighting.</b> The counter card draws one <c>ContactDrinkOffer</c> block per present bar
+    /// contact (<c>PresentBarContacts</c>), each wrapped in its own <c>.deck-offer-actions</c> — the SAME
+    /// class the card's real foot (Buy the special / Round for the room / …) uses, and #735/#780 pin that
+    /// class <c>position: sticky; bottom: 0</c> with a 12rem box-shadow scrim. With more than one bar
+    /// contact in the room, every one of those rows raced the real foot for the identical pinned rectangle:
+    /// measured live (four old shipmates at the Roadstead, #973 L5a's own dev cheat), the last contact's row
+    /// touched the foot with a 0px gap where every other pair in the card runs ~20px, and the foot's scrim
+    /// painted straight over it — "Round for the room" read struck through by "Offer &lt;name&gt; a drink"
+    /// exactly as the owner's screenshot showed.</para>
+    ///
+    /// <para><b>The fix.</b> <c>ContactDrinkOffer</c>'s own wrapper is <c>.contact-offer-row</c> now — the
+    /// same flex/wrap/gap/centre rule, none of the sticky/scrim rule — so only the card's one true foot is
+    /// still pinned.</para>
+    ///
+    /// <para>RED PROOF: put <c>.contact-offer-row</c> back to <c>.deck-offer-actions</c> in
+    /// <c>ContactDrinkOffer</c> (Map.razor) and this fails, naming the exact pixel gap that collapsed to
+    /// zero.</para>
+    /// </summary>
+    [Fact]
+    public async Task A_room_full_of_bar_contacts_never_covers_the_counters_own_foot()
+    {
+        await _page.GotoAsync(
+            _host.BaseUrl + "/map?scenario=sol&oldcrew=1", new() { Timeout = BootTimeoutMs });
+
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        await _page.Locator(".map-page").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // The ashore boot raises the arrival-tube story plate (ArrivalTube "ONE TUBE, NO CEREMONY") — take
+        // it down if it is up so it cannot eat the click-to-walk below.
+        ILocator plateClose = _page.Locator(".story-plate-close");
+        if (await plateClose.CountAsync() > 0 && await plateClose.IsVisibleAsync())
+        {
+            await plateClose.ClickAsync();
+        }
+
+        // Click-to-walk (#875) straight onto the BARKEEP console — the whole scene is canvas-drawn, so
+        // this is a pixel click rather than a DOM locator, at the console's measured spot on the
+        // Roadstead's welcome frame (1280x900, oldcrew's default dock). [E] confirms reach. Retried: a
+        // single click-to-walk pass can land a few pixels short of the console's own reach radius, and a
+        // gate that flakes on the WALK rather than the law it exists to check is a gate nobody would trust.
+        ILocator card = _page.Locator(".deck-offer-card");
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            await _page.Locator(".map-page").FocusAsync();
+            await _page.Mouse.ClickAsync(438, 297);
+            await _page.WaitForTimeoutAsync(2500);
+            await _page.Locator(".map-page").FocusAsync();
+            await _page.Keyboard.PressAsync("e");
+            await _page.WaitForTimeoutAsync(500);
+            if (await card.CountAsync() > 0 && await card.IsVisibleAsync())
+            {
+                break;
+            }
+        }
+
+        await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+
+        // Answer every present contact's "is looking at you" face-reveal (#973 L5a) so the real "Offer
+        // <name> a drink" row draws instead of the face gate — PresentBarContacts seeds several old
+        // shipmates at once, which is exactly the "room full of contacts" shape #1013 needs.
+        for (int i = 0; i < 8; i++)
+        {
+            ILocator faceBtn = card.Locator("button", new() { HasTextString = "is looking at you" });
+            if (await faceBtn.CountAsync() == 0)
+            {
+                break;
+            }
+            await faceBtn.First.ClickAsync();
+            await _page.Locator("button.old-crew-answer").First.ClickAsync();
+            await _page.Locator("button", new() { HasTextString = "Leave it there" }).ClickAsync();
+        }
+
+        Assert.True(await card.Locator("button", new() { HasTextString = "Round for the room" }).CountAsync() > 0,
+                    "the counter never raised its own foot (Round for the room) — this gate proved nothing");
+
+        // The card's own cap is `max-height: calc(100vh - 11rem)` — how many old shipmates PresentBarContacts
+        // seeds this run (and how their names wrap) decides whether that cap is ever reached, so a full-size
+        // window can pass by accident. Shrinking the viewport forces the card to overflow regardless, which
+        // is the one condition every sticky `.deck-offer-actions` sibling needs to race the real foot for the
+        // same pinned rectangle (#1013).
+        await _page.SetViewportSizeAsync(1280, 420);
+
+        // Every row in the card's body — each present contact's offer row, plus the one true foot — read
+        // off the DOM in source order, which is paint/scroll order here.
+        var rows = new List<(string Name, float X, float Y, float W, float H)>();
+        ILocator rowLocator = card.Locator(".contact-offer-row, .deck-offer-actions");
+        int rowCount = await rowLocator.CountAsync();
+        Assert.True(rowCount >= 2,
+                    $"only {rowCount} action row(s) drew on the counter card — this gate needs a contact row "
+                    + "AND the card's own foot to prove they do not collide");
+        for (int i = 0; i < rowCount; i++)
+        {
+            ILocator row = rowLocator.Nth(i);
+            string text = (await row.InnerTextAsync()).Replace('\n', ' ').Trim();
+            if (await row.BoundingBoxAsync() is { } box && box.Width > 0 && box.Height > 0)
+            {
+                rows.Add((text.Length > 40 ? text[..40] : text, box.X, box.Y, box.Width, box.Height));
+            }
+        }
+
+        var collisions = new List<string>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            for (int j = i + 1; j < rows.Count; j++)
+            {
+                if (Overlaps(rows[i], (rows[j].X, rows[j].Y, rows[j].W, rows[j].H)))
+                {
+                    collisions.Add($"'{rows[i].Name}' at ({rows[i].X:0},{rows[i].Y:0}) {rows[i].W:0}×{rows[i].H:0} "
+                                   + $"overlaps '{rows[j].Name}' at ({rows[j].X:0},{rows[j].Y:0}) "
+                                   + $"{rows[j].W:0}×{rows[j].H:0}");
+                }
+            }
+        }
+
+        Assert.True(collisions.Count == 0,
+                    "the counter card's own rows are covering each other (#1013):\n  "
+                    + string.Join("\n  ", collisions));
     }
 
     private static bool Overlaps(

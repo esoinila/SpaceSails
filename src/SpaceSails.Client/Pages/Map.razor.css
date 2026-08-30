@@ -202,11 +202,23 @@
    on top of each other and none of them could be read. The table card learned the same lesson at #746
    (.table-actions) and named it there; a law that has to be remembered per card is a law that gets
    forgotten on the next card, so it moves up to the family. Nothing that fits on one line moves. */
-::deep .deck-offer-actions {
+::deep .deck-offer-actions,
+::deep .contact-offer-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     justify-content: center;
+}
+
+/* #1013 · THE SAME ROW, MINUS THE FOOT. `.contact-offer-row` is ContactDrinkOffer's own wrapper — one per
+   present bar contact, so a full room draws several of them as ordinary BODY prose above the card's real
+   foot. It shares every rule above with `.deck-offer-actions` except the one two rules down: the sticky
+   pin and its 12rem scrim are for the ONE row that is actually the card's way out, and pinning every
+   contact's row to the same bottom:0 rectangle is what let "Round for the room" read as struck through by
+   whichever face's row rendered last (see the markup comment at ContactDrinkOffer). Margin instead of the
+   footer's sticky gap, so consecutive contacts still read as separate rows once there is more than one. */
+::deep .contact-offer-row {
+    margin-bottom: 0.5rem;
 }
 
 /* PR-WIRE — the favor-bank card (deposit / withdraw / borrow). Rides the same overlay family as the
