@@ -29,12 +29,16 @@ public sealed class NearestDoesNotFlickerTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    // sol.json: the-space-bar rides Mars at 12,000 km with a 7,200 s period.
-    private const double RoadsteadPeriod = 7_200.0;
     private const double AU = 1.495978707e11;
 
     private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
         new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
+
+    // sol.json: the-space-bar rides Mars at 12,000 km. #957 corrected its period from a hand-typed
+    // 7,200 s to Kepler's 39,910 s — the sweep below wants ONE station orbit, whatever that is, so it
+    // reads the rail rather than carrying a second copy of the number that was wrong in the first place.
+    private static double RoadsteadPeriod =>
+        Math.Abs(Sol.Value.Bodies.Single(b => b.Id == "the-space-bar").OrbitPeriodS);
 
     private static string ScenarioPath(string file)
     {

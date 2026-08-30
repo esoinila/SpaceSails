@@ -16,6 +16,17 @@ namespace SpaceSails.Core.Tests;
 /// <para>And the refusal is kept honest at the other end: a geometry no candidate on the ladder fixes
 /// returns null rather than a made-up capture, and an empty budget buys nothing at all — the reserve is
 /// never spent to make a click feel good.</para>
+///
+/// <para><b>A correction to this file's own bookkeeping (2026-08-30).</b> Every case below flies the
+/// <c>derelict-roadster</c> — the <i>Derelict Roadster</i>, a μ=0 berth on its own rail round the sun —
+/// and until now this file called it "The Rusty Roadstead" in its comments. It is not. The Rusty
+/// Roadstead is <c>the-space-bar</c>, and it hangs off <b>Mars</b>. The berth the owner was actually
+/// refused at therefore had no test at all, and the one case here that does name it asserts that the
+/// search finds <i>nothing</i>. That is why the real #957 survived this suite: the machinery below is
+/// sound and stays, but the fault was never in it — the Roadstead's rail carried it round Mars at
+/// 10.5 km/s where Newton allows 1.9, so no ship could ever ride alongside and no correction could ever
+/// close the gap. See <c>EveryBerthRidesAGravityRailTests</c> for the law that now holds the rails, and
+/// its <c>AtTheOwnersRead_TheAutopilotTakesTheDock</c> for the owner's own read, flown.</para>
 /// </summary>
 public class CaptureBrakeTests
 {
@@ -50,9 +61,9 @@ public class CaptureBrakeTests
     [Fact]
     public void WhereThePlainArmRefuses_OneBurnMakesItAPromise()
     {
-        // THE #957 CASE. The Rusty Roadstead (a μ=0 sun-parented berth), ~3.5 M km off the track at
+        // THE #957 SHAPE. The Derelict Roadster (a μ=0 sun-parented berth), ~3.5 M km off the track at
         // 12.4 km/s in its frame. The plain rehearsal coasts the whole horizon and never reaches the
-        // dock envelope — "can't verify a capture from here", the useless refusal the owner got.
+        // dock envelope — "can't verify a capture from here", the shape of the refusal the owner got.
         (Simulator sim, ICelestialEphemeris eph) = Sol();
         ShipState ship = InboundPast(eph, "derelict-roadster", missMeters: 3.5e9, extraSpeed: 12_400);
         int budget = Budget();
@@ -172,12 +183,12 @@ public class CaptureBrakeTests
         CaptureBrake.Solution s =
             CaptureBrake.Solve(ship, eph, sim, "derelict-roadster", Budget(), maxHorizonSeconds: SearchHorizon)!.Value;
 
-        string step = CaptureBrake.StepLine(s, "The Rusty Roadstead");
+        string step = CaptureBrake.StepLine(s, "Derelict Roadster");
         Assert.Contains(CaptureBrake.AimWord(s.Aim), step, StringComparison.Ordinal);
-        Assert.Contains("The Rusty Roadstead", step, StringComparison.Ordinal);
+        Assert.Contains("Derelict Roadster", step, StringComparison.Ordinal);
         Assert.Contains($"≈{s.ChargedPulses} p", step, StringComparison.Ordinal);
 
-        string added = CaptureBrake.AddedText(s, "The Rusty Roadstead");
+        string added = CaptureBrake.AddedText(s, "Derelict Roadster");
         Assert.Contains("Not declining", added, StringComparison.Ordinal);
         Assert.Contains(ArrivalStepRule.FormatSpeed(s.DeltaVMetersPerSecond), added, StringComparison.Ordinal);
     }

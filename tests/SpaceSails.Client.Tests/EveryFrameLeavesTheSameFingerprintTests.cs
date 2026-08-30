@@ -264,6 +264,28 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// </list>
     /// <para>No ledger row moved, no canvas buffer moved, and not one <c>AHiveFloorWithAPatrol</c> row moved
     /// at all.</para>
+    ///
+    /// <para><b>#957 · 25 OF THE 30 WERE RE-RECORDED, and it is the WORLD-DATA kind of change — the one kind
+    /// this ledger had not seen before.</b> #957 corrected three hand-typed orbit periods in
+    /// <c>scenarios/sol.json</c>: Cinder Roost, The Rusty Roadstead and The Tilt were riding rails no gravity
+    /// explains — 11.8, 10.5 and 35.9 km/s about their parents where Newton allows 4.7, 1.9 and 8.5 — which
+    /// is why the autopilot refused to dock at them (<c>DockRule.MatchSpeed</c> shears above 8 km/s). Three
+    /// bodies are now somewhere else at every t &gt; 0, so the frame sees it. Two row kinds moved and no
+    /// others, and the <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff on the old literals and the new says how
+    /// little: all thirty texts have the same 743 lines and the same 742 fields, and</para>
+    /// <list type="number">
+    ///   <item><b><c>sweep</c>, on 25 rows</b> — <b>exactly one field line differs, <c>_passes</c></b>, and
+    ///   within it exactly two of the twenty-nine passes: <c>cinder-roost</c> and <c>the-space-bar</c>. Same
+    ///   bodies, same order. Nothing else in the page moved at all.</item>
+    ///   <item><b><c>map-frame buffer</c>, on the five <c>TheMapFrameInFlight</c> rows</b> — the map draws the
+    ///   solar system, so it draws the three berths where they now are. The float and label COUNTS are
+    ///   unchanged (8364 floats, 24 labels), the label SET is unchanged at 22, and <b>the only labels that
+    ///   moved are ⚓ Cinder Roost, ⚓ The Rusty Roadstead and ⚓ The Tilt</b>.</item>
+    /// </list>
+    /// <para><b>No ledger row moved, no <c>walked-view pen</c> moved, and no call count moved</b> — this
+    /// change draws no new thing, it draws three old things in the right place. And the five
+    /// <see cref="World.TheElectricUniverse"/> rows are <b>byte-identical</b>, because that world is on
+    /// <c>wheel.json</c>, which #957 does not touch: the one world that could not move, did not.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]
