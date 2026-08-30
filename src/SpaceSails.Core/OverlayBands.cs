@@ -107,6 +107,23 @@ public static class OverlayBands
     /// <summary><c>.pin-backdrop</c> — the PIN pad pop-up.</summary>
     public const int PinBackdrop = DesksAndPopups + 120;    // 1320
 
+    /// <summary><c>.satchel-backdrop</c> — THE POCKET (#1027), and the one thing in this band that is not a
+    /// card at all.
+    ///
+    /// <para><b>Why it out-ranks every card in the band.</b> Everything else at
+    /// <see cref="ViewObjectBackdrop"/> is something the WORLD raised — an arrival beat, a story card, a
+    /// plaque the captain walked into. The satchel is the opposite: it is an INSTRUMENT, opened because a
+    /// hand went to a key. #1027's sweep found the two families sharing one z-index AND one class, tie-broken
+    /// by nothing but which block happened to be typed first in <c>Map.razor</c> — so pressing <b>I</b> under
+    /// a queued arrival card opened the pocket in the DOM and painted it UNDERNEATH the picture, and the key
+    /// read as dead (the #603 class: a control that quietly does nothing).</para>
+    ///
+    /// <para><b>And it stays under the lifeline.</b> +130 is one step over the cards and ten below
+    /// <see cref="DistressLifeline"/>: the pocket may cover a flavour card, and may never cover a stranded
+    /// captain's rescue button. It is likewise below the whole <see cref="Modal"/> band, so a death, a
+    /// crossing, a celebration and the first-ground family still take the screen off it.</para></summary>
+    public const int SatchelBackdrop = DesksAndPopups + 130; // 1330
+
     // ---- DistressLifeline member -----------------------------------------------------------------
 
     /// <summary><c>.map-adrift</c> — the reserved distress-lifeline container (the rescue reopen pill).</summary>

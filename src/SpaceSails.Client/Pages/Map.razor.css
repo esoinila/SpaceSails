@@ -2735,6 +2735,25 @@
     cursor: zoom-out;
 }
 
+/* #1027 · THE POCKET IS NOT A CARD, AND IT STOPPED PRETENDING TO BE ONE.
+
+   The satchel wears `.view-object-backdrop` for its looks — same dim, same blur, same click-to-close ground
+   — and for its LAYER it wears this, one step higher. The whole bug is in the sentence above the rule it
+   replaces: the two families shared a z-index, so which of them the player saw was decided by which block
+   was typed first in Map.razor. The satchel's is typed at ~2480 and the arrival card's at ~3550, so the
+   picture won, every time, silently. Press I under 🛗 THE SHAFT and the pocket opened BEHIND it.
+
+   A MODIFIER RATHER THAN A NEW FAMILY, deliberately: the same idiom as `.rep-backdrop` and
+   `.selfie-backdrop`, so the pop-up law's recogniser still reads the registered family root off the same
+   attribute and nobody has to register the satchel twice. It must stay AFTER `.view-object-backdrop` in
+   this file — equal specificity, so the cascade is doing the overriding and source order is the tie-break.
+
+   The number is OverlayBands.SatchelBackdrop and CssZBandSyncTests pins it: one over the cards, ten under
+   the distress lifeline. The pocket may cover a flavour card; it may never cover the rescue button. */
+.satchel-backdrop {
+    z-index: calc(var(--z-desks-popups) + 130);
+}
+
 ::deep .view-object {
     width: min(40rem, 94vw);
     /* The cap used to live here alone, and a cap with no scroll is a card that CLIPS: see the card-family
