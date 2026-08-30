@@ -131,5 +131,6 @@ No correction burn is needed at all: the press the owner made simply works.
 - [x] law test RED on old data (numbers above)
 - [x] data fix
 - [x] headless replay of the owner's scenario
-- [ ] full Core + Client suites
+- [x] full Core suite: **4065 passed / 0 failed** (25 m 54 s, run watched 2026-08-30)
+- [ ] full Client suite (running)
 - [ ] PR
