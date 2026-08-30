@@ -967,19 +967,34 @@
 
 /* #997 · `right` reads --desk-chip-strip-clearance (declared on .map-page) instead of a literal
    0.75rem — the scope no longer sits in the desk-chip-strip's own column (see the variable's
-   comment on .map-page for the measurement). */
+   comment on .map-page for the measurement).
+
+   `min(…, calc(100% - 18.5rem))` is the part the issue's own candidate fix did not have to reckon
+   with because it was measured at 1280×720 only. Verifying at 390×700 (this fix's own instructions)
+   found a SECOND trade-off past the readouts one the issue named: the card is a fixed ~290px/18.1rem
+   (the canvas is 280px, not responsive, and never has been), so at 11rem flat the card's LEFT edge
+   fell off the left of a 390px screen by 76px — the title and part of the canvas simply gone, not
+   overlapping anything, just not on the glass (#212's law again, from the other side). 18.5rem is
+   that measured width plus a hair of slack; the min() only ever bites below a ~29.5rem-wide
+   viewport, so 1280×720 (and everything else the game is laid out for) reads the flat 11rem exactly
+   as the issue specified. Below that width the card still ends up partly under the strip again —
+   there is not 11rem-of-clearance-plus-18.1rem-of-card in 390px to give — but a control you can
+   reach with 60px of it dimmed by a chip is strictly better than one a quarter of which is not on
+   the screen at all. Full mobile responsiveness for this card is a separate, bigger job than #997. */
 ::deep .map-scope {
     position: absolute;
-    right: var(--desk-chip-strip-clearance);
+    right: min(var(--desk-chip-strip-clearance), calc(100% - 18.5rem));
     bottom: 0.75rem;
     pointer-events: auto;
 }
 
 /* #963 — the minimised scope: a button-sized tile in the corner the window vacated, so the switch that
-   used to shout from the top of the screen now lives exactly where the instrument is. */
+   used to shout from the top of the screen now lives exactly where the instrument is. Same clamp as
+   the open card above — it is a smaller footprint but shares the same right edge by design (#963:
+   "lives exactly where the instrument is"), so it should never drift wider than the card ever did. */
 ::deep .map-scope-tile {
     position: absolute;
-    right: var(--desk-chip-strip-clearance);
+    right: min(var(--desk-chip-strip-clearance), calc(100% - 18.5rem));
     bottom: 0.75rem;
     pointer-events: auto;
 }

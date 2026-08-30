@@ -562,6 +562,43 @@ public sealed class HudCollisionTests : IAsyncLifetime
                     + string.Join("\n  ", collisions));
     }
 
+    /// <summary>
+    /// #997 · THE SCOPE STAYS ON THE GLASS AT A PHONE WIDTH.
+    ///
+    /// <para>Verifying the strip/scope fix above at 390×700 (the instructions' own second checkpoint) found
+    /// a second trade-off past the one the issue named: <c>.map-scope</c> is a fixed ~290px card (an
+    /// unresponsive 280px canvas underneath it, unrelated to this fix), so pushing its <c>right</c> out to a
+    /// flat <c>--desk-chip-strip-clearance</c> (11rem) walked its LEFT edge off the left of a 390px screen by
+    /// 76px — not overlapping anything, just not there. <c>min(var(...), calc(100% - 18.5rem))</c> on
+    /// <c>.map-scope</c>/<c>.map-scope-tile</c> is the guard against that: it only ever bites below a
+    /// ~29.5rem-wide viewport, so 1280×720 reads the flat 11rem exactly as #997 specifies (the test above
+    /// proves that), and a phone gets a smaller offset instead of losing part of the card off-screen.</para>
+    ///
+    /// <para>This does not assert zero overlap at 390px — there is not 11rem of clearance plus 18.1rem of
+    /// card in a 390px screen to give, and the strip does still touch the scope's header there. It asserts
+    /// the narrower, load-bearing fact: the card's own left edge is never negative, i.e. never off the
+    /// glass (#212's law, the other direction from the gate above).</para>
+    ///
+    /// <para>RED PROOF: drop the <c>min(…)</c> back to a bare <c>var(--desk-chip-strip-clearance)</c> on
+    /// <c>.map-scope</c> and this fails, naming a negative X.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_scope_stays_on_screen_at_a_phone_width()
+    {
+        await _page.SetViewportSizeAsync(390, 700);
+        await BootIntoNav();
+
+        ILocator scope = _page.Locator(".map-scope").First;
+        await scope.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        var box = await scope.BoundingBoxAsync();
+        Assert.True(box is { Width: > 0, Height: > 0 }, "the scope had no box at all on Nav at 390×700");
+
+        Assert.True(box!.X >= 0,
+                    $"the scope's card sits at x {box.X:0} on a 390px-wide screen — part of it is off the "
+                    + "left edge of the glass, not merely covered by something else (#997).");
+    }
+
     private static bool Overlaps(
         (string Name, float X, float Y, float W, float H) a, (float X, float Y, float W, float H) b) =>
         a.X < b.X + b.W && a.X + a.W > b.X && a.Y < b.Y + b.H && a.Y + a.H > b.Y;
