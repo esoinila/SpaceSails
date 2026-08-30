@@ -4,6 +4,11 @@ A scripted playtest per major feature: exact clicks/keys, what you should see, a
 "broken" looks like. Run through these after any change that touches the map, the ship
 simulation, or the deck views.
 
+This catalog is also machine-read: the [boot-every-scene workflow](workflows/boot-every-scene.md)
+sweeps these rows headless after a release, using each row's "what a tester should see" as its
+oracle — one more reason to keep those expectations written down and current. The workflow shelf
+index is [docs/workflows/README.md](workflows/README.md).
+
 **Before you start:** run `./run.ps1` (Release build) and open the printed localhost URL.
 Debug WASM runs on the IL interpreter and is roughly **100× slower** — choppy frames, sluggish
 plotting, and timings in these scripts (rum wobble, boarding time, warp behavior) will all read
