@@ -259,10 +259,19 @@ public partial class Map
                 TryTakeTable();
                 break;
             case DeckPlan.ConsoleKind.BarTop:
+            case DeckPlan.ConsoleKind.ShipDesk:
                 // #973 L5b · TAKE A TOP IN THE DOCKED BAR — the eighth way to open a sitting in this game,
                 // and the first one that is not on a surface excursion. #973 L0 wrote the gap down ("the
                 // bar's seven tops are drawn dressing with no chairs and no console"); this is the press.
                 // Sitting alone in a classy room is also what a walk-in is looking for.
+                //
+                // #1016 · …AND THE SHIP'S OWN TWO SEATS COME THROUGH THE SAME ARM. Owner, on 7 Deck: "Why
+                // no table here to sit at?", "Why no table in cabin either?", "I expect to have a bar
+                // table like this in this ships galley also.... feature complete." A top in her cantina
+                // and the desk in her berth are the same VERB as a top in a station bar — pull the chair
+                // out and sit down — so they are the same press and the same sitting, opened in the one
+                // place a sitting is opened. What is different about each room is an ANSWER the page hands
+                // back (`TheBarTopUnderfoot`), never a second way to sit.
                 TryTakeBarTop();
                 break;
             case DeckPlan.ConsoleKind.HiveBench:

@@ -235,6 +235,35 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// the pen, the canvas buffer and the call counts are byte-identical on all thirty, the committed-text
     /// diff is 30 files × 1 line and that line is the sweep's own, and the full client run's only red was
     /// this class's thirty rows.</para>
+    ///
+    /// <para><b>#1016 · TWENTY-FOUR WERE RE-RECORDED — not thirty, and the six that held still are half the
+    /// proof. The field count did not move (733 → 733), and this is the first re-pin in this ledger that
+    /// moved the PEN.</b> Owner, on 7 Deck: <i>"Why no table here to sit at?"</i>, <i>"Why no table in cabin
+    /// either?"</i>, <i>"I expect to have a bar table like this in this ships galley also.... feature
+    /// complete."</i> The SHIP'S OWN PLAN gained exactly three consoles — two takeable tops in her cantina
+    /// (the third stands under the CANTINA desk and is refused by the deck audit's label law) and the
+    /// DESK ✍ in CABIN 1. A console is DRAWN, so a frame that paints her deck paints three more
+    /// fixtures.</para>
+    ///
+    /// <para>Three row kinds moved and no others, and each has its own arithmetic:</para>
+    /// <list type="number">
+    ///   <item><b><c>sweep</c>, on 24 rows.</b> The <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run on
+    ///   the base (1cf6741) and on this lane. On every world whose <c>_deckPlan</c> is hers the diff is three
+    ///   ADDED <c>ConsoleSpot</c>s and nothing else — <c>ShipDesk "DESK ✍" (13.5, −9)</c> and two
+    ///   <c>BarTop "🪑 A FREE TABLE — SIT DOWN"</c> at <c>(8, 7.5)</c> and <c>(14, 7.5)</c> — with zero lines
+    ///   removed and zero changed. The five <c>AHiveFloorWithAPatrol</c> rows are byte-identical, because a
+    ///   hive floor's plan is not hers.</item>
+    ///   <item><b><c>the seat</c>, on the four <c>ACaptainInAChair</c> rows.</b> Three fields moved onto
+    ///   <c>TableTalk</c> for the seats that have no excursion behind them — <c>Aboard</c>, <c>Waits</c>,
+    ///   <c>Watch</c> — and all three read their defaults on a park bench.</item>
+    ///   <item><b><c>walked-view pen</c>, on the 15 rows that paint her deck</b> — every one of them by
+    ///   EXACTLY +720 calls, and the three <c>APlannedRoute</c> rows (which run twice the frames) by exactly
+    ///   +1440. Six calls a frame: three fixtures × a marker and a label, which is the same arithmetic
+    ///   #973 L4's re-pin used one deck over. A count that moved by anything but six a frame would be a
+    ///   different lane's bug wearing this lane's clothes.</item>
+    /// </list>
+    /// <para>No ledger row moved, no canvas buffer moved, and not one <c>AHiveFloorWithAPatrol</c> row moved
+    /// at all.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

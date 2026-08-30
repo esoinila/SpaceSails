@@ -495,6 +495,52 @@ public partial class Map
         public bool Office { get; init; }
 
         /// <summary>
+        /// #1016 · Whether this seat is on the captain's OWN SHIP — a top in her cantina, or the desk in
+        /// CABIN 1.
+        ///
+        /// <para>Owner, on 7 Deck: <i>"Why no table here to sit at?"</i>, <i>"Why no table in cabin
+        /// either?"</i>, <i>"I expect to have a bar table like this in this ships galley also.... feature
+        /// complete."</i> The same machinery a third time, and for the third time the flag buys exactly the
+        /// places a boat genuinely differs from a hall — <see cref="Office"/>'s own two, in fact. NOBODY EVER
+        /// COMES OVER: her crew is three droids on a fixed patrol, and a haulier crossing the captain's own
+        /// cantina to ask about her brother would be the scene and the ship disagreeing. And the silence is
+        /// described in the BOAT's words (<see cref="SittingAlone.NobodyCameAboard"/>) rather than in an
+        /// eighty-seat canteen's.</para>
+        ///
+        /// <para>It is deliberately not <see cref="Office"/> reused: an office is a room in somebody else's
+        /// building on a shift that no longer runs, and its silence says so. Two rooms that agree about one
+        /// mechanic and disagree about every word are two flags.</para>
+        /// </summary>
+        public bool Aboard { get; init; }
+
+        /// <summary>
+        /// #1016 · HOW MANY BEATS HAVE BEEN WAITED OUT AT THIS SEAT — <b>aboard only</b>, and null anywhere
+        /// else in the sense that nothing reads it there.
+        ///
+        /// <para>Ashore the beat counter is the ROOM's (<c>ex.TableWaits</c>) and that is a law rather than a
+        /// convenience: the approach is seeded on (site, floor, top, watch, beat), so a captain who stood up
+        /// and sat down again to reroll the dice simply carries on from the beat they were on. <b>There is no
+        /// such dice aboard</b> — nobody ever comes to either of the ship's seats — so there is nothing to
+        /// reroll and nothing to abuse, and the counter's only job is to stop the two silence lines looping
+        /// on the first one. It lives on the sitting because the ship has no excursion to keep a ledger on,
+        /// and inventing one for a number that decides which of two sentences you read would be a second
+        /// ledger for a fact nothing else asks about.</para>
+        /// </summary>
+        public int Waits { get; set; }
+
+        /// <summary>
+        /// #1016 · WHICH SHIFT THIS SITTING IS ON, when there is no excursion to ask.
+        ///
+        /// <para>Ashore the watch is the room's and is frozen on the excursion (<c>ex.CanteenWatch</c>,
+        /// #709), and this stays 0 there and is never read — a second copy of a fact the room already holds
+        /// is one source consumed in the wrong order waiting to happen. It is written only by the sittings
+        /// that HAVE no excursion behind them (a top in a docked station's bar, and the ship's own two), for
+        /// the one question the silence has to ask a clock: which of the hall's two pools a fruitless wait
+        /// comes out of.</para>
+        /// </summary>
+        public long Watch { get; init; }
+
+        /// <summary>
         /// #820 · WHERE STANDING UP PUTS THE BODY — the square this seat is stepped off onto.
         ///
         /// <para>Worked out from published geometry at the moment the captain sat down and carried here, so

@@ -425,18 +425,39 @@ public sealed class EveryFrameHashesTheSameTests
     // clothes. (The companion texts under Fingerprints/ moved on the same day and in the same single row —
     // `walked-view pen`, one more call per frame that draws a band — 17 of the 30, no ledger row, no sweep row.)
 
+    // ── #1016 · THIRTEEN ROWS RE-PINNED, EACH BY EXACTLY SIX CALLS ───────────────────────────────────
+    //
+    // Owner, on 7 Deck: "Why no table here to sit at?", "Why no table in cabin either?", "I expect to have a
+    // bar table like this in this ships galley also.... feature complete." Her cantina's three drawn tops
+    // were dressing with no console over them and her cabins had a bunk and nothing else, so the SHIP's own
+    // plan gained exactly three consoles: two takeable tops (the third stands under the CANTINA desk and is
+    // refused by the deck audit's label law) and the DESK ✍ in CABIN 1.
+    //
+    // A fixture is drawn as a marker and a label — two calls — so three of them is SIX, and every row that
+    // moved moved by six and by nothing else: 335→341, 309→315 (×2), 358→364 (×2), 362→368 (×3), 364→370
+    // (×2), 3771→3777, 3882→3888, 4365→4371. It is the same arithmetic #973 L4's re-pin used, on the other
+    // deck: three plates × two calls, independent of who is in the room.
+    //
+    // AND THE SHAPE OF THE REST OF THE TABLE IS THE OTHER HALF OF THE PROOF. Every row that moved is a deck
+    // the SHIP's plan is part of — her own three, the seven havens (a docked complex is her plan with a
+    // station welded onto it, seeded from `DeckPlan.Ship.Consoles`) and the three excursions whose field
+    // carries her down-tube. Not one wreck, not one B-floor, not the dark-lamp row and not "surface · luna
+    // site 0, dark, and the fan hears something" moved at all, because none of them is her. Had a hive floor
+    // moved here, or any of these moved by anything but six, it would be a different lane's bug wearing this
+    // lane's clothes.
+
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
-        ["ship · under way"] = (335, "e943fa59228f59c49c0efebc3eda6579bda13f1abc0e3e48e16a6f1358630be5"),
-        ["ship · docked, the shuttle away and the machine stalling"] = (309, "d5a908ca869086d4f0b39738da1b4a261c68f0b5e1421fbcd0a98d9ac7671cef"),
-        ["ship · hatches dogged, seated at the table"] = (309, "9096ac57873a26df8ac1d3cf7740960a7e98900a29493ded9004887eda0da6f8"),
-        ["haven · the-space-bar"] = (358, "19ca5c6d71b008ef030af25f59ee0faaeb0f7ec87d45453fd1c2c77eb3d8e30a"),
-        ["haven · cinder-roost"] = (362, "77c60458ce301e2eb6445dd24be3c8584712fd689804e843b48ac5e5a5d14314"),
-        ["haven · ringside-exchange"] = (364, "fe9c4f3820c98c849f04b68368a752814d99a55145c97287ae6388792cad1697"),
-        ["haven · the-tilt"] = (358, "3082188a8ada5f37b096f6ffb05111cd45212b6cbc73150e6b426582d6e10242"),
-        ["haven · selene-gate"] = (362, "95438470755148ea59c54ff792b7c341a8159725f769bdbcecac6d7eb4441ff4"),
-        ["haven · red-eye"] = (362, "1dffd21daf968445e945dd4055d08c011460e6491b778cb5f9425f75040c725f"),
-        ["haven · the-deep"] = (364, "c046973066136cb0483ff561dae82768a1e59528ba97e78e4ed8e6043356bd20"),
+        ["ship · under way"] = (341, "d43d37b12ccdfcb60b3ed3cceacf2a3f49c98546db42879ca8f212728948aa59"),
+        ["ship · docked, the shuttle away and the machine stalling"] = (315, "5286b06bb9df81273c03411d417ec9495cda79614bdff3d8a1f9fd867e2875ab"),
+        ["ship · hatches dogged, seated at the table"] = (315, "079f7120315a9a9e9ac1325643486eb6048e9620daa8211e9d3d0e931cf02db4"),
+        ["haven · the-space-bar"] = (364, "eb5e3c5e646094de112f4ecc0762a8fe8f5acad5e497a2c2717323969df414d9"),
+        ["haven · cinder-roost"] = (368, "6549d1c189b603eff35d990c9a8fa29b70de46357bc4a4222e7e36546a8e2d88"),
+        ["haven · ringside-exchange"] = (370, "072ff9e6a38ccf2f3f7e7dc66c2fc97b1b1d2ec128f27704cb629466577e9959"),
+        ["haven · the-tilt"] = (364, "24c4ecc7d07ef9ab6f948d3b43ce5702750583a11ac469e7d9b307a33e945260"),
+        ["haven · selene-gate"] = (368, "d69176565a8c8ca88ef8ce089f66e9c5a4c641df36e590ca46ffef13530455a9"),
+        ["haven · red-eye"] = (368, "17be4987b92049d51b989d7353e269f9b1be22330e2ebb87182bd130872f7763"),
+        ["haven · the-deep"] = (370, "2718a1dde37c4b2d107d24273271beb814c99cefecdbbd4b712c13e9bd6dce76"),
         ["wreck · HullBreach"] = (592, "637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020"),
         ["luna B1"] = (1591, "c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab"),
         ["luna B2"] = (426, "86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0"),
@@ -456,10 +477,10 @@ public sealed class EveryFrameHashesTheSameTests
         ["luna B1 · the round is out, and the buzzer went"] = (1617, "45921c657a779c388d7003d4b69dbfb6fb8ba9159ad8d582f2bcb040758c8b3d"),
         ["phobos B1"] = (1563, "879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c"),
         ["titan B1"] = (1512, "3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a"),
-        ["surface · luna site 0"] = (3771, "cca27dc80c1977748f3dffea0712055de0839d5bd146e6f7df06c6318d10ed50"),
-        ["surface · luna site 0, the whole excursion"] = (3882, "6f55115196410b6e21672692a024e51b55ff3c0ced9011955084a72af72ba85d"),
+        ["surface · luna site 0"] = (3777, "5fbd52373f9d06f6fdbd65477844909a2f6cedfb6da0e03d1870790e34a72cde"),
+        ["surface · luna site 0, the whole excursion"] = (3888, "a3556c2faa499f8ea8a444b3a21c5463b7bb060b54513a52c8f02a151d49b91a"),
         ["surface · luna site 0, dark, and the fan hears something"] = (267, "e6ea3770ba1385435a1913b10a4457860b3099bf5bb9d71648c9a5f0d14d49fd"),
-        ["surface · titan site 0, a derelict's instruments (none)"] = (4365, "9d80d64a15359410f466d62482a3c7f2c474cc918e940fb9359903affc0446a8"),
+        ["surface · titan site 0, a derelict's instruments (none)"] = (4371, "11c0c9f2e00579b4ff8cb407e8cda38f53ec4d4d4cd68598f79c46092de3aeb3"),
     };
 
     /// <summary>
