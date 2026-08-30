@@ -237,7 +237,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// this class's thirty rows.</para>
     ///
     /// <para><b>#1016 · TWENTY-FOUR WERE RE-RECORDED — not thirty, and the six that held still are half the
-    /// proof. The field count did not move (733 → 733), and this is the first re-pin in this ledger that
+    /// proof. The field count did not move (736 → 736), and this is the first re-pin in this ledger that
     /// moved the PEN.</b> Owner, on 7 Deck: <i>"Why no table here to sit at?"</i>, <i>"Why no table in cabin
     /// either?"</i>, <i>"I expect to have a bar table like this in this ships galley also.... feature
     /// complete."</i> The SHIP'S OWN PLAN gained exactly three consoles — two takeable tops in her cantina
@@ -248,7 +248,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// <para>Three row kinds moved and no others, and each has its own arithmetic:</para>
     /// <list type="number">
     ///   <item><b><c>sweep</c>, on 24 rows.</b> The <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run on
-    ///   the base (1cf6741) and on this lane. On every world whose <c>_deckPlan</c> is hers the diff is three
+    ///   the base (e2633bc) and on this lane. On every world whose <c>_deckPlan</c> is hers the diff is three
     ///   ADDED <c>ConsoleSpot</c>s and nothing else — <c>ShipDesk "DESK ✍" (13.5, −9)</c> and two
     ///   <c>BarTop "🪑 A FREE TABLE — SIT DOWN"</c> at <c>(8, 7.5)</c> and <c>(14, 7.5)</c> — with zero lines
     ///   removed and zero changed. The five <c>AHiveFloorWithAPatrol</c> rows are byte-identical, because a

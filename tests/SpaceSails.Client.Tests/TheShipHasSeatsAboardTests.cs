@@ -286,6 +286,59 @@ public sealed class TheShipHasSeatsAboardTests
         }
     }
 
+    // ── AND THE CASE COMES OUT AT ONE OF THEM ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// <b>WORK THE CASE, AT A TOP IN HER OWN CANTINA — the two halves of #1016 meeting.</b>
+    ///
+    /// <para>This lane built the SEATS; <c>fix/1016-work-the-case-anywhere</c> (#1017) took the case-work
+    /// verbs off the ground so a sitting with no <c>SurfaceExcursion</c> under it can spread the satchel,
+    /// dig a sheet and have the book keep it. Neither half is worth much without the other, and the seam
+    /// between two lanes is exactly where a feature ships broken — so this drives the whole thing at a top
+    /// on the captain's own boat: the spread opens, the dig takes its seconds, and the book files the entry
+    /// <b>under the boat</b> rather than under a moon or a station.</para>
+    ///
+    /// <para>It fails on an INSTANT write as well as on a dead one: half a document in, the strip has a bar
+    /// to draw and the book is still empty.</para>
+    /// </summary>
+    [Fact]
+    public void WorkTheCaseDigsASheetAtATopInHerOwnCantina()
+    {
+        Pages.Map map = SatInTheCantina();
+        Invoke(map, "SeedTheSpreadFinds");
+
+        // The door is open at this seat, and it says so rather than being quietly missing (#603).
+        Assert.Null(Invoke(map, "get_SpreadRefusal"));
+        Assert.True((bool)Invoke(map, "get_CanSpreadTheCaseHere")!);
+        Assert.Contains((List<Satchel.Item>)Field(map, "_satchel")!, i => i.Kind == Satchel.Kind.Paper);
+
+        Invoke(map, "OpenTheSpread");
+        Assert.True((bool)Field(map, "_showSatchel")!, "the spread did not open at a top on her own deck.");
+
+        var paper = new Satchel.Item(Satchel.Kind.Paper, "spread-demo-1");
+        Assert.True((bool)Invoke(map, "CanWriteUp", paper)!);
+        Invoke(map, "WriteItUp", paper);
+
+        // Nothing is spent on the press: an interruption has to have something to undo (#696).
+        Assert.NotNull(Field(map, "_processing"));
+        Assert.Empty((List<FieldNote>)Field(map, "_fieldNotes")!);
+
+        Invoke(map, "StepProcessing", Processing.SecondsPerDocument / 2);
+        double half = (double)Invoke(map, "ProcessingFraction")!;
+        Assert.True(half is > 0.3 and < 0.7,
+            $"half a document in, the strip's bar reads {half:F2} — the clock is not the document's clock.");
+        Assert.Empty((List<FieldNote>)Field(map, "_fieldNotes")!);
+
+        Invoke(map, "StepProcessing", Processing.SecondsPerDocument);
+        Assert.Null(Field(map, "_processing"));
+
+        // THE ENTRY, in the one book, filed under the room the captain is actually sitting in — which on
+        // this deck is a boat and not a berth, a hall or a moon.
+        FieldNote wrote = Assert.Single((List<FieldNote>)Field(map, "_fieldNotes")!);
+        Assert.Contains(FieldNotes.YourOwnBoat, wrote.Place, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("regolith", wrote.Text, StringComparison.OrdinalIgnoreCase);
+    }
+
     // ── THE BENCH ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>A live page standing on her own deck, with nothing running but the deck itself. The render
