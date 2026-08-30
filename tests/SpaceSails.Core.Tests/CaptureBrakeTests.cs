@@ -1,4 +1,4 @@
-﻿namespace SpaceSails.Core.Tests;
+namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// #957 — <b>THE AUTOPILOT LAYS A STEP INSTEAD OF COMPLAINING.</b> The owner, having flown right up to
