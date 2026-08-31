@@ -162,6 +162,106 @@ public sealed class TheScopeGoesWhereTheCaptainPointsItTests
         Assert.Contains(Callsign, line, StringComparison.Ordinal);
     }
 
+    // ── (d) …AND WITH EVERY TELESCOPE ALREADY SPOKEN FOR ──────────────────────────────────────────────
+    //
+    // The three tests above stand the bench up with an EMPTY ledger, which is the one standing in which
+    // the button already worked. The owner's screenshot is the other one: "Tracked targets (1 / 1)", the
+    // destination depot holding the single slot, "Passive watch — 1 tracked, 1 slipped (telescopes full)",
+    // and the Sensor tasks list carrying THE RED EYE DEPOT and nothing else after 📡 sharpen fix was
+    // pressed on the collector. The order was placed, and then quietly deleted.
+
+    private const string DepotId = "depot-red-eye";
+    private const string DepotCallsign = "The Red Eye Depot";
+
+    /// <summary>
+    /// THE ORDER SURVIVES THE NEXT TICK. <c>HandleLostAndColdTracks</c> keeps the custody carousel in step
+    /// with the ledger, and removed EVERY <c>TrackUpdate</c> whose subject the ledger does not hold — which
+    /// is exactly and only the case a captain presses this button in when the telescopes are full. So the
+    /// pass went on the list, the pulse said "she is the next look", and one tick later the list said
+    /// nothing about her at all: the sim overruling a sentence, on the very button #962 was filed about.
+    ///
+    /// <para><b>Red proof (run before shipping).</b> Restore <c>SensorTaskKind.TrackUpdate =&gt;
+    /// !_ledger.IsTracked(task.TargetShipId!)</c> in <c>TrackingPost.HandleLostAndColdTracks</c> and this
+    /// test goes red on the tick, holding the depot's pass and nothing else.</para>
+    /// </summary>
+    [Fact]
+    public void SHARPEN_FIX_WithEveryTelescopeHeld_KeepsHerLookOnTheSensorTasksList()
+    {
+        (Pages.Map map, TrackingPost post) = AChaseInProgress();
+        TheOneTelescopeIsAlreadyHolding(post, DepotId);
+
+        PressSharpenFixOnTheDossier(map);
+        Assert.Contains(post.TaskQueue, t => t.TargetShipId == HunterId);
+
+        ATickOfTheShipsClock(post, 60);
+
+        Assert.Contains(post.TaskQueue, t => t.TargetShipId == HunterId);
+    }
+
+    /// <summary>
+    /// AND THE PASS DOES SOMETHING WHEN IT LANDS. <c>HandlePass</c> answered a finished custody pass with
+    /// <c>TrackedTargetLedger.TryConfirm</c>, which only ever refreshes an entry that ALREADY exists — so
+    /// even had the order survived, the look would have completed and changed nothing. Here the captain
+    /// frees a slot while the scope is on her (the Drop button on the Sensors desk, which is the answer to
+    /// "but really HOW??????"), and the fix the pass earns is expected to land on the ledger.
+    ///
+    /// <para><b>Red proof.</b> Put the old <c>if (candidate is not null &amp;&amp; Ephemeris is not null)
+    /// { _ledger.TryConfirm(…); }</c> back and this goes red with an empty ledger.</para>
+    /// </summary>
+    [Fact]
+    public void SHARPEN_FIX_WithEveryTelescopeHeld_LandsHerOnTheLedgerOnceASlotIsFreed()
+    {
+        (Pages.Map map, TrackingPost post) = AChaseInProgress();
+        TheOneTelescopeIsAlreadyHolding(post, DepotId);
+
+        PressSharpenFixOnTheDossier(map);
+        Assert.False(post.TryGetTrack(HunterId, out _), "the full ledger took her anyway — this bench is not testing the full case.");
+
+        PressDropOnTheSensorsDesk(post, DepotId);   // …the captain frees the slot, the glass still on her
+        ATickOfTheShipsClock(post, 4 * SensorTaskGeometry.TrackPassSeconds);
+
+        Assert.True(post.TryGetTrack(HunterId, out _),
+            "the ordered look completed and left the ledger empty — the pass did nothing at all.");
+    }
+
+    /// <summary>
+    /// AND WHEN NO SLOT IS FREED, THE DESK SAYS SO — with her name in it, and what to do about it. The
+    /// alternative is the job leaving the list mid-chase with no word, which is indistinguishable from the
+    /// dead button. (This reads the same <c>_lastSweepMessage</c> the desk renders at
+    /// <c>TrackingPost.razor</c> line 164.)
+    /// </summary>
+    [Fact]
+    public void SHARPEN_FIX_WithEveryTelescopeHeld_TheDeskSaysWhyCustodyCouldNotBeKept()
+    {
+        (Pages.Map map, TrackingPost post) = AChaseInProgress();
+        TheOneTelescopeIsAlreadyHolding(post, DepotId);
+
+        PressSharpenFixOnTheDossier(map);
+        ATickOfTheShipsClock(post, 4 * SensorTaskGeometry.TrackPassSeconds);
+
+        string desk = (string?)Get(post, "_lastSweepMessage") ?? "";
+        Assert.Contains(Callsign, desk, StringComparison.Ordinal);
+        Assert.Contains("telescope", desk, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>THE CARD STOPS SAYING THE THING HE JUST DID. With the scope ordered onto her and no slot to
+    /// hold her, the dossier's line was "not on the telescope ledger — track her to sharpen the intel",
+    /// before the press and after it, unchanged — the sentence the owner answered with "but really
+    /// HOW??????".</summary>
+    [Fact]
+    public void THE_DOSSIER_SaysTheScopeIsOnHerOnceThePassIsOrdered()
+    {
+        (Pages.Map map, TrackingPost post) = AChaseInProgress();
+        TheOneTelescopeIsAlreadyHolding(post, DepotId);
+
+        PressSharpenFixOnTheDossier(map);
+
+        object card = typeof(Pages.Map).GetMethod("DossierFor", Hidden)!.Invoke(map, [HunterId])!;
+        Assert.True((bool)card.GetType().GetProperty("ScopeOrdered")!.GetValue(card)!,
+            "the dossier does not know the telescope has been ordered onto her, so its line cannot change.");
+        Assert.Null(card.GetType().GetProperty("TrackQuality")!.GetValue(card));
+    }
+
     // ── The bench ─────────────────────────────────────────────────────────────────────────────────────
 
     private static readonly Vector2d DestinationAt = new(1.6e11, 0);
@@ -201,18 +301,49 @@ public sealed class TheScopeGoesWhereTheCaptainPointsItTests
         [
             new TrackingPost.TrackingCandidate(HunterId, Callsign, new ShipState(HunterAt, Vector2d.Zero, 0),
                 IsThreat: true, CargoDetail: "hired muscle"),
+            // The depot ahead — the thing that was holding the single telescope in the owner's screenshot.
+            new TrackingPost.TrackingCandidate(DepotId, DepotCallsign, new ShipState(DestinationAt, Vector2d.Zero, 0)),
         ];
         Set(map, "_trackingPost", post);
 
         return (map, post);
     }
 
+    /// <summary>"Tracked targets (1 / 1)": the one telescope is already holding something else, which is
+    /// the standing the owner pressed 📡 sharpen fix in. Entered through <c>ApplyObservation</c> — the same
+    /// door a sweep hit and a laser range go through — so the ledger is full the way play fills it.</summary>
+    private static void TheOneTelescopeIsAlreadyHolding(TrackingPost post, string shipId)
+    {
+        Assert.True(
+            post.ApplyObservation(new Observation(shipId, 0, DestinationAt, Vector2d.Zero)),
+            "the bench could not fill the ledger — this test would then be measuring the empty case.");
+    }
+
+    /// <summary>One turn of the ship's clock through the component's REAL parameter tick — the thing that
+    /// runs the schedule, completes passes, and does the custody housekeeping that used to eat the order.
+    /// Called twice: the post has to have seen a previous SimTime before any time can have advanced.</summary>
+    private static void ATickOfTheShipsClock(TrackingPost post, double seconds)
+    {
+        MethodInfo tick = typeof(TrackingPost).GetMethod("OnParametersSet", Hidden)
+            ?? throw new MissingMethodException("TrackingPost has no OnParametersSet — this bench's tick has moved.");
+        tick.Invoke(post, null);
+        post.SimTime += seconds;
+        tick.Invoke(post, null);
+    }
+
+    /// <summary>The Drop button on a track card — private, like every other handler this bench drives.</summary>
+    private static void PressDropOnTheSensorsDesk(TrackingPost post, string shipId) =>
+        typeof(TrackingPost).GetMethod("Drop", Hidden)!.Invoke(post, [shipId]);
+
     /// <summary>Press whatever the dossier's 📡 button is wired to — read off the SHIPPING razor, so
     /// rewiring the button to anything else fails here rather than passing on a method a test picked.</summary>
     private static void PressSharpenFixOnTheDossier(Pages.Map map)
     {
         string razor = File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
-        int at = razor.IndexOf("📡 sharpen fix", StringComparison.Ordinal);
+        // The button's own LABEL, closing tag and all — not the bare words, which the card's status lines
+        // and comments are free to repeat and which would otherwise walk this search onto a neighbour's
+        // @onclick (they did, the day the card learned to say the scope was already ordered onto her).
+        int at = razor.IndexOf("📡 sharpen fix</button>", StringComparison.Ordinal);
         Assert.True(at >= 0, "the dossier no longer carries a 📡 sharpen fix button — this guard needs re-reading.");
 
         // The @onclick on that button: the last one before the label.

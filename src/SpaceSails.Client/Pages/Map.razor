@@ -7057,13 +7057,23 @@
             <div class="text-secondary">📜 @ShipHistories.For(dossierId).Teaser</div>
             <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
                  @RelativeMotion.WordedBefore(dossier.Closing)</div>
+            @* #962 · THE CARD HAS TO CHANGE WHEN THE BUTTON UNDER IT IS PRESSED. Owner, having pressed the
+               telescope button below and read the same sentence back: "It says we are not tracking the debt
+               collector and we should ... but really HOW??????" With every telescope held there is no
+               custody to give him — but the scope IS on her, and that is a different thing to say than
+               "not on the ledger". (Nothing in this block may repeat the button's own label: #962's guard
+               finds that button by searching the shipping razor for it.) *@
             @if (dossier.TrackQuality is { } quality)
             {
                 <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
             }
+            else if (dossier.ScopeOrdered)
+            {
+                <div class="text-info">📡 the telescope is on her — her pass is on the Sensors task list</div>
+            }
             else
             {
-                <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
+                <div class="text-secondary">📡 not on the telescope ledger — the telescope button below puts the scope on her</div>
             }
             <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
             @* #962 · THE TERMS OF HER CONTRACT, on the card the captain is already reading. Owner, docked

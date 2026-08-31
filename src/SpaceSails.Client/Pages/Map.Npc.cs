@@ -219,8 +219,17 @@ public partial class Map
     /// and the button now does both halves of what its own tooltip promises: her fix goes on the telescope
     /// ledger, AND a <see cref="SensorTask.TrackUpdate"/> jumps to the front of the carousel so the very
     /// next thing the instrument looks at is her, and the "Sensor tasks" list says so out loud. Owner:
-    /// <i>"Scanning the debt collector should show on the task list as the only job now."</i> Queueing the
-    /// pass is the half that survives a full ledger — the scope still swings, we just can't hold custody.</para>
+    /// <i>"Scanning the debt collector should show on the task list as the only job now."</i></para>
+    ///
+    /// <para><b>…and then it was still dead with the telescopes full, which is the standing the owner's own
+    /// screenshot was taken in: "Tracked targets (1 / 1)", the destination depot holding the only slot,
+    /// "1 tracked, 1 slipped (telescopes full)".</b> The refused ledger entry was reported honestly — but
+    /// the queued pass was a <see cref="SensorTask.TrackUpdate"/>, the LEDGER'S standing custody pass, and
+    /// the tracking post sweeps those out for any contact the ledger does not hold. So the order was placed
+    /// and deleted again within one tick, and the pulse's promise ("she is the next look") was a sentence
+    /// the sim overruled a moment later — this repo's own named bug class, on the very button filed for it.
+    /// A captain's look at a contact we cannot hold is <see cref="SensorTask.SharpenFix"/> now: one-shot,
+    /// nobody's housekeeping, and it stays on the list until the glass has actually taken it.</para>
     /// </summary>
     private void TrackShipFromMenu(string id)
     {
@@ -246,7 +255,14 @@ public partial class Map
 
         string callsign = ContactCallsign(id);
         bool held = _trackingPost.ApplyObservation(new Observation(id, SimTime, state.Position, state.Velocity));
-        _trackingPost.EnqueueAndPrioritize(SensorTask.TrackUpdate(id, callsign));
+
+        // #962 · WHICH pass is ordered depends on whether we got custody, and it has to: a STANDING custody
+        // pass is the ledger's, re-queued each tick while the entry lives and swept out when it dies — so
+        // ordering one for a contact the full ledger just refused put a job on the list that the very next
+        // tick deleted. A captain's one-shot look is his own, and stays until the glass has taken it.
+        _trackingPost.EnqueueAndPrioritize(held
+            ? SensorTask.TrackUpdate(id, callsign)
+            : SensorTask.SharpenFix(id, callsign));
         ShowPulseMessage(held
             ? $"{callsign} on the telescope ledger — the scope swings onto her next 📡"
             : $"Telescopes full — {callsign} is the next look, but we can't hold custody; drop a track on the Sensors desk");
@@ -508,6 +524,11 @@ public partial class Map
         double Distance, double RelSpeed, double Closing,
         double? TrackQuality, bool InDriverReach, string FireLine,
         bool IsPrey, int BoardReady,
+        // #962: is the telescope's own task list carrying a pass on her right now? The card's "not on the
+        // telescope ledger" line is otherwise the same sentence before and after the captain presses
+        // 📡 sharpen fix, which is what "It says we are not tracking the debt collector and we should ...
+        // but really HOW??????" was written under.
+        bool ScopeOrdered = false,
         // #962: a hunter's card carries the terms of her contract — who bought it and what ends it, with
         // the clocks running. Null on traffic, which has no contract to state.
         HuntTerms? Terms = null);
@@ -577,6 +598,19 @@ public partial class Map
             quality = track.EffectiveQuality(SimTime);
         }
 
+        bool scopeOrdered = false;
+        if (_trackingPost is not null)
+        {
+            foreach (SensorTask queued in _trackingPost.TaskQueue)
+            {
+                if (queued.TargetShipId == id)
+                {
+                    scopeOrdered = true;
+                    break;
+                }
+            }
+        }
+
         // #962 · ONE REACH, AND IT IS THE ONE THE SIM ENFORCES. This line used to quote muzzle × one day
         // (691,200 km) while EncounterRule.InWeaponRange gated every warning shot at 200,000 km — a card
         // and a sim disagreeing by three and a half times, on the card the owner had open while he asked
@@ -601,7 +635,7 @@ public partial class Map
             boardReady = within && slow ? 2 : within ? 1 : 0;
         }
 
-        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, terms);
+        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, scopeOrdered, terms);
     }
 
     /// <summary>
