@@ -198,6 +198,52 @@ public static class ArrivalStepRule
     public static string BrokenPlanAlarm(ArrivalCheck c) =>
         $"⚠ THE PLAN NO LONGER ENDS SAFELY — {Verdict(c)}. Nobody is flying the ship into a berth; she needs your hand.";
 
+    // ===== #952 — THE ITERATE LOOP: A PASS THE RIBBON NEVER REACHED IS NOT A PASS =====
+    //
+    // The owner's own sentence on #952 is about a LOOP, not a button: "I wanted to iterate the path until I
+    // could add orbit mars step to the end of my plan." The button landed in #965; the loop had a hole under
+    // it. The plotted course has a LENGTH — the Path-length slider — and the closest-approach sweep reports a
+    // closest approach for EVERY body in the system whether or not the ribbon goes anywhere near it. For a
+    // body the projection stops short of, that "closest approach" is pinned to the ribbon's LAST SAMPLE: it
+    // is the end of the picture, not an encounter.
+    //
+    // Judged against that artefact, an arrival reads as a confident ✗ WITH NUMBERS — "0.45 AU too far, 6.3
+    // km/s too fast" — over a course that in truth arrives well inside both gates a couple of hundred days
+    // later. That is this repo's own named bug class (the sim doing one thing while a sentence reports
+    // another), and it is precisely fatal to the iterate loop: the shortfall points the wrong way, so no
+    // amount of ±p / ±d / ±h will ever close a gap that was never there.
+    //
+    // So the law: an arrival whose pass sits on the ribbon's own edge is NOT JUDGED. The row says why, and
+    // says which control fixes it. Silence with a reason beats a number that is not true.
+
+    /// <summary>
+    /// <b>Is this "closest pass" just the end of the drawn course?</b> True when the pass epoch sits within
+    /// one sample step of the projection's last sample — the sweep had nowhere further to look, so the
+    /// distance it returned is where the ribbon stopped, not where the ship comes nearest.
+    ///
+    /// <para>The tolerance is the projection's OWN local sample spacing at that end, handed in by the
+    /// caller rather than picked here: a borrowed number, never an invented one. A genuine encounter that
+    /// happens to fall in the final sample is treated as unjudged too — that is the safe direction, and one
+    /// press of <c>auto</c> (or a nudge of Path length) moves it inside the line.</para>
+    /// </summary>
+    /// <param name="passSimTime">The pass the sweep returned.</param>
+    /// <param name="ribbonEndSimTime">The epoch of the projection's last sample.</param>
+    /// <param name="sampleStepSeconds">The projection's spacing at that end (its own last gap).</param>
+    public static bool PassIsOffTheEndOfTheRibbon(
+        double passSimTime, double ribbonEndSimTime, double sampleStepSeconds) =>
+        passSimTime >= ribbonEndSimTime - Math.Abs(sampleStepSeconds);
+
+    /// <summary>
+    /// What the row says instead of a verdict it cannot honestly give — and which control ends the wait.
+    /// Deliberately names the two the captain already has his hand on (#952: <i>"I really like those iterate
+    /// buttons"</i>), so the fix is one press away rather than a puzzle.
+    /// </summary>
+    /// <param name="bodyName">Where the plan is trying to end.</param>
+    /// <param name="ribbonEndText">How long the plotted course currently runs, on the panel's own ladder.</param>
+    public static string RibbonTooShort(string bodyName, string ribbonEndText) =>
+        $"⌛ not judged — the plotted path stops at {ribbonEndText}, short of {bodyName}. "
+        + "Stretch Path length (or press auto) until the pass is on the line.";
+
     // ===== #969 — ARM IT *THEN*, NOT ONLY *NOW* =====
     //
     // The owner's ruling, 2026-08-23: "I just want the possibility to plan the trip from space to docked at

@@ -243,6 +243,20 @@ public partial class Map
                 // (no second estimator); the clamp stops a runaway plan asking for an un-affordable reproject.
                 horizon = PlotHorizon.AutoProjectionSeconds(
                     PlanFurthestEpochSeconds(), AutoHorizonMinSeconds, AutoHorizonMarginSeconds, PlotHorizonSeconds);
+
+                // #952 — REACH FOR THE WHOLE CAP WHILE THE PLAN'S ENDING IS OFF THE END OF THE LINE. The
+                // arrival's epoch is not known independently of the ribbon: it is READ OFF the ribbon, so a
+                // course too short to reach the body cannot say how much longer it needs. It can only say
+                // "longer", and the honest answer to that is the projection cap the panel already budgets
+                // for (PlotHorizonSeconds — the Saturn metric: one sit-down covers a whole sail). One
+                // projection later the encounter is on the line, PlanFurthestEpochSeconds above counts it,
+                // and RefreshArriveValidity's transition asks for the reprojection that settles this back
+                // to encounter + margin. Auto only: a captain who put his own finger on Path length is
+                // iterating, and that is the loop #952 is about — never overrule it.
+                if (ArriveRibbonIsTooShort())
+                {
+                    horizon = PlotHorizonSeconds;
+                }
             }
 
             // #265: once the achieved orbit is BOUND to a body, cap the horizon at ~one revolution so the
@@ -273,6 +287,17 @@ public partial class Map
         if (_destinationPass is { } dp)
         {
             furthest = Math.Max(furthest, dp.SimTime - now);
+        }
+
+        // #952 — THE PLAN'S LAST STEP IS, BY DEFINITION, ITS FURTHEST ENCOUNTER. The arrival is a step in the
+        // list (PR-D1) but it was never in this reckoning, so "the plan's furthest encounter" meant the last
+        // BURN: plot two burns off Earth and end the plan at Mars, and the auto ribbon stopped at burn + 90 d
+        // — two hundred days short of the plan's own ending, with the arrival's ✗ computed off a pass that
+        // was really just the end of the line. The arrival belongs here beside the destination pass; it is
+        // the same kind of fact, read off the same sweep.
+        if (_arrive is { } arrival && ArrivePassFor(arrival.BodyId) is { } arrivalPass)
+        {
+            furthest = Math.Max(furthest, arrivalPass.SimTime - now);
         }
 
         // The furthest future burn node — so a plotted departure's ribbon reaches at least its last burn.
