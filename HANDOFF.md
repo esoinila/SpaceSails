@@ -1,6 +1,6 @@
 # #954 — flickering on every orbit — HANDOFF
 
-## Status: fix implemented, both halves proven RED by revert, Core+Client NearestRule/flicker gates green. Full suites next.
+## Status: DONE, PR open. Both halves + the anchor proven RED by revert. Full Release build + suite green: 4,071 Core + 1,438 Client = 5,509 tests, 0 failures.
 
 ## What #954 actually was, on this branch
 
@@ -74,8 +74,10 @@ Two halves, both phase-independent, which is why the result is ZERO changes of m
   - `UpdateNearestNeighbourhood`: case (b) rewritten as above; new `_neighbourhoodHavenId` incumbent.
 - `tests/SpaceSails.Core.Tests/NearestRuleTests.cs` — 4 new gates on the law.
 - `tests/SpaceSails.Client.Tests/NearestHoldsTheNeighbourhoodTests.cs` — NEW. 32 posts (8 planets ×
-  4 ranges) × {slot, line} + the premise + arrival + clamped.
+  4 ranges) × {slot, line, anchor} + the premise + arrival + clamped.
 - `tests/SpaceSails.Client.Tests/NearestDoesNotFlickerTests.cs` — one assertion updated (see below).
+- `tests/SpaceSails.Client.Tests/EveryFrameLeavesTheSameFingerprintTests.cs` + `Fingerprints/*.txt` —
+  all 30 re-pinned, with a ledger entry stating the diff (see below).
 
 ## RED proofs (both done, by revert)
 
@@ -150,5 +152,8 @@ browser: an MCP-driven tab is `document.hidden`, so any number from one is worth
 
 ## Not done / open
 
-- No full Core+Client run yet on the final tree (one is required before the PR).
+- **UiGate (Playwright) was not run locally** — CI runs it on its own job after a WASM AOT publish. This
+  change touches no CSS or layout; the boot smoke is CI's.
+- **No live browser look.** The mechanism is driven at the sim level by the guards (the real
+  `UpdateNearestBody` on the real scenario). Browser timings would be invalid in an MCP tab anyway.
 - No player-facing prose added or changed.
