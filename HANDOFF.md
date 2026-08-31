@@ -35,10 +35,26 @@ Reverted `.satchel-backdrop` to +120 and deleted the `_showSatchel` Esc line, re
 * `The_card_underneath_is_neither_spent_nor_lost` → FAIL (Escape left the satchel up).
 Fix restored, both green, twice in a row (58 s).
 
+## Suite runs (2026-08-31)
+| run | code | result |
+| --- | --- | --- |
+| 1 | 908cf25-ish | **Client 1371/1371, Core 4066/4066 — all green** |
+| 2 | b70415e (final) | Core 4066/4066 green; **Client 9 failed / 1362 passed** |
+
+The 9 are all `EveryFrameLeavesTheSameFingerprintTests` rows, one draw call off
+(`walked-view pen = 211920 → 211921`, `ACaptainInAChair / AHandOnTheWarpSlider` named).
+**Not reproducible in isolation:** that class alone = 31/31 green on the final code, and run together with
+`ThePocketIsNotACardTests` = 37/37 green. Run 1 passed on code differing only by a moved `if` line and a
+comment. Suspected pre-existing order/parallelism flake in the full-assembly run.
+
 ## Remaining
-- [ ] browser-free twin in `tests/SpaceSails.Client.Tests` (band order + markup class + Esc/Enter chain order)
-- [ ] full Core suite (`dotnet test SpaceSails.slnx`) + full UiGate
+- [ ] **IN FLIGHT (task be5c0kpn1): full `Client.Tests` on an UNMODIFIED base worktree `D:/repo12/wt/1027base`
+      — if it also fails those rows, the flake is pre-existing and the PR can go; if it is green, bisect my
+      change (first suspect: the Enter-chain move in commit 28adba3, which is the one behavioural delta
+      between run 1 and run 2 and can be reverted with no loss to the #1027 fix itself).**
+- [ ] full UiGate suite (`SPACESAILS_PUBLISH_DIR=D:/repo12/wt/1027/publish dotnet test tests/SpaceSails.UiGate`)
 - [ ] delete this file, open PR (`gh pr create --base our-own-ship-has-compartments`), reference #1027
+- [ ] `git worktree remove D:/repo12/wt/1027base` when done
 
 ## Local run recipe
 ```
