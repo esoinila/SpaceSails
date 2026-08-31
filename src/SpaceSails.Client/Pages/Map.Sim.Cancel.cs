@@ -29,6 +29,23 @@ public partial class Map
     // Returns true when it consumed the key by closing something.
     private bool TryDismissTopOverlay()
     {
+        // #1038 · THE PEEK, AND IT IS FIRST BECAUSE IT IS THE ONLY THING THE CAPTAIN CAN SEE.
+        //
+        // Owner, verbatim: "I thing esc-key should end the peek." It goes in this chain rather than beside it
+        // in OnKeyDown for the reason the chain exists — Escape has one meaning, "take the thing I am looking
+        // at off my screen", and a second Escape handler somewhere else is how a key ends up doing two things
+        // and lying about one of them (#997 wave 11, the click menus, where the fall-through moved the captain
+        // to another desk and left the menu's gate set).
+        //
+        // AT THE TOP, above the 1420 band, and the argument is #1027's own. That entry moved the first-ground
+        // family to the head of the chain because Esc over a VISIBLE ground lesson was peeling an INVISIBLE
+        // story card underneath it. Peek is that fact taken to its limit: while it is on, EVERY surface listed
+        // below is at opacity 0 and visibility hidden, so any line above this one would be a blind dismissal
+        // of a card the captain cannot see — spending a told-once beat he never read. The peek is the mode he
+        // is in and the only thing on the glass; ending it is the one thing the key can honestly mean. Press
+        // Escape twice and the second press peels the card the first press gave him back, which is the right
+        // two-step and the only one he can watch happen.
+        if (_peekMap) { EndPeekMap(); return true; }
         // #735 · The told-once cards — the convergence reveal and the first-ground family (the lesson, the
         // map-just-grew card, the tube rearm, the low-air warning). Every one of them already dismisses on
         // a backdrop click and carries its own way-out button, so dismissal is allowed here and Esc was

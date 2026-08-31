@@ -5452,9 +5452,13 @@
        backdrops, the scope) changes layer. pointer-events:none because this box covers the whole window
        and the canvas has to stay grabbable through it — the same bargain the two children already make,
        each re-enabling its own controls. *@
-    <div class="map-flowcolumn">
+    @* #1038 · peek-passthrough on BOTH boxes: neither is an overlay, they are the layout that #992 put
+       between the map page and the desk tab bar, and the peek fade has to walk THROUGH them to reach the
+       panels rather than dropping the whole column (and the 👁 way out inside it) to opacity 0. See the
+       .map-peek rule in app.css — the classes are the contract, the nesting is not. *@
+    <div class="map-flowcolumn peek-passthrough">
 
-    <div class="map-topstack">
+    <div class="map-topstack peek-passthrough">
 
     @* Station tab bar (StationDesks.md rule 3): visible aboard on every desk — the keyboard-shortcut
        equivalent for players who'd rather click. Captain (PR-15) leads the bar with its `0` key, ahead
@@ -5463,7 +5467,11 @@
        captain's link to the ship overhead is #327's orbit-comms line, painted across the excursion HUD. *@
     @if (_surface is null)
     {
-        <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
+        @* #1038 · peek-keep: this bar is the one thing peek leaves standing, because the 👁 button on the
+           end of it is the labelled way out of the mode. It has been meant to survive since peek was
+           written; until now the exemption named it as a direct child of .map-page and #992's flow column
+           quietly repealed that. *@
+        <div class="desk-tab-bar peek-keep bg-dark bg-opacity-75 rounded p-1">
             @foreach (ShipDesk desk in TabBarOrder)
             {
                 @* #1021 · The Galley chip is still on the bar and is no longer a desk — pressing it raises
@@ -5480,10 +5488,16 @@
                 </button>
             }
             @* Owner request: temporarily clear every panel to read the map, and back. Toggles the
-               .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` . *@
+               .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` .
+               #1038 · While peeking, this button IS the way out, so it says so in words and names the key
+               that also works — #195's law that every control states what pressing it will do, and the
+               shell wave's rule that a way out is visible AND worded. *@
             <button type="button" class="btn btn-sm desk-tab @(_peekMap ? "btn-warning" : "btn-outline-light")"
-                    title="Peek at the map — hide the panels (` toggles)" @onclick="TogglePeekMapFromClick">
-                @(_peekMap ? "👁 Show panels" : "👁 Peek")
+                    title="@(_peekMap
+                             ? "Bring the panels back — or press Esc (` toggles too)"
+                             : "Peek at the map — hide the panels (` toggles, Esc brings them back)")"
+                    @onclick="TogglePeekMapFromClick">
+                @(_peekMap ? "👁 Show panels (Esc)" : "👁 Peek")
             </button>
         </div>
     }
