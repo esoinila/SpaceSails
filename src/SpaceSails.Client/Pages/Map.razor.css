@@ -1221,7 +1221,19 @@
 }
 
 /* M25: navigation-target panel — the plotted course's pass vs orbit success, in plain words.
-   Bottom center, deliberately roomy: it is the whole point of navigating there. */
+   Bottom center, deliberately roomy: it is the whole point of navigating there.
+
+   #950 (reopened) · Z-INDEX ABOVE `.map-hud`, NOT BELOW IT. This panel is bottom-anchored against the
+   WINDOW (`bottom: 0.75rem`), independent of the flow column #992 built for `.map-hud` — the two layout
+   systems were never made to coordinate, so whenever the Plotting panel's own box runs long enough to
+   reach this low (docked at a great port with a plan and a destination both set, MEASURED at 1280×720 and
+   at 390×700: `.map-plot`'s own bottom edge lands 12 px inside this panel's TOP edge at both sizes), the
+   two geometrically overlap. At the old `chrome + 2` — BELOW `.map-hud`'s `chrome + 12` — the Plotting
+   panel's edge painted over this one, hiding a sliver of the one thing on screen that answers "the whole
+   point of navigating there" (the M25 comment's own words) behind an edge of a DIFFERENT panel the captain
+   was not, at that moment, reading. `chrome + 13` — one above `.map-hud`, one below `.map-topstack`'s
+   `chrome + 14` (the banner still wins over everything) — flips that: on the rare frame the two touch, the
+   navigation target's own words stay on top. */
 .map-dest-panel {
     position: absolute;
     bottom: 0.75rem;
@@ -1230,7 +1242,7 @@
     width: 38rem;
     max-width: calc(100% - 1.5rem);
     pointer-events: auto;
-    z-index: calc(var(--z-map-chrome) + 2);
+    z-index: calc(var(--z-map-chrome) + 13);
     border: 1px solid rgba(120, 220, 255, 0.5);
     /* #960: CAPPED so the dossier stacked above it (.map-dossier-raised) sits at a KNOWN offset rather than
        one CSS would have to measure. A long plan scrolls inside its own box instead of growing under the
