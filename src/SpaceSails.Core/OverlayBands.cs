@@ -47,7 +47,14 @@ public static class OverlayBands
 
     // ---- MapChrome members (each = MapChrome + a fine offset that preserves today's exact value) ---
 
-    /// <summary><c>.map-dest-panel</c> — the navigation-target box (Map.razor.css).</summary>
+    /// <summary><c>.map-dest-panel</c> — the navigation-target box (Map.razor.css).
+    ///
+    /// <para>#950 (reopened, then reverted) · Raising this above <see cref="MapHud"/> (<c>+12</c>) was tried
+    /// to stop `.map-plot`'s own bottom edge painting over this panel's top sliver, and reverted:
+    /// <c>.map-hud</c> is one stacking context, so out-ranking it here out-ranks EVERY control it carries,
+    /// and <c>CriticalControlsTests.EveryCriticalControl_IsReachable_AtEverySize</c> proved this panel's own
+    /// geometry genuinely covers <c>autopilot-disengage</c> at every tested size, not only the narrow ones.
+    /// Left at <c>+2</c> on purpose.</para></summary>
     public const int MapDestPanel = MapChrome + 2;   // 12
 
     /// <summary><c>.desk-layer</c> — the full-screen desk shield behind a station's chrome.</summary>
