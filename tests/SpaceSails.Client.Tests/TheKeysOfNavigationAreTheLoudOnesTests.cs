@@ -200,6 +200,52 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
         Assert.Equal(jupiter.Y, followed.Value.Y, 3);
     }
 
+    /// <summary>THE FOLLOW READS THE PLAN, IT DOES NOT REMEMBER IT. This repo's named bug class is two
+    /// answers to one question: a second copy of a fact, taken once and then quietly wrong. A follow-dest
+    /// that latched the body id (or worse, the POSITION) at the moment the button went down would satisfy
+    /// every other guard on this feature and still strand the camera over the place we used to be going.
+    ///
+    /// <para>So both halves are pressed here, through the plan's own door rather than the field: change the
+    /// destination while the follow is engaged and the camera must already be over the new body with no
+    /// second press; let sim time run and the followed point must have travelled with that body's orbit.
+    /// One source — <c>_destinationBodyId</c> read live, positioned live off the ephemeris — or this
+    /// fails.</para></summary>
+    [Fact]
+    public void FollowDestRidesWhereverThePlanSaysWeAreGoingNow()
+    {
+        Pages.Map map = ParkedOffMars();
+        var ephemeris = Get<ICelestialEphemeris>(map, "_ephemeris");
+        Set(map, "SimTime", 12_345.0);
+
+        Invoke(map, "SetDestination", "jupiter");
+        Invoke(map, "ToggleFollowDest");
+        Assert.True(Get<bool>(map, "_followDest"));
+
+        // The plan changes its mind. Nobody presses Follow dest again.
+        Invoke(map, "SetDestination", "saturn");
+
+        var moved = (Vector2d?)Invoke(map, "FollowedDestinationPosition");
+        Vector2d saturn = ephemeris.Position("saturn", 12_345.0);
+        Vector2d jupiter = ephemeris.Position("jupiter", 12_345.0);
+
+        Assert.NotNull(moved);
+        Assert.Equal(saturn.X, moved!.Value.X, 3);
+        Assert.Equal(saturn.Y, moved.Value.Y, 3);
+        // …and it really is somewhere else, or the assertion above could not tell the two apart.
+        Assert.True((saturn - jupiter).Length > AU, "the bench picked two bodies the camera cannot distinguish");
+
+        // The other half of one-source: the body it rides is MOVING. A position captured once passes
+        // everything above and freezes here.
+        Set(map, "SimTime", 12_345.0 + (400.0 * 86_400.0));
+        var later = (Vector2d?)Invoke(map, "FollowedDestinationPosition");
+        Vector2d saturnLater = ephemeris.Position("saturn", 12_345.0 + (400.0 * 86_400.0));
+
+        Assert.NotNull(later);
+        Assert.Equal(saturnLater.X, later!.Value.X, 3);
+        Assert.Equal(saturnLater.Y, later.Value.Y, 3);
+        Assert.True((saturnLater - saturn).Length > AU / 10, "Saturn did not move far enough to prove the point");
+    }
+
     /// <summary>ONE CAMERA, ONE THING TO FOLLOW. Two live follows are a fight over the same camera, and the
     /// frame would be told to centre on two places at once.</summary>
     [Fact]
