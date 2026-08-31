@@ -247,6 +247,182 @@ public sealed class TheIterateEndsWithTheArrivalTests
         Assert.NotEqual("within both gates", ArrivalStepRule.Shortfall(check));
     }
 
+    // ── (5) #1042 · THE OTHER EDGE: A PASS THE RIBBON MERELY *BEGINS* AT ───────────────────────────────
+
+    /// <summary>
+    /// <b>WITH THE SCRUB AT ZERO, THE BUTTON MUST NOT OFFER A BODY THE SHIP LEFT BEHIND BEFORE THE PLAN
+    /// BEGAN.</b> #1041 fixed the END edge and left this one standing on purpose, but it left BOTH readings
+    /// of a start-edge pass standing with it: "at closest approach NOW" and "opening from something whose
+    /// closest approach was years ago" come out of <see cref="ClosestApproach.Passes"/> as the same artefact,
+    /// pinned to the ribbon's first sample, and the compose button could not tell them apart. With the scrub
+    /// at zero that artefact sits at delta-zero from the captain's finger and beats every real encounter on
+    /// the line.
+    ///
+    /// <para>RED PROOF, watched on this bench before the fix: the orbit button read
+    /// <c>🛰 + Add orbit at scrub (Uranus)</c> — 20.16 AU, pass pinned to day 0, closest approach 333 days
+    /// in the past — and the dock button <c>⚓ + Add dock at scrub (The Tilt)</c>, same rock. On a 120 d line
+    /// it read <c>(Neptune)</c>, 29.88 AU, closest approach 1761 days ago: the very body CI offered #1041's
+    /// own gate.</para>
+    /// </summary>
+    [Fact]
+    public void AT_SCRUB_ZERO_TheButtonOffersNoBodyTheShipLeftBehindBeforeThePlanBegan()
+    {
+        Pages.Map map = AShipOffEarthWithTwoBurnsPastMars(DeparturePercentPerNode, pinnedPathLengthDays: 5);
+        Set(map, "_scrubOffsetSeconds", 0.0);
+
+        // THE PREMISE, OUT LOUD. This sky really does pin Neptune's and Uranus's "closest pass" to the
+        // ribbon's first sample while the ship opens from them — the state under test, or the bench proves
+        // nothing (#1041's own lesson about betting on where the planets are).
+        foreach (string leftBehind in new[] { "neptune", "uranus" })
+        {
+            ClosestApproach.Pass pass = PassFor(map, leftBehind);
+            (double range, double rangeRate, double relSpeed) = Approach(map, leftBehind);
+            double agoDays = range * rangeRate / (relSpeed * relSpeed) / Day;
+            _out.WriteLine(
+                $"{pass.BodyName}: pass at day {pass.SimTime / Day:F3}, {ArrivalStepRule.FormatDistance(pass.Distance)}, "
+                + $"opening at {rangeRate / 1000:F1} km/s — closest approach was {agoDays:F0} d ago");
+            Assert.Equal(0.0, pass.SimTime / Day, 0.01);
+            Assert.True(agoDays > 100, $"{pass.BodyName} must be a body the ship left behind long before the plan.");
+        }
+
+        // THE FIX: neither of them is on the button any more, in either arrival's words.
+        string orbit = ButtonLabel(map, ArrivalStepRule.ArrivalKind.Orbit);
+        string dock = ButtonLabel(map, ArrivalStepRule.ArrivalKind.Dock);
+        _out.WriteLine($"orbit button: {orbit}");
+        _out.WriteLine($"dock  button: {dock}");
+        foreach (string offer in new[] { orbit, dock })
+        {
+            Assert.DoesNotContain("Neptune", offer, StringComparison.Ordinal);
+            Assert.DoesNotContain("Triton", offer, StringComparison.Ordinal);
+            Assert.DoesNotContain("The Deep", offer, StringComparison.Ordinal);
+            Assert.DoesNotContain("Uranus", offer, StringComparison.Ordinal);
+            Assert.DoesNotContain("Miranda", offer, StringComparison.Ordinal);
+            Assert.DoesNotContain("The Tilt", offer, StringComparison.Ordinal);
+        }
+
+        // …and the general law behind the two names, measured in this test's own arithmetic rather than
+        // through the production predicate: whatever the button offers, either its pass is an encounter the
+        // picture actually holds, or the ship is still at closest approach to it now.
+        foreach (ArrivalStepRule.ArrivalKind kind in new[]
+                 { ArrivalStepRule.ArrivalKind.Orbit, ArrivalStepRule.ArrivalKind.Dock })
+        {
+            if (Invoke(map, "ArriveCandidate", kind) is not ClosestApproach.Pass offered)
+            {
+                continue;
+            }
+
+            var samples = (IReadOnlyList<TrajectorySample>)Get<object>(map, "_samples");
+            double step = samples[1].SimTime - samples[0].SimTime;
+            if (offered.SimTime > samples[0].SimTime + step)
+            {
+                continue;   // an interior (or end-edge) pass: not this rule's business
+            }
+
+            (double range, double rangeRate, double relSpeed) = Approach(map, offered.BodyId);
+            double secondsAgo = range * rangeRate / (relSpeed * relSpeed);
+            Assert.True(
+                secondsAgo <= step,
+                $"the button offers {offered.BodyName} at the ribbon's first sample, but its closest approach "
+                + $"was {secondsAgo / Day:F1} d before the plan begins — that is where the PICTURE starts, not "
+                + "an encounter on this course.");
+        }
+    }
+
+    /// <summary>
+    /// <b>AND THE ✓ SURVIVES — THE ASYMMETRY IS THE POINT.</b> #1041 kept start-edge passes judged for one
+    /// stated reason: <i>"silencing it would take the ✓ away from the captain coasting past the body he means
+    /// to orbit."</i> So here is that captain: a ship abeam of Mars, 1 M km out, moving square across the
+    /// line to it at 2 km/s — genuinely AT closest approach this instant, with the pass pinned to the ribbon's
+    /// first sample exactly like Neptune's was. He must keep his offer AND his ✓.
+    ///
+    /// <para>Without this fact the fix would be a blanket mute and the ✓ would be gone, which is precisely
+    /// what #1041 refused to do.</para>
+    /// </summary>
+    [Fact]
+    public void A_CAPTAIN_AT_CLOSEST_APPROACH_NOW_KeepsHisOfferAndHisTick()
+    {
+        Pages.Map map = AShipAbeamOfMarsAtClosestApproach();
+        Set(map, "_scrubOffsetSeconds", 0.0);
+
+        // The premise: Mars's pass really is pinned to the ribbon's first sample — the same artefact shape.
+        ClosestApproach.Pass mars = PassFor(map, "mars");
+        (double range, double rangeRate, double relSpeed) = Approach(map, "mars");
+        _out.WriteLine(
+            $"Mars: pass at day {mars.SimTime / Day:F4}, {ArrivalStepRule.FormatDistance(mars.Distance)}, "
+            + $"range rate {rangeRate:F1} m/s, rel {relSpeed / 1000:F2} km/s");
+        Assert.Equal(0.0, mars.SimTime / Day, 0.01);
+        Assert.False((bool)Invoke(map, "PassIsOnlyTheRibbonsBeginning", mars)!,
+            "a ship AT closest approach now is not a picture that merely begins here.");
+
+        // The offer stands, by name…
+        Assert.Contains("Mars", ButtonLabel(map, ArrivalStepRule.ArrivalKind.Orbit), StringComparison.Ordinal);
+
+        // …and so does the verdict it was protecting.
+        Invoke(map, "AddArriveAtScrub", ArrivalStepRule.ArrivalKind.Orbit);
+        ArrivalStepRule.ArrivalCheck check = TheCheck(map);
+        _out.WriteLine($"verdict: {ArrivalStepRule.Verdict(check)}");
+        Assert.True(check.Valid, $"the coasting captain's ✓ must survive #1042: {ArrivalStepRule.Verdict(check)}");
+    }
+
+    // ── (6) #1042 · THE SCRUB CANNOT POINT PAST THE END OF THE WORLD IT SCRUBS ─────────────────────────
+
+    /// <summary>
+    /// <b>SHORTEN THE LINE AND THE SCRUB COMES BACK ONTO IT.</b> The scrub slider's <c>max</c> IS the path
+    /// length, but the bound value was only ever written by a hand on the control — so every way the line got
+    /// SHORTER left a scrub standing past the end of the drawn world, resolving through
+    /// <c>SamplePositionAtTime</c>'s "past the end → the last sample" fallback. The ghost ship, the scrub
+    /// clock, the node-epoch floor and every "at scrub" button then all agreed on an hour that is not on the
+    /// picture.
+    ///
+    /// <para>RED PROOF, watched on this bench before the fix: <i>"the scrub is at 400.0 d on a line 30.0 d
+    /// long"</i> — a value more than thirteen times its own control's maximum, and the fact never even
+    /// reached its auto half. (With the clamp in, that half goes 648.9 d → 90.1 d and takes the scrub with
+    /// it, which is what the printed line below reports.)</para>
+    /// </summary>
+    [Fact]
+    public void SHRINKING_THE_PATH_LENGTH_BringsTheScrubBackOntoTheLine()
+    {
+        Pages.Map map = AShipOffEarthWithTwoBurnsPastMars(DeparturePercentPerNode, pinnedPathLengthDays: 400);
+        ScrubToTheEndOfTheLine(map);
+        Assert.Equal(400.0, Get<double>(map, "_scrubOffsetSeconds") / Day, 0.5);
+
+        // The captain drags Path length down to look at the near term.
+        Set(map, "_horizonChoice", "30");
+        Invoke(map, "ReprojectTrajectory");
+
+        double scrub = Get<double>(map, "_scrubOffsetSeconds");
+        _out.WriteLine($"after shrinking to {Horizon(map) / Day:F1} d the scrub reads {scrub / Day:F1} d");
+        Assert.True(scrub <= Horizon(map) + 1e-6,
+            $"the scrub is at {scrub / Day:F1} d on a line {Horizon(map) / Day:F1} d long — past the end of the "
+            + "world it scrubs, and past its own slider's maximum.");
+
+        // …and it points at an hour the picture actually holds, not at the fallback's last sample.
+        var samples = (IReadOnlyList<TrajectorySample>)Get<object>(map, "_samples");
+        double scrubTime = (double)Property(map, "ScrubTime")!;
+        Assert.InRange(scrubTime, samples[0].SimTime, samples[^1].SimTime);
+
+        // The same must hold when it is AUTO that shortens the line behind the captain's back — nobody
+        // touched the scrub control at all. On auto the plan's own ending stretches the ribbon to the Mars
+        // encounter (#952); take the arrival off the plan again and it snaps back to last burn + 90 d, and
+        // a scrub left at the old far end would be standing three hundred days outside the picture.
+        Set(map, "_horizonChoice", "auto");
+        Invoke(map, "AddArriveAtScrub", ArrivalStepRule.ArrivalKind.Orbit);
+        ScrubToTheEndOfTheLine(map);
+        double reachedFor = Horizon(map);
+        Assert.True(reachedFor / Day > 300, $"the bench must start from the long auto line: {reachedFor / Day:F1} d");
+
+        Invoke(map, "RemoveArriveStep");
+        Invoke(map, "ReprojectTrajectory");
+
+        double after = Get<double>(map, "_scrubOffsetSeconds");
+        _out.WriteLine(
+            $"auto held {reachedFor / Day:F1} d, snapped back to {Horizon(map) / Day:F1} d, scrub {after / Day:F1} d");
+        Assert.True(Horizon(map) < reachedFor - Day, "the auto line must genuinely have shrunk, or this proves nothing.");
+        Assert.True(after <= Horizon(map) + 1e-6,
+            $"auto snapping the line back must bring the scrub with it: scrub {after / Day:F1} d on a "
+            + $"{Horizon(map) / Day:F1} d line.");
+    }
+
     // ── The bench (the #969 / TheBerthEndsTheVoyage reflection idiom) ──────────────────────────────────
 
     /// <summary>A ship standing in free space off Earth with two plotted Vector burns that take her past Mars
@@ -283,6 +459,52 @@ public sealed class TheIterateEndsWithTheArrivalTests
         return map;
     }
 
+    /// <summary>
+    /// #1042 · <b>THE CAPTAIN COASTING PAST THE BODY HE MEANS TO ORBIT.</b> A ship abeam of Mars — one
+    /// million km out, well inside the capture range the arrival is judged against — with her whole relative
+    /// velocity square across the line to it, so the range rate is exactly zero and closest approach is THIS
+    /// INSTANT. The pass therefore pins to the ribbon's first sample, the same artefact shape Neptune's does,
+    /// and telling the two apart is the entire #1042 fix.
+    ///
+    /// <para>2 km/s relative is inside <see cref="OrbitRule.MaxRelativeSpeed"/>, so the arrival reads ✓ —
+    /// which is the ✓ #1041 refused to give up and this bench exists to keep.</para>
+    /// </summary>
+    private static Pages.Map AShipAbeamOfMarsAtClosestApproach()
+    {
+        var map = new Pages.Map();
+        FieldInfo pending = typeof(ComponentBase).GetField(
+            "_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException(
+                "ComponentBase has no _hasPendingQueuedRender — the render early-out this bench rides on has moved.");
+        pending.SetValue(map, true);
+
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        Set(map, "_ephemeris", ephemeris);
+        Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
+
+        Vector2d marsPos = ephemeris.Position("mars", 0);
+        Vector2d marsVel = (ephemeris.Position("mars", 1) - ephemeris.Position("mars", -1)) / 2;
+
+        // Offset along Mars's own velocity, relative motion square across it: r·v = 0, exactly.
+        Vector2d along = marsVel.Normalized();
+        var across = new Vector2d(-along.Y, along.X);
+        Set(map, "_ship", new ShipState(marsPos + (along * AbeamRangeMeters), marsVel + (across * AbeamRelSpeed), 0));
+        Set(map, "SimTime", 0.0);
+        Set(map, "_reactionMassPulses", 500);
+        Set(map, "_horizonChoice", "5");
+
+        Invoke(map, "RebuildPlan");
+        Invoke(map, "ReprojectTrajectory");
+        Sweep(map, 1000.0);
+        return map;
+    }
+
+    /// <summary>One million km: comfortably inside Mars's capture range (5.42 M km), so the arrival is a ✓.</summary>
+    private const double AbeamRangeMeters = 1.0e9;
+
+    /// <summary>2 km/s — under <see cref="OrbitRule.MaxRelativeSpeed"/>, so the insertion window is open.</summary>
+    private const double AbeamRelSpeed = 2000.0;
+
     private static void AddPlottedVectorBurn(Pages.Map map, double simTime, double percent, double heading)
     {
         Type nodeType = typeof(Pages.Map).GetNestedType("PlanNode", BindingFlags.NonPublic)
@@ -316,6 +538,17 @@ public sealed class TheIterateEndsWithTheArrivalTests
         Set(map, "_scrubOffsetSeconds", MarsPass(map).SimTime - Get<ShipState>(map, "_ship").SimTime);
 
     private static double Horizon(Pages.Map map) => (double)Property(map, "CurrentPlotHorizonSeconds")!;
+
+    /// <summary>#1042 — the pass the sweep is holding for a body.</summary>
+    private static ClosestApproach.Pass PassFor(Pages.Map map, string bodyId) =>
+        (ClosestApproach.Pass)(Invoke(map, "ArrivePassFor", bodyId)
+            ?? throw new InvalidOperationException($"no {bodyId} pass on the plotted course — this bench has drifted"));
+
+    /// <summary>#1042 — range, range rate and relative speed at the ribbon's FIRST sample, off the page's own
+    /// reading of its own projection.</summary>
+    private static (double Range, double RangeRate, double RelSpeed) Approach(Pages.Map map, string bodyId) =>
+        ((double, double, double))(Invoke(map, "LeadingApproach", bodyId)
+            ?? throw new InvalidOperationException($"no leading approach for {bodyId} — this bench has drifted"));
 
     private static ClosestApproach.Pass MarsPass(Pages.Map map) =>
         (ClosestApproach.Pass)(Invoke(map, "ArrivePassFor", "mars")

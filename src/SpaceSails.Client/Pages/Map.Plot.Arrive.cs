@@ -80,6 +80,15 @@ public partial class Map
                 continue;
             }
 
+            // #1042 — AND NOT A BODY THE RIBBON MERELY BEGINS AT. With the scrub at zero such a pass sits at
+            // delta-zero from the captain's finger and wins this pick outright over every real encounter
+            // later on the line, which is how the button came to read "+ Add orbit at scrub (Neptune)" to a
+            // ship thirty AU away and opening. See PassIsOnlyTheRibbonsBeginning: the row's ✓/✗ is untouched.
+            if (PassIsOnlyTheRibbonsBeginning(pass))
+            {
+                continue;
+            }
+
             double delta = Math.Abs(pass.SimTime - scrub);
             if (delta < bestDelta)
             {
@@ -90,8 +99,12 @@ public partial class Map
         // The tick's own tightest-orbitable pick is the SAME fact, already computed (Map.Sim.Tick), and it
         // survives the frame between a reprojection and the next pass sweep — so the button is never dead
         // for a frame while the list is being rebuilt. It is data reuse, not a second surface: the chip it
-        // used to draw is gone.
-        if (best is null && kind == ArrivalStepRule.ArrivalKind.Orbit && _armablePass is { } armable)
+        // used to draw is gone. #1042: the same front-edge test applies to it, or the fallback would hand
+        // back the very offer the loop above just refused.
+        if (best is null
+            && kind == ArrivalStepRule.ArrivalKind.Orbit
+            && _armablePass is { } armable
+            && !PassIsOnlyTheRibbonsBeginning(armable))
         {
             return armable;
         }
@@ -158,6 +171,68 @@ public partial class Map
         _samples.Count < 2
             ? null
             : (_samples[^1].SimTime, Math.Max(1.0, _samples[^1].SimTime - _samples[^2].SimTime));
+
+    /// <summary>
+    /// #1042 — the projection's FIRST sample and its own spacing there: <see cref="RibbonEnd"/>'s sibling at
+    /// the other end of the line. Read off <c>_samples</c> for the same reason — the ribbon's beginning has
+    /// to be measured in the very world the pass was measured in. Null until there is a projection to speak
+    /// of.
+    /// </summary>
+    private (double StartSimTime, double SampleStepSeconds)? RibbonStart() =>
+        _samples.Count < 2
+            ? null
+            : (_samples[0].SimTime, Math.Max(1.0, _samples[1].SimTime - _samples[0].SimTime));
+
+    /// <summary>#1042 — the approach to a body AS THE PICTURE OPENS: how far, how fast that distance is
+    /// growing, and how fast the ship is moving relative to it, all at the ribbon's first sample. The
+    /// velocities are read the one way the rest of this file reads them (<c>SampledVelocityAt</c> off the
+    /// ribbon, <c>PassBodyVelocity</c> off the ephemeris), so this and the verdict cannot describe two
+    /// ships.</summary>
+    private (double Range, double RangeRate, double RelSpeed)? LeadingApproach(string bodyId)
+    {
+        if (_ephemeris is null || _samples.Count < 2)
+        {
+            return null;
+        }
+
+        double startSimTime = _samples[0].SimTime;
+        Vector2d offset = _samples[0].Position - _ephemeris.Position(bodyId, startSimTime);
+        double range = offset.Length;
+        if (range <= 0)
+        {
+            return null;
+        }
+
+        Vector2d relVelocity = SampledVelocityAt(startSimTime) - PassBodyVelocity(bodyId, startSimTime);
+        return (range, offset.Dot(relVelocity) / range, relVelocity.Length);
+    }
+
+    /// <summary>
+    /// #1042 — is this "closest pass" only where the PICTURE begins? A body the ship has been opening from
+    /// since before the plan existed has its sweep-reported minimum pinned to the ribbon's first sample, and
+    /// with the scrub at zero that artefact beats every real encounter to the compose button.
+    ///
+    /// <para>Used ONLY to decide what may be OFFERED (<see cref="ArriveCandidate"/>). The arrive row's own
+    /// verdict is deliberately left alone — see the note above
+    /// <see cref="ArrivalStepRule.PassIsOffTheFrontOfTheRibbon"/> for why the two edges are not one law.</para>
+    ///
+    /// <para>Asked of every body in the system on every render of the two compose labels, so it takes the
+    /// law's own cheap half first (<see cref="ArrivalStepRule.PassSitsAtTheRibbonsStart"/>) and reads the
+    /// geometry only for the handful of passes that sit on the ribbon's front at all.</para>
+    /// </summary>
+    private bool PassIsOnlyTheRibbonsBeginning(ClosestApproach.Pass pass)
+    {
+        if (RibbonStart() is not { } start
+            || !ArrivalStepRule.PassSitsAtTheRibbonsStart(pass.SimTime, start.StartSimTime, start.SampleStepSeconds))
+        {
+            return false;
+        }
+
+        return LeadingApproach(pass.BodyId) is { } approach
+            && ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+                pass.SimTime, start.StartSimTime, start.SampleStepSeconds,
+                approach.Range, approach.RangeRate, approach.RelSpeed);
+    }
 
     /// <summary>#952 — is the arrival's pass only the end of the picture? See
     /// <see cref="ArrivalStepRule.PassIsOffTheEndOfTheRibbon"/> for why this is not a verdict.</summary>
