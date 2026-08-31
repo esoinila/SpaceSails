@@ -6566,29 +6566,41 @@
                         {
                             ArrivalStepRule.ArrivalCheck? _ac = ArriveCheck();
                             bool _avalid = _ac?.Valid ?? false;
+                            // #952: a course too short to reach the body yields no verdict at all — the row
+                            // must read NOT JUDGED, never INVALID, because "invalid" is a claim about a plan
+                            // and this is a confession about the picture.
+                            string? _ashortLine = ArriveRibbonTooShortLine();
+                            bool _aunjudged = _ac is null;
                             bool _aarmed = ArriveCoversArmed;
                             bool _aactive = _aarmed && AutopilotFlyingApproach;
                             bool _aopen = _openEditor == FlightEditorKind.Arrive;
                             string _astate = _aarmed ? (_aactive ? "active" : "armed") : "planned";
-                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
+                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid || _aunjudged ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
                                 <div class="map-plan-step-line" role="button" tabindex="0"
                                      title="Click to @(_aopen ? "collapse" : "manage") the arrival that ends this plan"
                                      @onclick="ToggleArriveEditor">
-                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : "does NOT end safely")" aria-hidden="true"></span>
+                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : _aunjudged ? "not judged yet" : "does NOT end safely")" aria-hidden="true"></span>
                                     <span class="map-plan-step-caret" aria-hidden="true">@(_aopen ? "▾" : "▸")</span>
                                     <span class="flex-grow-1">@ArriveGlanceLine(_ar)</span>
-                                    @if (ArrivePassFor(_ar.BodyId) is { } _ap2)
+                                    @if (!_aunjudged && ArrivePassFor(_ar.BodyId) is { } _ap2)
                                     {
                                         <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
                                     }
-                                    <span class="badge @(_avalid ? "bg-success" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "…") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : "INVALID")</span>
+                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "⌛") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : _aunjudged ? "NOT JUDGED" : "INVALID")</span>
                                 </div>
                                 @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
                                    speed against the real thresholds (Core ArrivalStepRule reads them off
                                    OrbitRule / DockRule, so the sentence and the sim cannot disagree). *@
+                                @* …and (#952) when there is no verdict to give at all because the plotted
+                                   course stops short of the body, say THAT — never a fabricated ✗ whose
+                                   numbers point the captain the wrong way round the iterate loop. *@
                                 @if (_ac is { } _acx && !_acx.Valid)
                                 {
                                     <div class="map-arrive-why text-danger small">@ArrivalStepRule.Verdict(_acx)</div>
+                                }
+                                @if (_ashortLine is { } _ashort)
+                                {
+                                    <div class="map-arrive-why text-warning small">@_ashort</div>
                                 }
                                 @if (_aopen)
                                 {
@@ -6596,6 +6608,10 @@
                                         @if (_ac is { } _ace)
                                         {
                                             <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
+                                        }
+                                        @if (_ashortLine is { } _ashortEdit)
+                                        {
+                                            <div class="small mb-1 text-warning">@_ashortEdit</div>
                                         }
                                         @* #969: the finished trip, in one line — "3 burns · arrive in 9 mo — the autopilot
                                            will orbit Mars (≈3 p) · nothing more needed". This is the owner's own sentence
@@ -6651,6 +6667,8 @@
                                                 <text>
                                                     The plan ends here. @(_avalid
                                                         ? "Arm it now and the ship finishes the trip by itself — burns first, arrival last."
+                                                        : _aunjudged
+                                                        ? "Stretch Path length above (or press auto) until the pass is on the line — then the numbers say which way to iterate."
                                                         : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
                                                 </text>
                                             }

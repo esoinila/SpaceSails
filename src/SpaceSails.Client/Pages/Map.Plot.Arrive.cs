@@ -34,6 +34,12 @@ public partial class Map
 
         /// <summary>The last evaluated validity, for the one-shot transition alarm. Null until judged.</summary>
         public bool? LastValid { get; set; }
+
+        /// <summary>#952 — did the last sweep find this arrival's pass sitting on the ribbon's own edge (a
+        /// course too short to reach it)? Kept for the same reason <see cref="LastValid"/> is: the moment it
+        /// stops being true is a TRANSITION, and the transition is what lets the auto path length settle
+        /// back onto the encounter it just found instead of re-deciding every 300 ms. Null until judged.</summary>
+        public bool? LastPassWasOffTheRibbon { get; set; }
     }
 
     private ArriveStep? _arrive;
@@ -133,9 +139,74 @@ public partial class Map
         return ArrivalStepRule.Check(kind, body.Name, pass.Distance, (shipVel - bodyVel).Length, hill);
     }
 
-    /// <summary>The arrive step's verdict, or null when there is no step (or no projection yet).</summary>
+    /// <summary>The arrive step's verdict, or null when there is no step, no projection yet — or (#952) when
+    /// the plotted course stops short of the body and the "pass" the sweep returned is only the end of the
+    /// ribbon. Null is already the whole UI's word for "cannot judge this", so the fabricated ✗ simply stops
+    /// being spoken; <see cref="ArriveRibbonIsTooShort"/> supplies the sentence that replaces it.</summary>
     private ArrivalStepRule.ArrivalCheck? ArriveCheck() =>
-        _arrive is null ? null : CheckArrival(_arrive.Kind, _arrive.BodyId);
+        _arrive is null || ArriveRibbonIsTooShort() ? null : CheckArrival(_arrive.Kind, _arrive.BodyId);
+
+    // ===== #952 — how long the plotted course actually is, and whether it reaches the plan's own ending =====
+
+    /// <summary>
+    /// The projection's last sample and its own spacing there. Both facts come off <c>_samples</c> — the very
+    /// list <c>ClosestApproach.Passes</c> swept — so "the ribbon ends here" is measured against the same
+    /// world the pass was measured in, never against the requested horizon (which the adaptive projector's
+    /// sample cap may not have reached). Null until there is a projection to speak of.
+    /// </summary>
+    private (double EndSimTime, double SampleStepSeconds)? RibbonEnd() =>
+        _samples.Count < 2
+            ? null
+            : (_samples[^1].SimTime, Math.Max(1.0, _samples[^1].SimTime - _samples[^2].SimTime));
+
+    /// <summary>#952 — is the arrival's pass only the end of the picture? See
+    /// <see cref="ArrivalStepRule.PassIsOffTheEndOfTheRibbon"/> for why this is not a verdict.</summary>
+    private bool ArriveRibbonIsTooShort() =>
+        _arrive is { } step
+        && ArrivePassFor(step.BodyId) is { } pass
+        && RibbonEnd() is { } end
+        && ArrivalStepRule.PassIsOffTheEndOfTheRibbon(pass.SimTime, end.EndSimTime, end.SampleStepSeconds);
+
+    /// <summary>
+    /// #952 — <b>PUT THE PLAN'S NEW ENDING ON THE LINE, AND DO IT ON THE PRESS.</b>
+    ///
+    /// <para>Path length on "auto" means "let the nav line pick its own length", and until the arrival became
+    /// a step the furthest thing auto knew about was the last BURN. Plot two burns off Earth, end the plan at
+    /// Mars nine months out, and the ribbon stopped at burn + 90 d — two hundred days short of the plan's own
+    /// ending — with the row's ✗ computed off a "pass" that was really just where the line ran out.</para>
+    ///
+    /// <para>The arrival's epoch cannot be known independently of the ribbon; it is READ OFF the ribbon. So
+    /// this converges it, bounded, in two turns: project (reaching for the cap while the pass is off the end
+    /// — see <c>CurrentPlotHorizonSeconds</c>), sweep to find the real encounter on that longer line, then
+    /// project again so the drawn ribbon settles back onto encounter + margin and the Path-length readout and
+    /// the picture agree. Two turns is enough by construction — the second projection's horizon is computed
+    /// from a pass that is already interior — and there is no third.</para>
+    ///
+    /// <para>Every step here is work the 300 ms cadence does anyway (<c>ReprojectThePassesOnTheirCadence</c>);
+    /// doing it synchronously on a button press is what makes the press an ANSWER rather than a wrong number
+    /// that quietly corrects itself a third of a second later. The cadence still runs after us — <c>_passDirty</c>
+    /// is left set — and recomputes the same thing, so this is an early evaluation, never a second truth.</para>
+    /// </summary>
+    private void ReachTheArrivalWithTheRibbon()
+    {
+        if (_ephemeris is null || _simulator is null)
+        {
+            return;
+        }
+
+        for (int turn = 0; turn < 2; turn++)
+        {
+            ReprojectTrajectory();
+            _passes = ClosestApproach.Passes(_samples, _ephemeris);
+        }
+    }
+
+    /// <summary>The sentence the row speaks in place of a verdict it cannot honestly give. Null whenever the
+    /// arrival IS judgeable (or there is no arrival), so a caller can print it unconditionally.</summary>
+    private string? ArriveRibbonTooShortLine() =>
+        _arrive is { } step && ArriveRibbonIsTooShort() && RibbonEnd() is { } end
+            ? ArrivalStepRule.RibbonTooShort(BodyName(step.BodyId), FormatHorizon(end.EndSimTime - _ship.SimTime))
+            : null;
 
     private Vector2d PassBodyVelocity(string bodyId, double simTime)
     {
@@ -196,10 +267,15 @@ public partial class Map
         _openEditor = FlightEditorKind.Arrive;   // a freshly added step opens its own editor (PR-D2 idiom)
         _selectedPlanNode = null;
 
+        ReachTheArrivalWithTheRibbon();
+
         ArrivalStepRule.ArrivalCheck? check = ArriveCheck();
         _arrive.LastValid = check?.Valid;
+        _arrive.LastPassWasOffTheRibbon = ArriveRibbonIsTooShort();
         ShowPulseMessage(check is { } c
             ? $"Plan ends at {pass.BodyName}. {ArrivalStepRule.Verdict(c)}"
+            : ArriveRibbonTooShortLine() is { } shortLine
+            ? $"Plan ends at {pass.BodyName}. {shortLine}"
             : $"Plan ends at {pass.BodyName}.");
     }
 
@@ -224,10 +300,14 @@ public partial class Map
         _arrive = new ArriveStep { BodyId = bodyId, Kind = kind };
         _arriveAlarm = null;
         _arriveAlarmDismissed = false;
+        // #952: a row laid by an ARM gets the same reach as one laid by the button — the plan gained an
+        // ending either way, and the course has to be long enough to show it.
+        ReachTheArrivalWithTheRibbon();
         // Seed the transition watch from the arrival as it stands, so an arm made into an already-poor
         // geometry does not immediately pop the "you ruined the plan" alarm at the captain who just armed
         // it — the row's ✗ is the honest surface for that (ArrivalStepRule.ShouldWarn).
         _arrive.LastValid = ArriveCheck()?.Valid;
+        _arrive.LastPassWasOffTheRibbon = ArriveRibbonIsTooShort();
     }
 
     private void RemoveArriveStep()
@@ -543,9 +623,21 @@ public partial class Map
             return;
         }
 
+        // #952 — THE COURSE IS TOO SHORT TO JUDGE THIS ARRIVAL. Not a verdict, and above all not an alarm:
+        // the pass the sweep returned is the ribbon's own edge. The moment it stops being the edge — the
+        // reach for the cap found the real encounter — is a TRANSITION, and on that one frame the auto path
+        // length is asked to run again so it can settle back onto the encounter instead of holding the cap.
+        bool offTheEnd = ArriveRibbonIsTooShort();
+        if (_arrive.LastPassWasOffTheRibbon == true && !offTheEnd && _horizonChoice == "auto")
+        {
+            _horizonDirty = true;
+        }
+
+        _arrive.LastPassWasOffTheRibbon = offTheEnd;
+
         if (ArriveCheck() is not { } check)
         {
-            return; // no projection yet — judge nothing rather than cry wolf
+            return; // no projection yet, or a course too short to judge — judge nothing rather than cry wolf
         }
 
         if (ArrivalStepRule.ShouldWarn(_arrive.LastValid, check.Valid))
@@ -574,11 +666,16 @@ public partial class Map
     {
         string verb = ArrivalStepRule.Verb(step.Kind);
         string body = BodyName(step.BodyId);
-        int est = ArriveEstPulses(step.Kind, step.BodyId);
-        string when = ArrivePassFor(step.BodyId) is { } pass && pass.SimTime > SimTime
+        // #952: a course that stops short of the body has NOTHING here to quote — the sweep's pass is where
+        // the ribbon ended, and the distance, the price and the countdown are all read off it. Every one of
+        // them goes to an em dash together, or the row would keep three fabricated numbers on the glance line
+        // while its own sentence underneath says it has not judged anything.
+        bool tooShort = ArriveRibbonIsTooShort();
+        string est = tooShort ? "—" : ArriveEstPulses(step.Kind, step.BodyId).ToString(CultureInfo.InvariantCulture);
+        string when = !tooShort && ArrivePassFor(step.BodyId) is { } pass && pass.SimTime > SimTime
             ? $"in {FormatDuration(pass.SimTime - SimTime)}"
-            : "now";
-        string dist = ArrivePassFor(step.BodyId) is { } p2 ? FormatDistance(p2.Distance) : "—";
+            : tooShort ? "—" : "now";
+        string dist = !tooShort && ArrivePassFor(step.BodyId) is { } p2 ? FormatDistance(p2.Distance) : "—";
         return $"{(step.Kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} {verb} {body} · pass {dist} · ≈{est} p · {when}";
     }
 }

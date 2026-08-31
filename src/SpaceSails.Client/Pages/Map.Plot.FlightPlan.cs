@@ -271,7 +271,12 @@ public partial class Map
                     ? $"{(arrive.Kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} {ArrivalStepRule.Verb(arrive.Kind)} at {BodyName(arrive.BodyId)} ✓"
                     : ArrivalStepRule.Verdict(c))
                 : $"{(arrive.Kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} {ArrivalStepRule.Verb(arrive.Kind)} at {BodyName(arrive.BodyId)}";
-            string arriveEta = ArrivePassFor(arrive.BodyId) is { } ap && ap.SimTime > SimTime
+            // #952: the ETA is read off the same pass the verdict is, so it keeps the same silence. A course
+            // that stops short of the body has no encounter to count down to — quoting the ribbon's own edge
+            // as "in 90 d" would put the artefact the row just refused to judge straight back on the banner,
+            // where a captain reads it without the row's sentence beside it to explain.
+            string arriveEta = !ArriveRibbonIsTooShort()
+                && ArrivePassFor(arrive.BodyId) is { } ap && ap.SimTime > SimTime
                 ? $"in {FormatDuration(ap.SimTime - SimTime)}"
                 : "at the pass";
             steps.Add(new FlightPlanStep(

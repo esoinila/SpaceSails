@@ -236,6 +236,61 @@ public class ArrivalStepRuleTests
         Assert.Equal(ArrivalStepRule.Verdict(c) + note, ArrivalStepRule.RefusalWhy(c, note));
     }
 
+    // ===== #952 · a pass the ribbon never reached is not a pass =====
+
+    /// <summary>
+    /// THE EDGE OF THE PICTURE IS NOT AN ENCOUNTER. <c>ClosestApproach.Passes</c> answers for every body in
+    /// the system whether or not the plotted course goes near it, so for a body the ribbon stops short of it
+    /// returns the LAST SAMPLE. Judged, that artefact prints a confident ✗ with numbers over a plan that in
+    /// truth arrives inside both gates — and sends the captain iterating the wrong way for ever. So the pass
+    /// is recognised for what it is, using the projection's own spacing at that end as the tolerance rather
+    /// than a number invented here.
+    /// </summary>
+    [Fact]
+    public void APassAtTheRibbonsLastSample_IsTheEndOfThePicture_NotAnEncounter()
+    {
+        const double ribbonEnd = 90.1 * 86400;
+        const double step = 3 * 3600;   // the projection's own maxTimeStep out in the deep
+
+        // Pinned to the end — this is the artefact.
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd, ribbonEnd, step));
+
+        // …and so is anything inside the final sample, which is the safe direction to be wrong in.
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - step, ribbonEnd, step));
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd + 1, ribbonEnd, step));
+
+        // A genuine encounter comfortably inside the line is a real pass and must be judged normally —
+        // without this half the rule would refuse to judge anything at all.
+        Assert.False(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - (2 * step), ribbonEnd, step));
+        Assert.False(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(24.5 * 86400, ribbonEnd, step));
+
+        // The tolerance is the caller's sample spacing, so a coarser ribbon shields a wider band — and a
+        // negative gap (a caller handing the spacing back to front) can never invert the test.
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - (2 * step), ribbonEnd, 4 * step));
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - step, ribbonEnd, -step));
+    }
+
+    /// <summary>
+    /// AND IT SAYS WHICH CONTROL ENDS THE WAIT. The owner likes the iterate buttons (#952: <i>"I really like
+    /// those iterate buttons"</i>); the sentence therefore names the one he has his hand on rather than
+    /// leaving him to guess why his arrival will not judge itself.
+    /// </summary>
+    [Fact]
+    public void TheRibbonTooShortLine_NamesTheBody_TheLength_AndTheControl()
+    {
+        string line = ArrivalStepRule.RibbonTooShort("Mars", "90 d");
+        Assert.Contains("not judged", line, StringComparison.Ordinal);
+        Assert.Contains("Mars", line, StringComparison.Ordinal);
+        Assert.Contains("90 d", line, StringComparison.Ordinal);
+        Assert.Contains("Path length", line, StringComparison.Ordinal);
+        Assert.Contains("auto", line, StringComparison.Ordinal);
+
+        // It is NOT a verdict and must never read like one — no ✗, no threshold, no shortfall.
+        Assert.DoesNotContain("✗", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("too far", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("need ≤", line, StringComparison.Ordinal);
+    }
+
     // ===== The words themselves =====
 
     [Fact]
