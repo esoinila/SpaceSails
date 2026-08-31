@@ -32,7 +32,7 @@ public static class RescueLifeline
     public const int PreLabZIndex = 30;
 
     /// <summary>The reserved distress-lifeline band <c>.map-adrift</c> lives in: above every non-rescue
-    /// overlay the state machine can raise (desk/deck pop-ups top out at <see cref="OverlayBands.ViewObjectBackdrop"/>),
+    /// overlay the state machine can raise (desk/deck pop-ups top out at <see cref="OverlayBands.SatchelBackdrop"/>),
     /// just below the rescue modal it opens (<see cref="OverlayBands.RescueBackdrop"/>). The lifeline is
     /// the last thing anything may paint over. Sourced from <see cref="OverlayBands"/> (#299), which the
     /// CSS mirrors and <c>CssZBandSyncTests</c> keeps honest — no hand-transcribed z-value here anymore.</summary>
@@ -107,18 +107,24 @@ public static class RescueLifeline
         return new Overlay("masthead/pilot-banner", new Rect(x, viewport.Y, w, h), ZIndex: OverlayBands.MapTopstack);
     }
 
-    /// <summary>A stand-in for ANY pointer-events pop-up authored into the desk/deck overlay band
-    /// (z-index up to 1320) that comes to rest over the bottom-centre. Not a state that co-occurs with
-    /// adrift today — a FORWARD guard: the lifeline band exists so that if one ever does, the affordance
-    /// still wins. Feed this to the audit against a pill at <see cref="PreLabZIndex"/> vs
-    /// <see cref="LifelineZIndex"/> to see the band earn its place.</summary>
+    /// <summary>A stand-in for ANY pointer-events pop-up authored into the desk/deck overlay band that comes
+    /// to rest over the bottom-centre. Not a state that co-occurs with adrift today — a FORWARD guard: the
+    /// lifeline band exists so that if one ever does, the affordance still wins. Feed this to the audit
+    /// against a pill at <see cref="PreLabZIndex"/> vs <see cref="LifelineZIndex"/> to see the band earn its
+    /// place.
+    ///
+    /// <para>#1027 · It is built at the band's CEILING, whatever that is today — the satchel's 1330 rather
+    /// than the cards' 1320 — because a worst case pinned to a named constant that has since been overtaken
+    /// is not a worst case any more. The name it reports carries the number so a failure says which.</para>
+    /// </summary>
     public static Overlay DeskBandPopupOverBottom(Rect viewport)
     {
         const double w = 38.0 * Rem;
         const double h = 16.0 * Rem;
         double x = viewport.X + (viewport.W - w) / 2;
         double y = viewport.Bottom - 3.0 * Rem - h; // sinks over the pill's bottom anchor.
-        return new Overlay("desk-band-popup (z≤1320)", new Rect(x, y, w, h), ZIndex: OverlayBands.ViewObjectBackdrop);
+        return new Overlay($"desk-band-popup (z≤{OverlayBands.SatchelBackdrop})", new Rect(x, y, w, h),
+            ZIndex: OverlayBands.SatchelBackdrop);
     }
 
     private static Overlay BottomCentre(Rect viewport, string name, double widthRem, double heightRem, int zIndex)

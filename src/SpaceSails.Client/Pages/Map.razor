@@ -2474,10 +2474,18 @@
     }
 
     @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
-       instrument it is a list of things to TRY, and every answer is definite. *@
+       instrument it is a list of things to TRY, and every answer is definite.
+
+       #1027 · `satchel-backdrop` IS THE LAYER, AND IT IS NOT COSMETIC. The pocket used to be one more
+       `.view-object-backdrop` among forty, which meant it shared a z-index with every card the world raises
+       and lost the tie to whichever of them was typed lower in this file. This block is at ~2480 and the
+       arrival card's is at ~3550, so a captain pressing I under 🛗 THE SHAFT opened the satchel BEHIND the
+       picture and saw a dead key. The modifier lifts it one step (OverlayBands.SatchelBackdrop, 1330) —
+       above the cards, below the distress lifeline and below every modal. The Esc chain in
+       Map.Sim.Cancel.cs peels it in the same order. *@
     @if (_showSatchel)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
+        <div class="view-object-backdrop satchel-backdrop" @onclick="() => Dismiss(CloseSatchel)">
             @* One Close for both pages: the satchel shuts the same way whichever half of it you are
                reading, and I still toggles it (#688) regardless of the page. *@
             <OverlayShell class="satchel" StopClicks="true"

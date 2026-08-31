@@ -29,25 +29,45 @@ public partial class Map
     // Returns true when it consumed the key by closing something.
     private bool TryDismissTopOverlay()
     {
-        // #528: the story card is the most modal thing there is — it opens without being asked for, over
-        // whatever the captain was already doing (a bar menu, a counter, a dig). Esc takes it FIRST, or the
-        // key would peel the card underneath it and leave the picture sitting there. The PLATE (the edge
+        // #735 · The told-once cards — the convergence reveal and the first-ground family (the lesson, the
+        // map-just-grew card, the tube rearm, the low-air warning). Every one of them already dismisses on
+        // a backdrop click and carries its own way-out button, so dismissal is allowed here and Esc was
+        // simply never wired to them; a card that takes the screen and ignores the cancel key is the
+        // #351 complaint again, one lane over.
+        //
+        // #1027 · THEY LEAD THE CHAIN NOW, AND THE REASON IS A NUMBER RATHER THAN A FEELING. They are the
+        // only family in this method drawn on `.convergence-backdrop` (z 1420, the Modal band), so they
+        // paint over every other card listed below — the story card included. They were listed SECOND, under
+        // #528's "the story card is the most modal thing there is", which was true on the day it was written
+        // and stopped being true when the first-ground family got its own band: Esc over a visible ground
+        // lesson peeled an invisible story card underneath it and left the lesson sitting there. That is the
+        // same shape as the bug this issue is about, one family over, so the same pass fixes it. THE ORDER
+        // OF THIS CHAIN IS PAINT ORDER, TOP DOWN, and now it is that all the way through.
+        if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
+        if (_groundLessonOpen) { CloseGroundLesson(); return true; }
+        if (_groundGrewOpen) { CloseGroundGrew(); return true; }
+        if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
+        if (_airCardOpen) { CloseAirCard(); return true; }
+        // #1027 · THE POCKET, AND IT IS THE FIRST TIME THE CANCEL KEY HAS REACHED IT AT ALL.
+        //
+        // The satchel was never in this chain: it closed on I, on its own ✕ and on its backdrop, which
+        // satisfied the pop-up law (#992) and left Esc falling straight through it to whatever card was
+        // underneath. Now that the pocket paints ABOVE those cards (OverlayBands.SatchelBackdrop, 1330) that
+        // fall-through is no longer merely a gap — it is the bug this issue names, running backwards: Esc
+        // would close the arrival card the captain cannot see and leave the satchel he is looking at.
+        //
+        // HERE, and not higher: the five cards above are 1420 and genuinely do cover the satchel, so they go
+        // first. Everything below is 1330 or under and the satchel covers it. One line, one place, and it
+        // reads off the same z-order the stylesheet does.
+        if (_showSatchel) { CloseSatchel(); return true; }
+        // #528: the story card opens without being asked for, over whatever the captain was already doing (a
+        // bar menu, a counter, a dig) — so it leads every card the captain went and GOT. The PLATE (the edge
         // flash) is deliberately NOT listed: it steals nothing and retires itself, so there is nothing for
         // Esc to take.
         //
         // #664 · There were TWO lines here, the reveal card's and the story card's, because the fork built
         // the same card twice. There is one card now and one line.
         if (_storyCard is not null) { CloseStoryCard(); return true; }
-        // #735 · The told-once cards — the convergence reveal and the first-ground family (the lesson, the
-        // map-just-grew card, the tube rearm, the low-air warning). Every one of them already dismisses on
-        // a backdrop click and carries its own way-out button, so dismissal is allowed here and Esc was
-        // simply never wired to them; a card that takes the screen and ignores the cancel key is the
-        // #351 complaint again, one lane over.
-        if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
-        if (_groundLessonOpen) { CloseGroundLesson(); return true; }
-        if (_groundGrewOpen) { CloseGroundGrew(); return true; }
-        if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
-        if (_airCardOpen) { CloseAirCard(); return true; }
         // #784 · The stand-up confirm sits ABOVE the table it is asking about, and Esc means KEEP YOUR SEAT.
         // Owner: "one press confirms, Esc keeps you seated." Listed here rather than under the table so the
         // cancel key cannot answer the question by doing the thing the question is about.
@@ -200,6 +220,18 @@ public partial class Map
             }
         }
 
+        // #1027 · THE POCKET STOPS THIS CHAIN AND PRESSES NOTHING, and it stops it ABOVE the stand-up
+        // confirm as well as above the cards.
+        //
+        // It is not a row here — it is a PAGE of many controls (rip, bin, offer, turn to the notebook)
+        // rather than a card with exactly one visible action, which is this key's founding refusal. But
+        // falling THROUGH it would be worse than doing nothing. Below this line sit an arrival card Enter
+        // would acknowledge and a seat Enter would stand the captain out of, and the pocket (1330) paints
+        // over both: the key would spend a beat or take a chair while the only thing on the screen did not
+        // move. Above the #784 exception on purpose — that exception is justified by the captain having
+        // just asked the question with his own hand on the keyboard, and a satchel opened over the confirm
+        // is a captain who has since gone and done something else.
+        if (_showSatchel) { return false; }
         // #784 · THE ONE QUESTION THIS KEY IS ALLOWED TO ANSWER, and the exception is worth stating rather
         // than smuggling. Every other card in this method asks nothing; the stand-up confirm asks something.
         // It is here because of WHERE IT CAME FROM: it is raised by a KEY (#847 left Esc on the docked strip
@@ -212,12 +244,16 @@ public partial class Map
         // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
         // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
         // on purpose, and its absence is the feature.
-        if (_storyCard is not null) { CloseStoryCard(); return true; }
+        //
+        // #1027 · The reorder above is mirrored here for the same reason the sentence gives: the told-once
+        // family paints at 1420 and the story card at 1320, so a key that pressed the story card's way on
+        // while a ground lesson stood over it would be answering a card nobody can see.
         if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
         if (_groundLessonOpen) { CloseGroundLesson(); return true; }
         if (_groundGrewOpen) { CloseGroundGrew(); return true; }
         if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
         if (_airCardOpen) { CloseAirCard(); return true; }
+        if (_storyCard is not null) { CloseStoryCard(); return true; }
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
