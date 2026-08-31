@@ -295,15 +295,19 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
         // an honest ✗ and not the state under test). So the bench walks the very control the row names, from
         // the shortest line upward, scrubbing to the far END each time — where an end-edge pass wins the
         // nearest-in-time pick outright — and stops at the first length that genuinely cuts the course short
-        // of whatever it is offering. Re-pressing the button REPLACES the terminal step (a plan ends once),
-        // so no cleanup is needed between turns.
+        // of whatever it is offering. #1048: a turn now starts by taking the previous turn's arrival back OFF
+        // the plan and ends by pressing until the plan's ending IS the ending the panel is offering — the two
+        // waits this walk was missing, and the whole of that flake. See the two helpers below.
         foreach (double pathLength in TheLengthsToTry)
         {
+            // #1048 — and the turn starts with the plan having NO ending again, so that the arrival row
+            // appearing is a signal once more. See TakeTheArrivalOffThePlan.
+            await TakeTheArrivalOffThePlan();
+
             await SetPathLength(pathLength);
             await SetRange(0, 1.0);   // the scrub to the far END — read AFTER the length settled, since the
                                       // scrub slider's own max IS the path length
-            await Compose("Add orbit at scrub");
-            await ExpectRows(2);
+            await AddTheEndingTheOfferActuallyStandsBehind();
 
             string row = await _page.Locator(".map-plan-step").Last.InnerTextAsync();
             if (row.Contains("not judged", StringComparison.OrdinalIgnoreCase))
@@ -317,6 +321,122 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
             + "the body the button offers, so this gate never reached the state it is about. The sky at "
             + "?start=wreck has moved out from under the bench — pick a start whose course has a reachable "
             + "encounter beyond a short line and say so here (#952).");
+    }
+
+    /// <summary>
+    /// #1048 · <b>THE OFFER IS NOT READY WHEN THE READOUT SAYS THE LINE CHANGED — SO PRESS UNTIL THE PLAN'S
+    /// ENDING IS THE ENDING THE PANEL IS ACTUALLY OFFERING.</b>
+    ///
+    /// <para><b>The race this replaces.</b> <c>Path length: 24 d</c> is printed straight off
+    /// <c>CurrentPlotHorizonSeconds</c> — the horizon the captain just ASKED for — so it re-renders on the
+    /// very input event that moved the slider. The ribbon behind it does not: the reprojection is on a 250 ms
+    /// clock (<c>ReprojectTheTrajectoryWhenItIsDue</c>) and the pass sweep that turns those samples into
+    /// <c>_passes</c> is on a further 300 ms one (<c>ReprojectThePassesOnTheirCadence</c>), and the sweep runs
+    /// EARLIER in the frame than the reprojection, so it cannot pick up that frame's new samples. For up to
+    /// ~550 ms plus the cost of two 8000-sample projections in interpreted WASM, the panel prints the new
+    /// length while <c>ArriveCandidate</c> — which is what "+ Add orbit at scrub" builds the step FROM — is
+    /// still answering for the OLD line. Press in that window and the arrival is built from a pass that was
+    /// off the end of the previous, shorter ribbon; <c>AddArriveAtScrub</c> then reprojects at the new,
+    /// longer horizon (<c>ReachTheArrivalWithTheRibbon</c>) and judges that body on a line that DOES reach
+    /// it — a confident ✓/✗ where the bench needed "not judged". Six turns of that and the walk falls out of
+    /// the bottom into its own <c>Assert.Fail</c>, blaming a sky that never moved: Core is deterministic
+    /// (§9 — no <c>DateTime.Now</c>) and the warp is 1, so the same commit sees the same sky every run. It
+    /// went red on three unrelated PRs in one afternoon — one of them a doc-only deletion — and green on
+    /// re-run each time, while its own sibling, walking the SAME bench, passed in the same job.</para>
+    ///
+    /// <para><b>The wait that replaces it.</b> There is no "the projection is current" flag in the DOM to
+    /// wait on — but the panel PRINTS the offer: the compose button reads
+    /// <c>🛰 + Add orbit at scrub (Mars)</c>, and that body name is <c>ArriveCandidate</c> itself, re-read
+    /// off <c>_passes</c> at the live scrub on every render. So the bench presses, and then holds the turn
+    /// until the plan's ending NAMES THE BODY THE BUTTON IS OFFERING. Those two agreeing is precisely the
+    /// state the fact needs, and it is a state, not a duration.</para>
+    ///
+    /// <para>And the press is what settles it, which is why a second press is an answer rather than a
+    /// retry: <c>AddArriveAtScrub</c> runs <c>ReachTheArrivalWithTheRibbon</c> SYNCHRONOUSLY — reproject,
+    /// sweep, twice — so the moment the first press lands, <c>_passes</c> is current for this path length
+    /// and the button's offer is honest. A press made from a stale sweep leaves the row and the button
+    /// naming two different bodies; pressing again builds the step from the settled offer. (Which is also
+    /// why a longer timeout would have fixed nothing: nothing here was ever going to become true by
+    /// waiting — the loop had already moved on to the next path length.)</para>
+    /// </summary>
+    private async Task AddTheEndingTheOfferActuallyStandsBehind()
+    {
+        for (int press = 1; press <= 3; press++)
+        {
+            await Compose("Add orbit at scrub");
+            await ExpectRows(2);
+            if (await TheOfferAndThePlansEndingAgree())
+            {
+                return;
+            }
+        }
+    }
+
+    /// <summary>Hold until the last plan step names the body the compose button is offering — or say, without
+    /// throwing, that they still disagree, so the caller can press again. The em-dash-free
+    /// <c>orbit &lt;body&gt; ·</c> shape is <c>ArriveGlanceLine</c>'s own, and the parenthesised name is
+    /// <c>ArriveButtonLabel</c>'s own; nothing here parses a number.</summary>
+    private async Task<bool> TheOfferAndThePlansEndingAgree()
+    {
+        try
+        {
+            await _page.WaitForFunctionAsync(
+                """
+                () => {
+                    const offer = Array.from(document.querySelectorAll('.map-plot-compose button'))
+                        .find(b => b.textContent.includes('Add orbit at scrub'));
+                    const rows = document.querySelectorAll('.map-plan-step');
+                    if (offer === undefined || rows.length < 2) { return false; }
+                    const named = /\(([^()]*)\)\s*$/.exec(offer.textContent.trim());
+                    if (named === null) { return false; }
+                    return rows[rows.length - 1].textContent.includes('orbit ' + named[1] + ' ·');
+                }
+                """,
+                null,
+                new() { Timeout = OfferSettleTimeoutMs });
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>How long one press is given to have the plan's ending agree with the offer before the bench
+    /// presses again. Generous next to the ~550 ms of throttles it covers, and short enough that three
+    /// presses cannot outlive <see cref="ActionTimeoutMs"/>.</summary>
+    private const float OfferSettleTimeoutMs = 8_000;
+
+    /// <summary>
+    /// #1048 — <b>GIVE THE ROW BACK ITS ARRIVAL.</b> Re-pressing the compose button REPLACES the terminal
+    /// step, which is convenient and was also the second half of the flake: from the second turn on there
+    /// were already two <c>.map-plan-step</c>s, so <c>ExpectRows(2)</c> stopped being a wait and became an
+    /// assertion that immediately held — and the text read straight after the press was the PREVIOUS turn's
+    /// row, still on screen, because a dispatched click returns long before Blazor's handler and render
+    /// have run. Taking the arrival off first (the row's own ✖ remove) makes the row's appearance a real
+    /// signal again on every turn.
+    /// </summary>
+    private async Task TakeTheArrivalOffThePlan()
+    {
+        if (await _page.Locator(".map-plan-step").CountAsync() < 2)
+        {
+            return;   // the first turn: the plan is one burn and ends nowhere yet
+        }
+
+        ILocator row = _page.Locator(".map-plan-step").Last;
+        ILocator remove = row.Locator("button", new() { HasTextString = "remove" });
+        if (await remove.CountAsync() == 0)
+        {
+            // PR-D2's idiom: a step's buttons live inside the step, so open it before reaching for one.
+            await row.Locator(".map-plan-step-line")
+                     .DispatchEventAsync("click", null, new() { Timeout = ActionTimeoutMs });
+            await remove.WaitForAsync(
+                new() { State = WaitForSelectorState.Attached, Timeout = ActionTimeoutMs });
+        }
+
+        await remove.DispatchEventAsync("click", null, new() { Timeout = ActionTimeoutMs });
+        await _page.Locator(".map-plan-step").Nth(1).WaitForAsync(
+            new() { State = WaitForSelectorState.Detached, Timeout = ActionTimeoutMs });
     }
 
     /// <summary>Free-flying at <c>?start=wreck</c> with the Plotting panel open — the state both facts above
@@ -338,9 +458,11 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
     }
 
-    /// <summary>Fractions of the Path-length slider's travel, shortest first. Log-scaled, so these are ~5 d,
-    /// ~11 d, ~24 d, ~54 d, ~121 d and ~270 d — a spread wide enough that some body the course is closing on
-    /// has its pass at the far end, and short enough that it is genuinely cut off.</summary>
+    /// <summary>Fractions of the Path-length slider's travel, shortest first. Log-scaled off
+    /// <c>SliderToDays</c> (5 d → 730 d over 100 steps), so the panel prints 5 d, 8 d, 14 d, 22 d, 37 d and
+    /// 60 d for these — read off the running panel while #1048 was being measured, correcting the ladder
+    /// this note first guessed at. A spread wide enough that some body the course is closing on has its pass
+    /// at the far end, and short enough that it is genuinely cut off.</summary>
     private static readonly double[] TheLengthsToTry = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5];
 
     /// <summary>Drag Path length to a fraction of its travel and WAIT until the panel says the new length —
