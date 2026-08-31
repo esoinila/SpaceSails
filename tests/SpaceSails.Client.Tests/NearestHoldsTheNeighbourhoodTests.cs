@@ -258,6 +258,49 @@ public sealed class NearestHoldsTheNeighbourhoodTests
             "while the ship went nowhere: " + string.Join(" | ", said));
     }
 
+    /// <summary>
+    /// #954 REGRESSION — THE ANCHOR. The ⚓ hint ("dockable haven — coast within…") follows
+    /// <c>_nearestHaven</c>, and it is the half of this readout that can go missing WITHOUT flickering,
+    /// which is how it nearly slipped past: the first cut of the berth rule held the line perfectly steady
+    /// and quietly turned the anchor off at five million km from Earth. The frame fingerprint caught it;
+    /// this is the guard that would have. Two claims, and the second is the one that matters — the berth
+    /// must be the SAME one all orbit, and it must be OFFERED at all wherever the neighbourhood has one.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ThePosts))]
+    public void THE_ANCHOR_TheNeighbourhoodGoesOnOfferingItsBerth(string planet, double metres)
+    {
+        Pages.Map map = Booted();
+        ICelestialEphemeris eph = Get<ICelestialEphemeris>(map, "_ephemeris");
+        double window = WatchWindow(planet);
+
+        var offered = new List<string>();
+        for (int step = 0; step <= Samples; step++)
+        {
+            double t = window * step / Samples;
+            Set(map, "SimTime", t);
+            Vector2d here = eph.Position(planet, t);
+            Set(map, "_ship", new ShipState(here + (here / here.Length) * metres, Vector2d.Zero, 0.0));
+            Invoke(map, "UpdateNearestBody");
+            offered.Add(Get<CelestialBody?>(map, "_nearestHaven")?.Id ?? "(none)");
+        }
+
+        var held = offered.Distinct(StringComparer.Ordinal).ToList();
+        Assert.True(held.Count == 1,
+            $"{Post(planet, metres)}: the ⚓ hint changed berths {CountChanges(offered)} times while the " +
+            "ship went nowhere: " + string.Join(" → ", held));
+
+        // …and it is not "steadily nothing" where the planet actually keeps a berth. Mercury's compute farm
+        // is not a berth you clamp onto, so that post is asserted the other way round rather than skipped.
+        bool planetHasABerth = eph.Bodies.Any(b => b.ParentId == planet && DockableHavens.IsDockable(b));
+        Assert.True(planetHasABerth == (held[0] != "(none)"),
+            planetHasABerth
+                ? $"{Post(planet, metres)}: {planet} keeps a dockable berth, but the ⚓ hint offered none " +
+                  "for the whole watch — the anchor went out where it should be lit."
+                : $"{Post(planet, metres)}: {planet} keeps no dockable berth, yet the hint offered " +
+                  $"\"{held[0]}\".");
+    }
+
     private static int CountChanges(List<string> values)
     {
         int changes = 0;

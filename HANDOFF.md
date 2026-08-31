@@ -84,8 +84,13 @@ Two halves, both phase-independent, which is why the result is ZERO changes of m
 - **Half 2** — put the berth gate back to `InTheSameBreath` on the live distance and dropped the berth
   incumbent: **1 failed**, `THE_LINE(earth, 10,000,000 km)` — exactly the post the sweep predicted.
 
-The guard asserts the MECHANISM (no change of the held id, no change of the readout's words while the
-ship goes nowhere), not pixels. Its premise test proves the world can tell pass from fail: at each post
+- **The anchor** — `THE_ANCHOR_TheNeighbourhoodGoesOnOfferingItsBerth`, added after the fingerprint caught
+  what my own guard had missed: restore the first-cut berth rule and it goes red on `earth @ 10,000,000 km`,
+  the one post inside Selene Gate's gap band, while every other guard stays green. That is the point of it —
+  the anchor is the half of this readout that can go missing WITHOUT flickering.
+
+The guard asserts the MECHANISM (no change of the held id, no change of the readout's words, no change of
+the berth on offer while the ship goes nowhere), not pixels. Its premise test proves the world can tell pass from fail: at each post
 either the literal nearest really does change hands, or it never leaves the planet — and both branches
 are asserted rather than skipped, plus every planet holding more than one body must blink SOMEWHERE.
 
