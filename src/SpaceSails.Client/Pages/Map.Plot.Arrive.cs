@@ -666,10 +666,12 @@ public partial class Map
     {
         string verb = ArrivalStepRule.Verb(step.Kind);
         string body = BodyName(step.BodyId);
-        int est = ArriveEstPulses(step.Kind, step.BodyId);
-        // #952: a course that stops short of the body has no pass to quote — the sweep's number is where the
-        // ribbon ended. An em dash is the honest reading; the row's own line underneath says why.
+        // #952: a course that stops short of the body has NOTHING here to quote — the sweep's pass is where
+        // the ribbon ended, and the distance, the price and the countdown are all read off it. Every one of
+        // them goes to an em dash together, or the row would keep three fabricated numbers on the glance line
+        // while its own sentence underneath says it has not judged anything.
         bool tooShort = ArriveRibbonIsTooShort();
+        string est = tooShort ? "—" : ArriveEstPulses(step.Kind, step.BodyId).ToString(CultureInfo.InvariantCulture);
         string when = !tooShort && ArrivePassFor(step.BodyId) is { } pass && pass.SimTime > SimTime
             ? $"in {FormatDuration(pass.SimTime - SimTime)}"
             : tooShort ? "—" : "now";
