@@ -43,6 +43,13 @@ public sealed class SceneInventoryTests
             DeckPlan.ConsoleKind.Vent,          // the charge dump
             DeckPlan.ConsoleKind.MedKit,
             DeckPlan.ConsoleKind.Cantina,
+            // #1016/#1040 · …and somewhere to SIT DOWN, in all three shapes her rooms now offer: a top under
+            // the cantina window, a stool at the counter, and a desk in a berth. Every one of them was drawn
+            // furniture with no console over it inside the last month, which is precisely the absence this
+            // table exists to catch — the owner walked up to all three and pressed E at nothing.
+            DeckPlan.ConsoleKind.BarTop,
+            DeckPlan.ConsoleKind.ShipStool,
+            DeckPlan.ConsoleKind.ShipDesk,
         ],
 
         // A derelict: the way home, the two things you came for, and the four fittings every hull carries.

@@ -64,16 +64,23 @@ public sealed class TheShipHasSeatsAboardTests
     }
 
     /// <summary>
-    /// …AND THE GALLEY DESK KEEPS ITS OWN PRESS. The CANTINA console switches to the galley card and must go
-    /// on doing exactly that, so the top that stands 1.5 du under it does NOT grow a seat — the deck audit's
-    /// own label law (<see cref="DeckPlan.LabelClearance"/>) decides which tops do, asked of the console list
-    /// itself rather than by hand.
+    /// …AND THE GALLEY DESK KEEPS ITS OWN PRESS, while EVERY top now carries a seat.
     ///
-    /// <para>Anti-vacuous in both directions: at least one top IS refused (or the law is selecting
-    /// everything), and the cantina console still answers from on top of itself.</para>
+    /// <para>#1016 could seat two of her three tops: the galley console stood at (11, 7.5) with a drawn top
+    /// 1.5 du under it, so the label law refused that one — the honest answer, and a room the owner then
+    /// filed as <i>"the UI represents code long time ago"</i>. #1040 gave the room the counter its own
+    /// backdrop has always drawn, put the galley console on the forward window corner where a bar art puts
+    /// its machines, and set the tops under the window. All three clear every fixture now, so all three are
+    /// takeable.</para>
+    ///
+    /// <para><b>The anti-vacuity moved with it, and it is stronger for it.</b> The old guard proved the law
+    /// was not selecting everything by relying on the room happening to have one crowded top — an assertion
+    /// made of an accident, which stops asserting the moment the room is re-planned. The law is a named
+    /// function now (<see cref="DeckPlan.ALabelFitsAt"/>) and is driven BOTH ways here, against this room's
+    /// own consoles: at every top it says yes, and standing on the galley console it says no.</para>
     /// </summary>
     [Fact]
-    public void TheGalleyDeskKeepsItsPressAndTheTopUnderItGetsNoSeat()
+    public void TheLabelLawDecidesWhichTopsGetASeat()
     {
         DeckPlan ship = DeckPlan.Ship;
         DeckPlan.ConsoleSpot galley =
@@ -83,20 +90,18 @@ public sealed class TheShipHasSeatsAboardTests
         Assert.NotNull(answering);
         Assert.Equal(DeckPlan.ConsoleKind.Cantina, answering!.Value.Kind);
 
-        int refused = ship.Tables.Count(t =>
-            !ship.Consoles.Any(c => c.Kind == DeckPlan.ConsoleKind.BarTop
-                                    && Math.Abs(c.X - t.X) < 1e-6 && Math.Abs(c.Y - t.Y) < 1e-6));
-        Assert.True(refused > 0,
-            "every top got a seat, so the label law is selecting everything and this guard proves nothing.");
+        // The law REFUSES where a label is already standing — proved on this ship's own console list, so a
+        // room re-planned tomorrow cannot quietly turn this guard into a tautology.
+        Assert.False(DeckPlan.ALabelFitsAt(ship.Consoles, galley.X, galley.Y),
+            "the label law waves a console through on top of another one, so it decides nothing.");
 
         foreach (DeckPlan.TableTop top in ship.Tables)
         {
             bool takeable = ship.Consoles.Any(c => c.Kind == DeckPlan.ConsoleKind.BarTop
                                                    && Math.Abs(c.X - top.X) < 1e-6
                                                    && Math.Abs(c.Y - top.Y) < 1e-6);
-            double dx = top.X - galley.X, dy = top.Y - galley.Y;
-            bool clear = Math.Sqrt((dx * dx) + (dy * dy)) >= DeckPlan.LabelClearance;
-            Assert.Equal(clear, takeable);
+            Assert.True(takeable,
+                $"the top at ({top.X}, {top.Y}) is drawn in her cantina and cannot be sat at.");
         }
     }
 
@@ -178,7 +183,8 @@ public sealed class TheShipHasSeatsAboardTests
         Assert.True((bool)Invoke(map, "TryTakeBarTop")!, "the desk in CABIN 1 refused [E].");
 
         object seat = Seated(map)!;
-        Assert.Equal("ship:cabin:desk", (string)Get(seat, "Key")!);
+        // #1040 · the key names WHICH berth, because there are two desks aboard now.
+        Assert.Equal(ShipLayout.CabinDeskKey(ShipLayout.DeskCabin), (string)Get(seat, "Key")!);
         Assert.True((bool)Get(seat, "Quiet")!);
         Assert.True((bool)Get(seat, "Aboard")!);
         Assert.Equal(SittingAlone.OwnDeskPlate, (string)Get(seat, "Plate")!);
@@ -378,9 +384,15 @@ public sealed class TheShipHasSeatsAboardTests
     private static IEnumerable<DeckPlan.ConsoleSpot> SeatConsoles(Pages.Map map) =>
         ((DeckPlan)Field(map, "_deckPlan")!).Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.BarTop);
 
-    private static DeckPlan.ConsoleSpot TheDesk(Pages.Map map) =>
-        ((DeckPlan)Field(map, "_deckPlan")!).Consoles
-            .Single(c => c.Kind == DeckPlan.ConsoleKind.ShipDesk);
+    /// <summary>#1040 · The desk in <see cref="ShipLayout.DeskCabin"/> — matched to ITS berth rather than
+    /// taken as the only one, because CABIN 2 grew one beside it.</summary>
+    private static DeckPlan.ConsoleSpot TheDesk(Pages.Map map)
+    {
+        DeckReachability.Point at = ShipLayout.CabinDeskStationIn(ShipLayout.DeskCabin);
+        return ((DeckPlan)Field(map, "_deckPlan")!).Consoles
+            .Single(c => c.Kind == DeckPlan.ConsoleKind.ShipDesk
+                         && Math.Abs(c.X - at.X) < 1e-6 && Math.Abs(c.Y - at.Y) < 1e-6);
+    }
 
     private static void StandAt(Pages.Map map, double x, double y)
     {

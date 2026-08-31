@@ -268,6 +268,12 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.BarTop:
             case DeckPlan.ConsoleKind.ShipDesk:
+            // #1040 · …AND HER COUNTER'S STOOLS COME THROUGH IT TOO. Owner, on 7 Deck: "Our on ship bar can
+            // be upgraded to match the other bars... the UI represents code long time ago." A stool is the
+            // same VERB as a top — you walk up to a piece of furniture and sit on it — so it is the same
+            // press and the same sitting; what a stool changes is the RUNG it leaves you on, and that
+            // travels on the page's answer exactly as every other difference between these rooms does.
+            case DeckPlan.ConsoleKind.ShipStool:
                 // #973 L5b · TAKE A TOP IN THE DOCKED BAR — the eighth way to open a sitting in this game,
                 // and the first one that is not on a surface excursion. #973 L0 wrote the gap down ("the
                 // bar's seven tops are drawn dressing with no chairs and no console"); this is the press.

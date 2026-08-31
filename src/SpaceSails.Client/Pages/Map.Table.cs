@@ -434,8 +434,13 @@ public partial class Map
         /// be the picture and the sentence disagreeing, which is the fault this very field was added to
         /// avoid. A bench is always the DOCKED strip anyway (it is never a conversation), and the strip
         /// draws no art at all.</para>
+        /// <para>#1040 · A STOOL WEARS NEITHER, for the bench's reason exactly: both pictures are
+        /// photographs of a table with a chair pulled out opposite, and a counter has no chair opposite and
+        /// no table. It is always the docked strip anyway (nobody ever comes aboard), and the strip draws no
+        /// art — but a field that would answer wrongly if it were ever asked is a lie waiting for a
+        /// caller.</para>
         public string? ArtUrl =>
-            !Bench && Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
+            !Bench && !Stool && Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
 
         /// <summary>How many the top seats, and how many chairs are still empty — the fact that let you
         /// ask to join in the first place, kept so the panel can say it.</summary>
@@ -512,6 +517,24 @@ public partial class Map
         /// mechanic and disagree about every word are two flags.</para>
         /// </summary>
         public bool Aboard { get; init; }
+
+        /// <summary>
+        /// #1040 · Whether this seat is a STOOL AT A COUNTER — today, the row bolted along the ship's own
+        /// cantina counter.
+        ///
+        /// <para>Owner, on 7 Deck: <i>"Our on ship bar can be upgraded to match the other bars... the UI
+        /// represents code long time ago."</i> The same machinery a fourth time, and the flag buys exactly
+        /// the one place a stool genuinely differs from a top: <b>the rung</b>. <c>SeatedIn</c> reads it and
+        /// answers <see cref="SeatedHud.Seat.BarStool"/>, which is where the gumshoe rule lives — the case
+        /// does not come out at a bar, and it does not come out at your own bar either
+        /// (<see cref="SeatedSpread.NotAtTheBarLine"/>, said out loud, never silently).</para>
+        ///
+        /// <para>It is deliberately NOT the counter's own <c>StoolSeat</c> (<c>Seating.Stool.cs</c>) reused:
+        /// that seat is a fact about a Hive canteen's frozen watch, its floor and its neighbour, and every
+        /// one of those is a question a boat cannot be asked. What the two share is the RUNG, and the rung
+        /// is the thing this flag reaches.</para>
+        /// </summary>
+        public bool Stool { get; init; }
 
         /// <summary>
         /// #1016 · HOW MANY BEATS HAVE BEEN WAITED OUT AT THIS SEAT — <b>aboard only</b>, and null anywhere

@@ -580,9 +580,14 @@ public partial class Map
     /// <param name="Aboard">#1016 · Whether this seat is on the captain's OWN SHIP rather than ashore. Two
     /// things hang off it and nothing else does: nobody ever crosses the floor to it (there is nobody
     /// aboard to do the crossing), and the silence when you wait is the boat's own rather than a hall's.</param>
+    /// <param name="Stool">#1040 · Whether this seat is a STOOL AT A COUNTER rather than a top or a desk —
+    /// the one fact that moves the sitting onto the <c>BarStool</c> rung of the exposure ladder, where the
+    /// gumshoe rule refuses the spread out loud. Owner: <i>"Our on ship bar can be upgraded to match the
+    /// other bars."</i> It is carried and never derived from a plate or a room name, for the reason every
+    /// other field on this record is: the ROOM knows what its furniture is, and a chair does not.</param>
     private readonly record struct BarTopUnderfoot(
         int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Setting,
-        string Plate, bool Quiet, bool Aboard);
+        string Plate, bool Quiet, bool Aboard, bool Stool = false);
 
 
     /// <summary>
@@ -620,7 +625,8 @@ public partial class Map
     private BarTopUnderfoot? TheBarTopUnderfoot()
     {
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { } spot
-            || spot.Kind is not (DeckPlan.ConsoleKind.BarTop or DeckPlan.ConsoleKind.ShipDesk))
+            || spot.Kind is not (DeckPlan.ConsoleKind.BarTop or DeckPlan.ConsoleKind.ShipDesk
+                                 or DeckPlan.ConsoleKind.ShipStool))
         {
             return null;
         }
