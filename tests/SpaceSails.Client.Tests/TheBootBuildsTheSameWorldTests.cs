@@ -224,7 +224,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?spread=1"] = "06b0b76c36a99fd528d929b746614cd4",
             ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "1b5de06fd2325d7ad77cf98c4f743d5d",
             ["/map?start=wreck&fetch=active"] = "faa031689c86edd6a251477d3383b2a1",
-            ["/map?start=wreck&dest=saturn"] = "PLACEHOLDER",
+            ["/map?start=wreck&dest=saturn"] = "faa031689c86edd6a251477d3383b2a1",
             // #997 wave 10 · The new dev start: ?target=collector, the dossier's own door. Read off the
             // dump and diffed against the pinned list — this is the ONLY line the dump adds, and no other
             // moved: the 32nd BootQuery field is something the PARSE answers, not a world the boot builds.

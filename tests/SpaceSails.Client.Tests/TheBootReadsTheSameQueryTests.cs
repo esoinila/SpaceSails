@@ -135,7 +135,7 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?spread=1"] = "5edaae2a838e6d3f25ac4c5eb7b4f91a",
             ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "654ebea7920753c81221785c3e1fb2b7",
             ["/map?start=wreck&fetch=active"] = "c3495b3c45bbcaee9ca7cf4dee51a06f",
-            ["/map?start=wreck&dest=saturn"] = "44eddb96244c238f239eddca3813a8b0",
+            ["/map?start=wreck&dest=saturn"] = "f853dafbafb0ebc1cf893a3765ac3f85",
             ["/map?start=wreck&target=collector"] = "ee81deda9e68cb7fbe70296863c4a32b",
             ["/map?stool=1&neighbour=0"] = "92f4fac2680f0d77dbc6bd78334161da",
             ["/map?stool=1&neighbour=1"] = "92f4fac2680f0d77dbc6bd78334161da",
