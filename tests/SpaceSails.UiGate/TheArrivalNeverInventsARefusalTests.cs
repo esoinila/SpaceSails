@@ -18,13 +18,19 @@ namespace SpaceSails.UiGate;
 /// in the bench case, a course that genuinely arrives 383,764 km from Mars at 2.3 km/s. Here the row must
 /// instead say it has not judged anything, and name the control that ends the wait.</para>
 ///
-/// <para><b>RED PROOF (watched, 2026-08-31).</b> Pointed at a Release publish of b71e1c5 via
-/// <c>SPACESAILS_PUBLISH_DIR</c>, the first fact below fails at its own premise —
-/// <c>Assert.Contains() Failure: Not found: "not judged"</c> — because on that build the row simply carries
-/// a fabricated verdict instead. The SECOND fact passes there too, and is meant to: it is the anti-vacuity
-/// half (a verdict comes back when the control the row names is pressed), and on the old build a verdict was
-/// never withheld in the first place. It earns its keep on THIS build, where the first fact proves the same
-/// bench starts out unjudged.</para>
+/// <para><b>RED PROOF.</b> Pointed at a publish of b71e1c5 via <c>SPACESAILS_PUBLISH_DIR</c>, the bench
+/// itself cannot even be built: no path length leaves the row saying it has not judged anything, because on
+/// that build a verdict is never withheld, and both facts fail at the bench's own <c>Assert.Fail</c>.</para>
+///
+/// <para><b>And a note on how this file first lied.</b> Its first draft pinned ONE path length and asserted
+/// on whatever body the button then offered. It passed locally and failed on CI, which offered
+/// <c>🛰 orbit Neptune · pass 30.64 AU</c> — a body whose closest approach on a five-day line sits at the
+/// line's START, because the ship is simply receding from it. That is an honest ✗ and not the state under
+/// test, and the difference between the two runs was the sky, not the code. (The local pass was worth
+/// nothing on its own for a second reason: <c>ClientHost</c> shares one publish folder across worktrees, so
+/// a bare local run can serve another lane's build. CI sets <c>SPACESAILS_PUBLISH_DIR</c> and is the honest
+/// gate.) The bench now walks the control the row names until the premise is genuinely met, and says so out
+/// loud when it cannot be.</para>
 /// </summary>
 public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
 {
@@ -104,36 +110,64 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// AND THE WAIT ENDS WHERE THE ROW SAYS IT DOES. Press <c>auto</c> — the control the sentence names — and
-    /// the arrival stops being unjudged: the row carries a real verdict with the real gates in it. This is the
-    /// half that keeps the first fact from being a way to make every arrival silent.
+    /// AND PRESSING THE CONTROL THE ROW NAMES ACTUALLY LENGTHENS THE LINE. The sentence sends the captain to
+    /// <c>auto</c>, so <c>auto</c> has to be an answer: it must reach for the plan's own ending rather than
+    /// snapping back to last-burn + 90 d, which is what it did before this change.
+    ///
+    /// <para>The second half is deliberately stated as an OR, because which body the button offered is the
+    /// sky's business (see the bench): either the longer line found the encounter and the row now carries a
+    /// real ✓/✗ verdict, or the course genuinely never reaches that body and the line has run all the way to
+    /// the projection cap — in which case "not judged" is still the honest reading and the row is entitled to
+    /// keep saying it. What is NOT allowed, and is the whole point, is a short line and a confident number.</para>
     /// </summary>
     [Fact]
-    public async Task Pressing_the_control_the_row_names_gets_a_real_verdict_back()
+    public async Task Pressing_the_control_the_row_names_lengthens_the_line_toward_the_plans_own_ending()
     {
         await AnArrivalOnAStubOfALine();
+        string lengthBefore = await PathLengthText();
 
         await _page.Locator(".map-plot button", new() { HasTextString = "auto" })
                    .DispatchEventAsync("click", null, new() { Timeout = ActionTimeoutMs });
 
-        // Keyed on the words themselves, never a sleep: the row stops saying it cannot judge.
+        // Keyed on the panel's own words, never a sleep.
         await _page.WaitForFunctionAsync(
-            "() => { const rows = document.querySelectorAll('.map-plan-step'); "
-            + "if (rows.length === 0) { return false; } "
-            + "return !/not judged/i.test(rows[rows.length - 1].textContent); }",
-            null,
+            "(was) => { const p = document.querySelector('.map-plot'); if (p === null) { return false; } "
+            + "const m = /Path length: ([^\\n]*)/.exec(p.textContent); "
+            + "return m !== null && m[1].trim() !== was; }",
+            lengthBefore,
             new() { Timeout = ActionTimeoutMs });
+
+        string lengthAfter = await PathLengthText();
+        Assert.NotEqual(lengthBefore, lengthAfter);
+        Assert.True(
+            DaysIn(lengthAfter) > DaysIn(lengthBefore),
+            $"auto must reach FOR the plan's ending, not away from it: {lengthBefore} → {lengthAfter}");
 
         ILocator row = _page.Locator(".map-plan-step").Last;
         string badge = await row.Locator(".badge").InnerTextAsync();
-        Assert.DoesNotContain("NOT JUDGED", badge, StringComparison.Ordinal);
-
-        // A verdict is a verdict either way round — what matters is that it is now a claim about the COURSE,
-        // with the real thresholds in it, rather than a confession about the picture.
         string rowText = await row.InnerTextAsync();
+
+        bool judged = badge.Contains("VALID", StringComparison.Ordinal);
+        bool ranToTheCap = DaysIn(lengthAfter) >= 700;
         Assert.True(
-            badge.Contains("VALID", StringComparison.Ordinal),
-            $"the row should now carry a ✓/✗ verdict; its badge reads \"{badge}\" and the row \"{rowText}\"");
+            judged || ranToTheCap,
+            $"after auto the line reads {lengthAfter} and the badge \"{badge}\" — a course this short with no "
+            + $"verdict is neither of the two honest endings. Row: \"{rowText}\"");
+    }
+
+    /// <summary>The panel's Path-length readout back as days ("2.0 yr" · "381 d" · "5 d"), so two lengths can
+    /// be compared. Its own ladder (<c>FormatHorizon</c>) is the only thing being parsed.</summary>
+    private static double DaysIn(string horizonText)
+    {
+        System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(
+            horizonText, @"([0-9]+(?:\.[0-9]+)?)\s*(yr|d)");
+        if (!m.Success)
+        {
+            throw new InvalidOperationException($"Path length read \"{horizonText}\", which is not on the panel's ladder");
+        }
+
+        double value = double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        return m.Groups[2].Value == "yr" ? value * 365 : value;
     }
 
     // ── The bench: an arrival added at the end of a deliberately short line ────────────────────────────
@@ -163,23 +197,68 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
         await _page.Locator(".map-plot-compose").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
 
-        // Path length to its shortest — the SECOND range control in the panel (the first is the scrub).
-        await SetRange(1, 0.0);
-        await _page.WaitForFunctionAsync(
-            "() => { const p = document.querySelector('.map-plot'); "
-            + "return p !== null && /Path length: 5 d/.test(p.textContent); }",
-            null,
-            new() { Timeout = ActionTimeoutMs });
-
         // A burn, so the plan is a plan and not an arrival standing on its own.
         await Compose("Add burn");
         await ExpectRows(1);
 
-        // The scrub run out to the far end of that stub — where a captain looking for a distant encounter
-        // puts it — and then the cherry on top.
-        await SetRange(0, 1.0);
-        await Compose("Add orbit at scrub");
-        await ExpectRows(2);
+        // NOW SHORTEN THE LINE UNTIL IT DOES NOT REACH. Which body the button offers is decided by the
+        // world — it takes the arrivable pass nearest the scrub — so pinning ONE path length and hoping the
+        // sky cooperates is how this gate first went green locally and red on CI, offering Neptune (whose
+        // closest approach on a five-day line is at the line's START: the ship is simply receding, which is
+        // an honest ✗ and not the state under test). So the bench walks the very control the row names, from
+        // the shortest line upward, scrubbing to the far END each time — where an end-edge pass wins the
+        // nearest-in-time pick outright — and stops at the first length that genuinely cuts the course short
+        // of whatever it is offering. Re-pressing the button REPLACES the terminal step (a plan ends once),
+        // so no cleanup is needed between turns.
+        foreach (double pathLength in TheLengthsToTry)
+        {
+            await SetPathLength(pathLength);
+            await SetRange(0, 1.0);   // the scrub to the far END — read AFTER the length settled, since the
+                                      // scrub slider's own max IS the path length
+            await Compose("Add orbit at scrub");
+            await ExpectRows(2);
+
+            string row = await _page.Locator(".map-plan-step").Last.InnerTextAsync();
+            if (row.Contains("not judged", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        Assert.Fail(
+            "no path length between the slider's shortest and its midpoint left the plotted course short of "
+            + "the body the button offers, so this gate never reached the state it is about. The sky at "
+            + "?start=wreck has moved out from under the bench — pick a start whose course has a reachable "
+            + "encounter beyond a short line and say so here (#952).");
+    }
+
+    /// <summary>Fractions of the Path-length slider's travel, shortest first. Log-scaled, so these are ~5 d,
+    /// ~11 d, ~24 d, ~54 d, ~121 d and ~270 d — a spread wide enough that some body the course is closing on
+    /// has its pass at the far end, and short enough that it is genuinely cut off.</summary>
+    private static readonly double[] TheLengthsToTry = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5];
+
+    /// <summary>Drag Path length to a fraction of its travel and WAIT until the panel says the new length —
+    /// the panel's own words are the signal (never a sleep). This matters twice over: the reprojection is on
+    /// a 250 ms throttle, and the scrub slider's <c>max</c> IS the path length, so reading the scrub before
+    /// this settles moves it to the wrong hour.</summary>
+    private async Task SetPathLength(double fraction)
+    {
+        string before = await PathLengthText();
+        await SetRange(1, fraction);
+        await _page.WaitForFunctionAsync(
+            "(was) => { const p = document.querySelector('.map-plot'); if (p === null) { return false; } "
+            + "const m = /Path length: ([^\\n]*)/.exec(p.textContent); "
+            + "return m !== null && m[1].trim() !== was; }",
+            before,
+            new() { Timeout = ActionTimeoutMs });
+    }
+
+    private async Task<string> PathLengthText()
+    {
+        string panel = await _page.Locator(".map-plot").InnerTextAsync();
+        System.Text.RegularExpressions.Match m =
+            System.Text.RegularExpressions.Regex.Match(panel, @"Path length: ([^\n]*)");
+        return m.Success ? m.Groups[1].Value.Trim() : "";
     }
 
     /// <summary>Move one of the panel's range controls to a fraction of its travel, the way a hand does.
