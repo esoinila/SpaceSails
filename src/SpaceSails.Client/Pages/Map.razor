@@ -6566,9 +6566,9 @@
                         {
                             ArrivalStepRule.ArrivalCheck? _ac = ArriveCheck();
                             bool _avalid = _ac?.Valid ?? false;
-                            @* #952: a course too short to reach the body yields no verdict at all — the row must
-                               read NOT JUDGED, never INVALID, because "invalid" is a claim about a plan and this
-                               is a confession about the picture. *@
+                            // #952: a course too short to reach the body yields no verdict at all — the row
+                            // must read NOT JUDGED, never INVALID, because "invalid" is a claim about a plan
+                            // and this is a confession about the picture.
                             string? _ashortLine = ArriveRibbonTooShortLine();
                             bool _aunjudged = _ac is null;
                             bool _aarmed = ArriveCoversArmed;
@@ -6591,14 +6591,14 @@
                                 @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
                                    speed against the real thresholds (Core ArrivalStepRule reads them off
                                    OrbitRule / DockRule, so the sentence and the sim cannot disagree). *@
+                                @* …and (#952) when there is no verdict to give at all because the plotted
+                                   course stops short of the body, say THAT — never a fabricated ✗ whose
+                                   numbers point the captain the wrong way round the iterate loop. *@
                                 @if (_ac is { } _acx && !_acx.Valid)
                                 {
                                     <div class="map-arrive-why text-danger small">@ArrivalStepRule.Verdict(_acx)</div>
                                 }
-                                @* #952: …and when there is no verdict to give because the plotted course stops
-                                   short of the body, say THAT — never a fabricated ✗ whose numbers point the
-                                   captain the wrong way round the iterate loop. *@
-                                else if (ArriveRibbonTooShortLine() is { } _ashort)
+                                @if (_ashortLine is { } _ashort)
                                 {
                                     <div class="map-arrive-why text-warning small">@_ashort</div>
                                 }
@@ -6609,7 +6609,7 @@
                                         {
                                             <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
                                         }
-                                        else if (_ashortLine is { } _ashortEdit)
+                                        @if (_ashortLine is { } _ashortEdit)
                                         {
                                             <div class="small mb-1 text-warning">@_ashortEdit</div>
                                         }
