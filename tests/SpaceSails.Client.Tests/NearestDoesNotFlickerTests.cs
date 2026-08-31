@@ -202,7 +202,14 @@ public sealed class NearestDoesNotFlickerTests
         Pages.Map map = ParkedOffMars();
         Set(map, "SimTime", 0.0);
         Invoke(map, "UpdateNearestBody");
-        Assert.Equal("mars", Get<CelestialBody?>(map, "_nearestBody")!.ParentId);
+
+        // The reading starts in Mars's neighbourhood. It used to be the STATION that held the slot from out
+        // here; since NearestRule.StandsForItself it is Mars, because a berth outside its own Hill sphere
+        // defers to the planet it rides. Either is "Mars's neighbourhood" — which is all this guard is
+        // establishing before it flies the ship away.
+        CelestialBody startedAt = Get<CelestialBody?>(map, "_nearestBody")!;
+        Assert.True(startedAt.Id == "mars" || startedAt.ParentId == "mars",
+            $"parked 0.16 AU off Mars, the nearest reading was \"{startedAt.Id}\" — not Mars's neighbourhood.");
 
         ICelestialEphemeris eph = Get<ICelestialEphemeris>(map, "_ephemeris");
         Vector2d jupiter = eph.Position("jupiter", 0);

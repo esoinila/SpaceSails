@@ -1,93 +1,111 @@
-# #997 — chip strip vs scope controls — HANDOFF
+# #954 — flickering on every orbit — HANDOFF
 
-## Status: fix implemented, both guards proven RED/GREEN, verified at desktop + 390x700. Full suites next.
+## Status: fix implemented, both halves proven RED by revert, Core+Client NearestRule/flicker gates green. Full suites next.
 
-## What was done
-- `src/SpaceSails.Client/Pages/Map.razor.css`
-  - `.map-page` gained `--desk-chip-strip-clearance: 11rem;` (documented, mirrors #986 F1's
-    `--desk-top-clearance` move for the other axis).
-  - `.desk-layer`'s right padding literal (`11rem`) now reads the variable.
-  - `.map-scope`, `.map-scope-tile` use
-    `right: min(var(--desk-chip-strip-clearance), calc(100% - 18.5rem))`.
-  - `.parrot-perch` uses `right: var(--desk-chip-strip-clearance)` plain (it's 33px wide — no
-    off-screen risk at any viewport the game supports).
-- `tests/SpaceSails.UiGate/HudCollisionTests.cs`
-  - New test `The_desk_chip_strip_never_covers_the_scopes_own_controls` (1280x720, Nav desk):
-    `.desk-chip-strip` vs `.map-scope`/`.parrot-perch`, fails on overlap.
-  - New test `The_scope_stays_on_screen_at_a_phone_width` (390x700, Nav desk): `.map-scope`'s box
-    X must be `>= 0`.
-  - Added a private `BootIntoNav()` helper (existing `BootIntoTheDeck()` goes to the Deck tab, not
-    Nav, so it couldn't be reused as-is).
+## What #954 actually was, on this branch
 
-## Trade-off #1 — the one the issue named: does the scope crowd .map-readouts more?
-Measured with a real Playwright pass at 1280x720 on the Nav desk, BEFORE and AFTER:
+The issue is OPEN but a first fix (#966, `ed171e1`) is already in the base branch: `NearestRule.Unseats`
+gave the nearest slot a 3% hysteresis band and `UpdateNearestNeighbourhood` learned to say
+"Mars › The Rusty Roadstead". That fixed the owner's screenshot (0.16 AU off Mars). The issue is open
+because PRs to `our-own-ship-has-compartments` do not auto-close — not because nothing was done.
 
-| | before | after |
+**But the flicker was still there, everywhere the ship actually flies.** The 3% band is measured along the
+SIGHTLINE, so it shrinks as the ship closes: at 0.16 AU 3% of the range is 700,000 km and Mars's whole
+family fits inside it; at 100,000 km it is 3,000 km and Phobos (9,376 km rail) and the Roadstead
+(12,000 km rail) start trading places again — every orbit, exactly as reported, just nearer in.
+
+Measured on the real scenario by driving `UpdateNearestBody` at a fixed range while the family turns
+(5 orbits of the planet's slowest satellite, 2,000 samples), BEFORE this change:
+
+| post | slot changes hands | line changes its words |
 |---|---|---|
-| `.map-scope` box | (978,386) 290x322 | (814,386) 290x322 |
-| `.parrot-perch` box | (1233,308) 33x36 | (1071,308) 33x36 |
-| `.desk-chip-strip` box | (1120,76) 152x342 | unchanged |
-| `.map-readouts` box | (12,173) 1105x216 | unchanged |
+| earth @ 100,000 km | **1,744** | 1,744 |
+| neptune @ 100,000 km | 144 | 144 |
+| saturn @ 300,000 km | 136 | 136 |
+| jupiter @ 1,000,000 km | 76 | 69 |
+| uranus @ 100,000 km | 29 | 29 |
+| mars @ 100,000 km | 16 | 17 |
+| earth @ 10,000,000 km | 0 | **19** (the berth NAME swapping) |
 
-Scope/strip overlap before: 148x32 (the bug). After: none (814..1104 vs strip's 1120..1272 — 16px
-clear). Parrot/strip overlap before: 33x36 (fully under a chip). After: none.
+Every one of those swaps is between members of ONE neighbourhood. The slot is not just a word: the
+scope's AUTO lock draws whatever body holds it and the HUD quotes that body's range and closing speed,
+so each swap is a picture and two numbers jumping — which is the owner's second comment
+("same flickering on the scope on targets that have hierarchical position").
 
-Readouts vs scope: readouts run y 173..389, scope runs y 386..708 in BOTH states — only a ~3px
-hairline that predates this change and is unaffected by the horizontal shift (stacked, not
-side-by-side — moving the scope left widens the x-overlap but the y-overlap stays flat at ~3px).
-**No new collision traded in on this axis.**
+## The law
 
-## Trade-off #2 — found by doing the assignment's own 390x700 check, NOT named in the issue
-The issue's numbers are 1280x720-only. Checking 390x700 (as instructed) found: `.map-scope` is a
-fixed ~290px card (unresponsive 280px canvas underneath, pre-existing, unrelated to this fix), so
-`right: 11rem` flat walked its LEFT edge off the left of a 390px screen by 76px — not overlapping
-anything, just gone. Fixed with `min(11rem, calc(100% - 18.5rem))`: bites only below a ~29.5rem
-(472px) viewport, so 1280x720 is unaffected (confirmed — see guard #1 above, still green), and at
-390px the card stays fully on screen at the cost of a smaller residual touch with the strip's last
-chip (~66x52px, down from the original 148x32, per a real measurement: box (6,366) vs strip
-(230,76) 152x342). Full mobile responsiveness for the scope card is a separate, bigger job than
-#997 — flagged as a possible follow-up, not attempted here.
+Two halves, both phase-independent, which is why the result is ZERO changes of mind rather than fewer.
 
-## RED/GREEN proof done (both guards)
-1. **Strip/scope overlap guard**: published fixed CSS → PASS. Reverted `.map-scope`'s `right` to
-   the bare `var(...)` (no other change) via `git checkout <parent-commit> -- Map.razor.css`,
-   republished → FAIL naming `.map-scope` at (978,386) and `.parrot-perch` under the strip at the
-   exact pixels the issue reported. Restored, republished → PASS.
-2. **Phone-width clamp guard**: published fixed CSS (with `min()`) → PASS. Edited `.map-scope`
-   back to the bare `var(...)` only, republished → FAIL, `x=-76`. Restored the `min()`,
-   republished → PASS.
-3. Full `HudCollisionTests` class (7 tests, including the two new ones) run clean once more after
-   both restores → **all 7 PASS**.
+1. **`NearestRule.StandsForItself`** (new, Core) — a satellite defers to its primary until the ship is
+   inside its **Hill sphere**; then it speaks for itself and the existing band decides the rest.
+   *Why the Hill radius and not something roomier:* a satellite's distance from a parked ship swings
+   between |D−a| and D+a, so any threshold T it can cross is crossed twice an orbit for every hover range
+   D in a ± T. The Hill radius (kilometres, where the rails are hundreds of thousands) shrinks that window
+   to the moon's own capture width. The obvious roomier line — "nearer to it than it is to its primary",
+   T = a — reopens it over half the approach; that is asserted directly in
+   `StandsForItself_TheHillRadiusIsTheLaw_BecauseARoomierLineIsStraddledEveryOrbit`.
+   It is also the same line `LocalMarketBody` and `IsHiddenAtHaven` already draw for "you are at this
+   body", so the slot now agrees with them instead of wandering off on its own.
+   A mass-less berth has no Hill sphere, so it never takes the slot by drifting past — it takes it by
+   being clamped to, written in as its own clause (`_dockedHavenId == body.Id`), which is what keeps
+   lying-low-at-a-dock heat cooling working.
 
-Two throwaway probe test files (`DiagTemp.cs`, `DiagShot.cs`) were used along the way to print raw
-boxes and take screenshots; both were deleted before committing (not part of the diff).
+2. **The berth in the line is chosen from its RAIL, not from where the rail has carried it this frame.**
+   Case (b) of `UpdateNearestNeighbourhood` used `InTheSameBreath` on the berth's live distance, which is
+   itself phase-dependent — hence the 19 name-swaps at Earth @ 10M km. It now asks whether the ship is
+   inside the planet's Hill sphere, or whether the berth could not unseat its own planet from ANYWHERE on
+   its orbit; and a planet with two berths (Earth) gets the same incumbent-holds hysteresis as the slot.
+   Side benefit: the ⚓ hint no longer blinks out at ~400,000 km on approach, which the old same-breath
+   gate did — right as the captain came inside coasting distance.
 
-## Visual verification done
-- Desktop 1280x720 (Nav desk, scope open): screenshot confirms the Scope card's `◀ AUTO ▶ –`
-  header is fully clear of the chip strip, with a visible gap; the parrot sits in that gap too.
-- Mobile 390x700 (Nav desk, scope open, arrival story-plate dismissed): screenshot confirms the
-  scope card is fully on-screen (not clipped); it still visually touches the last chip and the
-  readouts text at this narrow width (trade-off #2 above, pre-existing/residual, documented in the
-  CSS comments and the new guard test's own doc comment).
+## Files
 
-## One process hiccup worth flagging for future crews
-A `dotnet publish` I backgrounded took several minutes longer than expected (lock contention with
-an earlier publish still holding `obj/` files) and its completion notification arrived late/out of
-order. I ran a full test pass against a **stale, half-updated publish dir** in the interim (one
-new test failed with the pre-fix pixel numbers even though the source was already fixed) before
-noticing the mismatch by grepping the actual published CSS content. Lesson for next time: after a
-backgrounded `dotnet publish`, grep the *published output* for the change before trusting a test
-run against it — a wasm/dll timestamp is not proof the CSS asset was rebuilt, and a "completed"
-notification can arrive after a dependent step already ran against stale content.
+- `src/SpaceSails.Core/NearestRule.cs` — `StandsForItself` / `StandsForItselfSquared` + the reasoning.
+- `src/SpaceSails.Client/Pages/Map.Sim.Tick.cs`
+  - `UpdateNearestBody`: sweep skips bodies that don't stand for themselves; an incumbent that has
+    stopped standing for itself hands the slot back.
+  - new private `StandsForItself(CelestialBody)` — the docked clause + Hill radius, instantaneous rail.
+  - `UpdateNearestNeighbourhood`: case (b) rewritten as above; new `_neighbourhoodHavenId` incumbent.
+- `tests/SpaceSails.Core.Tests/NearestRuleTests.cs` — 4 new gates on the law.
+- `tests/SpaceSails.Client.Tests/NearestHoldsTheNeighbourhoodTests.cs` — NEW. 32 posts (8 planets ×
+  4 ranges) × {slot, line} + the premise + arrival + clamped.
+- `tests/SpaceSails.Client.Tests/NearestDoesNotFlickerTests.cs` — one assertion updated (see below).
 
-## Remaining
-- [ ] Run full Core + Client test suites once.
-- [ ] Open PR against `our-own-ship-has-compartments`, reference #997 (no auto-close — different
-      base), attribution footer + session link. Do NOT merge.
+## RED proofs (both done, by revert)
 
-## Environment notes
-- Worktree: `D:/repo12/wt/997`, branch `fix/997-chip-strip`, pushed to origin.
-- Used `SPACESAILS_PUBLISH_DIR=/c/temp-spacesails-diag` (a `dotnet publish -c Release` of just
-  `SpaceSails.Client`) to avoid republishing WASM for every `dotnet test tests/SpaceSails.UiGate`
-  run — each publish is ~1-2 min (sometimes longer under lock contention, see above).
-- Did not touch port 5073 or any running dotnet dev server.
+- **Half 1** — took the two `StandsForItself` filters out of `UpdateNearestBody`:
+  **41 of 72 failed** (20 SLOT posts, 20 LINE posts, +1). Restored → 72/72.
+- **Half 2** — put the berth gate back to `InTheSameBreath` on the live distance and dropped the berth
+  incumbent: **1 failed**, `THE_LINE(earth, 10,000,000 km)` — exactly the post the sweep predicted.
+
+The guard asserts the MECHANISM (no change of the held id, no change of the readout's words while the
+ship goes nowhere), not pixels. Its premise test proves the world can tell pass from fail: at each post
+either the literal nearest really does change hands, or it never leaves the planet — and both branches
+are asserted rather than skipped, plus every planet holding more than one body must blink SOMEWHERE.
+
+## One existing assertion changed, deliberately
+
+`NearestDoesNotFlickerTests.A_REAL_CHANGE_OF_NEIGHBOURHOOD_StillMovesTheReading` asserted
+`_nearestBody.ParentId == "mars"` when parked 0.16 AU off Mars — i.e. that the STATION held the slot.
+Under the new law Mars itself holds it (the berth defers). The assertion now reads "the reading is in
+Mars's neighbourhood" (`Id == "mars" || ParentId == "mars"`), which is what that line was establishing
+before it flies the ship to Jupiter. The other four tests in that file pass unchanged, including
+`THE_LINE` ("Mars › The Rusty Roadstead") and `THE_ANCHOR` (`_nearestHaven == the-space-bar`).
+
+## Blast radius checked
+
+`_nearestBody` is load-bearing (aerobrake seed, autopilot orbit info, combat "where"/`IsHiddenAtHaven`,
+docking, `CurrentWellBodyId`, `LocalMarketBody`, `LocalSpaceBodyId`, scope AUTO). Each was read before
+changing the sweep:
+- `CurrentWellBodyId` walks up to the planet-level well — same answer either way.
+- `LocalMarketBody` / `IsHiddenAtHaven` both require `IsBound` inside the body's Hill sphere, which is
+  now exactly when that body holds the slot. Docked markets come from the `_docked && _dockBodyId`
+  branch, untouched.
+- Docking never reads `_nearestBody` for the affordance (`Map.Docking.cs:282`), and sets it explicitly
+  on clamp-on; the docked clause keeps it.
+- Scope AUTO now steadily draws Mars instead of ping-ponging — the point of the exercise.
+
+## Not done / open
+
+- No full Core+Client run yet on the final tree (one is required before the PR).
+- No player-facing prose added or changed.

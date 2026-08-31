@@ -824,10 +824,17 @@ public partial class Map
     // is named together, "Mars › The Rusty Roadstead", by UpdateNearestNeighbourhood below.
     private void UpdateNearestBody()
     {
-        // The incumbent, re-read from the live ephemeris (it may have been hidden or charted since).
+        // The incumbent, re-read from the live ephemeris (it may have been hidden or charted since) — and
+        // only while it still stands for itself. A satellite the ship has pulled away from hands the slot
+        // back to its primary instead of holding it from outside its own rail.
         CelestialBody? incumbent = _nearestBody is { } held && !IsBodyHidden(held.Id)
             ? _ephemeris!.Bodies.FirstOrDefault(b => b.Id == held.Id)
             : null;
+        if (incumbent is not null && !StandsForItself(incumbent))
+        {
+            incumbent = null;
+        }
+
         double incumbentDistSq = incumbent is null
             ? double.MaxValue
             : (_ship.Position - _ephemeris!.Position(incumbent.Id, SimTime)).LengthSquared;
@@ -837,6 +844,7 @@ public partial class Map
         foreach (var body in _ephemeris!.Bodies)
         {
             if (IsBodyHidden(body.Id)) continue; // a hidden wreck is never "Nearest" until charted (PR-A)
+            if (!StandsForItself(body)) continue; // #954: out here it defers to what it goes round
             var bodyPos = _ephemeris.Position(body.Id, SimTime);
             double distSq = (_ship.Position - bodyPos).LengthSquared;
             if (distSq < minDistanceSq)
@@ -862,6 +870,44 @@ public partial class Map
         }
 
         UpdateNearestNeighbourhood();
+    }
+
+    // #954 · Is this body somewhere IN ITS OWN RIGHT from where the ship sits, or is it just a piece of the
+    // thing it goes round? A planet (and the Sun, and a derelict on its own heliocentric rail) always
+    // stands for itself. A satellite only does once the ship is INSIDE ITS HILL SPHERE — the same "you are
+    // at this body" line the market (LocalMarketBody) and lying-low (IsHiddenAtHaven) already draw, so the
+    // nearest slot now agrees with them instead of wandering off on its own.
+    //
+    // Why that line and not a bigger one: a satellite's distance from a parked ship swings between |D−a|
+    // and D+a as its rail turns, so ANY threshold T it can cross produces a shell of hover ranges where it
+    // crosses twice an orbit — that shell is D within a ± T. Setting T to the Hill radius (kilometres, for
+    // bodies whose rails are hundreds of thousands) shrinks the shell to the moon's own capture width; a
+    // roomier threshold widens it back into exactly the flicker the owner reported. A mass-less berth has
+    // no Hill sphere at all, so it never takes the slot by drifting near — only by being clamped to, which
+    // is why the dock is written in as its own clause.
+    private bool StandsForItself(CelestialBody body)
+    {
+        if (_ephemeris is null || body.ParentId is not { } parentId)
+        {
+            return true; // the root orbits nothing
+        }
+
+        if (_dockedHavenId == body.Id)
+        {
+            return true; // clamped on: we are unarguably here (the berth's Hill sphere is zero)
+        }
+
+        CelestialBody? primary = _ephemeris.Bodies.FirstOrDefault(b => b.Id == parentId);
+        if (primary is null || primary.ParentId is null)
+        {
+            return true; // a direct child of the root IS a neighbourhood — Mars never defers to the Sun
+        }
+
+        // Instantaneous separation, so an elliptical rail is judged on where it actually is (PR-B).
+        Vector2d bodyPos = _ephemeris.Position(body.Id, SimTime);
+        double railNow = (bodyPos - _ephemeris.Position(primary.Id, SimTime)).Length;
+        double hill = OrbitRule.HillRadius(railNow, body.Mu, primary.Mu);
+        return NearestRule.StandsForItselfSquared((_ship.Position - bodyPos).LengthSquared, Squared(hill));
     }
 
     // #954 · The hierarchy the single "Nearest" slot could not hold. Owner: "present the hierarchy — Mars is
@@ -899,11 +945,25 @@ public partial class Map
             return;
         }
 
-        // (b) The planet holds the slot — look for the haven riding beside it, close enough that neither
-        // could unseat the other. That is exactly the pair whose swap the owner watched flicker.
-        double nearDistSq = (_ship.Position - _nearestBodyPosition).LengthSquared;
+        // (b) The planet holds the slot — name the berth riding with it. A berth belongs to the reading two
+        // ways, and BOTH are answered from the rail rather than from where the rail happens to have carried
+        // it this second, so neither can blink:
+        //   · the ship is inside the planet's Hill sphere — it is all one place down here; or
+        //   · the berth could not unseat its own planet from ANYWHERE on its orbit — its whole rail fits
+        //     inside the band, which is the far-field case the owner was looking at when he filed this.
+        // Between the two (Selene Gate seen from a few million km, say) the line simply says "Earth", which
+        // is honest: from out there the gate is not riding with the planet in any useful sense.
+        double nearDist = (_ship.Position - _nearestBodyPosition).Length;
+        bool insideTheWell = parent is not null && nearDist < OrbitRule.HillRadius(near, parent.Mu);
+
+        // A planet can hold more than one berth (Earth has the gate out at Luna and the factory in low
+        // orbit), so the pick gets the same hysteresis as the slot: the berth already named keeps the line
+        // unless a challenger beats it by a real margin. Anything less is the rails turning.
         CelestialBody? haven = null;
         double havenDistSq = double.MaxValue;
+        CelestialBody? incumbentHaven = null;
+        double incumbentHavenDistSq = double.MaxValue;
+
         foreach (CelestialBody body in _ephemeris.Bodies)
         {
             if (body.ParentId != near.Id || IsBodyHidden(body.Id) || !IsDockableHaven(body))
@@ -911,20 +971,41 @@ public partial class Map
                 continue;
             }
 
-            double d = (_ship.Position - _ephemeris.Position(body.Id, SimTime)).LengthSquared;
+            Vector2d berth = _ephemeris.Position(body.Id, SimTime);
+            double rail = (berth - _nearestBodyPosition).Length;
+            if (!insideTheWell && !NearestRule.InTheSameBreath(nearDist, nearDist - rail))
+            {
+                continue; // out here its rail is wide enough to matter — it is not "riding with" the planet
+            }
+
+            double d = (_ship.Position - berth).LengthSquared;
             if (d < havenDistSq)
             {
                 (havenDistSq, haven) = (d, body);
             }
+
+            if (body.Id == _neighbourhoodHavenId)
+            {
+                (incumbentHavenDistSq, incumbentHaven) = (d, body);
+            }
         }
 
-        if (haven is not null && NearestRule.InTheSameBreathSquared(nearDistSq, havenDistSq))
+        if (incumbentHaven is not null && !NearestRule.UnseatsSquared(incumbentHavenDistSq, havenDistSq))
+        {
+            haven = incumbentHaven;
+        }
+
+        _neighbourhoodHavenId = haven?.Id;
+
+        if (haven is not null)
         {
             _nearestParentName = near.Name;
             _nearestChildName = haven.Name;
             _nearestHaven = haven;
         }
     }
+
+    private static double Squared(double x) => x * x;
 
     // The neighbourhood the nearest reading belongs to: the containing body's name and the thing inside it,
     // or nulls when the nearest is just itself. Read by the HUD line and by the scope's AUTO sub-line.
@@ -935,6 +1016,10 @@ public partial class Map
     // one riding beside it. The ⚓ affordance hint follows this, so it no longer blinks out on the frames
     // the planet held the slot.
     private CelestialBody? _nearestHaven;
+
+    // #954 · Which of the neighbourhood's berths the line is naming — the incumbent the hysteresis above
+    // holds onto, so a planet with two of them doesn't trade their names every time a rail comes round.
+    private string? _neighbourhoodHavenId;
 
     // The one line the "Nearest:" readout speaks — "Mars › The Rusty Roadstead" when there is a hierarchy
     // to present, the plain name when there is not.

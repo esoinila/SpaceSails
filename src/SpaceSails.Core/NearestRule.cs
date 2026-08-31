@@ -61,6 +61,44 @@ public static class NearestRule
         !UnseatsSquared(aDistanceSquared, bDistanceSquared) && !UnseatsSquared(bDistanceSquared, aDistanceSquared);
 
     /// <summary>
+    /// 🛰 THE SECOND HALF OF THE SAME LAW — <b>a satellite does not contest "nearest" from inside its
+    /// primary's skirts.</b>
+    ///
+    /// <para>The band above is measured along the sightline, so it shrinks as the ship closes: at a quarter
+    /// of an AU 3% of the range is 700,000 km and Mars's whole family fits inside it, but at 100,000 km it is
+    /// 3,000 km and Phobos (9,376 km out) and the Roadstead (12,000 km out) start trading places again —
+    /// every orbit, exactly as before, just nearer. It is worse at Earth, where a station in low orbit and
+    /// the planet swap several times a minute. The hysteresis was never wrong; it was measured against the
+    /// wrong thing.</para>
+    ///
+    /// <para>So a satellite defers to its primary, and the primary stands for the whole neighbourhood, until
+    /// the ship is <b>inside the satellite's Hill sphere</b> — the line at which it is captured, and the
+    /// very same line the market and the lying-low rule already use for "you are at this body". Then it
+    /// speaks for itself and the band above decides the rest.</para>
+    ///
+    /// <para><b>Why the Hill sphere and not something roomier.</b> A parked ship sees a satellite's
+    /// distance swing between |D−a| and D+a as its rail turns (D = range to the primary, a = the rail). Any
+    /// threshold T the satellite can cross is crossed TWICE AN ORBIT for every D in a ± T — a shell of
+    /// hover ranges where the flicker comes straight back. The Hill radius is kilometres where the rails
+    /// are hundreds of thousands of them, so that shell shrinks to the moon's own capture width and there
+    /// is nowhere left to park and watch the readout blink. A roomier threshold — "nearer to it than it is
+    /// to its primary", say — sets T = a and reopens the shell over the entire approach.</para>
+    ///
+    /// <para>A mass-less berth has no Hill sphere, so it never takes the slot by drifting past; it takes it
+    /// by being clamped to, which the caller writes in as its own clause. And a real moon still takes the
+    /// slot the moment the ship is captured by it — this is a rule about what "nearest" MEANS, not a lock.
+    /// </para>
+    /// </summary>
+    /// <param name="shipToBody">How far the ship is from the satellite.</param>
+    /// <param name="hillRadius">The satellite's Hill radius about the body it orbits.</param>
+    public static bool StandsForItself(double shipToBody, double hillRadius) =>
+        shipToBody < hillRadius;
+
+    /// <summary>Squared-distance form of <see cref="StandsForItself"/>, for the per-frame sweep.</summary>
+    public static bool StandsForItselfSquared(double shipToBodySquared, double hillRadiusSquared) =>
+        shipToBodySquared < hillRadiusSquared;
+
+    /// <summary>
     /// The one line for a nearest reading that has a parent and a child: "Mars › The Rusty Roadstead". The
     /// chevron is doing real work — it says the second thing is <i>inside</i> the first's Hill sphere, which
     /// is exactly the fact the flickering single-slot readout could not hold.
