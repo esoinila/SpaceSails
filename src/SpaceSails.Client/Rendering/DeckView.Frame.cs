@@ -138,7 +138,7 @@ public sealed partial class DeckView
 
         _perf?.Mark("PaintTheDark");
 
-        DrawTheSentries(surface, simTime, scale, project);
+        DrawTheSentries(surface, simTime, widthPx, heightPx, scale, project);
         _perf?.Mark("DrawTheSentries");
         DrawWhatTheFanHeard(surface, simTime, scale, project);
         _perf?.Mark("DrawWhatTheFanHeard");
@@ -881,7 +881,8 @@ public sealed partial class DeckView
     /// and OVER the dark, because a sentry carries a lamp and you can see a light in an unlit hall even
     /// when you cannot see what it lights.</summary>
     private void DrawTheSentries(
-        SurfaceHud? surface, double simTime, float scale, Func<double, double, (float X, float Y)> project)
+        SurfaceHud? surface, double simTime, int widthPx, int heightPx, float scale,
+        Func<double, double, (float X, float Y)> project)
     {
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
         // dropping, and its crude two-digit magazine readout riding above (seven-segment red, dim at 00).
@@ -932,6 +933,33 @@ public sealed partial class DeckView
                 if (!dry && pop > 0f) digit = LerpToWhite(digit, 0.7f * pop);
                 float fontPx = MagBasePx * (1f + 0.16f * pop);
 
+                // #1039 · A COUNTER IS ITS SENTRY'S INSTRUMENT, AND IT MAY NOT OUTLIVE THE MARK IT BELONGS TO.
+                //
+                // The frame is FollowCam-centred on the captain, so a plate seated at a FIXED screen row is a
+                // plate glued to the walker. That is exactly what the band-avoidance below did to the shuttle's
+                // own door sentry: GATE-1 stands at the tube mouth (MoonSurface.SurfaceTopY + 2) and the captain
+                // walks DOWN the field away from it, so the mark slides off the top of the glass — and the
+                // Math.Max(ReservedBottom, …) then parked its "99" just under the ship's line and left it there
+                // for the rest of the excursion, sliding sideways as he walked. The owner read it exactly as it
+                // was drawn: "the magazine count follows the walker." A number riding a body that does not own
+                // it is this repository's third named bug class — the pen reporting something the sim never said.
+                //
+                // So the plate is ANCHORED, not merely nudged: it is drawn only where its own sentry's mark is
+                // drawn. Off the glass there is no mark to anchor to, and a counter with nothing under it is not
+                // an instrument, it is a lie about whoever happens to be standing there. Nothing is lost by the
+                // silence — the sling's own magazines are already spelled out in the HUD's MAGAZINES line and
+                // the deployed roster in the key hints, and every sentry you can SEE still wears its drum.
+                //
+                // The mark itself (and the zap line to what it is dropping) keeps drawing: a beam arriving from
+                // off-frame is real information, and the canvas clips it for free.
+                bool markIsOnTheGlass =
+                    sx >= -0.55f * scale && sx <= widthPx + (0.55f * scale) &&
+                    sy >= -0.55f * scale && sy <= heightPx + (0.55f * scale);
+                if (!markIsOnTheGlass)
+                {
+                    continue;
+                }
+
                 // The readout: a dark scoreboard panel with the two big digits, anchored above the bot so
                 // it never covers the mark or its neighbours. Plate stays a steady size; only the number pops.
                 float pw = 3.0f * scale, ph = 2.0f * scale;
@@ -946,6 +974,11 @@ public sealed partial class DeckView
                 // ship's line, and still the same plate read from across the map. The band is measured for
                 // both lines whether or not the second is up, so a counter does not hop as the machine
                 // complains — and a bot anywhere but the very top of the frame is untouched by this.
+                //
+                // #1039 · This floor is only ever reached now by a bot whose MARK is on the glass (the gate
+                // above), so the seat it picks is always within a plate-height of its own sentry. Unguarded it
+                // was a fixed screen row that any off-frame bot could be parked on, which is how a door sentry
+                // twenty deck units behind the captain ended up wearing its drum over his head.
                 if (plateTop < CommsBand.ReservedBottom)
                 {
                     plateTop = (float)Math.Max(CommsBand.ReservedBottom, sy + (0.8f * scale));

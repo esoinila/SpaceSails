@@ -177,10 +177,19 @@ public sealed class TheShipsLineIsNeverBuriedTests
     /// two probe frames a known distance apart give the scale, and the scale gives the deck position whose
     /// counter lands on any screen point asked for. The probes are stood in the middle of the frame, well
     /// clear of the band, so nothing the fix does can perturb the solve.</para>
+    ///
+    /// <para>#1039 · AND "THE MIDDLE OF THE FRAME" IS MEASURED OFF THE CAPTAIN, not off the deck origin. The
+    /// probes used to sit at deck (0,0), which on this ground is up inside the SHIP hanging over the regolith
+    /// — forty pixels above the top of the glass. The old renderer drew a counter there anyway (that IS #1039:
+    /// a magazine plate parked on a fixed screen row with no sentry under it), so the solve happened to work
+    /// off ink nobody could ever have seen. The frame is FollowCam-centred on the captain, so the captain's
+    /// own stance is where the middle of the frame actually is.</para>
     /// </summary>
     private static MeasuringPen ASentryUnderTheShipsLine()
     {
-        const double ax = 0.0, ay = 0.0, d = 8.0;
+        DeckPlan ground = Scenes.Build(Ground);
+        double ax = ground.SpawnX, ay = ground.SpawnY;
+        const double d = 8.0;
         Word a = TheSentrysMagazine(OnTheGroundWithASentryAt(ax, ay));
         Word b = TheSentrysMagazine(OnTheGroundWithASentryAt(ax + d, ay + d));
 
