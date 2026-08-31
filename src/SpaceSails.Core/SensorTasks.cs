@@ -33,8 +33,23 @@ public sealed record SensorTask(
     string? CorridorAId = null,
     string? CorridorBId = null)
 {
+    /// <summary>The STANDING custody pass on a ship the ledger holds: re-queued every tick for every
+    /// held track, and swept back out the moment the ledger lets that track go.</summary>
     public static SensorTask TrackUpdate(string shipId, string label) =>
         new($"track:{shipId}", SensorTaskKind.TrackUpdate, label, Recurring: true, TargetShipId: shipId);
+
+    /// <summary>
+    /// #962 · THE CAPTAIN'S OWN LOOK — one directed pass at a contact the ledger does NOT hold.
+    ///
+    /// <para>Same aim, same id and same kind as a custody pass (one telescope, one job per contact), and
+    /// two things different: it is a one-shot, so it leaves the carousel once the glass has taken it; and
+    /// it does not belong to the ledger, so the custody housekeeping that sweeps out standing passes for
+    /// contacts we no longer hold must leave this one alone. That sweep is what made 📡 <i>sharpen fix</i>
+    /// look dead whenever every telescope was already spoken for: the order was queued, and deleted again
+    /// on the next tick, before the captain's eyes ever reached the task list.</para>
+    /// </summary>
+    public static SensorTask SharpenFix(string shipId, string label) =>
+        new($"track:{shipId}", SensorTaskKind.TrackUpdate, label, Recurring: false, TargetShipId: shipId);
 
     public static SensorTask AreaScan(Vector2d center, double radiusMeters, string label) =>
         new($"area:{(long)Math.Round(center.X / 1e9)}:{(long)Math.Round(center.Y / 1e9)}",
