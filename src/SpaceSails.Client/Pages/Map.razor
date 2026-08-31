@@ -6729,11 +6729,26 @@
             </OverlayShell>
         }
 
-    </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
-              (#992), then the story plate at the foot of it (#994). It closes HERE, around those three
-              only: everything below is absolutely positioned against .map-page, and pulling it inside a
-              pointer-events:none column would cost it its clicks. *@
+    @* #1037 · …AND THE NAVIGATION TARGET IS THE FOOT OF THE COLUMN, not a second layout system beside it.
 
+       M25 pinned this panel to the window's own bottom-centre corner (`position: absolute; bottom: 0.75rem`)
+       while the Plotting panel above it lives in #992's flex arithmetic. Two positioning systems that were
+       never made to coordinate, and the arithmetic did not know the panel was there: measured docked at a
+       great port with a plan AND a destination set, `.map-plot`'s own bottom edge landed 12 px inside
+       `.map-dest-panel`'s top edge at 1280x720 and 16 px at 390x700, and which of the two a real screen
+       painted there was whatever the z-band happened to say — `.map-hud` (chrome+12) over the panel
+       (chrome+2), so the edge of the surface the captain was NOT reading hid the top of the one that answers
+       "does this course actually get you there".
+
+       Raising the panel's z-index is PROVEN WRONG and must not be retried: `.map-hud` is one stacking
+       context, so out-ranking it out-ranks every control it carries — CriticalControlsTests caught
+       autopilot-disengage going unreachable at every size (#1035).
+
+       So the panel joins the column, exactly as #994 put the story plate in it: it takes its own measured
+       height off the foot of the window and `.map-hud` — `flex: 1 1 auto` — gets what is left. It keeps its
+       0.75rem offset from the glass (now the column's own margin) so `.map-dossier-raised`'s 18.25rem
+       stack-above offset and CriticalControls' bottom-centre model both stay true, and geometry rather
+       than a z-index number decides who owns the pixels. *@
     @if (_activeDesk == ShipDesk.Nav)
     {
     @* M25: the navigation-target panel — its own box, plain words. States exactly what the
@@ -6827,6 +6842,16 @@
             }
         </div>
     }
+    }
+
+    </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
+              (#992), then the story plate (#994) and the navigation-target panel (#1037) at the foot of
+              it. It closes HERE, around those four only: everything below is absolutely positioned
+              against .map-page, and pulling it inside a pointer-events:none column would cost it its
+              clicks. *@
+
+    @if (_activeDesk == ShipDesk.Nav)
+    {
 
     @* #952 — THE WAKE-UP CALL. Owner: "if we ruin it mid flight it would say so in the list and as a
        pop-up that we no longer have safely ending flight plan but will need input at some point. That

@@ -276,7 +276,10 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
         string css = Css();
         string panel = Between(css, ".map-dest-panel {", "}");
 
-        double panelBottom = Rem(panel, "bottom:");
+        // #1037 moved the panel into .map-flowcolumn's own arithmetic, so its 0.75rem off the glass is a
+        // column MARGIN now rather than an absolute `bottom`. Same number, same reason, same law: this is
+        // still "how far the nav panel's foot sits off the bottom of the window".
+        double panelBottom = Rem(panel, "margin-bottom:");
         double panelCap = Rem(panel, "max-height:");
         double raised = Rem(Between(css, ".map-dossier-raised {", "}"), "bottom:");
 

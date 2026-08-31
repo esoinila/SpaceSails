@@ -595,6 +595,21 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+
+    /* #1037 · …AND IT PAINTS INSIDE WHAT IT IS GIVEN. This is the half that makes the column's arithmetic
+       BINDING rather than advisory: three of the four blocks in here are `flex: 0 0 auto` and the fourth
+       has a floor, so on a window short enough they do not shrink — they OVERFLOW, and the Plotting panel
+       at the foot of them lands wherever it falls. That is what put its bottom edge inside the
+       navigation-target panel at 390x700 (measured: the HUD's own box 0 px tall, its 411 px of content
+       painting straight down the glass over whatever was under it), and at 320x480 it is what puts the
+       frame chip and the Plotting panel BELOW the bottom of the window with no way back to them at all.
+
+       `auto`, not `hidden`: what does not fit is still reachable by scrolling — #997's own backstop for
+       the Plotting panel ("the whole panel pages rather than losing its head"), said one level up for the
+       column that holds it. The x axis is clipped rather than scrolled because the toolbar wraps and the
+       panel is `max-width: 100%`: nothing in here is ever legitimately wider than the HUD. */
+    overflow: hidden auto;
+    overscroll-behavior: contain;
 }
 
 /* #992 · WHO GIVES WHEN THE WINDOW IS SHORT. The toolbar, the readouts and the frame chip are read at a
@@ -1221,12 +1236,34 @@
 }
 
 /* M25: navigation-target panel — the plotted course's pass vs orbit success, in plain words.
-   Bottom center, deliberately roomy: it is the whole point of navigating there. */
+   Bottom center, deliberately roomy: it is the whole point of navigating there.
+
+   #1037 · IT IS THE FOOT OF THE FLOW COLUMN NOW, not a second layout system beside it. M25 pinned it to
+   the window's own corner (`position: absolute; bottom: 0.75rem`) while the Plotting panel above it lives
+   in #992's flex arithmetic — and that arithmetic did not know this panel was there. Measured docked at a
+   great port with a plan AND a destination set: `.map-plot`'s own bottom edge landed 12 px inside this
+   panel's top edge at 1280x720 and 16 px at 390x700, and who painted there was whatever the z-band
+   happened to say. Raising the z-index above `.map-hud` is proven wrong (one stacking context —
+   out-ranking it out-ranks every control it carries, and CriticalControlsTests caught autopilot-disengage
+   going unreachable at every size, #1035); only geometry can settle it, which is #994's own finding about
+   the story plate one panel over.
+
+   So it is a member of the column: `position: relative` keeps its z-index working from inside a box that
+   makes no stacking context of its own, `align-self: center` is the old `left: 50% / translateX(-50%)`
+   said in the column's own language, and `margin-bottom` is the old `bottom` — the SAME 0.75 rem off the
+   glass, so `.map-dossier-raised`'s 18.25 rem stack-above offset and CriticalControls' bottom-centre model
+   are both still true of it.
+
+   `flex: 0 1 auto; min-height: 6rem` — it gives, like every other item in this column, because it has a
+   scroll in it (below) and a scroll is what makes giving harmless. The floor is the head row plus the
+   closest-approach line: a panel squeezed past that is a panel that says nothing. */
 .map-dest-panel {
-    position: absolute;
-    bottom: 0.75rem;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    align-self: center;
+    flex: 0 1 auto;
+    min-height: 6rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
     width: 38rem;
     max-width: calc(100% - 1.5rem);
     pointer-events: auto;
@@ -5555,10 +5592,20 @@
    instead of sitting at the foot of the window. `position: relative` keeps its z-index working from inside
    the column, and the column makes no stacking context of its own, so the plate stacks against .map-page's
    children exactly as it did while it was one of them. */
+/* #1037 · …AND IT GIVES, LIKE EVERYTHING ELSE IN THE COLUMN. #994 made it `flex: 0 0 auto` when it was the
+   LAST item and the only other one was the HUD; with the navigation-target panel at the foot of the column
+   too, a plate that never shrinks is a plate that pushes that panel off the bottom of the glass. Measured
+   at 390x700 with the great port's own three-line caption: the plate lays out 832 px tall (the words wrap
+   to a ~75 px column beside the art), which is 132 px more than the whole window — #735's law, on the one
+   card its gate was never pointed at. `min-height: 0` + `overflow-y: auto` is that law's own answer: the
+   card is capped by what the window has and scrolls inside itself, instead of every panel below it paying
+   for its caption. */
 ::deep .story-plate {
     position: relative;
     align-self: flex-start;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     margin: auto 0 5.5rem 1rem;
     z-index: calc(var(--z-desks-popups) + 40);
     display: flex;
@@ -5572,6 +5619,13 @@
     box-shadow: 0 0.6rem 2rem rgba(0, 0, 0, 0.55);
     pointer-events: none;
     animation: story-plate-in 260ms ease-out;
+}
+
+/* #1037 · the 5.5 rem was CLEARANCE FROM THE WINDOW'S OWN FOOT — the deck HUD the plate has stood above
+   since #528. With the navigation-target panel below it in the column, that clearance IS the panel, and
+   5.5 rem of nothing between them is 88 px the Plotting panel above would rather have. */
+::deep .story-plate:not(:last-child) {
+    margin-bottom: 0.5rem;
 }
 
 @keyframes story-plate-in {
