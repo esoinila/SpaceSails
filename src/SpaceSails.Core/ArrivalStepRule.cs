@@ -244,6 +244,93 @@ public static class ArrivalStepRule
         $"⌛ not judged — the plotted path stops at {ribbonEndText}, short of {bodyName}. "
         + "Stretch Path length (or press auto) until the pass is on the line.";
 
+    // ===== #1042 — THE OTHER EDGE: A PASS THE RIBBON MERELY *BEGINS* AT =====
+    //
+    // The end-edge law above has a sibling at the front of the line, and the two are DELIBERATELY NOT THE
+    // SAME LAW. #1041 recorded why, after CI offered "🛰 orbit Neptune · pass 30.64 AU" off a five-day line:
+    //
+    //   "A pass pinned to the ribbon's END means the sweep was cut short of an encounter the plan reaches. A
+    //    pass pinned to the START means the ship is at closest approach NOW and opening — which is a real
+    //    reading, and silencing it would take the ✓ away from the captain coasting past the body he means to
+    //    orbit. So the gate is what changes, not the law."
+    //
+    // That stands, and this rule does not touch it: a start-edge pass is still JUDGED, ✓ or ✗, because the
+    // closest the ship comes to that body over the rest of the plan is a true thing to say about the course.
+    //
+    // What #1042 found is the half that sentence quietly assumed. "At closest approach NOW" and "receding
+    // from something whose closest approach happened long before the plan began" produce the SAME artefact
+    // out of ClosestApproach.Passes — the sweep had nowhere earlier to look, so it pins the minimum to the
+    // ribbon's first sample — and the compose button cannot tell them apart. With the scrub at zero that
+    // artefact sits at delta-zero from the captain's finger and wins the nearest-in-time pick OUTRIGHT over
+    // every genuine encounter later on the line, so the button reads:
+    //
+    //   🛰 + Add orbit at scrub (Neptune)
+    //
+    // to a captain who has never been within thirty AU of Neptune and is opening from it at 29 km/s. The
+    // button's whole promise (#950) is that it names an encounter on YOUR course near YOUR finger; here it
+    // names where the picture starts. So the OFFER — not the verdict — needs to know which of the two it is
+    // looking at, and the two are told apart by ONE question with an exact answer: HOW LONG AGO WAS CLOSEST
+    // APPROACH? Straight-line relative motion puts it at t − (r·v)/|v|², so "at closest approach now" reads
+    // zero and "left behind before the plan began" reads years. That is what this measures.
+
+    /// <summary>
+    /// <b>Does the ribbon merely BEGIN here?</b> True when a "closest pass" is pinned to the projection's
+    /// first sample only because the sweep had nowhere earlier to look — the ship was already opening from
+    /// that body when the picture started, and its real closest approach lies behind the picture, in a past
+    /// no plotted burn can reach.
+    ///
+    /// <para><b>Not the mirror of <see cref="PassIsOffTheEndOfTheRibbon"/>, on purpose.</b> That one is a
+    /// confession about the picture and withholds the verdict entirely. This one is narrower and quieter: a
+    /// start-edge pass is still JUDGED, ✓ or ✗ (#1041's ruling — the ✓ belongs to the captain coasting past
+    /// the body he means to orbit), and all this decides is whether the compose button may OFFER to end the
+    /// plan there.</para>
+    ///
+    /// <para><b>The measurement.</b> For two bodies on straight lines, closest approach happens at
+    /// <c>t − (r·v)/|v|²</c>: with <c>r·v = range · rangeRate</c> that is
+    /// <c>range · rangeRate / relSpeed²</c> seconds ago, exact, scale-free and needing nothing but the state
+    /// at the ribbon's first sample — no curve fitting over samples the adaptive projector spaces unevenly
+    /// and drops a burn into. Zero means "at closest approach NOW", which is precisely the reading #1041
+    /// protects. The cut is ONE SAMPLE STEP before the first sample: the same tolerance the end-edge law
+    /// borrows, and the resolution at which "now" is the only thing the picture can mean.</para>
+    /// </summary>
+    /// <param name="passSimTime">The pass the sweep returned.</param>
+    /// <param name="ribbonStartSimTime">The epoch of the projection's FIRST sample.</param>
+    /// <param name="sampleStepSeconds">The projection's spacing at that end (its own first gap).</param>
+    /// <param name="rangeAtStart">Distance to the body at the projection's first sample (m).</param>
+    /// <param name="rangeRateAtStart">How fast that distance is growing there (m/s); ≤ 0 while still closing.</param>
+    /// <param name="relSpeedAtStart">Ship speed relative to the body at that sample (m/s).</param>
+    public static bool PassIsOffTheFrontOfTheRibbon(
+        double passSimTime, double ribbonStartSimTime, double sampleStepSeconds,
+        double rangeAtStart, double rangeRateAtStart, double relSpeedAtStart)
+    {
+        if (!PassSitsAtTheRibbonsStart(passSimTime, ribbonStartSimTime, sampleStepSeconds))
+        {
+            return false;
+        }
+
+        if (rangeRateAtStart <= 0 || relSpeedAtStart <= 0)
+        {
+            // Still closing (or standing still relative to the body): whatever this is, it is not a body the
+            // ship has already left behind, so the offer stands.
+            return false;
+        }
+
+        double secondsSinceClosestApproach =
+            rangeAtStart * rangeRateAtStart / (relSpeedAtStart * relSpeedAtStart);
+        return secondsSinceClosestApproach > Math.Abs(sampleStepSeconds);
+    }
+
+    /// <summary>
+    /// Is the pass sitting on the ribbon's first sample at all? The CHEAP HALF of
+    /// <see cref="PassIsOffTheFrontOfTheRibbon"/> — an interior pass has samples on both sides of it, so it
+    /// is an encounter and no measurement is needed. Named and shared rather than repeated, so a caller
+    /// sweeping every body in the system can skip the geometry for the many the picture plainly holds
+    /// without the client growing a second opinion about where the ribbon's front is.
+    /// </summary>
+    public static bool PassSitsAtTheRibbonsStart(
+        double passSimTime, double ribbonStartSimTime, double sampleStepSeconds) =>
+        passSimTime <= ribbonStartSimTime + Math.Abs(sampleStepSeconds);
+
     // ===== #969 — ARM IT *THEN*, NOT ONLY *NOW* =====
     //
     // The owner's ruling, 2026-08-23: "I just want the possibility to plan the trip from space to docked at

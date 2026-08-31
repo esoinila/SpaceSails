@@ -155,6 +155,105 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
             + $"verdict is neither of the two honest endings. Row: \"{rowText}\"");
     }
 
+    /// <summary>
+    /// #1042 · <b>THE SCRUB NEVER POINTS PAST THE END OF THE LINE IT SCRUBS.</b> The scrub slider's
+    /// <c>max</c> IS the path length, but its bound value was only ever written by a hand on the control — so
+    /// dragging Path length DOWN left the two disagreeing, with the scrub standing hundreds of days outside
+    /// the drawn world and every "at scrub" readout and button quietly agreeing on an hour that is not on the
+    /// picture.
+    ///
+    /// <para><b>Why the ELEMENT cannot be asked, and the PANEL must be.</b> The first draft of this fact read
+    /// the scrub input's <c>value</c> against its own <c>max</c> — and passed on the broken build, because a
+    /// range input re-sanitises its value the moment its <c>max</c> attribute shrinks. The browser quietly
+    /// walks the thumb back to the new far end WITHOUT firing an <c>input</c> event, so the DOM looks tidy
+    /// while the page's own scrub clock still stands at the old hour: the thumb and the clock, two readings
+    /// of one control, disagreeing. So the fact is stated against the panel's own printed numbers — its
+    /// <c>Scrub:</c> clock against its <c>Path length:</c> — which are what the captain actually reads and
+    /// what every "at scrub" button actually acts on. (A green test that asserts nothing is this repo's own
+    /// named bug class; the first draft was one, and this note is why it is not shipped.)</para>
+    ///
+    /// <para>Sky-independent on purpose — nothing here depends on where the planets are, which is the trap
+    /// this file already records (see the class note).</para>
+    /// </summary>
+    [Fact]
+    public async Task The_scrub_never_points_past_the_end_of_the_line_it_scrubs()
+    {
+        await AtThePlottingDesk();
+
+        // The panel's clock at the scrub's origin — this is "now" in the only units the panel speaks.
+        await SetRange(0, 0.0);
+        string nowText = await ScrubClockText();
+        double now = DaysInClock(nowText);
+
+        // A long line, and the scrub dragged to the far end of it — the captain looking at the whole sail.
+        await SetPathLength(0.9);
+        await SetRange(0, 1.0);
+        await _page.WaitForFunctionAsync(
+            "(was) => { const p = document.querySelector('.map-plot'); if (p === null) { return false; } "
+            + "const m = /Scrub: ([^\\n]*)/.exec(p.textContent); return m !== null && m[1].trim() !== was; }",
+            nowText,
+            new() { Timeout = ActionTimeoutMs });
+
+        double longLine = DaysIn(await PathLengthText());
+        double outAtTheEnd = DaysInClock(await ScrubClockText()) - now;
+        Assert.True(
+            outAtTheEnd > longLine / 2,
+            $"the bench must start with the scrub genuinely out at the far end: {outAtTheEnd:F1} d out on a "
+            + $"{longLine} d line.");
+
+        // Now he drags Path length back down to look at the near term. Nothing touches the scrub.
+        await SetPathLength(0.0);
+        double shortLine = DaysIn(await PathLengthText());
+        Assert.True(shortLine < longLine, $"the line must genuinely have shrunk: {longLine} d → {shortLine} d");
+
+        // The reprojection that carries the clamp is on a 250 ms throttle, so wait on the panel's own words
+        // for it rather than sleeping — and if it never comes, fall through and let the assertion speak.
+        try
+        {
+            await _page.WaitForFunctionAsync(
+                "(was) => { const p = document.querySelector('.map-plot'); if (p === null) { return false; } "
+                + "const m = /Scrub: ([^\\n]*)/.exec(p.textContent); return m !== null && m[1].trim() !== was; }",
+                await ScrubClockText(),
+                new() { Timeout = 15_000 });
+        }
+        catch (TimeoutException)
+        {
+            // deliberate: the assertion below is the one that should speak, with the numbers in it
+        }
+
+        string scrubText = await ScrubClockText();
+        double outNow = DaysInClock(scrubText) - now;
+        Assert.True(
+            outNow <= shortLine + 1,
+            $"the panel says Path length: {shortLine} d and Scrub: {scrubText} — {outNow:F1} d out from "
+            + $"{nowText}. The scrub clock is standing past the end of the world it scrubs, while the "
+            + "slider's own thumb sits at the new far end: one control, two answers.");
+    }
+
+    /// <summary>The panel's <c>Scrub:</c> clock, verbatim.</summary>
+    private async Task<string> ScrubClockText()
+    {
+        string panel = await _page.Locator(".map-plot").InnerTextAsync();
+        System.Text.RegularExpressions.Match m =
+            System.Text.RegularExpressions.Regex.Match(panel, @"Scrub: ([^\n]*)");
+        return m.Success ? m.Groups[1].Value.Trim() : "";
+    }
+
+    /// <summary>That clock ("291d 04h 12m" — <c>FormatSimTime</c>'s own shape) as days.</summary>
+    private static double DaysInClock(string clock)
+    {
+        System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(
+            clock, @"(\d+)d\s+(\d+)h\s+(\d+)m");
+        if (!m.Success)
+        {
+            throw new InvalidOperationException($"the scrub clock read \"{clock}\", which is not FormatSimTime's shape");
+        }
+
+        double Part(int group) =>
+            double.Parse(m.Groups[group].Value, System.Globalization.CultureInfo.InvariantCulture);
+        return Part(1) + (Part(2) / 24) + (Part(3) / 1440);
+    }
+
     /// <summary>The panel's Path-length readout back as days ("2.0 yr" · "381 d" · "5 d"), so two lengths can
     /// be compared. Its own ladder (<c>FormatHorizon</c>) is the only thing being parsed.</summary>
     private static double DaysIn(string horizonText)
@@ -183,19 +282,7 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
     /// </summary>
     private async Task AnArrivalOnAStubOfALine()
     {
-        await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&start=wreck", new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
-        await _page.Locator(".desk-tab-bar").WaitForAsync(
-            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
-
-        await _page.Locator("button.desk-tab", new() { HasTextString = "Nav" }).ClickAsync();
-        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Nav" }).WaitForAsync(
-            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
-
-        await _page.Locator(".map-hud button", new() { HasTextString = "Plot" }).ClickAsync();
-        await _page.Locator(".map-plot-compose").WaitForAsync(
-            new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+        await AtThePlottingDesk();
 
         // A burn, so the plan is a plan and not an arrival standing on its own.
         await Compose("Add burn");
@@ -230,6 +317,25 @@ public sealed class TheArrivalNeverInventsARefusalTests : IAsyncLifetime
             + "the body the button offers, so this gate never reached the state it is about. The sky at "
             + "?start=wreck has moved out from under the bench — pick a start whose course has a reachable "
             + "encounter beyond a short line and say so here (#952).");
+    }
+
+    /// <summary>Free-flying at <c>?start=wreck</c> with the Plotting panel open — the state both facts above
+    /// start from, and nothing more.</summary>
+    private async Task AtThePlottingDesk()
+    {
+        await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&start=wreck", new() { Timeout = BootTimeoutMs });
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        await _page.Locator(".desk-tab-bar").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        await _page.Locator("button.desk-tab", new() { HasTextString = "Nav" }).ClickAsync();
+        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Nav" }).WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        await _page.Locator(".map-hud button", new() { HasTextString = "Plot" }).ClickAsync();
+        await _page.Locator(".map-plot-compose").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
     }
 
     /// <summary>Fractions of the Path-length slider's travel, shortest first. Log-scaled, so these are ~5 d,
