@@ -837,22 +837,28 @@ public partial class Map
         CelestialBody? incumbent = _nearestBody is { } held && !IsBodyHidden(held.Id)
             ? _ephemeris!.Bodies.FirstOrDefault(b => b.Id == held.Id)
             : null;
-        if (incumbent is not null && !StandsForItself(incumbent))
+        double incumbentDistSq = double.MaxValue;
+        if (incumbent is not null)
         {
-            incumbent = null;
+            Vector2d incumbentPos = _ephemeris!.Position(incumbent.Id, SimTime);
+            if (StandsForItself(incumbent, incumbentPos))
+            {
+                incumbentDistSq = (_ship.Position - incumbentPos).LengthSquared;
+            }
+            else
+            {
+                incumbent = null;
+            }
         }
-
-        double incumbentDistSq = incumbent is null
-            ? double.MaxValue
-            : (_ship.Position - _ephemeris!.Position(incumbent.Id, SimTime)).LengthSquared;
 
         CelestialBody? challenger = null;
         double minDistanceSq = double.MaxValue;
         foreach (var body in _ephemeris!.Bodies)
         {
             if (IsBodyHidden(body.Id)) continue; // a hidden wreck is never "Nearest" until charted (PR-A)
-            if (!StandsForItself(body)) continue; // #954: out here it defers to what it goes round
             var bodyPos = _ephemeris.Position(body.Id, SimTime);
+            // #954: out here it defers to what it goes round — the neighbourhood contests, not the family.
+            if (!StandsForItself(body, bodyPos)) continue;
             double distSq = (_ship.Position - bodyPos).LengthSquared;
             if (distSq < minDistanceSq)
             {
@@ -892,7 +898,10 @@ public partial class Map
     // roomier threshold widens it back into exactly the flicker the owner reported. A mass-less berth has
     // no Hill sphere at all, so it never takes the slot by drifting near — only by being clamped to, which
     // is why the dock is written in as its own clause.
-    private bool StandsForItself(CelestialBody body)
+    // <paramref name="bodyPos"/> is passed in because the caller has already paid for it — this runs once
+    // per body per frame, so it takes the cheap outs first and never allocates (an explicit loop for the
+    // parent, not a LINQ closure: the same reason the rest of this file looks up bodies the long way).
+    private bool StandsForItself(CelestialBody body, Vector2d bodyPos)
     {
         if (_ephemeris is null || body.ParentId is not { } parentId)
         {
@@ -904,14 +913,18 @@ public partial class Map
             return true; // clamped on: we are unarguably here (the berth's Hill sphere is zero)
         }
 
-        CelestialBody? primary = _ephemeris.Bodies.FirstOrDefault(b => b.Id == parentId);
+        CelestialBody? primary = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == parentId) { primary = candidate; break; }
+        }
+
         if (primary is null || primary.ParentId is null)
         {
             return true; // a direct child of the root IS a neighbourhood — Mars never defers to the Sun
         }
 
         // Instantaneous separation, so an elliptical rail is judged on where it actually is (PR-B).
-        Vector2d bodyPos = _ephemeris.Position(body.Id, SimTime);
         double railNow = (bodyPos - _ephemeris.Position(primary.Id, SimTime)).Length;
         double hill = OrbitRule.HillRadius(railNow, body.Mu, primary.Mu);
         return NearestRule.StandsForItselfSquared((_ship.Position - bodyPos).LengthSquared, Squared(hill));
