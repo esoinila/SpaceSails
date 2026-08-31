@@ -819,9 +819,16 @@ public partial class Map
     // #954 — the nearest reading, with the flicker taken out of it. It used to take the literal minimum
     // every frame, which is why the HUD (and the scope's AUTO lock, which reads the same field) alternated
     // between Mars and The Rusty Roadstead twice per two-hour station orbit: from 0.16 AU the two ARE the
-    // same distance, and "closest" was re-decided on a hair. Now the incumbent keeps the slot until a
-    // challenger beats it by a real margin (NearestRule.Unseats) — and the pair that used to trade places
-    // is named together, "Mars › The Rusty Roadstead", by UpdateNearestNeighbourhood below.
+    // same distance, and "closest" was re-decided on a hair.
+    //
+    // TWO LAWS HOLD IT STILL, and the second is why the first was not enough. (1) The incumbent keeps the
+    // slot until a challenger beats it by a real margin (NearestRule.Unseats). That band is measured along
+    // the sightline, so it SHRINKS as the ship closes — and the same flicker was waiting at every range the
+    // ship actually flies: 1,744 changes of mind in five orbits, parked 100,000 km off Earth. So (2) the
+    // neighbourhood is the unit: a satellite does not contest the slot at all until the ship is inside its
+    // Hill sphere (NearestRule.StandsForItself, and StandsForItself below), and its primary stands for the
+    // whole family until then. The family is named together, "Mars › The Rusty Roadstead", by
+    // UpdateNearestNeighbourhood.
     private void UpdateNearestBody()
     {
         // The incumbent, re-read from the live ephemeris (it may have been hidden or charted since) — and
@@ -915,8 +922,9 @@ public partial class Map
     // deliberately the SAME readout, so whichever of the pair happens to hold the slot the line reads alike:
     //   (a) the nearest thing itself orbits a body that orbits something else — a moon or a station, never
     //       the nonsense "Sun › Mars"; and
-    //   (b) the nearest thing IS a planet, and one of its own dockable havens is in the same breath (inside
-    //       the hysteresis band) — the very body the readout used to flip to every orbit.
+    //   (b) the nearest thing IS a planet, and one of its own dockable berths rides with it — the very body
+    //       the readout used to flip to every orbit, and (since the neighbourhood law) the ordinary case,
+    //       because out here the berth defers to the planet rather than taking the slot from it.
     private void UpdateNearestNeighbourhood()
     {
         _nearestParentName = null;
