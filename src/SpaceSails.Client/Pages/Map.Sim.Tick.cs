@@ -966,22 +966,26 @@ public partial class Map
             return;
         }
 
-        // (b) The planet holds the slot — name the berth riding with it. A berth belongs to the reading two
-        // ways, and BOTH are answered from the rail rather than from where the rail happens to have carried
-        // it this second, so neither can blink:
-        //   · the ship is inside the planet's Hill sphere — it is all one place down here; or
-        //   · the berth could not unseat its own planet from ANYWHERE on its orbit — its whole rail fits
-        //     inside the band, which is the far-field case the owner was looking at when he filed this.
-        // Between the two (Selene Gate seen from a few million km, say) the line simply says "Earth", which
-        // is honest: from out there the gate is not riding with the planet in any useful sense.
+        // (b) The planet holds the slot — name the berth riding with it. A planet can hold more than one
+        // (Earth has the gate out at Luna and the factory in low orbit), and picking the one nearest the
+        // SHIP every frame just moves the flicker into the NAME: from ten million km those two swapped
+        // every time the Moon came round. So which berth is named is decided in the frame the question
+        // actually belongs to, and neither answer can blink:
+        //
+        //   · INSIDE the planet's Hill sphere the ship is in among them, and "nearest" means something —
+        //     take the nearest to the ship, and hold it while the two are in the same breath (#966's law,
+        //     doing here what it does for the slot);
+        //   · OUTSIDE it, no berth is meaningfully nearer than another — the whole family is one dot at
+        //     this range — so the line names the planet's OWN berth: the innermost, shortest rail. That is
+        //     read off the rails, which do not turn, so it is the same answer every frame of every orbit.
+        //
+        // Either way the neighbourhood keeps naming a berth whenever it has one, which is what holds the ⚓
+        // hint steady all the way in instead of dropping it somewhere on the approach.
         double nearDist = (_ship.Position - _nearestBodyPosition).Length;
         bool insideTheWell = parent is not null && nearDist < OrbitRule.HillRadius(near, parent.Mu);
 
-        // A planet can hold more than one berth (Earth has the gate out at Luna and the factory in low
-        // orbit), so the pick gets the same hysteresis as the slot: the berth already named keeps the line
-        // unless a challenger beats it by a real margin. Anything less is the rails turning.
         CelestialBody? haven = null;
-        double havenDistSq = double.MaxValue;
+        double havenDistSq = double.MaxValue;      // to the ship, inside the well; to the planet, outside it
         CelestialBody? incumbentHaven = null;
         double incumbentHavenDistSq = double.MaxValue;
 
@@ -993,13 +997,9 @@ public partial class Map
             }
 
             Vector2d berth = _ephemeris.Position(body.Id, SimTime);
-            double rail = (berth - _nearestBodyPosition).Length;
-            if (!insideTheWell && !NearestRule.InTheSameBreath(nearDist, nearDist - rail))
-            {
-                continue; // out here its rail is wide enough to matter — it is not "riding with" the planet
-            }
-
-            double d = (_ship.Position - berth).LengthSquared;
+            double d = insideTheWell
+                ? (_ship.Position - berth).LengthSquared
+                : (berth - _nearestBodyPosition).LengthSquared;
             if (d < havenDistSq)
             {
                 (havenDistSq, haven) = (d, body);
@@ -1011,7 +1011,10 @@ public partial class Map
             }
         }
 
-        if (incumbentHaven is not null && !NearestRule.UnseatsSquared(incumbentHavenDistSq, havenDistSq))
+        // The incumbent keeps the line while the contest is too close to call — and outside the well every
+        // contest is decided on rails that never move, so this only ever bites down among them.
+        if (incumbentHaven is not null
+            && NearestRule.InTheSameBreathSquared(incumbentHavenDistSq, havenDistSq))
         {
             haven = incumbentHaven;
         }

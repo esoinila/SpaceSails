@@ -67,9 +67,11 @@ public static class NearestRule
     /// <para>The band above is measured along the sightline, so it shrinks as the ship closes: at a quarter
     /// of an AU 3% of the range is 700,000 km and Mars's whole family fits inside it, but at 100,000 km it is
     /// 3,000 km and Phobos (9,376 km out) and the Roadstead (12,000 km out) start trading places again —
-    /// every orbit, exactly as before, just nearer. It is worse at Earth, where a station in low orbit and
-    /// the planet swap several times a minute. The hysteresis was never wrong; it was measured against the
-    /// wrong thing.</para>
+    /// every orbit, exactly as before, just nearer. It is worse at Earth: a ship held 100,000 km off it saw
+    /// the reading change hands on 1,744 of 2,000 samples taken across five orbits of the low-orbit
+    /// factory — sampled every 14 seconds of sim time and changing on nearly all of them, so that is a
+    /// strobe whose real rate is faster than the bench can see. The hysteresis was never wrong; it was
+    /// measured against the wrong thing.</para>
     ///
     /// <para>So a satellite defers to its primary, and the primary stands for the whole neighbourhood, until
     /// the ship is <b>inside the satellite's Hill sphere</b> — the line at which it is captured, and the

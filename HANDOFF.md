@@ -27,6 +27,10 @@ Measured on the real scenario by driving `UpdateNearestBody` at a fixed range wh
 | mars @ 100,000 km | 16 | 17 |
 | earth @ 10,000,000 km | 0 | **19** (the berth NAME swapping) |
 
+Read the Earth row as a floor, not a rate: 1,744 changes over 2,000 samples means it changed on nearly
+every sample the bench took (one every ~14 s of sim time), so the true rate is faster than the sampling
+can see — a strobe rather than a flicker.
+
 Every one of those swaps is between members of ONE neighbourhood. The slot is not just a word: the
 scope's AUTO lock draws whatever body holds it and the HUD quotes that body's range and closing speed,
 so each swap is a picture and two numbers jumping — which is the owner's second comment
@@ -50,13 +54,15 @@ Two halves, both phase-independent, which is why the result is ZERO changes of m
    being clamped to, written in as its own clause (`_dockedHavenId == body.Id`), which is what keeps
    lying-low-at-a-dock heat cooling working.
 
-2. **The berth in the line is chosen from its RAIL, not from where the rail has carried it this frame.**
-   Case (b) of `UpdateNearestNeighbourhood` used `InTheSameBreath` on the berth's live distance, which is
-   itself phase-dependent — hence the 19 name-swaps at Earth @ 10M km. It now asks whether the ship is
-   inside the planet's Hill sphere, or whether the berth could not unseat its own planet from ANYWHERE on
-   its orbit; and a planet with two berths (Earth) gets the same incumbent-holds hysteresis as the slot.
-   Side benefit: the ⚓ hint no longer blinks out at ~400,000 km on approach, which the old same-breath
-   gate did — right as the captain came inside coasting distance.
+2. **Which berth the line names is decided in the frame the question belongs to.** Case (b) of
+   `UpdateNearestNeighbourhood` picked the berth nearest the SHIP, gated on `InTheSameBreath` against its
+   live distance — both phase-dependent, hence the 19 name-swaps at Earth @ 10M km. Now: **inside** the
+   planet's Hill sphere the ship is in among them and "nearest" means something, so take the nearest to the
+   ship and hold it while the two are in the same breath (#966's law again); **outside** it, name the
+   planet's own berth — the innermost, shortest rail — which is read off rails that do not turn, so it is
+   the same answer every frame of every orbit. Either way the neighbourhood keeps naming a berth whenever
+   it has one, so the ⚓ hint is steady all the way in instead of dropping out on approach (the old
+   same-breath gate dropped it at ~400,000 km, right as the captain came inside coasting distance).
 
 ## Files
 
@@ -92,6 +98,29 @@ Mars's neighbourhood" (`Id == "mars" || ParentId == "mars"`), which is what that
 before it flies the ship to Jupiter. The other four tests in that file pass unchanged, including
 `THE_LINE` ("Mars › The Rusty Roadstead") and `THE_ANCHOR` (`_nearestHaven == the-space-bar`).
 
+## The frame fingerprint: all 30 re-pinned, with the evidence
+
+`EveryFrameLeavesTheSameFingerprintTests` went red on all 30 rows — correctly: this is a BEHAVIOUR change
+and that guard exists to catch exactly that. Re-recorded with `SPACESAILS_FINGERPRINT_WRITE=1` and
+documented in the file's own ledger, with the diff stated rather than asserted:
+
+- **4 ledger rows moved and no others**: `nearest body`, `nearest body at`, `nearest body moving` (the slot
+  and its kinematics — one fact three times) and `sweep`. Every text is still 45 lines.
+- On all 30 the reading was a **berth** (`selene-gate` ×25, `satellite-factory` ×5 on `wheel.json`) and is
+  now **Earth**, the planet those berths ride. The same substitution every time.
+- Field count 742 → 743: one field added, `_neighbourhoodHavenId`.
+- `SPACESAILS_SWEEP_DUMP` dump-and-diff on the base (b301cc3) vs this lane: out of 743 fields, **exactly
+  four differ on every row** (`_nearestBody`, `_nearestBodyPosition`, `_nearestBodyVelocity` changed,
+  `_neighbourhoodHavenId` added), plus `_nearestParentName`/`_nearestChildName` to their defaults on the
+  five `wheel.json` rows only — that world's works platform is not a dockable berth, so with the planet in
+  the slot there is nothing for the line to name; those five had `_nearestHaven` at ∅ on both sides.
+- **`_nearestHaven` is byte-identical on all 30** — the ⚓ hint is where it was. So are `walked-view pen`
+  and `map-frame buffer`, every call count included: nothing new is drawn, nothing else moved.
+
+The first cut of half 2 (a rail-width gate on the berth name) DID drop `_nearestHaven` and the hierarchy
+on 25 rows; the sweep dump is what caught it, and it is why the rule became "inside the well, nearest to
+the ship; outside it, the innermost berth" instead.
+
 ## Blast radius checked
 
 `_nearestBody` is load-bearing (aerobrake seed, autopilot orbit info, combat "where"/`IsHiddenAtHaven`,
@@ -104,6 +133,15 @@ changing the sweep:
 - Docking never reads `_nearestBody` for the affordance (`Map.Docking.cs:282`), and sets it explicitly
   on clamp-on; the docked clause keeps it.
 - Scope AUTO now steadily draws Mars instead of ping-ponging — the point of the exercise.
+
+## Cost in the tick
+
+`StandsForItself` runs once per body per frame (29 bodies in sol.json, 14 of them satellites). It takes
+the position the sweep already computed rather than re-asking the ephemeris, and finds the parent with an
+explicit loop rather than a LINQ closure, so it allocates nothing — the same reason every other body
+lookup in this file is written the long way. A planet costs one string compare and returns; a satellite
+costs one body-list scan, one extra `Position`, and one `HillRadius`. (Timings were NOT measured in a
+browser: an MCP-driven tab is `document.hidden`, so any number from one is worthless.)
 
 ## Not done / open
 
