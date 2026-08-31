@@ -224,6 +224,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?spread=1"] = "06b0b76c36a99fd528d929b746614cd4",
             ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "1b5de06fd2325d7ad77cf98c4f743d5d",
             ["/map?start=wreck&fetch=active"] = "faa031689c86edd6a251477d3383b2a1",
+            ["/map?start=wreck&dest=saturn"] = "faa031689c86edd6a251477d3383b2a1",
             // #997 wave 10 · The new dev start: ?target=collector, the dossier's own door. Read off the
             // dump and diffed against the pinned list — this is the ONLY line the dump adds, and no other
             // moved: the 32nd BootQuery field is something the PARSE answers, not a world the boot builds.
@@ -267,6 +268,14 @@ public sealed class TheBootBuildsTheSameWorldTests
         "/map?sling=jupiter",
         "/map?skim=saturn",
         "/map?start=wreck&fetch=active",
+        // #956 · the nav destination's own dev door — the key that lets a browser gate reach a state whose
+        // only other road is a body menu drawn on the CANVAS, where Playwright has no DOM to click. Like
+        // ?start= and ?target= beside it, it is SPENT AFTER the gate this sweep stops at (its work happens in
+        // SeedTheArcsAndTheJobs), so the world here is its neighbours' world and the line hashes the same —
+        // said out loud rather than glossed. What the URL ANSWERS differently is pinned next door, in
+        // TheBootReadsTheSameQueryTests; what it BUILDS is proved where it can be, on the screen, in
+        // TheFollowDestButtonIsRealTests.
+        "/map?start=wreck&dest=saturn",
         // the orders the boot calls load-bearing
         "/map?dock=the-tilt&start=space-bar",
         "/map?ashore=1&start=space-bar",

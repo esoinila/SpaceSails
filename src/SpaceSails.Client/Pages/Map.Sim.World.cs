@@ -45,6 +45,7 @@ public partial class Map
         public string? TipCheat;
         public string? HoardCheat;
         public string? TargetCheat; // #997 wave 10 /map?target=<contact-id>|collector: point the tactical UI at a contact so her dossier is up at boot
+        public string? DestCheat; // #956 /map?dest=<body-id>: boot with the NAV DESTINATION already set, so Follow dest is reachable from a URL (?target= points at a CONTACT — a different question)
         public string? SlingCheat;
         public string? SkimCheat;
         public string? BackroomCheat;
