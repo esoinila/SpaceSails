@@ -530,10 +530,21 @@ public partial class Map
 
     // Owner request: momentarily hide every panel to read the map, then bring them back. Pure
     // presentation — the sim, the active desk and all state are untouched; only the overlay
-    // opacity/hit-testing changes (see .map-peek in Map.razor.css).
+    // visibility/hit-testing changes (see the .map-peek rule in wwwroot/css/app.css — global, not
+    // Map.razor.css, because a scoped `> *` cannot reach a child component's own root).
+    //
+    // #1038 · IT IS A MODE, AND THE POP-UP LAW GENERALISES TO IT. Three ways out, all of them things the
+    // captain can find without being told: the 👁 button on the desk tab bar (which peek is now careful to
+    // leave standing — .peek-keep), the ` hotkey it has always had, and Escape, which joins the house cancel
+    // chain at the top (Map.Sim.Cancel). Whatever else this field ever hides, it may never hide all three.
     private bool _peekMap;
 
     private void TogglePeekMap() => _peekMap = !_peekMap;
+
+    // #1038 · The one-way door OUT, for callers that mean "end it" rather than "flip it". The cancel chain
+    // needs this rather than TogglePeekMap: Escape must never be able to START a peek, or a stray press on a
+    // clear screen would blank the panels and the key that did it would look broken.
+    private void EndPeekMap() => _peekMap = false;
 
     // 2026-07-18 playtest: the peek button shares the desk-tab bar, so a click stole focus off the map div
     // the same way a tab did. The mouse toggles peek through here so the keyboard comes home; the ` hotkey

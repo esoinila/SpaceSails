@@ -177,8 +177,10 @@ public partial class Map
             return;
         }
 
-        // Owner request: ` peeks at the map — hide every panel to read the sky, tap again to
-        // restore. Works on any desk; the desk tab bar (and this key) bring the panels back.
+        // Owner request: ` peeks at the map — hide every panel to read the sky, tap again to restore. Works
+        // on any desk. #1038 · this key TOGGLES and is the only one that does; the 👁 button (still lit on
+        // the tab bar, .peek-keep) and Escape (top of the cancel chain above) are the two ways OUT, so no
+        // key that means "stop" can ever start a peek.
         if (e.Key is "`" or "~")
         {
             TogglePeekMap();
