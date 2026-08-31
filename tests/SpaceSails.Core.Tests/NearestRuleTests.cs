@@ -95,6 +95,100 @@ public class NearestRuleTests
         }
     }
 
+    // ---- #954, the second half: a satellite defers to its primary until we are inside its Hill sphere ----
+    //
+    // The band above is measured along the sightline, so it shrinks as the ship closes and the same flicker
+    // came back everywhere the ship actually flies: parked 100,000 km off Earth the reading changed hands
+    // 1,744 times in five orbits of the low-orbit factory. StandsForItself is what stops it.
+
+    private const double PhobosRail = 9.377e6;      // sol.json: phobos orbitRadiusM
+    private const double PhobosMu = 7.1e5;
+    private const double MarsMu = 4.283e13;
+
+    [Fact]
+    public void StandsForItself_AMoonDefersToItsPlanetFromEveryPointOnItsOwnRail()
+    {
+        // #954 REGRESSION, as a law. The ship parked 100,000 km off Mars: Phobos swings between 90,624 km
+        // and 109,376 km away, and at NO point on that swing does it stand for itself — so the slot never
+        // changes hands and there is nothing to watch blink.
+        double hill = OrbitRule.HillRadius(PhobosRail, PhobosMu, MarsMu);
+        const double shipToMars = 1.0e8;
+
+        Assert.False(NearestRule.StandsForItself(shipToMars - PhobosRail, hill));
+        Assert.False(NearestRule.StandsForItself(shipToMars + PhobosRail, hill));
+    }
+
+    [Fact]
+    public void StandsForItself_TheHillRadiusIsTheLaw_BecauseARoomierLineIsStraddledEveryOrbit()
+    {
+        // WHY this threshold and not a roomier one. A satellite's distance from a parked ship swings
+        // between |D−a| and D+a, so any threshold T inside that swing is crossed TWICE AN ORBIT — the bug
+        // verbatim, at every hover range D in a ± T. The Hill radius keeps that window down to the moon's
+        // own capture width; the obvious roomier line, "nearer to it than it is to its primary" (T = a),
+        // opens it over half the approach.
+        //
+        // Enceladus, at the post the Saturn sweep caught blinking 136 times: rail 238,000 km, ship parked
+        // 300,000 km off Saturn.
+        const double enceladusRail = 2.380e8;    // sol.json
+        const double enceladusMu = 7.211e9;
+        const double saturnMu = 3.793e16;
+        const double shipToSaturn = 3.0e8;
+
+        double near = shipToSaturn - enceladusRail;
+        double far = shipToSaturn + enceladusRail;
+
+        // The roomier line is straddled — true at one end of the rail, false at the other. That IS a swap
+        // every half orbit.
+        Assert.True(NearestRule.StandsForItself(near, enceladusRail));
+        Assert.False(NearestRule.StandsForItself(far, enceladusRail));
+
+        // The Hill radius is not straddled anywhere on the rail, so the reading cannot change its mind.
+        double hill = OrbitRule.HillRadius(enceladusRail, enceladusMu, saturnMu);
+        Assert.True(hill < near, "Enceladus's Hill sphere reaches the parked ship — this case proves nothing.");
+        Assert.False(NearestRule.StandsForItself(near, hill));
+        Assert.False(NearestRule.StandsForItself(far, hill));
+    }
+
+    [Fact]
+    public void StandsForItself_ButTheMoonTakesTheSlotOnceWeAreCaptured()
+    {
+        // Not a lock: inside the Hill sphere — the same line the market and the lying-low rule already
+        // draw for "you are at this body" — the moon is somewhere in its own right and says so.
+        double hill = OrbitRule.HillRadius(PhobosRail, PhobosMu, MarsMu);
+
+        Assert.True(NearestRule.StandsForItself(0.5 * hill, hill));
+        Assert.False(NearestRule.StandsForItself(hill, hill));            // exactly on it does not
+        Assert.False(NearestRule.StandsForItself(1.001 * hill, hill));
+    }
+
+    [Fact]
+    public void StandsForItself_AMasslessBerthNeverTakesTheSlotByDriftingPast()
+    {
+        // The Rusty Roadstead has no mass, so no Hill sphere, so no distance at which passing near it makes
+        // it "the nearest body" — the neighbourhood speaks for it. The one way it holds the slot is being
+        // clamped to, which the caller writes in as its own clause rather than as a distance.
+        double hill = OrbitRule.HillRadius(RoadsteadOrbitRadius, bodyMu: 0.0, parentMu: MarsMu);
+        Assert.Equal(0.0, hill);
+
+        Assert.False(NearestRule.StandsForItself(1.0, hill));
+        Assert.False(NearestRule.StandsForItself(0.0, hill));
+    }
+
+    [Fact]
+    public void StandsForItselfSquared_AgreesWithTheDistanceForm()
+    {
+        // The per-frame sweep runs the squared form. The two must be the same law.
+        double hill = OrbitRule.HillRadius(PhobosRail, PhobosMu, MarsMu);
+        double[] distances = [0.0, 0.5 * hill, hill, 1.001 * hill, 1.0e8 - PhobosRail, 1.0e8 + PhobosRail];
+
+        foreach (double d in distances)
+        {
+            Assert.Equal(
+                NearestRule.StandsForItself(d, hill),
+                NearestRule.StandsForItselfSquared(d * d, hill * hill));
+        }
+    }
+
     [Fact]
     public void Hierarchy_SpeaksTheContainmentInOneLine()
     {
