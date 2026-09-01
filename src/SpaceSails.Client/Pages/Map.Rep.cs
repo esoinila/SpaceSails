@@ -373,9 +373,22 @@ public sealed partial class Map
 
     // ── The pitch ──────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>He is at your elbow, and he is delighted. The meeting is counted here and nowhere else,
-    /// because the bleed's cadence is counted in MEETINGS and a pitch that never landed was not one.</summary>
-    private void HeReachesYourTable()
+    /// <summary>
+    /// He is at your elbow, and he is delighted.
+    ///
+    /// <para>#1052 · …UNLESS SOMETHING IS ALREADY WEARING THE SCRIM, in which case he waits. This is the
+    /// live collision the one-scrim law was written for: a captain reading the galley card at a bar top
+    /// while the salesman crosses the floor got two full-viewport dims on top of each other and a room the
+    /// #784 dock exists to keep visible went black. He is HELD rather than turned away — his legs already
+    /// brought him here and he is standing at the table — and <c>PumpTheScrimQueue</c> lets him speak on
+    /// the first frame the glass is clear. The meeting is still counted where it always was, inside the
+    /// raise, because the bleed's cadence counts MEETINGS and a pitch that never landed was not one.</para>
+    /// </summary>
+    private void HeReachesYourTable() => RaiseAScrimCard(HisPitchGoesUp, () => CaptainIsSeated);
+
+    /// <summary>The pitch itself, once the glass is his. Everything this method does is what "he is at your
+    /// elbow" means, which is why the arbiter holds the WHOLE of it rather than the card alone.</summary>
+    private void HisPitchGoesUp()
     {
         _repMeetings++;
         _repBleeding = NebulaRep.BleedsThePreviousName(

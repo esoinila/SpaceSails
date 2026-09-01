@@ -2300,6 +2300,24 @@
                         @onclick="OpenTheSpread">
                     @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
                 </button>
+                @* #1052 · …AND THE OTHER THING YOU CAN DO IN A CHAIR, beside the case and never instead of
+                   it. Owner, 2026-09-01: "Reading the news pop-up could be option when sitting at table,
+                   instead of working the case."
+
+                   SEAT-TIED AND NOT PLACE-TIED (the 2026-08-30 ruling this strip already lives under). The
+                   button is drawn wherever the captain is sitting; WHICH paper it hands him is
+                   NewsWire.ScopeAt's answer about the chair's own place, asked in Map.Seated.News.cs. That
+                   is what makes it work at a moon canteen table on an excursion, where key 6 is rightly
+                   refused because the nav desk is a tube ride away — and the reason the guard drives
+                   exactly that case.
+
+                   It is a TOGGLE (#688's law, the satchel's and the galley card's): the control that opens
+                   the paper closes it. Never refused, because there is no state a seated captain can be in
+                   that has no paper at all — the wire prints somewhere. *@
+                <button type="button"
+                        class="btn btn-sm @(_seatedNewsOpen ? "btn-warning" : "btn-outline-light")"
+                        title="@SpaceSails.Core.SeatedSpread.ReadTheNewsHint"
+                        @onclick="ToggleSeatedNews">@SpaceSails.Core.SeatedSpread.ReadTheNewsLabel</button>
             </div>
 
             @* #865/#746 · …and PUT SOMETHING ON THE TABLE fans the pocket open right here, exactly as it
@@ -2429,6 +2447,61 @@
         </div>
     }
     }   @* …and the seated region closes. Two frames, one occupation of one table. *@
+
+    @* ═════════════════════════════════════════════════════════════════════════════════════════════════
+       #1052 (L2) · THE PAPER AT THE TABLE — AND IT IS DOCKED, NOT MODAL.
+
+       Owner, 2026-09-01, and this block is the sentence answered literally: "Just hope there is a way to
+       have both the newsfeed and pop-up-bar walkers visible UI at the same time."
+
+       SO THERE IS NO .view-object-backdrop IN HERE AT ALL — no scrim, no blur, no centring, and the guard
+       asserts the ABSENCE rather than trusting this comment. That is #784's own move made a second time: a
+       strip at the foot for the sitting, a panel at the side for the paper, and between them a hall that is
+       still lit, still walked, and still clickable. A rep who crosses the floor while the captain is reading
+       raises his card at 1320 and lands ON TOP of this panel, which is the right way round: the man talking
+       to you outranks the paper in your hands. The panel does not move and does not close, so putting his
+       card down leaves the captain reading where he was.
+
+       IT LIVES OUTSIDE THE SEATED REGION AND IS GATED ON THE SEAT ANYWAY. Standing up takes the paper with
+       it (there is nowhere to read it from), and the panel is not inside `.seated-dock` because the strip is
+       a short pinned row at the foot of the glass and a paper folded into it would grow the strip into the
+       modal it stopped being.
+
+       CappedScrollPanel is inside NewsWirePanel, so the head — the masthead and today's story — keeps its
+       measured height and only the dated list gives. Elegant minimalism: the scroll bar arrives when the
+       list is longer than the panel and not before.
+       ═════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (ThePaperIsOpen)
+    {
+        <div class="seated-news">
+            @* The shell's Bare frame and the .view-object family's own foot, exactly as the galley card
+               wears them — this is the same wire in a different box, and the box is the only new thing. *@
+            <OverlayShell class="view-object seated-news-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissLabel="Put the paper down"
+                          DismissTitle="Put the paper down — Esc does the same"
+                          OnClose="() => Dismiss(CloseSeatedNews)">
+                @* THE ✂ ON EVERY ROW, handed to the wire component rather than written beside it, so the
+                   headline row and the dated rows below it cannot come to offer different controls.
+
+                   READING FILES NOTHING. The scissors is the only thing on this panel that touches the
+                   book, and it is a press — #602's ammo-as-evidence, one system over: what is in the book
+                   got there because a hand put it there. The row says where the paper is once it is in
+                   (SeatedSpread.ClippedLabel) rather than going dead, which is #212/#603's rule. *@
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="SeatedNewsFeed()" ItemCount="SeatedNewsItemCount">
+                    <RowAction Context="story">
+                        <button type="button" class="news-clip"
+                                title="@SpaceSails.Core.SeatedSpread.ClipHint"
+                                @onclick="() => ClipThisStory(story)">@(AlreadyClipped(story)
+                                    ? SpaceSails.Core.SeatedSpread.ClippedLabel
+                                    : SpaceSails.Core.SeatedSpread.ClipLabel)</button>
+                    </RowAction>
+                </SpaceSails.Client.Pages.Stations.NewsWirePanel>
+            </OverlayShell>
+        </div>
+    }
 
     @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
        when sitting down it should ask with a pop-up whether I want to stand up again."

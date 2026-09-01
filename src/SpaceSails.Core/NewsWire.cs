@@ -104,8 +104,19 @@ public static class NewsWire
     public readonly record struct NewsEvent(NewsEventKind Kind, double SimTime, string Subject, string? Detail = null);
 
     /// <summary>One dated line on the wire — what both the Comms ticker and the Galley's long
-    /// feed render, whether it came from <see cref="Ambient"/> or from <see cref="Headline"/>.</summary>
-    public readonly record struct NewsItem(double SimTime, string Headline);
+    /// feed render, whether it came from <see cref="Ambient"/> or from <see cref="Headline"/>.
+    ///
+    /// <para>#1052 (L2) · <paramref name="Subjects"/> is what the ✂ CLIP files the line under, in
+    /// <see cref="CaseSubjects"/>'s own composed form — so a clipped story joins the red-pen threads the
+    /// field book already keeps. It is EMPTY for almost every line, and that is the ordinary case rather
+    /// than a defect: a clipped line with no subjects is filed as a plain note and starts no thread.</para>
+    ///
+    /// <para>It is declared by the AUTHOR of the line (<see cref="SubjectsFor"/> for a pushed event) and
+    /// never read back out of the prose downstream — the same discipline <c>FileNoteAbout</c> keeps, and
+    /// for the same reason: a reader that re-derived a name from a sentence would be a second source for
+    /// one fact.</para>
+    /// </summary>
+    public readonly record struct NewsItem(double SimTime, string Headline, string Subjects = "");
 
     // ---- Ambient flavor: rotating gossip derived from scenario content, seeded by sim-day ----
     // (mirrors the Galley v1 stub's "one deterministic headline per sim-day", now pulling real
@@ -437,5 +448,34 @@ public static class NewsWire
         // whoever filed it, because the alternative is the wire explaining a plot to the player.
         NewsEventKind.ArcBeatBreaks => evt.Subject,
         _ => "Static on the wire.",
+    };
+
+    /// <summary>
+    /// #1052 (L2) · <b>WHAT A CLIPPED STORY IS ABOUT.</b> The subjects a pushed event's line carries into
+    /// the field book when the captain presses ✂ CLIP — <see cref="CaseSubjects"/>'s own composed line, so
+    /// a clipped headline stacks under the same headings the dossier's own entries do.
+    ///
+    /// <para><b>Two kinds today, and the design names them: the two that already touch the case.</b>
+    /// <see cref="NewsEventKind.IntelPurchased"/> is somebody buying a fix on a hull — the hull is printed
+    /// in the sentence, so it is what the note is about. <see cref="NewsEventKind.ArcBeatBreaks"/> is an
+    /// arc landing on the wire in a filing clerk's voice, and what a filing is about is the OFFICE that
+    /// filed it — carried in <c>Detail</c> by the push site rather than fished back out of the headline.
+    /// Every other kind files a plain note with no thread, which is the honest answer for a line that names
+    /// nothing the book has a heading for.</para>
+    ///
+    /// <para><b>Why the hull is a <see cref="CaseSubjects.Kind.Place"/>.</b> The three kinds are Office,
+    /// Place and Person, and a hull is none of them cleanly — but in this game a hull is somewhere with a
+    /// door in it: you board it, you rob it, you walk a wreck's hold. Person is ruled out by that kind's own
+    /// law (it is a promise that a PERSON's printed name is in the sentence), and an Office it plainly is
+    /// not. FLAGGED in the PR for the owner: a fourth kind for a hull is a Core change and a design call,
+    /// not a crew's.</para>
+    /// </summary>
+    public static string SubjectsFor(NewsEvent evt) => evt.Kind switch
+    {
+        NewsEventKind.IntelPurchased when !string.IsNullOrWhiteSpace(evt.Subject) =>
+            CaseSubjects.Line(CaseSubjects.Place(evt.Subject)),
+        NewsEventKind.ArcBeatBreaks when !string.IsNullOrWhiteSpace(evt.Detail) =>
+            CaseSubjects.Line(CaseSubjects.Office(evt.Detail!)),
+        _ => "",
     };
 }

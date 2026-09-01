@@ -90,6 +90,12 @@ public sealed class EveryPopUpCanBeDismissedTests
         "deck-offer-card",    // the anchored card a room offers you
         "deck-shuttle-card",  // the hatch and the load-out
         "seated-dock",        // the sitting, as a strip
+        // #1052 · …AND THE STRIP'S SECOND PIECE, the paper it raises. Named here rather than left to the
+        // structural half deliberately: it is not a `-backdrop`, because it deliberately HAS none (the
+        // owner's "both the newsfeed and pop-up-bar walkers visible UI at the same time"), and a surface
+        // that escaped this law by not dimming the room would be the ruling of 2026-08-24 defeated by a
+        // stylesheet. A raised surface answers for its way out whether or not it took the screen to say so.
+        "seated-news",        // the paper the strip raises, which is also not a card
         "selfie-offer",       // the nudge
         "map-body-menu",      // the three context menus (body, contact, open sky, pick list)
         "map-dossier",        // #960's tucking card
@@ -302,6 +308,24 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the galley card — the news wire and the rum locker", "view-object-backdrop", Docked,
             Exit.AControl,
             b => b.CallOnTheDispatcher("OpenGalleyCard")),
+
+        // #1052 · THE PAPER AT THE TABLE — in this law on its first day, and the first surface in the
+        // register that answers it WITHOUT a scrim. Owner: "Just hope there is a way to have both the
+        // newsfeed and pop-up-bar walkers visible UI at the same time", so the panel is docked beside a live
+        // room rather than raised over a dimmed one. That is a reason to be in this register and never a
+        // reason to be out of it: a surface a captain raised is a surface a captain must be able to put down.
+        //
+        // The world is #1016's own dev row — a free top in a docked berth's bar — because the verb is
+        // SEAT-tied and the panel does not exist without a chair under it. Raised through the SHIPPING open
+        // verb, and the OPEN and not the toggle, for the mechanical reason written on the galley's row: this
+        // law re-raises before every press, and a driver wired to a toggle would shut the panel between
+        // finding its way out and pressing it.
+        //
+        // Exit.AControl: its ✕ is the shell's own dismiss, and the KEY is proved next door by typing it
+        // (TheNewsIsASeatVerbTests.EscapeTakesThePaperFirstAndTheChairSecond).
+        new("the paper at the table — the docked news panel", "seated-news", "/map?barcase=1",
+            Exit.AControl,
+            b => b.CallOnTheDispatcher("OpenSeatedNews")),
 
         // #949 · THE PLOTTING CARD, in this law on its first day and raised through its SHIPPING open verb
         // rather than by poking the gate — the galley's own discipline (#1021): all three of its doors (the

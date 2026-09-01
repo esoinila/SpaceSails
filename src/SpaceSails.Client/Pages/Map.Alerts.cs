@@ -211,6 +211,13 @@ public partial class Map
     private const int CommsTickerItemCount = 5;     // the ticker shows only the freshest few
     private const int GalleyFeedAmbientDays = 20;   // the Galley wants the long scrollback
     private const int GalleyFeedItemCount = 25;
+
+    // #1052 (L2) · THE PAPER AT A TABLE. Shorter than the galley card's scrollback on purpose: the galley
+    // card owns the screen and this panel stands BESIDE a live room the captain is watching, so it is a
+    // paper you skim over a drink rather than an archive you sit down to. The numbers are the only two
+    // constants this lane invents, and they are the same pair the other two consumers already name.
+    private const int SeatedNewsAmbientDays = 12;
+    private const int SeatedNewsItemCount = 12;
     private readonly List<NewsWire.NewsEvent> _newsEvents = [];
 
     private void PushNewsEvent(NewsWire.NewsEventKind kind, string subject, string? detail = null)
@@ -244,7 +251,12 @@ public partial class Map
         {
             foreach (NewsWire.NewsEvent evt in _newsEvents)
             {
-                items.Add(new NewsWire.NewsItem(evt.SimTime, NewsWire.Headline(evt)));
+                // #1052 (L2) · …AND WHAT THE LINE IS ABOUT TRAVELS WITH IT. The subjects are the event
+                // author's own answer (NewsWire.SubjectsFor) rather than anything read back off the
+                // headline, and they are carried on every consumer's feed — the ticker and the galley card
+                // simply never draw a ✂, so nothing about them changes.
+                items.Add(new NewsWire.NewsItem(
+                    evt.SimTime, NewsWire.Headline(evt), NewsWire.SubjectsFor(evt)));
             }
         }
 

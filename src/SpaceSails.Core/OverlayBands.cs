@@ -101,6 +101,22 @@ public static class OverlayBands
     /// desk cards yet safely BELOW the distress lifeline — a dice reveal must never bury the rescue button.</summary>
     public const int DiceTray = DesksAndPopups + 60;             // 1260
 
+    /// <summary><c>.seated-news</c> — THE DOCKED NEWS PANEL (#1052 L2), and like the seated strip it stands
+    /// beside, it is not a card: it has no backdrop at all.
+    ///
+    /// <para><b>Why it takes a band of its own rather than borrowing one.</b> #1031 gave the satchel its own
+    /// rung for the opposite reason — the pocket had to climb OVER the cards. This panel has to stay UNDER
+    /// them, and that is the owner's whole request: <i>"both the newsfeed and pop-up-bar walkers visible UI
+    /// at the same time."</i> A rep who crosses the floor and stands at your elbow raises a card at
+    /// <see cref="ViewObjectBackdrop"/>; the paper in your hands must not be painted over the man talking
+    /// to you. So this number is chosen as a REFUSAL: 1240, eighty under the cards and ninety under the
+    /// pocket.</para>
+    ///
+    /// <para>It shares 1240 with <c>.seated-dock</c> deliberately, because they are one instrument in two
+    /// pieces — the strip at the foot, the paper at the side — and they never overlap on the glass. A panel
+    /// that out-ranked the strip that raised it would be a paper covering its own way out.</para></summary>
+    public const int SeatedNewsPanel = DesksAndPopups + 40;      // 1240
+
     /// <summary><c>.view-object-backdrop</c> — the object-view pop-up.</summary>
     public const int ViewObjectBackdrop = DesksAndPopups + 120;  // 1320
 
