@@ -41,8 +41,8 @@ namespace SpaceSails.Client.Tests;
 /// <list type="number">
 ///   <item><b>THE LEDGER</b> — thirty-eight named readings (avatar, sim clock, accumulator, warp, the pulse
 ///   slot and the words in it, the nerve, the tracker, the guards' positions, the FrameGap clock, the camera,
-///   the passes, the trail). Committed as readable text under <c>Fingerprints/</c>, so a red run names the
-///   line that moved instead of printing two hashes that differ.</item>
+///   the passes, the trail). Committed as readable rows in <c>Ledgers/Fingerprints.ledger.txt</c>, so a
+///   red run names the ROW that moved instead of printing two hashes that differ.</item>
 ///   <item><b>THE SWEEP</b> — a generic walk over EVERY instance field of the component (minus the machinery
 ///   listed in <see cref="NotFingerprinted"/>), hashed to one line. The ledger says WHERE; the sweep says
 ///   NOTHING ESCAPED. A phase that writes a field nobody thought to name is still caught.</item>
@@ -105,11 +105,56 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
+    // ── WHERE THE PINS LIVE ───────────────────────────────────────────────────────────────────────────
+    //
+    // #1055 · The thirty texts that used to sit under Fingerprints/ — one file per row, each of them
+    // hand-edited by every lane that moved a field — are one machine-written ledger now:
+    // Ledgers/Fingerprints.ledger.txt, one row per (probe, scene). #1054's "thirty files, one line each"
+    // is thirty rows in ONE probe's block, written by the re-pin command and reviewed by its report.
+    //
+    //   TO RE-PIN (runs the measurement, rewrites the ledger, prints the report):
+    //     SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release \
+    //       --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked \
+    //       --logger "console;verbosity=detailed"
+
+    internal const string Suite = "Fingerprints";
+
+    /// <summary>The roster block: one row per field the sweep walks, so a field joining the page reddens by
+    /// NAME instead of by a count. See <see cref="TheSweepWalksTheRosterThatWasPinned"/>.</summary>
+    private const string RosterProbe = "sweep roster";
+
+    private const string StoppedAtProbe = "stopped-at";
+    private const string SweepProbe = "sweep";
+    private const string PenProbe = "walked-view pen";
+    private const string BufferProbe = "map-frame buffer";
+
+    /// <summary>What the ledger's own header says about where these numbers came from.</summary>
+    internal const string Preamble =
+        "SIX WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.\n"
+        + "Taken on the PRE-SPLIT code (#870 lane 7c): the first twenty on b19ef16, the plasma world's four\n"
+        + "on 04bb219, the warp slider's six on the commit that put the unsplit method back to capture them.\n"
+        + "Probes: `stopped-at` and the thirty-eight named LEDGER readings say WHERE; `sweep` says NOTHING\n"
+        + "ESCAPED (a count and a hash over every instance field of the page); `sweep roster` names those\n"
+        + "fields one per row, so a field joining the page reddens by name; `walked-view pen` and\n"
+        + "`map-frame buffer` are the picture, which is the half a state fingerprint cannot see.\n"
+        + "The re-pin history — which lane moved which probe, and the arithmetic that proved it — is in the\n"
+        + "docs on EveryFrameLeavesTheSameFingerprintTests.EveryFrameItRunsFingerprintsTheSame.";
+
+    /// <summary>One row of the matrix, named the way the ledger names it.</summary>
+    private static string SceneName(World world, Sequence sequence) => $"{world}.{sequence}";
+
+    /// <summary>One driven row: every probe it read, and the roster the sweep walked while reading them.</summary>
+    private sealed record Reading(
+        IReadOnlyList<(string Probe, string Value)> Rows,
+        IReadOnlyList<(string Field, string Type)> Roster);
+
     // ── THE THIRTY ROWS ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Six worlds × five sequences. Each row is the fingerprint text committed beside it in
-    /// <c>Fingerprints/&lt;world&gt;.&lt;sequence&gt;.txt</c>, taken on the PRE-SPLIT code — the first twenty on
+    /// Six worlds × five sequences. Each row's readings are pinned in
+    /// <c>Ledgers/Fingerprints.ledger.txt</c> under the scene name <c>&lt;world&gt;.&lt;sequence&gt;</c>
+    /// (#1055; until then they were thirty separate texts under <c>Fingerprints/</c>, hand-edited by every
+    /// lane that moved a field), taken on the PRE-SPLIT code — the first twenty on
     /// commit b19ef16, the plasma world's four on 04bb219, and the warp slider's six on the commit that put
     /// the unsplit method back in the tree to capture them.
     ///
@@ -410,38 +455,86 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     [InlineData(World.TheElectricUniverse, Sequence.AHandOnTheWarpSlider)]
     public void EveryFrameItRunsFingerprintsTheSame(World world, Sequence sequence)
     {
-        string produced = DriveAndFingerprint(world, sequence);
-        string path = Path.Combine(FingerprintDirectory(), $"{world}.{sequence}.txt");
+        string scene = SceneName(world, sequence);
+        IReadOnlyDictionary<string, PinLedger.Row> pinned = PinLedger.Pinned(Suite);
+        Reading got = DriveAndFingerprint(world, sequence);
 
-        if (Environment.GetEnvironmentVariable("SPACESAILS_FINGERPRINT_WRITE") == "1")
+        // The readable half first: name the ROW that moved, rather than printing two hashes that differ.
+        foreach ((string probe, string value) in got.Rows)
         {
-            Directory.CreateDirectory(FingerprintDirectory());
-            File.WriteAllText(path, produced);
-            return;
+            Assert.True(pinned.TryGetValue(PinLedger.Key(probe, scene), out PinLedger.Row was),
+                $"{Suite}.ledger.txt has no `{probe}` row for {scene} — that reading is asserting nothing "
+                + $"at all. Take the measurement:\n  {PinLedger.Invocation}");
+            Assert.True(was.Value == value,
+                $"the frame no longer leaves the same mark on {world} / {sequence}.\n"
+                + $"  {probe} was: {was.Value}\n"
+                + $"  {probe} now: {value}\n"
+                + WhichFieldMoved(probe, got)
+                + "Nothing in this lane may change what a frame writes. If a phase was reordered, put it "
+                + "back; the order IS the frame. If the change is intended, re-pin BY MEASUREMENT and paste "
+                + $"the printed report into the PR:\n  {PinLedger.Invocation}");
         }
 
-        Assert.True(File.Exists(path),
-            $"no snapshot was ever taken for {world}/{sequence} — the file {path} is missing, so this row " +
-            "is asserting nothing at all.");
-        string expected = File.ReadAllText(path).Replace("\r\n", "\n");
+        // …and no pinned row for this scene went unmeasured, which is the other direction of the same law.
+        var measured = new HashSet<string>(got.Rows.Select(r => r.Probe), StringComparer.Ordinal);
+        string[] unmeasured =
+        [
+            .. pinned.Values.Where(r => r.Scene == scene && !measured.Contains(r.Probe))
+                            .Select(r => r.Probe)
+        ];
+        Assert.True(unmeasured.Length == 0,
+            $"{unmeasured.Length} row(s) pinned for {scene} were never measured, so they are green forever: "
+            + string.Join(", ", unmeasured));
+    }
 
-        // The readable half first: name the line that moved, rather than printing two hashes that differ.
-        string[] want = expected.Split('\n');
-        string[] got = produced.Split('\n');
-        for (int line = 0; line < Math.Min(want.Length, got.Length); line++)
-        {
-            Assert.True(want[line] == got[line],
-                $"the frame no longer leaves the same mark on {world} / {sequence}.\n" +
-                $"  line {line + 1} was: {want[line]}\n" +
-                $"  line {line + 1} now: {got[line]}\n" +
-                "Nothing in this lane may change what a frame writes. If a phase was reordered, put it back; " +
-                "the order IS the frame.");
-        }
-        Assert.True(want.Length == got.Length,
-            $"the fingerprint for {world} / {sequence} changed length: {want.Length} lines → {got.Length}.");
+    /// <summary>
+    /// THE SWEEP'S ROSTER — every field of the page the sweep walks, pinned BY NAME.
+    ///
+    /// <para>#1055 · Requirement 4 on the issue, and the reason it exists: the <c>sweep</c> row is a COUNT and
+    /// a hash, so when it moves, all a crew used to be told is "744 → 745". Naming the field cost a dump on
+    /// the base, a dump on the lane and a line-by-line diff — every time. The roster is that answer, pinned:
+    /// one row per swept field, so the day a field joins <see cref="Pages.Map"/> this test goes red saying
+    /// <c>sweep +1: _navHelpOpen</c> and the thirty sweep rows go red beside it saying the same thing.</para>
+    ///
+    /// <para>It is also strictly MORE than the sweep hash could ever say: a field that changes TYPE while
+    /// keeping its name reddens here too.</para>
+    /// </summary>
+    [Fact]
+    public void TheSweepWalksTheRosterThatWasPinned()
+    {
+        IReadOnlyDictionary<string, PinLedger.Row> pinned = PinLedger.Pinned(Suite);
+        IReadOnlyList<(string Field, string Type)> roster = SweptRoster();
 
-        // …and then the whole text as one number, which is the thing that was committed before the split.
-        Assert.Equal(Sha256(expected), Sha256(produced));
+        Assert.True(roster.Count > 500,
+            $"the sweep found only {roster.Count} field(s) on the page — a sweep that walks nothing "
+            + "cannot tell pass from fail.");
+
+        string[] appeared =
+        [
+            .. roster.Where(f => !pinned.ContainsKey(PinLedger.Key(RosterProbe, f.Field)))
+                     .Select(f => $"{f.Field} ({f.Type})")
+        ];
+        var present = new HashSet<string>(roster.Select(f => f.Field), StringComparer.Ordinal);
+        string[] gone =
+        [
+            .. pinned.Values.Where(r => r.Probe == RosterProbe && !present.Contains(r.Scene))
+                            .Select(r => $"{r.Scene} ({r.Value})")
+        ];
+        string[] retyped =
+        [
+            .. roster.Where(f => pinned.TryGetValue(PinLedger.Key(RosterProbe, f.Field), out PinLedger.Row p)
+                                 && p.Value != f.Type)
+                     .Select(f => $"{f.Field}: {pinned[PinLedger.Key(RosterProbe, f.Field)].Value} → {f.Type}")
+        ];
+
+        Assert.True(appeared.Length == 0 && gone.Length == 0 && retyped.Length == 0,
+            $"the page's swept roster moved — {roster.Count} field(s) now, "
+            + $"{pinned.Values.Count(r => r.Probe == RosterProbe)} pinned:\n"
+            + (appeared.Length > 0 ? $"  sweep +{appeared.Length}: {string.Join(", ", appeared)}\n" : "")
+            + (gone.Length > 0 ? $"  sweep −{gone.Length}: {string.Join(", ", gone)}\n" : "")
+            + (retyped.Length > 0 ? $"  retyped: {string.Join(", ", retyped)}\n" : "")
+            + "That is the whole of what a state-shape change looks like. If it is intended, re-pin BY "
+            + $"MEASUREMENT and paste the printed report into the PR:\n  {PinLedger.Invocation}");
     }
 
     /// <summary>The snapshot is worth nothing if the bench cannot tell one world from another — a guard handed
@@ -450,15 +543,24 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     [Fact]
     public void EveryRowIsADifferentFrame()
     {
-        var seen = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (string file in Directory.EnumerateFiles(FingerprintDirectory(), "*.txt")
-                     .OrderBy(p => p, StringComparer.Ordinal))
+        var byScene = new SortedDictionary<string, StringBuilder>(StringComparer.Ordinal);
+        foreach (PinLedger.Row row in PinLedger.Read(Suite).Where(r => r.Probe != RosterProbe))
         {
-            string hash = Sha256(File.ReadAllText(file).Replace("\r\n", "\n"));
+            if (!byScene.TryGetValue(row.Scene, out StringBuilder? text))
+            {
+                byScene[row.Scene] = text = new StringBuilder();
+            }
+            text.Append(row.Probe).Append(" = ").Append(row.Value).Append('\n');
+        }
+
+        var seen = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach ((string scene, StringBuilder text) in byScene)
+        {
+            string hash = Sha256(text.ToString());
             Assert.False(seen.TryGetValue(hash, out string? twin),
-                $"{Path.GetFileName(file)} and {twin} produced the SAME fingerprint — two of these rows are " +
+                $"{scene} and {twin} produced the SAME fingerprint — two of these rows are " +
                 "driving the same frame, so one of them could never fail.");
-            seen[hash] = Path.GetFileName(file);
+            seen[hash] = scene;
         }
         Assert.Equal(30, seen.Count);
     }
@@ -526,7 +628,76 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
     // ── DRIVING ONE ROW ───────────────────────────────────────────────────────────────────────────────
 
-    private static string DriveAndFingerprint(World world, Sequence sequence)
+    /// <summary>Every row of the matrix driven and read, as ledger rows — the measurement the re-pin command
+    /// writes down, and the same one the guards above compare against what is written down.</summary>
+    internal static IReadOnlyList<PinLedger.Row> MeasureEveryRow()
+    {
+        var rows = new List<PinLedger.Row>();
+        foreach ((string Field, string Type) field in SweptRoster())
+        {
+            rows.Add(new PinLedger.Row(RosterProbe, field.Field, field.Type));
+        }
+        foreach (World world in Enum.GetValues<World>())
+        {
+            foreach (Sequence sequence in Enum.GetValues<Sequence>())
+            {
+                string scene = SceneName(world, sequence);
+                foreach ((string probe, string value) in DriveAndFingerprint(world, sequence).Rows)
+                {
+                    rows.Add(new PinLedger.Row(probe, scene, value));
+                }
+            }
+        }
+        return rows;
+    }
+
+    /// <summary>The fields the sweep walks, in the order it walks them — the same filter
+    /// <see cref="Fingerprint"/> applies, asked as a question rather than done twice.</summary>
+    private static IReadOnlyList<(string Field, string Type)> SweptRoster() =>
+    [
+        .. typeof(Pages.Map).GetFields(Hidden)
+            .Where(f => !f.IsStatic
+                        && !NotFingerprinted.Contains(f.FieldType.Name)
+                        && !AWallClockAndNothingElse.Contains(f.Name))
+            .OrderBy(f => f.Name, StringComparer.Ordinal)
+            .Select(f => (AsWritten(f.Name), PinLedger.TypeLabel(f.FieldType)))
+    ];
+
+    /// <summary>#1055 · What used to cost a dump on the base, a dump on the lane and a line-by-line diff: when
+    /// a <c>sweep</c> row moves, say WHICH FIELD did it, right there in the red.</summary>
+    private static string WhichFieldMoved(string probe, Reading got)
+    {
+        if (probe != SweepProbe)
+        {
+            return "";
+        }
+
+        IReadOnlyDictionary<string, PinLedger.Row> pinned = PinLedger.Pinned(Suite);
+        string[] appeared =
+        [
+            .. got.Roster.Where(f => !pinned.ContainsKey(PinLedger.Key(RosterProbe, f.Field)))
+                         .Select(f => f.Field)
+        ];
+        var present = new HashSet<string>(got.Roster.Select(f => f.Field), StringComparer.Ordinal);
+        string[] gone =
+        [
+            .. pinned.Values.Where(r => r.Probe == RosterProbe && !present.Contains(r.Scene))
+                            .Select(r => r.Scene)
+        ];
+
+        if (appeared.Length == 0 && gone.Length == 0)
+        {
+            return "  the swept ROSTER is unchanged, so no field joined or left the page — a field's VALUE "
+                + "moved. Dump both sides and diff them:\n"
+                + "    SPACESAILS_SWEEP_DUMP=<dir> dotnet test tests/SpaceSails.Client.Tests -c Release "
+                + "--filter FullyQualifiedName~EveryFrameLeavesTheSameFingerprint\n"
+                + "  …run once on the base and once on this lane, then diff the two <dir>s.\n";
+        }
+        return (appeared.Length > 0 ? $"  sweep +{appeared.Length}: {string.Join(", ", appeared)}\n" : "")
+            + (gone.Length > 0 ? $"  sweep −{gone.Length}: {string.Join(", ", gone)}\n" : "");
+    }
+
+    private static Reading DriveAndFingerprint(World world, Sequence sequence)
     {
         var pen = new RecordingPen();
         Pages.Map map = Boot(world, pen);
@@ -799,13 +970,13 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
 
     // ── THE FINGERPRINT ───────────────────────────────────────────────────────────────────────────────
 
-    private static string Fingerprint(World world, Sequence sequence, Pages.Map map, RecordingPen pen,
+    private static Reading Fingerprint(World world, Sequence sequence, Pages.Map map, RecordingPen pen,
         string? stoppedAt)
     {
-        var sb = new StringBuilder();
-        sb.Append("# ").Append(world).Append(" / ").Append(sequence).Append('\n');
-        sb.Append("# the mark one frame after another leaves on the component — #870 lane 7c\n");
-        sb.Append("stopped-at            = ").Append(stoppedAt ?? "ran to the end of the frame").Append('\n');
+        var rows = new List<(string Probe, string Value)>
+        {
+            (StoppedAtProbe, stoppedAt ?? "ran to the end of the frame"),
+        };
 
         // ── THE LEDGER: what the frame is for, read by name ───────────────────────────────────────────
         foreach ((string name, string member) in TheLedger)
@@ -818,11 +989,12 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
             {
                 reading = $"{reading[..120]}… {reading.Length} chars, sha256 {Sha256(reading)[..16]}";
             }
-            sb.Append(name.PadRight(21)).Append(" = ").Append(reading).Append('\n');
+            rows.Add((name, reading));
         }
 
         // ── THE SWEEP: and nothing at all escaped ─────────────────────────────────────────────────────
         var swept = new StringBuilder();
+        var roster = new List<(string Field, string Type)>();
         int fields = 0;
         foreach (FieldInfo f in typeof(Pages.Map).GetFields(Hidden).OrderBy(f => f.Name, StringComparer.Ordinal))
         {
@@ -832,6 +1004,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
                 continue;
             }
             fields++;
+            roster.Add((AsWritten(f.Name), PinLedger.TypeLabel(f.FieldType)));
             // #870 lane 6c · the walk starts with the COMPONENT already on its own path. A
             // collaborator the page hands ITSELF to (Map.Seating takes an ISeatHost) keeps a reference
             // back to the page, and that reference is not a reading: it is the very object this loop is
@@ -841,8 +1014,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
             // byte-identical.
             swept.Append(AsWritten(f.Name)).Append('=').Append(Render(f.GetValue(map), 1, [map])).Append('\n');
         }
-        sb.Append("sweep                 = ").Append(fields).Append(" fields, sha256 ")
-          .Append(Sha256(swept.ToString())).Append('\n');
+        rows.Add((SweepProbe, $"{fields} fields, sha256 {Sha256(swept.ToString())}"));
         if (Environment.GetEnvironmentVariable("SPACESAILS_SWEEP_DUMP") is { } dumpDir)
         {
             Directory.CreateDirectory(dumpDir);
@@ -850,10 +1022,9 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
         }
 
         // ── THE PEN: and the picture agrees with it ───────────────────────────────────────────────────
-        sb.Append("walked-view pen       = ").Append(pen.Commands).Append(" calls, sha256 ")
-          .Append(pen.Sha256()).Append('\n');
-        sb.Append("map-frame buffer      = ").Append(TheCanvasBuffer(map)).Append('\n');
-        return sb.ToString();
+        rows.Add((PenProbe, $"{pen.Commands} calls, sha256 {pen.Sha256()}"));
+        rows.Add((BufferProbe, TheCanvasBuffer(map)));
+        return new Reading(rows, roster);
     }
 
     /// <summary>What the frame is FOR, read by name so a red run points at a thing a person can picture.
@@ -1189,22 +1360,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     private static string Sha256(string text) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
 
-    private static string FingerprintDirectory() =>
-        Path.Combine(RepoRoot(), "tests", "SpaceSails.Client.Tests", "Fingerprints");
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
+    private static string RepoRoot() => PinLedger.RepoRoot();
 
     /// <summary>#870 lane 6′b · The twenty-two patrol fields live on the page's <c>_patrol</c>
     /// object now, so the lookup follows them there (<see cref="PatrolState"/>); every assertion and

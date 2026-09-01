@@ -1,0 +1,53 @@
+# SpaceSails · the SeatFingerprints pin ledger — MACHINE-WRITTEN (#1055).
+# DO NOT HAND-EDIT. Every number below was measured, never transcribed.
+#
+# Rows are `<probe> | <scene> | <value>`, grouped by probe in the order the measurement
+# produces them and, within a probe, by scene in the suite's own order. A re-pin is almost
+# always one PROBE moving across many scenes, so probe-major keeps each re-pin in its own
+# contiguous block and two lanes moving two different probes merge without a conflict.
+#
+# TO RE-PIN — run the measurement, never a text editor:
+#   SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked --logger "console;verbosity=detailed"
+# It rewrites every ledger and PRINTS the report: rows moved, old → new, the delta per row,
+# and for a sweep row the NAME of the field that appeared or disappeared. The report is what
+# a reviewer reads; this file is what CI compares against.
+#
+# EVERY DISTINCT SITTING THE SIX CONSTRUCTION SITES CAN OPEN, hashed (#870 lane 6d).
+# Taken on c906855, the six untouched `Table = new TableTalk { … }` sites, before a line of them
+# moved. `sha256` is the whole transcript of the sitting — the world, the console, the snap, every
+# property of the TableTalk read off the running object, every seat read, the pulse and the card.
+# `chars` is that transcript's length, which is what says how WIDE a change is at a glance.
+# The re-pin history is in the remarks on EverySeatTheCaptainTakesFingerprintsTheSameTests.
+
+chars | a chair in a ring office | 2569
+chars | a cubicle, with the catch still open | 2532
+chars | a free top in a cabinet | 2560
+chars | a free top in the hall | 2505
+chars | a park bench | 2531
+chars | a park bench with somebody on the far end | 2537
+chars | a stool at a chamber worktop | 2488
+chars | a top somebody is already at | 2523
+chars | a chair in a ring office (with a pour in front of you) | 2557
+chars | a cubicle, with the catch still open (with a pour in front of you) | 2520
+chars | a free top in a cabinet (with a pour in front of you) | 2799
+chars | a free top in the hall (with a pour in front of you) | 2744
+chars | a park bench (with a pour in front of you) | 2519
+chars | a park bench with somebody on the far end (with a pour in front of you) | 2525
+chars | a stool at a chamber worktop (with a pour in front of you) | 2476
+chars | a top somebody is already at (with a pour in front of you) | 2512
+sha256 | a chair in a ring office | c75279333d9082d470915ef678642c21411e8b0a7a174938999ff62d7021f4fa
+sha256 | a cubicle, with the catch still open | 173a3b2bcc1f188ed16e48fee7823c229cc4c021f05cae64f4d6f2868306c292
+sha256 | a free top in a cabinet | b69a442ef2fe80a74e4b4aaf9257ecee4348df7e4e9fc61eb8ac16437043b0e6
+sha256 | a free top in the hall | dd616769228fe0bafb5f5b93bb35692487ac174681d4717753f811a9c72773cf
+sha256 | a park bench | fa57822e7a363dbcbb8504c308941d74aa6f86bbfb09ca90f82ec464cdb8b90b
+sha256 | a park bench with somebody on the far end | 836e60073e4d1a5c05dc29d62f7850f4b6f94af6ad7ed3f7ae209b4404652225
+sha256 | a stool at a chamber worktop | de2b4fd8efd583da544e85071739d59e77018c12b42a334966039cf62b3c337b
+sha256 | a top somebody is already at | 7bfb8d97366f89df7c967b213f2593be914e3a99b8272cd0aea61d434a879f5f
+sha256 | a chair in a ring office (with a pour in front of you) | cad6977b2831110ee3de5e121753d5aef5f686609f4deca5a6023e7a2202ffc1
+sha256 | a cubicle, with the catch still open (with a pour in front of you) | 9d5cc662d21edaaff1ef67bebdb01c98315654ac0ade3f2e5d752c9001db462d
+sha256 | a free top in a cabinet (with a pour in front of you) | a29c82a5ab6345ee821a287f8f222837431806312fbbcd2f3a9fd4a4ab50152f
+sha256 | a free top in the hall (with a pour in front of you) | 417a72f0f24c7057e1ec86610263309811b555dbd45d20c16cfd815d2f35f5bc
+sha256 | a park bench (with a pour in front of you) | aeac9b9588e20a5b5a270efeae5cc045df11aed7dcb50eb632bf6c5191b38a78
+sha256 | a park bench with somebody on the far end (with a pour in front of you) | 05965aa0bcec2384b529168760c08385f9ec232bbaaea96b2bacb81defc148b3
+sha256 | a stool at a chamber worktop (with a pour in front of you) | dee4a7aa8ecf683f6a2074d085e8ac2e651999178fa7ed00f5107bd82eac4ea0
+sha256 | a top somebody is already at (with a pour in front of you) | 9a8fda8845ebe3db233fe1bea2037373ae4c08928208476b57325ffa6e17d2c5
