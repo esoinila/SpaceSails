@@ -71,10 +71,18 @@ the split has to reproduce every hash exactly. The four shapes that exist:
 `TheBootBuildsTheSameWorldTests` boots the shipping page at 75 dev URLs and diffs every instance field
 against a page that never booted; `EveryFrameHashesTheSameTests` records the renderer's draw-call
 transcript; `EveryFrameLeavesTheSameFingerprintTests` pins 30 frames (six worlds × five input
-sequences, the texts under `tests/SpaceSails.Client.Tests/Fingerprints/`);
-`EveryRoundFingerprintsTheSameTests` walks thirteen cases and 7,100 frames of the patrol. Each is
-**shown RED before it is trusted** — swap two passes in the conductor, or make one transition forget
-one assignment.
+sequences); `EveryRoundFingerprintsTheSameTests` walks thirteen cases and 7,100 frames of the patrol.
+Each is **shown RED before it is trusted** — swap two passes in the conductor, or make one transition
+forget one assignment.
+
+**And the pins live in a ledger, not in source (#1055).** Three of those four keep their numbers in
+`tests/SpaceSails.Client.Tests/Ledgers/*.ledger.txt`, one row per (probe, scene), grouped by probe so
+two lanes moving two different probes merge without a conflict. **Nobody types a number into one.**
+A re-pin is a command that RUNS the measurement and prints the report you paste into the PR:
+`SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release --filter
+FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked --logger "console;verbosity=detailed"`. CI never
+writes: the writer throws without the opt-in, and a test proves it throws. Full instructions are in
+[docs/testing-guide.md, Appendix B](testing-guide.md).
 
 **Reals in a fingerprint go to five significant figures, and the Linux runner is the arbiter.** A
 boot sweep that was green on Windows reddened all 75 cases on ubuntu, and the diff was one field:

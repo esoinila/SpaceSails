@@ -103,6 +103,30 @@ public static class SittingAlone
     /// differently.</summary>
     public const string OwnDeskPlate = Glyph + " YOUR OWN DESK";
 
+    // ── #1040 · …AND THE THIRD ROOM ABOARD, WHICH IS THE COUNTER IN THE SAME ROOM AS THE FIRST ─────────
+    //
+    // Owner, on 7 Deck: "Our on ship bar can be upgraded to match the other bars... the UI represents code
+    // long time ago." The cantina got the counter its own backdrop has always drawn, and a counter has
+    // stools — which puts the captain on the BAR STOOL rung of the exposure ladder on his own boat, where
+    // the gumshoe rule refuses the spread out loud (SeatedSpread.NotAtTheBarLine). That refusal is CORRECT
+    // and it is funny: the man will not lay a case out at a bar, and it turns out he will not do it at his
+    // own bar either. Nothing here bends to make it not so — the rung is the shipped rung, the refusal is
+    // the shipped sentence, and the room simply has one more kind of seat in it.
+
+    /// <summary>#1040 · A stool at the ship's own counter. Its own setting and not the cantina top's: the
+    /// difference between the two is the whole of what the rung is about — a top has a wall you can put your
+    /// back to, and a counter has your back to the room.</summary>
+    public const string ShipCounterSetting = "a stool at your own counter, the galley dark behind it";
+
+    /// <summary>#1040 · Whose counter it is, on the panel's plate. Built out of <see cref="Glyph"/> like the
+    /// other two, because it is the same furniture family.</summary>
+    public const string OwnStoolPlate = Glyph + " YOUR OWN COUNTER";
+
+    /// <summary>#1040 · …and what the deck writes over the row before anything is pressed. It says the ACTION
+    /// (#783's ruling on <see cref="FreeTablePlate"/>, one fixture along), because the plainest word for
+    /// sitting down is sitting down.</summary>
+    public const string FreeStoolPlate = Glyph + " THE COUNTER — TAKE A STOOL";
+
     // ── THE MOVES ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Hold the table and let the room decide. The passive verb, and the only one a solo table
@@ -482,6 +506,31 @@ public static class SittingAlone
         "The boat carries on somewhere past the bulkhead, a long way off, like weather.",
     ];
 
+    /// <summary>
+    /// #1040 · …and the same boat again, heard from a stool at her counter with nobody serving.
+    ///
+    /// <para>Its own pool for the reason every pool in this file is its own: the cantina's second line says
+    /// <i>the chair opposite stays yours</i>, and a stool has no chair opposite. A room's silence is made of
+    /// the room's own furniture, and the fastest way this game has ever caught a lie is a sentence naming a
+    /// thing the picture does not have.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> NobodyCameShipCounter =
+    [
+        "A while goes by. Nothing comes up out of the galley, because there is nobody down there and there " +
+        "has not been for a long time.",
+        "You sit at your own bar. The row of stools goes off into the dark and every one of them is empty, " +
+        "which is either restful or it is not, depending on the day.",
+    ];
+
+    /// <summary>#1040 · The silence at the counter, beat by beat — same shape as
+    /// <see cref="NobodyCameAboard"/> and deliberately a second call rather than a third flag on it: two
+    /// bools in one signature is a room described by arithmetic.</summary>
+    /// <param name="beat">How many times you have waited on this stool this sitting, from zero.</param>
+    public static string NobodyCameAtYourOwnCounter(int beat) =>
+        NobodyCameShipCounter[
+            (int)(((beat % NobodyCameShipCounter.Count) + NobodyCameShipCounter.Count)
+                  % NobodyCameShipCounter.Count)];
+
     /// <summary>#1016 · Which silence a beat aboard gets. No watch is consulted and that is not an omission:
     /// the ship's own rooms are not filled by a rota, so the ONLY thing that varies is which beat this is —
     /// a captain who waits twice is told two different things and the room does not loop.</summary>
@@ -519,9 +568,17 @@ public static class SittingAlone
         {
             yield return s;
         }
+        // #1040 · …and the counter's, walked by the same grep for the same reason.
+        foreach (string s in NobodyCameShipCounter)
+        {
+            yield return s;
+        }
         yield return ShipCantinaSetting;
         yield return ShipCabinSetting;
+        yield return ShipCounterSetting;
         yield return OwnDeskPlate;
+        yield return OwnStoolPlate;
+        yield return FreeStoolPlate;
         yield return TookTheTableLine;
         yield return StoodUpLine;
         // #783 · the other register, checked by the same grep the wary one is.

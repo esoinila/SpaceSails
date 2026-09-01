@@ -154,6 +154,11 @@ public partial class Map
             SeedOldCrewCheat(); // #973 L5a: the four shipmates at THIS berth, and a captain already buried
         }
 
+        if (q.CrewCheat is not null)
+        {
+            SeedCrewCheat(); // #663: the voyage the crew send a deputation over — bodies, and no money to show for them
+        }
+
         if (q.ConvergeCheat)
         {
             SeedConvergeCheat(); // #422: seed both arcs' joint threshold and fire THE CONVERGENCE reveal

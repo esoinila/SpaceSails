@@ -46,6 +46,13 @@ public enum AlertKind
     /// is a pop-up gate (the terms must be visible before accepting), not a banner button — this alert
     /// only SHOUTS and says-the-state; #236 keeps the action off the masthead.</summary>
     Adrift,
+
+    /// <summary>#638 — the ship is adrift in <see cref="VoidRule"/>'s stronger sense: the tank is empty, the
+    /// plan has no move left in it, and the plotted course touches no haven's capture. A clock is running, and
+    /// this is the channel that says so on the day it starts and again at the halfway mark. Strictly narrower
+    /// than <see cref="Adrift"/>, which is the dry tank alone and raises the #266 rescue offer — a captain
+    /// with an empty tank and a berth in front of him gets that one and never this.</summary>
+    Void,
 }
 
 /// <summary>One live alert. Immutable snapshot; the channel replaces it wholesale on any change.</summary>

@@ -10,11 +10,13 @@
 /// <para>A single pure enum carried into the rebirth flow. The client maps it to one of the Grok-generated
 /// death images and one seeded house-voice line. Two causes are LIVE today — <see cref="DeathCause.Collector"/>
 /// (the BUSTED last stand) and <see cref="DeathCause.Impact"/> (periapsis under the surface). The surface
-/// causes — <see cref="DeathCause.Reevers"/>, <see cref="DeathCause.Joined"/> — and the deep-space
-/// <see cref="DeathCause.Void"/> are wired READY (art + tested lines + the <see cref="DeathNarration.SurfaceEnd"/>
+/// causes — <see cref="DeathCause.Reevers"/>, <see cref="DeathCause.Joined"/> — are wired READY (art + tested
+/// lines + the <see cref="DeathNarration.SurfaceEnd"/>
 /// classifier): a surface Reever catch does NOT kill today (it prices heat + a nerve shock, see
 /// Map.Surface ReeverCatch) and nerve overdraw does not kill either, so nothing routes to them yet. When the
-/// surface-death lane lands it only has to set the cause — this rule already narrates it.</para>
+/// surface-death lane lands it only has to set the cause — this rule already narrates it. The deep-space
+/// <see cref="DeathCause.Void"/> stood in that same list for two years and does not any more: #638 gave it
+/// <see cref="VoidRule"/>, and it is the only cause in the set whose lane is a clock.</para>
 /// </summary>
 public enum DeathCause
 {
@@ -59,8 +61,16 @@ public enum DeathCause
     /// <see cref="DeathNarration.SurfaceEnd"/> so it stays chilling. (Wired ready.)</summary>
     Joined,
 
-    /// <summary>Lost to the void — adrift / EVA / an orbit that slipped, no body to name. (Wired ready for
-    /// whatever void death lands; none routes here today.)</summary>
+    /// <summary>Lost to the void — no body to name, no ground to hit.
+    ///
+    /// <para>#638 · <b>It has a lane now, and it took two years.</b> The line above used to end "wired ready
+    /// for whatever void death lands; none routes here today" — a cause with a painting, three lines of prose,
+    /// a headline and a <see cref="DeathNarration.CanHappen"/> law that nothing in the client had ever set.
+    /// The ruling picked the one candidate that was a trigger on state the sim already tracks rather than a
+    /// new scene: reaction mass at zero, no plan step left that can fire, and a plotted course that touches no
+    /// haven's capture — twenty consecutive sim-days of it. See <see cref="VoidRule"/>. Of the three
+    /// candidates on the issue, EVA was a scene the game does not have and a slipped orbit is
+    /// <see cref="Impact"/>'s ground under another name.</para></summary>
     Void,
 
     /// <summary>#564 · The tank ran out. Not a creature, not a fall, not nerve — the captain walked further
@@ -196,6 +206,17 @@ public static class DeathNarration
         if (cause == DeathCause.Inspected)
         {
             return "\"…nobody raised their voice, and it was over before the echo.\"";
+        }
+
+        // #638 · AND THE FOURTH PIECE OF THE SAME CARD, on the lane that finally reaches the void. Without
+        // this arm a captain who ran out of reaction mass three weeks from anywhere fell through to the pack
+        // quote below — "…they simply kept coming, and the guard did not hold forever" — under a headline
+        // that says he was lost to the void, over a painting of a parted tether. Nothing came for him at all,
+        // which is the whole point of the cause; the words are the issue's own ("nothing hunted you, you
+        // simply could not get home") because that sentence is why option 1 was the honest void death.
+        if (cause == DeathCause.Void)
+        {
+            return "\"…nothing hunted you. You simply could not get home.\"";
         }
 
         return nerveRanOut

@@ -427,11 +427,31 @@ public partial class Map
         // next one — and the SPREAD is seated-only by law, so a laid pair that outlived the chair would be
         // state the player could not see, could not reach and could not put down.
         ClearTheSpread();
+
+        // #1052 · …and the PAPER goes down with the chair, for the same sentence one surface over: the news
+        // panel is seated-only by law, so a gate left set would be a paper the captain could not see, could
+        // not reach and could not put down — and it would fan itself open again the next time he sat.
+        CloseSeatedNews();
         _seating.StandUpFromTable();
     }
 
     /// <inheritdoc cref="Seating.StandUpBeforeWalking"/>
-    private bool StandUpBeforeWalking() => _seating.StandUpBeforeWalking();
+    /// <remarks>#1052 · …AND THE PAPER GOES DOWN HERE TOO. This is the OTHER road out of a chair — the one
+    /// #847 gave a movement input, which reaches <c>Seating.StandUpFromTable</c> directly and so never
+    /// passes the forwarder above. Found by playing it: click-to-walk off a bar top with the news open left
+    /// the gate set, and the panel would have fanned itself open again at the next table the captain sat
+    /// down at. <c>ThePaperIsOpen</c> already keeps it off the SCREEN — this keeps the state honest as
+    /// well, which is the difference between a panel that is hidden and one that is shut.</remarks>
+    private bool StandUpBeforeWalking()
+    {
+        bool stood = _seating.StandUpBeforeWalking();
+        if (stood)
+        {
+            CloseSeatedNews();
+        }
+
+        return stood;
+    }
 
     /// <inheritdoc cref="Seating.StandingUpCostsARest"/>
     private bool StandingUpCostsARest => _seating.StandingUpCostsARest;

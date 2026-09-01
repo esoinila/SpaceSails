@@ -357,12 +357,12 @@ public sealed partial class Map
         }
 
         /// <summary>#833 · THE ESCORT. The one guard on the floor who is not walking a round, walking the captain
-        /// off it at his shoulder.</summary>
+        /// off it — #804 · out in front of him, which is what he said he would do.</summary>
         private void HeIsWalkingYouOut(Guard g, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
         {
             // #833 · The one guard who is not walking a round at all. He is ahead of everything else in
             // this loop because an escort in progress is not a thing a bench can stop and not a thing a
-            // sighting can interrupt: the captain is at his shoulder, and there is nothing left to see.
+            // sighting can interrupt: the captain is a pace in front of him, and there is nothing left to see.
             g.HeIsHeld(false);
             WalkTheEscort(g, dt, walls);
         }

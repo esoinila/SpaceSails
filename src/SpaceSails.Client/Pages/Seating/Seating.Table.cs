@@ -851,8 +851,14 @@ public partial class Map
                             // an office's turned-off shift are both somebody else's room; what a captain
                             // sitting in his own cantina hears is his own boat, and the cabin hears it
                             // through a door. Quiet is which of the two, exactly as it is one line down.
+                            // #1040 · …and a STOOL is not a table, even aboard. The cantina's own silence
+                            // ends on "the chair opposite stays yours", and a counter has no chair opposite;
+                            // a sentence naming furniture the picture does not have is the fastest lie this
+                            // game has ever been caught telling.
                             t.Aboard
-                                ? SittingAlone.NobodyCameAboard(t.Quiet, beat)
+                                ? t.Stool
+                                    ? SittingAlone.NobodyCameAtYourOwnCounter(beat)
+                                    : SittingAlone.NobodyCameAboard(t.Quiet, beat)
                                 : t.CubicleKey is { Length: > 0 }
                                 ? CubicleLock.NothingHappens(beat)
                                 : t.Office

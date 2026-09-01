@@ -76,7 +76,7 @@ public partial class Map
 
         /// <summary>Where the captain's body is. Read by nearly every verb here — the notice, the hail, the
         /// approach, the run's homing step, the sightline, the knock's reach — and WRITTEN by exactly one:
-        /// #833's escort, which walks the captain at the guard's shoulder through
+        /// #833's escort, which walks the captain a pace ahead of the guard (#804) through
         /// <see cref="DeckPlan"/>'s own <c>Move</c> rather than placing him.</summary>
         double AvatarX { get; set; }
 

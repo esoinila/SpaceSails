@@ -197,92 +197,61 @@ public class CrewTempTests
     }
 
     /// <summary>
-    /// #663 · WHY <c>CrewDeputation</c> AND <c>CrewMeeting</c> ARE STILL ORPHANS, stated as a computation
-    /// instead of as an opinion.
+    /// #663 · HOW FAR THE SHIPPED GAME CAN PUSH THE CREW, stated as a computation instead of as an opinion.
     ///
-    /// <para>The issue's plan for those two beats was to raise them on the <see cref="CrewTemp.Standing"/>
-    /// edges — a deputation on Petition, a meeting on Ultimatum — and the edges are the right ones. What
-    /// nobody had checked is whether the shipped game can CROSS them. It cannot, and a beat wired to an edge
-    /// the world cannot reach is a caller that satisfies a scanner and never fires, which is this house's
-    /// fifth bug class wearing the fix's clothes.</para>
+    /// <para>The issue's plan for <c>CrewDeputation</c> and <c>CrewMeeting</c> was to raise them on the
+    /// <see cref="CrewTemp.Standing"/> edges — a deputation on Petition, a meeting on Ultimatum. The edges
+    /// are the right ones; the question this sweep answers is which of them the WORLD can cross. A beat
+    /// wired to an edge the world cannot reach is a caller that satisfies a scanner and never fires, which
+    /// is this house's fifth bug class wearing the fix's clothes.</para>
     ///
-    /// <para>The reason is in <c>Map.CrewTemp.CrewVoyage()</c>, where three of the inputs that could push a
-    /// crew down are honest dormant constants — <c>PromisesBroken</c>, <c>CrewLost</c> and
-    /// <c>DaysSinceShoreLeave</c> — because nothing in the game yet makes a promise TO THE CREW, no crewman
-    /// can die, and nothing tracks shore leave. Of the inputs that ARE live, every one either helps the crew
-    /// or is capped: heat stops at <see cref="EncounterRule.MaxHeatLevel"/>, credits, tots and near-misses
-    /// only ever add, and honest filings pull PAY down while pushing PROSPECTS up by almost as much.</para>
+    /// <para><b>What moved.</b> The first cut of this sweep pinned the floor at Grumbling and named three
+    /// dormant inputs as the reason — <c>PromisesBroken</c>, <c>CrewLost</c>, <c>DaysSinceShoreLeave</c> —
+    /// with <c>CrewLost</c> excused as <i>"no crewman can die, because the crew are three droids on a rota
+    /// and one marker"</i>. That sentence was already false when it was written: the asteroid-deflection gig
+    /// (#394) puts five of the crew on a falling rock, rolls <c>DeflectionGig</c>'s crew-bolt complication
+    /// against them, docks the fee per body and prints <i>"N of the crew did not come home"</i>. The report
+    /// on the captain's desk went on saying <i>"Nobody has been lost. On a ship like this that is not luck,
+    /// it is the captain."</i> — the sim doing one thing while a sentence reported another, and a dormant
+    /// hook that had quietly stopped being dormant.</para>
     ///
-    /// <para>So this sweeps the whole live space and pins the floor. It is written to go RED the day any one
-    /// of those three hooks becomes real — which is the day the two beats become wireable, and the day
-    /// somebody should come back to #663 and wire them.</para>
+    /// <para>So <c>CrewLost</c> is live in <c>Map.CrewTemp.CrewVoyage()</c> now, and this is the ARITHMETIC
+    /// half of what that buys — the rules, asked what a dead crewman is worth. The WORLD half (whether the
+    /// shipping page can build such a voyage at all, and how far down it reaches) is measured against the
+    /// page itself, next door in <c>SpaceSails.Client.Tests.TheCrewSheetCountsTheDeadTests</c>, because a
+    /// sweep of hand-typed <see cref="CrewTemp.Voyage"/> values here could only ever mirror what that page
+    /// does and would rot the first time it changed.</para>
     /// </summary>
     [Fact]
-    public void NothingTheShipActuallyTracksCanPushTheCrewPastGrumbling()
+    public void ADeadCrewmanIsWhatBuysTheDeputationAndItIsStillNotEnoughForTheMeeting()
     {
-        CrewTemp.Standing worst = CrewTemp.Standing.Solid;
-        CrewTemp.Voyage worstVoyage = default;
+        // Bodies alone do not do it, and that is the design rather than an accident: SAFETY bottoms out at
+        // zero and the other four dimensions are untouched by a death, so a well-paid ship forgives one.
+        Assert.Equal(CrewTemp.Standing.Grumbling,
+            CrewTemp.StandingOf(new CrewTemp.Voyage(CrewLost: 5)));
 
-        // Every live input, swept past the point where it stops mattering. The dormant three are held at the
-        // constants Map.CrewTemp actually passes, because that is the world this claim is about.
-        foreach (int filings in new[] { 0, 1, 3, 6, 7, 10, 20, 40 })
-        {
-            foreach (int lies in new[] { 0, 1, 3, 10, 40 })
-            {
-                foreach (long share in new long[] { 0, 400, 5_000, 50_000 })
-                {
-                    foreach (int tots in new[] { 0, 10 })
-                    {
-                        foreach (int nearMisses in new[] { 0, 5 })
-                        {
-                            for (int heat = 0; heat <= EncounterRule.MaxHeatLevel; heat++)
-                            {
-                                foreach (bool vented in new[] { false, true })
-                                {
-                                    var v = new CrewTemp.Voyage(
-                                        HonestFilings: filings,
-                                        ProfitableLies: lies,
-                                        SharePaid: share,
-                                        PromisesKept: 0,        // dormant in Map.CrewTemp
-                                        PromisesBroken: 0,      // dormant in Map.CrewTemp
-                                        CrewLost: 0,            // dormant in Map.CrewTemp
-                                        NearMisses: nearMisses,
-                                        TotsPoured: tots,
-                                        DaysSinceShoreLeave: 0, // dormant in Map.CrewTemp
-                                        Heat: heat,
-                                        VentedOwnCompartment: vented);
+        // What crosses the Petition edge is bodies on a ship that is ALSO poor and honest — the owner's
+        // "right balance" made mechanical. A captain who lies and pays well can bury people quietly.
+        var honestAndBereaved = new CrewTemp.Voyage(HonestFilings: 7, CrewLost: 3);
+        Assert.Equal(CrewTemp.Standing.Petition, CrewTemp.StandingOf(honestAndBereaved));
+        Assert.Equal(CrewTemp.Standing.Grumbling, CrewTemp.StandingOf(honestAndBereaved with { CrewLost = 0 }));
+        Assert.Equal(CrewTemp.Standing.Grumbling,
+            CrewTemp.StandingOf(honestAndBereaved with { ProfitableLies = 6, SharePaid = 50_000 }));
 
-                                    CrewTemp.Standing s = CrewTemp.StandingOf(v);
-                                    if (s > worst)
-                                    {
-                                        worst = s;
-                                        worstVoyage = v;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // …and cohesion still holds the line it was written to hold: a crew that has been through things
+        // with this captain is SLOWER TO ACT, not happier. Same voyage, near-misses behind them, no
+        // deputation.
+        Assert.Equal(CrewTemp.Standing.Grumbling, CrewTemp.StandingOf(honestAndBereaved with { NearMisses = 5 }));
 
-        Assert.True(worst == CrewTemp.Standing.Grumbling,
-            $"the live inputs now reach {worst} ({worstVoyage}) — the crew CAN be pushed past Grumbling, so " +
-            "StoryBeats.Beat.CrewDeputation / CrewMeeting are wireable at last. Wire them on the " +
-            "CrewTemp.Standing edges (#663) and take them off EveryStoryBeatHasACallerTests.KnownOrphans.");
-
-        // And the other half of the claim, so this cannot pass on a sweep that reached nothing: the crew DO
-        // move within the range they have, or the sweep above would be a loop over one answer.
-        Assert.Equal(CrewTemp.Standing.Solid, CrewTemp.StandingOf(new CrewTemp.Voyage(SharePaid: 50_000, TotsPoured: 10)));
-        Assert.Equal(CrewTemp.Standing.Grumbling, CrewTemp.StandingOf(worstVoyage));
-
-        // …and the edges themselves are real, on a Voyage that the RULES admit even though the client cannot
-        // build one yet. This is what says the beats' target is correct and only their world is missing.
-        Assert.Equal(CrewTemp.Standing.Petition,
-            CrewTemp.StandingOf(new CrewTemp.Voyage(HonestFilings: 6, PromisesBroken: 1, DaysSinceShoreLeave: 90, Heat: 3)));
+        // The edge BELOW is still out of the world's reach, and this is the assertion that keeps
+        // StoryBeats.Beat.CrewMeeting honestly caller-less: an Ultimatum needs a broken promise or a crew
+        // kept aboard for months, and NOTHING in the shipped game writes either number. Wiring the meeting
+        // to this edge today would be a caller that can never fire.
         Assert.Equal(CrewTemp.Standing.Ultimatum,
             CrewTemp.StandingOf(new CrewTemp.Voyage(HonestFilings: 6, PromisesBroken: 1, CrewLost: 2,
                                                     DaysSinceShoreLeave: 200, Heat: 3)));
+        Assert.Equal(CrewTemp.Standing.Ultimatum,
+            CrewTemp.StandingOf(new CrewTemp.Voyage(HonestFilings: 7, CrewLost: 3, DaysSinceShoreLeave: 400)));
     }
 
     private static CrewTemp.Reading Find(in CrewTemp.Voyage v, CrewTemp.Dimension d)

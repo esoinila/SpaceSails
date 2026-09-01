@@ -514,6 +514,9 @@ public partial class Map
     // #223 dev cheat: seed the ledger's 🗺 section without a full bury run. "mine" buries one of OUR
     // chests on Phobos; "rumor" is the standalone PURCHASE path — pay a barfly for a map to an NPC hoard
     // (deliverable 5), no delivery strings, keep whatever we dig; "both" seeds one of each.
+    // #650: deliberately BODY-WIDE (no siteIndex). The cheat exists so a tester can set down anywhere on
+    // Phobos and find a ✗ waiting; picking a ground here would mean guessing which of the four sites they
+    // will land at, and guessing wrong would read exactly like the bug this cheat is used to inspect.
     private void InjectHoardCheat(string mode)
     {
         if (mode is "mine" or "both")

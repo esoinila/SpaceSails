@@ -50,17 +50,22 @@ public sealed class EveryStoryBeatHasACallerTests
     /// </summary>
     private static readonly Dictionary<StoryBeats.Beat, string> KnownOrphans = new()
     {
-        // #663 · The Petition and Ultimatum edges are the RIGHT edges, and the shipped game cannot cross
-        // either of them. Three of the inputs that could push a crew down are honest dormant constants in
-        // Map.CrewTemp (PromisesBroken, CrewLost, DaysSinceShoreLeave); every live input either helps the
-        // crew or is capped — heat stops at 3, and honest filings pull PAY down while pushing PROSPECTS up
-        // by almost as much, so the whole live space bottoms out inside Grumbling. Swept and pinned in Core
-        // (CrewTempTests.NothingTheShipActuallyTracksCanPushTheCrewPastGrumbling), written to go RED the day
-        // one of those hooks becomes real — which is the day these two become wireable. Wiring them today
-        // would be a caller that satisfies this scanner and can never fire, which is this house's fifth bug
-        // class wearing the fix's clothes.
-        [StoryBeats.Beat.CrewDeputation] = "#663 — the CrewTemp Petition edge cannot be crossed yet (see CrewTempTests)",
-        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge cannot be crossed yet (see CrewTempTests)",
+        // #663 · CrewDeputation CAME OFF THIS LIST. Its entry read "the CrewTemp Petition edge cannot be
+        // crossed yet" and named CrewLost as one of three dormant constants in Map.CrewTemp — an excuse that
+        // had already expired, because the deflection gig (#394) loses crew on a falling rock, docks the fee
+        // per body and says so out loud, while the sheet on the desk went on answering "Nobody has been
+        // lost". The counter is live, the Petition edge is crossable, and the beat is raised where the
+        // standing is read. See TheCrewSheetCountsTheDeadTests.
+        //
+        // CrewMeeting stays, and for the reason the list is FOR. The Ultimatum edge needs a broken promise
+        // to the crew or months without shore leave, and those two hooks really are numbers nobody keeps —
+        // pinned from both ends: the rules' half in Core
+        // (CrewTempTests.ADeadCrewmanIsWhatBuysTheDeputationAndItIsStillNotEnoughForTheMeeting) and the
+        // world's half against the shipping page
+        // (TheCrewSheetCountsTheDeadTests.TheShippedInputsReachADeputationAndNoFurther, which fails the day
+        // the reach passes a Petition). Wiring the meeting today would be a caller that satisfies this
+        // scanner and can never fire, which is this house's fifth bug class wearing the fix's clothes.
+        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge cannot be crossed yet (see TheCrewSheetCountsTheDeadTests)",
 
         // #777 · CollectorHail CAME OFF THIS LIST. Its entry read "the BUSTED card IS the hail's card; the
         // seam has no hosted presentation" — a debt against the SEAM rather than against the wiring, and the
@@ -219,5 +224,23 @@ public sealed class EveryStoryBeatHasACallerTests
     {
         Assert.DoesNotContain(StoryBeats.Beat.CollectorHail, KnownOrphans.Keys);
         Assert.Contains(StoryBeats.Beat.CollectorHail, BeatsWithACaller());
+    }
+
+    /// <summary>
+    /// #663 · And the third of the four. The deputation's excuse was that the world could not cross the
+    /// <c>CrewTemp.Standing.Petition</c> edge, because <c>CrewLost</c> was a dormant constant — an excuse
+    /// that had already expired when it was written, since the deflection gig (#394) loses crew on a falling
+    /// rock and says so out loud. The counter is live now and the edge is crossable, so the beat is raised
+    /// where the crew's standing is read; <see cref="TheCrewSheetCountsTheDeadTests"/> holds the proof that
+    /// the world can actually get there, which is the half a scanner cannot see.
+    ///
+    /// <para>Both halves of the ratchet on one beat, deliberately: off the excuse list AND actually raised.
+    /// Either alone would pass on a lie.</para>
+    /// </summary>
+    [Fact]
+    public void TheCrewDeputationIsRaisedAndIsNotOnTheExcuseList()
+    {
+        Assert.DoesNotContain(StoryBeats.Beat.CrewDeputation, KnownOrphans.Keys);
+        Assert.Contains(StoryBeats.Beat.CrewDeputation, BeatsWithACaller());
     }
 }

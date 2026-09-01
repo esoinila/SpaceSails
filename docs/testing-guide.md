@@ -225,6 +225,36 @@ enabled/disabled incorrectly relative to your credits.
 **Broken looks like:** no wobble after 3 rapid tots, wobble blocking interaction entirely, or `F`
 doing something.
 
+### 10b. Her cantina is a bar now (#1040)
+
+Owner, on 7 Deck: *"Our on ship bar can be upgraded to match the other bars... the UI represents code
+long time ago."*
+
+1. On 7 Deck, look at the **CANTINA**. It should read as a bar rather than as three rings on an empty
+   floor: a **counter** down its aft side with a filled slab for its top and the **back-bar** shelving
+   behind it, a **row of three stools** tucked in along its front, the three round **tops moved under
+   the panoramic window** (all three take a seat now, where one used to be refused), and the
+   **CANTINA** console over on the forward window corner where the galley machines are — it opens the
+   same galley card it always did.
+2. Walk into the counter. Confirm it **stops you** — you belly up to a bar, you do not walk through
+   one — and that you can still get round its near end into the servery behind it.
+3. Walk to a stool and press `E`. Confirm you sit **on the stool you walked up to** (try the near one
+   and the far one), the strip says **🪑 YOUR OWN COUNTER**, and **SIT A WHILE** answers in the
+   counter's own words rather than with a line about the chair opposite.
+4. With papers in the sleeve, press **Work the case** on that strip. Confirm it is **refused out
+   loud** — *"Not at the bar. Everything you put on this counter is read by the keep…"* That is
+   correct and it is the joke: a stool is the bar-stool rung, and the gumshoe rule holds at your own
+   bar too.
+5. Walk four paces to a top under the window, sit, and press **Work the case** again. Confirm it
+   **opens** — the refusal is about the seat, never about the boat.
+6. Walk to **CABIN 2** and press `E` at its **DESK ✍** (it has one now, like CABIN 1). Confirm the
+   cabinet rung, the case spreading unconditionally, and that `E` from the chair opens the desk
+   rather than putting you to bed.
+
+**Broken looks like:** a counter you walk through; a servery you cannot get behind; `[E]` at the far
+stool seating you at the near one; the case opening at the counter; the same wait line twice; a top
+under the window with no seat on it; or one desk where two berths are drawn.
+
 ---
 
 ## 11. Boarding run minigame
@@ -550,6 +580,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?sling=<bodyId>` / `?skim=<bodyId>` | Boot onto an approach arc with a close pass / atmosphere graze. |
 | `?expedition=1\|mining` | Spawn an away-team gig ALREADY ACCEPTED, its rock parked in shuttle range (#370). |
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
+| **`?crew=petition`** | **A DEPUTATION — three of them in the corridor outside your door (#663).** Boots holding the voyage the crew send one over: five of them left on the rock (the `?deflection=` gig above is the only thing in the shipped game that kills a crewman), and every wreck since filed honestly, so the share is empty and the bunks are too. It grants those two counters and nothing else — no standing is written and no card is pushed; the ship's own clock reads the crew sheet on the next tick, finds them past `CrewTemp.Standing.Petition`, and the beat arrives through the ordinary door with its cadence spent and its line in the ledger. Read the sheet behind it on the **Captain desk → the crew's report**: PETITION at the top, GETTING HOME on the floor and THE SHARE down with it. `?crew=deputation` is the same door. |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
@@ -567,7 +598,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
-| **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** |
+| **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** Every cause has a lane now: `?death=void` was the last one that did not, and #638 gave it the twenty-day adrift clock (`VoidRule`). |
 | **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
 | **`?watchers=1`** | **Open the MONOLITH GROUND'S attentive window and cut the dwell from forty seconds to two, so the strange-things-happen beat (#649) can be watched on demand. Stand at the stone. It is rare by design — one visit-window in three, and then only if you stay — and this changes the GATES and nothing else, so what you see is what a captain sees. Pair with `&dock=the-space-bar&body=phobos&site=0&land=1`, and with `&reevers=3` for the variant that needs a pack on the field.** |
 | **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first. #784 adds three WORDS beside the number, for links a person has to read: `?nerve=shot` (0), `?nerve=low` (2), `?nerve=half` (5). Same flag, same clamp — the words are spellings of the number and never a second parser.** |
@@ -676,6 +707,7 @@ place out of four, and nothing that reaches an impact at all.
 /map?death=reevers&wreck=1&land=1                  something has you against a bulkhead
 /map?death=suffocated&secretlab=1&land=1&floor=2   150 m under a moon, in a poured corridor
 /map?death=scuttled&wreck=1&land=1                 the overload you set yourself ran out (#525)
+/map?death=void                                    twenty days adrift ran out (#638) — her own deck only
 ```
 
 The cause is a `DeathCause` name, lowercased: `collector`, `impact`, `reevers`, `joined`, `void`,
@@ -696,7 +728,28 @@ Two things are read off the LIVE state rather than invented, for the same reason
 out (so a full-nerve captain honestly gets the mauled caption, a shattered one the overdraw caption), and
 whether the cause is legal where you are standing — ask for a `collector` death inside a wreck and the law
 substitutes one that can happen there, and the game says so in a DEV pulse rather than inventing a
-character. `?death=void` has no lane yet and says so.
+character.
+
+**#638 · `?death=void` takes a real lane now.** It reported "no lane at all yet" from #636 until 2026-09-01,
+which is what issue #638 was filed about: a cause with a painting, three lines of prose and a headline that
+nothing in the client could ever set. The lane is a CLOCK (`Core/VoidRule.cs`) — she is ADRIFT when reaction
+mass is zero, no burn or arrival step of the plan can still fire, and the plotted course reaches no haven's
+capture; twenty consecutive sim-days of that and the void has her. The dev door skips the twenty days and
+calls the very method the watch calls, so what a tester sees is what a captain sees.
+
+*What a tester should see* on `/map?death=void`: the sepia what-happened card carrying **`death-void.jpg`**
+(a captain adrift, tether parted, the sail receding — the picture nobody had ever seen in play), the headline
+`WHAT HAPPENED — lost to the void`, the caption *"…nothing hunted you. You simply could not get home."*, and
+one of the three `VoidLines` under it. It is legal on **her own deck only** (`CanHappen`, #636), so adding
+`&land=1` gets you the law substituting a ground death and saying so in the DEV pulse — that refusal is
+correct, not a bug.
+
+*Playing the whole clock* rather than staging its end: go dry with nowhere to go and decline the tow. The
+three tellings are a banner + log line on day 0 (*"Reaction mass is spent. Nothing answers the helm."*), a
+second banner on day 10 (*"Half the ledger gone…"*), and a story pop-up card on day 19 (*"The long dark has a
+schedule now. One day remains on it."*). Refuelling, or the course falling into any haven's capture, cancels
+the clock without ceremony — no banner, no card, it simply stops. The twenty is
+`VoidRule.DaysAdrift`, flagged as the owner's dial; the two telling days are derived from it.
 
 #### …and what to look at while you are there — the HOSTED hail (#777)
 
@@ -1575,3 +1628,92 @@ The short version, because these are the easiest to miss:
 /map?secretlab=1&land=1&floor=2&air=90     a dead floor with ninety seconds in the tank
 /map?secretlab=1&land=1&collectors=20      a repo boat lands while you are underground
 ```
+
+---
+
+## Appendix B — the pin ledgers, and the one sanctioned way to re-pin (#1055)
+
+Four snapshot guards in `tests/SpaceSails.Client.Tests` hold the game still by pinning what it
+measured on the old code. Three of them keep those pins in a **machine-written ledger** under
+`tests/SpaceSails.Client.Tests/Ledgers/`:
+
+| Ledger | Guard | What it pins |
+| --- | --- | --- |
+| `FrameHashes.ledger.txt` | `EveryFrameHashesTheSameTests` | 33 frames × (`calls`, `sha256`) — every mark `DeckView.Draw` lays, in order |
+| `Fingerprints.ledger.txt` | `EveryFrameLeavesTheSameFingerprintTests` | 30 scenes (six worlds × five input sequences) × 44 probes, plus a `sweep roster` row per swept field of `Pages.Map` |
+| `SeatFingerprints.ledger.txt` | `EverySeatTheCaptainTakesFingerprintsTheSameTests` | 16 sittings × (`chars`, `sha256`) |
+
+**The format.** One row per (probe, scene):
+
+```
+<probe> | <scene> | <value>
+```
+
+A *probe* is one thing measured (`calls`, `sweep`, `walked-view pen`, `the accumulator`); a *scene*
+is the world it was measured in (`ship · under way`, `TheRegolithOnFoot.AHeldKey`, `a park bench`).
+Rows are **grouped by probe**, because a re-pin is almost never "one scene moved" — it is one probe
+moving across many scenes. #1054 moved `sweep` on all thirty; #1040 moved `walked-view pen` on
+fifteen. Probe-major puts each of those in one contiguous block, so two lanes moving two different
+probes edit two blocks a hundred lines apart and git merges them without a word.
+
+**Nobody edits a ledger by hand.** `ThePinsAreRewrittenOnlyWhenAskedTests.EveryLedgerIsTheFileTheWriterWouldHaveWritten`
+re-renders each committed file from its own rows and demands it come back byte for byte.
+
+### Re-pinning
+
+When a change legitimately moves a pinned number, run the measurement — never a text editor:
+
+```bash
+SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release \
+  --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked \
+  --logger "console;verbosity=detailed"
+```
+
+PowerShell:
+
+```powershell
+$env:SPACESAILS_REPIN = "1"
+dotnet test tests/SpaceSails.Client.Tests -c Release `
+  --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked `
+  --logger "console;verbosity=detailed"
+Remove-Item Env:\SPACESAILS_REPIN
+```
+
+The `--logger` is not decoration: `dotnet test` swallows the output of a *passing* test, and the
+printed report **is** the deliverable. It names every row that moved, old → new, the delta per row,
+and — for the field sweep — the NAME of the field that appeared or disappeared:
+
+```
+── Fingerprints ─────────────────────────────────────────────
+  2035 row(s) measured, 2034 pinned; 55 moved, 1 new, 0 gone.
+  probes touched: sweep, sweep roster, walked-view pen
+  sweep | HerOwnDeckInFlight.SteadyFrames   Δ +1   ← sweep +1: _navHelpOpen
+      was: 744 fields, sha256 …
+      now: 745 fields, sha256 …
+  + sweep roster | _navHelpOpen | Boolean
+```
+
+**Paste that report into the PR body.** A re-pin is reviewed by its report, not by squinting at a
+table of hex.
+
+### CI never re-pins
+
+`PinLedger.Write` throws unless `SPACESAILS_REPIN` reads exactly `1`, and
+`ThePinsAreRewrittenOnlyWhenAskedTests.TheOptInIsOffUntilSomebodyTurnsItOn` proves it throws — on
+every CI build, with each ledger's bytes read before and after the refused call. A normal run only
+ever **compares**: a guard goes red and stays red until a human has looked at what moved.
+
+### When the sweep moves but the roster does not
+
+A `sweep` row can move with no field joining or leaving the page — a field's *value* changed
+(#953, #957). The red says so, and the way to name it is still the dump hook:
+
+```bash
+SPACESAILS_SWEEP_DUMP=<dir> dotnet test tests/SpaceSails.Client.Tests -c Release \
+  --filter FullyQualifiedName~EveryFrameLeavesTheSameFingerprint
+```
+
+Run it once on the base and once on your lane, then diff the two directories.
+
+> `EveryRoundFingerprintsTheSameTests` still keeps its pins in source. It is the fourth snapshot
+> guard and the next candidate for a ledger; nothing about #1055 changes what it measures.

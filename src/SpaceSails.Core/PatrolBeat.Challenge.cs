@@ -103,14 +103,24 @@ public static partial class PatrolBeat
     /// <summary>
     /// What is happening, before anything is read. Evidence, and then it stops (§13.9's discipline) — the
     /// card describes a man doing a task and says nothing at all about what happens next.
+    ///
+    /// <para>#804 · <b>AND HE SAYS THE AUTHORED LINE HERE</b> (canon pass, 2026-09-02):
+    /// <i>"Hold there. Floor's restricted. Show me something."</i> The card shipped with the gesture and no
+    /// words in it, which made the stop a pantomime — a hand out, and the captain left to infer the
+    /// sentence. Three clauses, and each one is a fact rather than a threat: STOP, WHY, WHAT I WANT. Note
+    /// what is not in it. There is no accusation, no question about who you are, and no consequence named:
+    /// he has not decided anything about you and has no intention of deciding anything he does not have to.
+    /// That is the register the whole feature is tuned to (§13.8), and it is why the line goes on the card
+    /// rather than into <see cref="HailLine"/> — a hail is <i>hold on</i>, and this is the thing he says
+    /// once he is standing in front of you with his hand out.</para>
     /// </summary>
     public static string ChallengeCard(string plate) =>
         $"{plate} — and they see you before you hear them stop. No shout and no lamp in the face: this " +
         "floor has lights, and you are plainly not what the lights are for.\n\n" +
-        "What you get is a hand out, palm up, for the thing everybody who works this corridor carries. " +
-        "Nothing about it is urgent. That is the part worth being frightened of — he has done this a " +
-        "hundred times, it has come to nothing a hundred times, and he will write down whichever way it " +
-        "goes tonight either way.";
+        "\"Hold there. Floor's restricted. Show me something.\" The hand is out, palm up, for the thing " +
+        "everybody who works this corridor carries. Nothing about it is urgent. That is the part worth " +
+        "being frightened of — he has done this a hundred times, it has come to nothing a hundred times, " +
+        "and he will write down whichever way it goes tonight either way.";
 
     /// <summary>#804 · The guard's read of the wallet, and the card it is told on. Deliberately the same
     /// shape as <see cref="UndergroundComplex.GateRead"/>: two arms, one sentence, one label — so the client
@@ -185,11 +195,19 @@ public static partial class PatrolBeat
     }
 
     /// <summary>The pass works. He is not pleased and he is not suspicious; the paperwork balances and he
-    /// has four more corridors to do.</summary>
+    /// has four more corridors to do.
+    ///
+    /// <para>#804 · <b>WITH THE AUTHORED LINE, verbatim</b> (canon pass, 2026-09-02):
+    /// <i>"Right. Keep to the lit side."</i> It shipped as <i>"Mind the wet floor round the corner"</i>,
+    /// which was small talk and nothing else. The authored line is small talk that is also an INSTRUCTION,
+    /// and the instruction is the whole of what a pass buys down here: you are allowed to be on this floor,
+    /// in the part of it the lights are for. He is not granting anything. He is telling a man on the books
+    /// where men on the books walk — and the captain, who came down to be somewhere else, hears the shape
+    /// of the building in four words.</para></summary>
     public const string SatisfiedLine =
         "👮 He reads it the way a man reads a pass at the end of a shift — the face, the site code, the " +
-        "tier — and puts it back in your hand. \"Mind the wet floor round the corner.\" The round picks up " +
-        "where it left off.";
+        "tier — a moment longer than he needs to, and puts it back in your hand. \"Right. Keep to the lit " +
+        "side.\" The round picks up where it left off.";
 
     /// <summary>A pass for another site. He reads it correctly and is entirely unmoved by it.</summary>
     public static string WrongSiteLine(string site) =>
@@ -218,7 +236,7 @@ public static partial class PatrolBeat
     /// <para>#833 · <b>And every clause of it is now literally true.</b> It shipped over a placement — the
     /// captain was PUT at the lift and the guard stayed where he was, so the sentence claimed a walk the sim
     /// did not take, in the feature whose whole register is procedure. The walk is real now (the client's
-    /// escort: he plans a route, the captain is walked at his shoulder, both are contacts on the fan the
+    /// escort: he plans a route, the captain is walked along it (#804 · in front of him), both are contacts on the fan the
     /// whole way, <see cref="PumpsLine"/> is said on it), so the only line here that had to change is the one
     /// that is kept for when the ground refuses a route at all — <see cref="EscortCutLine"/>, which admits
     /// the cut instead of narrating it.</para>
@@ -226,9 +244,21 @@ public static partial class PatrolBeat
     /// <para>#835 · <b>And it is no longer the whole of it — it is the whole of it for the first
     /// <see cref="EscortsAWatchAllows"/> times.</b> Past that the same walk keeps going, into the car and up
     /// (<see cref="KickOutDueLine"/>). Nothing about this rung changed; a rung was added above it.</para>
+    ///
+    /// <para>#804 · <b>AND IT OPENS WITH THE AUTHORED LINE</b> (canon pass, 2026-09-02):
+    /// <i>"No? Then you walk ahead of me to the lift, and we don't make it a thing."</i> It is the one line
+    /// in the feature that MOVED THE SIM. The escort shipped with the captain walked in the guard's wake —
+    /// half a pace back and a hand's width to the side — and the sentence now says the opposite in the
+    /// captain's own hearing. Walking somebody out in front of you is not a decoration on an escort, it IS
+    /// the escort: it is what a man does instead of taking hold of you, it puts the exit in front of the
+    /// captain the whole way, and it makes the refusal — turning round, or not going — the captain's own
+    /// visible act rather than a flag. So the sim was turned round with the line
+    /// (<see cref="AheadOnHisRoute"/>), because a sentence that claimed a walk the sim did not take is the
+    /// bug class this feature has already paid for twice.</para>
     /// </summary>
     public const string EscortLine =
-        "👮 He walks you back to the car himself, at your pace, talking about the pumps. He presses the " +
+        "👮 \"No? Then you walk ahead of me to the lift, and we don't make it a thing.\" He walks you back " +
+        "to the car at your pace, half a step behind your shoulder, talking about the pumps. He presses the " +
         "button for you and stands there while the doors shut. Nothing is taken, nobody is called, and " +
         "somewhere a line goes into a book with the time on it.";
 
@@ -237,6 +267,31 @@ public static partial class PatrolBeat
     public const string EscortNote =
         "Walked back to the lift by a man on the security rota. No voices, no confiscation, and a line in " +
         "a book with the time on it.";
+
+    /// <summary>
+    /// #804 · THE CANON PASS, AS A LIST THE BUILD CAN BE HELD TO.
+    ///
+    /// <para>Four sentences were authored for this feature (2026-09-02) and the instruction on them was
+    /// <b>verbatim</b>: the ear before any sighting, the challenge, the pass, and the refusal. Everything
+    /// else in the round — the plates, the walk-up, the small talk about the pumps, the field-book notes —
+    /// is prose this file wrote for itself and may rewrite. These four are not.</para>
+    ///
+    /// <para>They live here as a catalog rather than as four constants nobody cross-checks because that is
+    /// the difference between prose and canon: a constant can be improved by anybody passing through, and
+    /// the improvement is invisible. A line in this list has to be walked past a test that asks the SIM for
+    /// it — not the constant, the sentence the player is actually told (<see cref="TheGuardReads"/>) — so a
+    /// paraphrase cannot ship by being tidier than what the owner wrote.</para>
+    ///
+    /// <para>The order is the order a captain meets them in, which is also the order the ladder runs in:
+    /// heard, stopped, read, walked out.</para>
+    /// </summary>
+    public static IReadOnlyList<string> AuthoredLines =>
+    [
+        "Boots on shotcrete, out of step with yours.",
+        "Hold there. Floor's restricted. Show me something.",
+        "Right. Keep to the lit side.",
+        "No? Then you walk ahead of me to the lift, and we don't make it a thing.",
+    ];
 
     /// <summary>#804 · How long a guard leaves it before the round stops at you again. Long enough that an
     /// escort is one event rather than a loop at the lift doors, short enough that it is not a free pass for

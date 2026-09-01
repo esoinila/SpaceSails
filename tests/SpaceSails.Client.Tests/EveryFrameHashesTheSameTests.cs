@@ -371,6 +371,33 @@ public sealed class EveryFrameHashesTheSameTests
     // ahead of the split. A number here is not a preference: it is what the game drew that day. If one
     // changes, either the picture changed or the code that draws it did, and both are the thing this guard
     // exists to notice.
+    //
+    // #1055 · THE NUMBERS THEMSELVES NOW LIVE IN Ledgers/FrameHashes.ledger.txt, two rows per case —
+    // `calls | <case>` and `sha256 | <case>` — machine-written by the re-pin command and never transcribed
+    // by hand. Nothing about the assertions below moved; only the pins' home did. The re-pin history that
+    // used to sit above the table is kept verbatim underneath, because the arithmetic in it is the reason
+    // each number is what it is, and a ledger row cannot carry a paragraph.
+    //
+    //   TO RE-PIN (runs the measurement, rewrites the ledger, prints the report):
+    //     SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release \
+    //       --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked \
+    //       --logger "console;verbosity=detailed"
+
+    /// <summary>The ledger this suite's pins live in — <c>Ledgers/FrameHashes.ledger.txt</c>.</summary>
+    internal const string Suite = "FrameHashes";
+
+    /// <summary>The two things measured per case. A case's marks and its digest move together, but they are
+    /// separate rows because a report that says "+23 calls" is a report a person can decompose, and a report
+    /// that says only "the hash changed" is not.</summary>
+    private const string CallsProbe = "calls", ShaProbe = "sha256";
+
+    /// <summary>What the ledger's own header says about where these numbers came from.</summary>
+    internal const string Preamble =
+        "EVERY MARK DeckView.Draw LAYS, IN THE ORDER IT LAYS THEM — hashed, per case.\n"
+        + "Captured on 183c614, the 1,058-line Draw, before a line of it moved (#870 lane 7b).\n"
+        + "`calls` is how many marks the frame laid; `sha256` is the transcript of all of them, whole and in\n"
+        + "order, at round-trip precision. The re-pin history — which lane moved which rows and by what\n"
+        + "arithmetic — is in the class docs of EveryFrameHashesTheSameTests.";
 
     // ── #758 · THE FIVE HALL FLOORS WERE RE-PINNED, AND THE CALL COUNTS PROVE WHY ─────────────────────
     //
@@ -466,42 +493,19 @@ public sealed class EveryFrameHashesTheSameTests
     // wreck or B-floor row moved, because none of them has a sentry on it. Had a fourth row moved, or any of
     // these moved by two, it would be a different bug wearing this one's clothes.
 
-    private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
+    /// <summary>Every case drawn, as ledger rows — the measurement the re-pin command runs and writes
+    /// down, and the same measurement the guard below compares against what is written down.</summary>
+    internal static IReadOnlyList<PinLedger.Row> MeasureEveryRow()
     {
-        ["ship · under way"] = (341, "d43d37b12ccdfcb60b3ed3cceacf2a3f49c98546db42879ca8f212728948aa59"),
-        ["ship · docked, the shuttle away and the machine stalling"] = (315, "5286b06bb9df81273c03411d417ec9495cda79614bdff3d8a1f9fd867e2875ab"),
-        ["ship · hatches dogged, seated at the table"] = (315, "079f7120315a9a9e9ac1325643486eb6048e9620daa8211e9d3d0e931cf02db4"),
-        ["haven · the-space-bar"] = (364, "eb5e3c5e646094de112f4ecc0762a8fe8f5acad5e497a2c2717323969df414d9"),
-        ["haven · cinder-roost"] = (368, "6549d1c189b603eff35d990c9a8fa29b70de46357bc4a4222e7e36546a8e2d88"),
-        ["haven · ringside-exchange"] = (370, "072ff9e6a38ccf2f3f7e7dc66c2fc97b1b1d2ec128f27704cb629466577e9959"),
-        ["haven · the-tilt"] = (364, "24c4ecc7d07ef9ab6f948d3b43ce5702750583a11ac469e7d9b307a33e945260"),
-        ["haven · selene-gate"] = (368, "d69176565a8c8ca88ef8ce089f66e9c5a4c641df36e590ca46ffef13530455a9"),
-        ["haven · red-eye"] = (368, "17be4987b92049d51b989d7353e269f9b1be22330e2ebb87182bd130872f7763"),
-        ["haven · the-deep"] = (370, "2718a1dde37c4b2d107d24273271beb814c99cefecdbbd4b712c13e9bd6dce76"),
-        ["wreck · HullBreach"] = (592, "637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020"),
-        ["luna B1"] = (1591, "c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab"),
-        ["luna B2"] = (426, "86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0"),
-        ["luna B3"] = (315, "f2bfd5db303f27d26babb781de256e07c8acb004968960f29f8caedeb76d4deb"),
-        ["luna B4"] = (316, "3f362bbd6d748426d5f71935fd49c79dcec4d76590cbe38bd63fb2189187a82b"),
-        ["luna B5"] = (317, "59a6d0a562e6c3b1e59e549fc2a1a0be21107e0a917c7a0c1bf4278a8eb5fea0"),
-        ["luna B6"] = (367, "180c39e1a02cc244423d90f65e4e43de246f5ee738795b6c756804313e6c7fba"),
-        ["luna B7"] = (317, "9a3a15ce73ab249404bc38847d857eaca83da475d506c1b3ab2fe2a6051c8828"),
-        ["luna B8"] = (329, "edfdbae890ac40711e14ac32c860b07c18d90d01102a73496132403cd9f730d8"),
-        ["luna B9"] = (491, "9733f98860e23a5646086a414e4b9017430898ca61248cb141fedde13d46012f"),
-        ["luna B10"] = (456, "06bfd0920970c41fcbce5fef8a5b17e5c25e55cb4aaa8dbb44a719d37312d085"),
-        ["luna B11"] = (289, "5701f311bd8a52c8444195eba064d91761c57b730ecb0464dc566fc7824965a5"),
-        ["luna B12"] = (309, "bc3cc0671734f0b7fbfca6f4f90aa3fd608554caf5942e4258132c5af50bd5fe"),
-        ["luna B13"] = (421, "5ca280d45659b39791b90e5dffe6b0512cb5d03450e6d1cb1e8ef9591ce4fc2b"),
-        ["luna B1 · the lamps are all there is"] = (128, "b5d4a27b5482f54a4c31bdeb0993b613395be552dfbcf7ddb380f3d94656988f"),
-        ["luna B1 · sat down at a desk"] = (1607, "6c6224e19d84aad5de289486f5d533f683c2d9da104718310ada860105c3c76b"),
-        ["luna B1 · the round is out, and the buzzer went"] = (1617, "45921c657a779c388d7003d4b69dbfb6fb8ba9159ad8d582f2bcb040758c8b3d"),
-        ["phobos B1"] = (1563, "879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c"),
-        ["titan B1"] = (1512, "3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a"),
-        ["surface · luna site 0"] = (3777, "5fbd52373f9d06f6fdbd65477844909a2f6cedfb6da0e03d1870790e34a72cde"),
-        ["surface · luna site 0, the whole excursion"] = (3884, "0fd39fe57ef988ed4d37d54b4e54d0a80e8dbdf7bf2e4901709693f027fb2185"),
-        ["surface · luna site 0, dark, and the fan hears something"] = (263, "34020834f957d7b8d3db8b5c02a14ab017a4553a34fe1100346246a418522e71"),
-        ["surface · titan site 0, a derelict's instruments (none)"] = (4367, "bdace905702089de1182835d2668709113853e4a9f486830e9fad0ea09a2d7d9"),
-    };
+        var rows = new List<PinLedger.Row>();
+        foreach (string name in Names())
+        {
+            (int calls, string sha) = Frame(name);
+            rows.Add(new PinLedger.Row(CallsProbe, name, calls.ToString(CultureInfo.InvariantCulture)));
+            rows.Add(new PinLedger.Row(ShaProbe, name, sha));
+        }
+        return rows;
+    }
 
     /// <summary>
     /// EVERY CASE DRAWS THE FRAME IT DREW BEFORE THE SPLIT — same calls, same order, same numbers.
@@ -509,6 +513,7 @@ public sealed class EveryFrameHashesTheSameTests
     [Fact]
     public void EveryCaseDrawsTheFrameThatWasPinnedOnTheOldCode()
     {
+        IReadOnlyDictionary<string, PinLedger.Row> pinned = PinLedger.Pinned(Suite);
         var wrong = new List<string>();
         var fresh = new List<string>();
         int cases = 0, calls = 0;
@@ -523,28 +528,37 @@ public sealed class EveryFrameHashesTheSameTests
             // digest of the empty string and stay green through anything.
             Assert.True(drew > 20, $"'{name}' laid only {drew} mark(s) — that frame proves nothing.");
 
-            if (!Pinned.TryGetValue(name, out (int Calls, string Sha) pin))
+            if (!pinned.TryGetValue(PinLedger.Key(CallsProbe, name), out PinLedger.Row pinCalls)
+                || !pinned.TryGetValue(PinLedger.Key(ShaProbe, name), out PinLedger.Row pinSha))
             {
-                fresh.Add($"        [\"{name}\"] = ({drew}, \"{sha}\"),");
+                fresh.Add($"  {name} — {drew} call(s), sha256 {sha}");
                 continue;
             }
-            if (pin.Calls != drew || !string.Equals(pin.Sha, sha, StringComparison.Ordinal))
+            if (pinCalls.Value != drew.ToString(CultureInfo.InvariantCulture)
+                || !string.Equals(pinSha.Value, sha, StringComparison.Ordinal))
             {
                 wrong.Add($"  {name} — {drew} call(s), sha256 {sha}"
-                    + $"{Environment.NewLine}      pinned {pin.Calls} call(s), sha256 {pin.Sha}");
+                    + $"{Environment.NewLine}      pinned {pinCalls.Value} call(s), sha256 {pinSha.Value}");
             }
         }
 
         Assert.True(fresh.Count == 0,
-            $"{fresh.Count} case(s) have no pin. Paste these into Pinned:{Environment.NewLine}"
+            $"{fresh.Count} case(s) have no pin in {Suite}.ledger.txt — a ledger row is never typed in by "
+            + $"hand, it is measured:{Environment.NewLine}  {PinLedger.Invocation}{Environment.NewLine}"
             + string.Join(Environment.NewLine, fresh));
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} case(s) draw a different frame than the one pinned on the old code:"
-            + Environment.NewLine + string.Join(Environment.NewLine, wrong));
+            + Environment.NewLine + string.Join(Environment.NewLine, wrong)
+            + Environment.NewLine + Environment.NewLine
+            + "If the change is intended, re-pin BY MEASUREMENT and paste the printed report into the PR:"
+            + Environment.NewLine + "  " + PinLedger.Invocation);
 
         Assert.True(cases >= 20, $"only {cases} frame(s) were drawn — this sweep proves little.");
         Assert.True(calls > 20_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
-        Assert.Equal(cases, Pinned.Count);
+
+        // …and the ledger holds two rows for every case and not one row more: a pin for a case that is no
+        // longer drawn is a number nothing measures, and it would sit there green forever.
+        Assert.Equal(cases * 2, pinned.Count);
     }
 
     /// <summary>The same frame drawn twice in the same process is the same frame — the clause that catches a

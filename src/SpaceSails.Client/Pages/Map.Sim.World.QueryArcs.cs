@@ -367,6 +367,30 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["oldcrew=".Length..]).ToLowerInvariant();
             q.OldCrewCheat = candidate is "1" or "true" or "yes";
         }
+        else if (pair.StartsWith("crew=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #663 dev cheat: /map?crew=petition boots holding the voyage the crew send a DEPUTATION over —
+            // three of them in the corridor outside your door, hats in hands. That beat shipped with a
+            // painted canvas, a cadence and nobody to raise it, and the house rule written beside these
+            // readers is that "a scene nobody can reach on demand is a scene that ships broken".
+            //
+            // It was a long way from any boot. The only thing in the shipped game that kills a crewman is
+            // the deflection gig's crew-bolt roll, so crossing the Petition edge honestly means accepting
+            // the Ringside gig, drilling a rock, losing that dice two or three times — AND having filed
+            // enough wreck causes honestly to be poor while you did it. Both halves are needed, and that is
+            // the design rather than a threshold: a captain who lies and pays well can bury people quietly
+            // (CrewTempTests).
+            //
+            // So it grants exactly those two counters and nothing else. It writes no standing and pushes no
+            // card: the ship's own clock reads the sheet on the next tick, finds the crew past the edge, and
+            // the beat arrives through the one door with its cadence spent and its line in the log — which
+            // is the whole point of wiring the deputation at the standing rather than at a cheat.
+            string candidate = Uri.UnescapeDataString(pair["crew=".Length..]).ToLowerInvariant();
+            if (candidate is "petition" or "deputation")
+            {
+                q.CrewCheat = "petition";
+            }
+        }
         else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))
         {
             // #428 dev cheat: /map?nerve=N seeds the nerve gauge at boot at N WHOLE PIPS — the same ten

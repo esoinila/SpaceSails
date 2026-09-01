@@ -108,7 +108,10 @@ public partial class Map
     /// figure, and is the only person in the concourse who knows what the annexes are.</para></summary>
     private void AnnounceTheTermsAreOnFile()
     {
-        PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks, NebulaLore.TermsRefiledHeadline);
+        // #1052 (L2) · The DETAIL is the office that filed it — see the twin in Map.Kaamos.cs. Nothing the
+        // wire prints changes; the field book gains a heading for a ✂ CLIP of this line to stack under.
+        PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks,
+            NebulaLore.TermsRefiledHeadline, NebulaLore.TermsRefiledOffice);
         RaiseStoryBeat(StoryBeats.Beat.ArcNewsBreaks, "the policy");
     }
 

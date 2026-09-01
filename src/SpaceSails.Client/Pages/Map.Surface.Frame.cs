@@ -110,7 +110,7 @@ public partial class Map
         }
 
         _deckPlan = MoonSurface.SurfaceDeck(
-            ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
+            ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id, ex.Site.Index),
             SurfaceDroidCount, FillSurfaceDroids,
             siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name, // #320: the picked site seeds the ground + names the header
             // #586: which visit-window the monolith's foot is showing. Bucketed off sim time so it holds
@@ -250,22 +250,15 @@ public partial class Map
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
     // mark and the 'dig at the X' console land where the shovel did. A legacy/rumour cache with no stored
     // spot falls back to the deterministic hash-scatter, so every old save still plants a stable ✗.
-    private List<(string Id, double X, double Y, int ReeverLevel)> OwnCachePositionsAt(string bodyId)
-    {
-        var list = new List<(string, double, double, int)>();
-        foreach (TreasureCache c in _caches.CachesAt(bodyId))
-        {
-            if (!c.PlayerOwned)
-            {
-                continue;
-            }
-            (double x, double y) = c is { DigX: { } dx, DigY: { } dy }
-                ? (dx, dy)
-                : MoonSurface.CachePosition(c.Id);
-            list.Add((c.Id, x, y, c.ReeverLevel));
-        }
-        return list;
-    }
+    //
+    // #650 · …AND ON THE RIGHT GROUND. The coords are LOCAL to the surface deck, and since #320 every one of
+    // a body's 2–4 landing sites rebuilds that same local frame. Filtered by body alone — as this was — a
+    // chest buried out on the Wild Plain drew its ✗ at the identical x/y on the Ridge Camp, on ground the
+    // captain had never walked, and [E] dug it straight back out of a place it was not under. So the site is
+    // part of the question now, and the projection itself moved down to MoonSurface.OwnCacheMarks so the
+    // guard that proves it can stand on the very code the deck is built from, not on a copy of it.
+    private List<(string Id, double X, double Y, int ReeverLevel)> OwnCachePositionsAt(string bodyId, int siteIndex) =>
+        MoonSurface.OwnCacheMarks(_caches, bodyId, siteIndex);
 
     // The surface tick: dig channel, sentries, the chase, and the ambient tide — all cheap, no pathfinding.
     private void StepSurface(double dtRealSeconds)

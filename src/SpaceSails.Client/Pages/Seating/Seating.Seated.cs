@@ -182,10 +182,19 @@ public partial class Map
         /// privacy does not depend on anybody else's behaviour, so it is asked FIRST — and it is asked of the one
         /// set of shut doors the deck is rebuilt from (<c>ex.CubiclesShut</c>), never of a flag captured when the
         /// captain sat down, because the catch can go over while they are already sitting on it.</remarks>
+        /// <remarks>#1040 · AND THE BAR-STOOL RUNG IS REACHABLE FROM A TABLE-SHAPED SITTING NOW. The ship's
+        /// own counter (owner: <i>"Our on ship bar can be upgraded to match the other bars"</i>) seats the
+        /// captain through the one method every seat is opened through, so the sitting it builds is a
+        /// <c>TableTalk</c> like every other — and a stool on that counter must land on the rung a stool
+        /// lands on, which is where the gumshoe rule refuses the spread out loud. One flag
+        /// (<c>TableTalk.Stool</c>), read here, exactly as <c>Bench</c> is; NOT a second predicate, and not a
+        /// second exposure ladder. It is asked before <c>Quiet</c> because a counter is never private and a
+        /// room that claimed both would have to be answered somewhere.</remarks>
         public SeatedHud.Seat? SeatedIn =>
             Table is { } t
                 ? t.CubicleKey is { Length: > 0 } wc && _host.CubicleIsShut(wc) ? SeatedHud.Seat.LockedCubicle
                     : t.Bench ? SeatedHud.Seat.ParkBench
+                    : t.Stool ? SeatedHud.Seat.BarStool
                     : t.Quiet ? SeatedHud.Seat.Cabinet : SeatedHud.Seat.HallTable
             : Stool is not null ? SeatedHud.Seat.BarStool
             : null;

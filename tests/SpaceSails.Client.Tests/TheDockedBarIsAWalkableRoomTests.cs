@@ -223,14 +223,17 @@ public sealed class TheDockedBarIsAWalkableRoomTests
         for (int i = 0; i < 400; i++)
         {
             RunFrames(map, 1);
-            if (BarAfoot(map).Cast<object>().FirstOrDefault() is not { } who)
+
+            // #731 · HIS body, by his plate, and no longer "whoever is on the floor". The bar keeps its own
+            // hours now — a regular finishing, somebody coming out of the back — so a guard about the
+            // SALESMAN that read the first walker it found would be a guard about whoever happened to be
+            // crossing the room.
+            if (TheWalkerPlated(map, NebulaRep.Plate) is not { } who)
             {
                 continue;
             }
 
             object walk = Get(who, "Walk")!;
-            Assert.Equal(NebulaRep.Plate, (string)Get(walk, "Plate")!);
-
             var route = (IReadOnlyList<DeckReachability.Point>)Get(walk, "Route")!;
             Assert.True(route.Count > 1,
                         "he was placed rather than walked — a one-point route is a teleport with a plate on it.");
@@ -254,29 +257,33 @@ public sealed class TheDockedBarIsAWalkableRoomTests
     public void HisBodyIsDrawnOutOfTheBandTheDeckReserved()
     {
         Pages.Map map = AshoreAt(TheRedEye);
-        for (int i = 0; i < 400 && BarAfoot(map).Count == 0; i++)
+        for (int i = 0; i < 400 && TheWalkerPlated(map, NebulaRep.Plate) is null; i++)
         {
             RunFrames(map, 1);
         }
 
-        Assert.NotEmpty(BarAfoot(map));
+        object him = TheWalkerPlated(map, NebulaRep.Plate)
+            ?? throw new InvalidOperationException("four hundred frames and the salesman never got afoot.");
         var plan = (DeckPlan)Field(map, "_deckPlan")!;
         var buffer = new DeckPlan.Droid[DeckPlan.MaxDroids];
         plan.FillDroids((double)Field(map, "SimTime")!, buffer);
 
-        object walk = Get(BarAfoot(map).Cast<object>().Single(), "Walk")!;
+        object walk = Get(him, "Walk")!;
         Assert.True(HavenInterior.SeatedFigureCount + Egress.BandSlots <= plan.DroidCount,
                     $"the band is written into slots {HavenInterior.SeatedFigureCount}.."
                     + $"{HavenInterior.SeatedFigureCount + Egress.BandSlots - 1} and the plan draws only "
                     + $"{plan.DroidCount} figures — the renderer will never look at him.");
 
-        DeckPlan.Droid drawn = buffer[HavenInterior.SeatedFigureCount];
+        // #731 · …at HIS slot in the band, which is his place in the room's own list of feet. The bar has
+        // more than one person on the floor since the room grew hours.
+        int slot = HavenInterior.SeatedFigureCount + BarAfoot(map).Cast<object>().ToList().IndexOf(him);
+        DeckPlan.Droid drawn = buffer[slot];
         Assert.Equal(NebulaRep.Plate, drawn.Name);
         Assert.Equal((double)Get(walk, "X")!, drawn.X, 6);
         Assert.Equal((double)Get(walk, "Y")!, drawn.Y, 6);
 
-        // …and the rest of the band is off-map, so the buffer is always fully written.
-        for (int i = 1; i < Egress.BandSlots; i++)
+        // …and every slot the room is NOT using is off-map, so the buffer is always fully written.
+        for (int i = BarAfoot(map).Count; i < Egress.BandSlots; i++)
         {
             Assert.True(buffer[HavenInterior.SeatedFigureCount + i].X < -9000);
         }
@@ -325,7 +332,7 @@ public sealed class TheDockedBarIsAWalkableRoomTests
         // …and arriving is the BEGINNING: they stand at the top and are still there a hundred frames later.
         RunFrames(map, 100);
         Assert.Equal(1, arrived);
-        Assert.Single(BarAfoot(map));
+        Assert.NotNull(TheWalkerPlated(map, "◈ SOMEBODY"));
     }
 
     /// <summary>
@@ -393,7 +400,7 @@ public sealed class TheDockedBarIsAWalkableRoomTests
         RunFrames(map, 900);
 
         Assert.Equal(0, arrived);
-        object who = Assert.Single(BarAfoot(map).Cast<object>());
+        object who = TheWalkerPlated(map, "◈ SOMEBODY")!;
         object walk = Get(who, "Walk")!;
         HavenInterior.BarFloor bar = HavenInterior.BarBand(TheRedEye)!.Value;
         Assert.Contains(bar.Fixtures,
@@ -477,6 +484,22 @@ public sealed class TheDockedBarIsAWalkableRoomTests
     }
 
     private static IList BarAfoot(Pages.Map map) => (IList)Field(map, "_barAfoot")!;
+
+    /// <summary>#731 · The walker wearing this plate, or null. Named rather than "whoever is on the floor",
+    /// because the bar keeps its own hours now and a room with a metabolism has more than one person in
+    /// it.</summary>
+    private static object? TheWalkerPlated(Pages.Map map, string plate)
+    {
+        foreach (object who in BarAfoot(map))
+        {
+            if (string.Equals((string)Get(Get(who, "Walk")!, "Plate")!, plate, StringComparison.Ordinal))
+            {
+                return who;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Is this point the doorstep of that leaf — within one standoff of its midline?</summary>
     private static bool Near(DeckReachability.Point p, UndergroundComplex.LockedDoor leaf)

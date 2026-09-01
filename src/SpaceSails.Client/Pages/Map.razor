@@ -2300,6 +2300,24 @@
                         @onclick="OpenTheSpread">
                     @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
                 </button>
+                @* #1052 · …AND THE OTHER THING YOU CAN DO IN A CHAIR, beside the case and never instead of
+                   it. Owner, 2026-09-01: "Reading the news pop-up could be option when sitting at table,
+                   instead of working the case."
+
+                   SEAT-TIED AND NOT PLACE-TIED (the 2026-08-30 ruling this strip already lives under). The
+                   button is drawn wherever the captain is sitting; WHICH paper it hands him is
+                   NewsWire.ScopeAt's answer about the chair's own place, asked in Map.Seated.News.cs. That
+                   is what makes it work at a moon canteen table on an excursion, where key 6 is rightly
+                   refused because the nav desk is a tube ride away — and the reason the guard drives
+                   exactly that case.
+
+                   It is a TOGGLE (#688's law, the satchel's and the galley card's): the control that opens
+                   the paper closes it. Never refused, because there is no state a seated captain can be in
+                   that has no paper at all — the wire prints somewhere. *@
+                <button type="button"
+                        class="btn btn-sm @(_seatedNewsOpen ? "btn-warning" : "btn-outline-light")"
+                        title="@SpaceSails.Core.SeatedSpread.ReadTheNewsHint"
+                        @onclick="ToggleSeatedNews">@SpaceSails.Core.SeatedSpread.ReadTheNewsLabel</button>
             </div>
 
             @* #865/#746 · …and PUT SOMETHING ON THE TABLE fans the pocket open right here, exactly as it
@@ -2429,6 +2447,61 @@
         </div>
     }
     }   @* …and the seated region closes. Two frames, one occupation of one table. *@
+
+    @* ═════════════════════════════════════════════════════════════════════════════════════════════════
+       #1052 (L2) · THE PAPER AT THE TABLE — AND IT IS DOCKED, NOT MODAL.
+
+       Owner, 2026-09-01, and this block is the sentence answered literally: "Just hope there is a way to
+       have both the newsfeed and pop-up-bar walkers visible UI at the same time."
+
+       SO THERE IS NO .view-object-backdrop IN HERE AT ALL — no scrim, no blur, no centring, and the guard
+       asserts the ABSENCE rather than trusting this comment. That is #784's own move made a second time: a
+       strip at the foot for the sitting, a panel at the side for the paper, and between them a hall that is
+       still lit, still walked, and still clickable. A rep who crosses the floor while the captain is reading
+       raises his card at 1320 and lands ON TOP of this panel, which is the right way round: the man talking
+       to you outranks the paper in your hands. The panel does not move and does not close, so putting his
+       card down leaves the captain reading where he was.
+
+       IT LIVES OUTSIDE THE SEATED REGION AND IS GATED ON THE SEAT ANYWAY. Standing up takes the paper with
+       it (there is nowhere to read it from), and the panel is not inside `.seated-dock` because the strip is
+       a short pinned row at the foot of the glass and a paper folded into it would grow the strip into the
+       modal it stopped being.
+
+       CappedScrollPanel is inside NewsWirePanel, so the head — the masthead and today's story — keeps its
+       measured height and only the dated list gives. Elegant minimalism: the scroll bar arrives when the
+       list is longer than the panel and not before.
+       ═════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (ThePaperIsOpen)
+    {
+        <div class="seated-news">
+            @* The shell's Bare frame and the .view-object family's own foot, exactly as the galley card
+               wears them — this is the same wire in a different box, and the box is the only new thing. *@
+            <OverlayShell class="view-object seated-news-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissLabel="Put the paper down"
+                          DismissTitle="Put the paper down — Esc does the same"
+                          OnClose="() => Dismiss(CloseSeatedNews)">
+                @* THE ✂ ON EVERY ROW, handed to the wire component rather than written beside it, so the
+                   headline row and the dated rows below it cannot come to offer different controls.
+
+                   READING FILES NOTHING. The scissors is the only thing on this panel that touches the
+                   book, and it is a press — #602's ammo-as-evidence, one system over: what is in the book
+                   got there because a hand put it there. The row says where the paper is once it is in
+                   (SeatedSpread.ClippedLabel) rather than going dead, which is #212/#603's rule. *@
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="SeatedNewsFeed()" ItemCount="SeatedNewsItemCount">
+                    <RowAction Context="story">
+                        <button type="button" class="news-clip"
+                                title="@SpaceSails.Core.SeatedSpread.ClipHint"
+                                @onclick="() => ClipThisStory(story)">@(AlreadyClipped(story)
+                                    ? SpaceSails.Core.SeatedSpread.ClippedLabel
+                                    : SpaceSails.Core.SeatedSpread.ClipLabel)</button>
+                    </RowAction>
+                </SpaceSails.Client.Pages.Stations.NewsWirePanel>
+            </OverlayShell>
+        </div>
+    }
 
     @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
        when sitting down it should ask with a pop-up whether I want to stand up again."
@@ -3501,6 +3574,41 @@
                 <SpaceSails.Client.Pages.Stations.NewsWirePanel
                     SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays)"
                     ItemCount="GalleyFeedItemCount" />
+            </OverlayShell>
+        </div>
+    }
+
+    @* #949 · THE PLOTTING CARD — the help the owner asked for, where the question gets asked.
+
+       Owner, screenshot in hand: "We should have a help page where we show multi-step plan and the use of
+       the schrub and burn. New player seeing this image would understand how to play."
+
+       WHY A CARD WHEN /help/nav ALREADY EXISTS, in one line: the page is the read you do before you start,
+       and the ? is pressed mid-plan with the panel open. A second tab answers that question by taking the
+       question off the screen. The reasoning in full, and the whole door chain, is in Map.NavHelp.cs.
+
+       It is the galley's shape exactly — .view-object over a click-to-close backdrop, one way out, Escape —
+       so it inherits the family's cap, its inner scroll and its pinned foot (#735) with no new geometry.
+       The CappedScrollPanel inside is what keeps the TITLE still while the six steps move under it: on a
+       phone this card is taller than the glass, and a card whose heading scrolls away is a card you lose
+       your place in. The words are Components/PlottingHelp.razor, which reads every button face it prints
+       off the same Core call the panel draws it with. *@
+    @if (_navHelpOpen)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseNavHelp)">
+            <OverlayShell class="view-object nav-help-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="✕ Back to the plot"
+                          DismissTitle="Shut the plotting card — Esc and ? do the same"
+                          OnClose="() => Dismiss(CloseNavHelp)">
+                <CappedScrollPanel class="nav-help-scroll" BodyClass="nav-help-body" BodyFloor="8rem">
+                    <Header>
+                        <div class="view-object-title">🗺 HOW A TRIP IS PLANNED</div>
+                    </Header>
+                    <ChildContent>
+                        <PlottingHelp />
+                    </ChildContent>
+                </CappedScrollPanel>
             </OverlayShell>
         </div>
     }
@@ -5702,10 +5810,13 @@
             @* #963: the Scope toggle used to sit here and the owner asked why — "that functionality should
                stay at the scope position". It did: the scope window minimises into a tile in its own corner
                (see .map-scope-tile below), which is also what stops this row from drowning out Plot. *@
-            @* #949 — and the ? beside it opens the NAV desk's own two-minute walkthrough (pick a target,
-               Plot, scrub, add a burn, iterate with the ± buttons, add the arrive step, arm, warp), which
-               links on to the full Captain's Guide. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
-            <a class="btn btn-sm btn-outline-secondary" href="/help/nav" target="_blank" title="How to plot a trip — the eight steps, and on to the Captain's Guide">?</a>
+            @* #949 — the ? opens the plotting card OVER the map: how a trip is planned, the scrub, the ±
+               buttons and the arrival badge, with the panel still underneath it and Escape to put it away.
+               It used to open /help/nav in a second tab; that page is still the long version and the card's
+               foot still hands the reader on to it. The reasoning is in Map.NavHelp.cs — in one line, the ?
+               is pressed mid-plan, and a full page in another tab answers a question about the panel by
+               taking the panel off the screen. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => PressAndRefocus(ToggleNavHelp)" title="How a trip is planned — the plan, the scrub, the ± buttons and the arrival badge (? or Esc to close)">?</button>
             @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
                appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
                tutorial chrome for a veteran. Starting or replaying a lesson lives at the Captain's desk
@@ -5995,7 +6106,9 @@
                                OpenChild="@OpenPlanEditorKey()" OpenChildSelector=".map-plan-step-open">
                 <Header>
                 <div class="fw-bold mb-1">Plotting</div>
-                <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
+                @* #949 · The label is Core's (NodeFrame.ScrubLabel) so the help card can print the same
+                   word. The clock beside it is the client's own ladder and stays here. *@
+                <div class="mb-1">@(NodeFrame.ScrubLabel): @FormatSimTime(ScrubTime)</div>
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
                 <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
                        title="Scrub the plot clock forward and back along the course"
@@ -6085,9 +6198,9 @@
                         <button type="button" class="btn btn-sm btn-warning map-key-action"
                                 title="@CastOffRule.ComposeHint" @onclick="AddCastOffAtTop">@CastOffRule.ComposeButton</button>
                     }
-                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="Drop a new burn onto the plan at the scrub time" @onclick="AddBurnAtScrub">
-                        + Add burn at scrub
-                    </button>
+                    @* #949 · Face and tooltip both Core's now (NodeFrame), so the help card that teaches
+                       this button reads it rather than retyping it. *@
+                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="@NodeFrame.AddBurnAtScrubHint" @onclick="AddBurnAtScrub">@NodeFrame.AddBurnAtScrubButton</button>
                     @if (_slingablePass is { } sp)
                     {
                         <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Sling ? "btn-info" : "btn-outline-info")"
@@ -6600,7 +6713,11 @@
                                     {
                                         <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
                                     }
-                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "⌛") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : _aunjudged ? "NOT JUDGED" : "INVALID")</span>
+                                    @* #949 · The glyph and the five words are Core's constants now, so the
+                                       help card's "what ✓ / ✗ / ⌛ NOT JUDGED mean" section is printing the
+                                       same strings this badge is and cannot describe a badge that no longer
+                                       exists. Nothing about what it says or when has changed. *@
+                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : ArrivalStepRule.PendingBadge) @(_aarmed ? (_aactive ? ArrivalStepRule.StatusActive : ArrivalStepRule.StatusArmed) : _avalid ? ArrivalStepRule.StatusValid : _aunjudged ? ArrivalStepRule.StatusNotJudged : ArrivalStepRule.StatusInvalid)</span>
                                 </div>
                                 @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
                                    speed against the real thresholds (Core ArrivalStepRule reads them off
@@ -6658,11 +6775,13 @@
                                             }
                                             else if (_armIsAThen)
                                             {
-                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
+                                                @* #949 · The face is Core's; only the THEN clause is this
+                                                   branch's own. The help card prints the same face. *@
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId)) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
                                             }
                                             else
                                             {
-                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId)</text>
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId))</text>
                                             }
                                         </button>
                                         <div class="d-flex gap-2">
@@ -6674,7 +6793,10 @@
                                         <div class="text-secondary small mt-1">
                                             @if (_aarmed && ArmedArrivalStillAhead)
                                             {
-                                                <text>The plan is complete. The autopilot takes her at the pass — nothing more is needed unless something interferes.</text>
+                                                @* #949 · Core's sentence (ArrivalStepRule.ArmedAndNothingMore),
+                                                   because the help card promises it and must promise the
+                                                   words the step actually says. *@
+                                                <text>@ArrivalStepRule.ArmedAndNothingMore</text>
                                             }
                                             else
                                             {

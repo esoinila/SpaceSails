@@ -75,6 +75,57 @@ public sealed class BothArcsBreakOnTheWireTests
             $"(#663): {string.Join("; ", missing)}");
     }
 
+    /// <summary>
+    /// …AND THEY ARE ONE CALL SITE, not two that happen to agree. The beat and the wire push are two
+    /// TELLINGS of a single event — the same law the crew's own dead are counted under
+    /// (<see cref="TheCrewSheetCountsTheDeadTests"/>), and this house has a bug class for the alternative.
+    /// The test above would stay green while somebody moved the beat onto a different edge from the
+    /// headline, and the failure that produced would be the worst kind: an arc that breaks on the wire on
+    /// one edge and shows its card on another, with nothing red anywhere.
+    ///
+    /// <para>So each arc's two lines must sit within one another's reach, which is what a dedicated
+    /// <c>AnnounceThe…</c> method gives them — and is the reason both arcs have one.</para>
+    /// </summary>
+    [Fact]
+    public void TheBeatAndTheHeadlineComeOffOneCallSite()
+    {
+        var apart = new List<string>();
+
+        foreach ((string file, string edge) in Arcs)
+        {
+            string src = ArcSource(file);
+            int push = src.IndexOf("PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks", StringComparison.Ordinal);
+            int beat = src.IndexOf("RaiseStoryBeat(StoryBeats.Beat.ArcNewsBreaks", StringComparison.Ordinal);
+
+            if (push < 0 || beat < 0)
+            {
+                continue;   // the test above owns that failure and says it better
+            }
+
+            // Both statements inside one short method body. 400 characters is a couple of wrapped calls and
+            // a comment between them — wide enough that a reformat is not a failure, far too narrow to span
+            // a method.
+            if (Math.Abs(push - beat) > 400)
+            {
+                apart.Add($"{file} files the headline and raises the beat {Math.Abs(push - beat)} characters " +
+                          $"apart — they are no longer the one telling of {edge}");
+            }
+        }
+
+        Assert.True(apart.Count == 0,
+            "the wire push and the story beat have drifted onto different edges (#663): " +
+            string.Join("; ", apart));
+
+        // The fifth-bug-class companion, again: a distance test that always passed would pass on a file
+        // whose two calls are at opposite ends. Prove the yardstick can say NO, on two calls in this same
+        // file that are genuinely in different methods.
+        string kaamos = ArcSource("Map.Kaamos.cs");
+        int shard = kaamos.IndexOf("RaiseStoryBeat(StoryBeats.Beat.KaamosShardFound", StringComparison.Ordinal);
+        int wire = kaamos.IndexOf("PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks", StringComparison.Ordinal);
+        Assert.True(shard > 0 && wire > 0 && Math.Abs(shard - wire) > 400,
+            "the yardstick is broken: two calls in different methods measure as adjacent");
+    }
+
     /// <summary>The fifth-bug-class companion. A scan that read the wrong files, or empty ones, would pass
     /// every claim above; pin that these files are the real partials and that the scanner can say NO.</summary>
     [Fact]

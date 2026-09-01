@@ -49,8 +49,11 @@ public partial class Map
         // Re-weld at the SAME watch this visit docked at, so an opened wing appears without re-rolling the
         // seated regulars mid-dock (their rota was baked when we tied up — issue #410).
         if (_dockedHavenId is { } id
+            // #731 · …and the room as this evening has left it: whoever has stood up and walked out through
+            // the cellar door has no console at his chair any more, and whoever has come out of it and sat
+            // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn) is { } complex)
         {
             _deckPlan = complex;
         }
@@ -78,8 +81,11 @@ public partial class Map
         // room are people who are not here: the same law a turned shift keeps underground.
         ForgetTheBarsFeet(havenId);
         if (havenId is { } id
+            // #731 · …and the room as this evening has left it: whoever has stood up and walked out through
+            // the cellar door has no console at his chair any more, and whoever has come out of it and sat
+            // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";

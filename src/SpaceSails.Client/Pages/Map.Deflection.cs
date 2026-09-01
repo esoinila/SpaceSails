@@ -160,7 +160,14 @@ public partial class Map
         }
         if (c.CrewLost)
         {
+            // #663 · ONE DEATH, TWO REPORTERS. The excursion's count docks the fee and prints "N of the crew
+            // did not come home" on liftoff; the crew's own report keeps the other half, because the sheet
+            // on the captain's desk used to answer "Nobody has been lost. On a ship like this that is not
+            // luck, it is the captain." over the empty bunks. Both come off this ONE increment — a second
+            // place that decided somebody died would be a second set of books, and this house has a bug
+            // class named for those.
             ex.DeflectionCrewLost++;
+            NoteCrewDidNotComeHome();
         }
 
         RendererInterop.PlayCue(c.Band switch

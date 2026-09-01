@@ -92,6 +92,36 @@ public static class Egress
     /// three does reads as a canteen.</para></summary>
     public const double LeaversPerWatch = 1.0 / 3.0;
 
+    /// <summary>What share of a room's ABSENT people come in off the street — or out of the back — per watch.
+    ///
+    /// <para><b>Owner, 2026-09-01:</b> <i>"also just other customers arriving and leaving in the bars already
+    /// does a lot… they can go behind doors that are locked to us."</i> A room whose schedule only ever DRAINS
+    /// is not a room with a metabolism, it is a room being evacuated slowly — so the same watch that decides
+    /// who finishes decides who turns up, at the same rate and out of the same list of leaves. One arithmetic,
+    /// run in both directions.</para>
+    ///
+    /// <para>The same third as <see cref="LeaversPerWatch"/>, and it is deliberately the same NUMBER rather
+    /// than a second one to tune: over a long evening a room that loses a third of its sitters and gains a
+    /// third of its absentees per shift is a room that stays about as full as it started, which is what a bar
+    /// looks like.</para></summary>
+    public const double ComersPerWatch = LeaversPerWatch;
+
+    /// <summary>
+    /// ONE BODY A ROOM HAS, as the shift's arithmetic needs them — and nothing else about them.
+    ///
+    /// <para>The two rooms that ask this question do not share a furniture type: underground it is a
+    /// <see cref="CanteenRegulars.TableSeat"/> at a canteen top, and in a docked station's bar it is a name off
+    /// <see cref="PatronRota.Roster"/> in one of the bar's own numbered chairs. What the arithmetic actually
+    /// needs of either is TWO facts — where they sit in the room's own numbering, and what the room calls
+    /// them — so that is what it takes. A second copy of the deal, one per room, is this repository's oldest
+    /// bug class with a barman in it; the canteen's own overload below is a projection onto this and not a
+    /// second opinion.</para>
+    /// </summary>
+    /// <param name="Index">Their place in the room's own numbering — the top's ordinal underground, the
+    /// chair's index in a bar. For somebody who is not in the room yet, the place they will take.</param>
+    /// <param name="Plate">What the room calls them, verbatim and never a second name.</param>
+    public readonly record struct Occupant(int Index, string Plate);
+
     /// <summary>
     /// One movement the shift has already decided on: who, how far into the watch, and which door.
     /// </summary>
@@ -209,36 +239,123 @@ public static class Egress
         ArgumentNullException.ThrowIfNull(tops);
         ArgumentNullException.ThrowIfNull(locked);
 
-        var leaving = new List<Move>();
         if (locked.Count == 0)
         {
-            return leaving;
+            return [];
         }
 
+        var seated = new List<Occupant>(tops.Count);
         foreach (CanteenRegulars.TableSeat top in tops)
         {
-            if (top is not { Taken: true, Quiet: false, Plate: { Length: > 0 } plate })
+            // Cabinets are skipped — nobody is in one — and so is any top the room did not seat.
+            if (top is { Taken: true, Quiet: false, Plate: { Length: > 0 } plate })
+            {
+                seated.Add(new Occupant(top.Index, plate));
+            }
+        }
+
+        return Departures(bodyId, level, watch, seated, locked);
+    }
+
+    /// <summary>
+    /// …AND THE SAME QUESTION ASKED OF A ROOM THAT IS NOT A CANTEEN. The overload above is a projection onto
+    /// this one, so the Hive's hall and a docked station's bar deal their shifts with one arithmetic and one
+    /// set of seeds rather than with two that agree today.
+    /// </summary>
+    /// <param name="seated">Who is in the room, in the room's own order.</param>
+    public static IReadOnlyList<Move> Departures(
+        string bodyId,
+        int level,
+        long watch,
+        IReadOnlyList<Occupant> seated,
+        IReadOnlyList<UndergroundComplex.LockedDoor> locked) =>
+        Deal(bodyId, level, watch, seated, locked, "goes", LeaversPerWatch, "");
+
+    /// <summary>
+    /// #731 · WHO TURNS UP, THIS WATCH — the other half of the same schedule, and the owner's own words for
+    /// why it exists: <i>"also just other customers arriving and leaving in the bars already does a lot… they
+    /// can go behind doors that are locked to us."</i>
+    ///
+    /// <para>Identical machinery to <see cref="Departures"/> — one seeded roll against
+    /// <see cref="ComersPerWatch"/>, a moment inside the first <see cref="LastCallFraction"/> of the shift, and
+    /// a door out of the locked list — run over the people the room does NOT currently have. The door is the
+    /// point: somebody comes OUT of a leaf the captain's own TRY is refused at, crosses the floor on real legs
+    /// and takes a chair, and no line explains how they were behind it. That is the cold open the full stop is
+    /// the mirror of, and both are the same walker.</para>
+    ///
+    /// <para>The salt is different from the departure's, so a room does not send the same person out and bring
+    /// them in on one roll; and the door is dealt off <c>in:</c> plus their plate, so the leaf somebody comes
+    /// out of and the leaf they would leave by are two independent facts about one evening.</para>
+    /// </summary>
+    /// <param name="expected">Who is not in the room, each carrying the place they would take if they came —
+    /// the caller's to allot, because a free chair is a fact about a room and not about a schedule.</param>
+    public static IReadOnlyList<Move> Arrivals(
+        string bodyId,
+        int level,
+        long watch,
+        IReadOnlyList<Occupant> expected,
+        IReadOnlyList<UndergroundComplex.LockedDoor> locked) =>
+        Deal(bodyId, level, watch, expected, locked, "comes", ComersPerWatch, "in:");
+
+    /// <summary>
+    /// THE DEAL ITSELF, ONCE — the arithmetic both directions and both rooms spend.
+    ///
+    /// <para>One pass over the room's own people in the room's own order. Each gets one seeded roll against
+    /// <paramref name="share"/>; the ones that clear it are dealt a moment inside the first
+    /// <see cref="LastCallFraction"/> of the shift and a door out of the locked list. Returned in the order
+    /// they HAPPEN rather than in the room's order, because a caller stepping down the list as the watch runs
+    /// wants the next one at the front, and sorting it here means nobody sorts it twice. At most
+    /// <see cref="MostAtOnce"/> survive the cut, for the reason written on that constant.</para>
+    /// </summary>
+    /// <param name="salt">Which half of the schedule this is — folded into the seed so the two halves are
+    /// independent rolls about one person on one watch.</param>
+    /// <param name="doorPrefix">…and the same for the door, so somebody's way in and their way out are not
+    /// forced to be the same leaf by an accident of seeding.</param>
+    private static IReadOnlyList<Move> Deal(
+        string bodyId,
+        int level,
+        long watch,
+        IReadOnlyList<Occupant> people,
+        IReadOnlyList<UndergroundComplex.LockedDoor> locked,
+        string salt,
+        double share,
+        string doorPrefix)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(people);
+        ArgumentNullException.ThrowIfNull(locked);
+
+        var dealt = new List<Move>();
+        if (locked.Count == 0)
+        {
+            return dealt;
+        }
+
+        foreach (Occupant who in people)
+        {
+            if (who.Plate is not { Length: > 0 } plate)
             {
                 continue;
             }
 
-            ulong seed = DiceRule.Seed($"hive:egress:goes:{bodyId}:{level}:{top.Index}", watch);
+            ulong seed = DiceRule.Seed($"hive:egress:{salt}:{bodyId}:{level}:{who.Index}", watch);
             var roll = new DeterministicRandom(seed);
-            if (roll.NextDouble() >= LeaversPerWatch)
+            if (roll.NextDouble() >= share)
             {
                 continue;
             }
 
             double at = roll.NextDouble() * LastCallFraction * PatronRota.WatchSeconds;
-            leaving.Add(new Move(plate, top.Index, at, DoorFor(bodyId, level, watch, plate, locked)));
+            dealt.Add(new Move(
+                plate, who.Index, at, DoorFor(bodyId, level, watch, doorPrefix + plate, locked)));
         }
 
-        leaving.Sort(static (a, b) => a.AtSecondsIntoWatch.CompareTo(b.AtSecondsIntoWatch));
-        if (leaving.Count > MostAtOnce)
+        dealt.Sort(static (a, b) => a.AtSecondsIntoWatch.CompareTo(b.AtSecondsIntoWatch));
+        if (dealt.Count > MostAtOnce)
         {
-            leaving.RemoveRange(MostAtOnce, leaving.Count - MostAtOnce);
+            dealt.RemoveRange(MostAtOnce, dealt.Count - MostAtOnce);
         }
-        return leaving;
+        return dealt;
     }
 
     /// <summary>

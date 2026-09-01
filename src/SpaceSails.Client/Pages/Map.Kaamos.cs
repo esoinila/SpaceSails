@@ -119,7 +119,12 @@ public partial class Map
     /// has been waiting on the shelf for it.</para></summary>
     private void AnnounceTheBerthIsListed()
     {
-        PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks, CyclerWindow.BerthListedHeadline);
+        // #1052 (L2) · …and the DETAIL is who filed it, which is the whole of what a ✂ CLIP of this line is
+        // about (NewsWire.SubjectsFor). It changes nothing the wire prints — an ArcBeatBreaks headline IS
+        // its Subject and always has been — it only gives the field book a heading to stack the clipping
+        // under.
+        PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks,
+            CyclerWindow.BerthListedHeadline, CyclerWindow.BerthListedOffice);
         RaiseStoryBeat(StoryBeats.Beat.ArcNewsBreaks, "the berth at Ringside");
     }
 

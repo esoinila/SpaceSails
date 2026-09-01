@@ -278,7 +278,7 @@ public sealed class TheEscortIsAWalkTests
 
                 var g = new Walker { X = gx, Y = gy, Route = planned.Route };
                 double escortSeconds = 0, longestStep = 0, walked = 0;
-                int frames = 0, moving = 0, onTheFan = 0;
+                int frames = 0, moving = 0, onTheFan = 0, walking = 0, inFront = 0;
                 bool home = false;
                 double fan = MotionTracker.UndergroundRange(MotionTracker.DetectionRange(32.0), level);
 
@@ -293,16 +293,13 @@ public sealed class TheEscortIsAWalkTests
                         <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
 
                     double lx = cx - g.X, ly = cy - g.Y;
-                    bool waitingForYou = (lx * lx) + (ly * ly) > PatrolBeat.TetherDu * PatrolBeat.TetherDu;
+                    bool youAreTooFarAhead = (lx * lx) + (ly * ly) > PatrolBeat.TetherDu * PatrolBeat.TetherDu;
 
-                    if (heIsThere || waitingForYou)
+                    if (heIsThere)
                     {
                         g.Vx = 0;
                         g.Vy = 0;
-                        if (heIsThere)
-                        {
-                            g.Facing = Math.Atan2(ly, lx);
-                        }
+                        g.Facing = Math.Atan2(ly, lx);
                     }
                     else
                     {
@@ -324,17 +321,30 @@ public sealed class TheEscortIsAWalkTests
                         Stride(g, walls);
                     }
 
-                    // …and the captain, walked at his shoulder through the ONE primitive his body is ever
-                    // stepped by. This is DeckPlan.Move, called on the real deck — not a copy of it.
-                    (double tx, double ty) = heIsThere ? (carX, carY) : ShoulderOf(g);
+                    // …and the captain, walked a pace AHEAD of him (#804) through the ONE primitive his body
+                    // is ever stepped by. This is DeckPlan.Move, called on the real deck — not a copy of it.
+                    (double tx, double ty) = heIsThere ? (carX, carY) : AheadOf(g);
                     double cdx = tx - cx, cdy = ty - cy;
                     double want = Math.Sqrt((cdx * cdx) + (cdy * cdy));
                     (double wasX, double wasY) = (cx, cy);
-                    if (want > 1e-6)
+                    if (want > 1e-6 && (heIsThere || !youAreTooFarAhead))
                     {
                         double pace = Math.Min(
                             want, PatrolBeat.WalkSpeed * PatrolBeat.CatchUpFactor * Dt);
                         (cx, cy) = deck.Move(cx, cy, cdx / want * pace, cdy / want * pace);
+                    }
+
+                    // #804 · AND WHICH OF THEM IS IN FRONT. Counted only on frames he is actually walking,
+                    // because a facing taken off a body that did not move is last frame's answer. "In front"
+                    // is asked of HIS OWN HEADING — the captain is ahead when he is in the half-plane the
+                    // guard is walking into — which is the sentence's claim and not a proxy for it.
+                    if (MotionTracker.IsMoving(g.Vx, g.Vy))
+                    {
+                        walking++;
+                        if (((cx - g.X) * Math.Cos(g.Facing)) + ((cy - g.Y) * Math.Sin(g.Facing)) > 0)
+                        {
+                            inFront++;
+                        }
                     }
 
                     double stepped = Math.Sqrt(
@@ -375,7 +385,20 @@ public sealed class TheEscortIsAWalkTests
                 escorted++;
                 slowest = Math.Max(slowest, escortSeconds);
                 tally.Add($"{body} B{-level}: {startOut:F0} du in {escortSeconds:F0} s, moving " +
-                          $"{moving * 100.0 / frames:F0}%, step {longestStep:F3}");
+                          $"{moving * 100.0 / frames:F0}%, in front {inFront * 100.0 / Math.Max(1, walking):F0}%, " +
+                          $"step {longestStep:F3}");
+
+                // #804 · THE AUTHORED LINE, MEASURED. He says "you walk ahead of me to the lift", and this is
+                // the clause that makes the sentence true of the sim rather than of the prose. Ninety per cent
+                // rather than all of it, because the two of them turn corners a pace apart and the frames in
+                // the turn are honestly ambiguous — but the shipped wake geometry scores ZERO here, which is
+                // the gap this threshold is set inside of.
+                if (walking < 30 || inFront < walking * 0.9)
+                {
+                    bad.Add($"  {body} B{-level}: the captain was in front of the guard on {inFront} of " +
+                            $"{walking} walking frames — EscortLine says he walks AHEAD of him (#804), and a " +
+                            "sentence the sim contradicts is the bug class this escort has paid for twice.");
+                }
 
                 // NO SINGLE-FRAME JUMP. The captain's own frame budget is the whole of what he may be moved
                 // by, and the shipped placement was thirty-odd deck units of it in one frame.
@@ -415,10 +438,11 @@ public sealed class TheEscortIsAWalkTests
         Assert.True(floors > 6, $"only {floors} floors were long enough to be an escort worth measuring.");
         Assert.Equal(floors, escorted);
 
-        // …and the BOUND is a backstop rather than the thing that ends the walk. Measured over the 22 floors
-        // this sweep walks, the worst escort — the far room of the far rib, 152 du of corridor — arrives in
-        // 56 seconds with the guard moving on 99% of the frames. If that ever creeps up on the cap, the cut
-        // is about to start firing in ordinary play and somebody has to look at why.
+        // …and the BOUND is a backstop rather than the thing that ends the walk. Measured over the 26 floors
+        // this sweep walks, the worst escort — the far room of the far rib, 153 du of corridor — arrives in
+        // 57 seconds with the guard moving on 100% of the frames and the captain out in front of him on 99%
+        // to 100% of them (#804). If that ever creeps up on the cap, the cut is about to start firing in
+        // ordinary play and somebody has to look at why.
         Assert.True(slowest < PatrolBeat.EscortSecondsCap * 0.75,
             $"the slowest escort took {slowest:F0} s against a {PatrolBeat.EscortSecondsCap:F0} s bound:\n" +
             string.Join("\n", tally));
@@ -487,13 +511,12 @@ public sealed class TheEscortIsAWalkTests
         Stride(g, walls);
     }
 
-    /// <summary><c>Map.Patrol.ShoulderOf</c>, line for line.</summary>
-    private static (double X, double Y) ShoulderOf(Walker g)
-    {
-        double back = PatrolBeat.ShoulderDu, side = PatrolBeat.ShoulderDu * 0.25;
-        return (g.X - (Math.Cos(g.Facing) * back) - (Math.Sin(g.Facing) * side),
-                g.Y - (Math.Sin(g.Facing) * back) + (Math.Cos(g.Facing) * side));
-    }
+    /// <summary>#804 · <c>Map.Patrol.AheadOf</c>, line for line — and there is only one line of it now,
+    /// because the arithmetic moved into Core where both this replica and the page can call the SAME copy of
+    /// it. A replica that reimplements geometry is a replica that can drift from the page it is standing in
+    /// for, which is the whole hazard this file was written about.</summary>
+    private static (double X, double Y) AheadOf(Walker g) =>
+        PatrolBeat.AheadOnHisRoute(g.X, g.Y, g.Facing, g.Route?.Route, PatrolBeat.AheadDu);
 
     /// <summary>Is there ten deck units of walkable spine that way? Walked with the captain's own legs rather
     /// than reasoned about, because the walls are what decide it.</summary>
@@ -659,7 +682,7 @@ public sealed class TheEscortIsAWalkTests
         // The shipped shape, verbatim.
         Assert.DoesNotContain("StandCaptainAt(", read, StringComparison.Ordinal);
 
-        string escort = Between(patrol, "private void WalkTheEscort(", "private static (double X, double Y) ShoulderOf(");
+        string escort = Between(patrol, "private void WalkTheEscort(", "private static (double X, double Y) AheadOf(");
         Assert.Contains("SpendTheStride(g, dt, walls);", escort, StringComparison.Ordinal);
         Assert.Contains("_host.DeckPlan.Move(_host.AvatarX, _host.AvatarY", escort, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.TetherDu", escort, StringComparison.Ordinal);

@@ -89,6 +89,24 @@ public partial class Map
         // Owner: "one press confirms, Esc keeps you seated." Listed here rather than under the table so the
         // cancel key cannot answer the question by doing the thing the question is about.
         if (TheStandUpConfirmIsUp) { KeepYourSeat(); return true; }
+        // #1052 · THE PAPER AT THE TABLE, and its rung is the whole of what "docked, not modal" costs this
+        // chain.
+        //
+        // It sits BELOW the cards above it because every one of those really is painted over it: the
+        // told-once family at 1420, the pocket at 1330, the story card and the stand-up confirm at 1320,
+        // against this panel's 1240 (OverlayBands.SeatedNewsPanel). THE ORDER OF THIS CHAIN IS PAINT ORDER,
+        // TOP DOWN — #1027 wrote that down and it stays true here.
+        //
+        // And it sits ABOVE the two seat rungs directly below, which is the rung that actually matters. A
+        // captain reading the news in a docked chair who presses Escape means "put the paper down"; falling
+        // through to SeatedIsDocked would instead ask him whether he wants to STAND UP — a question about
+        // the chair, raised by a key he pressed at the paper, with the paper still on the screen. That is
+        // #1027's own bug (Esc peeling a card nobody can see) with the two surfaces swapped. Two presses
+        // now do the right two things in the right order: the paper, then the seat.
+        //
+        // Well above the galley rung further down, as the design asks — but the galley card is not the thing
+        // it had to be above. Nothing raised from a seat is.
+        if (ThePaperIsOpen) { CloseSeatedNews(); return true; }
         // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
         // always available, and a keyboard cancel that could not reach the one panel whose design law is
         // "you may always stand up" would be the game contradicting itself with a keystroke.
@@ -150,6 +168,17 @@ public partial class Map
         // tot of rum. A key that poured the rum for the captain would be the forbidden shape (#735), and a
         // key that closed the card past a button it could equally have pressed would be a coin toss.
         if (_galleyCardOpen) { CloseGalleyCard(); return true; }
+        // #949 · THE PLOTTING CARD, beside the galley card and for the galley card's own reason: it is a
+        // card the captain went and GOT — he pressed ? — so it is never the loudest thing on the glass and
+        // it sits below every card that opens without being asked for. Above the click menus, which are the
+        // least modal thing in this chain.
+        //
+        // Its rung matters more than most, and the reason is what the card IS. A player reaches for it
+        // because he is confused; the key he then reaches for is Escape, and a help card that ignored the
+        // cancel key would be teaching, by its own behaviour, the opposite of everything it says. Its own
+        // way out and the ? that raised it both close it too — three roads out, which for this card is the
+        // right number.
+        if (_navHelpOpen) { CloseNavHelp(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
         // #997 wave 11 · THE FOUR CLICK MENUS — FABLE'S RULING, WAVE 11.

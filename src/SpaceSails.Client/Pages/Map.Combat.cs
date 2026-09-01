@@ -473,6 +473,10 @@ public partial class Map
         // our hoards on a slow roll whether we're flying, warping, or docked.
         RunCacheDiscoveryWatch();
 
+        // #638: and the other whole-day watch — the void's. Same cadence and the same skip-proofing, because
+        // a countdown that a warp jump can leap over is not a countdown (Map.Void).
+        RunTheVoidWatch();
+
         bool wasHidden = !double.IsNaN(_hiddenAtHavenSinceSimTime);
         bool hidden = IsHiddenAtHaven();
 

@@ -556,6 +556,12 @@ public partial class Map
         AdvanceSounding(dtRealSeconds);     // #537: the clock on a knock
         AdvanceLabAlarm(dtRealSeconds);     // #409+: the mountain counting
 
+        // #663 · …and the crew's own standing, which is a pure reading of the whole voyage rather than an
+        // event anybody could hook. BEFORE the story cards, so a deputation raised on this frame is served
+        // by the same frame's card clock instead of waiting a tick — and the seam itself short-circuits on
+        // every frame where the sheet's inputs have not moved.
+        WatchWhereTheCrewStand();
+
         // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
         // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be
         // served there.
@@ -574,6 +580,12 @@ public partial class Map
             // the first line when there is no excursion, and a berth has none. This is the room the owner
             // drinks in finally having people who move in it.
             AdvanceBarWalkers(dtRealSeconds);
+            // #1052 · …AND A CARD HELD BEHIND A SCRIM GETS ITS TURN. One line, in the one frame a bar or a
+            // canteen runs at all, so the salesman who arrived while the captain was reading the galley card
+            // speaks on the frame after the captain shuts it rather than dimming the room a second time.
+            // AFTER the room has stepped, for the room's own reason (Map.BarWalkers.cs): a decision about
+            // what somebody should do next is a decision about a floor whose bodies have already moved.
+            PumpTheScrimQueue();
             // #973 L5b · …AND THE SIT BEAT IS SPENT ASHORE TOO. It is a debt in real seconds owed to the
             // player for having pressed [E] (#865), and it was paid out of `StepSurface` alone — the one
             // clock a seated captain had, back when every seat in the game was on an excursion. The eighth

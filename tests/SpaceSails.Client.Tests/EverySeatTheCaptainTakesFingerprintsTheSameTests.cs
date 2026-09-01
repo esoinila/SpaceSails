@@ -366,26 +366,61 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// against the OLD pins: <b>all sixteen reproduce byte for byte, 4/4 green</b>. So the only difference
     /// between the two sides is three added lines at their defaults — no line removed, none changed, and no
     /// seat read, pulse or card moved at all.</para>
+    ///
+    /// <para><b>#1040 · ALL SIXTEEN AGAIN, ONE FIELD THIS TIME, AND THE SAME PROOF.</b> Owner, on the same
+    /// deck: <i>"Our on ship bar can be upgraded to match the other bars... the UI represents code long time
+    /// ago."</i> Her cantina grew the counter its own backdrop has always drawn, and a counter has stools —
+    /// so <c>TableTalk</c> gained <c>Stool</c>, the one fact that moves a sitting onto the <c>BarStool</c>
+    /// rung, where the gumshoe rule refuses the spread out loud. Every row here is ashore on a Hive floor
+    /// and not one of them is a counter stool, so it reads its default in all sixteen:
+    /// <c>Stool = False</c>.</para>
+    ///
+    /// <para><b>Proved exactly as the three above were.</b> The property sweep in <see cref="Transcribe"/>
+    /// was temporarily filtered to skip <c>Stool</c> and the suite re-run against the OLD pins: <b>all
+    /// sixteen reproduce byte for byte, 4/4 green</b>. One added line at its default; nothing removed,
+    /// nothing changed, and not one seat read, pulse or card moved.</para>
+    ///
+    /// <para><b>#1055 · THE SIXTEEN DIGESTS THEMSELVES MOVED OUT OF THIS FILE</b> and into
+    /// <c>Ledgers/SeatFingerprints.ledger.txt</c>, two rows per sitting — <c>chars | &lt;sitting&gt;</c> and
+    /// <c>sha256 | &lt;sitting&gt;</c> — machine-written by the re-pin command, never transcribed by hand.
+    /// The history above stays here, because the arithmetic in it is the reason each digest is what it is.
+    /// The <c>chars</c> row is new and is the one thing this ledger adds: every re-pin note above had to
+    /// count the transcript's characters by hand to say how wide the change was (<i>"1111 → 1121 chars"</i>),
+    /// and now the report says it.</para>
     /// </remarks>
-    private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
+    internal const string Suite = "SeatFingerprints";
+
+    private const string CharsProbe = "chars", ShaProbe = "sha256";
+
+    /// <summary>What the ledger's own header says about where these numbers came from.</summary>
+    internal const string Preamble =
+        "EVERY DISTINCT SITTING THE SIX CONSTRUCTION SITES CAN OPEN, hashed (#870 lane 6d).\n"
+        + "Taken on c906855, the six untouched `Table = new TableTalk { … }` sites, before a line of them\n"
+        + "moved. `sha256` is the whole transcript of the sitting — the world, the console, the snap, every\n"
+        + "property of the TableTalk read off the running object, every seat read, the pulse and the card.\n"
+        + "`chars` is that transcript's length, which is what says how WIDE a change is at a glance.\n"
+        + "The re-pin history is in the remarks on EverySeatTheCaptainTakesFingerprintsTheSameTests.";
+
+    /// <summary>Every sitting taken and transcribed, as ledger rows — the measurement the re-pin command
+    /// writes down, and the same one the guard below compares against what is written down.</summary>
+    internal static IReadOnlyList<PinLedger.Row> MeasureEveryRow()
     {
-        ["a chair in a ring office"] = "c30bfb1ac6c76e961ce40257e17508fa5dda1671425c621e1574ffb6d973e655",
-        ["a cubicle, with the catch still open"] = "745a236442d53c3704ffc65b02290363f69c4592eab0a298e77e760f6fe7fb4d",
-        ["a free top in a cabinet"] = "79f9e4d2647a9d961fd08345ec7038dfb33c5b3806fe313ccb2b30d68c58f644",
-        ["a free top in the hall"] = "398b3bc777f98e6f642c7579c2c7cb80afca2a6da4e850f6a964ead10724d742",
-        ["a park bench"] = "bccbab6b18ddf5fb30403e7c8e9aa9771fd64eda619ac879b3fb4d62430dc6c8",
-        ["a park bench with somebody on the far end"] = "6729c10af20cff94d3885a40822c0a8618a5a1bb821123b295985f567f154215",
-        ["a stool at a chamber worktop"] = "223a7e4780de1b17984630347387e775dcbbea142ec268b94e7755ba78bed2fa",
-        ["a top somebody is already at"] = "18d3e32c88c5f54b0f5ed48241b0321bfc65a4356cbb5067ff5956c1770cdf40",
-        ["a chair in a ring office (with a pour in front of you)"] = "f5b9f1fe6dfd071eece574bd25ffcf6675106a83911e962118702ff540597a70",
-        ["a cubicle, with the catch still open (with a pour in front of you)"] = "9e90e0ba5bc1deac80802c6f18a5892a63d0b3a2d35cda0f22e5c1c17181b27b",
-        ["a free top in a cabinet (with a pour in front of you)"] = "caad548f1511b29cde6cb360e00235122bfb08ade5512d3569df44db05707049",
-        ["a free top in the hall (with a pour in front of you)"] = "243bf2051ce058704d790b40cc530afd51ecea39046062d32f7258471cf5fdde",
-        ["a park bench (with a pour in front of you)"] = "dcfb7cea4606bf894b344a2a63226305cb9cee03faf80263eee4d379d362bc39",
-        ["a park bench with somebody on the far end (with a pour in front of you)"] = "f00675e11c4aba0d3dcd954652d4b0c69b6a767d2676d1be34ddeaf803d25410",
-        ["a stool at a chamber worktop (with a pour in front of you)"] = "d122152afed728939746cdc2f7ef4dea709a301d55e27542108fd684ad7559a8",
-        ["a top somebody is already at (with a pour in front of you)"] = "97597e98bc48c2629e660300cc29edc1a014ca00e88b16fc3c3b3ec064fba664",
-    };
+        var rows = new List<PinLedger.Row>();
+        foreach (bool pour in new[] { false, true })
+        {
+            foreach ((string site, string text) in
+                     EverySitting(pour).OrderBy(p => p.Key, StringComparer.Ordinal))
+            {
+                string name = Named(site, pour);
+                rows.Add(new PinLedger.Row(CharsProbe, name, text.Length.ToString(Inv)));
+                rows.Add(new PinLedger.Row(ShaProbe, name, Sha256(text)));
+            }
+        }
+        return rows;
+    }
+
+    private static string Named(string site, bool pour) =>
+        pour ? site + " (with a pour in front of you)" : site;
 
     /// <summary>
     /// WHICH OF THE SIX CONSTRUCTION SITES EACH SITTING CAME OUT OF — the anti-vacuous half.
@@ -420,6 +455,7 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     [Fact]
     public void EverySeatHashesToWhatItHashedToOnTheOldCode()
     {
+        IReadOnlyDictionary<string, PinLedger.Row> pinned = PinLedger.Pinned(Suite);
         var wrong = new List<string>();
         var seen = new List<string>();
 
@@ -427,25 +463,37 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
         {
             foreach ((string site, string text) in EverySitting(pour).OrderBy(p => p.Key, StringComparer.Ordinal))
             {
-                string name = pour ? site + " (with a pour in front of you)" : site;
+                string name = Named(site, pour);
                 seen.Add(name);
                 string got = Sha256(text);
-                if (!Pinned.TryGetValue(name, out string? want)
-                    || !string.Equals(want, got, StringComparison.Ordinal))
+                string chars = text.Length.ToString(Inv);
+
+                if (!pinned.TryGetValue(PinLedger.Key(ShaProbe, name), out PinLedger.Row want))
                 {
-                    wrong.Add($"  [\"{name}\"] = \"{got}\",   // pinned {want ?? "(nothing)"}");
+                    wrong.Add($"  {name} — {chars} chars, sha256 {got}   // pinned nothing at all");
+                    continue;
+                }
+                string pinnedChars = pinned.TryGetValue(PinLedger.Key(CharsProbe, name), out PinLedger.Row c)
+                    ? c.Value : "(nothing)";
+                if (!string.Equals(want.Value, got, StringComparison.Ordinal) || pinnedChars != chars)
+                {
+                    wrong.Add($"  {name} — {chars} chars, sha256 {got}"
+                        + $"\n      pinned {pinnedChars} chars, sha256 {want.Value}");
                 }
             }
         }
 
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} sitting(s) of {seen.Count} do not match what they hashed to on the old code:\n"
-            + string.Join("\n", wrong));
+            + string.Join("\n", wrong)
+            + $"\n\nIf the change is intended, re-pin BY MEASUREMENT and paste the printed report into the "
+            + $"PR:\n  {PinLedger.Invocation}");
 
-        foreach (string name in Pinned.Keys)
+        foreach (PinLedger.Row row in pinned.Values.Where(r => r.Probe == ShaProbe))
         {
-            Assert.Contains(name, seen);
+            Assert.Contains(row.Scene, seen);
         }
+        Assert.Equal(seen.Count * 2, pinned.Count);
     }
 
     /// <summary>EVERY ONE OF THE SIX SITES IS ENTERED BY SOME CASE, and every case is attributed to one of

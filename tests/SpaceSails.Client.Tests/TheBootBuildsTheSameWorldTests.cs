@@ -159,6 +159,12 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?counter=1&watch=5"] = "595fa324a96f7a57b4735b81c3edec74",
             ["/map?credits=1234&fuel=7&simhours=9"] = "bebac09be550f3e488747ed9b4e5e82a",
             ["/map?credits=50000"] = "bebac09be550f3e488747ed9b4e5e82a",
+            // #663 · …and it hashes the BARE WORLD, which is correct and worth saying out loud: ?crew= grants
+            // two counters on the crew sheet, appends no body, moves no berth and spends no money, and it is
+            // seeded in SeedTheArcsAndTheJobs — well past the browser gate this sweep stops at. What the URL
+            // ANSWERS differently is pinned next door in TheBootReadsTheSameQueryTests; what it LEADS to is
+            // proved on the shipping sheet, in TheCrewSheetCountsTheDeadTests.
+            ["/map?crew=petition"] = "bebac09be550f3e488747ed9b4e5e82a",
             ["/map?death=collector&dock=selene-gate"] = "faa031689c86edd6a251477d3383b2a1",
             ["/map?death=impact"] = "faa031689c86edd6a251477d3383b2a1",
             ["/map?death=suffocated&dock=the-tilt&land=1"] = "5ba2a5b3d0305906c44da37d79f843b1",

@@ -129,6 +129,12 @@ public partial class Map
                 // bar nor a boat has one.
                 Quiet = top.Quiet,
                 Cabinet = 0,
+                // #1040 · …AND WHETHER IT IS A STOOL, which is the one thing that moves this sitting onto a
+                // different RUNG of the exposure ladder. Everything else about it is a top's: the same
+                // scene, the same wait, the same stand-up. What the counter buys is the gumshoe rule said
+                // out loud on the captain's own boat — he will not lay a case out at a bar, and it turns out
+                // he will not do it at his own bar either.
+                Stool = top.Stool,
                 // #1016 · WHOSE FLOOR THIS IS. Two things hang off it and nothing else does: nobody ever
                 // crosses it to your table, and the silence when you wait is the boat's own.
                 Aboard = top.Aboard,

@@ -1,0 +1,2071 @@
+# SpaceSails · the Fingerprints pin ledger — MACHINE-WRITTEN (#1055).
+# DO NOT HAND-EDIT. Every number below was measured, never transcribed.
+#
+# Rows are `<probe> | <scene> | <value>`, grouped by probe in the order the measurement
+# produces them and, within a probe, by scene in the suite's own order. A re-pin is almost
+# always one PROBE moving across many scenes, so probe-major keeps each re-pin in its own
+# contiguous block and two lanes moving two different probes merge without a conflict.
+#
+# TO RE-PIN — run the measurement, never a text editor:
+#   SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked --logger "console;verbosity=detailed"
+# It rewrites every ledger and PRINTS the report: rows moved, old → new, the delta per row,
+# and for a sweep row the NAME of the field that appeared or disappeared. The report is what
+# a reviewer reads; this file is what CI compares against.
+#
+# SIX WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.
+# Taken on the PRE-SPLIT code (#870 lane 7c): the first twenty on b19ef16, the plasma world's four
+# on 04bb219, the warp slider's six on the commit that put the unsplit method back to capture them.
+# Probes: `stopped-at` and the thirty-eight named LEDGER readings say WHERE; `sweep` says NOTHING
+# ESCAPED (a count and a hash over every instance field of the page); `sweep roster` names those
+# fields one per row, so a field joining the page reddens by name; `walked-view pen` and
+# `map-frame buffer` are the picture, which is the half a state fingerprint cannot see.
+# The re-pin history — which lane moved which probe, and the arithmetic that proved it — is in the
+# docs on EveryFrameLeavesTheSameFingerprintTests.EveryFrameItRunsFingerprintsTheSame.
+
+sweep roster | Boot | Task
+sweep roster | FollowShip | Boolean
+sweep roster | Paused | Boolean
+sweep roster | PlotMode | Boolean
+sweep roster | SimTime | Double
+sweep roster | Warp | Int32
+sweep roster | _activeDesk | ShipDesk
+sweep roster | _activeRadar | Boolean
+sweep roster | _activeThreadId | String
+sweep roster | _aerobrakeArmedBodyId | String
+sweep roster | _aerobrakeArmedQuote | Quote?
+sweep roster | _aerobrakeQuote | Quote?
+sweep roster | _aerobrakeQuoteBodyId | String
+sweep roster | _airCardOpen | Boolean
+sweep roster | _airCardSeen | Boolean
+sweep roster | _airCheatSeconds | Double?
+sweep roster | _airLastX | Double
+sweep roster | _airLastY | Double
+sweep roster | _airSupplyNoted | Supply?
+sweep roster | _alarmOutcome | String
+sweep roster | _ancientCharges | Int32
+sweep roster | _ancientLastGrant | Double[]
+sweep roster | _anythingHasWokenAboard | Boolean
+sweep roster | _approachBurnCount | Int32
+sweep roster | _approachCheat | Boolean?
+sweep roster | _approachMinDistance | Double
+sweep roster | _approachStalledBurns | Int32
+sweep roster | _archiveAboard | Boolean
+sweep roster | _archiveAtArmsLength | Boolean
+sweep roster | _archiveCard | ArchiveCard?
+sweep roster | _archiveCheat | Boolean
+sweep roster | _archiveConfrontations | Int32
+sweep roster | _archiveFieldNoticed | Boolean
+sweep roster | _archivePurged | Boolean
+sweep roster | _armablePass | Pass?
+sweep roster | _armedArrivalPassSimTime | Double?
+sweep roster | _armedBudgetPulses | Int32
+sweep roster | _armedOrbitBodyId | String
+sweep roster | _armedSpentPulses | Int32
+sweep roster | _armedTransferBurnsFired | Int32
+sweep roster | _armedTransferSchedule | Schedule?
+sweep roster | _armedTransferSummary | String
+sweep roster | _arrivalPhaseCheat | Int32?
+sweep roster | _arrive | ArriveStep
+sweep roster | _arriveAlarm | String
+sweep roster | _arriveAlarmDismissed | Boolean
+sweep roster | _ashore | Boolean
+sweep roster | _audioArmed | Boolean
+sweep roster | _audioEnabled | Boolean
+sweep roster | _autoWalk | AutoWalk
+sweep roster | _autoWalkDeck | DeckPlan
+sweep roster | _autopilotEvents | List<ValueTuple<Double, String>>
+sweep roster | _autopilotPlanBodyClearance | IReadOnlyDictionary<String, Double>
+sweep roster | _autopilotPlanClosestPass | Pass?
+sweep roster | _autopilotPlanPath | IReadOnlyList<TrajectorySample>
+sweep roster | _autopilotPlanScratch | Single[]
+sweep roster | _autopilotStandDownReason | String
+sweep roster | _autosaveDirty | Boolean
+sweep roster | _avatarHeading | Double
+sweep roster | _avatarX | Double
+sweep roster | _avatarY | Double
+sweep roster | _awayWindowScans | Dictionary<String, ValueTuple<Double?, Double>>
+sweep roster | _bankNote | String
+sweep roster | _bankPrompt | BankPromptKind?
+sweep roster | _bankSession | BankSession
+sweep roster | _bankSlotId | String
+sweep roster | _bankThreadId | String
+sweep roster | _bankTitle | String
+sweep roster | _bannerRowOffset | Int32
+sweep roster | _barAfoot | List<Walker>
+sweep roster | _barCameIn | Dictionary<String, Int32>
+sweep roster | _barCaseCheat | Boolean
+sweep roster | _barComing | IReadOnlyList<Move>
+sweep roster | _barDealt | HashSet<String>
+sweep roster | _barFeetBerth | String
+sweep roster | _barGoing | IReadOnlyList<Move>
+sweep roster | _barLeft | HashSet<String>
+sweep roster | _barMenu | Barkeep
+sweep roster | _barNotice | String
+sweep roster | _barVisitStation | String
+sweep roster | _beaconGhost | ShipState?
+sweep roster | _beatsSpoken | Dictionary<ValueTuple<Beat, String>, Double>
+sweep roster | _binsBuiltFor | String
+sweep roster | _binsOnThisFloor | IReadOnlyList<Bin>
+sweep roster | _bloodUntilMs | Double
+sweep roster | _boardBots | Int32
+sweep roster | _boardCoin | Int32
+sweep roster | _boardEmptyConfirm | Boolean
+sweep roster | _boardSiteIndex | Int32
+sweep roster | _boardSites | IReadOnlyList<LandingSite>
+sweep roster | _boardTarget | ShuttleStop
+sweep roster | _boatOrderedCold | Boolean
+sweep roster | _boatWarmth | Double
+sweep roster | _bodyMenuBody | CelestialBody
+sweep roster | _bodyMenuX | Double
+sweep roster | _bodyMenuY | Double
+sweep roster | _bondForce | Boolean
+sweep roster | _bondIndex | Int32
+sweep roster | _bondLastMs | Double
+sweep roster | _bookCheat | Int32?
+sweep roster | _bookTag | Theory?
+sweep roster | _bootPhase | String
+sweep roster | _brakeArrivalBodyId | String
+sweep roster | _brakeDestName | String
+sweep roster | _brakeGate | Gate
+sweep roster | _brakeQuotedPulses | Int32
+sweep roster | _brakeShowing | Boolean
+sweep roster | _burnAngleAbsolute | Boolean
+sweep roster | _burning | Dictionary<String, Double>
+sweep roster | _busted | BustedEncounter
+sweep roster | _caches | CacheLedger
+sweep roster | _camera | Camera
+sweep roster | _captainTab | CaptainView
+sweep roster | _captureEngaged | Boolean
+sweep roster | _captureProgress | Double
+sweep roster | _captureRequiredSeconds | Double
+sweep roster | _captureTargetCallsign | String
+sweep roster | _cardCheat | String
+sweep roster | _cargoByClass | Dictionary<String, Int32>
+sweep roster | _cargoUnits | Int32
+sweep roster | _cargoValue | Int32
+sweep roster | _caseThreads | List<Thread>
+sweep roster | _cautionIndex | Int32
+sweep roster | _cautionLastFiredMs | Double
+sweep roster | _cautionLastShudderMs | Double
+sweep roster | _cautionRun | Int32
+sweep roster | _celebration | MissionCelebration?
+sweep roster | _celebrationQueue | Queue<MissionCelebration>
+sweep roster | _chargeBoardMessage | String
+sweep roster | _chirp | ChirpState
+sweep roster | _closestPass | Pass?
+sweep roster | _coastSkipActive | Boolean
+sweep roster | _coastSkipDays | Int32
+sweep roster | _coastSkipLabel | String
+sweep roster | _collapsedLayerGroups | HashSet<String>
+sweep roster | _collectorCheatSeconds | Double?
+sweep roster | _collectors | List<Collector>
+sweep roster | _commsActionMessage | String
+sweep roster | _commsHailAnswer | String
+sweep roster | _commsSelectedId | String
+sweep roster | _coneCenter | Single[]
+sweep roster | _coneLower | Single[]
+sweep roster | _coneUpper | Single[]
+sweep roster | _contactorOn | Boolean
+sweep roster | _contactorOutmatchedSaid | Boolean
+sweep roster | _contactorOwedPulses | Double
+sweep roster | _contacts | ContactLedger
+sweep roster | _convergenceRevealOpen | Boolean
+sweep roster | _counterCheat | Boolean
+sweep roster | _courseOpportunities | List<CourseOpportunity>
+sweep roster | _crashNoteCopied | Boolean
+sweep roster | _credits | Int32
+sweep roster | _crewLost | Int32
+sweep roster | _crewVisitBerth | String
+sweep roster | _crewVoyageLastRead | Voyage
+sweep roster | _crossings | IReadOnlyList<Crossing>
+sweep roster | _dcNextActionCleared | Boolean
+sweep roster | _dcStandingOrder | Boolean
+sweep roster | _deathNerveLedger | IReadOnlyList<Event>
+sweep roster | _deckKeys | HashSet<String>
+sweep roster | _deckMode | Boolean
+sweep roster | _deckPanX | Double
+sweep roster | _deckPanY | Double
+sweep roster | _deckPlan | DeckPlan
+sweep roster | _deferredBeat | ValueTuple<Beat, String, String>?
+sweep roster | _deflection | DeflectionPlan
+sweep roster | _deflectionLeftPort | Boolean
+sweep roster | _deflectionRaiseMeters | Double
+sweep roster | _deflectionResolved | DeflectionOutcome?
+sweep roster | _deflectionStory | List<DeflectionStoryPanel>
+sweep roster | _deflectionStoryIndex | Int32
+sweep roster | _descentPhase | String
+sweep roster | _designateCheat | Boolean
+sweep roster | _designateOpen | Boolean
+sweep roster | _designateTargets | List<DesignateTarget>
+sweep roster | _designateUnit | String
+sweep roster | _desksRaised | HashSet<String>
+sweep roster | _destinationBodyId | String
+sweep roster | _destinationPass | Pass?
+sweep roster | _diceTrayEvent | DiceEvent?
+sweep roster | _digSettleUntilMs | Double
+sweep roster | _disarmConfirmBodyId | String
+sweep roster | _disarmConfirmExpiresMs | Double
+sweep roster | _dockAffordance | DockAffordance
+sweep roster | _dockBodyId | String
+sweep roster | _dockLatched | Boolean
+sweep roster | _dockOffset | Vector2d
+sweep roster | _dockReadyStatus | String
+sweep roster | _dockVisitSimTime | Double
+sweep roster | _docked | Boolean
+sweep roster | _dockedHavenId | String
+sweep roster | _doorBoardOutcome | String
+sweep roster | _dossierMinimized | Boolean
+sweep roster | _downClientX | Double
+sweep roster | _downClientY | Double
+sweep roster | _dragMoved | Boolean
+sweep roster | _dragging | Boolean
+sweep roster | _effectiveWarp | Int32
+sweep roster | _expedition | ExpeditionPlan
+sweep roster | _expeditionBriefCard | ExpeditionBriefCard?
+sweep roster | _expeditionRevealCard | ExpeditionRevealCard?
+sweep roster | _faceScene | String
+sweep roster | _faceSceneReply | String
+sweep roster | _facesExplained | HashSet<String>
+sweep roster | _favorObligations | List<FavorObligation>
+sweep roster | _fieldNotes | List<FieldNote>
+sweep roster | _filingBook | IReadOnlyList<Page>
+sweep roster | _fireAimOffsetSeconds | Double
+sweep roster | _fireAimPoint | Vector2d
+sweep roster | _fireAnnounced | Boolean
+sweep roster | _fireAtSimTime | Double
+sweep roster | _fireAtWill | Boolean
+sweep roster | _fireBlockedBy | String
+sweep roster | _fireDispersionMeters | Double
+sweep roster | _fireKind | OrdnanceKind
+sweep roster | _fireSolution | Solution?
+sweep roster | _fireSolutionPath | IReadOnlyList<TrajectorySample>
+sweep roster | _fireTargetId | String
+sweep roster | _fireTargetPath | IReadOnlyList<TrajectorySample>
+sweep roster | _fireTip | String
+sweep roster | _floorCubicles | List<ValueTuple<RingRoom, Stall>>
+sweep roster | _followDest | Boolean
+sweep roster | _forcedLandingBodyId | String
+sweep roster | _forcedSiteIndex | Int32?
+sweep roster | _foundCheat | Boolean
+sweep roster | _frameGapSeconds | Double
+sweep roster | _frameLabels | List<NavLabel>
+sweep roster | _frameMaxDragDecel | Double
+sweep roster | _frameNowMs | Double
+sweep roster | _freeTableCheat | Boolean
+sweep roster | _freightCheat | Boolean
+sweep roster | _frontDoorCheat | Boolean
+sweep roster | _fuelDirLine | String
+sweep roster | _fuelDirSig | String
+sweep roster | _galleyCardOpen | Boolean
+sweep roster | _ghosts | Dictionary<Reever, ValueTuple<Double, Double, Double>>
+sweep roster | _goodsCarCheat | Boolean
+sweep roster | _groundGrewOpen | Boolean
+sweep roster | _groundGrewSeen | Boolean
+sweep roster | _groundLessonOpen | Boolean
+sweep roster | _groundLessonSeen | Boolean
+sweep roster | _hallFor | ValueTuple<String, Int32>?
+sweep roster | _hallRoom | Amenity?
+sweep roster | _hasNetJammer | Boolean
+sweep roster | _hasVantarCard | Boolean
+sweep roster | _havenName | String
+sweep roster | _hazePassOrdinal | Int32
+sweep roster | _hazePassPeakG | Double
+sweep roster | _headOfficeBeatsSeen | HashSet<Int32>
+sweep roster | _heat | HeatState
+sweep roster | _heatInsuranceAdvised | Boolean
+sweep roster | _held | PulseHold
+sweep roster | _heldControlsSaid | Boolean
+sweep roster | _heldMemories | IReadOnlyList<Sheet>
+sweep roster | _hiddenAtHavenSinceSimTime | Double
+sweep roster | _hiddenBodyIds | HashSet<String>
+sweep roster | _hiddenLayersByDesk | Dictionary<ShipDesk, HashSet<String>>
+sweep roster | _holdLevel | Int32
+sweep roster | _honestFilings | Int32
+sweep roster | _horizonChoice | String
+sweep roster | _horizonDirty | Boolean
+sweep roster | _hotCargo | HotCargoLedger
+sweep roster | _hudBlips | List<ValueTuple<Double, Double, Boolean>>
+sweep roster | _hudBots | List<ValueTuple<Double, Double, String, Boolean, Boolean, Double, Double>>
+sweep roster | _hudDark | List<ValueTuple<Double, Double, Double, Double, Int32>>
+sweep roster | _hudEcho | List<ValueTuple<Double, Double, Double>>
+sweep roster | _hudEntities | List<Entity>
+sweep roster | _hudGhosts | List<ValueTuple<Double, Double, Double>>
+sweep roster | _hudHusks | List<ValueTuple<Double, Double>>
+sweep roster | _hudMarks | List<ValueTuple<Double, Double, Boolean>>
+sweep roster | _hudSmudges | List<ValueTuple<Double, Double, Double>>
+sweep roster | _hudSwept | List<ValueTuple<Double, Double, Boolean>>
+sweep roster | _hullVoid | HiddenVoid?
+sweep roster | _hunterSeq | Int32
+sweep roster | _hunters | List<HunterState>
+sweep roster | _hurtCheat | Int32?
+sweep roster | _importConfirming | Boolean
+sweep roster | _importPendingText | String
+sweep roster | _importPreview | SaveSlotMeta
+sweep roster | _inHazePass | Boolean
+sweep roster | _insurance | PirateInsurance
+sweep roster | _insurancePosterReads | Int32
+sweep roster | _intelLedger | IntelLedger
+sweep roster | _intercept | Result?
+sweep roster | _interestTargetId | String
+sweep roster | _internalHintGiven | Boolean
+sweep roster | _internalSoakSeconds | Double
+sweep roster | _jumpActive | Boolean
+sweep roster | _jumpDestName | String
+sweep roster | _jumpFlavor | String
+sweep roster | _jumpInProgress | Boolean
+sweep roster | _jumpTotalYears | Int32
+sweep roster | _jumpYear | Int32
+sweep roster | _kaamos | KaamosProgress
+sweep roster | _kaamosBounceCheat | Boolean
+sweep roster | _kaamosHolderCheat | Boolean
+sweep roster | _kaamosPodCheat | Boolean
+sweep roster | _keepNextCheckTime | Double
+sweep roster | _keepTrimFunded | Boolean
+sweep roster | _keepTrimPulsesPerDay | Int32
+sweep roster | _keepTrimsFired | Int32
+sweep roster | _kioskCard | KioskBuy?
+sweep roster | _kioskPicks | Int32
+sweep roster | _kitCheat | Boolean
+sweep roster | _knockedThisVisit | HashSet<String>
+sweep roster | _labAlarm | State
+sweep roster | _labAlarmElapsed | Double
+sweep roster | _labDoors | Dictionary<String, State>
+sweep roster | _labHackFailures | Int32
+sweep roster | _labHackRoll | DiceRoll?
+sweep roster | _labLeads | HashSet<String>
+sweep roster | _laid | List<Paper>
+sweep roster | _lampsOutCheat | Boolean
+sweep roster | _landBodyCheat | String
+sweep roster | _landCheat | Boolean
+sweep roster | _landableInRangeIds | HashSet<String>
+sweep roster | _lastAnnouncedHeat | Int32
+sweep roster | _lastDetectorReading | Reading
+sweep roster | _lastDischargeMs | Double
+sweep roster | _lastHorizonReprojectMs | Double
+sweep roster | _lastHudUpdateMs | Double
+sweep roster | _lastNearestReeverRange | Double?
+sweep roster | _lastParkStability | ParkStabilityVerdict
+sweep roster | _lastPointerX | Double
+sweep roster | _lastPointerY | Double
+sweep roster | _lastPulseSimTime | Double
+sweep roster | _lastReeverCatchMs | Double
+sweep roster | _lastRefillCheckSimTime | Double
+sweep roster | _lastReprojectMs | Double
+sweep roster | _lastRevealMs | Double
+sweep roster | _lastRumLine | String
+sweep roster | _lastRumMs | Double
+sweep roster | _lastSleepSimTime | Double
+sweep roster | _lastTimestampMs | Double?
+sweep roster | _lastVentSimTime | Double
+sweep roster | _lastVoyageCrash | CrashNote
+sweep roster | _layersOpen | Boolean
+sweep roster | _liftCar | ShaftKind
+sweep roster | _liftOutcome | String
+sweep roster | _liveNestSeen | Boolean
+sweep roster | _loadFrom | Item?
+sweep roster | _loadShare | Dictionary<String, Int32>
+sweep roster | _localBuyClass | String
+sweep roster | _localBuyCostCr | Int32
+sweep roster | _localBuyUnits | Int32
+sweep roster | _localSpace | LocalSpace
+sweep roster | _localTradeIsBuy | Boolean
+sweep roster | _localTradeMessage | String
+sweep roster | _localTradeProgress | Double
+sweep roster | _localTradeTargetId | String
+sweep roster | _lockedDoor | LockedDoorLook
+sweep roster | _longCoast | LongCoastState
+sweep roster | _longHaulClearanceBlock | String
+sweep roster | _longHaulDeparture | Departure?
+sweep roster | _longHaulPlanet | CelestialBody
+sweep roster | _longHaulReach | Reach?
+sweep roster | _lootLedger | List<LootRecord>
+sweep roster | _magazineCheat | Int32?
+sweep roster | _manifestRead | Boolean
+sweep roster | _mapCorridors | IReadOnlyList<CorridorRegion>
+sweep roster | _mapCorridorsBuiltAt | Double
+sweep roster | _massLevel | Int32
+sweep roster | _matchLedger | MatchClampLedger
+sweep roster | _messRoom | Amenity?
+sweep roster | _messRoomFor | ValueTuple<String, Int32>?
+sweep roster | _missileAmmo | Int32
+sweep roster | _mission | ShipMission
+sweep roster | _missionOptions | MissionOptions
+sweep roster | _monolithSeen | Boolean
+sweep roster | _navHelpOpen | Boolean
+sweep roster | _navSearchIndex | Int32
+sweep roster | _navSearchOpen | Boolean
+sweep roster | _navSearchQuery | String
+sweep roster | _navSearchRows | List<NavSearchRow>
+sweep roster | _nearMisses | Int32
+sweep roster | _nearestBody | CelestialBody
+sweep roster | _nearestBodyPosition | Vector2d
+sweep roster | _nearestBodyVelocity | Vector2d
+sweep roster | _nearestChildName | String
+sweep roster | _nearestHaven | CelestialBody
+sweep roster | _nearestParentName | String
+sweep roster | _nebula | NebulaProgress
+sweep roster | _nebulaAdjusterCheat | Boolean
+sweep roster | _neighbourCheat | Boolean?
+sweep roster | _neighbourhoodHavenId | String
+sweep roster | _nerve | Double
+sweep roster | _nerveBeats | Beats
+sweep roster | _nerveFlash | String
+sweep roster | _nerveFlashUntilMs | Double
+sweep roster | _nerveLedger | IReadOnlyList<Event>
+sweep roster | _nerveShockCarry | Double
+sweep roster | _nestClocks | Dictionary<String, Double>
+sweep roster | _newsEvents | List<NewsEvent>
+sweep roster | _nextPredictionSimTime | Double
+sweep roster | _nextProjectionSimTime | Double
+sweep roster | _nextSweepSimTime | Double
+sweep roster | _notesExpanded | HashSet<String>
+sweep roster | _notesView | NotesView
+sweep roster | _npcStates | NpcState[]
+sweep roster | _oddBooksRead | List<String>
+sweep roster | _oldCrew | IReadOnlyList<Seeded>
+sweep roster | _oldCrewCheat | Boolean
+sweep roster | _oldCrewSeededFor | String
+sweep roster | _openCaptainToTutorials | Boolean
+sweep roster | _openEditor | FlightEditorKind
+sweep roster | _openNoteKey | String
+sweep roster | _oracleDraw | Int32
+sweep roster | _oracleDrinks | Int32
+sweep roster | _oracleForce | Boolean
+sweep roster | _oracleLine | OracleLine?
+sweep roster | _oracleNotice | String
+sweep roster | _oracleOpen | Boolean
+sweep roster | _oracleStation | String
+sweep roster | _orbitDegradeSeverity | Int32
+sweep roster | _orbitDegradeWarning | String
+sweep roster | _orbitHoldAtBoarding | Double
+sweep roster | _orbitKept | Boolean
+sweep roster | _orbitedBodyHillRadius | Double
+sweep roster | _orbitedBodyId | String
+sweep roster | _orbitedBodyPosition | Vector2d
+sweep roster | _ordnance | List<OrdnanceState>
+sweep roster | _ordnanceSeq | Int32
+sweep roster | _outpostCheat | Boolean
+sweep roster | _overheard | List<OverheardLine>
+sweep roster | _park | Park?
+sweep roster | _parkBackCheat | Boolean
+sweep roster | _parkCheat | Boolean
+sweep roster | _parkFor | ValueTuple<String, Int32>?
+sweep roster | _parkStabilityBodyId | String
+sweep roster | _parkWalkCheat | Boolean
+sweep roster | _parrotBubbleUntilMs | Double
+sweep roster | _parrotCooldownUntilMs | Double
+sweep roster | _parrotCounter | Int32
+sweep roster | _parrotOffBooks | HashSet<String>
+sweep roster | _parrotSawArc | Boolean
+sweep roster | _parrotSawHunter | Boolean
+sweep roster | _parrotSawPrey | Boolean
+sweep roster | _parrotSawPyramid | Boolean
+sweep roster | _parrotSawWobble | Boolean
+sweep roster | _parrotSquawk | String
+sweep roster | _passDirty | Boolean
+sweep roster | _passes | IReadOnlyList<Pass>
+sweep roster | _patrol | Patrol
+sweep roster | _patronDrink | String
+sweep roster | _patronDrinkBlurb | String
+sweep roster | _peekMap | Boolean
+sweep roster | _penHoldingId | String
+sweep roster | _penInHand | Boolean
+sweep roster | _pendingContactDrink | String
+sweep roster | _pendingDeflectionCheat | ValueTuple<RockType, String, RockRail, String, String, Double, Double, ValueTuple<Double, String, Double, Double, Double>>?
+sweep roster | _pendingExpeditionCheat | ValueTuple<ExpeditionFlavor, ExpeditionSiteKind, String, String>?
+sweep roster | _pendingOffer | Quest
+sweep roster | _pendingResumeVault | Vault
+sweep roster | _pickMenu | List<PickCandidate>
+sweep roster | _pickMenuX | Double
+sweep roster | _pickMenuY | Double
+sweep roster | _pills | Int32
+sweep roster | _pinEntry | String
+sweep roster | _pinHatch | ConsoleSpot?
+sweep roster | _pinJob | Quest
+sweep roster | _pinOutcome | String
+sweep roster | _pinned | Boolean
+sweep roster | _pinnedPlan | ManeuverPlan
+sweep roster | _placardRead | Boolean
+sweep roster | _plan | ManeuverPlan
+sweep roster | _planNodes | List<PlanNode>
+sweep roster | _plasma | PlasmaEnvironment
+sweep roster | _plotFrameAnchor | Vector2d
+sweep roster | _plotFrameBodyId | String
+sweep roster | _plunderAuthorizedTargetId | String
+sweep roster | _plunderDeclinedTargetId | String
+sweep roster | _plunderOpportunityTargetId | String
+sweep roster | _posterReadInLife | Int32
+sweep roster | _predictedPath | PredictedPath
+sweep roster | _predictionDirty | Boolean
+sweep roster | _presetsRead | HashSet<String>
+sweep roster | _pressureDoor | String
+sweep roster | _processCheatSeconds | Double?
+sweep roster | _processing | ProcessingHold
+sweep roster | _profitableLies | Int32
+sweep roster | _pulse | PulseSlot
+sweep roster | _pumps | Dictionary<String, PumpRun>
+sweep roster | _pursuitTrail | List<TrajectorySample>
+sweep roster | _questSeq | Int32
+sweep roster | _quests | List<Quest>
+sweep roster | _reachBerthId | String
+sweep roster | _reachSeededFor | String
+sweep roster | _reactionMassPulses | Int32
+sweep roster | _rebirthsSeen | Int32
+sweep roster | _reconciled | Result?
+sweep roster | _reeverAmbushCheat | Int32
+sweep roster | _reevers | List<Reever>
+sweep roster | _refillCharges | Int32
+sweep roster | _released | HashSet<String>
+sweep roster | _remoteOutcome | String
+sweep roster | _renameDraft | String
+sweep roster | _renamingThreadId | String
+sweep roster | _renderLoopRunning | Boolean
+sweep roster | _repBleeding | Boolean
+sweep roster | _repCard | RepPitch?
+sweep roster | _repCheat | Boolean?
+sweep roster | _repMeetings | Int32
+sweep roster | _repMemory | NebulaRepVisit
+sweep roster | _repMoveOnAt | Double
+sweep roster | _repNameOnFile | String
+sweep roster | _repPost | Int32
+sweep roster | _repSaid | String
+sweep roster | _repSaidPassing | Boolean
+sweep roster | _repSigningToldInLife | Int32
+sweep roster | _repVisitBody | String
+sweep roster | _repVisitIndex | Int32
+sweep roster | _repWorkingHere | Boolean
+sweep roster | _resumeAvailable | Boolean
+sweep roster | _resumeHavenName | String
+sweep roster | _resumeTampered | Boolean
+sweep roster | _revealedBodyIds | HashSet<String>
+sweep roster | _revealedIterations | Int32
+sweep roster | _ringOfficeCheat | Boolean
+sweep roster | _ringsideSaved | Boolean
+sweep roster | _ripCheat | Boolean
+sweep roster | _rollCheat | Band?
+sweep roster | _roundThisVisit | Boolean
+sweep roster | _routeIntelProvenance | Dictionary<String, IntelProvenance>
+sweep roster | _routeWindows | Dictionary<String, IReadOnlyList<Window>>
+sweep roster | _routeWindowsArmedFor | Double?
+sweep roster | _routeWindowsRibbon | Object
+sweep roster | _ruinedShares | Double
+sweep roster | _rumTots | Int32
+sweep roster | _saidWhichSide | Boolean
+sweep roster | _sailHoled | Boolean
+sweep roster | _sailRepairedAtSimTime | Double
+sweep roster | _samples | IReadOnlyList<TrajectorySample>
+sweep roster | _satchel | List<Item>
+sweep roster | _satchelOutcome | String
+sweep roster | _satchelPage | SatchelPage
+sweep roster | _satchelTarget | ValueTuple<Target, String, String>?
+sweep roster | _scenarioName | String
+sweep roster | _scopeIntel | List<ScopeIntel>
+sweep roster | _scopeManualId | String
+sweep roster | _scopeMinimized | Boolean
+sweep roster | _scratch | Single[]
+sweep roster | _scrimQueued | ValueTuple<Action, Func<Boolean>>?
+sweep roster | _scrubOffsetSeconds | Double
+sweep roster | _scuttleEpitaph | String
+sweep roster | _scuttleHeardIt | Boolean
+sweep roster | _scuttleSecondsLeft | Double?
+sweep roster | _sealedFor | Dictionary<String, Double>
+sweep roster | _seatedNewsOpen | Boolean
+sweep roster | _seating | Seating
+sweep roster | _secretLabForceBodyId | String
+sweep roster | _secretLabsFound | HashSet<String>
+sweep roster | _selectedPlanNode | PlanNode
+sweep roster | _selectedTargetId | String
+sweep roster | _selfieOffer | SelfieOffer?
+sweep roster | _selfieOffersDeclined | HashSet<String>
+sweep roster | _selfieShot | CapturedSelfie
+sweep roster | _sensor | SensorModel
+sweep roster | _sensorLevel | Int32
+sweep roster | _shapeAlarm | String
+sweep roster | _shapeAlarmDismissed | Boolean
+sweep roster | _shapeWasWellFormed | Boolean?
+sweep roster | _shelterCheat | Boolean
+sweep roster | _ship | ShipState
+sweep roster | _shipAlerts | ShipAlerts
+sweep roster | _shipAuthorized | String
+sweep roster | _shipBoardLog | List<String>
+sweep roster | _shipBoardMessage | String
+sweep roster | _shipBots | List<ShipBot>
+sweep roster | _shipChargesSeconds | Double?
+sweep roster | _shipDoorsShut | HashSet<String>
+sweep roster | _shipEpitaph | ShipEpitaph
+sweep roster | _shipMenuId | String
+sweep roster | _shipMenuX | Double
+sweep roster | _shipMenuY | Double
+sweep roster | _shipPumpOrder | Boolean
+sweep roster | _shipPumps | Dictionary<String, PumpRun>
+sweep roster | _shipReserve | Int32
+sweep roster | _shipScuttleDeterrentSaid | Boolean
+sweep roster | _shipScuttleMessage | String
+sweep roster | _shipScuttleSecondKey | SecondKey?
+sweep roster | _shipScuttleWordGiven | Boolean
+sweep roster | _shipSelected | String
+sweep roster | _shipVacuumSeconds | Dictionary<String, Double>
+sweep roster | _shipVented | HashSet<String>
+sweep roster | _shotAuthorized | Boolean
+sweep roster | _showAlarmPanel | Boolean
+sweep roster | _showBarMenu | Boolean
+sweep roster | _showCaptainsRemote | Boolean
+sweep roster | _showChargeBoard | Boolean
+sweep roster | _showDevStarts | Boolean
+sweep roster | _showDoorBoard | Boolean
+sweep roster | _showLiftPanel | Boolean
+sweep roster | _showRescueOffer | Boolean
+sweep roster | _showSatchel | Boolean
+sweep roster | _showSaveDrawer | Boolean
+sweep roster | _showScuttlePanel | Boolean
+sweep roster | _showShipBoard | Boolean
+sweep roster | _showShipScuttlePanel | Boolean
+sweep roster | _showStartPicker | Boolean
+sweep roster | _showTutorial | Boolean
+sweep roster | _showVentPanel | Boolean
+sweep roster | _showWreckChoice | Boolean
+sweep roster | _shudderActive | Boolean
+sweep roster | _shudderFreezesNpcs | Boolean
+sweep roster | _shudderIndex | Int32
+sweep roster | _shudderNextGap | Double
+sweep roster | _shudderNpcHoldSimTime | Double
+sweep roster | _shudderOnsetMs | Double
+sweep roster | _shudderPlaySeed | UInt64
+sweep roster | _shudderSeconds | Double
+sweep roster | _shudderSeed | UInt64
+sweep roster | _shuttleBayFarStops | List<ShuttleFarStop>
+sweep roster | _shuttleBayStops | List<ShuttleStop>
+sweep roster | _shuttleDescending | Boolean
+sweep roster | _shuttleRun | Run
+sweep roster | _shuttleTarget | NpcState
+sweep roster | _sightBlockers | List<Segment>
+sweep roster | _sightDoorShut | Boolean[]
+sweep roster | _sightIndex | WallIndex
+sweep roster | _sightStone | Segment[]
+sweep roster | _sightings | SightingSpell
+sweep roster | _signalActive | Boolean
+sweep roster | _signalCold | Boolean
+sweep roster | _signalIndex | Int32
+sweep roster | _signalNextGap | Double
+sweep roster | _signalOnsetMs | Double
+sweep roster | _signalSeconds | Double
+sweep roster | _signalSeed | UInt64
+sweep roster | _signerReportedFor | HashSet<String>
+sweep roster | _simAccumulator | Double
+sweep roster | _skimAltKm | Double
+sweep roster | _skimBurnTime | Double
+sweep roster | _skimFailure | String
+sweep roster | _skimHeadingDeg | Double
+sweep roster | _skimPulses | Int32
+sweep roster | _skimResult | SkimGauge?
+sweep roster | _skimSolving | Boolean
+sweep roster | _skimmablePass | Pass?
+sweep roster | _skipActive | Boolean
+sweep roster | _skipNext | NextEvent
+sweep roster | _skipTargetEpoch | Double
+sweep roster | _skipTargetKind | EventKind
+sweep roster | _skipTargetLabel | String
+sweep roster | _skipWarpCommanded | Int32
+sweep roster | _skyMenuRadius | Double
+sweep roster | _skyMenuWorld | Vector2d?
+sweep roster | _skyMenuX | Double
+sweep roster | _skyMenuY | Double
+sweep roster | _slewBearingRad | Double
+sweep roster | _slewUntilSimTime | Double
+sweep roster | _slingBurnTime | Double
+sweep roster | _slingFailure | String
+sweep roster | _slingHeadingDeg | Double
+sweep roster | _slingPassRadii | Double
+sweep roster | _slingPulses | Int32
+sweep roster | _slingResult | Result?
+sweep roster | _slingSide | PassSide
+sweep roster | _slingSolving | Boolean
+sweep roster | _slingablePass | Pass?
+sweep roster | _slotList | IReadOnlyList<SaveSlotMeta>
+sweep roster | _slotStore | RendererSlotStore
+sweep roster | _slots | SaveSlotBook
+sweep roster | _slotsBoundThreadId | String
+sweep roster | _slugAmmo | Int32
+sweep roster | _soundQuietly | Boolean
+sweep roster | _sounding | ValueTuple<Double, Double, Double>?
+sweep roster | _spinePressurised | Boolean
+sweep roster | _spineVacuumSeconds | Double
+sweep roster | _spreadCheat | Boolean
+sweep roster | _started | Boolean
+sweep roster | _startingFloorCheat | Int32?
+sweep roster | _stoolCheat | Boolean
+sweep roster | _storyCard | ValueTuple<Beat, String, String>?
+sweep roster | _storyPlate | ValueTuple<Beat, String, Double>?
+sweep roster | _streamScratch | Single[]
+sweep roster | _suppressClickMenu | Boolean
+sweep roster | _surface | SurfaceExcursion
+sweep roster | _survivorsRescued | Int32
+sweep roster | _sweepFireSeconds | Double
+sweep roster | _sweepRoute | List<ValueTuple<Double, Double>>
+sweep roster | _sweepTeamCheat | Int32
+sweep roster | _sweepers | List<Sweeper>
+sweep roster | _tableSceneCheat | Boolean
+sweep roster | _telescopeLevel | Int32
+sweep roster | _tenderBeat | Int32
+sweep roster | _tenderFlashCheat | Boolean
+sweep roster | _tenderLine | Line?
+sweep roster | _tenderSitting | Sitting
+sweep roster | _tenderTouchedMs | Double
+sweep roster | _threadList | IReadOnlyList<GameThreadInfo>
+sweep roster | _threads | GameThreadRegistry
+sweep roster | _threadsCheat | Boolean
+sweep roster | _touchedThisFrame | Boolean
+sweep roster | _trackingPost | TrackingPost
+sweep roster | _trafficWave | Int32
+sweep roster | _transponderMode | TransponderMode
+sweep roster | _treasureMapCard | TreasureCache?
+sweep roster | _tubeRearmOpen | Boolean
+sweep roster | _tubeRearmSeen | Boolean
+sweep roster | _tutorialPlayed | Boolean
+sweep roster | _tutorialStep | Int32
+sweep roster | _twoClocksSaid | Boolean
+sweep roster | _unlockedHatches | HashSet<String>
+sweep roster | _ventLineSeed | Int32
+sweep roster | _ventLog | List<String>
+sweep roster | _ventMessage | String
+sweep roster | _ventPayoff | HashSet<String>
+sweep roster | _ventReadCard | String
+sweep roster | _ventReads | Dictionary<String, ValueTuple<DiceRoll, LifeSign>>
+sweep roster | _ventSelected | String
+sweep roster | _ventSpaces | Dictionary<String, Space>
+sweep roster | _ventedOwnCompartment | Boolean
+sweep roster | _viewObject | ConsoleSpot?
+sweep roster | _viewportHeight | Int32
+sweep roster | _viewportWidth | Int32
+sweep roster | _voidCardTucked | Boolean
+sweep roster | _voidDeclaredDay | Int64
+sweep roster | _voidHavenInReach | Boolean
+sweep roster | _voidLastToldDay | Int32
+sweep roster | _voidOpened | Boolean
+sweep roster | _voidSweptDay | Int64
+sweep roster | _voyageGroups | IReadOnlyList<GameThreadGroup>
+sweep roster | _walkInAnswered | Boolean
+sweep roster | _walkInAskedThisVisit | Boolean
+sweep roster | _walkInCard | Who?
+sweep roster | _walkInCheat | Boolean?
+sweep roster | _walkInPossibleHere | Boolean
+sweep roster | _walkInRoomLooked | Boolean
+sweep roster | _walkInSetupsRevealed | HashSet<String>
+sweep roster | _walkInVisitBody | String
+sweep roster | _walkInVisitIndex | Int32
+sweep roster | _walkInWho | Who?
+sweep roster | _walletOpen | Boolean
+sweep roster | _warpBeforePlot | Int32
+sweep roster | _wasArcing | Boolean
+sweep roster | _watchCheat | Int64?
+sweep roster | _watchersCheat | Boolean
+sweep roster | _weaponsTight | Boolean
+sweep roster | _weatherAsked | Boolean
+sweep roster | _weatherHeard | Dictionary<String, Int32>
+sweep roster | _weatherLastSaid | Dictionary<String, Int32>
+sweep roster | _weatherSaidId | String
+sweep roster | _weatherShared | Boolean
+sweep roster | _weatherSpeaker | String
+sweep roster | _weatherStation | String
+sweep roster | _weatherStationVisits | Dictionary<String, Int32>
+sweep roster | _wobbleUntilMs | Double
+sweep roster | _workedUp | HashSet<String>
+sweep roster | _worldReady | Boolean
+sweep roster | _wreck | Wreck?
+sweep roster | _wreckContact | String
+sweep roster | _wreckExamined | HashSet<String>
+sweep roster | _wreckLook | WreckLook?
+sweep roster | _wreckOutcome | SalvageOutcome?
+sweep roster | _wreckReported | WreckCause?
+sweep roster | _wreckSalvaged | Boolean
+sweep roster | _wreckTrackerLive | Boolean
+stopped-at | HerOwnDeckInFlight.SteadyFrames | ran to the end of the frame
+stopped-at | HerOwnDeckInFlight.OneLongGap | ran to the end of the frame
+stopped-at | HerOwnDeckInFlight.AHeldKey | ran to the end of the frame
+stopped-at | HerOwnDeckInFlight.APlannedRoute | ran to the end of the frame
+stopped-at | HerOwnDeckInFlight.AHandOnTheWarpSlider | ran to the end of the frame
+stopped-at | TheRegolithOnFoot.SteadyFrames | ran to the end of the frame
+stopped-at | TheRegolithOnFoot.OneLongGap | ran to the end of the frame
+stopped-at | TheRegolithOnFoot.AHeldKey | ran to the end of the frame
+stopped-at | TheRegolithOnFoot.APlannedRoute | ran to the end of the frame
+stopped-at | TheRegolithOnFoot.AHandOnTheWarpSlider | ran to the end of the frame
+stopped-at | AHiveFloorWithAPatrol.SteadyFrames | ran to the end of the frame
+stopped-at | AHiveFloorWithAPatrol.OneLongGap | ran to the end of the frame
+stopped-at | AHiveFloorWithAPatrol.AHeldKey | ran to the end of the frame
+stopped-at | AHiveFloorWithAPatrol.APlannedRoute | ran to the end of the frame
+stopped-at | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ran to the end of the frame
+stopped-at | ACaptainInAChair.SteadyFrames | ran to the end of the frame
+stopped-at | ACaptainInAChair.OneLongGap | ran to the end of the frame
+stopped-at | ACaptainInAChair.AHeldKey | ran to the end of the frame
+stopped-at | ACaptainInAChair.APlannedRoute | ran to the end of the frame
+stopped-at | ACaptainInAChair.AHandOnTheWarpSlider | ran to the end of the frame
+stopped-at | TheMapFrameInFlight.SteadyFrames | the canvas flush (CanvasRenderer.EndFrame → JS)
+stopped-at | TheMapFrameInFlight.OneLongGap | the canvas flush (CanvasRenderer.EndFrame → JS)
+stopped-at | TheMapFrameInFlight.AHeldKey | the canvas flush (CanvasRenderer.EndFrame → JS)
+stopped-at | TheMapFrameInFlight.APlannedRoute | the canvas flush (CanvasRenderer.EndFrame → JS)
+stopped-at | TheMapFrameInFlight.AHandOnTheWarpSlider | the canvas flush (CanvasRenderer.EndFrame → JS)
+stopped-at | TheElectricUniverse.SteadyFrames | ran to the end of the frame
+stopped-at | TheElectricUniverse.OneLongGap | ran to the end of the frame
+stopped-at | TheElectricUniverse.AHeldKey | ran to the end of the frame
+stopped-at | TheElectricUniverse.APlannedRoute | ran to the end of the frame
+stopped-at | TheElectricUniverse.AHandOnTheWarpSlider | ran to the end of the frame
+the real clock | HerOwnDeckInFlight.SteadyFrames | 1983.333333333
+the real clock | HerOwnDeckInFlight.OneLongGap | 17983.33333333
+the real clock | HerOwnDeckInFlight.AHeldKey | 1983.333333333
+the real clock | HerOwnDeckInFlight.APlannedRoute | 3983.333333333
+the real clock | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1983.333333333
+the real clock | TheRegolithOnFoot.SteadyFrames | 1983.333333333
+the real clock | TheRegolithOnFoot.OneLongGap | 17983.33333333
+the real clock | TheRegolithOnFoot.AHeldKey | 1983.333333333
+the real clock | TheRegolithOnFoot.APlannedRoute | 3983.333333333
+the real clock | TheRegolithOnFoot.AHandOnTheWarpSlider | 1983.333333333
+the real clock | AHiveFloorWithAPatrol.SteadyFrames | 1983.333333333
+the real clock | AHiveFloorWithAPatrol.OneLongGap | 17983.33333333
+the real clock | AHiveFloorWithAPatrol.AHeldKey | 1983.333333333
+the real clock | AHiveFloorWithAPatrol.APlannedRoute | 3983.333333333
+the real clock | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 1983.333333333
+the real clock | ACaptainInAChair.SteadyFrames | 1983.333333333
+the real clock | ACaptainInAChair.OneLongGap | 17983.33333333
+the real clock | ACaptainInAChair.AHeldKey | 1983.333333333
+the real clock | ACaptainInAChair.APlannedRoute | 3983.333333333
+the real clock | ACaptainInAChair.AHandOnTheWarpSlider | 1983.333333333
+the real clock | TheMapFrameInFlight.SteadyFrames | 1983.333333333
+the real clock | TheMapFrameInFlight.OneLongGap | 17983.33333333
+the real clock | TheMapFrameInFlight.AHeldKey | 1983.333333333
+the real clock | TheMapFrameInFlight.APlannedRoute | 3983.333333333
+the real clock | TheMapFrameInFlight.AHandOnTheWarpSlider | 1983.333333333
+the real clock | TheElectricUniverse.SteadyFrames | 1983.333333333
+the real clock | TheElectricUniverse.OneLongGap | 17983.33333333
+the real clock | TheElectricUniverse.AHeldKey | 1983.333333333
+the real clock | TheElectricUniverse.APlannedRoute | 3983.333333333
+the real clock | TheElectricUniverse.AHandOnTheWarpSlider | 1983.333333333
+the frame's now | HerOwnDeckInFlight.SteadyFrames | 1983.333333333
+the frame's now | HerOwnDeckInFlight.OneLongGap | 17983.33333333
+the frame's now | HerOwnDeckInFlight.AHeldKey | 1983.333333333
+the frame's now | HerOwnDeckInFlight.APlannedRoute | 3983.333333333
+the frame's now | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1983.333333333
+the frame's now | TheRegolithOnFoot.SteadyFrames | 1983.333333333
+the frame's now | TheRegolithOnFoot.OneLongGap | 17983.33333333
+the frame's now | TheRegolithOnFoot.AHeldKey | 1983.333333333
+the frame's now | TheRegolithOnFoot.APlannedRoute | 3983.333333333
+the frame's now | TheRegolithOnFoot.AHandOnTheWarpSlider | 1983.333333333
+the frame's now | AHiveFloorWithAPatrol.SteadyFrames | 1983.333333333
+the frame's now | AHiveFloorWithAPatrol.OneLongGap | 17983.33333333
+the frame's now | AHiveFloorWithAPatrol.AHeldKey | 1983.333333333
+the frame's now | AHiveFloorWithAPatrol.APlannedRoute | 3983.333333333
+the frame's now | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 1983.333333333
+the frame's now | ACaptainInAChair.SteadyFrames | 1983.333333333
+the frame's now | ACaptainInAChair.OneLongGap | 17983.33333333
+the frame's now | ACaptainInAChair.AHeldKey | 1983.333333333
+the frame's now | ACaptainInAChair.APlannedRoute | 3983.333333333
+the frame's now | ACaptainInAChair.AHandOnTheWarpSlider | 1983.333333333
+the frame's now | TheMapFrameInFlight.SteadyFrames | 1983.333333333
+the frame's now | TheMapFrameInFlight.OneLongGap | 17983.33333333
+the frame's now | TheMapFrameInFlight.AHeldKey | 1983.333333333
+the frame's now | TheMapFrameInFlight.APlannedRoute | 3983.333333333
+the frame's now | TheMapFrameInFlight.AHandOnTheWarpSlider | 1983.333333333
+the frame's now | TheElectricUniverse.SteadyFrames | 1983.333333333
+the frame's now | TheElectricUniverse.OneLongGap | 17983.33333333
+the frame's now | TheElectricUniverse.AHeldKey | 1983.333333333
+the frame's now | TheElectricUniverse.APlannedRoute | 3983.333333333
+the frame's now | TheElectricUniverse.AHandOnTheWarpSlider | 1983.333333333
+the FrameGap clock | HerOwnDeckInFlight.SteadyFrames | 0.01666666666667
+the FrameGap clock | HerOwnDeckInFlight.OneLongGap | 0.01666666666667
+the FrameGap clock | HerOwnDeckInFlight.AHeldKey | 0.01666666666667
+the FrameGap clock | HerOwnDeckInFlight.APlannedRoute | 0.01666666666667
+the FrameGap clock | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0.01666666666667
+the FrameGap clock | TheRegolithOnFoot.SteadyFrames | 0.01666666666667
+the FrameGap clock | TheRegolithOnFoot.OneLongGap | 0.01666666666667
+the FrameGap clock | TheRegolithOnFoot.AHeldKey | 0.01666666666667
+the FrameGap clock | TheRegolithOnFoot.APlannedRoute | 0.01666666666667
+the FrameGap clock | TheRegolithOnFoot.AHandOnTheWarpSlider | 0.01666666666667
+the FrameGap clock | AHiveFloorWithAPatrol.SteadyFrames | 0.01666666666667
+the FrameGap clock | AHiveFloorWithAPatrol.OneLongGap | 0.01666666666667
+the FrameGap clock | AHiveFloorWithAPatrol.AHeldKey | 0.01666666666667
+the FrameGap clock | AHiveFloorWithAPatrol.APlannedRoute | 0.01666666666667
+the FrameGap clock | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 0.01666666666667
+the FrameGap clock | ACaptainInAChair.SteadyFrames | 0.01666666666667
+the FrameGap clock | ACaptainInAChair.OneLongGap | 0.01666666666667
+the FrameGap clock | ACaptainInAChair.AHeldKey | 0.01666666666667
+the FrameGap clock | ACaptainInAChair.APlannedRoute | 0.01666666666667
+the FrameGap clock | ACaptainInAChair.AHandOnTheWarpSlider | 0.01666666666667
+the FrameGap clock | TheMapFrameInFlight.SteadyFrames | 0.01666666666667
+the FrameGap clock | TheMapFrameInFlight.OneLongGap | 0.01666666666667
+the FrameGap clock | TheMapFrameInFlight.AHeldKey | 0.01666666666667
+the FrameGap clock | TheMapFrameInFlight.APlannedRoute | 0.01666666666667
+the FrameGap clock | TheMapFrameInFlight.AHandOnTheWarpSlider | 0.01666666666667
+the FrameGap clock | TheElectricUniverse.SteadyFrames | 0.01666666666667
+the FrameGap clock | TheElectricUniverse.OneLongGap | 0.01666666666667
+the FrameGap clock | TheElectricUniverse.AHeldKey | 0.01666666666667
+the FrameGap clock | TheElectricUniverse.APlannedRoute | 0.01666666666667
+the FrameGap clock | TheElectricUniverse.AHandOnTheWarpSlider | 0.01666666666667
+the hold, said | HerOwnDeckInFlight.SteadyFrames | no
+the hold, said | HerOwnDeckInFlight.OneLongGap | no
+the hold, said | HerOwnDeckInFlight.AHeldKey | no
+the hold, said | HerOwnDeckInFlight.APlannedRoute | no
+the hold, said | HerOwnDeckInFlight.AHandOnTheWarpSlider | no
+the hold, said | TheRegolithOnFoot.SteadyFrames | no
+the hold, said | TheRegolithOnFoot.OneLongGap | no
+the hold, said | TheRegolithOnFoot.AHeldKey | no
+the hold, said | TheRegolithOnFoot.APlannedRoute | no
+the hold, said | TheRegolithOnFoot.AHandOnTheWarpSlider | no
+the hold, said | AHiveFloorWithAPatrol.SteadyFrames | no
+the hold, said | AHiveFloorWithAPatrol.OneLongGap | no
+the hold, said | AHiveFloorWithAPatrol.AHeldKey | no
+the hold, said | AHiveFloorWithAPatrol.APlannedRoute | no
+the hold, said | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | no
+the hold, said | ACaptainInAChair.SteadyFrames | no
+the hold, said | ACaptainInAChair.OneLongGap | no
+the hold, said | ACaptainInAChair.AHeldKey | no
+the hold, said | ACaptainInAChair.APlannedRoute | no
+the hold, said | ACaptainInAChair.AHandOnTheWarpSlider | no
+the hold, said | TheMapFrameInFlight.SteadyFrames | no
+the hold, said | TheMapFrameInFlight.OneLongGap | no
+the hold, said | TheMapFrameInFlight.AHeldKey | no
+the hold, said | TheMapFrameInFlight.APlannedRoute | no
+the hold, said | TheMapFrameInFlight.AHandOnTheWarpSlider | no
+the hold, said | TheElectricUniverse.SteadyFrames | no
+the hold, said | TheElectricUniverse.OneLongGap | no
+the hold, said | TheElectricUniverse.AHeldKey | no
+the hold, said | TheElectricUniverse.APlannedRoute | no
+the hold, said | TheElectricUniverse.AHandOnTheWarpSlider | no
+the accumulator | HerOwnDeckInFlight.SteadyFrames | 0.3333333333367
+the accumulator | HerOwnDeckInFlight.OneLongGap | 0.3333333334504
+the accumulator | HerOwnDeckInFlight.AHeldKey | 0.3333333333367
+the accumulator | HerOwnDeckInFlight.APlannedRoute | 0.3333333333194
+the accumulator | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0.3333333333363
+the accumulator | TheRegolithOnFoot.SteadyFrames | 0.9833333333333
+the accumulator | TheRegolithOnFoot.OneLongGap | 0.9833333333334
+the accumulator | TheRegolithOnFoot.AHeldKey | 0.9833333333333
+the accumulator | TheRegolithOnFoot.APlannedRoute | 0.9833333333333
+the accumulator | TheRegolithOnFoot.AHandOnTheWarpSlider | 0.9833333333364
+the accumulator | AHiveFloorWithAPatrol.SteadyFrames | 0.9833333333333
+the accumulator | AHiveFloorWithAPatrol.OneLongGap | 0.9833333333334
+the accumulator | AHiveFloorWithAPatrol.AHeldKey | 0.9833333333333
+the accumulator | AHiveFloorWithAPatrol.APlannedRoute | 0.9833333333333
+the accumulator | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 0.9833333333364
+the accumulator | ACaptainInAChair.SteadyFrames | 0.9833333333333
+the accumulator | ACaptainInAChair.OneLongGap | 0.9833333333334
+the accumulator | ACaptainInAChair.AHeldKey | 0.9833333333333
+the accumulator | ACaptainInAChair.APlannedRoute | 0.9833333333333
+the accumulator | ACaptainInAChair.AHandOnTheWarpSlider | 0.9833333333364
+the accumulator | TheMapFrameInFlight.SteadyFrames | 0.3333333333337
+the accumulator | TheMapFrameInFlight.OneLongGap | 0.3333333333452
+the accumulator | TheMapFrameInFlight.AHeldKey | 0.3333333333337
+the accumulator | TheMapFrameInFlight.APlannedRoute | 0.3333333333319
+the accumulator | TheMapFrameInFlight.AHandOnTheWarpSlider | 0.3333333333364
+the accumulator | TheElectricUniverse.SteadyFrames | 0.3333333333367
+the accumulator | TheElectricUniverse.OneLongGap | 0.3333333334504
+the accumulator | TheElectricUniverse.AHeldKey | 0.3333333333367
+the accumulator | TheElectricUniverse.APlannedRoute | 0.3333333333194
+the accumulator | TheElectricUniverse.AHandOnTheWarpSlider | 0.3333333333363
+the sim clock | HerOwnDeckInFlight.SteadyFrames | 1983
+the sim clock | HerOwnDeckInFlight.OneLongGap | 17983
+the sim clock | HerOwnDeckInFlight.AHeldKey | 1983
+the sim clock | HerOwnDeckInFlight.APlannedRoute | 3983
+the sim clock | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1317
+the sim clock | TheRegolithOnFoot.SteadyFrames | 1
+the sim clock | TheRegolithOnFoot.OneLongGap | 17
+the sim clock | TheRegolithOnFoot.AHeldKey | 1
+the sim clock | TheRegolithOnFoot.APlannedRoute | 3
+the sim clock | TheRegolithOnFoot.AHandOnTheWarpSlider | 667
+the sim clock | AHiveFloorWithAPatrol.SteadyFrames | 1
+the sim clock | AHiveFloorWithAPatrol.OneLongGap | 17
+the sim clock | AHiveFloorWithAPatrol.AHeldKey | 1
+the sim clock | AHiveFloorWithAPatrol.APlannedRoute | 3
+the sim clock | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 667
+the sim clock | ACaptainInAChair.SteadyFrames | 1
+the sim clock | ACaptainInAChair.OneLongGap | 17
+the sim clock | ACaptainInAChair.AHeldKey | 1
+the sim clock | ACaptainInAChair.APlannedRoute | 3
+the sim clock | ACaptainInAChair.AHandOnTheWarpSlider | 667
+the sim clock | TheMapFrameInFlight.SteadyFrames | 198
+the sim clock | TheMapFrameInFlight.OneLongGap | 1798
+the sim clock | TheMapFrameInFlight.AHeldKey | 198
+the sim clock | TheMapFrameInFlight.APlannedRoute | 398
+the sim clock | TheMapFrameInFlight.AHandOnTheWarpSlider | 732
+the sim clock | TheElectricUniverse.SteadyFrames | 1983
+the sim clock | TheElectricUniverse.OneLongGap | 17983
+the sim clock | TheElectricUniverse.AHeldKey | 1983
+the sim clock | TheElectricUniverse.APlannedRoute | 3983
+the sim clock | TheElectricUniverse.AHandOnTheWarpSlider | 1317
+the ship | HerOwnDeckInFlight.SteadyFrames | ShipState(Charge=0, Position=Vector2d(X=-35182960659.31, Y=150543413607.6), SimTime=1983, Velocity=Vector2d(X=-29003.69689628, Y=-6778.004477987))
+the ship | HerOwnDeckInFlight.OneLongGap | ShipState(Charge=0, Position=Vector2d(X=-35646856296.65, Y=150434268999.8), SimTime=17983, Velocity=Vector2d(X=-28983.28947553, Y=-6864.7365533))
+the ship | HerOwnDeckInFlight.AHeldKey | ShipState(Charge=0, Position=Vector2d(X=-35182960659.31, Y=150543413607.6), SimTime=1983, Velocity=Vector2d(X=-29003.69689628, Y=-6778.004477987))
+the ship | HerOwnDeckInFlight.APlannedRoute | ShipState(Charge=0, Position=Vector2d(X=-35240965516.12, Y=150529846748.2), SimTime=3983, Velocity=Vector2d(X=-29001.16048715, Y=-6788.849398375))
+the ship | HerOwnDeckInFlight.AHandOnTheWarpSlider | ShipState(Charge=0, Position=Vector2d(X=-35163643916.62, Y=150547926557.8), SimTime=1317, Velocity=Vector2d(X=-29004.54059573, Y=-6774.392903328))
+the ship | TheRegolithOnFoot.SteadyFrames | ShipState(Charge=0, Position=Vector2d(X=-35125472845.76, Y=150556836966.5), SimTime=1, Velocity=Vector2d(X=-29006.20636697, Y=-6767.256201384))
+the ship | TheRegolithOnFoot.OneLongGap | ShipState(Charge=0, Position=Vector2d(X=-35125936944.89, Y=150556728689.7), SimTime=17, Velocity=Vector2d(X=-29006.18612526, Y=-6767.342972325))
+the ship | TheRegolithOnFoot.AHeldKey | ShipState(Charge=0, Position=Vector2d(X=-35125472845.76, Y=150556836966.5), SimTime=1, Velocity=Vector2d(X=-29006.20636697, Y=-6767.256201384))
+the ship | TheRegolithOnFoot.APlannedRoute | ShipState(Charge=0, Position=Vector2d(X=-35125530858.17, Y=150556823432), SimTime=3, Velocity=Vector2d(X=-29006.20383677, Y=-6767.267047755))
+the ship | TheRegolithOnFoot.AHandOnTheWarpSlider | ShipState(Charge=0, Position=Vector2d(X=-35144790698.15, Y=150552328769.3), SimTime=667, Velocity=Vector2d(X=-29005.36358057, Y=-6770.867989185))
+the ship | AHiveFloorWithAPatrol.SteadyFrames | ShipState(Charge=0, Position=Vector2d(X=-35125472845.76, Y=150556836966.5), SimTime=1, Velocity=Vector2d(X=-29006.20636697, Y=-6767.256201384))
+the ship | AHiveFloorWithAPatrol.OneLongGap | ShipState(Charge=0, Position=Vector2d(X=-35125936944.89, Y=150556728689.7), SimTime=17, Velocity=Vector2d(X=-29006.18612526, Y=-6767.342972325))
+the ship | AHiveFloorWithAPatrol.AHeldKey | ShipState(Charge=0, Position=Vector2d(X=-35125472845.76, Y=150556836966.5), SimTime=1, Velocity=Vector2d(X=-29006.20636697, Y=-6767.256201384))
+the ship | AHiveFloorWithAPatrol.APlannedRoute | ShipState(Charge=0, Position=Vector2d(X=-35125530858.17, Y=150556823432), SimTime=3, Velocity=Vector2d(X=-29006.20383677, Y=-6767.267047755))
+the ship | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ShipState(Charge=0, Position=Vector2d(X=-35144790698.15, Y=150552328769.3), SimTime=667, Velocity=Vector2d(X=-29005.36358057, Y=-6770.867989185))
+the ship | ACaptainInAChair.SteadyFrames | ShipState(Charge=0, Position=Vector2d(X=-35125472845.76, Y=150556836966.5), SimTime=1, Velocity=Vector2d(X=-29006.20636697, Y=-6767.256201384))
+the ship | ACaptainInAChair.OneLongGap | ShipState(Charge=0, Position=Vector2d(X=-35125936944.89, Y=150556728689.7), SimTime=17, Velocity=Vector2d(X=-29006.18612526, Y=-6767.342972325))
+the ship | ACaptainInAChair.AHeldKey | ShipState(Charge=0, Position=Vector2d(X=-35125472845.76, Y=150556836966.5), SimTime=1, Velocity=Vector2d(X=-29006.20636697, Y=-6767.256201384))
+the ship | ACaptainInAChair.APlannedRoute | ShipState(Charge=0, Position=Vector2d(X=-35125530858.17, Y=150556823432), SimTime=3, Velocity=Vector2d(X=-29006.20383677, Y=-6767.267047755))
+the ship | ACaptainInAChair.AHandOnTheWarpSlider | ShipState(Charge=0, Position=Vector2d(X=-35144790698.15, Y=150552328769.3), SimTime=667, Velocity=Vector2d(X=-29005.36358057, Y=-6770.867989185))
+the ship | TheMapFrameInFlight.SteadyFrames | ShipState(Charge=0, Position=Vector2d(X=-35131187043.74, Y=150555503711.3), SimTime=198, Velocity=Vector2d(X=-29005.95712242, Y=-6768.324564258))
+the ship | TheMapFrameInFlight.OneLongGap | ShipState(Charge=0, Position=Vector2d(X=-35177594895.61, Y=150544667196.6), SimTime=1798, Velocity=Vector2d(X=-29003.93135152, Y=-6777.001284839))
+the ship | TheMapFrameInFlight.AHeldKey | ShipState(Charge=0, Position=Vector2d(X=-35131187043.74, Y=150555503711.3), SimTime=198, Velocity=Vector2d(X=-29005.95712242, Y=-6768.324564258))
+the ship | TheMapFrameInFlight.APlannedRoute | ShipState(Charge=0, Position=Vector2d(X=-35136988209.73, Y=150554149937.4), SimTime=398, Velocity=Vector2d(X=-29005.70404092, Y=-6769.40918697))
+the ship | TheMapFrameInFlight.AHandOnTheWarpSlider | ShipState(Charge=0, Position=Vector2d(X=-35146676044.07, Y=150551888651.3), SimTime=732, Velocity=Vector2d(X=-29005.28130189, Y=-6771.220485222))
+the ship | TheElectricUniverse.SteadyFrames | ShipState(Charge=0.04430484641983, Position=Vector2d(X=-35182960659.31, Y=150543413607.6), SimTime=1983, Velocity=Vector… 161 chars, sha256 20b9f49f81a8c443
+the ship | TheElectricUniverse.OneLongGap | ShipState(Charge=0.1039153239323, Position=Vector2d(X=-35646856296.65, Y=150434268999.8), SimTime=17983, Velocity=Vector… 161 chars, sha256 8650450e40e1026b
+the ship | TheElectricUniverse.AHeldKey | ShipState(Charge=0.04430484641983, Position=Vector2d(X=-35182960659.31, Y=150543413607.6), SimTime=1983, Velocity=Vector… 161 chars, sha256 20b9f49f81a8c443
+the ship | TheElectricUniverse.APlannedRoute | ShipState(Charge=0.07000702466733, Position=Vector2d(X=-35240965516.12, Y=150529846748.2), SimTime=3983, Velocity=Vector… 161 chars, sha256 b0f985e8c1acc0f1
+the ship | TheElectricUniverse.AHandOnTheWarpSlider | ShipState(Charge=0.03205041655556, Position=Vector2d(X=-35163643916.62, Y=150547926557.8), SimTime=1317, Velocity=Vector… 161 chars, sha256 bc42c626b6e82ded
+warp asked | HerOwnDeckInFlight.SteadyFrames | 1000
+warp asked | HerOwnDeckInFlight.OneLongGap | 1000
+warp asked | HerOwnDeckInFlight.AHeldKey | 1000
+warp asked | HerOwnDeckInFlight.APlannedRoute | 1000
+warp asked | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1000
+warp asked | TheRegolithOnFoot.SteadyFrames | 1
+warp asked | TheRegolithOnFoot.OneLongGap | 1
+warp asked | TheRegolithOnFoot.AHeldKey | 1
+warp asked | TheRegolithOnFoot.APlannedRoute | 1
+warp asked | TheRegolithOnFoot.AHandOnTheWarpSlider | 1000
+warp asked | AHiveFloorWithAPatrol.SteadyFrames | 1
+warp asked | AHiveFloorWithAPatrol.OneLongGap | 1
+warp asked | AHiveFloorWithAPatrol.AHeldKey | 1
+warp asked | AHiveFloorWithAPatrol.APlannedRoute | 1
+warp asked | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 1000
+warp asked | ACaptainInAChair.SteadyFrames | 1
+warp asked | ACaptainInAChair.OneLongGap | 1
+warp asked | ACaptainInAChair.AHeldKey | 1
+warp asked | ACaptainInAChair.APlannedRoute | 1
+warp asked | ACaptainInAChair.AHandOnTheWarpSlider | 1000
+warp asked | TheMapFrameInFlight.SteadyFrames | 100
+warp asked | TheMapFrameInFlight.OneLongGap | 100
+warp asked | TheMapFrameInFlight.AHeldKey | 100
+warp asked | TheMapFrameInFlight.APlannedRoute | 100
+warp asked | TheMapFrameInFlight.AHandOnTheWarpSlider | 1000
+warp asked | TheElectricUniverse.SteadyFrames | 1000
+warp asked | TheElectricUniverse.OneLongGap | 1000
+warp asked | TheElectricUniverse.AHeldKey | 1000
+warp asked | TheElectricUniverse.APlannedRoute | 1000
+warp asked | TheElectricUniverse.AHandOnTheWarpSlider | 1000
+warp effective | HerOwnDeckInFlight.SteadyFrames | 1000
+warp effective | HerOwnDeckInFlight.OneLongGap | 1000
+warp effective | HerOwnDeckInFlight.AHeldKey | 1000
+warp effective | HerOwnDeckInFlight.APlannedRoute | 1000
+warp effective | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1000
+warp effective | TheRegolithOnFoot.SteadyFrames | 1
+warp effective | TheRegolithOnFoot.OneLongGap | 1
+warp effective | TheRegolithOnFoot.AHeldKey | 1
+warp effective | TheRegolithOnFoot.APlannedRoute | 1
+warp effective | TheRegolithOnFoot.AHandOnTheWarpSlider | 1000
+warp effective | AHiveFloorWithAPatrol.SteadyFrames | 1
+warp effective | AHiveFloorWithAPatrol.OneLongGap | 1
+warp effective | AHiveFloorWithAPatrol.AHeldKey | 1
+warp effective | AHiveFloorWithAPatrol.APlannedRoute | 1
+warp effective | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 1000
+warp effective | ACaptainInAChair.SteadyFrames | 1
+warp effective | ACaptainInAChair.OneLongGap | 1
+warp effective | ACaptainInAChair.AHeldKey | 1
+warp effective | ACaptainInAChair.APlannedRoute | 1
+warp effective | ACaptainInAChair.AHandOnTheWarpSlider | 1000
+warp effective | TheMapFrameInFlight.SteadyFrames | 100
+warp effective | TheMapFrameInFlight.OneLongGap | 100
+warp effective | TheMapFrameInFlight.AHeldKey | 100
+warp effective | TheMapFrameInFlight.APlannedRoute | 100
+warp effective | TheMapFrameInFlight.AHandOnTheWarpSlider | 1000
+warp effective | TheElectricUniverse.SteadyFrames | 1000
+warp effective | TheElectricUniverse.OneLongGap | 1000
+warp effective | TheElectricUniverse.AHeldKey | 1000
+warp effective | TheElectricUniverse.APlannedRoute | 1000
+warp effective | TheElectricUniverse.AHandOnTheWarpSlider | 1000
+nearest body | HerOwnDeckInFlight.SteadyFrames | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | HerOwnDeckInFlight.OneLongGap | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | HerOwnDeckInFlight.AHeldKey | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | HerOwnDeckInFlight.APlannedRoute | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | HerOwnDeckInFlight.AHandOnTheWarpSlider | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheRegolithOnFoot.SteadyFrames | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheRegolithOnFoot.OneLongGap | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheRegolithOnFoot.AHeldKey | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheRegolithOnFoot.APlannedRoute | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheRegolithOnFoot.AHandOnTheWarpSlider | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | AHiveFloorWithAPatrol.SteadyFrames | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | AHiveFloorWithAPatrol.OneLongGap | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | AHiveFloorWithAPatrol.AHeldKey | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | AHiveFloorWithAPatrol.APlannedRoute | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | ACaptainInAChair.SteadyFrames | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | ACaptainInAChair.OneLongGap | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | ACaptainInAChair.AHeldKey | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | ACaptainInAChair.APlannedRoute | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | ACaptainInAChair.AHandOnTheWarpSlider | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheMapFrameInFlight.SteadyFrames | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheMapFrameInFlight.OneLongGap | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheMapFrameInFlight.AHeldKey | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheMapFrameInFlight.APlannedRoute | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheMapFrameInFlight.AHandOnTheWarpSlider | CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body | TheElectricUniverse.SteadyFrames | CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=6371000, Eccentricity=0, Id="earth", InitialPhase=1.8, IsHaven=no… 241 chars, sha256 e31d17f2b299aafb
+nearest body | TheElectricUniverse.OneLongGap | CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=6371000, Eccentricity=0, Id="earth", InitialPhase=1.8, IsHaven=no… 241 chars, sha256 e31d17f2b299aafb
+nearest body | TheElectricUniverse.AHeldKey | CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=6371000, Eccentricity=0, Id="earth", InitialPhase=1.8, IsHaven=no… 241 chars, sha256 e31d17f2b299aafb
+nearest body | TheElectricUniverse.APlannedRoute | CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=6371000, Eccentricity=0, Id="earth", InitialPhase=1.8, IsHaven=no… 241 chars, sha256 e31d17f2b299aafb
+nearest body | TheElectricUniverse.AHandOnTheWarpSlider | CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=6371000, Eccentricity=0, Id="earth", InitialPhase=1.8, IsHaven=no… 241 chars, sha256 e31d17f2b299aafb
+nearest body at | HerOwnDeckInFlight.SteadyFrames | Vector2d(X=-34046456965, Y=145674290003.9)
+nearest body at | HerOwnDeckInFlight.OneLongGap | Vector2d(X=-34510340334.59, Y=145565093377.5)
+nearest body at | HerOwnDeckInFlight.AHeldKey | Vector2d(X=-34046456965, Y=145674290003.9)
+nearest body at | HerOwnDeckInFlight.APlannedRoute | Vector2d(X=-34104461377.31, Y=145660721246.9)
+nearest body at | HerOwnDeckInFlight.AHandOnTheWarpSlider | Vector2d(X=-34027140297.09, Y=145678803273.5)
+nearest body at | TheRegolithOnFoot.SteadyFrames | Vector2d(X=-33989462372.29, Y=145687598812.1)
+nearest body at | TheRegolithOnFoot.OneLongGap | Vector2d(X=-33989926471.42, Y=145687490535.3)
+nearest body at | TheRegolithOnFoot.AHeldKey | Vector2d(X=-33989462372.29, Y=145687598812.1)
+nearest body at | TheRegolithOnFoot.APlannedRoute | Vector2d(X=-33989520384.7, Y=145687585277.6)
+nearest body at | TheRegolithOnFoot.AHandOnTheWarpSlider | Vector2d(X=-34008316121.71, Y=145683198875.4)
+nearest body at | AHiveFloorWithAPatrol.SteadyFrames | Vector2d(X=-33989462372.29, Y=145687598812.1)
+nearest body at | AHiveFloorWithAPatrol.OneLongGap | Vector2d(X=-33989926471.42, Y=145687490535.3)
+nearest body at | AHiveFloorWithAPatrol.AHeldKey | Vector2d(X=-33989462372.29, Y=145687598812.1)
+nearest body at | AHiveFloorWithAPatrol.APlannedRoute | Vector2d(X=-33989520384.7, Y=145687585277.6)
+nearest body at | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | Vector2d(X=-34008316121.71, Y=145683198875.4)
+nearest body at | ACaptainInAChair.SteadyFrames | Vector2d(X=-33989462372.29, Y=145687598812.1)
+nearest body at | ACaptainInAChair.OneLongGap | Vector2d(X=-33989926471.42, Y=145687490535.3)
+nearest body at | ACaptainInAChair.AHeldKey | Vector2d(X=-33989462372.29, Y=145687598812.1)
+nearest body at | ACaptainInAChair.APlannedRoute | Vector2d(X=-33989520384.7, Y=145687585277.6)
+nearest body at | ACaptainInAChair.AHandOnTheWarpSlider | Vector2d(X=-34008316121.71, Y=145683198875.4)
+nearest body at | TheMapFrameInFlight.SteadyFrames | Vector2d(X=-33995118556.9, Y=145686279087.3)
+nearest body at | TheMapFrameInFlight.OneLongGap | Vector2d(X=-34041526340.89, Y=145675442283.1)
+nearest body at | TheMapFrameInFlight.AHeldKey | Vector2d(X=-33995118556.9, Y=145686279087.3)
+nearest body at | TheMapFrameInFlight.APlannedRoute | Vector2d(X=-34000919718.66, Y=145684925295.3)
+nearest body at | TheMapFrameInFlight.AHandOnTheWarpSlider | Vector2d(X=-34010172460.08, Y=145682765518.9)
+nearest body at | TheElectricUniverse.SteadyFrames | Vector2d(X=-34046456965, Y=145674290003.9)
+nearest body at | TheElectricUniverse.OneLongGap | Vector2d(X=-34510340334.59, Y=145565093377.5)
+nearest body at | TheElectricUniverse.AHeldKey | Vector2d(X=-34046456965, Y=145674290003.9)
+nearest body at | TheElectricUniverse.APlannedRoute | Vector2d(X=-34104461377.31, Y=145660721246.9)
+nearest body at | TheElectricUniverse.AHandOnTheWarpSlider | Vector2d(X=-34027140297.09, Y=145678803273.5)
+nearest body moving | HerOwnDeckInFlight.SteadyFrames | Vector2d(X=-29003.55651855, Y=-6778.604095459)
+nearest body moving | HerOwnDeckInFlight.OneLongGap | Vector2d(X=-28981.81563187, Y=-6870.962661743)
+nearest body moving | HerOwnDeckInFlight.AHeldKey | Vector2d(X=-29003.55651855, Y=-6778.604095459)
+nearest body moving | HerOwnDeckInFlight.APlannedRoute | Vector2d(X=-29000.8550148, Y=-6790.152694702)
+nearest body moving | HerOwnDeckInFlight.AHandOnTheWarpSlider | Vector2d(X=-29004.45512199, Y=-6774.758178711)
+nearest body moving | TheRegolithOnFoot.SteadyFrames | Vector2d(X=-29006.20630074, Y=-6767.256546021)
+nearest body moving | TheRegolithOnFoot.OneLongGap | Vector2d(X=-29006.18474197, Y=-6767.348968506)
+nearest body moving | TheRegolithOnFoot.AHeldKey | Vector2d(X=-29006.20630074, Y=-6767.256546021)
+nearest body moving | TheRegolithOnFoot.APlannedRoute | Vector2d(X=-29006.20360565, Y=-6767.268096924)
+nearest body moving | TheRegolithOnFoot.AHandOnTheWarpSlider | Vector2d(X=-29005.3302784, Y=-6771.010299683)
+nearest body moving | AHiveFloorWithAPatrol.SteadyFrames | Vector2d(X=-29006.20630074, Y=-6767.256546021)
+nearest body moving | AHiveFloorWithAPatrol.OneLongGap | Vector2d(X=-29006.18474197, Y=-6767.348968506)
+nearest body moving | AHiveFloorWithAPatrol.AHeldKey | Vector2d(X=-29006.20630074, Y=-6767.256546021)
+nearest body moving | AHiveFloorWithAPatrol.APlannedRoute | Vector2d(X=-29006.20360565, Y=-6767.268096924)
+nearest body moving | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | Vector2d(X=-29005.3302784, Y=-6771.010299683)
+nearest body moving | ACaptainInAChair.SteadyFrames | Vector2d(X=-29006.20630074, Y=-6767.256546021)
+nearest body moving | ACaptainInAChair.OneLongGap | Vector2d(X=-29006.18474197, Y=-6767.348968506)
+nearest body moving | ACaptainInAChair.AHeldKey | Vector2d(X=-29006.20630074, Y=-6767.256546021)
+nearest body moving | ACaptainInAChair.APlannedRoute | Vector2d(X=-29006.20360565, Y=-6767.268096924)
+nearest body moving | ACaptainInAChair.AHandOnTheWarpSlider | Vector2d(X=-29005.3302784, Y=-6771.010299683)
+nearest body moving | TheMapFrameInFlight.SteadyFrames | Vector2d(X=-29005.94353104, Y=-6768.38269043)
+nearest body moving | TheMapFrameInFlight.OneLongGap | Vector2d(X=-29003.78593636, Y=-6777.622406006)
+nearest body moving | TheMapFrameInFlight.AHeldKey | Vector2d(X=-29005.94353104, Y=-6768.38269043)
+nearest body moving | TheMapFrameInFlight.APlannedRoute | Vector2d(X=-29005.67400551, Y=-6769.537689209)
+nearest body moving | TheMapFrameInFlight.AHandOnTheWarpSlider | Vector2d(X=-29005.24398041, Y=-6771.379898071)
+nearest body moving | TheElectricUniverse.SteadyFrames | Vector2d(X=-29003.55651855, Y=-6778.604095459)
+nearest body moving | TheElectricUniverse.OneLongGap | Vector2d(X=-28981.81563187, Y=-6870.962661743)
+nearest body moving | TheElectricUniverse.AHeldKey | Vector2d(X=-29003.55651855, Y=-6778.604095459)
+nearest body moving | TheElectricUniverse.APlannedRoute | Vector2d(X=-29000.8550148, Y=-6790.152694702)
+nearest body moving | TheElectricUniverse.AHandOnTheWarpSlider | Vector2d(X=-29004.45512199, Y=-6774.758178711)
+the pursuit trail | HerOwnDeckInFlight.SteadyFrames | []
+the pursuit trail | HerOwnDeckInFlight.OneLongGap | []
+the pursuit trail | HerOwnDeckInFlight.AHeldKey | []
+the pursuit trail | HerOwnDeckInFlight.APlannedRoute | []
+the pursuit trail | HerOwnDeckInFlight.AHandOnTheWarpSlider | []
+the pursuit trail | TheRegolithOnFoot.SteadyFrames | []
+the pursuit trail | TheRegolithOnFoot.OneLongGap | []
+the pursuit trail | TheRegolithOnFoot.AHeldKey | []
+the pursuit trail | TheRegolithOnFoot.APlannedRoute | []
+the pursuit trail | TheRegolithOnFoot.AHandOnTheWarpSlider | []
+the pursuit trail | AHiveFloorWithAPatrol.SteadyFrames | []
+the pursuit trail | AHiveFloorWithAPatrol.OneLongGap | []
+the pursuit trail | AHiveFloorWithAPatrol.AHeldKey | []
+the pursuit trail | AHiveFloorWithAPatrol.APlannedRoute | []
+the pursuit trail | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | []
+the pursuit trail | ACaptainInAChair.SteadyFrames | []
+the pursuit trail | ACaptainInAChair.OneLongGap | []
+the pursuit trail | ACaptainInAChair.AHeldKey | []
+the pursuit trail | ACaptainInAChair.APlannedRoute | []
+the pursuit trail | ACaptainInAChair.AHandOnTheWarpSlider | []
+the pursuit trail | TheMapFrameInFlight.SteadyFrames | []
+the pursuit trail | TheMapFrameInFlight.OneLongGap | []
+the pursuit trail | TheMapFrameInFlight.AHeldKey | []
+the pursuit trail | TheMapFrameInFlight.APlannedRoute | []
+the pursuit trail | TheMapFrameInFlight.AHandOnTheWarpSlider | []
+the pursuit trail | TheElectricUniverse.SteadyFrames | []
+the pursuit trail | TheElectricUniverse.OneLongGap | []
+the pursuit trail | TheElectricUniverse.AHeldKey | []
+the pursuit trail | TheElectricUniverse.APlannedRoute | []
+the pursuit trail | TheElectricUniverse.AHandOnTheWarpSlider | []
+this frame's drag | HerOwnDeckInFlight.SteadyFrames | 0
+this frame's drag | HerOwnDeckInFlight.OneLongGap | 0
+this frame's drag | HerOwnDeckInFlight.AHeldKey | 0
+this frame's drag | HerOwnDeckInFlight.APlannedRoute | 0
+this frame's drag | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0
+this frame's drag | TheRegolithOnFoot.SteadyFrames | 0
+this frame's drag | TheRegolithOnFoot.OneLongGap | 0
+this frame's drag | TheRegolithOnFoot.AHeldKey | 0
+this frame's drag | TheRegolithOnFoot.APlannedRoute | 0
+this frame's drag | TheRegolithOnFoot.AHandOnTheWarpSlider | 0
+this frame's drag | AHiveFloorWithAPatrol.SteadyFrames | 0
+this frame's drag | AHiveFloorWithAPatrol.OneLongGap | 0
+this frame's drag | AHiveFloorWithAPatrol.AHeldKey | 0
+this frame's drag | AHiveFloorWithAPatrol.APlannedRoute | 0
+this frame's drag | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 0
+this frame's drag | ACaptainInAChair.SteadyFrames | 0
+this frame's drag | ACaptainInAChair.OneLongGap | 0
+this frame's drag | ACaptainInAChair.AHeldKey | 0
+this frame's drag | ACaptainInAChair.APlannedRoute | 0
+this frame's drag | ACaptainInAChair.AHandOnTheWarpSlider | 0
+this frame's drag | TheMapFrameInFlight.SteadyFrames | 0
+this frame's drag | TheMapFrameInFlight.OneLongGap | 0
+this frame's drag | TheMapFrameInFlight.AHeldKey | 0
+this frame's drag | TheMapFrameInFlight.APlannedRoute | 0
+this frame's drag | TheMapFrameInFlight.AHandOnTheWarpSlider | 0
+this frame's drag | TheElectricUniverse.SteadyFrames | 0
+this frame's drag | TheElectricUniverse.OneLongGap | 0
+this frame's drag | TheElectricUniverse.AHeldKey | 0
+this frame's drag | TheElectricUniverse.APlannedRoute | 0
+this frame's drag | TheElectricUniverse.AHandOnTheWarpSlider | 0
+the next sweep | HerOwnDeckInFlight.SteadyFrames | 1993
+the next sweep | HerOwnDeckInFlight.OneLongGap | 17993
+the next sweep | HerOwnDeckInFlight.AHeldKey | 1993
+the next sweep | HerOwnDeckInFlight.APlannedRoute | 3993
+the next sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1327
+the next sweep | TheRegolithOnFoot.SteadyFrames | 60
+the next sweep | TheRegolithOnFoot.OneLongGap | 60
+the next sweep | TheRegolithOnFoot.AHeldKey | 60
+the next sweep | TheRegolithOnFoot.APlannedRoute | 60
+the next sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 727
+the next sweep | AHiveFloorWithAPatrol.SteadyFrames | 60
+the next sweep | AHiveFloorWithAPatrol.OneLongGap | 60
+the next sweep | AHiveFloorWithAPatrol.AHeldKey | 60
+the next sweep | AHiveFloorWithAPatrol.APlannedRoute | 60
+the next sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 727
+the next sweep | ACaptainInAChair.SteadyFrames | 60
+the next sweep | ACaptainInAChair.OneLongGap | 60
+the next sweep | ACaptainInAChair.AHeldKey | 60
+the next sweep | ACaptainInAChair.APlannedRoute | 60
+the next sweep | ACaptainInAChair.AHandOnTheWarpSlider | 727
+the next sweep | TheMapFrameInFlight.SteadyFrames | 241
+the next sweep | TheMapFrameInFlight.OneLongGap | 1813
+the next sweep | TheMapFrameInFlight.AHeldKey | 241
+the next sweep | TheMapFrameInFlight.APlannedRoute | 421
+the next sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 792
+the next sweep | TheElectricUniverse.SteadyFrames | 1993
+the next sweep | TheElectricUniverse.OneLongGap | 17993
+the next sweep | TheElectricUniverse.AHeldKey | 1993
+the next sweep | TheElectricUniverse.APlannedRoute | 3993
+the next sweep | TheElectricUniverse.AHandOnTheWarpSlider | 1327
+the next projection | HerOwnDeckInFlight.SteadyFrames | 21600
+the next projection | HerOwnDeckInFlight.OneLongGap | 21600
+the next projection | HerOwnDeckInFlight.AHeldKey | 21600
+the next projection | HerOwnDeckInFlight.APlannedRoute | 21600
+the next projection | HerOwnDeckInFlight.AHandOnTheWarpSlider | 21600
+the next projection | TheRegolithOnFoot.SteadyFrames | 21600
+the next projection | TheRegolithOnFoot.OneLongGap | 21600
+the next projection | TheRegolithOnFoot.AHeldKey | 21600
+the next projection | TheRegolithOnFoot.APlannedRoute | 21600
+the next projection | TheRegolithOnFoot.AHandOnTheWarpSlider | 21600
+the next projection | AHiveFloorWithAPatrol.SteadyFrames | 21600
+the next projection | AHiveFloorWithAPatrol.OneLongGap | 21600
+the next projection | AHiveFloorWithAPatrol.AHeldKey | 21600
+the next projection | AHiveFloorWithAPatrol.APlannedRoute | 21600
+the next projection | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 21600
+the next projection | ACaptainInAChair.SteadyFrames | 21600
+the next projection | ACaptainInAChair.OneLongGap | 21600
+the next projection | ACaptainInAChair.AHeldKey | 21600
+the next projection | ACaptainInAChair.APlannedRoute | 21600
+the next projection | ACaptainInAChair.AHandOnTheWarpSlider | 21600
+the next projection | TheMapFrameInFlight.SteadyFrames | 21600
+the next projection | TheMapFrameInFlight.OneLongGap | 21600
+the next projection | TheMapFrameInFlight.AHeldKey | 21600
+the next projection | TheMapFrameInFlight.APlannedRoute | 21600
+the next projection | TheMapFrameInFlight.AHandOnTheWarpSlider | 21600
+the next projection | TheElectricUniverse.SteadyFrames | 21600
+the next projection | TheElectricUniverse.OneLongGap | 21600
+the next projection | TheElectricUniverse.AHeldKey | 21600
+the next projection | TheElectricUniverse.APlannedRoute | 21600
+the next projection | TheElectricUniverse.AHandOnTheWarpSlider | 21600
+the trajectory | HerOwnDeckInFlight.SteadyFrames | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | HerOwnDeckInFlight.OneLongGap | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | HerOwnDeckInFlight.AHeldKey | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | HerOwnDeckInFlight.APlannedRoute | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | HerOwnDeckInFlight.AHandOnTheWarpSlider | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheRegolithOnFoot.SteadyFrames | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheRegolithOnFoot.OneLongGap | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheRegolithOnFoot.AHeldKey | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheRegolithOnFoot.APlannedRoute | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheRegolithOnFoot.AHandOnTheWarpSlider | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | AHiveFloorWithAPatrol.SteadyFrames | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | AHiveFloorWithAPatrol.OneLongGap | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | AHiveFloorWithAPatrol.AHeldKey | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | AHiveFloorWithAPatrol.APlannedRoute | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | ACaptainInAChair.SteadyFrames | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | ACaptainInAChair.OneLongGap | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | ACaptainInAChair.AHeldKey | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | ACaptainInAChair.APlannedRoute | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | ACaptainInAChair.AHandOnTheWarpSlider | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheMapFrameInFlight.SteadyFrames | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheMapFrameInFlight.OneLongGap | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheMapFrameInFlight.AHeldKey | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheMapFrameInFlight.APlannedRoute | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheMapFrameInFlight.AHandOnTheWarpSlider | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 8a0ea4b037d3ae17
+the trajectory | TheElectricUniverse.SteadyFrames | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 0da1756906a90c61
+the trajectory | TheElectricUniverse.OneLongGap | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 0da1756906a90c61
+the trajectory | TheElectricUniverse.AHeldKey | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 0da1756906a90c61
+the trajectory | TheElectricUniverse.APlannedRoute | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 0da1756906a90c61
+the trajectory | TheElectricUniverse.AHandOnTheWarpSlider | [TrajectorySample(Position=Vector2d(X=-35125443839.55, Y=150556843733.8), SimTime=0), TrajectorySample(Position=Vector2d… 5731 chars, sha256 0da1756906a90c61
+the closest pass | HerOwnDeckInFlight.SteadyFrames | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | HerOwnDeckInFlight.OneLongGap | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | HerOwnDeckInFlight.AHeldKey | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | HerOwnDeckInFlight.APlannedRoute | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | HerOwnDeckInFlight.AHandOnTheWarpSlider | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheRegolithOnFoot.SteadyFrames | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheRegolithOnFoot.OneLongGap | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheRegolithOnFoot.AHeldKey | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheRegolithOnFoot.APlannedRoute | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheRegolithOnFoot.AHandOnTheWarpSlider | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | AHiveFloorWithAPatrol.SteadyFrames | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | AHiveFloorWithAPatrol.OneLongGap | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | AHiveFloorWithAPatrol.AHeldKey | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | AHiveFloorWithAPatrol.APlannedRoute | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | ACaptainInAChair.SteadyFrames | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | ACaptainInAChair.OneLongGap | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | ACaptainInAChair.AHeldKey | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | ACaptainInAChair.APlannedRoute | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | ACaptainInAChair.AHandOnTheWarpSlider | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheMapFrameInFlight.SteadyFrames | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheMapFrameInFlight.OneLongGap | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheMapFrameInFlight.AHeldKey | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheMapFrameInFlight.APlannedRoute | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheMapFrameInFlight.AHandOnTheWarpSlider | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 8456315bb7fd6ca8
+the closest pass | TheElectricUniverse.SteadyFrames | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 b60f68c543ea69bd
+the closest pass | TheElectricUniverse.OneLongGap | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 b60f68c543ea69bd
+the closest pass | TheElectricUniverse.AHeldKey | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 b60f68c543ea69bd
+the closest pass | TheElectricUniverse.APlannedRoute | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 b60f68c543ea69bd
+the closest pass | TheElectricUniverse.AHandOnTheWarpSlider | Pass(BodyId="sun", BodyName="Sun", BodyRadius=6963400000, Distance=154597256524.8, ShipPosition=Vector2d(X=-40243824843.… 166 chars, sha256 b60f68c543ea69bd
+the armable pass | HerOwnDeckInFlight.SteadyFrames | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | HerOwnDeckInFlight.OneLongGap | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | HerOwnDeckInFlight.AHeldKey | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | HerOwnDeckInFlight.APlannedRoute | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | HerOwnDeckInFlight.AHandOnTheWarpSlider | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheRegolithOnFoot.SteadyFrames | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheRegolithOnFoot.OneLongGap | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheRegolithOnFoot.AHeldKey | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheRegolithOnFoot.APlannedRoute | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheRegolithOnFoot.AHandOnTheWarpSlider | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | AHiveFloorWithAPatrol.SteadyFrames | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | AHiveFloorWithAPatrol.OneLongGap | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | AHiveFloorWithAPatrol.AHeldKey | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | AHiveFloorWithAPatrol.APlannedRoute | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | ACaptainInAChair.SteadyFrames | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | ACaptainInAChair.OneLongGap | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | ACaptainInAChair.AHeldKey | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | ACaptainInAChair.APlannedRoute | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | ACaptainInAChair.AHandOnTheWarpSlider | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheMapFrameInFlight.SteadyFrames | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheMapFrameInFlight.OneLongGap | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheMapFrameInFlight.AHeldKey | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheMapFrameInFlight.APlannedRoute | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheMapFrameInFlight.AHandOnTheWarpSlider | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 165 chars, sha256 3ec2a784757ddc9c
+the armable pass | TheElectricUniverse.SteadyFrames | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 167 chars, sha256 ec62cdd2c4d906cd
+the armable pass | TheElectricUniverse.OneLongGap | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 167 chars, sha256 ec62cdd2c4d906cd
+the armable pass | TheElectricUniverse.AHeldKey | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 167 chars, sha256 ec62cdd2c4d906cd
+the armable pass | TheElectricUniverse.APlannedRoute | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 167 chars, sha256 ec62cdd2c4d906cd
+the armable pass | TheElectricUniverse.AHandOnTheWarpSlider | Pass(BodyId="earth", BodyName="Earth", BodyRadius=6371000, Distance=4998681368.222, ShipPosition=Vector2d(X=-37534764587… 167 chars, sha256 ec62cdd2c4d906cd
+the long haul | HerOwnDeckInFlight.SteadyFrames | ∅
+the long haul | HerOwnDeckInFlight.OneLongGap | ∅
+the long haul | HerOwnDeckInFlight.AHeldKey | ∅
+the long haul | HerOwnDeckInFlight.APlannedRoute | ∅
+the long haul | HerOwnDeckInFlight.AHandOnTheWarpSlider | ∅
+the long haul | TheRegolithOnFoot.SteadyFrames | ∅
+the long haul | TheRegolithOnFoot.OneLongGap | ∅
+the long haul | TheRegolithOnFoot.AHeldKey | ∅
+the long haul | TheRegolithOnFoot.APlannedRoute | ∅
+the long haul | TheRegolithOnFoot.AHandOnTheWarpSlider | ∅
+the long haul | AHiveFloorWithAPatrol.SteadyFrames | ∅
+the long haul | AHiveFloorWithAPatrol.OneLongGap | ∅
+the long haul | AHiveFloorWithAPatrol.AHeldKey | ∅
+the long haul | AHiveFloorWithAPatrol.APlannedRoute | ∅
+the long haul | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ∅
+the long haul | ACaptainInAChair.SteadyFrames | ∅
+the long haul | ACaptainInAChair.OneLongGap | ∅
+the long haul | ACaptainInAChair.AHeldKey | ∅
+the long haul | ACaptainInAChair.APlannedRoute | ∅
+the long haul | ACaptainInAChair.AHandOnTheWarpSlider | ∅
+the long haul | TheMapFrameInFlight.SteadyFrames | ∅
+the long haul | TheMapFrameInFlight.OneLongGap | ∅
+the long haul | TheMapFrameInFlight.AHeldKey | ∅
+the long haul | TheMapFrameInFlight.APlannedRoute | ∅
+the long haul | TheMapFrameInFlight.AHandOnTheWarpSlider | ∅
+the long haul | TheElectricUniverse.SteadyFrames | ∅
+the long haul | TheElectricUniverse.OneLongGap | ∅
+the long haul | TheElectricUniverse.AHeldKey | ∅
+the long haul | TheElectricUniverse.APlannedRoute | ∅
+the long haul | TheElectricUniverse.AHandOnTheWarpSlider | ∅
+the pulse | HerOwnDeckInFlight.SteadyFrames | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | HerOwnDeckInFlight.OneLongGap | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | HerOwnDeckInFlight.AHeldKey | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | HerOwnDeckInFlight.APlannedRoute | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | HerOwnDeckInFlight.AHandOnTheWarpSlider | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheRegolithOnFoot.SteadyFrames | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheRegolithOnFoot.OneLongGap | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheRegolithOnFoot.AHeldKey | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheRegolithOnFoot.APlannedRoute | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheRegolithOnFoot.AHandOnTheWarpSlider | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | AHiveFloorWithAPatrol.SteadyFrames | PulseSlot(ExpiresMs=9216.666666667, HeldUntilMs=2716.666666667, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 9856451090429b0d
+the pulse | AHiveFloorWithAPatrol.OneLongGap | PulseSlot(ExpiresMs=24333.33333333, HeldUntilMs=17833.33333333, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 6dd8f0e1a8c817fa
+the pulse | AHiveFloorWithAPatrol.AHeldKey | PulseSlot(ExpiresMs=9216.666666667, HeldUntilMs=2716.666666667, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 9856451090429b0d
+the pulse | AHiveFloorWithAPatrol.APlannedRoute | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | PulseSlot(ExpiresMs=9216.666666667, HeldUntilMs=2716.666666667, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 9856451090429b0d
+the pulse | ACaptainInAChair.SteadyFrames | PulseSlot(ExpiresMs=9216.666666667, HeldUntilMs=2716.666666667, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 9856451090429b0d
+the pulse | ACaptainInAChair.OneLongGap | PulseSlot(ExpiresMs=24333.33333333, HeldUntilMs=17833.33333333, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 6dd8f0e1a8c817fa
+the pulse | ACaptainInAChair.AHeldKey | PulseSlot(ExpiresMs=9216.666666667, HeldUntilMs=2716.666666667, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 9856451090429b0d
+the pulse | ACaptainInAChair.APlannedRoute | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | ACaptainInAChair.AHandOnTheWarpSlider | PulseSlot(ExpiresMs=9216.666666667, HeldUntilMs=2716.666666667, Message="An indoor park behind the canteen's glass: grav… 425 chars, sha256 9856451090429b0d
+the pulse | TheMapFrameInFlight.SteadyFrames | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheMapFrameInFlight.OneLongGap | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheMapFrameInFlight.AHeldKey | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheMapFrameInFlight.APlannedRoute | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheMapFrameInFlight.AHandOnTheWarpSlider | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheElectricUniverse.SteadyFrames | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheElectricUniverse.OneLongGap | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheElectricUniverse.AHeldKey | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheElectricUniverse.APlannedRoute | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+the pulse | TheElectricUniverse.AHandOnTheWarpSlider | PulseSlot(ExpiresMs=0, HeldUntilMs=0, Message=∅, Rank=PulseRank.Status)
+arcing | HerOwnDeckInFlight.SteadyFrames | no
+arcing | HerOwnDeckInFlight.OneLongGap | no
+arcing | HerOwnDeckInFlight.AHeldKey | no
+arcing | HerOwnDeckInFlight.APlannedRoute | no
+arcing | HerOwnDeckInFlight.AHandOnTheWarpSlider | no
+arcing | TheRegolithOnFoot.SteadyFrames | no
+arcing | TheRegolithOnFoot.OneLongGap | no
+arcing | TheRegolithOnFoot.AHeldKey | no
+arcing | TheRegolithOnFoot.APlannedRoute | no
+arcing | TheRegolithOnFoot.AHandOnTheWarpSlider | no
+arcing | AHiveFloorWithAPatrol.SteadyFrames | no
+arcing | AHiveFloorWithAPatrol.OneLongGap | no
+arcing | AHiveFloorWithAPatrol.AHeldKey | no
+arcing | AHiveFloorWithAPatrol.APlannedRoute | no
+arcing | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | no
+arcing | ACaptainInAChair.SteadyFrames | no
+arcing | ACaptainInAChair.OneLongGap | no
+arcing | ACaptainInAChair.AHeldKey | no
+arcing | ACaptainInAChair.APlannedRoute | no
+arcing | ACaptainInAChair.AHandOnTheWarpSlider | no
+arcing | TheMapFrameInFlight.SteadyFrames | no
+arcing | TheMapFrameInFlight.OneLongGap | no
+arcing | TheMapFrameInFlight.AHeldKey | no
+arcing | TheMapFrameInFlight.APlannedRoute | no
+arcing | TheMapFrameInFlight.AHandOnTheWarpSlider | no
+arcing | TheElectricUniverse.SteadyFrames | no
+arcing | TheElectricUniverse.OneLongGap | no
+arcing | TheElectricUniverse.AHeldKey | no
+arcing | TheElectricUniverse.APlannedRoute | no
+arcing | TheElectricUniverse.AHandOnTheWarpSlider | no
+the camera | HerOwnDeckInFlight.SteadyFrames | Camera(Center=Vector2d(X=-35182960659.31, Y=150543413607.6), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 cd6fc97bb6b84e36
+the camera | HerOwnDeckInFlight.OneLongGap | Camera(Center=Vector2d(X=-35646856296.65, Y=150434268999.8), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 985e65ca732576b2
+the camera | HerOwnDeckInFlight.AHeldKey | Camera(Center=Vector2d(X=-35182960659.31, Y=150543413607.6), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 cd6fc97bb6b84e36
+the camera | HerOwnDeckInFlight.APlannedRoute | Camera(Center=Vector2d(X=-35240965516.12, Y=150529846748.2), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 319ef7a5ccb5d933
+the camera | HerOwnDeckInFlight.AHandOnTheWarpSlider | Camera(Center=Vector2d(X=-35163643916.62, Y=150547926557.8), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 ea6e1bba8bd6eb92
+the camera | TheRegolithOnFoot.SteadyFrames | Camera(Center=Vector2d(X=-35125472845.76, Y=150556836966.5), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 79f582c04753cb51
+the camera | TheRegolithOnFoot.OneLongGap | Camera(Center=Vector2d(X=-35125936944.89, Y=150556728689.7), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 1fa597f1b72413d3
+the camera | TheRegolithOnFoot.AHeldKey | Camera(Center=Vector2d(X=-35125472845.76, Y=150556836966.5), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 79f582c04753cb51
+the camera | TheRegolithOnFoot.APlannedRoute | Camera(Center=Vector2d(X=-35125530858.17, Y=150556823432), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPixel… 165 chars, sha256 62a5aa854aac4243
+the camera | TheRegolithOnFoot.AHandOnTheWarpSlider | Camera(Center=Vector2d(X=-35144790698.15, Y=150552328769.3), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 355d3f3bd1664a18
+the camera | AHiveFloorWithAPatrol.SteadyFrames | Camera(Center=Vector2d(X=-35125472845.76, Y=150556836966.5), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 79f582c04753cb51
+the camera | AHiveFloorWithAPatrol.OneLongGap | Camera(Center=Vector2d(X=-35125936944.89, Y=150556728689.7), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 1fa597f1b72413d3
+the camera | AHiveFloorWithAPatrol.AHeldKey | Camera(Center=Vector2d(X=-35125472845.76, Y=150556836966.5), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 79f582c04753cb51
+the camera | AHiveFloorWithAPatrol.APlannedRoute | Camera(Center=Vector2d(X=-35125530858.17, Y=150556823432), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPixel… 165 chars, sha256 62a5aa854aac4243
+the camera | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | Camera(Center=Vector2d(X=-35144790698.15, Y=150552328769.3), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 355d3f3bd1664a18
+the camera | ACaptainInAChair.SteadyFrames | Camera(Center=Vector2d(X=-35125472845.76, Y=150556836966.5), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 79f582c04753cb51
+the camera | ACaptainInAChair.OneLongGap | Camera(Center=Vector2d(X=-35125936944.89, Y=150556728689.7), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 1fa597f1b72413d3
+the camera | ACaptainInAChair.AHeldKey | Camera(Center=Vector2d(X=-35125472845.76, Y=150556836966.5), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 79f582c04753cb51
+the camera | ACaptainInAChair.APlannedRoute | Camera(Center=Vector2d(X=-35125530858.17, Y=150556823432), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPixel… 165 chars, sha256 62a5aa854aac4243
+the camera | ACaptainInAChair.AHandOnTheWarpSlider | Camera(Center=Vector2d(X=-35144790698.15, Y=150552328769.3), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 355d3f3bd1664a18
+the camera | TheMapFrameInFlight.SteadyFrames | Camera(Center=Vector2d(X=-35131187043.74, Y=150555503711.3), HeightPx=800, MaxMetersPerPixel=100000000000, MinMetersPerP… 172 chars, sha256 1e39fb51a323e110
+the camera | TheMapFrameInFlight.OneLongGap | Camera(Center=Vector2d(X=-35177594895.61, Y=150544667196.6), HeightPx=800, MaxMetersPerPixel=100000000000, MinMetersPerP… 172 chars, sha256 b8cfc9607da38c9c
+the camera | TheMapFrameInFlight.AHeldKey | Camera(Center=Vector2d(X=-35131187043.74, Y=150555503711.3), HeightPx=800, MaxMetersPerPixel=100000000000, MinMetersPerP… 172 chars, sha256 1e39fb51a323e110
+the camera | TheMapFrameInFlight.APlannedRoute | Camera(Center=Vector2d(X=-35136988209.73, Y=150554149937.4), HeightPx=800, MaxMetersPerPixel=100000000000, MinMetersPerP… 172 chars, sha256 bbed1eba785721e2
+the camera | TheMapFrameInFlight.AHandOnTheWarpSlider | Camera(Center=Vector2d(X=-35146676044.07, Y=150551888651.3), HeightPx=800, MaxMetersPerPixel=100000000000, MinMetersPerP… 172 chars, sha256 58ad069e568bd23f
+the camera | TheElectricUniverse.SteadyFrames | Camera(Center=Vector2d(X=-35182960659.31, Y=150543413607.6), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 cd6fc97bb6b84e36
+the camera | TheElectricUniverse.OneLongGap | Camera(Center=Vector2d(X=-35646856296.65, Y=150434268999.8), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 985e65ca732576b2
+the camera | TheElectricUniverse.AHeldKey | Camera(Center=Vector2d(X=-35182960659.31, Y=150543413607.6), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 cd6fc97bb6b84e36
+the camera | TheElectricUniverse.APlannedRoute | Camera(Center=Vector2d(X=-35240965516.12, Y=150529846748.2), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 319ef7a5ccb5d933
+the camera | TheElectricUniverse.AHandOnTheWarpSlider | Camera(Center=Vector2d(X=-35163643916.62, Y=150547926557.8), HeightPx=0, MaxMetersPerPixel=100000000000, MinMetersPerPix… 167 chars, sha256 ea6e1bba8bd6eb92
+the HUD's last paint | HerOwnDeckInFlight.SteadyFrames | 1866.666666667
+the HUD's last paint | HerOwnDeckInFlight.OneLongGap | 17933.33333333
+the HUD's last paint | HerOwnDeckInFlight.AHeldKey | 1866.666666667
+the HUD's last paint | HerOwnDeckInFlight.APlannedRoute | 3800
+the HUD's last paint | HerOwnDeckInFlight.AHandOnTheWarpSlider | 1866.666666667
+the HUD's last paint | TheRegolithOnFoot.SteadyFrames | 1866.666666667
+the HUD's last paint | TheRegolithOnFoot.OneLongGap | 17933.33333333
+the HUD's last paint | TheRegolithOnFoot.AHeldKey | 1866.666666667
+the HUD's last paint | TheRegolithOnFoot.APlannedRoute | 3800
+the HUD's last paint | TheRegolithOnFoot.AHandOnTheWarpSlider | 1866.666666667
+the HUD's last paint | AHiveFloorWithAPatrol.SteadyFrames | 1866.666666667
+the HUD's last paint | AHiveFloorWithAPatrol.OneLongGap | 17933.33333333
+the HUD's last paint | AHiveFloorWithAPatrol.AHeldKey | 1866.666666667
+the HUD's last paint | AHiveFloorWithAPatrol.APlannedRoute | 3800
+the HUD's last paint | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 1866.666666667
+the HUD's last paint | ACaptainInAChair.SteadyFrames | 1866.666666667
+the HUD's last paint | ACaptainInAChair.OneLongGap | 17933.33333333
+the HUD's last paint | ACaptainInAChair.AHeldKey | 1866.666666667
+the HUD's last paint | ACaptainInAChair.APlannedRoute | 3800
+the HUD's last paint | ACaptainInAChair.AHandOnTheWarpSlider | 1866.666666667
+the HUD's last paint | TheMapFrameInFlight.SteadyFrames | 0
+the HUD's last paint | TheMapFrameInFlight.OneLongGap | 0
+the HUD's last paint | TheMapFrameInFlight.AHeldKey | 0
+the HUD's last paint | TheMapFrameInFlight.APlannedRoute | 0
+the HUD's last paint | TheMapFrameInFlight.AHandOnTheWarpSlider | 0
+the HUD's last paint | TheElectricUniverse.SteadyFrames | 1866.666666667
+the HUD's last paint | TheElectricUniverse.OneLongGap | 17933.33333333
+the HUD's last paint | TheElectricUniverse.AHeldKey | 1866.666666667
+the HUD's last paint | TheElectricUniverse.APlannedRoute | 3800
+the HUD's last paint | TheElectricUniverse.AHandOnTheWarpSlider | 1866.666666667
+the avatar | HerOwnDeckInFlight.SteadyFrames | 21
+the avatar | HerOwnDeckInFlight.OneLongGap | 21
+the avatar | HerOwnDeckInFlight.AHeldKey | 28.95
+the avatar | HerOwnDeckInFlight.APlannedRoute | 22.5
+the avatar | HerOwnDeckInFlight.AHandOnTheWarpSlider | 21
+the avatar | TheRegolithOnFoot.SteadyFrames | 21
+the avatar | TheRegolithOnFoot.OneLongGap | 21
+the avatar | TheRegolithOnFoot.AHeldKey | 28.95
+the avatar | TheRegolithOnFoot.APlannedRoute | 22.32160949707
+the avatar | TheRegolithOnFoot.AHandOnTheWarpSlider | 21
+the avatar | AHiveFloorWithAPatrol.SteadyFrames | -84.67675003124
+the avatar | AHiveFloorWithAPatrol.OneLongGap | -84.67675003124
+the avatar | AHiveFloorWithAPatrol.AHeldKey | -67.42675003124
+the avatar | AHiveFloorWithAPatrol.APlannedRoute | -82.5
+the avatar | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | -84.67675003124
+the avatar | ACaptainInAChair.SteadyFrames | -84.51666666667
+the avatar | ACaptainInAChair.OneLongGap | -84.51666666667
+the avatar | ACaptainInAChair.AHeldKey | -84.51666666667
+the avatar | ACaptainInAChair.APlannedRoute | -82.5
+the avatar | ACaptainInAChair.AHandOnTheWarpSlider | -84.51666666667
+the avatar | TheMapFrameInFlight.SteadyFrames | 21
+the avatar | TheMapFrameInFlight.OneLongGap | 21
+the avatar | TheMapFrameInFlight.AHeldKey | 21
+the avatar | TheMapFrameInFlight.APlannedRoute | 21
+the avatar | TheMapFrameInFlight.AHandOnTheWarpSlider | 21
+the avatar | TheElectricUniverse.SteadyFrames | 21
+the avatar | TheElectricUniverse.OneLongGap | 21
+the avatar | TheElectricUniverse.AHeldKey | 28.95
+the avatar | TheElectricUniverse.APlannedRoute | 22.5
+the avatar | TheElectricUniverse.AHandOnTheWarpSlider | 21
+the avatar (y) | HerOwnDeckInFlight.SteadyFrames | 0
+the avatar (y) | HerOwnDeckInFlight.OneLongGap | 0
+the avatar (y) | HerOwnDeckInFlight.AHeldKey | 0
+the avatar (y) | HerOwnDeckInFlight.APlannedRoute | -4.5
+the avatar (y) | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0
+the avatar (y) | TheRegolithOnFoot.SteadyFrames | 0
+the avatar (y) | TheRegolithOnFoot.OneLongGap | 0
+the avatar (y) | TheRegolithOnFoot.AHeldKey | 0
+the avatar (y) | TheRegolithOnFoot.APlannedRoute | -4.228576660156
+the avatar (y) | TheRegolithOnFoot.AHandOnTheWarpSlider | 0
+the avatar (y) | AHiveFloorWithAPatrol.SteadyFrames | -246.4075540433
+the avatar (y) | AHiveFloorWithAPatrol.OneLongGap | -246.4075540433
+the avatar (y) | AHiveFloorWithAPatrol.AHeldKey | -246.4075540433
+the avatar (y) | AHiveFloorWithAPatrol.APlannedRoute | -258
+the avatar (y) | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | -246.4075540433
+the avatar (y) | ACaptainInAChair.SteadyFrames | -248.1
+the avatar (y) | ACaptainInAChair.OneLongGap | -248.1
+the avatar (y) | ACaptainInAChair.AHeldKey | -248.1
+the avatar (y) | ACaptainInAChair.APlannedRoute | -258
+the avatar (y) | ACaptainInAChair.AHandOnTheWarpSlider | -248.1
+the avatar (y) | TheMapFrameInFlight.SteadyFrames | 0
+the avatar (y) | TheMapFrameInFlight.OneLongGap | 0
+the avatar (y) | TheMapFrameInFlight.AHeldKey | 0
+the avatar (y) | TheMapFrameInFlight.APlannedRoute | 0
+the avatar (y) | TheMapFrameInFlight.AHandOnTheWarpSlider | 0
+the avatar (y) | TheElectricUniverse.SteadyFrames | 0
+the avatar (y) | TheElectricUniverse.OneLongGap | 0
+the avatar (y) | TheElectricUniverse.AHeldKey | 0
+the avatar (y) | TheElectricUniverse.APlannedRoute | -4.5
+the avatar (y) | TheElectricUniverse.AHandOnTheWarpSlider | 0
+the avatar's heading | HerOwnDeckInFlight.SteadyFrames | 0
+the avatar's heading | HerOwnDeckInFlight.OneLongGap | 0
+the avatar's heading | HerOwnDeckInFlight.AHeldKey | 0
+the avatar's heading | HerOwnDeckInFlight.APlannedRoute | -0.7853981633974
+the avatar's heading | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0
+the avatar's heading | TheRegolithOnFoot.SteadyFrames | 0
+the avatar's heading | TheRegolithOnFoot.OneLongGap | 0
+the avatar's heading | TheRegolithOnFoot.AHeldKey | 0
+the avatar's heading | TheRegolithOnFoot.APlannedRoute | -0.7853981633975
+the avatar's heading | TheRegolithOnFoot.AHandOnTheWarpSlider | 0
+the avatar's heading | AHiveFloorWithAPatrol.SteadyFrames | 0
+the avatar's heading | AHiveFloorWithAPatrol.OneLongGap | 0
+the avatar's heading | AHiveFloorWithAPatrol.AHeldKey | 0
+the avatar's heading | AHiveFloorWithAPatrol.APlannedRoute | -1.570796326795
+the avatar's heading | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 0
+the avatar's heading | ACaptainInAChair.SteadyFrames | 0
+the avatar's heading | ACaptainInAChair.OneLongGap | 0
+the avatar's heading | ACaptainInAChair.AHeldKey | 0
+the avatar's heading | ACaptainInAChair.APlannedRoute | -1.570796326795
+the avatar's heading | ACaptainInAChair.AHandOnTheWarpSlider | 0
+the avatar's heading | TheMapFrameInFlight.SteadyFrames | 0
+the avatar's heading | TheMapFrameInFlight.OneLongGap | 0
+the avatar's heading | TheMapFrameInFlight.AHeldKey | 0
+the avatar's heading | TheMapFrameInFlight.APlannedRoute | 0
+the avatar's heading | TheMapFrameInFlight.AHandOnTheWarpSlider | 0
+the avatar's heading | TheElectricUniverse.SteadyFrames | 0
+the avatar's heading | TheElectricUniverse.OneLongGap | 0
+the avatar's heading | TheElectricUniverse.AHeldKey | 0
+the avatar's heading | TheElectricUniverse.APlannedRoute | -0.7853981633974
+the avatar's heading | TheElectricUniverse.AHandOnTheWarpSlider | 0
+the route | HerOwnDeckInFlight.SteadyFrames | ∅
+the route | HerOwnDeckInFlight.OneLongGap | ∅
+the route | HerOwnDeckInFlight.AHeldKey | ∅
+the route | HerOwnDeckInFlight.APlannedRoute | ∅
+the route | HerOwnDeckInFlight.AHandOnTheWarpSlider | ∅
+the route | TheRegolithOnFoot.SteadyFrames | ∅
+the route | TheRegolithOnFoot.OneLongGap | ∅
+the route | TheRegolithOnFoot.AHeldKey | ∅
+the route | TheRegolithOnFoot.APlannedRoute | ∅
+the route | TheRegolithOnFoot.AHandOnTheWarpSlider | ∅
+the route | AHiveFloorWithAPatrol.SteadyFrames | ∅
+the route | AHiveFloorWithAPatrol.OneLongGap | ∅
+the route | AHiveFloorWithAPatrol.AHeldKey | ∅
+the route | AHiveFloorWithAPatrol.APlannedRoute | ∅
+the route | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ∅
+the route | ACaptainInAChair.SteadyFrames | ∅
+the route | ACaptainInAChair.OneLongGap | ∅
+the route | ACaptainInAChair.AHeldKey | ∅
+the route | ACaptainInAChair.APlannedRoute | ∅
+the route | ACaptainInAChair.AHandOnTheWarpSlider | ∅
+the route | TheMapFrameInFlight.SteadyFrames | ∅
+the route | TheMapFrameInFlight.OneLongGap | ∅
+the route | TheMapFrameInFlight.AHeldKey | ∅
+the route | TheMapFrameInFlight.APlannedRoute | ∅
+the route | TheMapFrameInFlight.AHandOnTheWarpSlider | ∅
+the route | TheElectricUniverse.SteadyFrames | ∅
+the route | TheElectricUniverse.OneLongGap | ∅
+the route | TheElectricUniverse.AHeldKey | ∅
+the route | TheElectricUniverse.APlannedRoute | ∅
+the route | TheElectricUniverse.AHandOnTheWarpSlider | ∅
+the seat | HerOwnDeckInFlight.SteadyFrames | ∅
+the seat | HerOwnDeckInFlight.OneLongGap | ∅
+the seat | HerOwnDeckInFlight.AHeldKey | ∅
+the seat | HerOwnDeckInFlight.APlannedRoute | ∅
+the seat | HerOwnDeckInFlight.AHandOnTheWarpSlider | ∅
+the seat | TheRegolithOnFoot.SteadyFrames | ∅
+the seat | TheRegolithOnFoot.OneLongGap | ∅
+the seat | TheRegolithOnFoot.AHeldKey | ∅
+the seat | TheRegolithOnFoot.APlannedRoute | ∅
+the seat | TheRegolithOnFoot.AHandOnTheWarpSlider | ∅
+the seat | AHiveFloorWithAPatrol.SteadyFrames | ∅
+the seat | AHiveFloorWithAPatrol.OneLongGap | ∅
+the seat | AHiveFloorWithAPatrol.AHeldKey | ∅
+the seat | AHiveFloorWithAPatrol.APlannedRoute | ∅
+the seat | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ∅
+the seat | ACaptainInAChair.SteadyFrames | TableTalk(Aboard=no, Bark=∅, Bench=yes, BenchIndex=0, Cabinet=0, CubicleKey=∅, DrinkInHand=no, Free=0, Index=4000, Joine… 1121 chars, sha256 cf9ef1d86df67d3f
+the seat | ACaptainInAChair.OneLongGap | TableTalk(Aboard=no, Bark=∅, Bench=yes, BenchIndex=0, Cabinet=0, CubicleKey=∅, DrinkInHand=no, Free=0, Index=4000, Joine… 1121 chars, sha256 cf9ef1d86df67d3f
+the seat | ACaptainInAChair.AHeldKey | TableTalk(Aboard=no, Bark=∅, Bench=yes, BenchIndex=0, Cabinet=0, CubicleKey=∅, DrinkInHand=no, Free=0, Index=4000, Joine… 1121 chars, sha256 cf9ef1d86df67d3f
+the seat | ACaptainInAChair.APlannedRoute | ∅
+the seat | ACaptainInAChair.AHandOnTheWarpSlider | TableTalk(Aboard=no, Bark=∅, Bench=yes, BenchIndex=0, Cabinet=0, CubicleKey=∅, DrinkInHand=no, Free=0, Index=4000, Joine… 1121 chars, sha256 cf9ef1d86df67d3f
+the seat | TheMapFrameInFlight.SteadyFrames | ∅
+the seat | TheMapFrameInFlight.OneLongGap | ∅
+the seat | TheMapFrameInFlight.AHeldKey | ∅
+the seat | TheMapFrameInFlight.APlannedRoute | ∅
+the seat | TheMapFrameInFlight.AHandOnTheWarpSlider | ∅
+the seat | TheElectricUniverse.SteadyFrames | ∅
+the seat | TheElectricUniverse.OneLongGap | ∅
+the seat | TheElectricUniverse.AHeldKey | ∅
+the seat | TheElectricUniverse.APlannedRoute | ∅
+the seat | TheElectricUniverse.AHandOnTheWarpSlider | ∅
+the nerve | HerOwnDeckInFlight.SteadyFrames | 100
+the nerve | HerOwnDeckInFlight.OneLongGap | 100
+the nerve | HerOwnDeckInFlight.AHeldKey | 100
+the nerve | HerOwnDeckInFlight.APlannedRoute | 100
+the nerve | HerOwnDeckInFlight.AHandOnTheWarpSlider | 100
+the nerve | TheRegolithOnFoot.SteadyFrames | 100
+the nerve | TheRegolithOnFoot.OneLongGap | 100
+the nerve | TheRegolithOnFoot.AHeldKey | 100
+the nerve | TheRegolithOnFoot.APlannedRoute | 100
+the nerve | TheRegolithOnFoot.AHandOnTheWarpSlider | 100
+the nerve | AHiveFloorWithAPatrol.SteadyFrames | 100
+the nerve | AHiveFloorWithAPatrol.OneLongGap | 100
+the nerve | AHiveFloorWithAPatrol.AHeldKey | 100
+the nerve | AHiveFloorWithAPatrol.APlannedRoute | 100
+the nerve | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 100
+the nerve | ACaptainInAChair.SteadyFrames | 100
+the nerve | ACaptainInAChair.OneLongGap | 100
+the nerve | ACaptainInAChair.AHeldKey | 100
+the nerve | ACaptainInAChair.APlannedRoute | 100
+the nerve | ACaptainInAChair.AHandOnTheWarpSlider | 100
+the nerve | TheMapFrameInFlight.SteadyFrames | 100
+the nerve | TheMapFrameInFlight.OneLongGap | 100
+the nerve | TheMapFrameInFlight.AHeldKey | 100
+the nerve | TheMapFrameInFlight.APlannedRoute | 100
+the nerve | TheMapFrameInFlight.AHandOnTheWarpSlider | 100
+the nerve | TheElectricUniverse.SteadyFrames | 100
+the nerve | TheElectricUniverse.OneLongGap | 100
+the nerve | TheElectricUniverse.AHeldKey | 100
+the nerve | TheElectricUniverse.APlannedRoute | 100
+the nerve | TheElectricUniverse.AHandOnTheWarpSlider | 100
+the tracker | HerOwnDeckInFlight.SteadyFrames | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | HerOwnDeckInFlight.OneLongGap | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | HerOwnDeckInFlight.AHeldKey | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | HerOwnDeckInFlight.APlannedRoute | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | HerOwnDeckInFlight.AHandOnTheWarpSlider | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheRegolithOnFoot.SteadyFrames | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | TheRegolithOnFoot.OneLongGap | ChirpState(Armed=yes, ClearSeconds=21.98333333333)
+the tracker | TheRegolithOnFoot.AHeldKey | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | TheRegolithOnFoot.APlannedRoute | ChirpState(Armed=yes, ClearSeconds=7.983333333333)
+the tracker | TheRegolithOnFoot.AHandOnTheWarpSlider | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | AHiveFloorWithAPatrol.SteadyFrames | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | AHiveFloorWithAPatrol.OneLongGap | ChirpState(Armed=yes, ClearSeconds=21.98333333333)
+the tracker | AHiveFloorWithAPatrol.AHeldKey | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | AHiveFloorWithAPatrol.APlannedRoute | ChirpState(Armed=yes, ClearSeconds=7.983333333333)
+the tracker | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | ACaptainInAChair.SteadyFrames | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | ACaptainInAChair.OneLongGap | ChirpState(Armed=yes, ClearSeconds=21.98333333333)
+the tracker | ACaptainInAChair.AHeldKey | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | ACaptainInAChair.APlannedRoute | ChirpState(Armed=yes, ClearSeconds=7.983333333333)
+the tracker | ACaptainInAChair.AHandOnTheWarpSlider | ChirpState(Armed=yes, ClearSeconds=5.983333333333)
+the tracker | TheMapFrameInFlight.SteadyFrames | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheMapFrameInFlight.OneLongGap | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheMapFrameInFlight.AHeldKey | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheMapFrameInFlight.APlannedRoute | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheMapFrameInFlight.AHandOnTheWarpSlider | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheElectricUniverse.SteadyFrames | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheElectricUniverse.OneLongGap | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheElectricUniverse.AHeldKey | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheElectricUniverse.APlannedRoute | ChirpState(Armed=yes, ClearSeconds=4)
+the tracker | TheElectricUniverse.AHandOnTheWarpSlider | ChirpState(Armed=yes, ClearSeconds=4)
+the guards | HerOwnDeckInFlight.SteadyFrames | []
+the guards | HerOwnDeckInFlight.OneLongGap | []
+the guards | HerOwnDeckInFlight.AHeldKey | []
+the guards | HerOwnDeckInFlight.APlannedRoute | []
+the guards | HerOwnDeckInFlight.AHandOnTheWarpSlider | []
+the guards | TheRegolithOnFoot.SteadyFrames | []
+the guards | TheRegolithOnFoot.OneLongGap | []
+the guards | TheRegolithOnFoot.AHeldKey | []
+the guards | TheRegolithOnFoot.APlannedRoute | []
+the guards | TheRegolithOnFoot.AHandOnTheWarpSlider | []
+the guards | AHiveFloorWithAPatrol.SteadyFrames | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
+the guards | AHiveFloorWithAPatrol.OneLongGap | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 4ef9aeea404d4f81
+the guards | AHiveFloorWithAPatrol.AHeldKey | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
+the guards | AHiveFloorWithAPatrol.APlannedRoute | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 4f693e0c76190c1c
+the guards | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
+the guards | ACaptainInAChair.SteadyFrames | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
+the guards | ACaptainInAChair.OneLongGap | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 4ef9aeea404d4f81
+the guards | ACaptainInAChair.AHeldKey | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
+the guards | ACaptainInAChair.APlannedRoute | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 4f693e0c76190c1c
+the guards | ACaptainInAChair.AHandOnTheWarpSlider | [Guard(AfterYou=no, AfterYouFor=0, CallingIn=0, CoverAt=∅, CoverFor=0, CoverPoint=0, DeckName="PATROL 1", Held=no, Knock… 754 chars, sha256 5fd789f99123ad0f
+the guards | TheMapFrameInFlight.SteadyFrames | []
+the guards | TheMapFrameInFlight.OneLongGap | []
+the guards | TheMapFrameInFlight.AHeldKey | []
+the guards | TheMapFrameInFlight.APlannedRoute | []
+the guards | TheMapFrameInFlight.AHandOnTheWarpSlider | []
+the guards | TheElectricUniverse.SteadyFrames | []
+the guards | TheElectricUniverse.OneLongGap | []
+the guards | TheElectricUniverse.AHeldKey | []
+the guards | TheElectricUniverse.APlannedRoute | []
+the guards | TheElectricUniverse.AHandOnTheWarpSlider | []
+the patrol clock | HerOwnDeckInFlight.SteadyFrames | 0
+the patrol clock | HerOwnDeckInFlight.OneLongGap | 0
+the patrol clock | HerOwnDeckInFlight.AHeldKey | 0
+the patrol clock | HerOwnDeckInFlight.APlannedRoute | 0
+the patrol clock | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0
+the patrol clock | TheRegolithOnFoot.SteadyFrames | 0
+the patrol clock | TheRegolithOnFoot.OneLongGap | 0
+the patrol clock | TheRegolithOnFoot.AHeldKey | 0
+the patrol clock | TheRegolithOnFoot.APlannedRoute | 0
+the patrol clock | TheRegolithOnFoot.AHandOnTheWarpSlider | 0
+the patrol clock | AHiveFloorWithAPatrol.SteadyFrames | 1.983333333333
+the patrol clock | AHiveFloorWithAPatrol.OneLongGap | 2.066666666667
+the patrol clock | AHiveFloorWithAPatrol.AHeldKey | 1.983333333333
+the patrol clock | AHiveFloorWithAPatrol.APlannedRoute | 3.983333333333
+the patrol clock | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 1.983333333333
+the patrol clock | ACaptainInAChair.SteadyFrames | 1.983333333333
+the patrol clock | ACaptainInAChair.OneLongGap | 2.066666666667
+the patrol clock | ACaptainInAChair.AHeldKey | 1.983333333333
+the patrol clock | ACaptainInAChair.APlannedRoute | 3.983333333333
+the patrol clock | ACaptainInAChair.AHandOnTheWarpSlider | 1.983333333333
+the patrol clock | TheMapFrameInFlight.SteadyFrames | 0
+the patrol clock | TheMapFrameInFlight.OneLongGap | 0
+the patrol clock | TheMapFrameInFlight.AHeldKey | 0
+the patrol clock | TheMapFrameInFlight.APlannedRoute | 0
+the patrol clock | TheMapFrameInFlight.AHandOnTheWarpSlider | 0
+the patrol clock | TheElectricUniverse.SteadyFrames | 0
+the patrol clock | TheElectricUniverse.OneLongGap | 0
+the patrol clock | TheElectricUniverse.AHeldKey | 0
+the patrol clock | TheElectricUniverse.APlannedRoute | 0
+the patrol clock | TheElectricUniverse.AHandOnTheWarpSlider | 0
+the traffic | HerOwnDeckInFlight.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
+the traffic | HerOwnDeckInFlight.OneLongGap | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9194 chars, sha256 3584629a0feee37a
+the traffic | HerOwnDeckInFlight.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
+the traffic | HerOwnDeckInFlight.APlannedRoute | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9057 chars, sha256 e7c4d9dac7662283
+the traffic | HerOwnDeckInFlight.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 e08803637666faf5
+the traffic | TheRegolithOnFoot.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | TheRegolithOnFoot.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | TheRegolithOnFoot.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | TheRegolithOnFoot.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | TheRegolithOnFoot.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 4e7c48ef00f2b8f4
+the traffic | AHiveFloorWithAPatrol.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | AHiveFloorWithAPatrol.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | AHiveFloorWithAPatrol.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | AHiveFloorWithAPatrol.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 4e7c48ef00f2b8f4
+the traffic | ACaptainInAChair.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | ACaptainInAChair.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | ACaptainInAChair.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | ACaptainInAChair.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
+the traffic | ACaptainInAChair.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 4e7c48ef00f2b8f4
+the traffic | TheMapFrameInFlight.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 ae1b4b6b70e2a26e
+the traffic | TheMapFrameInFlight.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 ff962fa644343616
+the traffic | TheMapFrameInFlight.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 ae1b4b6b70e2a26e
+the traffic | TheMapFrameInFlight.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8551 chars, sha256 00eafb99e3144793
+the traffic | TheMapFrameInFlight.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 791815c1190b13e3
+the traffic | TheElectricUniverse.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
+the traffic | TheElectricUniverse.OneLongGap | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9195 chars, sha256 6832e8d848ccda2f
+the traffic | TheElectricUniverse.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
+the traffic | TheElectricUniverse.APlannedRoute | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9056 chars, sha256 024905af99b11991
+the traffic | TheElectricUniverse.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 e08803637666faf5
+the hunters | HerOwnDeckInFlight.SteadyFrames | []
+the hunters | HerOwnDeckInFlight.OneLongGap | []
+the hunters | HerOwnDeckInFlight.AHeldKey | []
+the hunters | HerOwnDeckInFlight.APlannedRoute | []
+the hunters | HerOwnDeckInFlight.AHandOnTheWarpSlider | []
+the hunters | TheRegolithOnFoot.SteadyFrames | []
+the hunters | TheRegolithOnFoot.OneLongGap | []
+the hunters | TheRegolithOnFoot.AHeldKey | []
+the hunters | TheRegolithOnFoot.APlannedRoute | []
+the hunters | TheRegolithOnFoot.AHandOnTheWarpSlider | []
+the hunters | AHiveFloorWithAPatrol.SteadyFrames | []
+the hunters | AHiveFloorWithAPatrol.OneLongGap | []
+the hunters | AHiveFloorWithAPatrol.AHeldKey | []
+the hunters | AHiveFloorWithAPatrol.APlannedRoute | []
+the hunters | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | []
+the hunters | ACaptainInAChair.SteadyFrames | []
+the hunters | ACaptainInAChair.OneLongGap | []
+the hunters | ACaptainInAChair.AHeldKey | []
+the hunters | ACaptainInAChair.APlannedRoute | []
+the hunters | ACaptainInAChair.AHandOnTheWarpSlider | []
+the hunters | TheMapFrameInFlight.SteadyFrames | []
+the hunters | TheMapFrameInFlight.OneLongGap | []
+the hunters | TheMapFrameInFlight.AHeldKey | []
+the hunters | TheMapFrameInFlight.APlannedRoute | []
+the hunters | TheMapFrameInFlight.AHandOnTheWarpSlider | []
+the hunters | TheElectricUniverse.SteadyFrames | []
+the hunters | TheElectricUniverse.OneLongGap | []
+the hunters | TheElectricUniverse.AHeldKey | []
+the hunters | TheElectricUniverse.APlannedRoute | []
+the hunters | TheElectricUniverse.AHandOnTheWarpSlider | []
+the ordnance | HerOwnDeckInFlight.SteadyFrames | []
+the ordnance | HerOwnDeckInFlight.OneLongGap | []
+the ordnance | HerOwnDeckInFlight.AHeldKey | []
+the ordnance | HerOwnDeckInFlight.APlannedRoute | []
+the ordnance | HerOwnDeckInFlight.AHandOnTheWarpSlider | []
+the ordnance | TheRegolithOnFoot.SteadyFrames | []
+the ordnance | TheRegolithOnFoot.OneLongGap | []
+the ordnance | TheRegolithOnFoot.AHeldKey | []
+the ordnance | TheRegolithOnFoot.APlannedRoute | []
+the ordnance | TheRegolithOnFoot.AHandOnTheWarpSlider | []
+the ordnance | AHiveFloorWithAPatrol.SteadyFrames | []
+the ordnance | AHiveFloorWithAPatrol.OneLongGap | []
+the ordnance | AHiveFloorWithAPatrol.AHeldKey | []
+the ordnance | AHiveFloorWithAPatrol.APlannedRoute | []
+the ordnance | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | []
+the ordnance | ACaptainInAChair.SteadyFrames | []
+the ordnance | ACaptainInAChair.OneLongGap | []
+the ordnance | ACaptainInAChair.AHeldKey | []
+the ordnance | ACaptainInAChair.APlannedRoute | []
+the ordnance | ACaptainInAChair.AHandOnTheWarpSlider | []
+the ordnance | TheMapFrameInFlight.SteadyFrames | []
+the ordnance | TheMapFrameInFlight.OneLongGap | []
+the ordnance | TheMapFrameInFlight.AHeldKey | []
+the ordnance | TheMapFrameInFlight.APlannedRoute | []
+the ordnance | TheMapFrameInFlight.AHandOnTheWarpSlider | []
+the ordnance | TheElectricUniverse.SteadyFrames | []
+the ordnance | TheElectricUniverse.OneLongGap | []
+the ordnance | TheElectricUniverse.AHeldKey | []
+the ordnance | TheElectricUniverse.APlannedRoute | []
+the ordnance | TheElectricUniverse.AHandOnTheWarpSlider | []
+the ghost | HerOwnDeckInFlight.SteadyFrames | ∅
+the ghost | HerOwnDeckInFlight.OneLongGap | ∅
+the ghost | HerOwnDeckInFlight.AHeldKey | ∅
+the ghost | HerOwnDeckInFlight.APlannedRoute | ∅
+the ghost | HerOwnDeckInFlight.AHandOnTheWarpSlider | ∅
+the ghost | TheRegolithOnFoot.SteadyFrames | ∅
+the ghost | TheRegolithOnFoot.OneLongGap | ∅
+the ghost | TheRegolithOnFoot.AHeldKey | ∅
+the ghost | TheRegolithOnFoot.APlannedRoute | ∅
+the ghost | TheRegolithOnFoot.AHandOnTheWarpSlider | ∅
+the ghost | AHiveFloorWithAPatrol.SteadyFrames | ∅
+the ghost | AHiveFloorWithAPatrol.OneLongGap | ∅
+the ghost | AHiveFloorWithAPatrol.AHeldKey | ∅
+the ghost | AHiveFloorWithAPatrol.APlannedRoute | ∅
+the ghost | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | ∅
+the ghost | ACaptainInAChair.SteadyFrames | ∅
+the ghost | ACaptainInAChair.OneLongGap | ∅
+the ghost | ACaptainInAChair.AHeldKey | ∅
+the ghost | ACaptainInAChair.APlannedRoute | ∅
+the ghost | ACaptainInAChair.AHandOnTheWarpSlider | ∅
+the ghost | TheMapFrameInFlight.SteadyFrames | ∅
+the ghost | TheMapFrameInFlight.OneLongGap | ∅
+the ghost | TheMapFrameInFlight.AHeldKey | ∅
+the ghost | TheMapFrameInFlight.APlannedRoute | ∅
+the ghost | TheMapFrameInFlight.AHandOnTheWarpSlider | ∅
+the ghost | TheElectricUniverse.SteadyFrames | ∅
+the ghost | TheElectricUniverse.OneLongGap | ∅
+the ghost | TheElectricUniverse.AHeldKey | ∅
+the ghost | TheElectricUniverse.APlannedRoute | ∅
+the ghost | TheElectricUniverse.AHandOnTheWarpSlider | ∅
+the surface | HerOwnDeckInFlight.SteadyFrames | ∅
+the surface | HerOwnDeckInFlight.OneLongGap | ∅
+the surface | HerOwnDeckInFlight.AHeldKey | ∅
+the surface | HerOwnDeckInFlight.APlannedRoute | ∅
+the surface | HerOwnDeckInFlight.AHandOnTheWarpSlider | ∅
+the surface | TheRegolithOnFoot.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cab… 5014 chars, sha256 8ca754aadbe05e14
+the surface | TheRegolithOnFoot.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1275, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5012 chars, sha256 aab079d6648133c5
+the surface | TheRegolithOnFoot.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cab… 5014 chars, sha256 8ca754aadbe05e14
+the surface | TheRegolithOnFoot.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1247.8, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cab… 5014 chars, sha256 cba3178a9d0e9b7d
+the surface | TheRegolithOnFoot.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cab… 5014 chars, sha256 8ca754aadbe05e14
+the surface | AHiveFloorWithAPatrol.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
+the surface | AHiveFloorWithAPatrol.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 111f0acf24a78cb0
+the surface | AHiveFloorWithAPatrol.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
+the surface | AHiveFloorWithAPatrol.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5092 chars, sha256 94c070173f61bc9b
+the surface | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
+the surface | ACaptainInAChair.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
+the surface | ACaptainInAChair.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 111f0acf24a78cb0
+the surface | ACaptainInAChair.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
+the surface | ACaptainInAChair.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5092 chars, sha256 94c070173f61bc9b
+the surface | ACaptainInAChair.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Bots=[], Buried=no, BurnFired=no, CabinetBeats=0, Cabin… 5093 chars, sha256 304c98fa30270b5b
+the surface | TheMapFrameInFlight.SteadyFrames | ∅
+the surface | TheMapFrameInFlight.OneLongGap | ∅
+the surface | TheMapFrameInFlight.AHeldKey | ∅
+the surface | TheMapFrameInFlight.APlannedRoute | ∅
+the surface | TheMapFrameInFlight.AHandOnTheWarpSlider | ∅
+the surface | TheElectricUniverse.SteadyFrames | ∅
+the surface | TheElectricUniverse.OneLongGap | ∅
+the surface | TheElectricUniverse.AHeldKey | ∅
+the surface | TheElectricUniverse.APlannedRoute | ∅
+the surface | TheElectricUniverse.AHandOnTheWarpSlider | ∅
+the pulse cooldown | HerOwnDeckInFlight.SteadyFrames | -1
+the pulse cooldown | HerOwnDeckInFlight.OneLongGap | -1
+the pulse cooldown | HerOwnDeckInFlight.AHeldKey | -1
+the pulse cooldown | HerOwnDeckInFlight.APlannedRoute | -1
+the pulse cooldown | HerOwnDeckInFlight.AHandOnTheWarpSlider | -1
+the pulse cooldown | TheRegolithOnFoot.SteadyFrames | -1
+the pulse cooldown | TheRegolithOnFoot.OneLongGap | -1
+the pulse cooldown | TheRegolithOnFoot.AHeldKey | -1
+the pulse cooldown | TheRegolithOnFoot.APlannedRoute | -1
+the pulse cooldown | TheRegolithOnFoot.AHandOnTheWarpSlider | -1
+the pulse cooldown | AHiveFloorWithAPatrol.SteadyFrames | -1
+the pulse cooldown | AHiveFloorWithAPatrol.OneLongGap | -1
+the pulse cooldown | AHiveFloorWithAPatrol.AHeldKey | -1
+the pulse cooldown | AHiveFloorWithAPatrol.APlannedRoute | -1
+the pulse cooldown | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | -1
+the pulse cooldown | ACaptainInAChair.SteadyFrames | -1
+the pulse cooldown | ACaptainInAChair.OneLongGap | -1
+the pulse cooldown | ACaptainInAChair.AHeldKey | -1
+the pulse cooldown | ACaptainInAChair.APlannedRoute | -1
+the pulse cooldown | ACaptainInAChair.AHandOnTheWarpSlider | -1
+the pulse cooldown | TheMapFrameInFlight.SteadyFrames | -1
+the pulse cooldown | TheMapFrameInFlight.OneLongGap | -1
+the pulse cooldown | TheMapFrameInFlight.AHeldKey | -1
+the pulse cooldown | TheMapFrameInFlight.APlannedRoute | -1
+the pulse cooldown | TheMapFrameInFlight.AHandOnTheWarpSlider | -1
+the pulse cooldown | TheElectricUniverse.SteadyFrames | -1
+the pulse cooldown | TheElectricUniverse.OneLongGap | -1
+the pulse cooldown | TheElectricUniverse.AHeldKey | -1
+the pulse cooldown | TheElectricUniverse.APlannedRoute | -1
+the pulse cooldown | TheElectricUniverse.AHandOnTheWarpSlider | -1
+sweep | HerOwnDeckInFlight.SteadyFrames | 757 fields, sha256 256fead7853842cf0cb88ee503f54c85237612f8b62f21eaf348cd1958fa216a
+sweep | HerOwnDeckInFlight.OneLongGap | 757 fields, sha256 ca91e4aa24af1d43479a6a395ce6badc9fb6683d4ee363c46ddbba7ccf10d244
+sweep | HerOwnDeckInFlight.AHeldKey | 757 fields, sha256 e3ca900e541af0776df3d4ea864fbf44bd2ce3c33e4d0ebb21dfb42229e63b61
+sweep | HerOwnDeckInFlight.APlannedRoute | 757 fields, sha256 2e210b66ae3a47405e6cf7539e1844048953a98802ce941345c924070c50ff94
+sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 757 fields, sha256 0524018b20c2be8866fc899543455d9b8cb9a5c747e8180146e242b185051ea0
+sweep | TheRegolithOnFoot.SteadyFrames | 757 fields, sha256 7de84d565f79ed367c7f7ec299ec7298e5f92ddcc054471639443520e77aec85
+sweep | TheRegolithOnFoot.OneLongGap | 757 fields, sha256 60895923efc403ff4f4d8f344c534d950801c21abd478988c35a2a2e4fb678c8
+sweep | TheRegolithOnFoot.AHeldKey | 757 fields, sha256 b2dc0e5f5cf5e74aea82c8cd5d700be06fa82d64ea5bee5489f014519e94d8f4
+sweep | TheRegolithOnFoot.APlannedRoute | 757 fields, sha256 5c8906cb3038e686c8f2c8dbaf9943fef34a0bf83a4b5f2032bcae8d4002ee7a
+sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 757 fields, sha256 8e518b8f976ea70f2276e6ce949d0d0eec9a5327969d3b187604bc6ab8034189
+sweep | AHiveFloorWithAPatrol.SteadyFrames | 757 fields, sha256 f27a1a739ba50d9865ed39aa89c274dd0ab40da0b01afd9f0193164cbb5c0b84
+sweep | AHiveFloorWithAPatrol.OneLongGap | 757 fields, sha256 6a2b5ceff3a13a6bce7a3883f7a027dcfa6b07414365931408bbbb922c08f193
+sweep | AHiveFloorWithAPatrol.AHeldKey | 757 fields, sha256 58256b6179d0555cfb54114f3b9dac9a95ec24061fc53a3df766ec24e824c972
+sweep | AHiveFloorWithAPatrol.APlannedRoute | 757 fields, sha256 e8a54c3c567b612053ccee72749f91d0e642e8f3188fa7a1719ba82ade77715d
+sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 757 fields, sha256 6530169f211fcb48c95039e5cdf71c58eb07fd49f269b9c1717de8eeced01038
+sweep | ACaptainInAChair.SteadyFrames | 757 fields, sha256 43181456dff75862b4dd6fd10f333087c0be6551c7d4968e15321d3a0ed160de
+sweep | ACaptainInAChair.OneLongGap | 757 fields, sha256 225e9e0b0a380dc35b7f058c81dafdb45719699b306d78c33c3ae20de1e1c169
+sweep | ACaptainInAChair.AHeldKey | 757 fields, sha256 fb8d313e3c306ae20a4f0e578d59d9184f5a4abf00b5cda0dd14998532d76c85
+sweep | ACaptainInAChair.APlannedRoute | 757 fields, sha256 e8a54c3c567b612053ccee72749f91d0e642e8f3188fa7a1719ba82ade77715d
+sweep | ACaptainInAChair.AHandOnTheWarpSlider | 757 fields, sha256 a1ed601794db045c6b25c07626b3bd9d2edbf7a11452aea42fd40a82ce062c86
+sweep | TheMapFrameInFlight.SteadyFrames | 757 fields, sha256 3d2eb3e41a43897ea50d5bc14e19b498f3889a59493449a5d56c535de5d41eb5
+sweep | TheMapFrameInFlight.OneLongGap | 757 fields, sha256 645b494fccaeb66e29fadb3af7563b5fe7ba444e22b99390fcf7a3e6d6c4b7c3
+sweep | TheMapFrameInFlight.AHeldKey | 757 fields, sha256 cdc6e06f4193d4f8822b9e8e9f53159c0e85ca1ee847a61b9adb1e671036d990
+sweep | TheMapFrameInFlight.APlannedRoute | 757 fields, sha256 98ca63a1d164b5555c3f9703c10ecc893c1ef7a24ccbecec057600049bf4dcd8
+sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 757 fields, sha256 ba8cf7396dedeebe8cee1dccf9862854dab9669e32cfceb1aea05e333df39f6b
+sweep | TheElectricUniverse.SteadyFrames | 757 fields, sha256 5f033592e9eb2b0039b86632392b0873f7fd4e9b6f531cb2f6f86911bc6c8ff9
+sweep | TheElectricUniverse.OneLongGap | 757 fields, sha256 ab55b83c1407213aa5feb2266de12fee334c549c25e7cd15d5d82b3105c1621d
+sweep | TheElectricUniverse.AHeldKey | 757 fields, sha256 1e64016959b8da690d09b16e4ebc17a0b9f34d5af85e513c5a5b45765ae44727
+sweep | TheElectricUniverse.APlannedRoute | 757 fields, sha256 b2d035a30c0f2cf3e86fdd6e2d1cc3f37d06ded21986e3faa8eb9cda38f44d2a
+sweep | TheElectricUniverse.AHandOnTheWarpSlider | 757 fields, sha256 6c0af6748a8d45b645e2fad0a2996525549bf6fe911944d70e60ca6ec4598075
+walked-view pen | HerOwnDeckInFlight.SteadyFrames | 39397 calls, sha256 e4a2d0b25df18e3bf7b360589b17fe0b7fa7dd14d3b861903edf1594ba618acb
+walked-view pen | HerOwnDeckInFlight.OneLongGap | 39406 calls, sha256 5297158a2c8eefea027e7c47384a3605357b794dc4eafc2269f629a83635336f
+walked-view pen | HerOwnDeckInFlight.AHeldKey | 39395 calls, sha256 b85af1d2af7441fda3e67a7618d9e56e6765f8c27d1b0f818b8598a48efdcada
+walked-view pen | HerOwnDeckInFlight.APlannedRoute | 78797 calls, sha256 1a85b08089b8d827106fec7a54c13f19c7e836be9b66a25fc8fef149a5a0e147
+walked-view pen | HerOwnDeckInFlight.AHandOnTheWarpSlider | 39437 calls, sha256 1c2517d24d2b502e8e020aa774fbbc1b03ffc4b367c6efd3d96504800446d4b8
+walked-view pen | TheRegolithOnFoot.SteadyFrames | 475560 calls, sha256 c4da7b26fef5b46d586fb5b2e4bb129b76ff325052654ab8be3c7b6f551c6bf4
+walked-view pen | TheRegolithOnFoot.OneLongGap | 475561 calls, sha256 d1548e37f71d807b12f21fb5c2426af20330d3a70259fa0f2e17e59b3e44305e
+walked-view pen | TheRegolithOnFoot.AHeldKey | 475558 calls, sha256 a0f10b3da1a26a3383bd85f8dab64b8eb1ae4592c9ff804188ea7af6358ff926
+walked-view pen | TheRegolithOnFoot.APlannedRoute | 951121 calls, sha256 150e16fc32d95710cc1807b40885c8ae045ef5369155fee8d188f673ef11e957
+walked-view pen | TheRegolithOnFoot.AHandOnTheWarpSlider | 475588 calls, sha256 45e803bba2b5aa2f89f9e3e2c5e2690b2d55eeecd38356aa568d45f5fce95ce0
+walked-view pen | AHiveFloorWithAPatrol.SteadyFrames | 211800 calls, sha256 2184b0ab74c42ca71c8b200c60152bf714035ca0241a02ed6c7964ce096e2d8d
+walked-view pen | AHiveFloorWithAPatrol.OneLongGap | 211801 calls, sha256 d726eeda53213277313a92539e1e55d38e2d274458fdaed00c17621adf83d7dd
+walked-view pen | AHiveFloorWithAPatrol.AHeldKey | 211696 calls, sha256 7c760ccd825626beb63b7e7241d02fd61137a89cda9db1563a483f5ccfa4e7b7
+walked-view pen | AHiveFloorWithAPatrol.APlannedRoute | 423602 calls, sha256 85b16531f72a1c3e48723172ae1035ca6c2d5d9f770542eede53e43e7194f81d
+walked-view pen | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 211800 calls, sha256 86f297ca5d048ca6a491a9423ae38ed198c79c84ea1c02afd5f827fd0b4ad0c9
+walked-view pen | ACaptainInAChair.SteadyFrames | 211920 calls, sha256 b8d5466a64a27ac46d0b9defd95f6588c4fed46783ec332c344326073837948b
+walked-view pen | ACaptainInAChair.OneLongGap | 211921 calls, sha256 23ecbf9706fd23ca860c9df23d405fa3f82774a8d114fe27c0ced7ec694e1104
+walked-view pen | ACaptainInAChair.AHeldKey | 211920 calls, sha256 b8d5466a64a27ac46d0b9defd95f6588c4fed46783ec332c344326073837948b
+walked-view pen | ACaptainInAChair.APlannedRoute | 423607 calls, sha256 435f57a25ee5b976b81661f019864a2818032523cbf7b1a9fd0b04a19b70735f
+walked-view pen | ACaptainInAChair.AHandOnTheWarpSlider | 211920 calls, sha256 81c894c10285e5a9215cdd7fd98d0461d4ac60af19314857e0c60095be6c277a
+walked-view pen | TheMapFrameInFlight.SteadyFrames | 0 calls, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+walked-view pen | TheMapFrameInFlight.OneLongGap | 0 calls, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+walked-view pen | TheMapFrameInFlight.AHeldKey | 0 calls, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+walked-view pen | TheMapFrameInFlight.APlannedRoute | 0 calls, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+walked-view pen | TheMapFrameInFlight.AHandOnTheWarpSlider | 0 calls, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+walked-view pen | TheElectricUniverse.SteadyFrames | 39517 calls, sha256 87707a9c7d750a8a0ae2ae017b752160d431536c50386722020109e2c961b14e
+walked-view pen | TheElectricUniverse.OneLongGap | 39526 calls, sha256 033bb1bbcd124cf7dceee505c28b1e79bc026329f5a92f1fa5577278e79bc662
+walked-view pen | TheElectricUniverse.AHeldKey | 39515 calls, sha256 f062cf7e03ac57763ae43e1965c7239661c761b6403b115539afdf5404c7c89d
+walked-view pen | TheElectricUniverse.APlannedRoute | 79037 calls, sha256 be6a8363fc61c63a75770c5cbdc8c50d49bc951c0da4b5caf2a32c9c9735fced
+walked-view pen | TheElectricUniverse.AHandOnTheWarpSlider | 39557 calls, sha256 c597c3a940e99f9442212b5525b852cb38aeacda10a39bbf610f76fa296e7e74
+map-frame buffer | HerOwnDeckInFlight.SteadyFrames | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | HerOwnDeckInFlight.OneLongGap | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | HerOwnDeckInFlight.AHeldKey | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | HerOwnDeckInFlight.APlannedRoute | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | HerOwnDeckInFlight.AHandOnTheWarpSlider | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheRegolithOnFoot.SteadyFrames | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheRegolithOnFoot.OneLongGap | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheRegolithOnFoot.AHeldKey | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheRegolithOnFoot.APlannedRoute | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheRegolithOnFoot.AHandOnTheWarpSlider | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | AHiveFloorWithAPatrol.SteadyFrames | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | AHiveFloorWithAPatrol.OneLongGap | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | AHiveFloorWithAPatrol.AHeldKey | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | AHiveFloorWithAPatrol.APlannedRoute | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | ACaptainInAChair.SteadyFrames | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | ACaptainInAChair.OneLongGap | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | ACaptainInAChair.AHeldKey | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | ACaptainInAChair.APlannedRoute | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | ACaptainInAChair.AHandOnTheWarpSlider | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheMapFrameInFlight.SteadyFrames | 8364 floats, 24 labels, sha256 4cd1095a05a77169e48803ea3b554b86955a13bc80b7b361708515a6d59471de
+map-frame buffer | TheMapFrameInFlight.OneLongGap | 8364 floats, 24 labels, sha256 21c1b515608652da3f435c4e4b7c981434464f6eebcf2ab91cf3288ffc8b86db
+map-frame buffer | TheMapFrameInFlight.AHeldKey | 8364 floats, 24 labels, sha256 4cd1095a05a77169e48803ea3b554b86955a13bc80b7b361708515a6d59471de
+map-frame buffer | TheMapFrameInFlight.APlannedRoute | 8364 floats, 24 labels, sha256 030c4bce59c1cd6dd9822502b295dc5dcaa87004d2a4646e89967f60691308af
+map-frame buffer | TheMapFrameInFlight.AHandOnTheWarpSlider | 8364 floats, 24 labels, sha256 5a77cc6ceaa6af8a826f08ac9d7465633555a505410615ff2d6e20934469f386
+map-frame buffer | TheElectricUniverse.SteadyFrames | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheElectricUniverse.OneLongGap | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheElectricUniverse.AHeldKey | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheElectricUniverse.APlannedRoute | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+map-frame buffer | TheElectricUniverse.AHandOnTheWarpSlider | 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

@@ -67,6 +67,24 @@ public static class NodeFrame
     public static readonly IReadOnlyList<NodeDirection> QuickSelects =
         [NodeDirection.Forward, NodeDirection.Back, NodeDirection.Up, NodeDirection.Down];
 
+    // ===== #949 · THE TWO FACES THE COMPOSE ROW WEARS =====
+    //
+    // Both were literals in Map.razor. They are here for the reason the arrive row's words are in
+    // ArrivalStepRule: the help card that teaches this panel must READ its labels rather than retype
+    // them, or the help is a second source of truth about the UI and will quietly stop agreeing with it.
+    // The scrub is in this file rather than a panel file because the scrub is the burn planner's clock —
+    // it is what every "at scrub" button below means by "at scrub".
+
+    /// <summary>The scrub clock's own label, as the panel prints it before the time.</summary>
+    public const string ScrubLabel = "Scrub";
+
+    /// <summary>The compose row's loud one: drop a maneuver step onto the plan at the scrubbed moment.
+    /// #963 dressed it as a key action ("the Add Burn buttons … are the keys to navigation").</summary>
+    public const string AddBurnAtScrubButton = "+ Add burn at scrub";
+
+    /// <summary>What that button promises, on its tooltip.</summary>
+    public const string AddBurnAtScrubHint = "Drop a new burn onto the plan at the scrub time";
+
     /// <summary>Prograde: the world heading of <paramref name="velocity"/>. A dead-stop ghost has no
     /// forward — the frame degenerates to the world axes and this returns 0.</summary>
     public static double Prograde(Vector2d velocity) =>

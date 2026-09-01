@@ -92,6 +92,15 @@ public sealed class DeckPlan
         // still the same VERB (the sitting is opened in the one place sittings are opened), which is why
         // the dispatch arm below it is shared rather than copied.
         ShipDesk,
+        // #1040 · THE STOOL ROW AT HER OWN COUNTER. Its own kind and not a re-used BarTop, for the reason
+        // every split in this list is: a stool is a different FIXTURE — a tall backless seat bolted in a row
+        // along a counter, where your back is to the room — and the two must be able to disagree about their
+        // plate, their setting, their silence and, above all, their RUNG. A top seats you on the hall-table
+        // rung; a stool seats you on the BAR STOOL rung, where the gumshoe rule refuses the spread out loud.
+        // It is still the same VERB (the sitting is opened in the one place sittings are opened), which is
+        // why the dispatch arm below it is shared rather than copied. Owner, on 7 Deck: "Our on ship bar can
+        // be upgraded to match the other bars... the UI represents code long time ago."
+        ShipStool,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.
@@ -359,6 +368,32 @@ public sealed class DeckPlan
     /// console on it.</para>
     /// </summary>
     public const double LabelClearance = 2.0;
+
+    /// <summary>
+    /// #1040 · <b>MAY A NEW CONSOLE STAND HERE?</b> — <see cref="LabelClearance"/>'s own question, asked as a
+    /// function instead of being spelled out inside whichever builder needed it.
+    ///
+    /// <para>#1016 wrote this loop inline in <c>BuildShip</c> to decide which of her cantina tops could carry
+    /// a seat, and its guard proved the law was not selecting everything by relying on the room happening to
+    /// have one crowded top. That is an anti-vacuity proof made of an accident: re-plan the room and the
+    /// guard silently stops proving anything, which is this repository's <i>green test that asserts nothing</i>
+    /// class. Named here, the law can be driven both ways by a test on any room at all.</para>
+    /// </summary>
+    /// <param name="consoles">Everything already on the deck — asked of the list ITSELF, after everything
+    /// else is in it, so a fixture that moves tomorrow is re-judged tomorrow.</param>
+    public static bool ALabelFitsAt(IEnumerable<ConsoleSpot> consoles, double x, double y)
+    {
+        foreach (ConsoleSpot spot in consoles)
+        {
+            double dx = spot.X - x, dy = spot.Y - y;
+            if ((dx * dx) + (dy * dy) < LabelClearance * LabelClearance)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>The SHUTTLE-BAY HATCH on the ship's bottom hull (#295): the wild-side threshold the
     /// down-tube mates to, mirroring the top airlock hatch that mates the station tube. The bare ship
@@ -967,6 +1002,17 @@ public sealed class DeckPlan
             new(9, 3, 6, 3, false, false),
             new(6, 10, 6, 3, false, false),
 
+            // #1040 · HER COUNTER, AND IT IS A REAL WALL. Owner: "Our on ship bar can be upgraded to match
+            // the other bars... the UI represents code long time ago." A haven bar's counter has been a wall
+            // segment since #247 — "you belly up, you don't walk through it" — and this room, whose own
+            // backdrop is a photograph of a counter with a row of stools down it, had no counter at all.
+            //
+            // The two points are Core's (ShipLayout.CantinaCounter) and are read by the three things that
+            // must never disagree: this wall, the fill the pen draws over it, and the standoff the stool row
+            // is measured at. A counter drawn where nothing collides is a bar you walk through.
+            new(ShipLayout.CantinaCounter.X1, ShipLayout.CantinaCounter.Y1,
+                ShipLayout.CantinaCounter.X2, ShipLayout.CantinaCounter.Y2, false, false),
+
             // --- Cabins + HEAD (starboard, x 4..18, y -10..-3): corridor wall with four doors.
             //     3D-reno Phase 3 split the old three-cabin block into three cabins + a space HEAD 🚽.
             //     Stern-to-bow: CABIN 3 [4,7.5], CABIN 2 [7.5,11], CABIN 1 [11,14.5], HEAD [14.5,18];
@@ -1024,7 +1070,14 @@ public sealed class DeckPlan
             new(ConsoleKind.Helm, 24, 2.5f, "HELM"),
             new(ConsoleKind.NavPost, 24, -2.5f, "NAV POST"),
             new(ConsoleKind.Scope, 20, 7, "SCOPE"),
-            new(ConsoleKind.Cantina, 11, 7.5f, "CANTINA"),
+            // #1040 · THE GALLEY CARD'S OWN DESK, off the middle of the floor at last. It stood at (11, 7.5)
+            // with a drawn table 1.5 du under it, which is the owner's "not at the middle of the empty
+            // floor" complaint about the havens' barkeeps, unenforced in the one room he owns. Read from
+            // Core, like the charge dump and the cabin desks, and for the reason written at those: two
+            // numbers for one console is the exact shape of every console collision this ship has had.
+            new(ConsoleKind.Cantina,
+                (float)ShipLayout.CantinaGalleyStation.X, (float)ShipLayout.CantinaGalleyStation.Y,
+                "CANTINA"),
             new(ConsoleKind.Cargo, -5, 6.5f, "CARGO"),        // #295: the hold is now the top-port room
             new(ConsoleKind.Shuttle, -10, -6.5f, "SHUTTLE BAY"), // #295: the bay is now bottom-port
 
@@ -1070,19 +1123,6 @@ public sealed class DeckPlan
             // WELL-RESTED satiety stops it being the steady-hands grind (CabinComforts owns that law).
             new(ConsoleKind.Bunk, 12.75f, -6.5f, "BUNK 🛏"),
 
-            // #1016 · DESK ✍ — the other half of the same berth. Owner, on 7 Deck: "Why no table in cabin
-            // either?" A bunk is where you stop being awake; a desk is where you work, and the captain's
-            // own cabin is the one room aboard with a DOOR between it and the corridor, which is what makes
-            // it the ship's cabinet rung (the case may be spread there unconditionally).
-            //
-            // POSITION READ FROM CORE, exactly like the CHARGE DUMP two screens up and for the reason
-            // written there: two numbers for one console is the exact shape of every console collision this
-            // ship has had. ShipLayout.CabinDeskStation derives it from CABIN 1's own bounds and explains
-            // why the corner is the right one — it is the placement that puts the CHAIR nearer this console
-            // than the bunk, so [E] from the seat never turns in for the night.
-            new(ConsoleKind.ShipDesk,
-                (float)ShipLayout.CabinDeskStation.X, (float)ShipLayout.CabinDeskStation.Y, "DESK ✍"),
-
             // The gangway to a docked haven (go-ashore, 2026-07-07; moved to the airlock vestibule
             // 2026-07-08). In the docked complex you walk the tube; on the bare ship, pressing E here
             // just teaches "clamp on first" (see InteractAtConsole's Airlock case).
@@ -1102,7 +1142,9 @@ public sealed class DeckPlan
         (float X, float Y, string Text)[] roomLabels =
         [
             (22, -7, "BRIDGE"),
-            (11, 5, "CANTINA"),
+            // #1040 · …and the room writes its name somewhere the furniture is not. It read (11, 5), which
+            // is now half a du off the second stool in the row.
+            ((float)ShipLayout.CantinaLabelStation.X, (float)ShipLayout.CantinaLabelStation.Y, "CANTINA"),
             (2.5f, 12f, "⚓ AIRLOCK"),
             (12.75f, -9f, "CABIN 1"), (9.25f, -9f, "CABIN 2"), (5.75f, -9f, "MED BAY"), // CABIN 3 → MED BAY (owner 2026-07-18)
             (-6, 8.5f, "CARGO HOLD"),
@@ -1123,9 +1165,13 @@ public sealed class DeckPlan
             new("art/space-head.jpg", 14.5f, -3, 3.5f, 7, 0.9f), // HEAD 🚽
         ];
 
-        // Cantina tables (plan-driven now): three tops with a view, port side. Dressing — no seat count, so
-        // they draw the ring they have always drawn and #792's chairs belong to the room that has patrons.
-        TableTop[] tables = [new(8, 7.5f), new(11, 6), new(14, 7.5f)];
+        // Cantina tables: three tops, FORWARD of the counter and under the panoramic window — which is
+        // where a bar art puts its patron tables and where the one view aboard actually is. They read
+        // (8, 7.5), (11, 6), (14, 7.5) — laid across the middle of the room with the galley console
+        // standing on the middle one, which is why #1016 could only seat two of the three. Off Core now
+        // (ShipLayout.CantinaTops), read off the cantina's own bounds. Seat count still 0: they draw the
+        // ring they have always drawn, and #792's chairs belong to a room that has patrons.
+        TableTop[] tables = [.. ShipLayout.CantinaTops.Select(p => new TableTop((float)p.X, (float)p.Y))];
 
         // The shuttle-bay airlock door (#163; #295 moved it to the bottom hull hatch): an amber
         // auto-door across the SHUTTLE-BAY HATCH on the bottom hull. On the bare ship it sits on the
@@ -1165,6 +1211,24 @@ public sealed class DeckPlan
             (float)ShipLayout.BridgeRepeaterStation.X, (float)ShipLayout.BridgeRepeaterStation.Y,
             "⚙ ATMOSPHERE (bridge repeater)"));
 
+        // #1016/#1040 · DESK ✍ — the other half of a berth. Owner, on 7 Deck: "Why no table in cabin
+        // either?", and on #1040: "CABIN 2 could take a desk like CABIN 1's." A bunk is where you stop being
+        // awake; a desk is where you work, and a berth is the one kind of room aboard with a DOOR between it
+        // and the corridor, which is what makes it the ship's cabinet rung (the case may be spread there
+        // unconditionally).
+        //
+        // POSITIONS READ FROM CORE, exactly like the CHARGE DUMP above and for the reason written there: two
+        // numbers for one console is the exact shape of every console collision this ship has had.
+        // ShipLayout.CabinDeskStationIn derives each from ITS OWN berth's bounds and explains why the corner
+        // is the right one — it is the placement that puts the CHAIR nearer the desk than the bunk, so [E]
+        // from the seat never turns in for the night. Written as a loop over ShipLayout.DeskCabins so a
+        // third berth is furnished, audited and seatable on one line.
+        foreach (string cabin in ShipLayout.DeskCabins)
+        {
+            DeckReachability.Point at = ShipLayout.CabinDeskStationIn(cabin);
+            consoles.Add(new ConsoleSpot(ConsoleKind.ShipDesk, (float)at.X, (float)at.Y, "DESK ✍"));
+        }
+
         // HER SCUTTLING CHARGES, port side aft with the machinery. The derelicts have carried a scuttling
         // panel since #488; the owner's point is that a ship is a ship — and that this one is the last
         // argument a captain has when something is already aboard.
@@ -1185,33 +1249,71 @@ public sealed class DeckPlan
         // a top that moves takes its seat with it. §13.15 — two numbers for one fixture is this ship's own
         // named console bug, and she has had four of them.
         //
-        // AND NOT ON A TOP THAT WOULD SMEAR A LABEL. The middle top sits 1.5 du under the CANTINA console
-        // (11, 7.5), which is the desk that opens the galley card and must go on doing exactly that; the
-        // other two clear it by the full interact radius. So the room's own audit law decides which tops
-        // get a seat — asked of the console list ITSELF, after everything else is in it, exactly as the
-        // haven bar asks it — rather than a hand-picked pair, and a fixture that moves tomorrow is re-judged
-        // tomorrow. The seat that is not published is the honest answer for that top: its chair would be
-        // inside the galley desk's own prompt.
+        // AND NOT ON A TOP THAT WOULD SMEAR A LABEL. The room's own audit law decides which tops get a seat
+        // — asked of the console list ITSELF, after everything else is in it, exactly as the haven bar asks
+        // it — rather than a hand-picked set, so a fixture that moves tomorrow is re-judged tomorrow.
+        //
+        // #1040 · IT USED TO REFUSE ONE OF THE THREE, and that was honest rather than desirable: the galley
+        // console stood at (11, 7.5) with the middle top 1.5 du under it, so that top's chair would have
+        // been inside the galley desk's own prompt. This lane moved the console onto the forward window
+        // corner (where a bar art puts its machines) and the tops under the window, so all three clear every
+        // fixture in the room and all three are takeable. The LAW did not change; the room did.
+        //
+        // ── #1040 · AND A STOOL ROW AT THE COUNTER, WHICH IS ONE FIXTURE AND THEREFORE ONE CONSOLE ─────
+        //
+        // Owner: "Our on ship bar can be upgraded to match the other bars... the UI represents code long
+        // time ago." The row is Core's (ShipLayout.CantinaStools, one body-width off the counter's own
+        // face); what is added here is the PRESS, and it is a single console with a RUN down the counter —
+        // #791's own idiom, from the owner's B1 complaint that "the Bar desk is really long now, but there
+        // is only one spot to get service on it… we would need an E-bus of the bar desk length". Four
+        // consoles a stool apart would fail the deck audit's own label law and read as four fixtures; a
+        // counter is one fixture you walk up to anywhere along, and which stool you get is which stool you
+        // were standing at (Map.ShipSeats).
+        //
+        // Added BEFORE the tops below, so the label law judges them against it rather than the other way
+        // round — the order in this method is the order the room was built in, and a console that arrives
+        // after a judgement is a console nobody judged.
+        (float cx, float cy0, float _, float cy1) = ShipLayout.CantinaCounter;
+        var stoolRow = new List<StoolSpot>(ShipLayout.CantinaStoolCount);
+        foreach (DeckReachability.Point stool in ShipLayout.CantinaStools)
+        {
+            // Never taken and the row never has anybody on it, and that is the honest answer rather than a
+            // default nobody thought about: her crew is three droids on a fixed patrol and none of them
+            // drinks. The captain's own body is drawn by the figure pass, not by this list.
+            stoolRow.Add(new StoolSpot((float)stool.X, (float)stool.Y));
+        }
+
+        consoles.Add(new ConsoleSpot(
+            ConsoleKind.ShipStool,
+            (float)ShipLayout.CantinaCounterService.X, (float)ShipLayout.CantinaCounterService.Y,
+            SpaceSails.Core.SittingAlone.FreeStoolPlate,
+            Run: (cx, cy0, cx, cy1)));
+
         foreach (TableTop top in tables)
         {
-            bool crowded = false;
-            foreach (ConsoleSpot spot in consoles)
-            {
-                double dx = spot.X - top.X;
-                double dy = spot.Y - top.Y;
-                if ((dx * dx) + (dy * dy) < LabelClearance * LabelClearance)
-                {
-                    crowded = true;
-                    break;
-                }
-            }
-
-            if (!crowded)
+            if (ALabelFitsAt(consoles, top.X, top.Y))
             {
                 consoles.Add(new ConsoleSpot(
                     ConsoleKind.BarTop, top.X, top.Y, SpaceSails.Core.SittingAlone.FreeTablePlate));
             }
         }
+
+        // ── #1040 · AND THE ROOM IS DRAWN AS FURNITURE RATHER THAN AS EMPTY FLOOR ───────────────────────
+        //
+        // #868's primitive, first used on a Hive back-office and never on the boat the player owns. Owner,
+        // reading a room off the plan: "The graphics kind of does not show there being a table" — and his
+        // own fix, "could the table just be a different color rectangle". A counter drawn as a single line
+        // reads as a space you could stand in, which is exactly what it is not.
+        //
+        // Two pieces, in the two tones this deck has meant those things with since #868: the counter's own
+        // top is a surface you work at, and the back-bar behind it is something you keep things in.
+        (float bx0, float by0, float bx1, float by1) = ShipLayout.CantinaBackBar;
+        (float tx0, float ty0, float tx1, float ty1) = ShipLayout.CantinaCounterTop;
+        FurnitureSpot[] shipFurniture =
+        [
+            new(tx0, ty0, tx1, ty1, 0),
+            new(bx0, by0, bx1, by1, 1),
+        ];
 
         // #537 · AND HER OWN SHIELDING IS FILLED TOO. Owner: "we should cover those narrow spaces … all of
         // them." All of them means hers as well — and on the ship it matters for a second reason: she is the
@@ -1229,7 +1331,10 @@ public sealed class DeckPlan
             spawnX: 21, spawnY: 0, // on the bridge, facing the bow glass
             droidCount: 3, fillDroids: FillShipDroids, location: ShipLocation,
             doors: [.. doors], shipFixtures: true, tables: tables,
-            structures: shipStructures);
+            structures: shipStructures,
+            // #1040 · her counter's seats and her counter's own fill, so the room a captain sees and the
+            // room he presses [E] in are one room.
+            stools: [.. stoolRow], furniture: shipFurniture);
     }
 
     // --- Droid pirate infantry 🤖🏴‍☠️ ---

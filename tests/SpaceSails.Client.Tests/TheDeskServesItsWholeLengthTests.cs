@@ -192,8 +192,18 @@ public sealed class TheDeskServesItsWholeLengthTests
                     // row all opening one beat would be three pieces of furniture pretending to be a choice.
                     // The list is the whole point of the assertion — a run is a deliberate, named thing and
                     // never something a console grows by accident.
+                    //
+                    // #1040 · A THIRD, and it is the ship's own. Her cantina grew the counter the haven bars
+                    // have had since #247, and a counter is one fixture you walk up to anywhere along: three
+                    // stool consoles a stool apart would fail the deck audit's own label law and would read
+                    // as three pieces of furniture. The list is still the whole point of the assertion —
+                    // this entry is a deliberate addition made in the same commit as the run itself.
                     Assert.Contains(c.Kind,
-                        new[] { DeckPlan.ConsoleKind.HiveAmenity, DeckPlan.ConsoleKind.HiveBasin });
+                        new[]
+                        {
+                            DeckPlan.ConsoleKind.HiveAmenity, DeckPlan.ConsoleKind.HiveBasin,
+                            DeckPlan.ConsoleKind.ShipStool,
+                        });
                     continue;
                 }
 

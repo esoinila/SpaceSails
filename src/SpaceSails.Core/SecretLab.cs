@@ -320,6 +320,28 @@ public static class SecretLab
         return DiceRule.Roll(DiceRule.Seed($"secretlab:has:{bodyId}"), oneInN).Face == 1;
     }
 
+    /// <summary>
+    /// #1052 (L1) · <b>THE SEAM: what does this place read?</b> Whether the news a captain raises HERE is
+    /// the facility's own <see cref="NewsWire.NewsScope.CompanyIntranet"/> rather than the port's rag —
+    /// the one thing the wire needs to know about a hidden lab, and the whole of what this file lends it.
+    ///
+    /// <para>Two facts, and no more. <paramref name="insideLab"/> is the caller's own honest position: a lab
+    /// canteen table stands inside a FORCED region, and the wire has no business re-deriving the geometry
+    /// the client is already standing in. <see cref="Present"/> is then asked as a cross-check so a body
+    /// that hides nothing can never print a company paper, with <paramref name="forcePresent"/> carrying
+    /// the <c>?secretlab=1</c> cheat exactly as <see cref="For"/> does — otherwise the cheat's lab would
+    /// exist on the ground and not on the noticeboard.</para>
+    ///
+    /// <para>L2 consumes this through <see cref="NewsWire.ScopeAt"/> (never directly): the seat verb builds a
+    /// <see cref="NewsWire.NewsPlace"/> from the seated context it already holds and asks the wire for its
+    /// masthead. Nothing else about a place is allowed to leak into Core.</para>
+    /// </summary>
+    public static bool ReadsCompanyIntranet(string bodyId, bool insideLab, bool forcePresent = false)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return insideLab && (forcePresent || Present(bodyId));
+    }
+
     /// <summary>Whether a probe of (<paramref name="squareX"/>, <paramref name="squareY"/>) is close enough to
     /// the hidden door to shriek a PROXIMITY hint (the detector "very close") — the door's own square, or any
     /// of the eight around it. The exact-square case (a reveal) is <see cref="IsDoorSquare"/>.</summary>

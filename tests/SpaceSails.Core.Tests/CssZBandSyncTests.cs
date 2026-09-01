@@ -96,6 +96,11 @@ public class CssZBandSyncTests
         { ".deck-shuttle-card", OverlayBands.DeckShuttleCard },
         { ".arrival-brake-card", OverlayBands.ArrivalBrakeCard },
         { ".start-picker-backdrop", OverlayBands.StartPickerBackdrop },
+        // #1052 · The docked news panel joins the sync gate the day it is created, and its number is the one
+        // in this table chosen as a REFUSAL: it stays UNDER the cards, so a rep's pitch lands over the paper
+        // rather than the paper over the man. A CSS edit that nudged it past 1320 would silently put a
+        // newspaper on top of every card a bar can raise.
+        { ".seated-news", OverlayBands.SeatedNewsPanel },
         { ".view-object-backdrop", OverlayBands.ViewObjectBackdrop },
         { ".pin-backdrop", OverlayBands.PinBackdrop },
         { ".satchel-backdrop", OverlayBands.SatchelBackdrop },
