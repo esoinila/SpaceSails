@@ -266,6 +266,18 @@ public sealed record CacheRecord
     /// cache. A free-form bury persists the actual coords, so the ✗ reloads where the shovel dug.</summary>
     public double? DigX { get; init; }
     public double? DigY { get; init; }
+
+    /// <summary>#650 · WHICH GROUND the chest is under — the landing-site ordinal (<see cref="LandingSite.Index"/>)
+    /// the shovel went in at. Null means body-wide, which is what every chest saved before this field existed is.
+    ///
+    /// <para><b>Written only when it has a value</b>, unlike <see cref="DigX"/>/<see cref="DigY"/> which have
+    /// always emitted explicit nulls. That is the whole point: a vault written before #650, re-loaded and
+    /// re-saved by this build, must come back BYTE-FOR-BYTE — same keys, same order, same checksum (the digest
+    /// is taken over the payload, so an extra <c>"siteIndex": null</c> would change the file's hash and mark
+    /// every legacy save as edited). <c>CachesRoundTripByteForByte</c> in the Core suite holds that line.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? SiteIndex { get; init; }
 }
 
 public sealed record CacheCargoRecord(string CargoClass, int Units, bool Hot);

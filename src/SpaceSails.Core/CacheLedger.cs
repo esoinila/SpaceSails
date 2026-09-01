@@ -51,11 +51,11 @@ public sealed class CacheLedger
 
     /// <summary>Bury a freshly minted chest: it goes to the front of the ledger and its map is now
     /// ours to view any time. Returns the stored cache (with its final id and map text).</summary>
-    public TreasureCache Bury(string bodyId, int coin, IReadOnlyList<CacheCargo> cargo, double simTime, string owner, bool playerOwned, int reeverLevel = 0, double? digX = null, double? digY = null)
+    public TreasureCache Bury(string bodyId, int coin, IReadOnlyList<CacheCargo> cargo, double simTime, string owner, bool playerOwned, int reeverLevel = 0, double? digX = null, double? digY = null, int? siteIndex = null)
     {
         int mint = _seq++;
         string id = $"cache-{(playerOwned ? "you" : "npc")}-{mint}";
-        TreasureCache cache = CacheMint.Bury(id, bodyId, mint, coin, cargo, simTime, owner, playerOwned, reeverLevel, digX, digY);
+        TreasureCache cache = CacheMint.Bury(id, bodyId, mint, coin, cargo, simTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex);
         _caches.Insert(0, cache);
         return cache;
     }
@@ -86,9 +86,20 @@ public sealed class CacheLedger
     /// with a loaded one (#225). Clamped so a garbled value can never rewind the counter.</summary>
     public void RestoreMintIndex(int nextMintIndex) => _seq = Math.Max(_seq, Math.Max(0, nextMintIndex));
 
-    /// <summary>The known caches buried at a body (the dig-here list for the shuttle pop-up).</summary>
+    /// <summary>The known caches buried at a body — every ground on it. This is the BOOK's read (the ledger's
+    /// 🗺 section, the destination board's "there's a chest down there" hint): a captain in orbit is owed every
+    /// chest on the moon. The GROUND's read, which must not show a ✗ on a site the shovel never touched, is
+    /// <see cref="CachesAt(string, int)"/> (#650).</summary>
     public IEnumerable<TreasureCache> CachesAt(string bodyId) =>
         _caches.Where(c => c.BodyId == bodyId);
+
+    /// <summary>#650 · The known caches diggable from ONE ground: the caches at a body whose site matches the
+    /// one being walked. Since #320 a body's 2–4 landing sites all rebuild the same local coordinate frame, so
+    /// this — not <see cref="CachesAt(string)"/> — is what the surface deck, the ✗ marks and the dig may read.
+    /// A null-site (legacy/rumour) cache still answers for every site of its body, so no saved chest is ever
+    /// stranded by the new field.</summary>
+    public IEnumerable<TreasureCache> CachesAt(string bodyId, int siteIndex) =>
+        _caches.Where(c => c.BodyId == bodyId && c.IsOnSite(siteIndex));
 
     /// <summary>True when there is a chest to dig at a body.</summary>
     public bool HasCacheAt(string bodyId) => _caches.Any(c => c.BodyId == bodyId);
