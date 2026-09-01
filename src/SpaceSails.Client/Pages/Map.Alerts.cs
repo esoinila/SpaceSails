@@ -224,18 +224,33 @@ public partial class Map
 
     /// <summary>Player events (as headlines) blended with <paramref name="ambientCount"/> days of
     /// rotating ambient flavor, newest first — the Comms ticker takes a short slice of this, the
-    /// Galley desk a long one.</summary>
-    private IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount)
+    /// Galley desk a long one.
+    ///
+    /// <para>#1052 (L1) · <paramref name="scope"/> picks the masthead. It defaults to
+    /// <see cref="NewsWire.NewsScope.SystemWire"/> and both shipped consumers (the galley card at key 6
+    /// and the Comms ticker) pass nothing, so their output is byte-identical to what it was before this
+    /// lane — <c>TheGalleyAndTheTickerStillReadTheSystemWireTests</c> guards that. A
+    /// <see cref="NewsWire.NewsScope.PortRag"/> reader gets the port's own sheet on top; a
+    /// <see cref="NewsWire.NewsScope.CompanyIntranet"/> reader gets the facility's paper and, per the
+    /// design, NONE of the system wire — which is why the pushed events are dropped too: a lab's
+    /// noticeboard does not carry news of a robbery three planets away.</para></summary>
+    private IReadOnlyList<NewsWire.NewsItem> NewsFeed(
+        int ambientCount,
+        NewsWire.NewsScope scope = NewsWire.NewsScope.SystemWire,
+        string? salt = null)
     {
         var items = new List<NewsWire.NewsItem>(_newsEvents.Count + ambientCount);
-        foreach (NewsWire.NewsEvent evt in _newsEvents)
+        if (scope != NewsWire.NewsScope.CompanyIntranet)
         {
-            items.Add(new NewsWire.NewsItem(evt.SimTime, NewsWire.Headline(evt)));
+            foreach (NewsWire.NewsEvent evt in _newsEvents)
+            {
+                items.Add(new NewsWire.NewsItem(evt.SimTime, NewsWire.Headline(evt)));
+            }
         }
 
         if (_ephemeris is not null)
         {
-            items.AddRange(NewsWire.Ambient(_ephemeris, SimTime, ambientCount));
+            items.AddRange(NewsWire.Ambient(_ephemeris, SimTime, ambientCount, scope, salt));
         }
 
         items.Sort((a, b) => b.SimTime.CompareTo(a.SimTime));
