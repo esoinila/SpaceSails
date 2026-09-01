@@ -3505,6 +3505,41 @@
         </div>
     }
 
+    @* #949 · THE PLOTTING CARD — the help the owner asked for, where the question gets asked.
+
+       Owner, screenshot in hand: "We should have a help page where we show multi-step plan and the use of
+       the schrub and burn. New player seeing this image would understand how to play."
+
+       WHY A CARD WHEN /help/nav ALREADY EXISTS, in one line: the page is the read you do before you start,
+       and the ? is pressed mid-plan with the panel open. A second tab answers that question by taking the
+       question off the screen. The reasoning in full, and the whole door chain, is in Map.NavHelp.cs.
+
+       It is the galley's shape exactly — .view-object over a click-to-close backdrop, one way out, Escape —
+       so it inherits the family's cap, its inner scroll and its pinned foot (#735) with no new geometry.
+       The CappedScrollPanel inside is what keeps the TITLE still while the six steps move under it: on a
+       phone this card is taller than the glass, and a card whose heading scrolls away is a card you lose
+       your place in. The words are Components/PlottingHelp.razor, which reads every button face it prints
+       off the same Core call the panel draws it with. *@
+    @if (_navHelpOpen)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseNavHelp)">
+            <OverlayShell class="view-object nav-help-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="✕ Back to the plot"
+                          DismissTitle="Shut the plotting card — Esc and ? do the same"
+                          OnClose="() => Dismiss(CloseNavHelp)">
+                <CappedScrollPanel class="nav-help-scroll" BodyClass="nav-help-body" BodyFloor="8rem">
+                    <Header>
+                        <div class="view-object-title">🗺 HOW A TRIP IS PLANNED</div>
+                    </Header>
+                    <ChildContent>
+                        <PlottingHelp />
+                    </ChildContent>
+                </CappedScrollPanel>
+            </OverlayShell>
+        </div>
+    }
+
     @* #836 · THE FLETCH WALLET, FANNED WHILE HE CROSSES THE FLOOR. Owner: "I think I should be able to pick
        the badge I show the guard... like Fletch ... suppose we have 4 different ID's ... one of them real".
 
@@ -5702,10 +5737,13 @@
             @* #963: the Scope toggle used to sit here and the owner asked why — "that functionality should
                stay at the scope position". It did: the scope window minimises into a tile in its own corner
                (see .map-scope-tile below), which is also what stops this row from drowning out Plot. *@
-            @* #949 — and the ? beside it opens the NAV desk's own two-minute walkthrough (pick a target,
-               Plot, scrub, add a burn, iterate with the ± buttons, add the arrive step, arm, warp), which
-               links on to the full Captain's Guide. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
-            <a class="btn btn-sm btn-outline-secondary" href="/help/nav" target="_blank" title="How to plot a trip — the eight steps, and on to the Captain's Guide">?</a>
+            @* #949 — the ? opens the plotting card OVER the map: how a trip is planned, the scrub, the ±
+               buttons and the arrival badge, with the panel still underneath it and Escape to put it away.
+               It used to open /help/nav in a second tab; that page is still the long version and the card's
+               foot still hands the reader on to it. The reasoning is in Map.NavHelp.cs — in one line, the ?
+               is pressed mid-plan, and a full page in another tab answers a question about the panel by
+               taking the panel off the screen. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => PressAndRefocus(ToggleNavHelp)" title="How a trip is planned — the plan, the scrub, the ± buttons and the arrival badge (? or Esc to close)">?</button>
             @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
                appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
                tutorial chrome for a veteran. Starting or replaying a lesson lives at the Captain's desk
@@ -5995,7 +6033,9 @@
                                OpenChild="@OpenPlanEditorKey()" OpenChildSelector=".map-plan-step-open">
                 <Header>
                 <div class="fw-bold mb-1">Plotting</div>
-                <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
+                @* #949 · The label is Core's (NodeFrame.ScrubLabel) so the help card can print the same
+                   word. The clock beside it is the client's own ladder and stays here. *@
+                <div class="mb-1">@(NodeFrame.ScrubLabel): @FormatSimTime(ScrubTime)</div>
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
                 <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
                        title="Scrub the plot clock forward and back along the course"
@@ -6085,9 +6125,9 @@
                         <button type="button" class="btn btn-sm btn-warning map-key-action"
                                 title="@CastOffRule.ComposeHint" @onclick="AddCastOffAtTop">@CastOffRule.ComposeButton</button>
                     }
-                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="Drop a new burn onto the plan at the scrub time" @onclick="AddBurnAtScrub">
-                        + Add burn at scrub
-                    </button>
+                    @* #949 · Face and tooltip both Core's now (NodeFrame), so the help card that teaches
+                       this button reads it rather than retyping it. *@
+                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="@NodeFrame.AddBurnAtScrubHint" @onclick="AddBurnAtScrub">@NodeFrame.AddBurnAtScrubButton</button>
                     @if (_slingablePass is { } sp)
                     {
                         <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Sling ? "btn-info" : "btn-outline-info")"
@@ -6600,7 +6640,11 @@
                                     {
                                         <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
                                     }
-                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "⌛") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : _aunjudged ? "NOT JUDGED" : "INVALID")</span>
+                                    @* #949 · The glyph and the five words are Core's constants now, so the
+                                       help card's "what ✓ / ✗ / ⌛ NOT JUDGED mean" section is printing the
+                                       same strings this badge is and cannot describe a badge that no longer
+                                       exists. Nothing about what it says or when has changed. *@
+                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : ArrivalStepRule.PendingBadge) @(_aarmed ? (_aactive ? ArrivalStepRule.StatusActive : ArrivalStepRule.StatusArmed) : _avalid ? ArrivalStepRule.StatusValid : _aunjudged ? ArrivalStepRule.StatusNotJudged : ArrivalStepRule.StatusInvalid)</span>
                                 </div>
                                 @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
                                    speed against the real thresholds (Core ArrivalStepRule reads them off
@@ -6658,11 +6702,13 @@
                                             }
                                             else if (_armIsAThen)
                                             {
-                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
+                                                @* #949 · The face is Core's; only the THEN clause is this
+                                                   branch's own. The help card prints the same face. *@
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId)) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
                                             }
                                             else
                                             {
-                                                <text>🛰 Arm the arrival at @BodyName(_ar.BodyId)</text>
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId))</text>
                                             }
                                         </button>
                                         <div class="d-flex gap-2">
@@ -6674,7 +6720,10 @@
                                         <div class="text-secondary small mt-1">
                                             @if (_aarmed && ArmedArrivalStillAhead)
                                             {
-                                                <text>The plan is complete. The autopilot takes her at the pass — nothing more is needed unless something interferes.</text>
+                                                @* #949 · Core's sentence (ArrivalStepRule.ArmedAndNothingMore),
+                                                   because the help card promises it and must promise the
+                                                   words the step actually says. *@
+                                                <text>@ArrivalStepRule.ArmedAndNothingMore</text>
                                             }
                                             else
                                             {

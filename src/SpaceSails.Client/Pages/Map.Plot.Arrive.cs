@@ -314,11 +314,14 @@ public partial class Map
     // ===== The buttons =====
 
     /// <summary>The label on the compose button, with the body named so the captain can see what he is
-    /// about to add before he adds it (#950 — the old chip named a body he never chose).</summary>
+    /// about to add before he adds it (#950 — the old chip named a body he never chose).
+    /// <para>#949 · The FACE is Core's (<see cref="ArrivalStepRule.AddAtScrubButton"/>) and only the
+    /// bracketed body is this method's, so the help card can print the same button without retyping it.
+    /// It was the same expression written out twice here; now it is written nowhere.</para></summary>
     private string ArriveButtonLabel(ArrivalStepRule.ArrivalKind kind) =>
         ArriveCandidate(kind) is { } pass
-            ? $"{(kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} + Add {ArrivalStepRule.Verb(kind)} at scrub ({pass.BodyName})"
-            : $"{(kind == ArrivalStepRule.ArrivalKind.Dock ? "⚓" : "🛰")} + Add {ArrivalStepRule.Verb(kind)} at scrub";
+            ? $"{ArrivalStepRule.AddAtScrubButton(kind)} ({pass.BodyName})"
+            : ArrivalStepRule.AddAtScrubButton(kind);
 
     /// <summary>
     /// Append the arrival to the end of the plan — "the cherry on top" (#952). One terminal step at a

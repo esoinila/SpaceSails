@@ -205,6 +205,33 @@ public partial class Map
             return;
         }
 
+        // #949 · `?` raises the plotting card — the universal help key, and this game had it spare. It is
+        // Shift+/ on a US layout and arrives here as its own e.Key ("?"), never as "/", so the search box
+        // directly above is untouched by it.
+        //
+        // UNGATED BY DESK, deliberately, where that search box is gated to the three that draw the map. The
+        // card teaches the Plotting panel, so Nav is where it will mostly be pressed — but a player who
+        // does not yet know which desk plots a trip is precisely the reader it was written for, and a help
+        // key that answers only from the room you have already found helps the people who need it least. It
+        // hangs over whatever desk raised it, the way 6 does the galley (#1021).
+        //
+        // Ashore is the one place it stays out of, in the house rule the desk keys above already keep: on
+        // the regolith there is no plotting table and no tube ride short enough to make this card an answer
+        // to anything.
+        //
+        // AND IT ASKS FOR THE REPAINT ITSELF — the Escape rung's idiom above, not decoration. This page is
+        // its own IHandleEvent (Map.Sim.cs) and its HandleEventAsync is `callback.InvokeAsync(arg)` with no
+        // StateHasChanged behind it, so a handler that only sets a field has drawn nothing and the card
+        // appears on whatever frame the render loop paints next. In a browser that is one frame and looks
+        // fine; it is still #680's "in the DOM is not on the screen" waiting to happen, on a card the
+        // captain asked for by name.
+        if (e.Key == "?" && _surface is null)
+        {
+            ToggleNavHelp();
+            StateHasChanged();
+            return;
+        }
+
         if (_deckMode && HandleDeckKey(e.Key))
         {
             return;
