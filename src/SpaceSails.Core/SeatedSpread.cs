@@ -124,23 +124,22 @@ public static class SeatedSpread
     /// <summary>What the strip calls the act of reading the local paper. #1052's own words, verbatim.</summary>
     public const string ReadTheNewsLabel = "📰 Read the news";
 
-    /// <summary>The hint on that control. FLAGGED FOR CANON REVIEW (#1052 authored the label and not the
-    /// hover); it says only what the press does and takes no view on what the paper says.</summary>
-    public const string ReadTheNewsHint =
-        "Read whatever paper they print here — the room stays where it is while you read";
+    /// <summary>The hint on that control. Canon (Fable, #1052 canon pass 2026-09-01): it says only what
+    /// the press does and takes no view on what the paper says.</summary>
+    public const string ReadTheNewsHint = "What this ground prints.";
 
     /// <summary>What a row's scissors say. #1052's own words, verbatim.</summary>
     public const string ClipLabel = "✂ Clip";
 
-    /// <summary>The hint behind the scissors. FLAGGED FOR CANON REVIEW alongside
-    /// <see cref="ReadTheNewsHint"/>. It carries the law rather than a flourish: reading files nothing and
-    /// clipping is a decision (#602's ammo-as-evidence — what is in the book got there on purpose).</summary>
-    public const string ClipHint =
-        "Cut this story out and keep it — reading files nothing, clipping does";
+    /// <summary>The hint behind the scissors. Canon (Fable, #1052 canon pass 2026-09-01). It carries the
+    /// law rather than a flourish: reading files nothing and clipping is a decision (#602's
+    /// ammo-as-evidence — what is in the book got there on purpose).</summary>
+    public const string ClipHint = "Tear it out for the field book.";
 
     /// <summary>…and what the row says once this story is already in the book. Never disabled (#212/#603):
-    /// the control says where the paper is, and pressing it again is simply nothing.</summary>
-    public const string ClippedLabel = "✂ clipped";
+    /// the control says where the paper is, and pressing it again is simply nothing.
+    /// Canon (Fable, #1052 canon pass 2026-09-01).</summary>
+    public const string ClippedLabel = "✂ In the book.";
 
     /// <summary>What the spread page says over the rows, so a captain knows what the list IS before they
     /// press anything on it.</summary>
