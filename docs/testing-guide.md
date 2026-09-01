@@ -1605,3 +1605,92 @@ The short version, because these are the easiest to miss:
 /map?secretlab=1&land=1&floor=2&air=90     a dead floor with ninety seconds in the tank
 /map?secretlab=1&land=1&collectors=20      a repo boat lands while you are underground
 ```
+
+---
+
+## Appendix B — the pin ledgers, and the one sanctioned way to re-pin (#1055)
+
+Four snapshot guards in `tests/SpaceSails.Client.Tests` hold the game still by pinning what it
+measured on the old code. Three of them keep those pins in a **machine-written ledger** under
+`tests/SpaceSails.Client.Tests/Ledgers/`:
+
+| Ledger | Guard | What it pins |
+| --- | --- | --- |
+| `FrameHashes.ledger.txt` | `EveryFrameHashesTheSameTests` | 33 frames × (`calls`, `sha256`) — every mark `DeckView.Draw` lays, in order |
+| `Fingerprints.ledger.txt` | `EveryFrameLeavesTheSameFingerprintTests` | 30 scenes (six worlds × five input sequences) × 44 probes, plus a `sweep roster` row per swept field of `Pages.Map` |
+| `SeatFingerprints.ledger.txt` | `EverySeatTheCaptainTakesFingerprintsTheSameTests` | 16 sittings × (`chars`, `sha256`) |
+
+**The format.** One row per (probe, scene):
+
+```
+<probe> | <scene> | <value>
+```
+
+A *probe* is one thing measured (`calls`, `sweep`, `walked-view pen`, `the accumulator`); a *scene*
+is the world it was measured in (`ship · under way`, `TheRegolithOnFoot.AHeldKey`, `a park bench`).
+Rows are **grouped by probe**, because a re-pin is almost never "one scene moved" — it is one probe
+moving across many scenes. #1054 moved `sweep` on all thirty; #1040 moved `walked-view pen` on
+fifteen. Probe-major puts each of those in one contiguous block, so two lanes moving two different
+probes edit two blocks a hundred lines apart and git merges them without a word.
+
+**Nobody edits a ledger by hand.** `ThePinsAreRewrittenOnlyWhenAskedTests.EveryLedgerIsTheFileTheWriterWouldHaveWritten`
+re-renders each committed file from its own rows and demands it come back byte for byte.
+
+### Re-pinning
+
+When a change legitimately moves a pinned number, run the measurement — never a text editor:
+
+```bash
+SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release \
+  --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked \
+  --logger "console;verbosity=detailed"
+```
+
+PowerShell:
+
+```powershell
+$env:SPACESAILS_REPIN = "1"
+dotnet test tests/SpaceSails.Client.Tests -c Release `
+  --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked `
+  --logger "console;verbosity=detailed"
+Remove-Item Env:\SPACESAILS_REPIN
+```
+
+The `--logger` is not decoration: `dotnet test` swallows the output of a *passing* test, and the
+printed report **is** the deliverable. It names every row that moved, old → new, the delta per row,
+and — for the field sweep — the NAME of the field that appeared or disappeared:
+
+```
+── Fingerprints ─────────────────────────────────────────────
+  2035 row(s) measured, 2034 pinned; 55 moved, 1 new, 0 gone.
+  probes touched: sweep, sweep roster, walked-view pen
+  sweep | HerOwnDeckInFlight.SteadyFrames   Δ +1   ← sweep +1: _navHelpOpen
+      was: 744 fields, sha256 …
+      now: 745 fields, sha256 …
+  + sweep roster | _navHelpOpen | Boolean
+```
+
+**Paste that report into the PR body.** A re-pin is reviewed by its report, not by squinting at a
+table of hex.
+
+### CI never re-pins
+
+`PinLedger.Write` throws unless `SPACESAILS_REPIN` reads exactly `1`, and
+`ThePinsAreRewrittenOnlyWhenAskedTests.TheOptInIsOffUntilSomebodyTurnsItOn` proves it throws — on
+every CI build, with each ledger's bytes read before and after the refused call. A normal run only
+ever **compares**: a guard goes red and stays red until a human has looked at what moved.
+
+### When the sweep moves but the roster does not
+
+A `sweep` row can move with no field joining or leaving the page — a field's *value* changed
+(#953, #957). The red says so, and the way to name it is still the dump hook:
+
+```bash
+SPACESAILS_SWEEP_DUMP=<dir> dotnet test tests/SpaceSails.Client.Tests -c Release \
+  --filter FullyQualifiedName~EveryFrameLeavesTheSameFingerprint
+```
+
+Run it once on the base and once on your lane, then diff the two directories.
+
+> `EveryRoundFingerprintsTheSameTests` still keeps its pins in source. It is the fourth snapshot
+> guard and the next candidate for a ledger; nothing about #1055 changes what it measures.

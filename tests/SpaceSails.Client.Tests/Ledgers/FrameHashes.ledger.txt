@@ -1,0 +1,86 @@
+# SpaceSails · the FrameHashes pin ledger — MACHINE-WRITTEN (#1055).
+# DO NOT HAND-EDIT. Every number below was measured, never transcribed.
+#
+# Rows are `<probe> | <scene> | <value>`, grouped by probe in the order the measurement
+# produces them and, within a probe, by scene in the suite's own order. A re-pin is almost
+# always one PROBE moving across many scenes, so probe-major keeps each re-pin in its own
+# contiguous block and two lanes moving two different probes merge without a conflict.
+#
+# TO RE-PIN — run the measurement, never a text editor:
+#   SPACESAILS_REPIN=1 dotnet test tests/SpaceSails.Client.Tests -c Release --filter FullyQualifiedName~ThePinsAreRewrittenOnlyWhenAsked --logger "console;verbosity=detailed"
+# It rewrites every ledger and PRINTS the report: rows moved, old → new, the delta per row,
+# and for a sweep row the NAME of the field that appeared or disappeared. The report is what
+# a reviewer reads; this file is what CI compares against.
+#
+# EVERY MARK DeckView.Draw LAYS, IN THE ORDER IT LAYS THEM — hashed, per case.
+# Captured on 183c614, the 1,058-line Draw, before a line of it moved (#870 lane 7b).
+# `calls` is how many marks the frame laid; `sha256` is the transcript of all of them, whole and in
+# order, at round-trip precision. The re-pin history — which lane moved which rows and by what
+# arithmetic — is in the class docs of EveryFrameHashesTheSameTests.
+
+calls | ship · under way | 364
+calls | ship · docked, the shuttle away and the machine stalling | 338
+calls | ship · hatches dogged, seated at the table | 338
+calls | haven · the-space-bar | 387
+calls | haven · cinder-roost | 391
+calls | haven · ringside-exchange | 393
+calls | haven · the-tilt | 387
+calls | haven · selene-gate | 391
+calls | haven · red-eye | 391
+calls | haven · the-deep | 393
+calls | wreck · HullBreach | 592
+calls | luna B1 | 1591
+calls | luna B2 | 426
+calls | luna B3 | 315
+calls | luna B4 | 316
+calls | luna B5 | 317
+calls | luna B6 | 367
+calls | luna B7 | 317
+calls | luna B8 | 329
+calls | luna B9 | 491
+calls | luna B10 | 456
+calls | luna B11 | 289
+calls | luna B12 | 309
+calls | luna B13 | 421
+calls | luna B1 · the lamps are all there is | 128
+calls | luna B1 · sat down at a desk | 1607
+calls | luna B1 · the round is out, and the buzzer went | 1617
+calls | phobos B1 | 1563
+calls | titan B1 | 1512
+calls | surface · luna site 0 | 3800
+calls | surface · luna site 0, the whole excursion | 3907
+calls | surface · luna site 0, dark, and the fan hears something | 263
+calls | surface · titan site 0, a derelict's instruments (none) | 4390
+sha256 | ship · under way | 58db0ba402b4b3545c170303bc0d73eb37e5dde9f9b704849260d8cc2405b1b0
+sha256 | ship · docked, the shuttle away and the machine stalling | d3e9fda8acbf8860a159cea9724adc86b198b6a919d3329c6bf76948457b815c
+sha256 | ship · hatches dogged, seated at the table | 59002f36dab94347fe6ba76bc324a2adb06ff473088f58d8d1cc9958fad53edf
+sha256 | haven · the-space-bar | 5174fa8883666bbad704fdb78a349b91527dc3409a2c51e06b432f76ac1bc8d8
+sha256 | haven · cinder-roost | 5f45add2144875253468b55249f9030b99cf2ed4a2ae3e64d983a23aad3c07fc
+sha256 | haven · ringside-exchange | 203fb9100cee4d1e41f0120ff761a18ec3c715b2b160969de4d87d7f4fc728fd
+sha256 | haven · the-tilt | 46e4d3aa1ece00fa44036415f125e54219784ee58f2ee27ef5db1764a196add1
+sha256 | haven · selene-gate | 0c3bbc7cbfd21d06c7a5995083a7716734e152aacca40c0491994ec707eee734
+sha256 | haven · red-eye | 2c88a55c7ba306a7d809f3bfb0edd967146a1c127c24bda1f15f6d325c8c330f
+sha256 | haven · the-deep | 973827c654a4c7dc8f8032982c9451ea9d1eefb02cf4e4b3b02e5533897d8d1f
+sha256 | wreck · HullBreach | 637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020
+sha256 | luna B1 | c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab
+sha256 | luna B2 | 86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0
+sha256 | luna B3 | f2bfd5db303f27d26babb781de256e07c8acb004968960f29f8caedeb76d4deb
+sha256 | luna B4 | 3f362bbd6d748426d5f71935fd49c79dcec4d76590cbe38bd63fb2189187a82b
+sha256 | luna B5 | 59a6d0a562e6c3b1e59e549fc2a1a0be21107e0a917c7a0c1bf4278a8eb5fea0
+sha256 | luna B6 | 180c39e1a02cc244423d90f65e4e43de246f5ee738795b6c756804313e6c7fba
+sha256 | luna B7 | 9a3a15ce73ab249404bc38847d857eaca83da475d506c1b3ab2fe2a6051c8828
+sha256 | luna B8 | edfdbae890ac40711e14ac32c860b07c18d90d01102a73496132403cd9f730d8
+sha256 | luna B9 | 9733f98860e23a5646086a414e4b9017430898ca61248cb141fedde13d46012f
+sha256 | luna B10 | 06bfd0920970c41fcbce5fef8a5b17e5c25e55cb4aaa8dbb44a719d37312d085
+sha256 | luna B11 | 5701f311bd8a52c8444195eba064d91761c57b730ecb0464dc566fc7824965a5
+sha256 | luna B12 | bc3cc0671734f0b7fbfca6f4f90aa3fd608554caf5942e4258132c5af50bd5fe
+sha256 | luna B13 | 5ca280d45659b39791b90e5dffe6b0512cb5d03450e6d1cb1e8ef9591ce4fc2b
+sha256 | luna B1 · the lamps are all there is | b5d4a27b5482f54a4c31bdeb0993b613395be552dfbcf7ddb380f3d94656988f
+sha256 | luna B1 · sat down at a desk | 6c6224e19d84aad5de289486f5d533f683c2d9da104718310ada860105c3c76b
+sha256 | luna B1 · the round is out, and the buzzer went | 45921c657a779c388d7003d4b69dbfb6fb8ba9159ad8d582f2bcb040758c8b3d
+sha256 | phobos B1 | 879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c
+sha256 | titan B1 | 3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a
+sha256 | surface · luna site 0 | 6ea3dbef056a998cd4904a29f9c932be45a4fd529367ed6088a0baa0b84f176b
+sha256 | surface · luna site 0, the whole excursion | 46668299078192e2ba90d9ae36a81b8a38aadf8b35ec0dacded7821f631ddf8d
+sha256 | surface · luna site 0, dark, and the fan hears something | 34020834f957d7b8d3db8b5c02a14ab017a4553a34fe1100346246a418522e71
+sha256 | surface · titan site 0, a derelict's instruments (none) | cecd8a7e26ee1aa6fe651c485cbe755a4cd02cfdbc2172ee2977641fdbb806f4
