@@ -58,9 +58,6 @@ public sealed partial class Map
     /// <summary>When he next drifts to another fixture.</summary>
     private double _repMoveOnAt;
 
-    /// <summary>Which fixture on his beat he is heading for.</summary>
-    private int _repPost;
-
     /// <summary>Whether he has already said the one thing a rebuffed salesman says, this visit.</summary>
     private bool _repSaidPassing;
 
@@ -76,6 +73,52 @@ public sealed partial class Map
 
     /// <summary>What he last said back, under the pitch. Cleared when he goes.</summary>
     private string? _repSaid;
+
+    // ── #1061 · HE WORKS THE ROOM ──────────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-09-01: "let's at some point work on those A* walking insurance salesmen at stations :-D"
+    //
+    // Until this lane his beat was a ring of FURNITURE — the counter, the ends of two or three tops — walked
+    // round for ever with nothing at the far end of any of it. The room contained a man drifting. What it
+    // contains now is a man SELLING: he crosses to somebody else's table, stands there for a beat of patter,
+    // and goes on to the next mark, and when the room is worked he leaves through a leaf that does not open
+    // for the captain, like anybody whose shift has ended. Not one word is said at any of those tables — the
+    // pause IS the patter (§13.8), and the point of the whole beat is that a captain sitting two tops away
+    // WATCHES THE PITCH COMING.
+    //
+    // The round itself is Core's (Egress.Marks), frozen to the watch, so it is the same tables in the same
+    // order on every machine and across a reload.
+
+    /// <summary>#1061 · The round he is working: whose tables, in what order, and how long each pause lasts.
+    /// Null is a question this visit has not asked yet; empty is an answer it gave (a room with nobody in it
+    /// but the captain).</summary>
+    private IReadOnlyList<Egress.Patter>? _repRound;
+
+    /// <summary>#1061 · Which watch that round belongs to. A shift turning over is the room forgetting —
+    /// #731's own law — so the people he was working went home and he starts on the ones who are here now.</summary>
+    private long _repRoundWatch = long.MinValue;
+
+    /// <summary>#1061 · How many of the round's marks he has actually finished. The counter does not count:
+    /// nobody is sitting at it, and the floor under <see cref="Egress.MarksBeforeTheTable"/> is a floor about
+    /// PEOPLE the captain has watched him work.</summary>
+    private int _repMarksWorked;
+
+    /// <summary>#1061 · Whether he has already stood at the counter this visit — the one stop on his round
+    /// that is furniture, kept because it is where he says he will be and because a room with nobody in it
+    /// still gets a man walking into it.</summary>
+    private bool _repStoodAtTheCounter;
+
+    /// <summary>#1061 · Where he was standing when the last pause ended.
+    ///
+    /// <para>The next leg begins THERE and not back at a doorstep, which is #973 L5b's own flag paid off for
+    /// the salesman: <i>"a player watching the counter would see her vanish from it and come back out of the
+    /// cellar. That is a worse lie than not retrying."</i> Null before his first walk of a visit, which is the
+    /// one walk that really does begin at a door.</para></summary>
+    private DeckReachability.Point? _repStandingAt;
+
+    /// <summary>#1061 · His shift here is over. The room is worked, he has gone out through a leaf, and he
+    /// does not come back — until the watch turns over, when it is a different room full of people.</summary>
+    private bool _repShiftOver;
 
     /// <summary>#973 L2 · Which life the signing flashback has already come back in, or 0 for none.
     ///
@@ -121,8 +164,8 @@ public sealed partial class Map
         _repSaid = null;
         _repBleeding = false;
         _repSaidPassing = false;
-        _repPost = 0;
         _repMoveOnAt = 0;
+        ForgetTheRound();
 
         if (bodyId is null)
         {
@@ -181,7 +224,7 @@ public sealed partial class Map
     {
         foreach (Walker w in afoot)
         {
-            if (w.For is Errand.RepRounds or Errand.RepPitching)
+            if (w.For is Errand.RepRounds or Errand.RepPitching or Errand.RepLeaving)
             {
                 return w;
             }
@@ -192,12 +235,18 @@ public sealed partial class Map
 
     /// <summary>
     /// PUT HIM ON THE FLOOR, or move him along it. The first walk of a visit comes in through a door —
-    /// #731's idiom, and the same one the haulier uses — and every walk after it is a drift between the
-    /// fixtures of his beat, or a crossing to the captain's table.
+    /// #731's idiom, and the same one the haulier uses — and every walk after it begins at his own feet.
+    ///
+    /// <para>#1061 · The order below IS his working day, and it is written as a fall-through rather than as a
+    /// state machine because each clause is a reason the one under it does not apply. He comes to the
+    /// captain's table only once the captain has watched him work the room; otherwise he stands at the
+    /// counter, then at somebody's table, then at somebody else's; and when there is nobody left to work he
+    /// goes off shift. His approach to the CAPTAIN is untouched by any of it — same gate, same card, same
+    /// memory of having been told no.</para>
     /// </summary>
     private bool SendTheRepIn(SurfaceExcursion ex, UndergroundComplex.Amenity amenity, double dt)
     {
-        if (ex.Walkers.Count >= WalkerBand || SimTime < _repMoveOnAt)
+        if (_repShiftOver || ex.Walkers.Count >= WalkerBand || SimTime < _repMoveOnAt)
         {
             return false;
         }
@@ -206,48 +255,80 @@ public sealed partial class Map
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         UndergroundComplex.FloorPlan floor =
             UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        // #731 (B1 canteen) · …and the walked-in are in chairs too. One opinion about every top in the room,
+        // which is why this reads the room's BOTH halves of churn and not just who stood up.
+        IReadOnlyList<CanteenRegulars.TableSeat> tops = CanteenRegulars.Tables(
+            ex.Stop.Body.Id, ex.Floor, amenity, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn);
 
-        // He crosses to the table only when the captain is sitting alone at one and has not already sent
-        // him away this visit. Everything else on his beat is furniture he stands beside.
+        // #1061 · Egress.SEATED and not Egress.OnTheSchedule: a salesman's round asks who is sitting there to
+        // be stood beside, not who the shift may give legs to. The crowd is who an insurance man sells to,
+        // and standing at their table gives them nothing to run — see the note on OnTheSchedule.
+        TheRoundHeIsWorking(
+            ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch, () => Egress.Seated(tops));
+
+        // He crosses to the table only when the captain is sitting alone at one, has not already sent him
+        // away this visit — and has had time to watch him work the room first (#1061).
         if (TheCaptainIsSittingAlone(out int tableIndex)
             && _repMemory.MayApproach(_repVisitIndex)
+            && TheCaptainHasWatchedHimWork
             && TopOn(ex, amenity, tableIndex) is { } top
             && ChairOppositeTheCaptain(in top, walls) is { } beside)
         {
-            return PlanTheRep(ex, floor, walls, beside, Errand.RepPitching, tableIndex);
+            return PlanTheRep(ex, floor, walls, beside, Errand.RepPitching, tableIndex,
+                              NpcWalk.NoPersonalSpace);
         }
 
-        IReadOnlyList<DeckReachability.Point> beat = TheRepsBeat(ex, amenity, floor, walls);
-        if (beat.Count == 0)
+        // The counter first, because that is where he says he will be.
+        if (!_repStoodAtTheCounter)
         {
+            _repStoodAtTheCounter = true;
+            if (TheCounterOn(amenity, walls) is { } counter && !HeIsAlreadyStandingAt(counter))
+            {
+                return PlanTheRep(ex, floor, walls, counter, Errand.RepRounds, -1,
+                                  NpcWalk.PersonalSpaceInRadii);
+            }
+        }
+
+        // …and then the marks, in the order this watch dealt them.
+        if (TheMarkHeIsOn is { } mark)
+        {
+            if (TheTopNumbered(tops, mark.Index) is { } theirs
+                && WhereABodyStandsAt(in theirs, walls) is { } at
+                && !HeIsAlreadyStandingAt(at)
+                && PlanTheRep(ex, floor, walls, at, Errand.RepRounds, mark.Index,
+                              NpcWalk.PersonalSpaceInRadii))
+            {
+                return true;
+            }
+
+            // Their top has gone (they finished and left), the stone allows nobody beside it, the floor has
+            // no route to it, or he is already standing there. A man does not queue for a table nobody is at,
+            // and a mark retried every frame for a whole watch is a salesman in a loop: it is worked.
+            _repMarksWorked++;
             return false;
         }
 
-        _repPost = (_repPost + 1) % beat.Count;
-        return PlanTheRep(ex, floor, walls, beat[_repPost], Errand.RepRounds, -1);
+        return HeGoesOffShift(ex, floor, walls);
     }
 
-    /// <summary>Plan one of his walks. He starts from where he is if he is already in the room, and from
-    /// the doorstep of a door he does not have to be let through if this is his entrance.</summary>
+    /// <summary>Plan one of his walks. He starts from where he is standing if he is already working this room,
+    /// and from the doorstep of a door he does not have to be let through if this is his entrance.</summary>
     private bool PlanTheRep(
         SurfaceExcursion ex, UndergroundComplex.FloorPlan floor,
-        IReadOnlyList<SurfaceCollision.Segment> walls, DeckReachability.Point to, Errand errand, int table)
+        IReadOnlyList<SurfaceCollision.Segment> walls, DeckReachability.Point to, Errand errand, int table,
+        double berth)
     {
-        int index = Egress.DoorFor(ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch, NebulaRep.ContactId, floor.Locked);
-        if (index < 0 || index >= floor.Locked.Count)
+        if (WhereHeSetsOffFrom(floor.Locked, walls, ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch, to)
+            is not { } from)
         {
             return false;
         }
 
-        UndergroundComplex.LockedDoor door = floor.Locked[index];
-        if (Egress.StandingPlaceAt(in door, DeckPlan.AvatarRadius, walls, to.X, to.Y) is not { } doorstep)
+        if (OnFoot(NebulaRep.Plate, new NpcWalk.Bound("", to.X, to.Y), from, walls, berth) is not { } walk)
         {
-            return false;
-        }
-
-        if (OnFoot(NebulaRep.Plate, new NpcWalk.Bound("", to.X, to.Y), doorstep, walls,
-                   NpcWalk.NoPersonalSpace) is not { } walk)
-        {
+            // He cannot get there from where he is standing. He is not left frozen mid-floor: the next frame
+            // starts him from a doorstep again, which is the one beginning this room always has for him.
+            _repStandingAt = null;
             return false;
         }
 
@@ -256,49 +337,177 @@ public sealed partial class Map
         return true;
     }
 
-    /// <summary>
-    /// HIS BEAT — the two or three fixtures a man with nothing to do stands beside. The counter first,
-    /// because that is where he says he will be, then the ends of the room's own tops.
+    /// <summary>#1061 · <b>THE ROOM IS WORKED, SO HE GOES.</b> Out through a leaf the captain's own TRY is
+    /// refused at, on <see cref="Egress.DoorFor"/>'s answer off the frozen watch — the same door, the same
+    /// call and the same plate as his way in, so the salesman never leaves through a leaf he was never behind.
     ///
-    /// <para>Read off the floor's published geometry and never carved here: a second list of where the
-    /// counter is would be this repo's oldest bug class with a salesman walking through it.</para>
-    /// </summary>
-    private static IReadOnlyList<DeckReachability.Point> TheRepsBeat(
-        SurfaceExcursion ex, UndergroundComplex.Amenity amenity, UndergroundComplex.FloorPlan floor,
+    /// <para>The shift is over whether or not the floor gives him a way out of it. A room with no locked leaf
+    /// is a room he simply stops working in, which is the honest answer and never a body left drifting
+    /// between fixtures for the rest of a watch.</para>
+    ///
+    /// <para>Nothing is said. He is not at the counter the next time you look.</para></summary>
+    private bool HeGoesOffShift(
+        SurfaceExcursion ex, UndergroundComplex.FloorPlan floor,
         IReadOnlyList<SurfaceCollision.Segment> walls)
     {
-        List<DeckReachability.Point> beat = [];
-
-        if (amenity.Hall is { } hall)
+        _repShiftOver = true;
+        if (_repStandingAt is not { } from)
         {
-            foreach (UndergroundComplex.CounterPlace place in hall.CounterRow)
+            return false;
+        }
+
+        int index = Egress.DoorFor(
+            ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch, NebulaRep.ContactId, floor.Locked);
+        if (index < 0 || index >= floor.Locked.Count)
+        {
+            return false;
+        }
+
+        UndergroundComplex.LockedDoor door = floor.Locked[index];
+        if (Egress.StandingPlaceAt(in door, DeckPlan.AvatarRadius, walls, from.X, from.Y) is not { } doorstep
+            || OnFoot(NebulaRep.Plate, new NpcWalk.Bound(door.Sign, doorstep.X, doorstep.Y), from, walls)
+                is not { } away)
+        {
+            return false;
+        }
+
+        ex.Walkers.Add(new Walker { Walk = away, Table = -1, For = Errand.RepLeaving });
+        StateHasChanged();
+        return true;
+    }
+
+    /// <summary>#1061 · The one standing place at the counter this hall allows, or null. Read off the floor's
+    /// published fixtures and never carved here — a second list of where the counter is would be this repo's
+    /// oldest bug class with a salesman leaning on it.</summary>
+    private static DeckReachability.Point? TheCounterOn(
+        UndergroundComplex.Amenity amenity, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        if (amenity.Hall is not { } hall)
+        {
+            return null;
+        }
+
+        foreach (UndergroundComplex.CounterPlace place in hall.CounterRow)
+        {
+            if (!place.Seated && !SurfaceCollision.Blocked(place.X, place.Y, DeckPlan.AvatarRadius, walls))
             {
-                if (place.Seated || SurfaceCollision.Blocked(place.X, place.Y, DeckPlan.AvatarRadius, walls))
+                // One standing place at the counter is the bar; the rest of the row is other people's.
+                return new DeckReachability.Point(place.X, place.Y);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>#1061 · One of the hall's tops by the ordinal the round names — a lookup against the list the
+    /// room was drawn from, never a second geometry.</summary>
+    private static CanteenRegulars.TableSeat? TheTopNumbered(
+        IReadOnlyList<CanteenRegulars.TableSeat> tops, int index)
+    {
+        foreach (CanteenRegulars.TableSeat top in tops)
+        {
+            if (top.Index == index && top.Taken)
+            {
+                return top;
+            }
+        }
+
+        return null;
+    }
+
+    // ── #1061 · THE ROUND ──────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#1061 · Make sure the round on the page is the one THIS watch dealt. Asked once per shift and
+    /// only read afterwards: <see cref="Egress.Marks"/> is frozen to the watch, and re-asking it sixty times a
+    /// second for an answer that cannot change is #731's own lesson with a salesman walking through it.
+    ///
+    /// <para>A shift turning over wipes it, which is the room forgetting — the people he was working went
+    /// home three hours ago, and the ones sitting there now have never been sold anything.</para></summary>
+    private void TheRoundHeIsWorking(
+        string bodyId, int level, long watch, Func<IReadOnlyList<Egress.Occupant>> seated)
+    {
+        if (_repRound is not null && _repRoundWatch == watch)
+        {
+            return;
+        }
+
+        if (_repRound is not null)
+        {
+            ForgetTheRound();
+        }
+
+        _repRoundWatch = watch;
+        _repRound = Egress.Marks(bodyId, level, watch, NebulaRep.ContactId, seated());
+    }
+
+    /// <summary>#1061 · A round belongs to one visit and one watch; forgetting it is forgetting both.</summary>
+    private void ForgetTheRound()
+    {
+        _repRound = null;
+        _repRoundWatch = long.MinValue;
+        _repMarksWorked = 0;
+        _repStoodAtTheCounter = false;
+        _repStandingAt = null;
+        _repShiftOver = false;
+    }
+
+    /// <summary>#1061 · The mark he is on, or null when the room is worked.</summary>
+    private Egress.Patter? TheMarkHeIsOn =>
+        _repRound is { } round && _repMarksWorked < round.Count ? round[_repMarksWorked] : null;
+
+    /// <summary>
+    /// #1061 · <b>HAS THE CAPTAIN WATCHED HIM WORK?</b> The whole of the beat, as one predicate: he does not
+    /// come to your table until you have seen him at <see cref="Egress.MarksBeforeTheTable"/> other people's.
+    ///
+    /// <para>It is a FLOOR and not a quota, capped by the round the room could actually deal: a hall with one
+    /// sitter in it is worked out after one table, and a salesman who stood about waiting for a second one
+    /// that does not exist would be a captain sitting alone for a whole shift with nothing crossing the floor
+    /// at all.</para>
+    /// </summary>
+    private bool TheCaptainHasWatchedHimWork =>
+        _repMarksWorked >= Math.Min(Egress.MarksBeforeTheTable, _repRound?.Count ?? 0);
+
+    /// <summary>#1061 · Is he already standing where the next stop is? A walk of no length is a teleport with
+    /// a plate on it, and a stop he is already at is a stop he has worked.</summary>
+    private bool HeIsAlreadyStandingAt(DeckReachability.Point to) =>
+        _repStandingAt is { } here
+        && ((here.X - to.X) * (here.X - to.X)) + ((here.Y - to.Y) * (here.Y - to.Y))
+           < DeckPlan.AvatarRadius * DeckPlan.AvatarRadius;
+
+    /// <summary>#1061 · WHERE THIS LEG BEGINS — his own feet if he is already working the room, and otherwise
+    /// the doorstep of the leaf this watch deals him. One answer for both rooms.</summary>
+    private DeckReachability.Point? WhereHeSetsOffFrom(
+        IReadOnlyList<UndergroundComplex.LockedDoor> leaves,
+        IReadOnlyList<SurfaceCollision.Segment> walls,
+        string bodyId, int level, long watch, DeckReachability.Point to)
+    {
+        if (_repStandingAt is { } here)
+        {
+            return here;
+        }
+
+        int index = Egress.DoorFor(bodyId, level, watch, NebulaRep.ContactId, leaves);
+        return index < 0 || index >= leaves.Count
+            ? null
+            : Egress.StandingPlaceAt(leaves[index], DeckPlan.AvatarRadius, walls, to.X, to.Y);
+    }
+
+    /// <summary>#1061 · How long he stands at THIS stop. The round's own beat at a mark, and the plain dwell
+    /// at the counter, where there is nobody to talk to.</summary>
+    private double HisBeatAt(int table)
+    {
+        if (table >= 0 && _repRound is { } round)
+        {
+            foreach (Egress.Patter mark in round)
+            {
+                if (mark.Index == table)
                 {
-                    continue;
+                    return mark.BeatSeconds;
                 }
-
-                beat.Add(new DeckReachability.Point(place.X, place.Y));
-                break;   // one standing place at the counter is the bar; the rest of the row is other people's
             }
         }
 
-        foreach (CanteenRegulars.TableSeat top in
-                 CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, amenity, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn))
-        {
-            if (WhereABodyStandsAt(in top, walls) is { } beside)
-            {
-                beat.Add(beside);
-            }
-
-            if (beat.Count >= 3)
-            {
-                break;
-            }
-        }
-
-        _ = floor;
-        return beat;
+        return RepDwellSeconds;
     }
 
     /// <summary>The captain, alone, at a top he can be reached at. The seat's own two answers asked rather
@@ -329,6 +538,22 @@ public sealed partial class Map
     private bool StepTheRep(
         IList<Walker> afoot, Walker who, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
     {
+        // #1061 · …AND ONE THAT ENDS THE ORDINARY WAY. His shift is over and he is walking out through a leaf
+        // that does not open for the captain: the route running out is the end of him, exactly as it is for a
+        // regular who has finished a drink, and nothing is said about it.
+        if (who.For == Errand.RepLeaving)
+        {
+            who.Walk.Step(dt, walls, _avatarX, _avatarY);
+            if (who.Walk.Afoot)
+            {
+                return false;
+            }
+
+            afoot.RemoveAt(slot);
+            _repStandingAt = null;
+            return true;
+        }
+
         if (who.Walk.State != NpcWalk.Doing.Arrived)
         {
             who.Walk.Step(dt, walls, _avatarX, _avatarY);
@@ -339,8 +564,15 @@ public sealed partial class Map
 
             if (who.Walk.State != NpcWalk.Doing.Arrived)
             {
-                // The floor refused him. He simply is not there, which is honest — and nothing was said.
+                // The floor refused him somewhere between the door and the table. He is standing wherever it
+                // stopped him, which is honest — and the mark he could not reach is one he does not queue for.
                 afoot.RemoveAt(slot);
+                HeIsStandingHere(who);
+                if (who.For == Errand.RepRounds && who.Table >= 0)
+                {
+                    _repMarksWorked++;
+                }
+
                 _repMoveOnAt = SimTime + RepDwellSeconds;
                 return true;
             }
@@ -352,24 +584,40 @@ public sealed partial class Map
             }
             else
             {
-                _repMoveOnAt = SimTime + RepDwellSeconds;
+                // #1061 · …and at somebody ELSE'S table he says nothing at all. The pause is the patter, and
+                // its length is the round's own — a fact about this watch and never a clock reading.
+                _repMoveOnAt = SimTime + HisBeatAt(who.Table);
             }
 
             who.Walk.LookTowards(_avatarX, _avatarY);
             return true;
         }
 
-        // Standing. A man on his rounds drifts on when he has stood long enough; a man mid-pitch waits for
+        // Standing. A man on his rounds moves on when he has stood long enough; a man mid-pitch waits for
         // an answer however long that takes, because the answer is the whole of the scene.
         if (who.For == Errand.RepRounds && SimTime >= _repMoveOnAt)
         {
             afoot.RemoveAt(slot);
+
+            // #1061 · A pause at the table, and then on — FROM HERE. He is taken off the list and put back on
+            // it in the same frame by the planner, so the room never draws him vanishing off a top and coming
+            // back out of a cellar.
+            HeIsStandingHere(who);
+            if (who.Table >= 0)
+            {
+                _repMarksWorked++;
+            }
+
             return true;
         }
 
         who.Walk.LookTowards(_avatarX, _avatarY);
         return false;
     }
+
+    /// <summary>#1061 · Remember where his feet are, so the next leg of his round begins at them.</summary>
+    private void HeIsStandingHere(Walker who) =>
+        _repStandingAt = new DeckReachability.Point(who.Walk.X, who.Walk.Y);
 
     // ── The pitch ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -538,15 +786,18 @@ public sealed partial class Map
         // standing at a bar table with no card in his hand, which is the state #731's escort branch refuses.
         if (_surface is { } ex && TheRepAfoot(ex.Walkers) is { } underground)
         {
+            // #1061 · …and he walks on from where his feet actually are, which is your elbow. The round is not
+            // over: there are other tables in this room, and the man who has just been told no goes to them.
+            HeIsStandingHere(underground);
             ex.Walkers.Remove(underground);
         }
 
         if (TheRepAfoot(_barAfoot) is { } ashore)
         {
+            HeIsStandingHere(ashore);
             _barAfoot.Remove(ashore);
         }
 
-        _repPost = -1;                                 // the counter is the first stop on his beat
         _repMoveOnAt = SimTime + RepDwellSeconds;
     }
 
