@@ -34,7 +34,7 @@ public partial class Map
         {
             return;
         }
-        string? nearest = NearestOwnCacheId(ex.Stop.Body.Id, spot.X, spot.Y);
+        string? nearest = NearestOwnCacheId(ex.Stop.Body.Id, ex.Site.Index, spot.X, spot.Y);
         if (nearest is null)
         {
             ShowPulseMessage("The X is scuffed to nothing — no chest here.");
@@ -127,11 +127,13 @@ public partial class Map
         }
     }
 
-    private string? NearestOwnCacheId(string bodyId, double x, double y)
+    // #650 · The chest under a ✗ can only be one that is under THIS ground — same filter that drew the mark,
+    // so the shovel and the map can never disagree about which site a chest is on.
+    private string? NearestOwnCacheId(string bodyId, int siteIndex, double x, double y)
     {
         string? best = null;
         double bestSq = double.MaxValue;
-        foreach ((string id, double cx, double cy, int _) in OwnCachePositionsAt(bodyId))
+        foreach ((string id, double cx, double cy, int _) in OwnCachePositionsAt(bodyId, siteIndex))
         {
             double d = (cx - x) * (cx - x) + (cy - y) * (cy - y);
             if (d < bestSq)
@@ -266,7 +268,11 @@ public partial class Map
 
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
-        TreasureCache cache = _caches.Bury(ex.Stop.Body.Id, coin, ex.PendingCargo, SimTime, "you", playerOwned: true, presence, digX, digY);
+        // #650 · The chest goes into THIS ground, not "somewhere on this moon": the site the shuttle set down
+        // at rides the cache, so the ✗ is drawn — and dug — only here, and the map card names the place.
+        TreasureCache cache = _caches.Bury(
+            ex.Stop.Body.Id, coin, ex.PendingCargo, SimTime, "you", playerOwned: true, presence, digX, digY,
+            siteIndex: ex.Site.Index);
         SeedDiscoveryWatch();
 
         ex.Buried = true;

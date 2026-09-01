@@ -480,8 +480,13 @@ public partial class Map
         // Same reasoning as the beacons above: these are surface instruments reporting surface facts, and
         // underground they are not merely useless but WRONG. Gated once, here, because _hudMarks feeds both
         // the on-grid marks and BuildCacheBeacons — one source, one gate.
+        //
+        // #650 · AND ON ONE GROUND OF IT. The same argument one step sideways: a body's 2–4 landing sites
+        // (#320) rebuild that same coordinate envelope, so a chest dug out on the Wild Plain has an (x, y)
+        // on the Ridge Camp that is a different place entirely — a mark, and a beacon pointing at it, on
+        // ground the captain has never walked. Site-filtered for exactly the reason the floor is gated.
         // 🗺 Layers (#405) Ground finds → Treasure ✗: the buried-cache marks the excursion HUD carries.
-        foreach (TreasureCache c in LayerVisible("finds.treasure") && ex.Floor >= 0 ? _caches.CachesAt(bodyId) : [])
+        foreach (TreasureCache c in LayerVisible("finds.treasure") && ex.Floor >= 0 ? _caches.CachesAt(bodyId, ex.Site.Index) : [])
         {
             if (!c.PlayerOwned)
             {

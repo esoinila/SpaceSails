@@ -57,17 +57,22 @@ public static class CacheMint
 
     /// <summary>Mint a complete cache from its contents and place. The landmark is resolved off
     /// <see cref="Landmarks"/>; bearing and paces are derived from the seed. Pure — no side effects,
-    /// no clock read (the caller passes the burial time).</summary>
+    /// no clock read (the caller passes the burial time).
+    ///
+    /// <para>#650 · <paramref name="siteIndex"/> is WHICH GROUND on that body the shovel went in at
+    /// (<see cref="LandingSite.Index"/>). Left null the chest is body-wide, exactly as every cache minted
+    /// before the field existed — which is why a rumour map, minted with no ground under it, still reads
+    /// and digs the way it always has.</para></summary>
     public static TreasureCache Bury(
         string id, string bodyId, int mintIndex, int coin, IReadOnlyList<CacheCargo> cargo,
         double buriedSimTime, string owner, bool playerOwned, int reeverLevel = 0,
-        double? digX = null, double? digY = null)
+        double? digX = null, double? digY = null, int? siteIndex = null)
     {
         Landmark site = Landmarks.For(bodyId);
         string seed = SeedKey(bodyId, owner, buriedSimTime, mintIndex);
         return new TreasureCache(
             id, bodyId, site.Name, Bearing(seed), Paces(seed),
-            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel, digX, digY);
+            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex);
     }
 }
 

@@ -48,6 +48,15 @@ public readonly record struct CacheCargo(string CargoClass, int Units, bool Hot)
 /// spot; the client then falls back to the deterministic hash-scatter (<c>MoonSurface.CachePosition</c>),
 /// so every legacy cache round-trips unchanged.</param>
 /// <param name="DigY">The REAL surface y the chest went into the ground (see <paramref name="DigX"/>).</param>
+/// <param name="SiteIndex">#650 · WHICH GROUND the chest is under — the ordinal of the landing site
+/// (<see cref="LandingSite.Index"/>) the shovel went in at. Since #320 a body offers 2–4 seeded sites and
+/// every one of them rebuilds the SAME local surface frame, so a cache filtered by body alone drew its ✗ —
+/// and dug out — at the same local x/y on all of them, on ground the captain had never walked.
+///
+/// <para><b>Null means body-wide</b>, which is exactly what every chest buried before this field existed
+/// was: a legacy save loads with no site, keeps today's behaviour on every site of its body, and writes
+/// back byte-for-byte (the vault omits the key entirely when it is null). New burials record their site,
+/// so the ✗ is drawn only on the one ground it is actually under, and the map card names that ground.</para></param>
 public readonly record struct TreasureCache(
     string Id,
     string BodyId,
@@ -61,7 +70,8 @@ public readonly record struct TreasureCache(
     bool PlayerOwned,
     int ReeverLevel = 0,
     double? DigX = null,
-    double? DigY = null)
+    double? DigY = null,
+    int? SiteIndex = null)
 {
     /// <summary>True when this cache recorded the actual dug spot (free-form bury) rather than leaning on
     /// the hash-scatter — both coords present. A legacy or rumour cache has neither and falls back.</summary>
@@ -76,10 +86,30 @@ public readonly record struct TreasureCache(
     /// <summary>True when the chest holds anything at all worth digging up.</summary>
     public bool HasContents => Coin > 0 || TotalCargoUnits > 0;
 
-    /// <summary>The big caption the map card shouts: "PHOBOS — from the monolith, 40 paces
-    /// anti-spinward". Body name is the caller's display string (title-cased off the ephemeris).</summary>
+    /// <summary>#650 · True when this chest knows which of the body's landing sites it is under. False for
+    /// every legacy save and every rumour/NPC chest, which stay body-wide exactly as they are today.</summary>
+    public bool HasSite => SiteIndex is not null;
+
+    /// <summary>#650 · Is this chest under the ground the captain is standing on? A sited cache answers only
+    /// for its own site; a null-site (legacy) cache answers yes anywhere on its body — the old behaviour,
+    /// kept deliberately so no saved chest becomes undiggable.</summary>
+    public bool IsOnSite(int siteIndex) => SiteIndex is not { } mine || mine == siteIndex;
+
+    /// <summary>#650 · The display name of the ground this chest is under ("The Ridge Camp"), resolved off
+    /// the body's seeded site board (<see cref="LandingSites"/>, deterministic per body id, so the name is
+    /// stable forever without being copied into the save). Null when the cache is body-wide.</summary>
+    public string? SiteName =>
+        SiteIndex is { } i ? LandingSites.At(BodyId, i).Name : null;
+
+    /// <summary>The big caption the map card shouts. A sited chest names the ground it is actually under —
+    /// "PHOBOS · THE RIDGE CAMP — from the monolith, 40 paces anti-spinward" (#650) — so the card, and the
+    /// ledger row that reads the same text, tell a captain standing on the wrong site where to go back to.
+    /// A body-wide (legacy/rumour) chest keeps the original "PHOBOS — from the monolith, …". Body name is
+    /// the caller's display string (title-cased off the ephemeris).</summary>
     public string Caption(string bodyDisplayName) =>
-        $"{bodyDisplayName.ToUpperInvariant()} — from {LandmarkName}, {Paces} paces {Bearing}";
+        SiteName is { } site
+            ? $"{bodyDisplayName.ToUpperInvariant()} · {site.ToUpperInvariant()} — from {LandmarkName}, {Paces} paces {Bearing}"
+            : $"{bodyDisplayName.ToUpperInvariant()} — from {LandmarkName}, {Paces} paces {Bearing}";
 
     /// <summary>The bearing+paces line on its own ("40 paces anti-spinward of the monolith").</summary>
     public string BearingLine =>

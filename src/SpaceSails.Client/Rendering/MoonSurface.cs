@@ -257,6 +257,37 @@ public static class MoonSurface
         return (x, y);
     }
 
+    /// <summary>
+    /// #650 · THE ✗ MARKS THAT BELONG TO THIS GROUND — the one projection from the hoard to the marks the
+    /// surface deck plants, so the map and the shovel can never be built from different questions.
+    ///
+    /// <para>Two filters, both load-bearing. <b>Ours</b>: a rival's chest we merely hold a map to gets no ✗.
+    /// <b>This site</b>: a body offers 2–4 landing sites since #320 and every one of them rebuilds the SAME
+    /// local coordinate frame, so a chest buried out on the Wild Plain, filtered by body alone, planted its ✗
+    /// at the identical x/y on the Ridge Camp — on ground the captain had never walked, and diggable there.
+    /// A null-site (legacy save, rumour map) cache still answers for every ground on its body, so nothing
+    /// buried before the field existed becomes unreachable.</para>
+    ///
+    /// <para>The position is the REAL dug spot when the free-form bury recorded one (playtest bug #5), else
+    /// the deterministic <see cref="CachePosition"/> hash-scatter — unchanged.</para>
+    /// </summary>
+    public static List<(string Id, double X, double Y, int ReeverLevel)> OwnCacheMarks(
+        CacheLedger caches, string bodyId, int siteIndex)
+    {
+        ArgumentNullException.ThrowIfNull(caches);
+        var list = new List<(string, double, double, int)>();
+        foreach (TreasureCache c in caches.CachesAt(bodyId, siteIndex))
+        {
+            if (!c.PlayerOwned)
+            {
+                continue;
+            }
+            (double x, double y) = c is { DigX: { } dx, DigY: { } dy } ? (dx, dy) : CachePosition(c.Id);
+            list.Add((c.Id, x, y, c.ReeverLevel));
+        }
+        return list;
+    }
+
     private static int StableHash(string s)
     {
         unchecked
