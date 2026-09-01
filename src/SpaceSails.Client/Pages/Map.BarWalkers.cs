@@ -95,6 +95,66 @@ public partial class Map
     /// door every time this visit.</summary>
     private const int BarIsNotAFloor = 0;
 
+    // ── #731 · THE ROOM'S OWN HOURS ──────────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-08-06: "Like on the bar now they have to wait for us to leave before they can sit up… or
+    // leave the bar." And, 2026-09-01: "also just other customers arriving and leaving in the bars already
+    // does a lot… they can go behind doors that are locked to us."
+    //
+    // Until this lane the bar's four regulars were a pure function of the docking watch and NOTHING could
+    // move them: whoever the rota seated when the captain clamped on was still in that chair when he cast
+    // off. Now the same frozen watch that seats them also decides which of them finishes and goes, and which
+    // of the ones it has "in the back" comes OUT of the back — both through the leaves the captain's own TRY
+    // is refused at, both on the one walker, and not one line is said about any of it.
+
+    /// <summary>#731 · Which regulars have stood up and walked out this visit, by the rota's own id. The room
+    /// stops seating them the moment their legs start: one body, one place.</summary>
+    private readonly HashSet<string> _barLeft = new(StringComparer.Ordinal);
+
+    /// <summary>#731 · …and which have come out of the back and sat down, by the chair they took. Written on
+    /// the frame they reach it and never on the frame they set off — a man is not in a chair he is still
+    /// walking to.</summary>
+    private readonly Dictionary<string, int> _barCameIn = new(StringComparer.Ordinal);
+
+    /// <summary>#731 · This shift's own list of who goes, worked out ONCE when the visit begins and only read
+    /// afterwards. Null is a question the room has not been asked yet; empty is an answer it gave.</summary>
+    private IReadOnlyList<Egress.Move>? _barGoing;
+
+    /// <summary>#731 · …and the same list run the other way: who turns up.</summary>
+    private IReadOnlyList<Egress.Move>? _barComing;
+
+    /// <summary>#731 · Which moves have been dealt already, so a schedule re-read every frame never sends the
+    /// same person through the same door twice. Keyed on the direction and the id, because a man may both
+    /// leave a room and come into it and they are two different evenings.</summary>
+    private readonly HashSet<string> _barDealt = new(StringComparer.Ordinal);
+
+    /// <summary>#731 · The room as this evening has left it — handed to the deck build, the droid fill and the
+    /// barkeep's line through one call, so the three of them cannot come to three views of who is here.</summary>
+    private HavenInterior.RoomChurn TheBarsChurn => new(_barLeft, _barCameIn);
+
+    /// <summary>#731 · How far into the frozen docking watch the clock has got. The SCHEDULE is a function of
+    /// <see cref="BarWatch"/> and does not move while it is being read; this is only the hand crossing the
+    /// times that schedule already named — the same shape the canteen's own deal has, and never a wall
+    /// clock.</summary>
+    private double IntoTheBarsWatch => SimTime - (BarWatch * PatronRota.WatchSeconds);
+
+    /// <summary>#731 · How many of the ROOM'S OWN people are on their feet. The salesman and the walk-in are
+    /// not: they do not live here and they are not who <see cref="Egress.MostAtOnce"/> is a law about. Counted
+    /// off the walker list rather than tracked, because that list is the truth about who is afoot.</summary>
+    private int TheBarsOwnFeet()
+    {
+        int feet = 0;
+        foreach (Walker w in _barAfoot)
+        {
+            if (w.For is Errand.Leaving or Errand.Arriving)
+            {
+                feet++;
+            }
+        }
+
+        return feet;
+    }
+
     // ── ONE FRAME OF THE BAR'S METABOLISM ────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -124,6 +184,7 @@ public partial class Map
         }
 
         ForgetTheBarsFeet(bar.BodyId);
+        DealTheBarsHours(bar);
         StepTheBarsFeet(dtRealSeconds, bar);
         AdvanceTheRepAshore(bar);
         AdvanceTheWalkIn(bar);   // #973 L5b · …and whoever the evening has crossing the floor to your table
@@ -141,6 +202,224 @@ public partial class Map
 
         _barFeetBerth = berth;
         _barAfoot.Clear();
+
+        // …and the evening with them. A different berth is a different room, and a chair emptied at the last
+        // one is a chair belonging to a station this captain is no longer tied to. Null and not empty for the
+        // schedules: empty is an answer this room gave, null is a question it has not been asked yet.
+        _barLeft.Clear();
+        _barCameIn.Clear();
+        _barDealt.Clear();
+        _barGoing = null;
+        _barComing = null;
+    }
+
+    // ── #731 · WHO GOES, WHO COMES, AND WHEN ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #731 · <b>WHAT THIS SHIFT HAS DECIDED, BY NOW.</b> The scheduled half of the owner's own proposal —
+    /// <i>scheduled for ambience, triggered for plot beats; both through one walker</i> — said in the room he
+    /// actually drinks in.
+    ///
+    /// <para>Both directions are one arithmetic (<see cref="Egress"/>, off the frozen
+    /// <see cref="BarWatch"/>), and each move is dealt exactly once. <b>The lists are worked out once per
+    /// visit and afterwards only read:</b> answering "who goes" needs the whole rota resolved, and asking that
+    /// sixty times a second for something that cannot change while the captain is standing there is the same
+    /// lesson #731 v1 paid for underground with a whole floor plan per frame.</para>
+    ///
+    /// <para>The room's own feet are capped at <see cref="Egress.MostAtOnce"/>: one person standing up and
+    /// crossing a bar is something a captain looks at, and four at once is a fire drill.</para>
+    /// </summary>
+    private void DealTheBarsHours(in HavenInterior.BarFloor bar)
+    {
+        _barGoing ??= TheWatchDecidesWhoGoes(in bar);
+        _barComing ??= TheWatchDecidesWhoComes(in bar);
+
+        if ((_barGoing.Count == 0 && _barComing.Count == 0) || TheBarsOwnFeet() >= Egress.MostAtOnce)
+        {
+            return;
+        }
+
+        double into = IntoTheBarsWatch;
+        DealWhatIsDue(in bar, _barGoing, into, leaving: true);
+        DealWhatIsDue(in bar, _barComing, into, leaving: false);
+    }
+
+    /// <summary>#731 · One direction of the schedule, stepped down until the room is full of feet. The two
+    /// halves differ in exactly one line, which is why they are not two loops.</summary>
+    private void DealWhatIsDue(
+        in HavenInterior.BarFloor bar, IReadOnlyList<Egress.Move> schedule, double into, bool leaving)
+    {
+        foreach (Egress.Move move in schedule)
+        {
+            if (into < move.AtSecondsIntoWatch || !_barDealt.Add((leaving ? "out:" : "in:") + move.Plate))
+            {
+                continue;
+            }
+
+            bool afoot = leaving ? TheyStandUpAndGo(in bar, move) : TheyComeOutOfTheBack(in bar, move);
+            if (!afoot)
+            {
+                // No route, no chair, or nowhere to stand at that leaf. Nothing happens — which is the honest
+                // answer, and never a body placed at the far end of a walk that could not be walked.
+                _barDealt.Remove((leaving ? "out:" : "in:") + move.Plate);
+            }
+
+            if (TheBarsOwnFeet() >= Egress.MostAtOnce)
+            {
+                return;
+            }
+        }
+    }
+
+    /// <summary>#731 · THE SHIFT'S OWN LIST OF WHO FINISHES — the regulars this watch actually seated, run
+    /// through Core's one deal. Asked of the rota's UNTOUCHED answer (no churn), because the schedule is a
+    /// fact about the watch and must not change as the evening it describes plays out.</summary>
+    private IReadOnlyList<Egress.Move> TheWatchDecidesWhoGoes(in HavenInterior.BarFloor bar)
+    {
+        var seated = new List<Egress.Occupant>();
+        IReadOnlyList<HavenInterior.SeatedRegular> rota =
+            HavenInterior.ResolveRegulars(bar.BodyId, _dockVisitSimTime);
+        for (int i = 0; i < rota.Count; i++)
+        {
+            if (rota[i].Present)
+            {
+                seated.Add(new Egress.Occupant(i, rota[i].Id));
+            }
+        }
+
+        return Egress.Departures(bar.BodyId, BarIsNotAFloor, BarWatch, seated, bar.Doors);
+    }
+
+    /// <summary>
+    /// #731 · …AND OF WHO COMES OUT OF THE BACK. <i>"In the space bars there are lot of cases where we can
+    /// have npcs arrive at bar from locked place."</i>
+    ///
+    /// <para>Only the regulars the rota has <see cref="PatronState.InTheBack"/> — <i>"away in the back / a
+    /// locked room"</i> — are eligible, and that is the whole inference: a man who comes out of a leaf the
+    /// captain cannot open was, according to the room's own bookkeeping, behind it. A regular who is simply
+    /// <see cref="PatronState.Gone"/> is not at this station at all and does not get to materialise in the
+    /// cellar. That distinction has been computed every watch since #410 and told to nobody but the barkeep;
+    /// it is load-bearing now.</para>
+    ///
+    /// <para>The chair each would take is allotted here, off the room's own free list in the pool's own order,
+    /// so two people walking in never head for one chair.</para>
+    /// </summary>
+    private IReadOnlyList<Egress.Move> TheWatchDecidesWhoComes(in HavenInterior.BarFloor bar)
+    {
+        IReadOnlyList<int> free = HavenInterior.FreePatronSeats(bar.BodyId, _dockVisitSimTime);
+        if (free.Count == 0)
+        {
+            return [];
+        }
+
+        var expected = new List<Egress.Occupant>();
+        IReadOnlyList<HavenInterior.SeatedRegular> rota =
+            HavenInterior.ResolveRegulars(bar.BodyId, _dockVisitSimTime);
+        int next = 0;
+        foreach (HavenInterior.SeatedRegular r in rota)
+        {
+            if (r.State != PatronState.InTheBack || next >= free.Count)
+            {
+                continue;
+            }
+
+            expected.Add(new Egress.Occupant(free[next], r.Id));
+            next++;
+        }
+
+        return expected.Count == 0
+            ? []
+            : Egress.Arrivals(bar.BodyId, BarIsNotAFloor, BarWatch, expected, bar.Doors);
+    }
+
+    /// <summary>
+    /// #731 · <b>SOMEBODY FINISHES AND GOES.</b> The chair comes back empty in the same breath their legs
+    /// start — one body, one place — and the deck is re-welded so the drawn room agrees with the walked one.
+    ///
+    /// <para>They give the captain a body's berth (<see cref="NpcWalk.PersonalSpaceInRadii"/>), which is the
+    /// ruling on this issue said out loud: a captain standing in the door of a room somebody is trying to
+    /// leave stops them, and being looked at is the content. They never clip and they never push.</para>
+    /// </summary>
+    private bool TheyStandUpAndGo(in HavenInterior.BarFloor bar, Egress.Move move)
+    {
+        if (TheRegular(bar.BodyId, move.Plate) is not { Present: true } who
+            || move.Door < 0 || move.Door >= bar.Doors.Count)
+        {
+            return false;
+        }
+
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        var from = new DeckReachability.Point(who.X, who.Y);
+        UndergroundComplex.LockedDoor leaf = bar.Doors[move.Door];
+        if (SurfaceCollision.Blocked(from.X, from.Y, DeckPlan.AvatarRadius, walls)
+            || Egress.StandingPlaceAt(in leaf, DeckPlan.AvatarRadius, walls, from.X, from.Y) is not { } doorstep
+            || OnFoot(who.ShortName, new NpcWalk.Bound(leaf.Sign, doorstep.X, doorstep.Y), from, walls)
+                is not { } walk)
+        {
+            return false;
+        }
+
+        _barAfoot.Add(new Walker
+        {
+            Walk = walk, Table = move.TableIndex, For = Errand.Leaving, Who = who.Id,
+        });
+
+        // He is on his feet, so he is not in the chair. Said to the ROOM before anything else, because the
+        // frame that draws him crossing the floor must not also draw him sitting where he was.
+        _barLeft.Add(who.Id);
+        RebuildDockedDeck();
+        StateHasChanged();
+        return true;
+    }
+
+    /// <summary>#731 · <b>…AND SOMEBODY COMES OUT OF THE BACK.</b> They step out of a leaf that has never
+    /// opened for the captain, cross the floor on the captain's own lattice, and take a chair — and the chair
+    /// is theirs only on the frame they reach it (see <see cref="StepTheBarsFeet"/>). Nothing is said.</summary>
+    private bool TheyComeOutOfTheBack(in HavenInterior.BarFloor bar, Egress.Move move)
+    {
+        if (TheRegular(bar.BodyId, move.Plate) is not { } who
+            || move.Door < 0 || move.Door >= bar.Doors.Count
+            || HavenInterior.PatronSeatAt(move.TableIndex) is not { } chair)
+        {
+            return false;
+        }
+
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        UndergroundComplex.LockedDoor leaf = bar.Doors[move.Door];
+
+        // THE CHAIR FIRST, THEN THE DOORSTEP — #731 v1 paid for this order already. A leaf has two sides and
+        // both can be standable; asked with no hint, half the time the answer is the room the captain has
+        // never been in, from which there is no route to any chair at all.
+        if (SurfaceCollision.Blocked(chair.X, chair.Y, DeckPlan.AvatarRadius, walls)
+            || Egress.StandingPlaceAt(in leaf, DeckPlan.AvatarRadius, walls, chair.X, chair.Y)
+                is not { } doorstep
+            || OnFoot(who.ShortName, new NpcWalk.Bound(leaf.Sign, chair.X, chair.Y), doorstep, walls)
+                is not { } walk)
+        {
+            return false;
+        }
+
+        _barAfoot.Add(new Walker
+        {
+            Walk = walk, Table = move.TableIndex, For = Errand.Arriving, Who = who.Id,
+        });
+        StateHasChanged();
+        return true;
+    }
+
+    /// <summary>#731 · One of the bar's regulars by the rota's own id, off the rota's UNTOUCHED answer — the
+    /// seat they were dealt this watch, whatever this evening has since done to the room.</summary>
+    private HavenInterior.SeatedRegular? TheRegular(string bodyId, string id)
+    {
+        foreach (HavenInterior.SeatedRegular r in HavenInterior.ResolveRegulars(bodyId, _dockVisitSimTime))
+        {
+            if (string.Equals(r.Id, id, StringComparison.Ordinal))
+            {
+                return r;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>#973 L0 · The clock, and nothing else. What an arrival MEANS is decided by whoever asked for
@@ -190,6 +469,16 @@ public partial class Map
 
             _barAfoot.RemoveAt(i);
             anybodyLanded = true;
+
+            // #731 · …AND AN ARRIVAL ENDS IN A CHAIR. He is in it on THIS frame and not on the one he set off
+            // on: a man is not sitting somewhere he is still walking to, and a room that seated him early
+            // would draw him twice. A walk the ground refused seats nobody — he simply is not here, which is
+            // the honest answer.
+            if (w.For == Errand.Arriving && w.Walk.State == NpcWalk.Doing.Arrived && w.Who.Length > 0)
+            {
+                _barCameIn[w.Who] = w.Table;
+                RebuildDockedDeck();
+            }
         }
 
         if (anybodyLanded)
@@ -305,10 +594,10 @@ public partial class Map
                 return true;
             }
 
-            // Nobody is there any more. They do not announce it; they go and stand at the bar like anybody
-            // else whose evening did not go the way they expected.
+            // Nobody is there any more. They do not announce it; they turn round where they are standing and
+            // go, out through the leaf they came out of.
             _barAfoot.RemoveAt(slot);
-            _ = TheyWaitAtTheCounter(bar, walls, who.Walk.Plate);
+            _ = TheyLeaveTheBar(in bar, walls, who);
             return true;
         }
 
@@ -316,12 +605,67 @@ public partial class Map
         if (!(who.StillWanted?.Invoke() ?? true))
         {
             _barAfoot.RemoveAt(slot);
-            _ = TheyWaitAtTheCounter(bar, walls, who.Walk.Plate);
+            _ = TheyLeaveTheBar(in bar, walls, who);
             return true;
         }
 
         who.Walk.LookTowards(_avatarX, _avatarY);
         return false;
+    }
+
+    /// <summary>
+    /// #731 · <b>THE FULL STOP, TRIGGERED.</b> <i>"If they go behind a door that is locked to us, we use that
+    /// as 'I guess that concludes the conversation' point in the plot / situation."</i>
+    ///
+    /// <para>This is the beat the owner named for THIS room, and it is the same walker as the scheduled one —
+    /// one class, two reasons to use it. A stranger who has just been refused your last offer stands up and
+    /// goes, out through the leaf <see cref="Egress.DoorFor"/> dealt her when she came in: the same call, off
+    /// the same frozen watch and the same plate, so nobody in this bar ever leaves through a door they were
+    /// never behind.</para>
+    ///
+    /// <para><b>She walks from WHERE SHE IS STANDING</b>, and that sentence is the whole of this method. Until
+    /// this lane, an answered walk-in was taken off the floor and re-planned from a back-room doorstep — a
+    /// body that vanished from the captain's elbow and reappeared out of the cellar. #973 L5b's own file
+    /// flagged it in as many words: <i>"a player watching the counter would see her vanish from it and come
+    /// back out of the cellar. That is a worse lie than not retrying, and the honest version wants a 'walk
+    /// from where you are standing' that the bar's planner does not have yet."</i> It has one now.</para>
+    ///
+    /// <para><b>And no berth</b>, for the reason the walk in had none: she is a stride from the captain at his
+    /// own table, and a body that froze there out of politeness would be a scene that never ends (#731 v1's
+    /// first bug, at 1.45 du). The doorway courtesy belongs to somebody crossing a room they have no business
+    /// with the captain in — which is every scheduled departure this room deals.</para>
+    ///
+    /// <para>Nothing is said. Not a pulse, not a card, not a line. The room says it by walking her out.</para>
+    /// </summary>
+    /// <returns>False when there is no leaf, no doorstep or no route — in which case she is simply gone,
+    /// because she is already on her feet and a body left frozen mid-floor is worse than an empty room.</returns>
+    private bool TheyLeaveTheBar(
+        in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls, Walker who)
+    {
+        string plate = who.Walk.Plate;
+        int which = Egress.DoorFor(bar.BodyId, BarIsNotAFloor, BarWatch, plate, bar.Doors);
+        if (which < 0 || which >= bar.Doors.Count)
+        {
+            return false;
+        }
+
+        var from = new DeckReachability.Point(who.Walk.X, who.Walk.Y);
+        UndergroundComplex.LockedDoor leaf = bar.Doors[which];
+        if (Egress.StandingPlaceAt(in leaf, DeckPlan.AvatarRadius, walls, from.X, from.Y) is not { } doorstep
+            || OnFoot(
+                   plate, new NpcWalk.Bound(leaf.Sign, doorstep.X, doorstep.Y), from, walls,
+                   NpcWalk.NoPersonalSpace)
+               is not { } away)
+        {
+            return false;
+        }
+
+        _barAfoot.Add(new Walker
+        {
+            Walk = away, Table = who.Table, For = Errand.Leaving, Who = who.Who,
+        });
+        StateHasChanged();
+        return true;
     }
 
     // ── PLANNING A WALK ACROSS THIS ROOM ─────────────────────────────────────────────────────────────────
