@@ -94,6 +94,16 @@ public partial class Map
         /// errand.</summary>
         public int Cabinet { get; init; }
 
+        /// <summary>#731 · WHOSE EVENING THIS IS, in the room's own id — <c>PatronRota.Roster</c>'s shout-name
+        /// for a bar regular, and empty for everybody who is not one of a room's own people.
+        ///
+        /// <para>It is not <see cref="NpcWalk.Plate"/>, and the difference is load-bearing: the plate is what
+        /// the deck DRAWS over their head (the short name, "Silas"), and this is what the room FILES them
+        /// under. The bar's churn — who has walked out, who has come in and sat down — is keyed on the id,
+        /// because that is what the rota, the consoles and the barkeep's own line are all keyed on. One
+        /// person filed under two names is this repository's oldest bug class wearing a hat.</para></summary>
+        public string Who { get; init; } = "";
+
         /// <summary>#973 L0 · IS THIS WALK STILL WANTED? Asked again on the frame the route runs out, and
         /// never trusted from the frame it was planned on — a body that crossed a room to a captain who has
         /// stood up in the meantime must not deliver anything. Null on every errand that answers this for

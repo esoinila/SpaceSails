@@ -156,7 +156,12 @@ public partial class Map
         var seatedHere = new List<string>();
         var steppedOut = new List<string>();
         var inTheBack = new List<string>();
-        foreach (HavenInterior.SeatedRegular r in HavenInterior.ResolveRegulars(id, _dockVisitSimTime))
+        // #731 · …and the churn with it. A man who stood up and walked out through the cellar door while the
+        // captain was standing here has stepped out, and the barkeep is the last person in this game who would
+        // still be naming him as in tonight. The consoles, the drawn figures and this sentence read ONE answer
+        // (HavenInterior.ResolveRegulars applies the churn), which is the whole reason it is a parameter.
+        foreach (HavenInterior.SeatedRegular r in
+                 HavenInterior.ResolveRegulars(id, _dockVisitSimTime, TheBarsChurn))
         {
             switch (r.State)
             {
