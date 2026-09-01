@@ -46,7 +46,7 @@ namespace SpaceSails.Client.Pages;
 /// <see cref="Patrol.WalkUpToTheCaptain"/>), the captain's controls stay free through all of it, and walking away is
 /// allowed. And the escort was <c>StandCaptainAt</c>: <i>"how did I jump to elevator there?"</i> — so the
 /// walk back is now a walk (<see cref="Patrol.WalkTheEscort"/>), he plans the route himself, the captain is walked
-/// at his shoulder through his own collision, and both of them are moving contacts on the fan the whole way.
+/// a pace ahead of him along it through his own collision (#804), and both are moving contacts on the fan.
 /// The one placement left is behind a caption that ADMITS it is a cut.</para>
 ///
 /// <para><b>One stepper.</b> The round, the walk-up and the escort all spend their frame through

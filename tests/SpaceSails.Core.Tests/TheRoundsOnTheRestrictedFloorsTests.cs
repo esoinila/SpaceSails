@@ -571,16 +571,18 @@ public class TheRoundsOnTheRestrictedFloorsTests
         Assert.True(PatrolBeat.GivesUpBeyondDu < PatrolBeat.MarkerSightDu);
     }
 
-    /// <summary>#833 · The escort's own numbers hang together: the captain is kept closer than the tether, he
-    /// is worked briskly enough to close a lag, and the bound on the whole walk is longer than the longest
-    /// walk the floors can ask for (which <c>TheEscortIsAWalkTests</c> measures at 56 seconds).</summary>
+    /// <summary>#833 · The escort's own numbers hang together: the captain is walked closer in front than the
+    /// tether allows him to get, he is worked briskly enough to be out there at all (#804), and the bound on
+    /// the whole walk is longer than the longest walk the floors can ask for (which
+    /// <c>TheEscortIsAWalkTests</c> measures at 57 seconds).</summary>
     [Fact]
     public void TheEscortsNumbersCanActuallyPutTwoPeopleAtTheSameDoor()
     {
-        Assert.True(PatrolBeat.ShoulderDu < PatrolBeat.TetherDu,
-            "the captain is held further away than the guard is allowed to let him lag — the escort would " +
-            "stand still forever.");
-        Assert.True(PatrolBeat.CatchUpFactor > 1.0, "a lag that cannot be closed is a lag that stays.");
+        Assert.True(PatrolBeat.AheadDu < PatrolBeat.TetherDu,
+            "the captain is walked further out in front than the man behind him is willing to let him get — " +
+            "the escort would stand still forever.");
+        Assert.True(PatrolBeat.CatchUpFactor > 1.0,
+            "legs no brisker than the guard's can never get out in front of him (#804).");
         Assert.True(PatrolBeat.AtTheCarDu < PatrolBeat.AtTheStopDu,
             "the captain would be declared home before the guard had arrived with him.");
         Assert.True(PatrolBeat.EscortSecondsCap > 60.0);

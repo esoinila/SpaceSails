@@ -89,22 +89,117 @@ public static partial class PatrolBeat
     // sentence-vs-sim bug class, verbatim, in the one feature whose entire register is procedure.
     //
     // So the numbers below exist to make EscortLine literally true: he plans a route to the car, the captain
-    // is walked along at his shoulder through the captain's own collision, and neither of them is ever put
-    // anywhere. Both are moving contacts on the fan the whole way, which is the one guaranteed long walk
-    // beside a guard this game has.
+    // is walked along it through the captain's own collision — #804 · a pace OUT IN FRONT of him, because that
+    // is what the authored line says he does — and neither of them is ever put anywhere. Both are moving
+    // contacts on the fan the whole way, which is the one guaranteed long walk beside a guard this game has.
 
-    /// <summary>#833 · How far from him the captain is walked — half a pace back and half a pace to the
-    /// side, which is where you end up beside somebody who is showing you out.</summary>
-    public const double ShoulderDu = 1.3;
+    /// <summary>
+    /// #804 · How far IN FRONT of him the captain is walked. It was <c>ShoulderDu</c> and it was measured
+    /// BACKWARDS — half a pace behind and a hand's width to the side, the captain in the guard's wake —
+    /// until the canon pass put the arrangement in the guard's own mouth: <i>"you walk ahead of me to the
+    /// lift"</i> (<see cref="EscortLine"/>).
+    ///
+    /// <para>The distance did not change and did not need to; what changed is its sign and what it means. A
+    /// pace and a bit is close enough that the two of them are plainly together and far enough that nobody
+    /// is being pushed. FLAGGED for the owner's tuning, and it may never exceed <see cref="TetherDu"/> —
+    /// past that the captain is not being walked out, he is being followed.</para>
+    /// </summary>
+    public const double AheadDu = 1.3;
 
-    /// <summary>#833 · How far the captain may lag before the guard WAITS. He is escorting, not racing: a man
-    /// who walked off and left you would not be walking you anywhere. It is also what guarantees the pair
-    /// arrive together rather than the escort ending with the captain still down the corridor.</summary>
+    /// <summary>
+    /// #804 · How far in front the captain may get before HE is the one who waits. It was the other way
+    /// round — the guard waited for a captain who lagged — which was the right rule for a captain walked in
+    /// somebody's wake and is the wrong one for a captain walking out in front. A man showing you out sets
+    /// the pace; getting a corridor ahead of him is not compliance, it is leaving.
+    ///
+    /// <para>Twice <see cref="AheadDu"/>, so ordinary walking never touches it and only a captain the ground
+    /// has let run ahead does. It is still what guarantees the pair ARRIVE together, which was #833's reason
+    /// for it and is untouched.</para>
+    /// </summary>
     public const double TetherDu = 2.6;
 
-    /// <summary>#833 · How much brisker than the guard the captain's own legs are worked so a lag closes
-    /// rather than becoming permanent. Above one, and modest: this is somebody keeping up, not a tow.</summary>
+    /// <summary>#833 · How much brisker than the guard the captain's own legs are worked. #804 · It closed a
+    /// lag when the captain walked behind; it is what puts and keeps him in FRONT now. Above one, and
+    /// modest, for the same reason either way: this is two people walking, not a tow.</summary>
     public const double CatchUpFactor = 1.6;
+
+    /// <summary>
+    /// #804 · WHERE THE CAPTAIN IS WALKED: a point on the guard's OWN PLANNED ROUTE,
+    /// <paramref name="aheadDu"/> further along it than the guard is standing.
+    ///
+    /// <para><b>Why the route and not a ray off his facing.</b> #833 measured this the hard way in the other
+    /// direction and wrote the finding down: a first cut put the captain half a pace to the SIDE, a doorway
+    /// is not half a pace wider than a man, and the escort ran at 34% moving and never reached the car. What
+    /// rescued it was walking where he had ALREADY WALKED — walkable by construction, because he had just
+    /// walked it. Turning the captain round takes that guarantee away: the ground in front of a man is
+    /// ground nobody has tested, and a ray off his facing points squarely into shotcrete at every corner he
+    /// has not turned yet.</para>
+    ///
+    /// <para>So the guarantee is kept by taking the point off the A* itself. Every leg of
+    /// <paramref name="route"/> was proved clear at <c>DeckPlan.AvatarRadius</c> by the planner, and the
+    /// guard is about to walk all of it: a point measured forward along that polyline is exactly as walkable
+    /// as his next step, corners included, and it turns them a pace before he does — which is what walking
+    /// in front of somebody looks like.</para>
+    ///
+    /// <para>The fallback is the naive ray, used only when there is no route at all (he is standing at the
+    /// car, or a re-plan has just failed). At that moment he is not going anywhere, so there is no corner
+    /// left to be wrong about.</para>
+    /// </summary>
+    /// <param name="guardX">Where he is, in deck units.</param>
+    /// <param name="guardY">Where he is.</param>
+    /// <param name="facing">Which way he is pointed — the fallback's only input.</param>
+    /// <param name="route">His planned waypoints, or null/empty when he has none.</param>
+    /// <param name="aheadDu">How far along the route to measure. Clamped at the last waypoint, so the
+    /// captain arrives at the destination rather than walking through it.</param>
+    public static (double X, double Y) AheadOnHisRoute(
+        double guardX, double guardY, double facing,
+        IReadOnlyList<DeckReachability.Point>? route, double aheadDu)
+    {
+        if (route is not { Count: > 0 })
+        {
+            return (guardX + (Math.Cos(facing) * aheadDu), guardY + (Math.Sin(facing) * aheadDu));
+        }
+
+        // Where on the polyline he is standing. Asked rather than assumed: the walk's cursor is the
+        // AutoWalk's own business and re-planning moves it, so the honest question is which leg he is
+        // nearest to and how far into it.
+        int leg = 0;
+        double best = double.PositiveInfinity;
+        double px = route[0].X, py = route[0].Y;
+        for (int i = 0; i + 1 < route.Count; i++)
+        {
+            (double ax, double ay) = (route[i].X, route[i].Y);
+            (double bx, double by) = (route[i + 1].X, route[i + 1].Y);
+            double ex = bx - ax, ey = by - ay;
+            double len2 = (ex * ex) + (ey * ey);
+            double t = len2 <= 1e-12 ? 0 : Math.Clamp((((guardX - ax) * ex) + ((guardY - ay) * ey)) / len2, 0, 1);
+            double qx = ax + (ex * t), qy = ay + (ey * t);
+            double d2 = ((guardX - qx) * (guardX - qx)) + ((guardY - qy) * (guardY - qy));
+            if (d2 < best)
+            {
+                best = d2;
+                leg = i;
+                (px, py) = (qx, qy);
+            }
+        }
+
+        // …and then forward along it, leg by leg, until the distance is spent or the route runs out.
+        double left = aheadDu;
+        for (int i = leg; i + 1 < route.Count; i++)
+        {
+            (double bx, double by) = (route[i + 1].X, route[i + 1].Y);
+            double dx = bx - px, dy = by - py;
+            double legLeft = Math.Sqrt((dx * dx) + (dy * dy));
+            if (legLeft >= left)
+            {
+                return legLeft <= 1e-12 ? (bx, by) : (px + (dx / legLeft * left), py + (dy / legLeft * left));
+            }
+            left -= legLeft;
+            (px, py) = (bx, by);
+        }
+
+        return (px, py);   // the end of the route: the car itself, and the captain stops at it
+    }
 
     /// <summary>#833 · Close enough to the car to BE at it — the end of the escort, measured on the captain,
     /// because the captain arriving is the thing the escort was about.</summary>
@@ -157,10 +252,18 @@ public static partial class PatrolBeat
         return !DrawnFor(captainX, captainY, guardX, guardY, walls);
     }
 
-    /// <summary>What a corridor you cannot see into sounds like when a round is in it. Said sparingly — it
-    /// is a warning, not a narrator — and it names no direction, because the bearing is the fan's job and
-    /// two instruments answering one question is how they come to disagree.</summary>
-    public const string HeardLine =
-        "👣 Boots on shotcrete, out of sight and in no hurry — the tread of somebody walking a line they " +
-        "have walked all week.";
+    /// <summary>
+    /// What a corridor you cannot see into sounds like when a round is in it. Said sparingly — it is a
+    /// warning, not a narrator — and it names no direction, because the bearing is the fan's job and two
+    /// instruments answering one question is how they come to disagree.
+    ///
+    /// <para>#804 · <b>THE AUTHORED LINE, verbatim</b> (canon pass, 2026-09-02). It shipped as a longer
+    /// sentence of its own — <i>"out of sight and in no hurry — the tread of somebody walking a line they
+    /// have walked all week"</i> — which was a narrator explaining the man. What the canon pass wrote is
+    /// four words shorter and does the whole job with the last three of them: <b>out of step with yours</b>.
+    /// It is not a description of him at all; it is the captain noticing that a second set of boots is in
+    /// the building, and noticing it by the one property a floor of shotcrete hands you for free. Nothing may
+    /// be added to it and nothing paraphrased — <see cref="PatrolBeat.AuthoredLines"/> is why.</para>
+    /// </summary>
+    public const string HeardLine = "👣 Boots on shotcrete, out of step with yours.";
 }
