@@ -10,9 +10,9 @@ the sim clock         = 1983
 the ship              = ShipState(Charge=0, Position=Vector2d(X=-35182960659.31, Y=150543413607.6), SimTime=1983, Velocity=Vector2d(X=-29003.69689628, Y=-6778.004477987))
 warp asked            = 1000
 warp effective        = 1000
-nearest body          = CelestialBody(ArgPeriapsis=0, Atmosphere=∅, BodyRadius=1000, Eccentricity=0, Id="selene-gate", InitialPhase=0.4, IsHaven… 236 chars, sha256 6a64b74b6151bfbe
-nearest body at       = Vector2d(X=-33693189285.68, Y=145825833089.3)
-nearest body moving   = Vector2d(X=-29406.91722679, Y=-5838.315063477)
+nearest body          = CelestialBody(ArgPeriapsis=0, Atmosphere=Atmosphere(RefDensity=1.2, ScaleHeight=8000, TopAltitude=140000), BodyRadius=63… 304 chars, sha256 ee103621c8a72046
+nearest body at       = Vector2d(X=-34046456965, Y=145674290003.9)
+nearest body moving   = Vector2d(X=-29003.55651855, Y=-6778.604095459)
 the pursuit trail     = []
 this frame's drag     = 0
 the next sweep        = 1993
@@ -40,6 +40,6 @@ the ordnance          = []
 the ghost             = ∅
 the surface           = ∅
 the pulse cooldown    = -1
-sweep                 = 737 fields, sha256 e29a2f2a48a64688a913f3e94182943f9e79658d27d05f09602ebf3f938aa354
+sweep                 = 743 fields, sha256 e2b2f58e20d37b3351e6de49f1de1c3bac2ae5cc20a42b812f6a842425dd9274
 walked-view pen       = 36637 calls, sha256 20f6a2f93402d6b9c983f99e6f76acf3ccf92ce4ef26cacc41735ad0e3a85560
 map-frame buffer      = 0 floats, 0 labels, sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

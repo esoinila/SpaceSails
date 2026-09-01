@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,7 +74,24 @@ internal sealed class ClientHost : IAsyncDisposable
         // build) but it keeps a bare local `dotnet test` self-contained.
         string repoRoot = RepoRoot();
         string clientProj = Path.Combine(repoRoot, "src", "SpaceSails.Client", "SpaceSails.Client.csproj");
-        string outDir = Path.Combine(Path.GetTempPath(), "spacesails-uigate-publish");
+
+        // #956 · THE FOLDER IS KEYED TO THE CHECKOUT, because two lanes run at once here.
+        //
+        // This was one shared `spacesails-uigate-publish` for every worktree on the box. The owner's
+        // standing practice is two concurrent crews, each in its own `wt/<lane>` — and each one's gate
+        // published over the same folder and then served whatever `blazor.boot.json` had been written
+        // LAST. It cost this lane an hour: a #956 gate booted `?dest=saturn` against a build from another
+        // lane that had never heard of `?dest=`, and reported the feature missing. The gate was right about
+        // what it saw and wrong about whose game it was looking at — a browser gate that can serve a
+        // stranger's build is worse than no gate, because it fails and passes for reasons off the branch.
+        //
+        // Keying the folder on the checkout's own path fixes it without ceremony: two lanes, two folders,
+        // and a rerun in the same worktree still reuses its publish. CI is unaffected — it passes
+        // SPACESAILS_PUBLISH_DIR and never reaches this line.
+        string lane = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(
+                Encoding.UTF8.GetBytes(repoRoot.ToLowerInvariant())))[..12].ToLowerInvariant();
+        string outDir = Path.Combine(Path.GetTempPath(), $"spacesails-uigate-publish-{lane}");
         log.WriteLine($"[client-host] SPACESAILS_PUBLISH_DIR unset — publishing {clientProj} → {outDir}");
 
         var psi = new ProcessStartInfo("dotnet",

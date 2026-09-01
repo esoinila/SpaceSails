@@ -19,15 +19,45 @@ html, body {
 }
 
 /* Owner request: "Peek" — temporarily clear every panel to read the map, then bring them back
-   (👁 Peek button in the desk tab bar, or the ` hotkey). Fades every overlay that's a direct
-   child of the map page EXCEPT the live canvas, the desk tab bar (which carries the button and
-   the key to restore) and the loading splash. Global rather than scoped to Map.razor.css so it
-   also reaches child-component roots (the desk-chip strip). Pointer events fall through so map
-   contacts stay clickable while peeking. */
-.map-peek > *:not(.map-canvas):not(.desk-tab-bar):not(.map-loading) {
+   (👁 button in the desk tab bar, the ` hotkey, or Escape). Global rather than scoped to
+   Map.razor.css so it also reaches child-component roots (the desk-chip strip).
+
+   #1038 · TWO CLASSES DECIDE THIS NOW, NOT A DEPTH. The rule used to read
+   `.map-peek > *:not(.map-canvas):not(.desk-tab-bar):not(.map-loading)` — every DIRECT child of the
+   page fades except three. The desk tab bar has been on that exemption list since the day peek was
+   written, because the bar carries the 👁 button that is the way back, and while the bar was a direct
+   child of .map-page it worked. #992 wrapped the top stack and the Nav HUD in .map-flowcolumn to make
+   the window-height arithmetic measurable, which put the bar two levels down — and a `>` exemption
+   that names a grandchild matches nothing. The column faded as one box and took the only labelled way
+   out with it, which is exactly the MODE the pop-up law (#992, owner 2026-08-24) forbids: a state the
+   player cannot see their way out of. A layout change silently repealed a law, and no test noticed.
+
+   So the survivors are MARKED rather than counted:
+     * .peek-keep         — the way out. It stays lit and clickable. (The desk tab bar.)
+     * .peek-passthrough  — a layout wrapper that is not itself an overlay: it does not fade, and the
+                            rule keeps walking DOWNWARD through it at any depth. (.map-flowcolumn and
+                            .map-topstack.) Wrap the bar in five more boxes tomorrow, mark them, and
+                            the way out still survives.
+   Everything else under the page fades. ThePeekIsAModeYouCanSeeYourWayOutOfTests reads this rule and
+   the real render tree together, so the next .map-flowcolumn goes red the day it is typed.
+
+   VISIBILITY, not just opacity — and that is the second half of #1038. `pointer-events: none` on a
+   faded box does NOT reach its controls: pointer-events INHERITS, and a descendant that declares
+   `pointer-events: auto` (which .map-hud's toolbar, readouts, frame chip and plot panel all do, by
+   design, so the canvas stays grabbable through the gaps) overrides an inherited value no matter how
+   !important the ancestor was. Opacity 0 is likewise not a hit-test barrier. So every control on the
+   HUD stayed pressable while invisible for as long as peek has existed — the owner asked whether the
+   buttons were "also there even though they are invisible", and they were. `visibility: hidden` is
+   inherited too, but nothing in this client ever declares `visibility: visible`, and a hidden subtree
+   is out of hit-testing AND out of the tab order, so the keyboard cannot reach a blind control either.
+   It is transitioned at 0s with the fade's own delay so the 0.12s fade still plays and the controls
+   go dead the instant the pixels do. */
+.map-peek > *:not(.map-canvas):not(.map-loading):not(.peek-passthrough),
+.map-peek .peek-passthrough > *:not(.peek-keep):not(.peek-passthrough) {
     opacity: 0;
+    visibility: hidden;
     pointer-events: none !important;
-    transition: opacity 0.12s ease;
+    transition: opacity 0.12s ease, visibility 0s linear 0.12s;
 }
 
 h1:focus {

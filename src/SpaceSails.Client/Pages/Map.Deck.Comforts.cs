@@ -21,8 +21,17 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
     /// <summary>The Galley's "Pour a tot" button funnels through the exact same PourRum the deck
-    /// cantina console uses (see InteractAtConsole's Cantina case) — one rum ledger, two doors.</summary>
-    private void PourRumFromGalley() => ShowPulseMessage(PourRum(null, NerveModel.DrinkKind.GalleyTot, withExcuse: true));
+    /// cantina console uses (see InteractAtConsole's Cantina case) — one rum ledger, two doors.
+    ///
+    /// <para>#1022 · …and the man behind the counter answers it. The tender speaks AFTER the pour, because
+    /// what he has to say depends on the tot the pour just counted (see <c>TheTenderPours</c>): the drink
+    /// law owns the threshold and he reads it, rather than keeping a count of his own that could drift off
+    /// the ledger's.</para></summary>
+    private void PourRumFromGalley()
+    {
+        ShowPulseMessage(PourRum(null, NerveModel.DrinkKind.GalleyTot, withExcuse: true));
+        TheTenderPours();
+    }
 
     private bool RumWobbleActive => (_lastTimestampMs ?? 0) < _wobbleUntilMs;
 
@@ -45,7 +54,9 @@ public partial class Map
     private string PourRum(string? overrideLine, NerveModel.DrinkKind kind = NerveModel.DrinkKind.GalleyTot, bool withExcuse = false)
     {
         double now = _lastTimestampMs ?? 0;
-        _rumTots = now - _lastRumMs < 90_000 ? _rumTots + 1 : 1;
+        // #1022 · the spree window is NerveModel's own now (SpreeGapMs), beside the threshold it feeds — the
+        // same number the tender's sitting lapses on, so one visit to the counter cannot be two things.
+        _rumTots = now - _lastRumMs < NerveModel.SpreeGapMs ? _rumTots + 1 : 1;
         _lastRumMs = now;
         RendererInterop.PlayCue("rum");
 

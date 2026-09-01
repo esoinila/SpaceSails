@@ -207,6 +207,14 @@
                                 <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Abandon the case — let her go"
                                         @onclick="() => AbandonSearch(task.TargetShipId!)">✕</button>
                             }
+                            else if (!task.Recurring)
+                            {
+                                @* #962: a one-shot look the captain ordered by hand is his to call off again.
+                                   A STANDING custody pass gets no ✕ on purpose — the ledger re-queues it every
+                                   tick, so the button would do nothing anyone could see. Drop the track. *@
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Call this look off"
+                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
+                            }
                         </div>
                     }
                 </div>
@@ -627,10 +635,30 @@
             {
                 string shipId = pass.Task.TargetShipId!;
                 TrackingCandidate? candidate = FindCandidate(shipId);
-                if (candidate is not null && Ephemeris is not null)
+                if (candidate is { } seen)
                 {
-                    _ledger.TryConfirm(
-                        shipId, Ephemeris, _telescope, ShipPosition, candidate.Value.State, pass.CompleteTime);
+                    if (_ledger.IsTracked(shipId))
+                    {
+                        if (Ephemeris is not null)
+                        {
+                            _ledger.TryConfirm(
+                                shipId, Ephemeris, _telescope, ShipPosition, seen.State, pass.CompleteTime);
+                        }
+                    }
+                    else
+                    {
+                        // #962 · THE ORDERED LOOK LANDED ON A CONTACT WE DO NOT HOLD. TryConfirm above only
+                        // ever refreshes an entry that already exists, so this pass used to complete and do
+                        // nothing whatsoever — the captain watched the telescope swing onto her and the
+                        // ledger stayed empty. The fix a completed pass earns enters the ledger if a
+                        // telescope is free; if every one is spoken for the look still HAPPENED, and the
+                        // desk says which of the two it was rather than letting the job leave the list in
+                        // silence.
+                        var fix = new Observation(shipId, pass.CompleteTime, seen.State.Position, seen.State.Velocity);
+                        _lastSweepMessage = _ledger.Add(fix)
+                            ? $"{seen.Callsign} on the telescope ledger — fix taken"
+                            : $"{seen.Callsign}: fix taken, but every telescope is held — drop a track to keep her";
+                    }
                 }
 
                 _lastPassFlash = (shipId, DateTime.UtcNow);
@@ -742,7 +770,12 @@
             SensorTask task = _schedule.Queue[i];
             bool stale = task.Kind switch
             {
-                SensorTaskKind.TrackUpdate => !_ledger.IsTracked(task.TargetShipId!),
+                // #962 · A STANDING custody pass belongs to the ledger, and goes when the ledger lets go.
+                // A one-shot SharpenFix look belongs to the captain who ordered it — it is on the list
+                // PRECISELY BECAUSE she is not held — so it outlives this sweep and leaves on its own once
+                // the glass has taken it. Sweeping it out here deleted 📡 sharpen fix's whole order one
+                // tick after the press, every time the telescopes were already full.
+                SensorTaskKind.TrackUpdate => task.Recurring && !_ledger.IsTracked(task.TargetShipId!),
                 SensorTaskKind.LostSearch => !_lostTracks.IsLost(task.TargetShipId!),
                 _ => false,
             };

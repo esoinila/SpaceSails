@@ -446,6 +446,26 @@ public sealed class EveryFrameHashesTheSameTests
     // moved here, or any of these moved by anything but six, it would be a different lane's bug wearing this
     // lane's clothes.
 
+    // ── #1039 · THREE ROWS RE-PINNED, EACH BY EXACTLY FOUR CALLS — AND THE FOUR ARE TWO LIES ─────────
+    //
+    // Owner, walking the Tilt's ground (#1015): "The magazine count follows the walker here…" — a 99 welded
+    // under the ship's orbit line with no sentry anywhere near it. #986 F2's band-avoidance re-seated a plate
+    // that would reach into the comms band onto a FIXED screen row, and a fixed row on a FollowCam frame is a
+    // row glued to the captain. So a counter is now drawn only where its own sentry's MARK is drawn.
+    //
+    // THIS SNAPSHOT WAS DRAWING TWO OF THEM. `TheWholeExcursion` carries three bots — (5,5), (−5,5), (−5,−5)
+    // — and the captain stands at MoonSurface.SpawnY = −21.5. At 1200×700 the scale is 18.75 and the origin
+    // 350 + (−21.5 × 18.75) = −53.1, so the two bots at deck y = +5 project to y = −146.9: a hundred and
+    // forty-seven pixels ABOVE the top of the glass, marks nobody could ever have seen, each wearing a plate
+    // parked at CommsBand.ReservedBottom. Only the dry "00" bot at y = −5 (y = 40.6) was ever really there.
+    //
+    // A plate is a fill and its digits — two calls — so two phantoms is FOUR, and every row that moved moved
+    // by four and by nothing else: 3888→3884, 267→263, 4371→4367. And the shape of the rest of the table is
+    // the other half of the proof: the only rows that moved are the three that hand Draw a Bots list.
+    // "surface · luna site 0" carries no surface hud at all and is unchanged at 3777; not one ship, haven,
+    // wreck or B-floor row moved, because none of them has a sentry on it. Had a fourth row moved, or any of
+    // these moved by two, it would be a different bug wearing this one's clothes.
+
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
         ["ship · under way"] = (341, "d43d37b12ccdfcb60b3ed3cceacf2a3f49c98546db42879ca8f212728948aa59"),
@@ -478,9 +498,9 @@ public sealed class EveryFrameHashesTheSameTests
         ["phobos B1"] = (1563, "879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c"),
         ["titan B1"] = (1512, "3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a"),
         ["surface · luna site 0"] = (3777, "5fbd52373f9d06f6fdbd65477844909a2f6cedfb6da0e03d1870790e34a72cde"),
-        ["surface · luna site 0, the whole excursion"] = (3888, "a3556c2faa499f8ea8a444b3a21c5463b7bb060b54513a52c8f02a151d49b91a"),
-        ["surface · luna site 0, dark, and the fan hears something"] = (267, "e6ea3770ba1385435a1913b10a4457860b3099bf5bb9d71648c9a5f0d14d49fd"),
-        ["surface · titan site 0, a derelict's instruments (none)"] = (4371, "11c0c9f2e00579b4ff8cb407e8cda38f53ec4d4d4cd68598f79c46092de3aeb3"),
+        ["surface · luna site 0, the whole excursion"] = (3884, "0fd39fe57ef988ed4d37d54b4e54d0a80e8dbdf7bf2e4901709693f027fb2185"),
+        ["surface · luna site 0, dark, and the fan hears something"] = (263, "34020834f957d7b8d3db8b5c02a14ab017a4553a34fe1100346246a418522e71"),
+        ["surface · titan site 0, a derelict's instruments (none)"] = (4367, "bdace905702089de1182835d2668709113853e4a9f486830e9fad0ea09a2d7d9"),
     };
 
     /// <summary>

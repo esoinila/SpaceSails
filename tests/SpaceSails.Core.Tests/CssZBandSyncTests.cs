@@ -98,6 +98,7 @@ public class CssZBandSyncTests
         { ".start-picker-backdrop", OverlayBands.StartPickerBackdrop },
         { ".view-object-backdrop", OverlayBands.ViewObjectBackdrop },
         { ".pin-backdrop", OverlayBands.PinBackdrop },
+        { ".satchel-backdrop", OverlayBands.SatchelBackdrop },
         { ".map-adrift", OverlayBands.MapAdrift },
         { ".rescue-backdrop", OverlayBands.RescueBackdrop },
         { ".mission-celebration-backdrop", OverlayBands.MissionCelebrationBackdrop },
@@ -138,7 +139,11 @@ public class CssZBandSyncTests
         IReadOnlyDictionary<string, int> bands = ParseRootBands();
 
         int lifeline = ResolveSelectorZ(css, ".map-adrift", bands);
-        foreach (string popup in new[] { ".deck-offer-card", ".arrival-brake-card", ".start-picker-backdrop", ".view-object-backdrop", ".pin-backdrop" })
+        // #1027 · `.satchel-backdrop` joins the sweep the day it is created. It is the HIGHEST thing in the
+        // desks-and-pop-ups band (1330, one over the cards it was buried under), which makes it the sharpest
+        // case this assertion has: if the pocket ever climbed past the lifeline, a captain reading his own
+        // satchel could no longer see the button that calls the tow.
+        foreach (string popup in new[] { ".deck-offer-card", ".arrival-brake-card", ".start-picker-backdrop", ".view-object-backdrop", ".pin-backdrop", ".satchel-backdrop" })
         {
             Assert.True(lifeline > ResolveSelectorZ(css, popup, bands), $"lifeline must out-rank {popup}");
         }

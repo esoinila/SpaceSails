@@ -173,6 +173,19 @@ public partial class Map
                 _ => null,
             };
         }
+        else if (pair.StartsWith("tender=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1022 dev cheat: /map?tender=flash makes the tender's rare roll come up on the first beat of
+            // every sitting at the galley card.
+            //
+            // Same philosophy as ?roll= above, and the same reason it is needed: the roll is a 1-in-12 on a
+            // card most sessions open twice, so without a lever the beat is reachable only by luck. It
+            // forces the ROLL and never the content — which line he reaches for is still his own salted
+            // pick, what follows it still follows it, and the once-a-sitting law still holds. What a tester
+            // watches play out is the beat a captain would get.
+            string candidate = Uri.UnescapeDataString(pair["tender=".Length..]).ToLowerInvariant();
+            _tenderFlashCheat = candidate is "flash" or "1" or "true" or "yes";
+        }
         else
         {
             return false;

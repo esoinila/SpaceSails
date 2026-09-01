@@ -264,6 +264,65 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// </list>
     /// <para>No ledger row moved, no canvas buffer moved, and not one <c>AHiveFloorWithAPatrol</c> row moved
     /// at all.</para>
+    ///
+    /// <para><b>#957 · 25 OF THE 30 WERE RE-RECORDED, and it is the WORLD-DATA kind of change — the one kind
+    /// this ledger had not seen before.</b> #957 corrected three hand-typed orbit periods in
+    /// <c>scenarios/sol.json</c>: Cinder Roost, The Rusty Roadstead and The Tilt were riding rails no gravity
+    /// explains — 11.8, 10.5 and 35.9 km/s about their parents where Newton allows 4.7, 1.9 and 8.5 — which
+    /// is why the autopilot refused to dock at them (<c>DockRule.MatchSpeed</c> shears above 8 km/s). Three
+    /// bodies are now somewhere else at every t &gt; 0, so the frame sees it. Two row kinds moved and no
+    /// others, and the <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff on the old literals and the new says how
+    /// little: all thirty texts have the same 743 lines and the same 742 fields, and</para>
+    /// <list type="number">
+    ///   <item><b><c>sweep</c>, on 25 rows</b> — <b>exactly one field line differs, <c>_passes</c></b>, and
+    ///   within it exactly two of the twenty-nine passes: <c>cinder-roost</c> and <c>the-space-bar</c>. Same
+    ///   bodies, same order. Nothing else in the page moved at all.</item>
+    ///   <item><b><c>map-frame buffer</c>, on the five <c>TheMapFrameInFlight</c> rows</b> — the map draws the
+    ///   solar system, so it draws the three berths where they now are. The float and label COUNTS are
+    ///   unchanged (8364 floats, 24 labels), the label SET is unchanged at 22, and <b>the only labels that
+    ///   moved are ⚓ Cinder Roost, ⚓ The Rusty Roadstead and ⚓ The Tilt</b>.</item>
+    /// </list>
+    /// <para><b>No ledger row moved, no <c>walked-view pen</c> moved, and no call count moved</b> — this
+    /// change draws no new thing, it draws three old things in the right place. And the five
+    /// <see cref="World.TheElectricUniverse"/> rows are <b>byte-identical</b>, because that world is on
+    /// <c>wheel.json</c>, which #957 does not touch: the one world that could not move, did not.</para>
+    ///
+    /// <para><b>#954 · ALL THIRTY WERE RE-RECORDED, and this is a kind of re-pin the ledger had not seen: a
+    /// BEHAVIOUR change. The frame deliberately writes a different answer.</b> Every entry above is a
+    /// state-shape change, a redraw, or world data; this one moves what the frame MEANS by "nearest". #966
+    /// stopped the readout flickering between Mars and the station in its Hill sphere at the range the owner
+    /// photographed, with a band measured along the sightline. That band shrinks as the ship closes, so the
+    /// flicker was still waiting everywhere the ship actually flies — 1,744 changes of mind in five orbits,
+    /// parked 100,000 km off Earth. So a satellite now defers to its primary until the ship is inside its
+    /// Hill sphere (<c>NearestRule.StandsForItself</c>), and a mass-less berth, which has no Hill sphere at
+    /// all, holds the slot only when it is clamped to.</para>
+    ///
+    /// <para><b>Which is exactly what these thirty rows show, and it is the same substitution every time.</b>
+    /// On all thirty the nearest reading was a BERTH — <c>selene-gate</c> on twenty-five, the works platform
+    /// <c>satellite-factory</c> on the five <c>wheel.json</c> rows — and on all thirty it is now the planet
+    /// those berths ride: <b>Earth</b>, radius 6,371,000 either way. Four ledger rows moved and no others:
+    /// <c>nearest body</c>, <c>nearest body at</c> and <c>nearest body moving</c> — the slot and its
+    /// kinematics, the same fact three times — and <c>sweep</c>. The field count moved 742 → 743: ONE field
+    /// added to the page, <c>_neighbourhoodHavenId</c>, the berth the neighbourhood line is naming, held
+    /// across frames so a planet with two of them cannot trade their names as the rails come round.</para>
+    ///
+    /// <para>The <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run on the base (b301cc3) and on this lane,
+    /// and out of 743 fields <b>exactly four differ on every row</b> — <c>_nearestBody</c>,
+    /// <c>_nearestBodyPosition</c> and <c>_nearestBodyVelocity</c> changed, <c>_neighbourhoodHavenId</c>
+    /// added — plus, on the five <c>wheel.json</c> rows ONLY, <c>_nearestParentName</c> and
+    /// <c>_nearestChildName</c> going to their defaults: that world's works platform is not a dockable
+    /// berth, so with the planet in the slot there is no berth for the line to name, and it reads "Earth"
+    /// where it read "Earth › Highport Satellite Works". Those five rows have <c>_nearestHaven</c> at ∅ on
+    /// BOTH sides, so no anchor was offered there before and none is withheld now.</para>
+    ///
+    /// <para><b>What did NOT move is half the proof.</b> <c>_nearestHaven</c> is byte-identical on all thirty
+    /// rows — the ⚓ hint is exactly where it was, which is the thing a captain would have noticed going. So
+    /// are <c>walked-view pen</c> and <c>map-frame buffer</c>, on every row, with every call count unchanged:
+    /// this change draws nothing new and moves nothing anywhere else on the page. (The scope inset, which is
+    /// where the slot shows as a PICTURE, sits after the <c>EndFrame</c> flush and is not fingerprinted here
+    /// — see the exclusions above; <c>NearestHoldsTheNeighbourhoodTests</c> is the guard that watches the
+    /// slot itself hold still, across thirty-two posts.) A re-pin that had moved a pen, a call count, or any
+    /// field outside those six would have been a different lane's bug wearing this lane's clothes.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

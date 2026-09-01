@@ -188,6 +188,15 @@ public partial class Map
         {
             SeedTargetCheat(q.TargetCheat);
         }
+
+        // #956 · ?dest=<body-id> — the navigation destination, laid down through the page's OWN door rather
+        // than the field, so what boots is the state a captain's click would have produced (the Fly to order
+        // it writes, the pass it dirties) and not a lookalike. An id the scenario does not carry is ignored
+        // in silence, the way ?reveal= treats one: a cheat is a shortcut, never a new failure mode.
+        if (q.DestCheat is { } destId && _ephemeris?.Bodies.Any(b => b.Id == destId) == true)
+        {
+            SetDestination(destId);
+        }
     }
 
     /// <summary>The two seeded approaches, which suppress the picker because picking a berth would

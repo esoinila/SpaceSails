@@ -2474,10 +2474,18 @@
     }
 
     @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
-       instrument it is a list of things to TRY, and every answer is definite. *@
+       instrument it is a list of things to TRY, and every answer is definite.
+
+       #1027 · `satchel-backdrop` IS THE LAYER, AND IT IS NOT COSMETIC. The pocket used to be one more
+       `.view-object-backdrop` among forty, which meant it shared a z-index with every card the world raises
+       and lost the tie to whichever of them was typed lower in this file. This block is at ~2480 and the
+       arrival card's is at ~3550, so a captain pressing I under 🛗 THE SHAFT opened the satchel BEHIND the
+       picture and saw a dead key. The modifier lifts it one step (OverlayBands.SatchelBackdrop, 1330) —
+       above the cards, below the distress lifeline and below every modal. The Esc chain in
+       Map.Sim.Cancel.cs peels it in the same order. *@
     @if (_showSatchel)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
+        <div class="view-object-backdrop satchel-backdrop" @onclick="() => Dismiss(CloseSatchel)">
             @* One Close for both pages: the satchel shuts the same way whichever half of it you are
                reading, and I still toggles it (#688) regardless of the page. *@
             <OverlayShell class="satchel" StopClicks="true"
@@ -3445,6 +3453,35 @@
                           DismissTitle="Shut the galley card — Esc and 6 do the same"
                           OnClose="() => Dismiss(CloseGalleyCard)">
                 <div class="view-object-title">🍹 THE GALLEY</div>
+
+                @* #1022 · THE MAN BEHIND THE COUNTER LEADS THE CARD.
+
+                   Owner, live: "The dialog, one imagines, is a set of phrases to keep the customer talking
+                   :-D ... but there is something heart warming in those scenes at the same time."
+
+                   The picture is the gen-AI art the owner said the first version lacked, and B-7V's plate
+                   and his current line sit under it, above the locker. Order matters and it is the same
+                   argument #1021 made about the locker and the wire: the thing that TALKS to you is the top
+                   of the card, the thing you PRESS is under it, and the thing you READ is what gives.
+
+                   Every word here is Core's (SpaceSails.Core.TheTender) — this markup chooses nothing, it
+                   only draws whichever line the sitting handed back. The rare register is drawn APART from
+                   his own voice: an announcement gets its own row, indented and italic, with the line
+                   underneath it in his ordinary voice. They arrive as one TheTender.Line, so there is no
+                   way to render the first without the second. *@
+                <div class="tender-head">
+                    <img class="tender-art" src="art/b7v-the-tender.jpg" alt="" aria-hidden="true"
+                         onerror="this.style.display='none'" />
+                    <div class="tender-plate">@SpaceSails.Core.TheTender.Plate</div>
+                    @if (_tenderLine is { } tender)
+                    {
+                        @if (tender.Announcement is { } announcement)
+                        {
+                            <div class="tender-announcement">@announcement</div>
+                        }
+                        <div class="tender-line">@tender.Text</div>
+                    }
+                </div>
 
                 <div class="galley-card-rum">
                     <div class="fw-bold mb-2">The rum locker 🍹</div>
@@ -5415,9 +5452,13 @@
        backdrops, the scope) changes layer. pointer-events:none because this box covers the whole window
        and the canvas has to stay grabbable through it — the same bargain the two children already make,
        each re-enabling its own controls. *@
-    <div class="map-flowcolumn">
+    @* #1038 · peek-passthrough on BOTH boxes: neither is an overlay, they are the layout that #992 put
+       between the map page and the desk tab bar, and the peek fade has to walk THROUGH them to reach the
+       panels rather than dropping the whole column (and the 👁 way out inside it) to opacity 0. See the
+       .map-peek rule in app.css — the classes are the contract, the nesting is not. *@
+    <div class="map-flowcolumn peek-passthrough">
 
-    <div class="map-topstack">
+    <div class="map-topstack peek-passthrough">
 
     @* Station tab bar (StationDesks.md rule 3): visible aboard on every desk — the keyboard-shortcut
        equivalent for players who'd rather click. Captain (PR-15) leads the bar with its `0` key, ahead
@@ -5426,7 +5467,11 @@
        captain's link to the ship overhead is #327's orbit-comms line, painted across the excursion HUD. *@
     @if (_surface is null)
     {
-        <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
+        @* #1038 · peek-keep: this bar is the one thing peek leaves standing, because the 👁 button on the
+           end of it is the labelled way out of the mode. It has been meant to survive since peek was
+           written; until now the exemption named it as a direct child of .map-page and #992's flow column
+           quietly repealed that. *@
+        <div class="desk-tab-bar peek-keep bg-dark bg-opacity-75 rounded p-1">
             @foreach (ShipDesk desk in TabBarOrder)
             {
                 @* #1021 · The Galley chip is still on the bar and is no longer a desk — pressing it raises
@@ -5443,10 +5488,16 @@
                 </button>
             }
             @* Owner request: temporarily clear every panel to read the map, and back. Toggles the
-               .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` . *@
+               .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` .
+               #1038 · While peeking, this button IS the way out, so it says so in words and names the key
+               that also works — #195's law that every control states what pressing it will do, and the
+               shell wave's rule that a way out is visible AND worded. *@
             <button type="button" class="btn btn-sm desk-tab @(_peekMap ? "btn-warning" : "btn-outline-light")"
-                    title="Peek at the map — hide the panels (` toggles)" @onclick="TogglePeekMapFromClick">
-                @(_peekMap ? "👁 Show panels" : "👁 Peek")
+                    title="@(_peekMap
+                             ? "Bring the panels back — or press Esc (` toggles too)"
+                             : "Peek at the map — hide the panels (` toggles, Esc brings them back)")"
+                    @onclick="TogglePeekMapFromClick">
+                @(_peekMap ? "👁 Show panels (Esc)" : "👁 Peek")
             </button>
         </div>
     }
@@ -6529,29 +6580,41 @@
                         {
                             ArrivalStepRule.ArrivalCheck? _ac = ArriveCheck();
                             bool _avalid = _ac?.Valid ?? false;
+                            // #952: a course too short to reach the body yields no verdict at all — the row
+                            // must read NOT JUDGED, never INVALID, because "invalid" is a claim about a plan
+                            // and this is a confession about the picture.
+                            string? _ashortLine = ArriveRibbonTooShortLine();
+                            bool _aunjudged = _ac is null;
                             bool _aarmed = ArriveCoversArmed;
                             bool _aactive = _aarmed && AutopilotFlyingApproach;
                             bool _aopen = _openEditor == FlightEditorKind.Arrive;
                             string _astate = _aarmed ? (_aactive ? "active" : "armed") : "planned";
-                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
+                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid || _aunjudged ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
                                 <div class="map-plan-step-line" role="button" tabindex="0"
                                      title="Click to @(_aopen ? "collapse" : "manage") the arrival that ends this plan"
                                      @onclick="ToggleArriveEditor">
-                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : "does NOT end safely")" aria-hidden="true"></span>
+                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : _aunjudged ? "not judged yet" : "does NOT end safely")" aria-hidden="true"></span>
                                     <span class="map-plan-step-caret" aria-hidden="true">@(_aopen ? "▾" : "▸")</span>
                                     <span class="flex-grow-1">@ArriveGlanceLine(_ar)</span>
-                                    @if (ArrivePassFor(_ar.BodyId) is { } _ap2)
+                                    @if (!_aunjudged && ArrivePassFor(_ar.BodyId) is { } _ap2)
                                     {
                                         <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
                                     }
-                                    <span class="badge @(_avalid ? "bg-success" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "…") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : "INVALID")</span>
+                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : "⌛") @(_aarmed ? (_aactive ? "ACTIVE" : "ARMED") : _avalid ? "VALID" : _aunjudged ? "NOT JUDGED" : "INVALID")</span>
                                 </div>
                                 @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
                                    speed against the real thresholds (Core ArrivalStepRule reads them off
                                    OrbitRule / DockRule, so the sentence and the sim cannot disagree). *@
+                                @* …and (#952) when there is no verdict to give at all because the plotted
+                                   course stops short of the body, say THAT — never a fabricated ✗ whose
+                                   numbers point the captain the wrong way round the iterate loop. *@
                                 @if (_ac is { } _acx && !_acx.Valid)
                                 {
                                     <div class="map-arrive-why text-danger small">@ArrivalStepRule.Verdict(_acx)</div>
+                                }
+                                @if (_ashortLine is { } _ashort)
+                                {
+                                    <div class="map-arrive-why text-warning small">@_ashort</div>
                                 }
                                 @if (_aopen)
                                 {
@@ -6559,6 +6622,10 @@
                                         @if (_ac is { } _ace)
                                         {
                                             <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
+                                        }
+                                        @if (_ashortLine is { } _ashortEdit)
+                                        {
+                                            <div class="small mb-1 text-warning">@_ashortEdit</div>
                                         }
                                         @* #969: the finished trip, in one line — "3 burns · arrive in 9 mo — the autopilot
                                            will orbit Mars (≈3 p) · nothing more needed". This is the owner's own sentence
@@ -6614,6 +6681,8 @@
                                                 <text>
                                                     The plan ends here. @(_avalid
                                                         ? "Arm it now and the ship finishes the trip by itself — burns first, arrival last."
+                                                        : _aunjudged
+                                                        ? "Stretch Path length above (or press auto) until the pass is on the line — then the numbers say which way to iterate."
                                                         : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
                                                 </text>
                                             }
@@ -6674,11 +6743,26 @@
             </OverlayShell>
         }
 
-    </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
-              (#992), then the story plate at the foot of it (#994). It closes HERE, around those three
-              only: everything below is absolutely positioned against .map-page, and pulling it inside a
-              pointer-events:none column would cost it its clicks. *@
+    @* #1037 · …AND THE NAVIGATION TARGET IS THE FOOT OF THE COLUMN, not a second layout system beside it.
 
+       M25 pinned this panel to the window's own bottom-centre corner (`position: absolute; bottom: 0.75rem`)
+       while the Plotting panel above it lives in #992's flex arithmetic. Two positioning systems that were
+       never made to coordinate, and the arithmetic did not know the panel was there: measured docked at a
+       great port with a plan AND a destination set, `.map-plot`'s own bottom edge landed 12 px inside
+       `.map-dest-panel`'s top edge at 1280x720 and 16 px at 390x700, and which of the two a real screen
+       painted there was whatever the z-band happened to say — `.map-hud` (chrome+12) over the panel
+       (chrome+2), so the edge of the surface the captain was NOT reading hid the top of the one that answers
+       "does this course actually get you there".
+
+       Raising the panel's z-index is PROVEN WRONG and must not be retried: `.map-hud` is one stacking
+       context, so out-ranking it out-ranks every control it carries — CriticalControlsTests caught
+       autopilot-disengage going unreachable at every size (#1035).
+
+       So the panel joins the column, exactly as #994 put the story plate in it: it takes its own measured
+       height off the foot of the window and `.map-hud` — `flex: 1 1 auto` — gets what is left. It keeps its
+       0.75rem offset from the glass (now the column's own margin) so `.map-dossier-raised`'s 18.25rem
+       stack-above offset and CriticalControls' bottom-centre model both stay true, and geometry rather
+       than a z-index number decides who owns the pixels. *@
     @if (_activeDesk == ShipDesk.Nav)
     {
     @* M25: the navigation-target panel — its own box, plain words. States exactly what the
@@ -6772,6 +6856,16 @@
             }
         </div>
     }
+    }
+
+    </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
+              (#992), then the story plate (#994) and the navigation-target panel (#1037) at the foot of
+              it. It closes HERE, around those four only: everything below is absolutely positioned
+              against .map-page, and pulling it inside a pointer-events:none column would cost it its
+              clicks. *@
+
+    @if (_activeDesk == ShipDesk.Nav)
+    {
 
     @* #952 — THE WAKE-UP CALL. Owner: "if we ruin it mid flight it would say so in the list and as a
        pop-up that we no longer have safely ending flight plan but will need input at some point. That
@@ -7020,13 +7114,23 @@
             <div class="text-secondary">📜 @ShipHistories.For(dossierId).Teaser</div>
             <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
                  @RelativeMotion.WordedBefore(dossier.Closing)</div>
+            @* #962 · THE CARD HAS TO CHANGE WHEN THE BUTTON UNDER IT IS PRESSED. Owner, having pressed the
+               telescope button below and read the same sentence back: "It says we are not tracking the debt
+               collector and we should ... but really HOW??????" With every telescope held there is no
+               custody to give him — but the scope IS on her, and that is a different thing to say than
+               "not on the ledger". (Nothing in this block may repeat the button's own label: #962's guard
+               finds that button by searching the shipping razor for it.) *@
             @if (dossier.TrackQuality is { } quality)
             {
                 <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
             }
+            else if (dossier.ScopeOrdered)
+            {
+                <div class="text-info">📡 the telescope is on her — her pass is on the Sensors task list</div>
+            }
             else
             {
-                <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
+                <div class="text-secondary">📡 not on the telescope ledger — the telescope button below puts the scope on her</div>
             }
             <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
             @* #962 · THE TERMS OF HER CONTRACT, on the card the captain is already reading. Owner, docked
@@ -8298,11 +8402,21 @@
         {
             <div class="old-crew-history small text-secondary">@display — @sharedHistory</div>
         }
+        @* #1013 · A CONTACT ROW IS NOT THE CARD'S OWN FOOT. `.deck-offer-actions` is `position: sticky;
+           bottom: 0` (the pinned way-out row, #735/#780) — fine for the ONE true foot at the end of a
+           card, wrong for these: PresentBarContacts can hand the counter several people in the room at
+           once, each drawing one of these blocks, so a full room drew as many sticky bottom:0 siblings as
+           there were faces. Every one of them raced the real foot for the exact same pinned rectangle, and
+           whichever the browser struck last painted its 12rem scrim (the scrim meant to darken the FOOT's
+           OWN backdrop) straight over the previous face's row — "Round for the room" read as struck through
+           by "Offer a drink". `.contact-offer-row` keeps the same flex/wrap/gap/centre rule (below) and
+           drops only the sticky/scrim half, so a room of contacts scrolls as body prose and the card's foot
+           is the only thing still pinned. *@
         @if (TheyWouldNoticeTheFace(giver))
         {
             @* …and they are looking at the face before they are looking at the glass. Nothing else about
                this person is available until the captain has said one of the three things. *@
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <button type="button" class="btn btn-sm btn-outline-light"
                         title="@($"{display} is looking at a face they have never seen before")"
                         @onclick="@(() => OpenTheFaceScene(giver))">🪞 @display is looking at you</button>
@@ -8310,7 +8424,7 @@
         }
         else if (_pendingContactDrink == giver)
         {
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
                         title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — they pick their own pour; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
@@ -8327,7 +8441,7 @@
         }
         else if (_roundThisVisit)
         {
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <span class="bar-toasted small">🍻 @display toasted you with the room@(knownFav is { } kf ? $" · drinks {kf.Name}" : "")</span>
                 <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
                         title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
@@ -8336,7 +8450,7 @@
         }
         else
         {
-            <div class="deck-offer-actions">
+            <div class="contact-offer-row">
                 <button type="button" class="btn btn-sm btn-warning"
                         title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
                         @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>

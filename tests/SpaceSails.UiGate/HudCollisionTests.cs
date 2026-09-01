@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Playwright;
 
 namespace SpaceSails.UiGate;
@@ -27,6 +28,8 @@ namespace SpaceSails.UiGate;
 public sealed class HudCollisionTests : IAsyncLifetime
 {
     private static readonly float BootTimeoutMs = 180_000;
+
+    private static readonly float ActionTimeoutMs = 30_000;
 
     /// <summary>
     /// The HUD controls that share the deck with the canvas gauges. Named rather than globbed so a NEW control
@@ -358,9 +361,268 @@ public sealed class HudCollisionTests : IAsyncLifetime
             + "be spent on the other's pixels (#994 item 2).");
     }
 
+    /// <summary>
+    /// #1013 · A ROOM FULL OF CONTACTS DOES NOT COVER THE COUNTER'S OWN FOOT.
+    ///
+    /// <para><b>The sighting.</b> The counter card draws one <c>ContactDrinkOffer</c> block per present bar
+    /// contact (<c>PresentBarContacts</c>), each wrapped in its own <c>.deck-offer-actions</c> — the SAME
+    /// class the card's real foot (Buy the special / Round for the room / …) uses, and #735/#780 pin that
+    /// class <c>position: sticky; bottom: 0</c> with a 12rem box-shadow scrim. With more than one bar
+    /// contact in the room, every one of those rows raced the real foot for the identical pinned rectangle:
+    /// measured live (four old shipmates at the Roadstead, #973 L5a's own dev cheat), the last contact's row
+    /// touched the foot with a 0px gap where every other pair in the card runs ~20px, and the foot's scrim
+    /// painted straight over it — "Round for the room" read struck through by "Offer &lt;name&gt; a drink"
+    /// exactly as the owner's screenshot showed.</para>
+    ///
+    /// <para><b>The fix.</b> <c>ContactDrinkOffer</c>'s own wrapper is <c>.contact-offer-row</c> now — the
+    /// same flex/wrap/gap/centre rule, none of the sticky/scrim rule — so only the card's one true foot is
+    /// still pinned.</para>
+    ///
+    /// <para>RED PROOF: put <c>.contact-offer-row</c> back to <c>.deck-offer-actions</c> in
+    /// <c>ContactDrinkOffer</c> (Map.razor) and this fails, naming the exact pixel gap that collapsed to
+    /// zero.</para>
+    /// </summary>
+    [Fact]
+    public async Task A_room_full_of_bar_contacts_never_covers_the_counters_own_foot()
+    {
+        await _page.GotoAsync(
+            _host.BaseUrl + "/map?scenario=sol&oldcrew=1", new() { Timeout = BootTimeoutMs });
+
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        await _page.Locator(".map-page").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // The ashore boot raises the arrival-tube story plate (ArrivalTube "ONE TUBE, NO CEREMONY") — take
+        // it down if it is up so it cannot eat the click-to-walk below.
+        ILocator plateClose = _page.Locator(".story-plate-close");
+        if (await plateClose.CountAsync() > 0 && await plateClose.IsVisibleAsync())
+        {
+            await plateClose.ClickAsync();
+        }
+
+        // Click-to-walk (#875) straight onto the BARKEEP console — the whole scene is canvas-drawn, so
+        // this is a pixel click rather than a DOM locator, at the console's measured spot on the
+        // Roadstead's welcome frame (1280x900, oldcrew's default dock). [E] confirms reach. Retried: a
+        // single click-to-walk pass can land a few pixels short of the console's own reach radius, and a
+        // gate that flakes on the WALK rather than the law it exists to check is a gate nobody would trust.
+        ILocator card = _page.Locator(".deck-offer-card");
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            await _page.Locator(".map-page").FocusAsync();
+            await _page.Mouse.ClickAsync(438, 297);
+            await _page.WaitForTimeoutAsync(2500);
+            await _page.Locator(".map-page").FocusAsync();
+            await _page.Keyboard.PressAsync("e");
+            await _page.WaitForTimeoutAsync(500);
+            if (await card.CountAsync() > 0 && await card.IsVisibleAsync())
+            {
+                break;
+            }
+        }
+
+        await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+
+        // Answer every present contact's "is looking at you" face-reveal (#973 L5a) so the real "Offer
+        // <name> a drink" row draws instead of the face gate — PresentBarContacts seeds several old
+        // shipmates at once, which is exactly the "room full of contacts" shape #1013 needs.
+        for (int i = 0; i < 8; i++)
+        {
+            ILocator faceBtn = card.Locator("button", new() { HasTextString = "is looking at you" });
+            if (await faceBtn.CountAsync() == 0)
+            {
+                break;
+            }
+            await faceBtn.First.ClickAsync();
+            await _page.Locator("button.old-crew-answer").First.ClickAsync();
+            await _page.Locator("button", new() { HasTextString = "Leave it there" }).ClickAsync();
+        }
+
+        Assert.True(await card.Locator("button", new() { HasTextString = "Round for the room" }).CountAsync() > 0,
+                    "the counter never raised its own foot (Round for the room) — this gate proved nothing");
+
+        // The card's own cap is `max-height: calc(100vh - 11rem)` — how many old shipmates PresentBarContacts
+        // seeds this run (and how their names wrap) decides whether that cap is ever reached, so a full-size
+        // window can pass by accident. Shrinking the viewport forces the card to overflow regardless, which
+        // is the one condition every sticky `.deck-offer-actions` sibling needs to race the real foot for the
+        // same pinned rectangle (#1013).
+        await _page.SetViewportSizeAsync(1280, 420);
+
+        // Every row in the card's body — each present contact's offer row, plus the one true foot — read
+        // off the DOM in source order, which is paint/scroll order here.
+        var rows = new List<(string Name, float X, float Y, float W, float H)>();
+        ILocator rowLocator = card.Locator(".contact-offer-row, .deck-offer-actions");
+        int rowCount = await rowLocator.CountAsync();
+        Assert.True(rowCount >= 2,
+                    $"only {rowCount} action row(s) drew on the counter card — this gate needs a contact row "
+                    + "AND the card's own foot to prove they do not collide");
+        for (int i = 0; i < rowCount; i++)
+        {
+            ILocator row = rowLocator.Nth(i);
+            string text = (await row.InnerTextAsync()).Replace('\n', ' ').Trim();
+            if (await row.BoundingBoxAsync() is { } box && box.Width > 0 && box.Height > 0)
+            {
+                rows.Add((text.Length > 40 ? text[..40] : text, box.X, box.Y, box.Width, box.Height));
+            }
+        }
+
+        var collisions = new List<string>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            for (int j = i + 1; j < rows.Count; j++)
+            {
+                if (Overlaps(rows[i], (rows[j].X, rows[j].Y, rows[j].W, rows[j].H)))
+                {
+                    collisions.Add($"'{rows[i].Name}' at ({rows[i].X:0},{rows[i].Y:0}) {rows[i].W:0}×{rows[i].H:0} "
+                                   + $"overlaps '{rows[j].Name}' at ({rows[j].X:0},{rows[j].Y:0}) "
+                                   + $"{rows[j].W:0}×{rows[j].H:0}");
+                }
+            }
+        }
+
+        Assert.True(collisions.Count == 0,
+                    "the counter card's own rows are covering each other (#1013):\n  "
+                    + string.Join("\n  ", collisions));
+    }
+
+    /// <summary>
+    /// #997 · THE DESK-CHIP STRIP DOES NOT PAINT OVER THE SCOPE'S OWN CONTROLS.
+    ///
+    /// <para><b>The sighting.</b> Walking every desk in a real browser for #994 found two literals that had
+    /// never been told about each other: <c>.desk-chip-strip</c> (DeskChips.razor.css) docks a 9.5rem column
+    /// 0.5rem off the right edge, and <c>.map-scope</c>/<c>.map-scope-tile</c>/<c>.parrot-perch</c>
+    /// (Map.razor.css) each anchored themselves 0.75–0.9rem off the SAME edge, with no idea the strip's
+    /// column existed. Measured at 1280×720: the strip ran x 1120…1272, and the scope's card at its old
+    /// offset ran x 978…1268 — a 148×32 px overlap where the last chip (Galley) painted over the Scope
+    /// card's own header row (<c>◀ AUTO ▶</c> and the <c>–</c> minimise), so a click aimed at the scope's
+    /// controls switched desk instead. The parrot's perch (33×36 px) sat behind a chip the same way.</para>
+    ///
+    /// <para><b>The fix.</b> A single <c>--desk-chip-strip-clearance: 11rem</c> on <c>.map-page</c>, read by
+    /// <c>.desk-layer</c>'s right padding AND by <c>.map-scope</c>/<c>.map-scope-tile</c>/<c>.parrot-perch</c>
+    /// as their own <c>right</c> — the same move #986 F1 made for the top edge, one number instead of four
+    /// that agree by accident.</para>
+    ///
+    /// <para><b>The other collision this could have traded for.</b> The scope moving to <c>right: 11rem</c>
+    /// sits it further under <c>.map-readouts</c>' own horizontal span (x 12…1117 at 1280×720) than before —
+    /// but the two are stacked, not side by side: the readouts end at y≈389 and the scope begins at y≈386,
+    /// a ≤4 px hairline shared before AND after this change. This gate does not assert that hairline away
+    /// (it is not the bug #997 is about and was never zero), but it does assert the strip/scope/perch
+    /// collision that #997 IS about.</para>
+    ///
+    /// <para>RED PROOF: put the literal <c>right: 0.75rem</c> back on <c>.map-scope</c> (or
+    /// <c>.map-scope-tile</c>, or <c>right: 0.9rem</c> on <c>.parrot-perch</c>) in place of
+    /// <c>var(--desk-chip-strip-clearance)</c> and this fails, naming the exact pixels the strip steals.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_desk_chip_strip_never_covers_the_scopes_own_controls()
+    {
+        await _page.SetViewportSizeAsync(1280, 720);
+        await BootIntoNav();
+
+        ILocator strip = _page.Locator(".desk-chip-strip").First;
+        await strip.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        ILocator scope = _page.Locator(".map-scope").First;
+        await scope.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        var boxes = new List<(string Name, float X, float Y, float W, float H)>();
+        foreach ((string name, ILocator locator) in new (string, ILocator)[]
+                 {
+                     (".desk-chip-strip", strip),
+                     (".map-scope", scope),
+                     (".parrot-perch", _page.Locator(".parrot-perch").First),
+                 })
+        {
+            if (await locator.CountAsync() == 0 || !await locator.IsVisibleAsync())
+            {
+                continue;   // the parrot is a flourish, not a guarantee — absence is not this gate's concern
+            }
+            if (await locator.BoundingBoxAsync() is { Width: > 0, Height: > 0 } box)
+            {
+                boxes.Add((name, box.X, box.Y, box.Width, box.Height));
+            }
+        }
+
+        Assert.True(boxes.Any(b => b.Name == ".desk-chip-strip") && boxes.Any(b => b.Name == ".map-scope"),
+                    "the strip or the scope had no box at all on Nav — this gate measured nothing");
+
+        var collisions = new List<string>();
+        (string Name, float X, float Y, float W, float H) stripBox = boxes.First(b => b.Name == ".desk-chip-strip");
+        foreach ((string Name, float X, float Y, float W, float H) other in boxes.Where(b => b.Name != ".desk-chip-strip"))
+        {
+            if (Overlaps(other, (stripBox.X, stripBox.Y, stripBox.W, stripBox.H)))
+            {
+                collisions.Add($"{other.Name} at ({other.X:0},{other.Y:0}) {other.W:0}×{other.H:0} sits under "
+                                + $"the desk-chip strip at ({stripBox.X:0},{stripBox.Y:0}) {stripBox.W:0}×{stripBox.H:0}");
+            }
+        }
+
+        Assert.True(collisions.Count == 0,
+                    "the desk-chip strip is painting over the scope's own controls (#997):\n  "
+                    + string.Join("\n  ", collisions));
+    }
+
+    /// <summary>
+    /// #997 · THE SCOPE STAYS ON THE GLASS AT A PHONE WIDTH.
+    ///
+    /// <para>Verifying the strip/scope fix above at 390×700 (the instructions' own second checkpoint) found
+    /// a second trade-off past the one the issue named: <c>.map-scope</c> is a fixed ~290px card (an
+    /// unresponsive 280px canvas underneath it, unrelated to this fix), so pushing its <c>right</c> out to a
+    /// flat <c>--desk-chip-strip-clearance</c> (11rem) walked its LEFT edge off the left of a 390px screen by
+    /// 76px — not overlapping anything, just not there. <c>min(var(...), calc(100% - 18.5rem))</c> on
+    /// <c>.map-scope</c>/<c>.map-scope-tile</c> is the guard against that: it only ever bites below a
+    /// ~29.5rem-wide viewport, so 1280×720 reads the flat 11rem exactly as #997 specifies (the test above
+    /// proves that), and a phone gets a smaller offset instead of losing part of the card off-screen.</para>
+    ///
+    /// <para>This does not assert zero overlap at 390px — there is not 11rem of clearance plus 18.1rem of
+    /// card in a 390px screen to give, and the strip does still touch the scope's header there. It asserts
+    /// the narrower, load-bearing fact: the card's own left edge is never negative, i.e. never off the
+    /// glass (#212's law, the other direction from the gate above).</para>
+    ///
+    /// <para>RED PROOF: drop the <c>min(…)</c> back to a bare <c>var(--desk-chip-strip-clearance)</c> on
+    /// <c>.map-scope</c> and this fails, naming a negative X.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_scope_stays_on_screen_at_a_phone_width()
+    {
+        await _page.SetViewportSizeAsync(390, 700);
+        await BootIntoNav();
+
+        ILocator scope = _page.Locator(".map-scope").First;
+        await scope.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        var box = await scope.BoundingBoxAsync();
+        Assert.True(box is { Width: > 0, Height: > 0 }, "the scope had no box at all on Nav at 390×700");
+
+        Assert.True(box!.X >= 0,
+                    $"the scope's card sits at x {box.X:0} on a 390px-wide screen — part of it is off the "
+                    + "left edge of the glass, not merely covered by something else (#997).");
+    }
+
     private static bool Overlaps(
         (string Name, float X, float Y, float W, float H) a, (float X, float Y, float W, float H) b) =>
         a.X < b.X + b.W && a.X + a.W > b.X && a.Y < b.Y + b.H && a.Y + a.H > b.Y;
+
+    /// <summary>Boot the published artifact and get onto the Nav desk, where the scope lives.</summary>
+    private async Task BootIntoNav()
+    {
+        await _page.GotoAsync(_host.BaseUrl + "/", new() { Timeout = BootTimeoutMs });
+        await _page.Locator("a.btn-primary[href*='scenario=sol']").ClickAsync();
+
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+
+        await _page.Locator(".start-picker-backdrop").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+        await _page.Locator(".start-picker-newvoyage").ClickAsync();
+
+        await _page.Locator(".desk-tab-bar").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        await _page.Locator("button.desk-tab", new() { HasTextString = "Nav" }).First.ClickAsync();
+        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Nav" }).First.WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+    }
 
     /// <summary>Boot the published artifact and get onto the deck, where the HUD lives.</summary>
     private async Task BootIntoTheDeck()

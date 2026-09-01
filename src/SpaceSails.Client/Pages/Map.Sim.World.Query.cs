@@ -24,7 +24,7 @@ public partial class Map
     /// <summary>Which world, where in it, and the jobs and money you arrive holding — <c>?scenario=</c>,
     /// <c>?start=</c>, <c>?dock=</c>, <c>?fuel=</c>, <c>?credits=</c>, <c>?fetch=</c>, <c>?reveal=</c>,
     /// <c>?crack=</c>, <c>?tip=</c>, <c>?hoard=</c>, <c>?sling=</c>, <c>?skim=</c>, <c>?backroom=</c>,
-    /// <c>?target=</c> and <c>?simhours=</c>.</summary>
+    /// <c>?target=</c>, <c>?dest=</c> and <c>?simhours=</c>.</summary>
     private bool ReadTheWorldAndTheJobs(string pair, BootQuery q)
     {
         // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
@@ -121,6 +121,29 @@ public partial class Map
             if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
             {
                 q.TargetCheat = candidate;
+            }
+        }
+        else if (pair.StartsWith("dest=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #956 dev cheat: /map?dest=<body-id> boots with the NAVIGATION DESTINATION already set — the
+            // thing `Follow dest` follows.
+            //
+            // WHY IT HAD TO EXIST, and it is the very reason `?target=` above had to. A nav destination has
+            // exactly one road: a click on a body's canvas menu. Canvas has no DOM, so no browser gate can
+            // reach it, and #956's whole feature — a camera that rides the destination — was therefore
+            // provable only in xUnit against fields. That is the #603 class waiting to happen: perfect in
+            // the source, dead under a finger. One URL key buys the pixels.
+            //
+            //   /map?dest=jupiter          the nav target set, Follow dest live
+            //   /map?dest=saturn&start=…   …from wherever you like
+            //
+            // NOT the same key as `?target=`: that points the TACTICAL ui at a contact (a ship), this sets
+            // the NAV destination (a body). Two questions, two keys. Sanitised as a slug like its
+            // neighbours — it becomes a lookup against the ephemeris.
+            string candidate = Uri.UnescapeDataString(pair["dest=".Length..]).ToLowerInvariant();
+            if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+            {
+                q.DestCheat = candidate;
             }
         }
         else if (pair.StartsWith("crack=", StringComparison.OrdinalIgnoreCase))

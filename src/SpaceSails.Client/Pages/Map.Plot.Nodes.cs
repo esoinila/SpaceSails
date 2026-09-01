@@ -42,10 +42,22 @@ public partial class Map
         // the berth plus the berth's own shove. Everything judged off this ribbon (the passes, the arrival
         // row's OK/NOT bit, #969's arm-time rehearsal) is therefore computed FROM THE BERTH ONWARD, which is
         // the owner's "the plotted path starts with the cast-off + clearance" in one argument.
-        _samples = _simulator!.ProjectAdaptive(PlanStartState(), _plan, CurrentPlotHorizonSeconds, maxTimeStep: 3 * 3600, maxSamples: 8000);
+        double horizon = CurrentPlotHorizonSeconds;
+        _samples = _simulator!.ProjectAdaptive(PlanStartState(), _plan, horizon, maxTimeStep: 3 * 3600, maxSamples: 8000);
         _nextProjectionSimTime = _ship.SimTime + ProjectionRefreshSimSeconds;
         _passDirty = true;
         _lastReprojectMs = _lastTimestampMs ?? 0;
+
+        // #1042 — AND THE SCRUB CANNOT POINT PAST THE END OF THE WORLD IT SCRUBS. The scrub slider's max IS
+        // this horizon (Map.razor), but the bound value was only ever written by a hand on the control, so
+        // every way the line gets SHORTER left the two disagreeing: drag Path length down, let auto settle
+        // back off the projection cap once #952's reach found the encounter, or let a bound orbit cap the
+        // horizon at one revolution — and the scrub still stood at the old far end, quietly resolving through
+        // SamplePositionAtTime's "past the end → the last sample" fallback. The ghost ship, the ETA, the
+        // node-epoch floor and every "at scrub" button then all agreed on an hour that is no longer drawn.
+        // Clamped HERE, against the very number the projection was just asked for, so the control and its
+        // value cannot tell two stories about how long the course is.
+        _scrubOffsetSeconds = Math.Clamp(_scrubOffsetSeconds, 0, horizon);
     }
 
     // ---- Plotting mode ----

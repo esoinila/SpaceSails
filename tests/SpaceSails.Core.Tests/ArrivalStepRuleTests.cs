@@ -236,6 +236,125 @@ public class ArrivalStepRuleTests
         Assert.Equal(ArrivalStepRule.Verdict(c) + note, ArrivalStepRule.RefusalWhy(c, note));
     }
 
+    // ===== #952 · a pass the ribbon never reached is not a pass =====
+
+    /// <summary>
+    /// THE EDGE OF THE PICTURE IS NOT AN ENCOUNTER. <c>ClosestApproach.Passes</c> answers for every body in
+    /// the system whether or not the plotted course goes near it, so for a body the ribbon stops short of it
+    /// returns the LAST SAMPLE. Judged, that artefact prints a confident ✗ with numbers over a plan that in
+    /// truth arrives inside both gates — and sends the captain iterating the wrong way for ever. So the pass
+    /// is recognised for what it is, using the projection's own spacing at that end as the tolerance rather
+    /// than a number invented here.
+    /// </summary>
+    [Fact]
+    public void APassAtTheRibbonsLastSample_IsTheEndOfThePicture_NotAnEncounter()
+    {
+        const double ribbonEnd = 90.1 * 86400;
+        const double step = 3 * 3600;   // the projection's own maxTimeStep out in the deep
+
+        // Pinned to the end — this is the artefact.
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd, ribbonEnd, step));
+
+        // …and so is anything inside the final sample, which is the safe direction to be wrong in.
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - step, ribbonEnd, step));
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd + 1, ribbonEnd, step));
+
+        // A genuine encounter comfortably inside the line is a real pass and must be judged normally —
+        // without this half the rule would refuse to judge anything at all.
+        Assert.False(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - (2 * step), ribbonEnd, step));
+        Assert.False(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(24.5 * 86400, ribbonEnd, step));
+
+        // The tolerance is the caller's sample spacing, so a coarser ribbon shields a wider band — and a
+        // negative gap (a caller handing the spacing back to front) can never invert the test.
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - (2 * step), ribbonEnd, 4 * step));
+        Assert.True(ArrivalStepRule.PassIsOffTheEndOfTheRibbon(ribbonEnd - step, ribbonEnd, -step));
+    }
+
+    // ===== #1042 · and the other edge: a pass the ribbon merely BEGINS at =====
+
+    /// <summary>
+    /// THE BEGINNING OF THE PICTURE IS NOT AN ENCOUNTER EITHER — BUT ONLY WHEN THE SHIP LEFT THE BODY BEHIND
+    /// BEFORE THE PLAN BEGAN. The sweep pins a "closest approach" to the ribbon's first sample in two quite
+    /// different worlds: a captain genuinely AT closest approach this instant (#1041's protected ✓), and a
+    /// ship opening from something whose real closest approach was years ago (CI's <c>🛰 orbit Neptune ·
+    /// 30.64 AU</c>). Straight-line motion dates the closest approach exactly, and one sample step — the
+    /// end-edge law's own tolerance, borrowed not invented — is where "now" stops meaning now.
+    /// </summary>
+    [Fact]
+    public void APassAtTheRibbonsFirstSample_IsOnlyThePictureBeginning_WhenTheBodyWasLeftBehindBeforeIt()
+    {
+        const double start = 0;
+        const double step = 1800;   // the projection's own first gap on the bench this shipped against
+
+        // NEPTUNE, measured on that bench: 29.88 AU out, opening at 29.32 km/s, 29.36 km/s relative — which
+        // dates its closest approach 1761 days BEFORE the plan begins. The picture merely starts here.
+        Assert.True(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, step, rangeAtStart: 4.470e12, rangeRateAtStart: 29_320, relSpeedAtStart: 29_360));
+
+        // THE CAPTAIN COASTING PAST THE BODY HE MEANS TO ORBIT — abeam at a million km, his whole 2 km/s
+        // square across the line to it. Range rate zero: closest approach is NOW, the reading #1041 protects.
+        Assert.False(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, step, rangeAtStart: 1.0e9, rangeRateAtStart: 0, relSpeedAtStart: 2000));
+
+        // …and a hair past it: 1 m/s of opening at a million km on 2 km/s relative dates closest approach
+        // 250 s ago, inside the sample step, so it is still "now" at the picture's own resolution.
+        Assert.False(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, step, rangeAtStart: 1.0e9, rangeRateAtStart: 1, relSpeedAtStart: 2000));
+
+        // Nudge the same geometry to nine hours past closest approach and it IS behind the picture.
+        Assert.True(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, step, rangeAtStart: 1.0e9, rangeRateAtStart: 130, relSpeedAtStart: 2000));
+
+        // STILL CLOSING is never an edge artefact, however far away the body is.
+        Assert.False(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, step, rangeAtStart: 4.470e12, rangeRateAtStart: -29_320, relSpeedAtStart: 29_360));
+
+        // AN INTERIOR PASS IS AN ENCOUNTER, whatever the ship was doing when the picture opened — without
+        // this half the rule would silence half the solar system on every plot.
+        Assert.False(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            passSimTime: 24.5 * 86400, start, step,
+            rangeAtStart: 4.470e12, rangeRateAtStart: 29_320, relSpeedAtStart: 29_360));
+
+        // The tolerance is the caller's own spacing — a coarser ribbon calls a wider band "now" — and a
+        // negative gap (a caller handing the spacing back to front) can never invert the test.
+        Assert.False(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, 20 * 3600, rangeAtStart: 1.0e9, rangeRateAtStart: 130, relSpeedAtStart: 2000));
+        Assert.True(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, -step, rangeAtStart: 4.470e12, rangeRateAtStart: 29_320, relSpeedAtStart: 29_360));
+
+        // A ship standing perfectly still relative to the body divides by nothing and claims nothing.
+        Assert.False(ArrivalStepRule.PassIsOffTheFrontOfTheRibbon(
+            start, start, step, rangeAtStart: 1.0e9, rangeRateAtStart: 0, relSpeedAtStart: 0));
+
+        // The cheap half the client sweeps thirty bodies with says the same thing about where the front is.
+        Assert.True(ArrivalStepRule.PassSitsAtTheRibbonsStart(start, start, step));
+        Assert.True(ArrivalStepRule.PassSitsAtTheRibbonsStart(start + step, start, step));
+        Assert.True(ArrivalStepRule.PassSitsAtTheRibbonsStart(start + step, start, -step));
+        Assert.False(ArrivalStepRule.PassSitsAtTheRibbonsStart(start + (2 * step), start, step));
+        Assert.False(ArrivalStepRule.PassSitsAtTheRibbonsStart(24.5 * 86400, start, step));
+    }
+
+    /// <summary>
+    /// AND IT SAYS WHICH CONTROL ENDS THE WAIT. The owner likes the iterate buttons (#952: <i>"I really like
+    /// those iterate buttons"</i>); the sentence therefore names the one he has his hand on rather than
+    /// leaving him to guess why his arrival will not judge itself.
+    /// </summary>
+    [Fact]
+    public void TheRibbonTooShortLine_NamesTheBody_TheLength_AndTheControl()
+    {
+        string line = ArrivalStepRule.RibbonTooShort("Mars", "90 d");
+        Assert.Contains("not judged", line, StringComparison.Ordinal);
+        Assert.Contains("Mars", line, StringComparison.Ordinal);
+        Assert.Contains("90 d", line, StringComparison.Ordinal);
+        Assert.Contains("Path length", line, StringComparison.Ordinal);
+        Assert.Contains("auto", line, StringComparison.Ordinal);
+
+        // It is NOT a verdict and must never read like one — no ✗, no threshold, no shortfall.
+        Assert.DoesNotContain("✗", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("too far", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("need ≤", line, StringComparison.Ordinal);
+    }
+
     // ===== The words themselves =====
 
     [Fact]

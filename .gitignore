@@ -499,3 +499,7 @@ mcps/
 labviz/
 
 tools/playthrough/ui-audit/
+
+# Skills are docs, not build output - a skill named release/ or publish/ must not be eaten by the rules above
+!.claude/skills/**/
+!.claude/skills/**
