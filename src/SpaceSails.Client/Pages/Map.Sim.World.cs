@@ -68,6 +68,7 @@ public partial class Map
         public readonly List<string> RevealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         public bool TableSceneCheat; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
         public bool OldCrewCheat; // #973 L5a /map?oldcrew=1: boot ashore with the four shipmates working THIS berth and one captain already buried, so "you look different" can be played
+        public string? CrewCheat; // #663 /map?crew=petition: boot holding the voyage the crew send a deputation over — bodies left on a rock, and an honest ship that is poor because of it
     }
 
     /// <summary>Read the URL once, key by key. Each reader answers TRUE when the pair was its own and
