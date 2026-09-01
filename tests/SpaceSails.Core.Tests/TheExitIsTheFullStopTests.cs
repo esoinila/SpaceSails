@@ -602,9 +602,19 @@ public sealed class TheExitIsTheFullStopTests
 
     /// <summary>The whole sweep's schedule, hashed. Captured on the code this lane ships and committed with
     /// it; git says which commit this number came from. See the guard above for why a PIN is the only shape
-    /// this law can take.</summary>
+    /// this law can take.
+    ///
+    /// <para><b>#731 (B1 canteen) · RE-PINNED, and the lane that moved it says why.</b> The crowd is out of
+    /// the deal. #751 built background patrons as DATA — <i>"a plate, a bark and a chair. No pathing, no
+    /// schedule, no per-frame anything"</i> — and <c>Egress.Departures</c>' canteen projection had been
+    /// feeding them into the schedule since v1, so a hall's dozen background tops outvoted the rota's three
+    /// and the ROOM'S OWN TURNOVER, which is what #731 names as this floor's whole customer, was the beat four
+    /// shifts in five did not show. The sweep's departures fall from <b>312 to 106</b> and every one of the
+    /// 106 is now one of the ten. Nothing else about the deal moved: the seeds, the share, the last-call
+    /// window and the doors are the ones v1 pinned, and the same room asked twice still answers the same
+    /// evening.</para></summary>
     private const string PinnedSchedule =
-        "E6B7FA68FE09EBF0BF81302C4C4BA520DC0FE11AAA183DAED1883C84AB7D4CE6";
+        "4AD01680F636D8FB9033C4A001E5E5D5E0F645BE30E34521B0FA377CC715F0AC";
 
     // ── (f) NEVER REEVERS ────────────────────────────────────────────────────────────────────────────
 

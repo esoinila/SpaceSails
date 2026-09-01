@@ -114,6 +114,24 @@ public partial class Map
         /// says so. The whole of what an APPROACH means is the caller's; this component owns the walking and
         /// knows nothing about what somebody has come to say.</summary>
         public Action? OnArrive { get; init; }
+
+        /// <summary>#731 · WHERE THE GESTURE IS AIMED — the chair they got up from, so the pass is held up to
+        /// the room they are leaving rather than at the wall they are leaving through. NaN on every walk with
+        /// no gesture in it, which is every walk but one.
+        ///
+        /// <para>Carried from the frame the walk was PLANNED rather than looked up when the doorstep is
+        /// reached, because looking it up needs the whole floor plan and <c>UndergroundComplex.Build</c> lays
+        /// a building out from scratch on every call — #731 v1 paid for that lesson once already, with a floor
+        /// plan per frame.</para></summary>
+        public double PassToX { get; init; } = double.NaN;
+
+        /// <summary>#731 · …and the other half of where the gesture is aimed.</summary>
+        public double PassToY { get; init; } = double.NaN;
+
+        /// <summary>#731 · How long they have been holding it up, in seconds of the SAME <c>dt</c> the walk
+        /// itself is stepped on. One clock for the walk and for the pause, so no frame can fall between
+        /// them.</summary>
+        public double PassHeld { get; set; }
     }
 
     /// <summary>#731 · WHY SOMEBODY IS ON THEIR FEET. Three answers, and they are three different ENDINGS,
@@ -144,6 +162,20 @@ public partial class Map
         /// not invited, and there is no eighth way to open a sitting in this codebase — and the pitch card
         /// goes up on the frame he lands on.</summary>
         RepPitching,
+
+        /// <summary>
+        /// #731 · <b>THE EXIT THAT IS A GESTURE.</b> The issue's second customer, in its own words: <i>"the
+        /// agency temp leaving at watch change through the staff door, showing the pass nobody inside asks
+        /// for."</i>
+        ///
+        /// <para>The same walk as <see cref="Leaving"/>, to the same kind of leaf, on the same legs — and then
+        /// one thing more. At the doorstep they stop, turn back to the room they are leaving, and hold the
+        /// pass up to it for <see cref="CanteenRegulars.PassHeldSeconds"/>. <b>Nobody looks.</b> No console
+        /// appears, nothing is pulsed, no card is raised, nobody's facing changes, and the leaf refuses the
+        /// captain exactly as it did before — the gesture happens, and the room's answer to it is the whole
+        /// beat. It is an errand of its own rather than a flag on <see cref="Leaving"/> because it is a
+        /// different ENDING, which is what this enum is for.</para></summary>
+        ShowingThePass,
 
         /// <summary>#973 L0 · SOMEBODY CROSSING A DOCKED STATION'S BAR TO YOUR TABLE. The sixth errand, and
         /// the first that belongs to a room the Hive did not build — see <see cref="ApproachTheTable"/>. Like
@@ -195,7 +227,7 @@ public partial class Map
         }
 
         ForgetWalkersIfTheShiftTurned(ex);
-        DealTheDepartures(ex);
+        DealTheShiftsOwnHours(ex);
 
         if (ex.Walkers.Count == 0)
         {
@@ -268,6 +300,55 @@ public partial class Map
                 continue;
             }
 
+            // ── #731 · THE ERRAND THAT ENDS IN A GESTURE NOBODY ANSWERS ──────────────────────────────
+            //
+            // "The B1 canteen: rota turnover made visible — the agency temp leaving at watch change through
+            // the staff door, showing the pass nobody inside asks for."
+            //
+            // The walk is a departure's, verbatim. The ENDING is not: instead of the leaf clicking behind
+            // them, they stop on the doorstep, turn back to the room, and hold the pass up to it. The room
+            // does nothing whatsoever — that is not an omission, it is the beat, and the canon differential
+            // on this lane is what keeps it that way.
+            if (w.For == Errand.ShowingThePass)
+            {
+                if (w.Walk.State != NpcWalk.Doing.Arrived)
+                {
+                    w.Walk.Step(dt, walls, _avatarX, _avatarY);
+                    if (w.Walk.Afoot)
+                    {
+                        continue;
+                    }
+                    if (w.Walk.State != NpcWalk.Doing.Arrived)
+                    {
+                        // The ground refused them somewhere between the table and the leaf. They stop, and
+                        // there is nothing to hold up to anybody — never a gesture performed by a body that
+                        // never got to the door.
+                        ex.Walkers.RemoveAt(i);
+                        anybodyLanded = true;
+                        continue;
+                    }
+                    // …and the hold begins on the frame the doorstep is reached, on the walk's own clock.
+                    anybodyLanded = true;
+                }
+                else
+                {
+                    w.PassHeld += dt;
+                    if (w.PassHeld >= CanteenRegulars.PassHeldSeconds)
+                    {
+                        // Held up, unread, and through. Nothing is said.
+                        ex.Walkers.RemoveAt(i);
+                        anybodyLanded = true;
+                        continue;
+                    }
+                }
+
+                // Turned back to the room they are leaving. Not at the captain — the captain is not who a
+                // pass is shown to, and a body that swung round to face whoever walked past would be the
+                // room answering, which is the one thing this beat may not do.
+                w.Walk.LookTowards(w.PassToX, w.PassToY);
+                continue;
+            }
+
             w.Walk.Step(dt, walls, _avatarX, _avatarY);
             if (w.Walk.Afoot)
             {
@@ -278,7 +359,17 @@ public partial class Map
             anybodyLanded = true;
             if (w.For == Errand.Arriving && w.Walk.State == NpcWalk.Doing.Arrived)
             {
-                SomebodyHasReachedYourTable(ex, w);
+                // #731 · TWO KINDS OF ARRIVAL, told apart by whether the room FILED them. A regular who came
+                // out of a leaf off the rota carries the plate the room knows them by and ends in a chair;
+                // the one who came to the captain's table carries none and ends in #865's card.
+                if (w.Who.Length > 0)
+                {
+                    TheyTakeTheTop(ex, w);
+                }
+                else
+                {
+                    SomebodyHasReachedYourTable(ex, w);
+                }
             }
         }
 
@@ -300,6 +391,10 @@ public partial class Map
         ex.Walkers.Clear();
         ex.HallStoodUp.Clear();
         ex.HallDeparted.Clear();
+        // #731 · …and the other direction with them. A shift turning over deals the room fresh, and somebody
+        // who walked in early on the last watch is on the new watch's own sheet or is not here at all.
+        ex.HallCameIn.Clear();
+        ex.HallArrived.Clear();
         // #731 v2 · …and the conversation somebody was holding a door open for. A shift turning over is the
         // room forgetting, and a parked scene is the most forgettable thing in it: the woman it belonged to
         // went home three hours ago.
@@ -307,6 +402,7 @@ public partial class Map
         // …and the shift's own list of who goes, which belonged to the shift that has just ended. Null and
         // not empty: empty is an answer this room gave, null is a question it has not been asked yet.
         ex.HallSchedule = null;
+        ex.HallArrivals = null;
         ex.WalkersWatch = ex.CanteenWatch;
         ex.WalkersFloor = ex.Floor;
     }
@@ -328,12 +424,17 @@ public partial class Map
     /// frozen by construction, so it is worked out on the first frame of a shift and then only READ. The
     /// per-frame cost of a room with nobody due is a null check and a count.</para>
     /// </summary>
-    private void DealTheDepartures(SurfaceExcursion ex)
+    /// <summary>#731 · …AND THE SAME SHIFT DECIDES WHO TURNS UP. Both lists are worked out once when the
+    /// watch begins on this floor and only read afterwards; both are stepped down by the same clock hand
+    /// crossing the times the frozen watch already named.</summary>
+    private void DealTheShiftsOwnHours(SurfaceExcursion ex)
     {
-        // The shift's own list, worked out once. See the note above on why this is not a micro-optimisation.
+        // The shift's own lists, worked out once. See the note above on why this is not a micro-optimisation.
         ex.HallSchedule ??= TheShiftDecidesWhoGoes(ex);
+        ex.HallArrivals ??= TheShiftDecidesWhoComes(ex);
 
-        if (ex.HallSchedule.Count == 0 || TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
+        if ((ex.HallSchedule.Count == 0 && ex.HallArrivals.Count == 0)
+            || TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
         {
             return;
         }
@@ -342,18 +443,54 @@ public partial class Map
         // while it is being read; this is only the clock hand crossing the times that schedule already named.
         double into = SimTime - (PatronRota.WatchIndex(SimTime) * PatronRota.WatchSeconds);
 
-        foreach (Egress.Move move in ex.HallSchedule)
+        DealTheDepartures(ex, into);
+        DealTheArrivals(ex, into);
+    }
+
+    private void DealTheDepartures(SurfaceExcursion ex, double into)
+    {
+        foreach (Egress.Move move in ex.HallSchedule!)
         {
             if (into < move.AtSecondsIntoWatch || !ex.HallDeparted.Add(move.TableIndex))
             {
                 continue;
             }
-            if (!TheyStandUpAndGo(ex, move))
+            // No route, or nowhere to stand at that door? They simply stay in their chair — the honest
+            // answer, and never a body placed at the far end of a walk that could not be walked. The move
+            // stays SPENT: see DealTheArrivals for why a refusal that is re-offered every frame is a bug.
+            _ = TheyStandUpAndGo(ex, move);
+            if (TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
             {
-                // No route, or nowhere to stand at that door. They simply stay in their chair — the honest
-                // answer, and never a body placed at the far end of a walk that could not be walked.
-                ex.HallDeparted.Remove(move.TableIndex);
+                return;
             }
+        }
+    }
+
+    /// <summary>#731 · …and the other half of the room's hours, stepped down the same way. Dealt exactly once
+    /// per person per shift (<c>HallArrived</c>, keyed on the PLATE because an arrival's person is the
+    /// schedule's and its top is this side's), so a list re-read every frame cannot walk the same body out of
+    /// the same leaf twice.</summary>
+    private void DealTheArrivals(SurfaceExcursion ex, double into)
+    {
+        if (TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
+        {
+            return;
+        }
+
+        foreach (Egress.Move move in ex.HallArrivals!)
+        {
+            if (into < move.AtSecondsIntoWatch || !ex.HallArrived.Add(move.Plate))
+            {
+                continue;
+            }
+            // …and the same: a move the floor cannot carry is spent rather than re-offered. WHY a walk is
+            // refused here is a fact about the STONE — where a body can stand in front of a leaf, and whether
+            // the lattice joins that spot to a chair — and none of it changes while a watch is running. So a
+            // move put back on the list is a move re-attempted on every frame of a four-hour shift, and every
+            // attempt lays the whole building out again (`UndergroundComplex.Build`, twice). That is #731 v1's
+            // own lesson — a floor plan per frame — arriving through the door it was written to close, and it
+            // cost this lane nine minutes of a test run before it was found.
+            _ = TheyComeOutOfTheBack(ex, move);
             if (TheRoomsOwnFeet(ex) >= Egress.MostAtOnce)
             {
                 return;
@@ -379,6 +516,125 @@ public partial class Map
                 ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch,
                 CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch),
                 locked);
+    }
+
+    /// <summary>
+    /// #731 · <b>…AND WHO THIS SHIFT BRINGS IN.</b> The issue's second customer — <i>"the B1 canteen: rota
+    /// turnover made visible"</i> — and it is <see cref="Egress"/>'s one arithmetic run the other way, not a
+    /// canteen-flavoured copy of it.
+    ///
+    /// <para>Who is eligible is the ROTA'S OWN ANSWER and never a roll invented here:
+    /// <see cref="CanteenRegulars.ComingOnShift"/> is the next watch's sheet less the people this watch
+    /// already seated. That is the whole inference the room has been computing and telling nobody — the board
+    /// on this room's wall says <c>ROTA — WEEK 31</c>, and until this lane the turnover happened in the one
+    /// frame the floor was rebuilt in, which is the frame nobody is looking at.</para>
+    ///
+    /// <para>The top each of them would take is allotted HERE, off the room's own free list in its own order,
+    /// because a free chair is a fact about a room and not about a schedule — the same split
+    /// <c>Egress.Arrivals</c>' own docs name. Asked of the rota's UNTOUCHED answer (no churn), because the
+    /// schedule is a fact about the watch and must not change as the evening it describes plays out.</para>
+    /// </summary>
+    private IReadOnlyList<Egress.Move> TheShiftDecidesWhoComes(SurfaceExcursion ex)
+    {
+        if (!TheCanteenOn(ex, out UndergroundComplex.Amenity a))
+        {
+            return [];
+        }
+
+        IReadOnlyList<string> coming =
+            CanteenRegulars.ComingOnShift(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch);
+        if (coming.Count == 0)
+        {
+            return [];
+        }
+
+        IReadOnlyList<UndergroundComplex.LockedDoor> locked =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Locked;
+        if (locked.Count == 0)
+        {
+            return [];
+        }
+
+        // A HALL TOP WITH NOBODY AT IT — not a cabinet (nobody eats in one) and not a chair the shift has
+        // already dealt to somebody, whether one of the ten or one of the crowd. In the room's own order, so
+        // two people walking in never head for one chair.
+        var free = new List<int>();
+        foreach (CanteenRegulars.TableSeat top in
+            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+        {
+            if (top is { Taken: false, Quiet: false })
+            {
+                free.Add(top.Index);
+            }
+        }
+
+        var expected = new List<Egress.Occupant>();
+        for (int i = 0; i < coming.Count && i < free.Count; i++)
+        {
+            expected.Add(new Egress.Occupant(free[i], coming[i]));
+        }
+
+        return expected.Count == 0
+            ? []
+            : Egress.Arrivals(ex.Stop.Body.Id, ex.Floor, ex.CanteenWatch, expected, locked);
+    }
+
+    /// <summary>#731 · <b>SOMEBODY COMES OUT OF THE STAFF DOOR AND TAKES A TOP.</b> They step out of a leaf
+    /// the captain's own TRY is refused at, cross the hall on the captain's own lattice, and sit — and the
+    /// chair is theirs only on the frame they reach it (see <see cref="TheyTakeTheTop"/>). They give the
+    /// captain a body's berth like anybody going about their own business, so standing in their way stops
+    /// them and being looked at is the content. Nothing is said.</summary>
+    private bool TheyComeOutOfTheBack(SurfaceExcursion ex, Egress.Move move)
+    {
+        if (!TheCanteenOn(ex, out UndergroundComplex.Amenity a))
+        {
+            return false;
+        }
+
+        IReadOnlyList<UndergroundComplex.LockedDoor> locked =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Locked;
+        if (TopOn(ex, a, move.TableIndex) is not { } top
+            || move.Door < 0 || move.Door >= locked.Count)
+        {
+            return false;
+        }
+
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        if (WhereABodyStandsAt(top, walls) is not { } chair)
+        {
+            return false;
+        }
+
+        // THE CHAIR FIRST, AND THEN THE DOORSTEP — #731 v1 paid for this order already. A leaf has two sides
+        // and both can be standable; asked with no hint, half the time the answer is the room the captain has
+        // never been in, from which there is no route to any chair at all.
+        UndergroundComplex.LockedDoor door = locked[move.Door];
+        if (Egress.StandingPlaceAt(in door, DeckPlan.AvatarRadius, walls, chair.X, chair.Y)
+                is not { } doorstep
+            || OnFoot(move.Plate, new NpcWalk.Bound(door.Sign, chair.X, chair.Y), doorstep, walls)
+                is not { } walk)
+        {
+            return false;
+        }
+
+        ex.Walkers.Add(new Walker
+        {
+            Walk = walk, Table = move.TableIndex, For = Errand.Arriving, Who = move.Plate,
+        });
+        StateHasChanged();
+        return true;
+    }
+
+    /// <summary>#731 · They have reached the chair, so the chair is theirs — said to the ROOM, in the one
+    /// function that answers who is in which top, and the deck re-welded so the drawn room agrees with the
+    /// walked one. A top somebody took in the meantime is not taken twice: the walk simply ends and they are
+    /// not here, which is the honest answer.</summary>
+    private void TheyTakeTheTop(SurfaceExcursion ex, Walker who)
+    {
+        if (ex.HallCameIn.TryAdd(who.Table, who.Who))
+        {
+            RebuildSurfaceDeck();
+        }
     }
 
     /// <summary>#731 · Somebody gets up. Their chair comes back empty in the same breath their legs start —
@@ -419,7 +675,20 @@ public partial class Map
             return false;
         }
 
-        ex.Walkers.Add(new Walker { Walk = walk, Table = move.TableIndex, For = Errand.Leaving });
+        // #731 · …AND ONE OF THE TEN DOES NOT SIMPLY GO. Who that is is Core's law and never a coin flipped
+        // here (CanteenRegulars.ShowsThePassOnTheWayOut); what it changes is the ENDING, which is why it is a
+        // different errand rather than a flag. The gesture is aimed at the chair they are getting up from,
+        // carried now rather than looked up at the doorstep — a lookup there would be a whole floor plan on
+        // every frame of the hold.
+        bool gesture = CanteenRegulars.ShowsThePassOnTheWayOut(move.Plate);
+        ex.Walkers.Add(new Walker
+        {
+            Walk = walk,
+            Table = move.TableIndex,
+            For = gesture ? Errand.ShowingThePass : Errand.Leaving,
+            PassToX = gesture ? from.X : double.NaN,
+            PassToY = gesture ? from.Y : double.NaN,
+        });
         ex.HallStoodUp.Add(move.TableIndex);
         RebuildSurfaceDeck();
         return true;
@@ -621,7 +890,7 @@ public partial class Map
         }
 
         IReadOnlyList<CanteenRegulars.TableSeat> tops =
-            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp);
+            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn);
         if (Escort.AFreeCabinet(tops, from.X, from.Y) is not { } booth
             || TheBooth(hall, booth.Cabinet) is not { } cabinet
             || Escort.WhereSheWaits(in cabinet, hall.Cabinets, DeckPlan.AvatarRadius, walls) is not { } at)
@@ -836,7 +1105,7 @@ public partial class Map
         SurfaceExcursion ex, UndergroundComplex.Amenity a, int tableIndex)
     {
         foreach (CanteenRegulars.TableSeat top in
-            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
+            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn))
         {
             if (top.Index == tableIndex)
             {

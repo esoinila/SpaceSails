@@ -91,7 +91,12 @@ public partial class Map
                 // #731 · …and who has already stood up and walked off this watch. One body, one place: a
                 // regular crossing the hall on real legs must not ALSO be drawn in the chair they left, and
                 // the one function that can be made to agree about it is the one that seats them.
-                ex.HallStoodUp);
+                ex.HallStoodUp,
+                // #731 · …and who has walked IN off the oncoming rota and taken a top. The mirror of the
+                // line above and for the mirror reason: somebody the player watched cross the floor and sit
+                // down has to be drawn in that chair by the same one function, or the room turns over in the
+                // one frame nobody is looking at, which is what it did before this lane.
+                ex.HallCameIn);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.

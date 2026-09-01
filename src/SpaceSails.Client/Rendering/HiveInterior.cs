@@ -76,6 +76,11 @@ public static class HiveInterior
     /// watch. Handed down for the same reason the watch itself is: a body crossing the hall on real legs
     /// must not ALSO be drawn sitting in the chair it left, and the one place that can be made true is the
     /// one function that answers who is in which chair (<see cref="CanteenRegulars.Tables"/>).</param>
+    /// <param name="cameIn">#731 · …and the canteen tops somebody has WALKED IN off the oncoming rota and
+    /// taken this watch, by the plate over their head. The mirror of <paramref name="stoodUp"/> and handed
+    /// down for the mirror reason: a body the player watched cross the floor and sit down must be drawn in
+    /// that chair by the one function that seats anybody, and the console over that top has to be theirs so
+    /// the [E] press meets the person the room is showing.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
@@ -84,7 +89,8 @@ public static class HiveInterior
         IReadOnlyCollection<string>? cubiclesShut = null,
         IReadOnlyCollection<string>? cabinetsDogged = null,
         RoomBooking.Booking? booked = null,
-        IReadOnlySet<int>? stoodUp = null)
+        IReadOnlySet<int>? stoodUp = null,
+        IReadOnlyDictionary<int, string>? cameIn = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -460,7 +466,7 @@ public static class HiveInterior
             // a canteen is, which is #788's own discipline for the seated captain applied to everybody else
             // in the room.
             foreach (CanteenRegulars.TableSeat top in
-                CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp))
+                CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp, cameIn))
             {
                 // #823 · …and HOW MANY of them are at it, which the pen used to have to guess at and
                 // therefore drew as one. Handed down like every other field on this record, off the same

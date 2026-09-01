@@ -802,6 +802,29 @@ public partial class Map
         // been asked yet" — an EMPTY list is an answer (nobody goes), and the two are not spelled the same.
         public IReadOnlyList<Egress.Move>? HallSchedule { get; set; }
 
+        // ── #731 · …AND THE OTHER DIRECTION ───────────────────────────────────────────────────────────
+        //
+        // Issue #731's second customer: "The B1 canteen: rota turnover made visible." A room that only ever
+        // empties is a room being evacuated slowly, and this floor has only ever emptied. The oncoming shift
+        // (CanteenRegulars.ComingOnShift) walks in through the same leaves the outgoing one walks out of, on
+        // the same one arithmetic (Egress.Arrivals), off the same frozen watch.
+
+        // Which top each newcomer has SAT DOWN AT, by the plate the room draws over their head — written on
+        // the frame their legs stop and never on the frame they set off, because a person is not sitting
+        // somewhere they are still walking to. Handed to CanteenRegulars.Tables beside HallStoodUp, so the
+        // drawn room and the pressed room have one opinion about every chair in it.
+        public Dictionary<int, string> HallCameIn { get; } = new();
+
+        // …and who has already been dealt IN this watch, by plate, so a schedule re-read every frame cannot
+        // walk the same person out of the same door twice. Keyed on the plate rather than on the top because
+        // an arrival's top is allotted by this side and its person is the schedule's.
+        public HashSet<string> HallArrived { get; } = new(StringComparer.Ordinal);
+
+        // …and the shift's own list of who turns up, worked out once when a watch begins on this floor, for
+        // the reason HallSchedule is. NULL is a question this room has not been asked yet; EMPTY is an answer
+        // it gave.
+        public IReadOnlyList<Egress.Move>? HallArrivals { get; set; }
+
         // Which watch and floor the sets above belong to. A shift turning over, or a lift ride, empties
         // them — the room forgetting, which is the same rule the table state upstairs already runs under.
         public long WalkersWatch { get; set; } = long.MinValue;

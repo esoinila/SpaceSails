@@ -536,8 +536,13 @@ public sealed class SeatsAreDrawnTests
         // crossing the hall on real legs must not ALSO be drawn in the chair they left, and the one place
         // that can be made true is the one function that answers who is sitting where. The pen learns
         // nothing by it: it is still handed `top.Taken` and still only decides which glyph that is.
+        // #731 (B1 rota) · …AND WHO HAS WALKED IN OFF THE ONCOMING ROTA rides down beside them, for the
+        // mirror reason. The room fills as well as empties now, and a body the player watched cross the floor
+        // and sit down has to be drawn in that chair by the SAME one function — the two halves of the churn
+        // travel together in one call, or the drawn room and the pressed room part company over one chair.
         Assert.Contains(
-            "CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp)", hive, StringComparison.Ordinal);
+            "CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp, cameIn)",
+            hive, StringComparison.Ordinal);
         Assert.Contains("top.Seats, top.Taken, top.Talking, top.Heads", hive, StringComparison.Ordinal);
         Assert.Contains("counter.StoolRow", hive, StringComparison.Ordinal);
 
