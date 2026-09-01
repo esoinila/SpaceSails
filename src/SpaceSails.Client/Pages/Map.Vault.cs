@@ -497,6 +497,12 @@ public partial class Map
                 Title = SaveSlotLabels.CleanTitle(title),
                 Note = SaveSlotLabels.CleanNote(note),
             },
+            // #638 · the void's countdown, and ONLY when one is running. A ship that has never gone dry with
+            // nowhere to go writes no section at all, which is what keeps every save made before this lane
+            // existed byte-identical through a load and a re-save (see Vault.Void).
+            Void = _voidDeclaredDay == VoidRule.ClockNotRunning
+                ? null
+                : new VoidSection { DeclaredDay = _voidDeclaredDay, LastToldDay = _voidLastToldDay },
         };
     }
 
@@ -1082,6 +1088,14 @@ public partial class Map
         {
             SeedDiscoveryWatch();
         }
+
+        // #638 · THE VOID'S CLOCK RESUMES TOO — or does not exist, which is what every save written before
+        // this lane says. The sweep's cache is deliberately NOT restored: what the picture holds is a fact
+        // about a course, and the first tick after the load re-asks it at the clock the captain woke at.
+        _voidDeclaredDay = vault.Void?.DeclaredDay ?? VoidRule.ClockNotRunning;
+        _voidLastToldDay = vault.Void?.LastToldDay ?? VoidRule.NothingToldYet;
+        _voidSweptDay = long.MinValue;
+        _voidHavenInReach = true;
 
         // Loading a saved game shows NONE of the tutorial promotions (owner, 2026-07-18) — set last so
         // even the no-berth ApplyStart("earth") fallback above can't leave the greeting raised.

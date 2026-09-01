@@ -273,6 +273,16 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the satchel / notebook / spread", "view-object-backdrop", Ashore, Exit.AControl,
             b => b.Poke("_showSatchel", true)),
 
+        // #638 · THE VOID'S DAY-19 CARD, in this law on its first day. The ruling binds #761 hard on this
+        // lane ("the player is told clearly, thrice, in escalating register") and the third telling is a card
+        // that stops the game a day before it ends — exactly the sort of surface the 2026-08-24 ruling was
+        // written about. Raised through its own SHIPPING verb (the galley's discipline, #1021):
+        // RaiseTheLongDarkCard is the ONE place the card is built, so a fork that stopped raising it fails
+        // here rather than nowhere. Free-flying, because that is the only world the void can reach a captain
+        // in — DeathNarration.CanHappen allows the cause on her own deck and nowhere else.
+        new("the void's one-day-left card", "view-object-backdrop", FreeFlying, Exit.AControl,
+            b => b.CallOnTheDispatcher("RaiseTheLongDarkCard")),
+
         // #1021 · THE GALLEY, WHICH IS A POP-UP NOW AND SO ARRIVES IN THIS LAW ON ITS FIRST DAY. Owner, of
         // the full-screen desk it replaces: "this UI MUST GO!… keep the features but I want it done in
         // pop-up style like the work the case is." A desk answered to nobody here; a card answers to the

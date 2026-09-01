@@ -299,8 +299,16 @@ public partial class Map
                 ApplyHunterCatch(_hunters[^1]);
                 return;
 
+            case DeathCause.Void:
+                // #638 · IT HAS A LANE NOW. This arm used to fall into the `default` below, whose honest
+                // refusal — that this cause had no lane at all — is the sentence the whole issue was filed
+                // about. The door skips the twenty days and takes the real ending: the same call the watch
+                // makes when the clock runs out, so what a tester sees is what a captain sees.
+                TheVoidTakesHer();
+                return;
+
             default:
-                // Reevers / Joined / Suffocated need somebody out of the ship; Void has no lane at all yet.
+                // Reevers / Joined / Suffocated need somebody out of the ship.
                 ShowPulseMessage(
                     $"🧪 DEV ?death={asked}: not a death that happens on her deck. Add &land=1 (the ground), "
                     + "&wreck=1&land=1 (a derelict) or &secretlab=1&land=1&floor=2 (the Hive).");

@@ -597,7 +597,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
-| **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** |
+| **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** Every cause has a lane now: `?death=void` was the last one that did not, and #638 gave it the twenty-day adrift clock (`VoidRule`). |
 | **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
 | **`?watchers=1`** | **Open the MONOLITH GROUND'S attentive window and cut the dwell from forty seconds to two, so the strange-things-happen beat (#649) can be watched on demand. Stand at the stone. It is rare by design — one visit-window in three, and then only if you stay — and this changes the GATES and nothing else, so what you see is what a captain sees. Pair with `&dock=the-space-bar&body=phobos&site=0&land=1`, and with `&reevers=3` for the variant that needs a pack on the field.** |
 | **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first. #784 adds three WORDS beside the number, for links a person has to read: `?nerve=shot` (0), `?nerve=low` (2), `?nerve=half` (5). Same flag, same clamp — the words are spellings of the number and never a second parser.** |
@@ -706,6 +706,7 @@ place out of four, and nothing that reaches an impact at all.
 /map?death=reevers&wreck=1&land=1                  something has you against a bulkhead
 /map?death=suffocated&secretlab=1&land=1&floor=2   150 m under a moon, in a poured corridor
 /map?death=scuttled&wreck=1&land=1                 the overload you set yourself ran out (#525)
+/map?death=void                                    twenty days adrift ran out (#638) — her own deck only
 ```
 
 The cause is a `DeathCause` name, lowercased: `collector`, `impact`, `reevers`, `joined`, `void`,
@@ -726,7 +727,28 @@ Two things are read off the LIVE state rather than invented, for the same reason
 out (so a full-nerve captain honestly gets the mauled caption, a shattered one the overdraw caption), and
 whether the cause is legal where you are standing — ask for a `collector` death inside a wreck and the law
 substitutes one that can happen there, and the game says so in a DEV pulse rather than inventing a
-character. `?death=void` has no lane yet and says so.
+character.
+
+**#638 · `?death=void` takes a real lane now.** It reported "no lane at all yet" from #636 until 2026-09-01,
+which is what issue #638 was filed about: a cause with a painting, three lines of prose and a headline that
+nothing in the client could ever set. The lane is a CLOCK (`Core/VoidRule.cs`) — she is ADRIFT when reaction
+mass is zero, no burn or arrival step of the plan can still fire, and the plotted course reaches no haven's
+capture; twenty consecutive sim-days of that and the void has her. The dev door skips the twenty days and
+calls the very method the watch calls, so what a tester sees is what a captain sees.
+
+*What a tester should see* on `/map?death=void`: the sepia what-happened card carrying **`death-void.jpg`**
+(a captain adrift, tether parted, the sail receding — the picture nobody had ever seen in play), the headline
+`WHAT HAPPENED — lost to the void`, the caption *"…nothing hunted you. You simply could not get home."*, and
+one of the three `VoidLines` under it. It is legal on **her own deck only** (`CanHappen`, #636), so adding
+`&land=1` gets you the law substituting a ground death and saying so in the DEV pulse — that refusal is
+correct, not a bug.
+
+*Playing the whole clock* rather than staging its end: go dry with nowhere to go and decline the tow. The
+three tellings are a banner + log line on day 0 (*"Reaction mass is spent. Nothing answers the helm."*), a
+second banner on day 10 (*"Half the ledger gone…"*), and a story pop-up card on day 19 (*"The long dark has a
+schedule now. One day remains on it."*). Refuelling, or the course falling into any haven's capture, cancels
+the clock without ceremony — no banner, no card, it simply stops. The twenty is
+`VoidRule.DaysAdrift`, flagged as the owner's dial; the two telling days are derived from it.
 
 #### …and what to look at while you are there — the HOSTED hail (#777)
 
