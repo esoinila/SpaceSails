@@ -362,6 +362,13 @@ public static class DevStarts
         new("☄", "The rock that must not arrive",
             "The asteroid-deflection gig accepted, the rock inbound, ship docked at Ringside — the whole clock running (#394).",
             "/map?deflection=1"),
+        // #663 · THE DEPUTATION, AND THE ONLY ROAD TO IT. The beat shipped with a painted canvas, a cadence
+        // and nobody at all to raise it, and its edge is the crew's own STANDING — which the shipped game
+        // can only cross by losing people on the rock above AND being poor and honest while it happened.
+        // That is a gig's worth of bad dice and a dozen honest filings for one card, so it gets a door.
+        new("🧑‍🔧", "A DEPUTATION — three of them outside your door",
+            "Five of the crew left on the rock and every wreck since filed honestly, so the share is empty and the bunks are too. The crew sheet on the Captain's desk reads PETITION, and the ship's own clock puts three of them in the corridor with their hats in their hands (#663, #394).",
+            "/map?crew=petition"),
         new("💰", "A fat purse",
             "The Sol start with 50,000 credits in the purse, for pricing anything without grinding for it.",
             "/map?credits=50000"),
