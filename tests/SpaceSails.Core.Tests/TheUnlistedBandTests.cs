@@ -248,11 +248,20 @@ public sealed class TheUnlistedBandTests
         // a dozen seeded rolls can invert any of these by luck — a guard that reads one floor's dice would
         // be pinning the seed, not the design, and would go red the first time anything upstream of the
         // roll changed.
+        //
+        // #608 · THE COMPARISON IS BETWEEN THE TWO FLOORS THAT CAN HOLD PAPER AT ALL, which is the hidden
+        // band's own head against the listed building's. It used to read the true bottom against the listed
+        // bottom, and both of those are VACUUM — the owner's rule is that reading and writing do not happen
+        // in a suit, so neither floor holds a file any more and the old pairing compared nothing to nothing
+        // and would have gone green on any build at all. The claim being made here has not changed: the
+        // floors nobody listed are heavier with FILES and no heavier with hardware than the floors that are.
         const int Sample = 600;
         foreach (string body in Sites())
         {
-            int listedLevel = UndergroundComplex.DepthOf(body);
-            int deepLevel = UndergroundComplex.TrueDepthOf(body);
+            const int listedLevel = -1;
+            int deepLevel = UndergroundComplex.BandTop(UndergroundComplex.UnlistedBandOf(body));
+            Assert.True(UndergroundComplex.HoldsPressure(body, deepLevel));
+            Assert.True(UndergroundComplex.HoldsPressure(body, listedLevel));
             Assert.True(UndergroundComplex.IsUnlisted(body, deepLevel));
             Assert.False(UndergroundComplex.IsUnlisted(body, listedLevel));
 
