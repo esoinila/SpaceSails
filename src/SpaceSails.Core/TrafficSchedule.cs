@@ -88,7 +88,10 @@ public static class TrafficSchedule
     // between Mars (2.28e11 m) and Jupiter (7.79e11 m).
     private const double LongHaulThresholdMeters = 4e11;
 
-    private static readonly string[] Callsigns =
+    /// <summary>The hauler names this world's merchant traffic actually flies under. Public since
+    /// #1052 so the port rag can name a hull the reader might have seen on the board outside, instead
+    /// of inventing a second ship-name table that contradicts the one on the scope.</summary>
+    public static IReadOnlyList<string> Callsigns { get; } =
         ["Meridian", "Kestrel", "Long Haul", "Aurora", "Tycho's Due", "Windlass", "Half Hitch", "Barnacle", "Sable", "Pelican"];
 
     // Pods are dumb ballistic compute-core canisters — the pirate's milk run and the tutorial's
@@ -171,7 +174,7 @@ public static class TrafficSchedule
                 : ShortRoutes[rng.NextInt(0, ShortRoutes.Length)];
             var personality = (RoutePersonality)rng.NextInt(0, 3);
             string id = NpcId("npc", wave, i);
-            string callsign = Callsigns[i % Callsigns.Length] + WaveTag(wave);
+            string callsign = Callsigns[i % Callsigns.Count] + WaveTag(wave);
 
             int cargoUnits = rng.NextInt(5, 21);
             if (isMidFlight)
@@ -248,7 +251,7 @@ public static class TrafficSchedule
 
             var personality = (RoutePersonality)rng.NextInt(0, 3);
             string id = NpcId("npc", wave, i);
-            string callsign = Callsigns[i % Callsigns.Length] + WaveTag(wave);
+            string callsign = Callsigns[i % Callsigns.Count] + WaveTag(wave);
             int cargoUnits = rng.NextInt(5, 21);
 
             if (isMidFlight)
