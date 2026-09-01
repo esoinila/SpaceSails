@@ -58,6 +58,44 @@ public static partial class UndergroundComplex
         Relic,
     }
 
+    // ── #608 · PAPER NEEDS AIR ──────────────────────────────────────────────────────────────────────────
+    //
+    // The owner's ruling on why any floor down here is pressurised at all, quoted in full in Air.cs and
+    // load-bearing here: "the thought about the dead floors is that it is very difficult to work in the
+    // suit. So all work would happen out of it. So any room that would house like office work would be
+    // pressurized by that constraint" — "like writing with a pen ... reading documents etc.... that kind of
+    // thing would not happen at all in vacuum as a working environment" — "or any kind of fine motor skill
+    // stuff".
+    //
+    // That is a law about the WORLD and not about a suit's comfort, and this file was contradicting it in
+    // the plainest possible way: InRoom branched on designation, on IsFound and on IsUnlisted, and never
+    // once on air. There was no HoldsPressure in the file. So three floors in every four handed a captain
+    // "📋 Operational paper: rosters, routes, a shipping schedule" out of a room where, by the owner's own
+    // rule, nobody had ever sat down to write a roster — a building saying one thing about itself with its
+    // pressure plate and another with its drawers.
+    //
+    // The fix is the law, once, at the end of the roll rather than as an extra arm inside each weighting:
+    // a paperwork face on a floor that does not breathe was never paperwork. What is there instead is what
+    // the owner says an airless floor IS — "storage, hauling, plant, hard-vacuum process" — so it comes up
+    // as a crate or as nothing, which is the same two answers the rest of the building gives.
+
+    /// <summary>#608 · Does this haul require a floor that BREATHES?
+    ///
+    /// <para>True for the two paperwork hauls and nothing else. <see cref="Haul.Records"/> is rosters and
+    /// schedules and <see cref="Haul.Dirt"/> is a file on somebody: both are the output of a person sitting
+    /// at a desk with a pen, which is exactly the work the owner ruled cannot happen in a suit — so a room
+    /// that holds either is a room somebody worked in out of their suit, and that room is on a pressurised
+    /// floor by construction.</para>
+    ///
+    /// <para><b>What is deliberately NOT here.</b> <see cref="Haul.Equipment"/> is a crate nobody unpacked
+    /// and <see cref="Haul.Relic"/> is a band of alloy on a pallet — storage and hauling are what a vacuum
+    /// floor is FOR, and gating them would empty the very floors the rule says were staffed all day.
+    /// <see cref="Haul.Key"/> is the judgement call and it stays out: an authority card is a token on a
+    /// lanyard, carried by the person who works the doors, and a suit-work floor has doors too. It is also
+    /// the way DOWN (#585) — three of the four designated rooms in this file mint one — so air-gating it
+    /// would not be enforcing a rule about paper, it would be redesigning the descent.</para></summary>
+    public static bool NeedsAir(Haul haul) => haul is Haul.Records or Haul.Dirt;
+
     /// <summary>#614 · WHERE THE THING ON THE PALLET IS, and why it is not a roll.
     ///
     /// <para>Same reasoning as <see cref="KeyRoomFor"/>, for the same reason: a one-in-N object placed by
@@ -190,26 +228,55 @@ public static partial class UndergroundComplex
         //
         // Deliberately NOT more Equipment. If the hidden floor paid in hardware it would be a loot room with
         // a story painted on it, and every captain would end up describing it as "the good level".
-        if (IsUnlisted(bodyId, level))
-        {
-            return face switch
+        Haul rolled = IsUnlisted(bodyId, level)
+            ? face switch
             {
                 1 or 2 => Haul.Nothing,       // still stripped. Somebody cleared this too, and in a hurry.
                 3 => Haul.Equipment,
                 4 or 5 => Haul.Records,
                 6 => Haul.Key,
                 _ => Haul.Dirt,               // a third of the floor is a file on somebody
+            }
+            : face switch
+            {
+                1 or 2 or 3 => Haul.Nothing,
+                4 or 5 => Haul.Equipment,
+                6 or 7 => Haul.Records,
+                8 => Haul.Key,
+                _ => Haul.Dirt,
             };
+
+        // ── #608 · AND THEN THE AIR HAS ITS SAY ──────────────────────────────────────────────────────────
+        //
+        // Both weightings above are the weightings of an OFFICE FLOOR, and they are kept exactly as they
+        // were, because on a floor that breathes they are right — including the hidden band's, whose whole
+        // point is that reaching it pays in information rather than in a bigger number (#592). What changes
+        // is that the roll is now asked against the floor it landed on.
+        //
+        // ONE gate at the end rather than paper faces removed from two tables, and that is the load-bearing
+        // choice: the day somebody adds a sixth thing a person makes with a pen, NeedsAir is the one place
+        // that has to be told, and it will be told in a sentence about what the thing IS rather than in two
+        // switch arms about where it is not.
+        //
+        // WHAT A SUIT-WORK FLOOR HAS INSTEAD is not invented — the owner named it: "storage, hauling, plant,
+        // hard-vacuum process". A crate or an empty room, in the same proportion the rest of the building
+        // uses, off its own seed so that changing this never re-rolls the haul table itself.
+        //
+        // THE FOUR DESIGNATED ROOMS ABOVE ARE NOT REACHED BY THIS, and that is deliberate rather than an
+        // oversight of ordering. They are authored placements that exist precisely because a roll can be
+        // silently absent forever, and #411's standing order sits on THE STANDING ORDER's own plate at B12
+        // of a head office where only every fourth floor breathes. Deleting the head office's one piece of
+        // evidence to enforce a rule about rosters would be trading a stated bug for the exact unstated one
+        // the designations were written against. That floor wanting air is real, and it is the airlock half
+        // of #608, which stays open.
+        if (NeedsAir(rolled) && !HoldsPressure(bodyId, level))
+        {
+            return DiceRule.Roll(DiceRule.Seed($"hive:suit-work:{bodyId}:{level}:{roomIndex}"), 2).Face == 1
+                ? Haul.Equipment
+                : Haul.Nothing;
         }
 
-        return face switch
-        {
-            1 or 2 or 3 => Haul.Nothing,
-            4 or 5 => Haul.Equipment,
-            6 or 7 => Haul.Records,
-            8 => Haul.Key,
-            _ => Haul.Dirt,
-        };
+        return rolled;
     }
 
     /// <summary>Whose file it is, and what is in it. The subject is one of the standing roles a captain
