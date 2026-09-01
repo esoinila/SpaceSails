@@ -167,14 +167,19 @@ public static class CanteenRegulars
     /// clock, and deliberately a WATCH rather than a raw time. See the class docs.</param>
     /// <param name="stoodUp">#731 · The tops whose person has GOT UP AND WALKED OFF this watch, by table
     /// ordinal. See <see cref="Tables"/> for why this exists and why it is not a second rota.</param>
+    /// <param name="cameIn">#731 · …and the other direction: who has WALKED IN off the oncoming rota this
+    /// watch and where they sat down. See <see cref="Tables"/>.</param>
     public static IReadOnlyList<Seated> Sitting(
         string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0,
-        IReadOnlySet<int>? stoodUp = null)
+        IReadOnlySet<int>? stoodUp = null,
+        IReadOnlyDictionary<int, string>? cameIn = null)
     {
         var sat = new List<Seated>();
         foreach ((int table, int who) in Seating(bodyId, level, amenity, watch))
         {
-            if (stoodUp?.Contains(table) == true)
+            // A top somebody has walked in and taken is theirs, whatever the shift dealt it: the walker
+            // reached that chair on the frame it was written, and one chair holds one person.
+            if (stoodUp?.Contains(table) == true || cameIn?.ContainsKey(table) == true)
             {
                 continue;
             }
@@ -182,7 +187,62 @@ public static class CanteenRegulars
             sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
         }
 
+        // …and the newcomers, in TABLE ORDER and never in the caller's dictionary order — a list whose order
+        // depends on the order somebody happened to arrive is a list two frames of one watch disagree about.
+        foreach ((int table, string plate) in InTableOrder(cameIn, amenity.Tables.Count))
+        {
+            if (ByPlate(plate) is { } newcomer)
+            {
+                (double tx, double ty) = amenity.Tables[table];
+                sat.Add(new Seated(tx, ty, newcomer.Plate, newcomer.Line));
+            }
+        }
+
         return sat;
+    }
+
+    /// <summary>#731 · The walked-in, by the room's own table ordinal, in that ordinal's order — and never
+    /// the dictionary's own, which is an implementation detail of the caller's bookkeeping and not a fact
+    /// about a room. Tops outside the room are dropped rather than trusted.</summary>
+    private static List<(int Table, string Plate)> InTableOrder(
+        IReadOnlyDictionary<int, string>? cameIn, int tops)
+    {
+        var ordered = new List<(int Table, string Plate)>();
+        if (cameIn is null)
+        {
+            return ordered;
+        }
+
+        foreach ((int table, string plate) in cameIn)
+        {
+            if (table >= 0 && table < tops)
+            {
+                ordered.Add((table, plate));
+            }
+        }
+
+        ordered.Sort(static (a, b) => a.Table.CompareTo(b.Table));
+        return ordered;
+    }
+
+    /// <summary>#731 · One of the authored cast by their plate, or null for a plate this room did not write.
+    ///
+    /// <para>The lookup exists because a walker carries a PLATE and nothing else — <c>NpcWalk</c> is
+    /// world-blind and holds no cast index — so the room seating somebody who has just walked in has to get
+    /// back from the name over their head to the breath they give a captain who stops at the table. A second
+    /// copy of the line, carried on the walker, would be one person filed under two sentences.</para></summary>
+    public static Character? ByPlate(string plate)
+    {
+        ArgumentNullException.ThrowIfNull(plate);
+        foreach (Character c in Cast)
+        {
+            if (string.Equals(c.Plate, plate, StringComparison.Ordinal))
+            {
+                return c;
+            }
+        }
+
+        return null;
     }
 
     // ── #746 · THE TABLES HAVE SEATS, AND THE SAME LAW SAYS WHO IS IN THEM ────────────────────────────────
@@ -417,9 +477,25 @@ public static class CanteenRegulars
     /// there, and this only says which of them is no longer in the chair. Excursion-scoped and watch-scoped
     /// in the caller, like every other thing the Hive remembers about a shift.</para>
     /// </param>
+    /// <param name="cameIn">
+    /// #731 · …AND WHO HAS WALKED IN OFF THE ONCOMING ROTA, by the top they took.
+    ///
+    /// <para>The mirror of <paramref name="stoodUp"/>, and it exists for the mirror reason. A room whose
+    /// schedule only ever DRAINS is not a room with a metabolism, it is a room being evacuated slowly; the
+    /// same watch that decides who finishes decides who turns up (<see cref="ComingOnShift"/>), and somebody
+    /// who has crossed the floor on real legs and sat down must be drawn in that chair by the one function
+    /// that answers who is in which chair — or the room the player looks at and the room [E] asks about are
+    /// two rooms again.</para>
+    ///
+    /// <para>It is not a second rota either: the shift still says who was dealt this watch, and this only
+    /// says which of the ONCOMING shift got here early and where. Read BEFORE
+    /// <paramref name="stoodUp"/> so that a top somebody vacated and somebody else took reads as taken —
+    /// one chair, one person, whichever of the two moved last.</para>
+    /// </param>
     public static IReadOnlyList<TableSeat> Tables(
         string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0,
-        IReadOnlySet<int>? stoodUp = null)
+        IReadOnlySet<int>? stoodUp = null,
+        IReadOnlyDictionary<int, string>? cameIn = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -438,7 +514,15 @@ public static class CanteenRegulars
             (double tx, double ty) = amenity.Tables[i];
             int seats = i < bill.Count ? bill[i] : SeatCounts[0];
 
-            if (stoodUp?.Contains(i) == true)
+            if (cameIn?.TryGetValue(i, out string? walkedIn) == true && ByPlate(walkedIn) is { } newcomer)
+            {
+                // #731 · Somebody came out of a leaf that does not open for the captain, crossed the floor and
+                // sat here. They are one of the ten and they are one person, exactly like a regular the shift
+                // dealt — the only thing different about them is that the player watched them arrive.
+                tops.Add(new TableSeat(
+                    i, tx, ty, seats, newcomer.Plate, newcomer.Line, Heads: RegularHeads));
+            }
+            else if (stoodUp?.Contains(i) == true)
             {
                 // They stood up. The top is a top with nobody at it, which is exactly what it is.
                 tops.Add(new TableSeat(i, tx, ty, seats, null, null));
@@ -486,6 +570,93 @@ public static class CanteenRegulars
     /// <summary>How many cabinet tops this room adds, for the list's capacity.</summary>
     private static int CabinetRoom(UndergroundComplex.Amenity amenity) =>
         amenity.Hall?.Cabinets.Count ?? 0;
+
+    // ── #731 · THE ROTA TURNS OVER, AND THE ROOM SHOWS IT ─────────────────────────────────────────────────
+    //
+    // Issue #731's second customer, in the issue's own words: "The B1 canteen: rota turnover made visible —
+    // the agency temp leaving at watch change through the staff door, showing the pass nobody inside asks
+    // for."
+    //
+    // The room has emptied on a schedule since #731 v1 and has never once FILLED. That is half a metabolism,
+    // and the half it is missing is the one the board on this room's own wall is about: ROTA — WEEK 31. This
+    // class has always known who the next shift puts in here; it simply produced them by rebuilding the room
+    // at the stroke of the watch, so the turnover happened in the one frame nobody was looking at.
+
+    /// <summary>
+    /// #731 · WHO THE ONCOMING ROTA PUTS IN THIS ROOM THAT THIS WATCH DOES NOT — the people who WALK IN.
+    ///
+    /// <para>The next watch's own seating, less everybody this watch already seated. Nothing new is rolled:
+    /// this is the rota reading one line further down the sheet, which is exactly what a rota is for and what
+    /// the noticeboard in this room says it does. A person who is on both shifts is not "arriving" — they are
+    /// sitting there — and a person on neither is not in the building.</para>
+    ///
+    /// <para><b>Deterministic in (site, floor, watch) and nothing else.</b> <see cref="Seating"/> is seeded on
+    /// the site and the shift, so this is too, and the same watch names the same oncoming faces in the same
+    /// order on every machine forever. It reads no clock: the caller freezes the watch when the floor is drawn
+    /// (#709) and hands that number here, exactly as it does to <see cref="Tables"/>.</para>
+    ///
+    /// <para>Plates, and not cast indices, because a plate is what the walker carries and what the room draws
+    /// over their head. Empty for every room that is not the one people sit in — which is the owner's B1
+    /// ruling asked of <see cref="PeopleSitHere"/> rather than re-derived.</para>
+    /// </summary>
+    /// <param name="bodyId">The site.</param>
+    /// <param name="level">The floor.</param>
+    /// <param name="amenity">The room, as Core carved it.</param>
+    /// <param name="watch">The shift, frozen when the floor was drawn.</param>
+    public static IReadOnlyList<string> ComingOnShift(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        var accountedFor = new HashSet<int>();
+        foreach ((int _, int cast) in Seating(bodyId, level, amenity, watch))
+        {
+            accountedFor.Add(cast);
+        }
+
+        var coming = new List<string>();
+        foreach ((int _, int cast) in Seating(bodyId, level, amenity, watch + 1))
+        {
+            // Add() answers false for somebody this watch already has AND for a face the oncoming sheet
+            // happens to name twice, so nobody walks into a room they are already sitting in.
+            if (accountedFor.Add(cast))
+            {
+                coming.Add(Cast[cast].Plate);
+            }
+        }
+
+        return coming;
+    }
+
+    /// <summary>
+    /// #731 · <b>THE ONE EXIT THAT IS A GESTURE.</b>
+    ///
+    /// <para>The issue names the beat and names the person: <i>"the agency temp leaving at watch change
+    /// through the staff door, showing the pass nobody inside asks for."</i> They are the one in this cast who
+    /// has been here a week, whose name on the rota is not the name they gave at the door
+    /// (<c>CanteenBoard</c>'s nights-slot-four notice, and their own single breath), and who therefore still
+    /// believes a staff door is a thing you are asked to justify. Everybody else in the room has learned that
+    /// nobody is asking.</para>
+    ///
+    /// <para><b>Nothing here says any of that.</b> The gesture is the whole content: they stop at a leaf the
+    /// captain's own TRY is refused at, turn back to a room that does not look up, hold, and go. No line of
+    /// dialog explains it, which is law three on this issue and the reason this is a predicate about WHO
+    /// rather than a string about why.</para>
+    ///
+    /// <para>Asked of <see cref="CanteenTable.WhoIs"/> — the one place in this codebase that turns a plate
+    /// into one of the named three — so the day the temp's plate is re-worded there is one author of it.</para>
+    /// </summary>
+    public static bool ShowsThePassOnTheWayOut(string? plate) =>
+        CanteenTable.WhoIs(plate) == CanteenTable.Who.Temp;
+
+    /// <summary>#731 · How long the pass is held up to a room that does not answer, in seconds of the same
+    /// clock the walk itself is stepped on.
+    ///
+    /// <para>Three. Long enough that a captain anywhere in the hall can see somebody has stopped at the staff
+    /// door and turned round; short enough that it reads as a formality being observed rather than as a body
+    /// that has got stuck in a doorway. It is counted in the walker's own <c>dt</c> and never against a wall
+    /// clock, so the walk and the pause are on one clock and a frame cannot fall between them.</para></summary>
+    public const double PassHeldSeconds = 3.0;
 
     /// <summary>
     /// #709/#757 · IS THIS THE ROOM PEOPLE ARE IN? The owner's B1 ruling, as a question anybody may ask.

@@ -223,6 +223,16 @@ public static class Egress
     /// the first <see cref="LastCallFraction"/> of the shift and a door out of the locked list. Cabinets are
     /// skipped — nobody is in one — and so is any top the room did not seat.</para>
     ///
+    /// <para><b>#731 (B1 canteen) · AND THE CROWD IS SKIPPED, because the crowd is DATA.</b> #751 wrote that
+    /// law on the day it built them: <i>"A background patron is a plate, a bark and a chair. No pathing, no
+    /// schedule, no per-frame anything… WASM perf is a law here and this is how it is kept: by there being
+    /// nothing to run."</i> This projection was feeding them into the schedule anyway, and the cost was not
+    /// only the frames: a hall holds a dozen background tops against the rota's three, so the two departures a
+    /// shift deals were the crowd's four times out of five and the ROTA'S OWN TURNOVER — the thing this room's
+    /// noticeboard is about, and the thing #731 names as this floor's whole customer — was invisible. Measured
+    /// before the clause: 84 named departures against 332 the crowd took, and the agency temp got out of the
+    /// room three times in two hundred and forty shifts.</para>
+    ///
     /// <para>Returned in the order they LEAVE rather than in table order, because a caller stepping down the
     /// list as the watch runs wants the next one at the front, and sorting it here means nobody sorts it
     /// twice. At most <see cref="MostAtOnce"/> survive the cut, for the reason written on that
@@ -247,8 +257,9 @@ public static class Egress
         var seated = new List<Occupant>(tops.Count);
         foreach (CanteenRegulars.TableSeat top in tops)
         {
-            // Cabinets are skipped — nobody is in one — and so is any top the room did not seat.
-            if (top is { Taken: true, Quiet: false, Plate: { Length: > 0 } plate })
+            // Cabinets are skipped — nobody is in one — and so is any top the room did not seat, and so is
+            // the crowd, which has no schedule by #751's own law (see the docs above).
+            if (top is { Taken: true, Quiet: false, Stranger: false, Plate: { Length: > 0 } plate })
             {
                 seated.Add(new Occupant(top.Index, plate));
             }

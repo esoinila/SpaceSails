@@ -75,7 +75,7 @@ public partial class Map
             foreach (UndergroundComplex.Amenity a in floor.Amenities)
             {
                 foreach (CanteenRegulars.TableSeat top in
-                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
+                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn))
                 {
                     if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
                     {
@@ -194,7 +194,7 @@ public partial class Map
             foreach (UndergroundComplex.Amenity a in floor.Amenities)
             {
                 foreach (CanteenRegulars.TableSeat top in
-                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
+                    CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn))
                 {
                     if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
                     {

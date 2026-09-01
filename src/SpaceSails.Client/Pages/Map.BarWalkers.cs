@@ -38,15 +38,21 @@ namespace SpaceSails.Client.Pages;
 /// about either fact. That is §13.8 and it is the whole of #731's beat, arriving at last in the room the owner
 /// actually drinks in.</para>
 ///
-/// <h3>What is NOT here yet, stated plainly</h3>
+/// <h3>The seat this file was written without, and now has</h3>
 ///
-/// <para><b>There is no way to sit down in a docked bar.</b> Every seat in this game is opened through
-/// <c>Seating.TakeThisSeat</c>, all seven sites of it are gated on a <c>SurfaceExcursion</c>, and a docked
-/// berth has none — the bar's seven tops are drawn dressing with no chairs and no console. So
-/// <see cref="ApproachTheTable"/> exists, is wired, and answers the honest thing today: nobody is sitting
-/// alone, therefore nobody is crossed to, therefore the visitor waits at the counter. The gate is a
-/// <c>Func&lt;bool&gt;</c> and not a private opinion precisely so that the day the haven bar grows a seat, one
-/// caller changes and this file does not.</para>
+/// <para>This paragraph said <i>"there is no way to sit down in a docked bar"</i> until #979/#981 built one.
+/// It was true when #977 wrote it — every seat in this game is opened through <c>Seating.TakeThisSeat</c>, all
+/// seven sites of it were gated on a <c>SurfaceExcursion</c>, and a docked berth has none, so the bar's tops
+/// were drawn dressing with no chairs and no console. <b>The eighth site closed that gap</b>
+/// (<c>Seating.BarTop.cs</c>, opened off the page's own <c>TheBarTopUnderfoot</c> rather than off an
+/// excursion; <c>Map.ShipSeats.cs</c> later widened the same one answer to the boat's own cantina and desks),
+/// and the count in <c>EverySeatTheCaptainTakesFingerprintsTheSameTests.ThereIsOnePlaceASittingIsOpened</c>
+/// moved 7 → 8 to say so.</para>
+///
+/// <para>So <see cref="ApproachTheTable"/>'s gate does what it was shaped for: <c>TheCaptainIsSittingAloneIn
+/// TheBar</c> answered false at every berth in the game on the day it was written and answers TRUE now, and
+/// exactly one caller changed. The gate is a <c>Func&lt;bool&gt;</c> and not a private opinion precisely so
+/// that this file did not have to.</para>
 /// </summary>
 public partial class Map
 {

@@ -247,6 +247,29 @@ the field book. What it teaches, by observation and never by tooltip: #746's fil
 **First entry into the hall** raises **🍸 THE HALL** (once per excursion). It belongs to the branch office's
 `CANTEEN 1` — the head office's dining room has its own register and its own arrival card (#411).
 
+**#731 (B1 canteen) · THE ROTA TURNS OVER WHILE YOU ARE STANDING IN IT.** Until this lane the hall only ever
+*drained*: a third of its sitters finished and walked out through a leaf that does not open for you, and nobody
+ever came the other way, so the shift change happened in the one frame the floor was rebuilt in. It now runs
+**both directions on one schedule**, off the same frozen watch — somebody the next rota puts in this room comes
+**out** of one of those same leaves, crosses the floor on real legs, and takes a top; the chair is theirs on the
+frame they reach it, and `[E]` at them gets the ordinary regular's scene. **The crowd does not move**, and never
+should have (#751: *"a plate, a bark and a chair… no pathing, no schedule"*); what walks is the rota's own ten,
+which is what makes the turnover legible at all.
+
+**What a tester should see**, standing anywhere in the hall on a shift with churn in it
+(`?tablescene=1&watch=N` — try `0`, `3`, `4`, `8`): a figure stands up, a chair goes empty in the same breath,
+they cross the floor unhurried and go through a back leaf; a while later somebody comes **out** of a leaf and
+sits at a top that was bare. **Stand in the doorway** and the one walking to it stops a body-width short, turns,
+and looks at you — that is content, not a stall; step aside and the same walk finishes itself. **Nothing is ever
+said about any of it:** no pulse, no card, no line, and your own `[E]` at that leaf is refused exactly as it
+always was.
+
+**And one of the ten does something else.** On the shifts the rota names the **agency temp** to finish
+(`watch=4`, `10`, `28`, `34`, `44`, `46`, `49` on luna are seven of them), they reach the staff door, **stop,
+turn back to the room, and hold the pass up to it for three seconds** — and nobody in the room looks up, asks,
+or answers. It is deliberately the floor's rarest beat, roughly one shift in eleven. If anything on screen
+changes while they are holding it, that is the bug.
+
 **B17's staff mess is hall-class too, and it is the same carve** — one implementation, two customers, and the
 only line where they differ is the seat target. The mess's is derived: `ImpliedComplement(body)` = the floors
 the directory **admits to**, times four heads a department. A twenty-storey clinic runs eighty people, a

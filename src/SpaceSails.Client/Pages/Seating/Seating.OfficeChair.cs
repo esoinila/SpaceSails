@@ -363,7 +363,7 @@ public partial class Map
             foreach (UndergroundComplex.Amenity a in floor.Amenities)
             {
                 IReadOnlyList<CanteenRegulars.Seated> sat =
-                    CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp);
+                    CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn);
                 if (sat.Count > 0)
                 {
                     return sat;
