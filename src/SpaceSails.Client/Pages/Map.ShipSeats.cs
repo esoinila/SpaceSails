@@ -44,7 +44,23 @@ namespace SpaceSails.Client.Pages;
 /// aboard is always the silence, and the silence is the ship's own words
 /// (<see cref="SittingAlone.NobodyCameAboard"/>).</para>
 ///
-/// <para><b>And there is no counter and no excursion.</b> No pour can be bought aboard, so the register is
+/// <h3>#1040 · …and then she grew a counter</h3>
+///
+/// <para><b>Owner, on the same deck:</b> <i>"Our on ship bar can be upgraded to match the other bars... the
+/// UI represents code long time ago."</i> The room had three rings, a galley console standing in the middle
+/// of them and no counter at all — in a room whose own backdrop is a photograph of a counter with a row of
+/// stools down it. #1040 built the counter (<see cref="ShipLayout.CantinaCounter"/>, a real wall you belly
+/// up to, the haven bars' own idiom since #247) and bolted a row of stools along it, and it added a desk to
+/// CABIN 2 beside CABIN 1's.</para>
+///
+/// <para><b>A stool changes exactly one thing, and it is the RUNG.</b> The sitting is the same sitting
+/// through the same one method; <c>SeatedIn</c> reads the flag and answers <c>BarStool</c>, which is where
+/// the gumshoe rule lives — so the case does not come out at the captain's own bar either, and the refusal
+/// is the shipped sentence said out loud. That is the intended outcome and not a gap: this lane put a seat
+/// on a rung that already knew what to say, and added no predicate of its own.</para>
+///
+/// <para><b>And there is nobody behind the counter, and no excursion.</b> No pour can be bought aboard — she
+/// has a bar and no barkeep, which is what #1022's tender is for and is a different lane — so the register is
 /// decided by the watch alone; and the short rest's ledger lives on an excursion this deck does not have, so
 /// the wait beat says its line and files no pips. That gap is named where it is taken, in
 /// <c>Seating.Table.cs</c>'s wait beat, rather than papered over with a second ledger.</para>
@@ -97,20 +113,77 @@ public partial class Map
 
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
 
-        // ── THE DESK IN CABIN 1 ──────────────────────────────────────────────────────────────────────
+        // ── THE STOOL ROW AT HER COUNTER ─────────────────────────────────────────────────────────────
         //
-        // Owner: "Why no table in cabin either?" It is the one seat aboard behind a door, which is what
-        // makes it the ship's CABINET rung — SeatedIn reads Quiet, and the case may be spread there
-        // unconditionally. Cabinet stays 0: a cabinet NUMBER is a leaf in a hall the counter can see, and a
-        // berth aboard your own ship is nobody's business to dog but yours.
+        // Owner, on 7 Deck: "Our on ship bar can be upgraded to match the other bars... the UI represents
+        // code long time ago." The counter it needed is Core's (ShipLayout.CantinaCounter) and so is the row
+        // bolted along it; what is decided here is WHICH STOOL, and the answer is the one the captain is
+        // standing at. The console is a RUN down the whole counter (#791's E-bus), so [E] anywhere along it
+        // answers — and answering with a fixed stool would sit a man at the far end of the bar from where he
+        // walked up, which is the drawn room and the walked room disagreeing.
+        //
+        // A stool is NOT sounded against the stone the way a top's chair is: a chair is a place BESIDE a
+        // fixture and has to be found, and a stool IS the fixture. The square is the row's own, and that it
+        // is a square a body fits on is a law with a guard on it (TheCounterAboardHasStoolsTests) rather
+        // than an arithmetic done twice.
+        if (spot.Kind == DeckPlan.ConsoleKind.ShipStool)
+        {
+            IReadOnlyList<DeckReachability.Point> row = ShipLayout.CantinaStools;
+            int nearest = -1;
+            double best = double.MaxValue;
+            for (int i = 0; i < row.Count; i++)
+            {
+                double dx = row[i].X - _avatarX, dy = row[i].Y - _avatarY;
+                double d2 = (dx * dx) + (dy * dy);
+                if (d2 < best)
+                {
+                    best = d2;
+                    nearest = i;
+                }
+            }
+
+            if (nearest < 0)
+            {
+                return null;
+            }
+
+            return new BarTopUnderfoot(
+                nearest, $"ship:cantina:stool:{nearest}", ShipWatch, row[nearest].X, row[nearest].Y,
+                ShipLayout.CantinaStoolSeats, SittingAlone.ShipCounterSetting, SittingAlone.OwnStoolPlate,
+                Quiet: false, Aboard: true, Stool: true);
+        }
+
+        // ── THE DESK IN A BERTH ──────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "Why no table in cabin either?", and on #1040: "CABIN 2 could take a desk like CABIN 1's."
+        // It is the one KIND of seat aboard behind a door, which is what makes it the ship's CABINET rung —
+        // SeatedIn reads Quiet, and the case may be spread there unconditionally. Cabinet stays 0: a cabinet
+        // NUMBER is a leaf in a hall the counter can see, and a berth aboard your own ship is nobody's
+        // business to dog but yours.
+        //
+        // WHICH BERTH is matched back against Core's own list rather than being assumed, because there are
+        // two of them now: a key that named the wrong cabin would file two sittings in one drawer, and a key
+        // that named neither would be the sitting having no identity at all.
         if (spot.Kind == DeckPlan.ConsoleKind.ShipDesk)
         {
-            var desk = new DeckReachability.Point(spot.X, spot.Y);
-            return BesideThisTop(desk, walls) is not { } deskChair
-                ? null
-                : new BarTopUnderfoot(
-                    0, "ship:cabin:desk", ShipWatch, deskChair.X, deskChair.Y, ShipLayout.CabinDeskSeats,
-                    SittingAlone.ShipCabinSetting, SittingAlone.OwnDeskPlate, Quiet: true, Aboard: true);
+            for (int i = 0; i < ShipLayout.DeskCabins.Length; i++)
+            {
+                string cabin = ShipLayout.DeskCabins[i];
+                DeckReachability.Point desk = ShipLayout.CabinDeskStationIn(cabin);
+                if (Math.Abs(desk.X - spot.X) >= 0.5 || Math.Abs(desk.Y - spot.Y) >= 0.5)
+                {
+                    continue;
+                }
+
+                return BesideThisTop(desk, walls) is not { } deskChair
+                    ? null
+                    : new BarTopUnderfoot(
+                        i, ShipLayout.CabinDeskKey(cabin), ShipWatch, deskChair.X, deskChair.Y,
+                        ShipLayout.CabinDeskSeats, SittingAlone.ShipCabinSetting, SittingAlone.OwnDeskPlate,
+                        Quiet: true, Aboard: true);
+            }
+
+            return null;
         }
 
         // ── THE TOPS IN HER CANTINA ──────────────────────────────────────────────────────────────────

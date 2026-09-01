@@ -225,6 +225,36 @@ enabled/disabled incorrectly relative to your credits.
 **Broken looks like:** no wobble after 3 rapid tots, wobble blocking interaction entirely, or `F`
 doing something.
 
+### 10b. Her cantina is a bar now (#1040)
+
+Owner, on 7 Deck: *"Our on ship bar can be upgraded to match the other bars... the UI represents code
+long time ago."*
+
+1. On 7 Deck, look at the **CANTINA**. It should read as a bar rather than as three rings on an empty
+   floor: a **counter** down its aft side with a filled slab for its top and the **back-bar** shelving
+   behind it, a **row of three stools** tucked in along its front, the three round **tops moved under
+   the panoramic window** (all three take a seat now, where one used to be refused), and the
+   **CANTINA** console over on the forward window corner where the galley machines are — it opens the
+   same galley card it always did.
+2. Walk into the counter. Confirm it **stops you** — you belly up to a bar, you do not walk through
+   one — and that you can still get round its near end into the servery behind it.
+3. Walk to a stool and press `E`. Confirm you sit **on the stool you walked up to** (try the near one
+   and the far one), the strip says **🪑 YOUR OWN COUNTER**, and **SIT A WHILE** answers in the
+   counter's own words rather than with a line about the chair opposite.
+4. With papers in the sleeve, press **Work the case** on that strip. Confirm it is **refused out
+   loud** — *"Not at the bar. Everything you put on this counter is read by the keep…"* That is
+   correct and it is the joke: a stool is the bar-stool rung, and the gumshoe rule holds at your own
+   bar too.
+5. Walk four paces to a top under the window, sit, and press **Work the case** again. Confirm it
+   **opens** — the refusal is about the seat, never about the boat.
+6. Walk to **CABIN 2** and press `E` at its **DESK ✍** (it has one now, like CABIN 1). Confirm the
+   cabinet rung, the case spreading unconditionally, and that `E` from the chair opens the desk
+   rather than putting you to bed.
+
+**Broken looks like:** a counter you walk through; a servery you cannot get behind; `[E]` at the far
+stool seating you at the near one; the case opening at the counter; the same wait line twice; a top
+under the window with no seat on it; or one desk where two berths are drawn.
+
 ---
 
 ## 11. Boarding run minigame

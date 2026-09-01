@@ -366,25 +366,38 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
     /// against the OLD pins: <b>all sixteen reproduce byte for byte, 4/4 green</b>. So the only difference
     /// between the two sides is three added lines at their defaults — no line removed, none changed, and no
     /// seat read, pulse or card moved at all.</para>
+    ///
+    /// <para><b>#1040 · ALL SIXTEEN AGAIN, ONE FIELD THIS TIME, AND THE SAME PROOF.</b> Owner, on the same
+    /// deck: <i>"Our on ship bar can be upgraded to match the other bars... the UI represents code long time
+    /// ago."</i> Her cantina grew the counter its own backdrop has always drawn, and a counter has stools —
+    /// so <c>TableTalk</c> gained <c>Stool</c>, the one fact that moves a sitting onto the <c>BarStool</c>
+    /// rung, where the gumshoe rule refuses the spread out loud. Every row here is ashore on a Hive floor
+    /// and not one of them is a counter stool, so it reads its default in all sixteen:
+    /// <c>Stool = False</c>.</para>
+    ///
+    /// <para><b>Proved exactly as the three above were.</b> The property sweep in <see cref="Transcribe"/>
+    /// was temporarily filtered to skip <c>Stool</c> and the suite re-run against the OLD pins: <b>all
+    /// sixteen reproduce byte for byte, 4/4 green</b>. One added line at its default; nothing removed,
+    /// nothing changed, and not one seat read, pulse or card moved.</para>
     /// </remarks>
     private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
     {
-        ["a chair in a ring office"] = "c30bfb1ac6c76e961ce40257e17508fa5dda1671425c621e1574ffb6d973e655",
-        ["a cubicle, with the catch still open"] = "745a236442d53c3704ffc65b02290363f69c4592eab0a298e77e760f6fe7fb4d",
-        ["a free top in a cabinet"] = "79f9e4d2647a9d961fd08345ec7038dfb33c5b3806fe313ccb2b30d68c58f644",
-        ["a free top in the hall"] = "398b3bc777f98e6f642c7579c2c7cb80afca2a6da4e850f6a964ead10724d742",
-        ["a park bench"] = "bccbab6b18ddf5fb30403e7c8e9aa9771fd64eda619ac879b3fb4d62430dc6c8",
-        ["a park bench with somebody on the far end"] = "6729c10af20cff94d3885a40822c0a8618a5a1bb821123b295985f567f154215",
-        ["a stool at a chamber worktop"] = "223a7e4780de1b17984630347387e775dcbbea142ec268b94e7755ba78bed2fa",
-        ["a top somebody is already at"] = "18d3e32c88c5f54b0f5ed48241b0321bfc65a4356cbb5067ff5956c1770cdf40",
-        ["a chair in a ring office (with a pour in front of you)"] = "f5b9f1fe6dfd071eece574bd25ffcf6675106a83911e962118702ff540597a70",
-        ["a cubicle, with the catch still open (with a pour in front of you)"] = "9e90e0ba5bc1deac80802c6f18a5892a63d0b3a2d35cda0f22e5c1c17181b27b",
-        ["a free top in a cabinet (with a pour in front of you)"] = "caad548f1511b29cde6cb360e00235122bfb08ade5512d3569df44db05707049",
-        ["a free top in the hall (with a pour in front of you)"] = "243bf2051ce058704d790b40cc530afd51ecea39046062d32f7258471cf5fdde",
-        ["a park bench (with a pour in front of you)"] = "dcfb7cea4606bf894b344a2a63226305cb9cee03faf80263eee4d379d362bc39",
-        ["a park bench with somebody on the far end (with a pour in front of you)"] = "f00675e11c4aba0d3dcd954652d4b0c69b6a767d2676d1be34ddeaf803d25410",
-        ["a stool at a chamber worktop (with a pour in front of you)"] = "d122152afed728939746cdc2f7ef4dea709a301d55e27542108fd684ad7559a8",
-        ["a top somebody is already at (with a pour in front of you)"] = "97597e98bc48c2629e660300cc29edc1a014ca00e88b16fc3c3b3ec064fba664",
+        ["a chair in a ring office"] = "c75279333d9082d470915ef678642c21411e8b0a7a174938999ff62d7021f4fa",
+        ["a cubicle, with the catch still open"] = "173a3b2bcc1f188ed16e48fee7823c229cc4c021f05cae64f4d6f2868306c292",
+        ["a free top in a cabinet"] = "b69a442ef2fe80a74e4b4aaf9257ecee4348df7e4e9fc61eb8ac16437043b0e6",
+        ["a free top in the hall"] = "dd616769228fe0bafb5f5b93bb35692487ac174681d4717753f811a9c72773cf",
+        ["a park bench"] = "fa57822e7a363dbcbb8504c308941d74aa6f86bbfb09ca90f82ec464cdb8b90b",
+        ["a park bench with somebody on the far end"] = "836e60073e4d1a5c05dc29d62f7850f4b6f94af6ad7ed3f7ae209b4404652225",
+        ["a stool at a chamber worktop"] = "de2b4fd8efd583da544e85071739d59e77018c12b42a334966039cf62b3c337b",
+        ["a top somebody is already at"] = "7bfb8d97366f89df7c967b213f2593be914e3a99b8272cd0aea61d434a879f5f",
+        ["a chair in a ring office (with a pour in front of you)"] = "cad6977b2831110ee3de5e121753d5aef5f686609f4deca5a6023e7a2202ffc1",
+        ["a cubicle, with the catch still open (with a pour in front of you)"] = "9d5cc662d21edaaff1ef67bebdb01c98315654ac0ade3f2e5d752c9001db462d",
+        ["a free top in a cabinet (with a pour in front of you)"] = "a29c82a5ab6345ee821a287f8f222837431806312fbbcd2f3a9fd4a4ab50152f",
+        ["a free top in the hall (with a pour in front of you)"] = "417a72f0f24c7057e1ec86610263309811b555dbd45d20c16cfd815d2f35f5bc",
+        ["a park bench (with a pour in front of you)"] = "aeac9b9588e20a5b5a270efeae5cc045df11aed7dcb50eb632bf6c5191b38a78",
+        ["a park bench with somebody on the far end (with a pour in front of you)"] = "05965aa0bcec2384b529168760c08385f9ec232bbaaea96b2bacb81defc148b3",
+        ["a stool at a chamber worktop (with a pour in front of you)"] = "dee4a7aa8ecf683f6a2074d085e8ac2e651999178fa7ed00f5107bd82eac4ea0",
+        ["a top somebody is already at (with a pour in front of you)"] = "9a8fda8845ebe3db233fe1bea2037373ae4c08928208476b57325ffa6e17d2c5",
     };
 
     /// <summary>

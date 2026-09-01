@@ -938,7 +938,14 @@ public static class HavenInterior
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
                               : y > ShipHatchY ? "GANGWAY"
                               : DeckPlan.Ship.Location(x, y),
-            doors: doors.ToArray(), shipFixtures: true, followCam: true, tables: tables.ToArray());
+            doors: doors.ToArray(), shipFixtures: true, followCam: true, tables: tables.ToArray(),
+            // #1040 · …AND THE SHIP'S OWN COUNTER TRAVELS WITH HER. A docked complex is her plan with a
+            // station welded onto it, and her walls, doors, consoles, labels, backdrops and tops are all
+            // seeded from it above. Her stool row and her counter's fill were the two she would have arrived
+            // without — so the moment she clamped on, the seats [E] still answers at would have stopped
+            // being drawn: the walked room and the drawn room disagreeing, which is this repository's third
+            // named bug class with a bar stool under it.
+            stools: ship.Stools, furniture: ship.Furniture);
     }
 
     // Ship's three droids, the immigration officer, the four seated bar regulars (issue #410, roved by the

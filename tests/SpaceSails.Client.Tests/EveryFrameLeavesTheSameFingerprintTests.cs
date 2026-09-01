@@ -323,6 +323,39 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// — see the exclusions above; <c>NearestHoldsTheNeighbourhoodTests</c> is the guard that watches the
     /// slot itself hold still, across thirty-two posts.) A re-pin that had moved a pen, a call count, or any
     /// field outside those six would have been a different lane's bug wearing this lane's clothes.</para>
+    ///
+    /// <para><b>#1040 · 24 OF THE 30 WERE RE-RECORDED, and it is #1016's kind: the PEN moved, because a room
+    /// grew furniture.</b> Owner, on 7 Deck: <i>"Our on ship bar can be upgraded to match the other bars...
+    /// the UI represents code long time ago."</i> Her cantina got the counter its own backdrop has always
+    /// drawn — a real wall you belly up to, a stool row along it, filled slabs for its top and its back-bar,
+    /// the galley console off the middle of the floor, and her three tops moved under the window (all three
+    /// are takeable now, where the label law used to refuse the one standing under the galley desk). CABIN 2
+    /// got the desk CABIN 1 has.</para>
+    ///
+    /// <para><b>The diff is the old pins against the new ones — the pinned files ARE the base's
+    /// fingerprints — and exactly three row kinds moved:</b></para>
+    /// <list type="number">
+    ///   <item><b><c>sweep</c>, on 24 rows</b>, with the field count unmoved at <b>743</b>: no page field was
+    ///   added or removed, and what changed inside it is her plan, which every world whose <c>_deckPlan</c>
+    ///   is hers carries. <b>All five <c>AHiveFloorWithAPatrol</c> rows are byte-identical</b>, because a
+    ///   Hive floor's plan is not hers.</item>
+    ///   <item><b><c>the seat</c>, on the four <c>ACaptainInAChair</c> rows that hold one</b> — 1111 → 1121
+    ///   chars, which is one added <c>TableTalk</c> field at its default (<c>Stool=no</c>).
+    ///   <c>ACaptainInAChair/APlannedRoute</c> is byte-identical: that row walks, and #847 stands you up
+    ///   before it does.</item>
+    ///   <item><b><c>walked-view pen</c>, on the 15 rows that paint her deck</b> — every one by <b>exactly
+    ///   +2760 calls</b>, and the three <c>APlannedRoute</c> rows (twice the frames) by exactly +5520. That
+    ///   is <b>23 marks a frame</b> over 120 frames, and every one of the 23 was MEASURED rather than
+    ///   reasoned about, by re-recording the row with each piece taken out: <b>10</b> for the two filled
+    ///   fittings, a fill and four keyline segments each (39397 → 38197 with the furniture dropped);
+    ///   <b>3</b> for the counter's service rail, #791's own rail and ticks (38197 → 37837 with the run
+    ///   dropped); <b>6</b> for three added consoles at a marker and a label each; <b>3</b> for the three
+    ///   stools; and <b>1</b> for the counter's wall. The same 23 shows up next door in
+    ///   <c>EveryFrameHashesTheSameTests</c>, where <b>13 cases moved and every one moved by exactly
+    ///   +23</b> — her own three, the seven havens and the three excursions that carry her deck.</item>
+    /// </list>
+    /// <para><b>No ledger row moved, no <c>map-frame buffer</c> moved, and not one wreck, B-floor or dark
+    /// row moved at all.</b></para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

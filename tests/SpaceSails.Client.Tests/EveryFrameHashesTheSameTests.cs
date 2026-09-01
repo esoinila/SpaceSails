@@ -468,16 +468,16 @@ public sealed class EveryFrameHashesTheSameTests
 
     private static readonly Dictionary<string, (int Calls, string Sha)> Pinned = new(StringComparer.Ordinal)
     {
-        ["ship · under way"] = (341, "d43d37b12ccdfcb60b3ed3cceacf2a3f49c98546db42879ca8f212728948aa59"),
-        ["ship · docked, the shuttle away and the machine stalling"] = (315, "5286b06bb9df81273c03411d417ec9495cda79614bdff3d8a1f9fd867e2875ab"),
-        ["ship · hatches dogged, seated at the table"] = (315, "079f7120315a9a9e9ac1325643486eb6048e9620daa8211e9d3d0e931cf02db4"),
-        ["haven · the-space-bar"] = (364, "eb5e3c5e646094de112f4ecc0762a8fe8f5acad5e497a2c2717323969df414d9"),
-        ["haven · cinder-roost"] = (368, "6549d1c189b603eff35d990c9a8fa29b70de46357bc4a4222e7e36546a8e2d88"),
-        ["haven · ringside-exchange"] = (370, "072ff9e6a38ccf2f3f7e7dc66c2fc97b1b1d2ec128f27704cb629466577e9959"),
-        ["haven · the-tilt"] = (364, "24c4ecc7d07ef9ab6f948d3b43ce5702750583a11ac469e7d9b307a33e945260"),
-        ["haven · selene-gate"] = (368, "d69176565a8c8ca88ef8ce089f66e9c5a4c641df36e590ca46ffef13530455a9"),
-        ["haven · red-eye"] = (368, "17be4987b92049d51b989d7353e269f9b1be22330e2ebb87182bd130872f7763"),
-        ["haven · the-deep"] = (370, "2718a1dde37c4b2d107d24273271beb814c99cefecdbbd4b712c13e9bd6dce76"),
+        ["ship · under way"] = (364, "58db0ba402b4b3545c170303bc0d73eb37e5dde9f9b704849260d8cc2405b1b0"),
+        ["ship · docked, the shuttle away and the machine stalling"] = (338, "d3e9fda8acbf8860a159cea9724adc86b198b6a919d3329c6bf76948457b815c"),
+        ["ship · hatches dogged, seated at the table"] = (338, "59002f36dab94347fe6ba76bc324a2adb06ff473088f58d8d1cc9958fad53edf"),
+        ["haven · the-space-bar"] = (387, "5174fa8883666bbad704fdb78a349b91527dc3409a2c51e06b432f76ac1bc8d8"),
+        ["haven · cinder-roost"] = (391, "5f45add2144875253468b55249f9030b99cf2ed4a2ae3e64d983a23aad3c07fc"),
+        ["haven · ringside-exchange"] = (393, "203fb9100cee4d1e41f0120ff761a18ec3c715b2b160969de4d87d7f4fc728fd"),
+        ["haven · the-tilt"] = (387, "46e4d3aa1ece00fa44036415f125e54219784ee58f2ee27ef5db1764a196add1"),
+        ["haven · selene-gate"] = (391, "0c3bbc7cbfd21d06c7a5995083a7716734e152aacca40c0491994ec707eee734"),
+        ["haven · red-eye"] = (391, "2c88a55c7ba306a7d809f3bfb0edd967146a1c127c24bda1f15f6d325c8c330f"),
+        ["haven · the-deep"] = (393, "973827c654a4c7dc8f8032982c9451ea9d1eefb02cf4e4b3b02e5533897d8d1f"),
         ["wreck · HullBreach"] = (592, "637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020"),
         ["luna B1"] = (1591, "c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab"),
         ["luna B2"] = (426, "86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0"),
@@ -497,10 +497,10 @@ public sealed class EveryFrameHashesTheSameTests
         ["luna B1 · the round is out, and the buzzer went"] = (1617, "45921c657a779c388d7003d4b69dbfb6fb8ba9159ad8d582f2bcb040758c8b3d"),
         ["phobos B1"] = (1563, "879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c"),
         ["titan B1"] = (1512, "3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a"),
-        ["surface · luna site 0"] = (3777, "5fbd52373f9d06f6fdbd65477844909a2f6cedfb6da0e03d1870790e34a72cde"),
-        ["surface · luna site 0, the whole excursion"] = (3884, "0fd39fe57ef988ed4d37d54b4e54d0a80e8dbdf7bf2e4901709693f027fb2185"),
+        ["surface · luna site 0"] = (3800, "6ea3dbef056a998cd4904a29f9c932be45a4fd529367ed6088a0baa0b84f176b"),
+        ["surface · luna site 0, the whole excursion"] = (3907, "46668299078192e2ba90d9ae36a81b8a38aadf8b35ec0dacded7821f631ddf8d"),
         ["surface · luna site 0, dark, and the fan hears something"] = (263, "34020834f957d7b8d3db8b5c02a14ab017a4553a34fe1100346246a418522e71"),
-        ["surface · titan site 0, a derelict's instruments (none)"] = (4367, "bdace905702089de1182835d2668709113853e4a9f486830e9fad0ea09a2d7d9"),
+        ["surface · titan site 0, a derelict's instruments (none)"] = (4390, "cecd8a7e26ee1aa6fe651c485cbe755a4cd02cfdbc2172ee2977641fdbb806f4"),
     };
 
     /// <summary>

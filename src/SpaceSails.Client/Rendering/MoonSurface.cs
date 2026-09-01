@@ -327,6 +327,10 @@ public static class MoonSurface
             location: layout.Location,
             // #465: hand the tube's doors to the plan. `doors: null` here is what made the airlock invisible.
             doors: layout.Doors, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables,
+            // #1040 · …and her counter's seats and its fill beside her tops, for the reason her tops are
+            // here at all: this plan IS her deck with a landing site grown out of the shuttle hatch, so a
+            // fixture she has that this list does not is a fixture that vanishes the moment she sets down.
+            stools: DeckPlan.Ship.Stools, furniture: DeckPlan.Ship.Furniture,
             scenery: layout.Scenery,
             // #589: this world's own stone, so a glance at the walls says which moon this is.
             stoneInk: BodyPalette.For(bodyId),
