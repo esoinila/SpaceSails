@@ -85,16 +85,30 @@ public sealed class TheNavHelpPageTeachesTheWholeLoopTests
         Assert.Equal("/help/nav", CompiledRoute(page));
     }
 
-    /// <summary>THE ? ON THE NAV TOOLBAR RESOLVES. The href in Map.razor is matched against the compiled
-    /// route, so the two cannot drift apart. RED PROOF: point the ? back at /guide, or misspell the
-    /// route in either place, and this goes red.</summary>
+    /// <summary>
+    /// THE ? ON THE NAV TOOLBAR STILL LEADS HERE — VIA THE CARD.
+    ///
+    /// <para>#949 · The road grew a hop and this guard grew with it, rather than being relaxed. The <c>?</c>
+    /// was an <c>&lt;a href="/help/nav" target="_blank"&gt;</c>; it raises the in-game plotting card now, and
+    /// the CARD's foot carries the link on to this page. The reason is in Map.NavHelp.cs: the <c>?</c> is
+    /// pressed mid-plan, and a full page in a second tab answers a question about the panel by taking the
+    /// panel off the screen.</para>
+    ///
+    /// <para>What is asserted is the whole chain, both hops, so neither can quietly stop resolving: the
+    /// toolbar carries a <c>?</c> BUTTON (that pressing it raises the card is proved by pressing, in
+    /// <see cref="TheHelpCardTeachesTodaysPanelTests"/>), and the card links to this page's own compiled
+    /// route. RED PROOF: point the card's foot at /guide alone and this goes red naming the route.</para>
+    /// </summary>
     [Fact]
-    public void TheNavToolbarQuestionMarkResolvesToTheHelpPage()
+    public void TheNavToolbarQuestionMarkLeadsToTheHelpPageThroughTheCard()
     {
         string map = Regex.Replace(Source("Pages", "Map.razor"), @"\s+", " ");
-        Match anchor = Regex.Match(map, @"<a class=""btn btn-sm btn-outline-secondary"" href=""([^""]+)""[^>]*>\?</a>");
-        Assert.True(anchor.Success, "the Nav toolbar no longer carries a ? link at all");
-        Assert.Equal(CompiledRoute(typeof(SpaceSails.Client.Pages.HelpNav)), anchor.Groups[1].Value);
+        // `[^<]*` and not `[^>]*`: the button's own @onclick is a lambda, so there is a `>` INSIDE the tag
+        // and the obvious pattern never matches. There is no `<` in it, which is the honest boundary here.
+        Assert.Matches(@"<button[^<]*ToggleNavHelp[^<]*>\?</button>", map);
+
+        string route = CompiledRoute(typeof(SpaceSails.Client.Pages.HelpNav));
+        Assert.Contains($"href=\"{route}\"", Source("Components", "PlottingHelp.razor"), StringComparison.Ordinal);
     }
 
     /// <summary>Two more doors in, both of which the owner asked for: the Guide's plotting section, and

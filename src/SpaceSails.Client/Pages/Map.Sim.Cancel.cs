@@ -150,6 +150,17 @@ public partial class Map
         // tot of rum. A key that poured the rum for the captain would be the forbidden shape (#735), and a
         // key that closed the card past a button it could equally have pressed would be a coin toss.
         if (_galleyCardOpen) { CloseGalleyCard(); return true; }
+        // #949 · THE PLOTTING CARD, beside the galley card and for the galley card's own reason: it is a
+        // card the captain went and GOT — he pressed ? — so it is never the loudest thing on the glass and
+        // it sits below every card that opens without being asked for. Above the click menus, which are the
+        // least modal thing in this chain.
+        //
+        // Its rung matters more than most, and the reason is what the card IS. A player reaches for it
+        // because he is confused; the key he then reaches for is Escape, and a help card that ignored the
+        // cancel key would be teaching, by its own behaviour, the opposite of everything it says. Its own
+        // way out and the ? that raised it both close it too — three roads out, which for this card is the
+        // right number.
+        if (_navHelpOpen) { CloseNavHelp(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
         // #997 wave 11 · THE FOUR CLICK MENUS — FABLE'S RULING, WAVE 11.

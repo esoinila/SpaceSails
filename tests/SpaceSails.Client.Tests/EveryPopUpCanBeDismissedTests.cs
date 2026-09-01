@@ -293,6 +293,22 @@ public sealed class EveryPopUpCanBeDismissedTests
             Exit.AControl,
             b => b.CallOnTheDispatcher("OpenGalleyCard")),
 
+        // #949 · THE PLOTTING CARD, in this law on its first day and raised through its SHIPPING open verb
+        // rather than by poking the gate — the galley's own discipline (#1021): all three of its doors (the
+        // toolbar ?, the ? key, the Escape rung) funnel through OpenNavHelp, so a fork that stopped raising
+        // the card fails here rather than nowhere. The OPEN and not the toggle, for the mechanical reason
+        // written on the galley's row: Raise() runs again before every press, and a driver wired to a toggle
+        // would shut the card between finding its way out and pressing it.
+        //
+        // At Nav, because Nav is the desk whose toolbar carries the ? — the card itself hangs over any desk,
+        // but a guard should ask its question in the room the player is standing in.
+        //
+        // Exit.AControl: its two <a> links are not controls this law can press (no onclick), and its way out
+        // is the shell's own dismiss. The KEY is proved next door, by typing it —
+        // TheHelpCardTeachesTodaysPanelTests.
+        new("the plotting help card", "view-object-backdrop", Docked, Exit.AControl,
+            b => b.CallOnTheDispatcher("OpenNavHelp"), At: ShipDesk.Nav),
+
         new("the ship's own atmosphere board", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_showShipBoard", true)),
 

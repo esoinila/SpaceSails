@@ -356,6 +356,26 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// </list>
     /// <para><b>No ledger row moved, no <c>map-frame buffer</c> moved, and not one wreck, B-floor or dark
     /// row moved at all.</b></para>
+    ///
+    /// <para><b>#949 · ALL 30 WERE RE-RECORDED, and it is the smallest kind of re-pin there is: ONE FIELD
+    /// JOINED THE PAGE and nothing else in the game moved at all.</b> The <c>?</c> on the Nav toolbar
+    /// stopped opening <c>/help/nav</c> in a second tab and raises the plotting card over the map instead,
+    /// so <c>Map</c> gained <c>_navHelpOpen</c> — the card's gate — and the sweep counts one more field than
+    /// it did.</para>
+    ///
+    /// <para><b>The diff is the old pins against the new ones, and it is 30 files × 1 line:</b> exactly one
+    /// row kind moved, <c>sweep</c>, on every one of the thirty, with the field count <b>743 → 744</b>. Not
+    /// one other line in any of the thirty texts differs — the ledger, the seat, the walked-view pen, the
+    /// map-frame buffer and every call count are byte-identical. Which is what "a card nobody has opened
+    /// paints nothing" has to look like when it is true.</para>
+    ///
+    /// <para>Proved a state change and not a behaviour change with this file's own
+    /// <c>SPACESAILS_SWEEP_DUMP</c> hook rather than inferred from the count: the whole sweep was dumped and
+    /// the new field found in it. <b>It is <c>_navHelpOpen</c>, present on all thirty rows and reading
+    /// <c>no</c> on every single one</b> — no world in this matrix presses <c>?</c>, and none of them has
+    /// grown a card it did not have. A field count that moved by one while some OTHER field's value had
+    /// also changed would be a different lane's bug wearing this lane's clothes, and the dump is what tells
+    /// those two apart.</para>
     /// </summary>
     [Theory]
     [InlineData(World.HerOwnDeckInFlight, Sequence.SteadyFrames)]

@@ -1,0 +1,177 @@
+@namespace SpaceSails.Client.Components
+@using SpaceSails.Core
+
+@* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #949 · WHAT THE PLOTTING PANEL IS FOR, SAID IN SIX PARAGRAPHS, WITHOUT LEAVING THE GAME.
+
+   Owner, 2026-08-18, posting a screenshot of his own multi-step plan: "We should have a help page where we
+   show multi-step plan and the use of the schrub and burn. New player seeing this image would understand
+   how to play. I really like the increment - and decrement options."
+
+   THIS IS NOT THE EIGHT-STEP PAGE, AND THE DIFFERENCE IS THE WHOLE REASON IT EXISTS. /help/nav (#972) is
+   the walkthrough: eight steps, a drawn sketch each, read once before you start. It opens in a SECOND TAB,
+   because a full-page route over /map would take the game off the screen — which is exactly the wrong
+   thing to do to somebody who is stuck mid-plan with the panel open and a question about the row in front
+   of him. This is that question answered where it is asked: a card over the map, thirty seconds, gone on
+   Escape, with the panel still underneath it. The card hands the reader on to the page for the long
+   version; the page is still the reference.
+
+   TWO RULES IT IS BUILT UNDER, and the second one is the one with a guard behind it.
+
+   1. NO PICTURE OF THE PANEL. Not a screenshot, and not a sketch either — the sketches belong to the page,
+      where there is a column's width to draw them in. Here the illustration IS the label: every face a
+      captain has to hunt for on the real panel is printed as a chip, at the size it is printed on the
+      button, so what he reads here is literally what he is looking for.
+
+   2. EVERY FACE IS BORROWED, NEVER TYPED. Each chip below is a NodeFrame / ArrivalStepRule call — the
+      SAME call the panel makes to draw that button. Rename a button and this card renames with it; type a
+      face here by hand and TheHelpCardTeachesTodaysPanelTests goes red. A help page is the easiest place
+      in this codebase for the repo's own named bug class to hide (a sentence reporting one thing while
+      the sim does another), because nothing else in the client is made of sentences ABOUT the client.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
+<div class="plotting-help">
+
+    <p class="ph-lede">
+        You never steer to Mars. You throw the ship at where Mars is going to be, then check your work —
+        here, with the sky frozen and nothing at stake yet.
+    </p>
+
+    @* ── 1 ─────────────────────────────────────────────────────────────────────────────────────────── *@
+    <section class="ph-step">
+        <span class="ph-num" aria-hidden="true">1</span>
+        <h3 class="ph-head">Say where you are going</h3>
+        <p>
+            Click a planet, moon or haven on the map, or give the order at the Captain's desk
+            (<kbd>0</kbd>). Everything the panel tells you from here is measured against that one choice.
+        </p>
+    </section>
+
+    @* ── 2 ─────────────────────────────────────────────────────────────────────────────────────────── *@
+    <section class="ph-step">
+        <span class="ph-num" aria-hidden="true">2</span>
+        <h3 class="ph-head">The plan is a list of steps</h3>
+        <p>
+            <span class="ph-chip ph-chip-key">🗺 Plot</span> pauses the sim and opens the table. Cast off,
+            burn, sling, skim, arrive — each is a row, and each row opens into a sub-panel that owns its own
+            buttons. Nothing on this table spends a gram or a minute until you leave it.
+        </p>
+    </section>
+
+    @* ── 3 ─────────────────────────────────────────────────────────────────────────────────────────── *@
+    <section class="ph-step">
+        <span class="ph-num" aria-hidden="true">3</span>
+        <h3 class="ph-head">The scrub is your finger on the timeline</h3>
+        <p>
+            Drag <span class="ph-chip">@NodeFrame.ScrubLabel</span> and the whole system runs forward as
+            ghosts. Every button that says <em>at scrub</em> acts at the moment you are pointing at:
+        </p>
+        <p class="ph-chips">
+            <span class="ph-chip ph-chip-key">@NodeFrame.AddBurnAtScrubButton</span>
+            <span class="ph-chip">@ArrivalStepRule.AddAtScrubButton(ArrivalStepRule.ArrivalKind.Orbit)</span>
+            <span class="ph-chip">@ArrivalStepRule.AddAtScrubButton(ArrivalStepRule.ArrivalKind.Dock)</span>
+        </p>
+        <p>
+            Move the finger, press the button, and the step lands where you were pointing.
+        </p>
+    </section>
+
+    @* ── 4 · THE ONE THE OWNER ASKED FOR BY NAME ────────────────────────────────────────────────────── *@
+    <section class="ph-step">
+        <span class="ph-num" aria-hidden="true">4</span>
+        <h3 class="ph-head">Tune a burn without typing</h3>
+        <p>
+            Every burn row carries three pairs. This is the part you will spend the most time on, and it
+            needs no keyboard at all.
+        </p>
+        <dl class="ph-pairs">
+            <dt>aim</dt>
+            <dd>
+                <span class="ph-chip">@NodeFrame.NudgeLabel(-1)</span>
+                <span class="ph-chip">@NodeFrame.NudgeLabel(1)</span>
+                — swing it off wherever it points now.
+            </dd>
+            <dt>size</dt>
+            <dd>
+                <span class="ph-chip">@NodeFrame.NudgeMagnitudeLabel(-1, true)</span>
+                <span class="ph-chip">@NodeFrame.NudgeMagnitudeLabel(-1, false)</span>
+                <span class="ph-chip">@NodeFrame.NudgeMagnitudeLabel(1, false)</span>
+                <span class="ph-chip">@NodeFrame.NudgeMagnitudeLabel(1, true)</span>
+                — spend more or fewer pulses.
+            </dd>
+            <dt>when</dt>
+            <dd>
+                <span class="ph-chip">@NodeFrame.NudgeEpochLabel(-1, true)</span>
+                <span class="ph-chip">@NodeFrame.NudgeEpochLabel(-1, false)</span>
+                <span class="ph-chip">@NodeFrame.NudgeEpochLabel(1, false)</span>
+                <span class="ph-chip">@NodeFrame.NudgeEpochLabel(1, true)</span>
+                — fire it earlier or later.
+            </dd>
+        </dl>
+        <p>
+            <strong>The course re-solves under every press.</strong> Watch the closest-pass number and keep
+            pressing whichever button makes it smaller. The typed fields are still there for fine trims —
+            they are the exception now, not the way in.
+        </p>
+    </section>
+
+    @* ── 5 ─────────────────────────────────────────────────────────────────────────────────────────── *@
+    <section class="ph-step">
+        <span class="ph-num" aria-hidden="true">5</span>
+        <h3 class="ph-head">The plan ends with an arrival — armed now, flown later</h3>
+        <p>
+            Open the last step and press
+            <span class="ph-chip ph-chip-key">@ArrivalStepRule.ArmButtonLabel("Mars")</span> while the
+            burns are still ahead of you. Arming is a decision about the whole trip, not something you have
+            to be awake for at the pass, and it arms <em>that body, at that pass</em> — never whatever
+            happens to be nearest when the moment comes.
+        </p>
+        <p class="ph-quote">@ArrivalStepRule.ArmedAndNothingMore</p>
+        <p>
+            Three burns and one arrival, then zero input. That sentence is what you are plotting towards.
+        </p>
+    </section>
+
+    @* ── 6 ─────────────────────────────────────────────────────────────────────────────────────────── *@
+    <section class="ph-step">
+        <span class="ph-num" aria-hidden="true">6</span>
+        <h3 class="ph-head">Reading the badge on the arrival</h3>
+        <dl class="ph-pairs">
+            <dt class="ph-good">@TheBadge(true) @ArrivalStepRule.StatusValid</dt>
+            <dd>Both gates clear — distance and closing speed. The plan ends safely.</dd>
+
+            <dt class="ph-bad">@TheBadge(false) @ArrivalStepRule.StatusInvalid</dt>
+            <dd>
+                Not a refusal — a to-do list. The row says in numbers how far off you are on each gate.
+                Go back to the ± buttons; the numbers say which way.
+            </dd>
+
+            <dt class="ph-wait">@ArrivalStepRule.PendingBadge @ArrivalStepRule.StatusNotJudged</dt>
+            <dd>
+                No verdict, rather than a bad one: the plotted line stops short of the body, so there is
+                nothing yet to judge. Stretch <em>Path length</em> — or press <em>auto</em> — until the
+                pass is on the line. The panel will never hand you a @TheBadge(false) it has not earned.
+            </dd>
+        </dl>
+    </section>
+
+    <p class="ph-foot">
+        The same trip in eight pictures, one drawn sketch each:
+        <a href="/help/nav" target="_blank" rel="noopener">📐 Plotting a trip ↗</a> ·
+        everything else — piracy, trade, the surface game:
+        <a href="/guide" target="_blank" rel="noopener">📖 The Captain's Guide ↗</a>
+    </p>
+</div>
+
+@code {
+    /// <summary>The row's own ✓ / ✗, asked of <see cref="ArrivalStepRule.Badge"/> rather than typed — the
+    /// glyph is a function of a verdict in the panel, so it is a function of one here too. The numbers in
+    /// the check are only there to make a valid or invalid one; nothing on this card reads them.</summary>
+    private static string TheBadge(bool valid) => ArrivalStepRule.Badge(
+        ArrivalStepRule.Check(
+            ArrivalStepRule.ArrivalKind.Orbit,
+            "Mars",
+            distance: valid ? 0 : 1e12,
+            relSpeed: valid ? 0 : 1e5,
+            hillRadius: 1));
+}

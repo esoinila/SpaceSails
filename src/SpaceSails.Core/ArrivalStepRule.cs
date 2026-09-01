@@ -123,6 +123,55 @@ public static class ArrivalStepRule
     /// <summary>The verb the step is named by: "orbit" or "dock".</summary>
     public static string Verb(ArrivalKind kind) => kind == ArrivalKind.Dock ? "dock" : "orbit";
 
+    // ===== #949 · THE FACES THE ARRIVE ROW WEARS, WHERE THE HELP CAN READ THEM TOO =====
+    //
+    // Every string below was a LITERAL typed into Map.razor's arrive row. Each is now typed once, and the
+    // move is not tidiness. The owner asked for a help page that teaches this row — "New player seeing
+    // this image would understand how to play" — and a help page that TYPES the words the panel renders
+    // is this repository's own named bug class (a sentence reporting one thing while the thing it
+    // describes does another) installed on purpose, in the one file whose entire job is to be right about
+    // the UI. So the panel and the card read the same constants, a rename moves both at once, and
+    // TheHelpCardTeachesTodaysPanelTests goes red the day one of them drifts from the other.
+    //
+    // The badge WORDS and not the badge glyph: Badge() above already owns ✓ and ✗, and it cannot own the
+    // third state, because ⌛ is not a verdict — it is the absence of one (#952/#1041). The markup reaches
+    // for it exactly when Check() has nothing to say.
+
+    /// <summary>The badge glyph for a pass with no verdict yet: the plotted line does not reach it, so
+    /// there is nothing to be ✓ or ✗ about. Never a fabricated ✗ (#952).</summary>
+    public const string PendingBadge = "⌛";
+
+    /// <summary>The badge word for a plan that ends safely.</summary>
+    public const string StatusValid = "VALID";
+
+    /// <summary>The badge word for a plan that does not end safely — a to-do list, not a refusal.</summary>
+    public const string StatusInvalid = "INVALID";
+
+    /// <summary>The badge word for a pass off the end of the plotted line: no verdict, not a bad one.</summary>
+    public const string StatusNotJudged = "NOT JUDGED";
+
+    /// <summary>The badge word once the autopilot holds the promise, before the pass comes round.</summary>
+    public const string StatusArmed = "ARMED";
+
+    /// <summary>The badge word while the armed arrival is flying itself.</summary>
+    public const string StatusActive = "ACTIVE";
+
+    /// <summary>The compose row's own face — <c>🛰 + Add orbit at scrub</c> / <c>⚓ + Add dock at scrub</c>.
+    /// The panel appends in brackets the body it would add (#950); the help card shows the face bare,
+    /// because WHICH body is on offer is the captain's own scrub's business.</summary>
+    public static string AddAtScrubButton(ArrivalKind kind) =>
+        $"{(kind == ArrivalKind.Dock ? "⚓" : "🛰")} + Add {Verb(kind)} at scrub";
+
+    /// <summary>The arm control's face. 🛰 for both kinds, which is the panel's own choice and not an
+    /// oversight: the glyph here is the AUTOPILOT's, not the arrival's.</summary>
+    public static string ArmButtonLabel(string bodyName) => $"🛰 Arm the arrival at {bodyName}";
+
+    /// <summary>#955 · What the armed step says once the promise is made — the sentence the whole plan is
+    /// plotted towards. Three burns and one arrival, then zero input.</summary>
+    public const string ArmedAndNothingMore =
+        "The plan is complete. The autopilot takes her at the pass — nothing more is needed unless "
+        + "something interferes.";
+
     /// <summary>
     /// <b>The sentence the row and the refusal both speak.</b> Owner (#957): <i>"Also it gives totally
     /// useless error. Why does it not tell what it is complaining about … Where is the problem, so it can
