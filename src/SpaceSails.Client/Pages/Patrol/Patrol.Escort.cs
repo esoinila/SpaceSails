@@ -3,7 +3,7 @@ using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
-// Subject: part of the patrol (#870 lane 6′c; the header note lives in Map.Patrol.cs) — #833's walked escort: the route to the car he plans himself, the shoulder the captain is walked at, and the one jump-cut left, which admits it is one.
+// Subject: part of the patrol (#870 lane 6′c; the header note lives in Map.Patrol.cs) — #833's walked escort: the route to the car he plans himself, the pace ahead of him the captain is walked at (#804), and the one jump-cut left, which admits it is one.
 public sealed partial class Map
 {
     private sealed partial class Patrol
@@ -61,13 +61,21 @@ public sealed partial class Map
 
         /// <summary>
         /// #833 · One frame of the walk back. He spends his route through the same stepper his round does, and
-        /// the captain is WALKED at his shoulder — through <c>DeckPlan.Move</c>, the one primitive the captain's
-        /// body is ever stepped by, so the escort obeys the same walls his own legs do and never once places him.
+        /// the captain is WALKED — through <c>DeckPlan.Move</c>, the one primitive the captain's body is ever
+        /// stepped by, so the escort obeys the same walls his own legs do and never once places him.
         ///
-        /// <para><b>The tether is what makes them arrive together.</b> A guard who out-walked the man he was
-        /// escorting would not be escorting anybody, so he waits when the captain falls behind
-        /// (<see cref="PatrolBeat.TetherDu"/>) and the captain's legs are worked a little brisker than his
-        /// (<see cref="PatrolBeat.CatchUpFactor"/>) until the gap closes.</para>
+        /// <para>#804 · <b>AND HE IS WALKED IN FRONT.</b> The canon pass put the arrangement in the guard's own
+        /// mouth — <i>"you walk ahead of me to the lift"</i> — so the target is a pace along his own planned
+        /// route rather than a pace back into his wake (<see cref="PatrolBeat.AheadOnHisRoute"/>). The route is
+        /// what keeps the old guarantee: every leg of it was cleared by the A* at the avatar's radius, so
+        /// walking a pace into it is as walkable as his next step and turns the corners before he does.</para>
+        ///
+        /// <para><b>The tether is what makes them arrive together, and it points the other way now.</b> #833
+        /// had the guard wait for a captain who lagged, which is the right rule for a man walked in somebody's
+        /// wake. A man walked out in FRONT cannot lag; what he can do is get a corridor ahead, and that is not
+        /// compliance, it is leaving. So past <see cref="PatrolBeat.TetherDu"/> it is the CAPTAIN who waits
+        /// while the man setting the pace closes up, and <see cref="PatrolBeat.CatchUpFactor"/> is what puts
+        /// him out in front in the first place rather than what closes a gap.</para>
         ///
         /// <para><b>The last pace is the captain's.</b> Once the guard is standing at the car the captain keeps
         /// walking, to the car's own mouth — which is the exact square the old placement used, arrived at rather
@@ -83,16 +91,16 @@ public sealed partial class Map
             bool heIsThere = (hx * hx) + (hy * hy) <= PatrolBeat.AtTheStopDu * PatrolBeat.AtTheStopDu;
 
             double lx = _host.AvatarX - g.X, ly = _host.AvatarY - g.Y;
-            bool waitingForYou = (lx * lx) + (ly * ly) > PatrolBeat.TetherDu * PatrolBeat.TetherDu;
 
-            if (heIsThere || waitingForYou)
+            // #804 · THE TETHER, THE OTHER WAY ROUND. He is behind you now, so the thing it has to catch is a
+            // captain getting out in front — and the one who waits for it is the captain, below.
+            bool youAreTooFarAhead = (lx * lx) + (ly * ly) > PatrolBeat.TetherDu * PatrolBeat.TetherDu;
+
+            if (heIsThere)
             {
                 g.Vx = 0;
                 g.Vy = 0;
-                if (heIsThere)
-                {
-                    g.Facing = System.Math.Atan2(ly, lx);   // at the doors, half turned back to you
-                }
+                g.Facing = System.Math.Atan2(ly, lx);   // at the doors, half turned back to you
             }
             else
             {
@@ -117,12 +125,13 @@ public sealed partial class Map
                 SpendTheStride(g, dt, walls);
             }
 
-            // …and the captain, walked. His target is the guard's shoulder while the guard is moving, and the
-            // car's own mouth once the guard is standing at it.
-            (double tx, double ty) = heIsThere ? (sx, sy) : ShoulderOf(g);
+            // …and the captain, walked. His target is a pace AHEAD of the guard along the guard's own route
+            // while the guard is moving, and the car's own mouth once the guard is standing at it. He does not
+            // take the step at all when he is already out past the tether: the man behind him sets the pace.
+            (double tx, double ty) = heIsThere ? (sx, sy) : AheadOf(g);
             double cdx = tx - _host.AvatarX, cdy = ty - _host.AvatarY;
             double want = System.Math.Sqrt((cdx * cdx) + (cdy * cdy));
-            if (want > 1e-6)
+            if (want > 1e-6 && (heIsThere || !youAreTooFarAhead))
             {
                 double pace = System.Math.Min(want, PatrolBeat.WalkSpeed * PatrolBeat.CatchUpFactor * dt);
                 (_host.AvatarX, _host.AvatarY) = _host.DeckPlan.Move(_host.AvatarX, _host.AvatarY, cdx / want * pace, cdy / want * pace);
@@ -168,24 +177,22 @@ public sealed partial class Map
         }
 
         /// <summary>
-        /// #833 · A pace back and a hand's width to his left — where you walk beside somebody who is showing you
-        /// out. Taken off his FACING, so the captain swings round the corners with him instead of being dragged
-        /// through them.
+        /// #804 · A pace out in front of him, on his own route — where you walk when somebody has said
+        /// <i>"you walk ahead of me to the lift"</i>.
         ///
-        /// <para><b>Mostly IN HIS WAKE, and that is measured rather than styled.</b> A first cut put the captain
-        /// half a pace to the side, and a doorway is not half a pace wider than a man: the target kept landing in
-        /// stone, the captain slid along the jamb, the tether stretched and the guard stood waiting — an escort
-        /// that stuttered its way down the corridor and was moving a THIRD of the time (titan B6: 34%, and it ran
-        /// out the whole ninety-second bound without ever reaching the car). Walking where he walked is walkable
-        /// by construction, because he has just walked it: the same sweep now measures 99% moving on all 22
-        /// floors. Both numbers are <c>TheEscortIsAWalkTests</c>'s own.</para>
+        /// <para><b>The arithmetic is Core's</b> (<see cref="PatrolBeat.AheadOnHisRoute"/>) and this is the
+        /// hand-off of the one thing Core cannot reach: the waypoints of the route this guard is walking right
+        /// now. #833's shipped version did the trigonometry here, and a second author on an escort's geometry is
+        /// how a replica and a page come to disagree about where a body is.</para>
+        ///
+        /// <para><b>Why a ROUTE point and not a ray off his facing</b> is #833's own measurement, read
+        /// backwards: half a pace to the SIDE put the target in stone at every doorway and ran the escort at
+        /// 34% moving (titan B6) without ever reaching the car, and what fixed it was ground somebody had
+        /// already proved walkable. In front of a man there is no such ground — except the A* he is about to
+        /// walk, which is exactly what this hands over.</para>
         /// </summary>
-        private static (double X, double Y) ShoulderOf(Guard g)
-        {
-            double back = PatrolBeat.ShoulderDu, side = PatrolBeat.ShoulderDu * 0.25;
-            return (g.X - (System.Math.Cos(g.Facing) * back) - (System.Math.Sin(g.Facing) * side),
-                    g.Y - (System.Math.Sin(g.Facing) * back) + (System.Math.Cos(g.Facing) * side));
-        }
+        private static (double X, double Y) AheadOf(Guard g) =>
+            PatrolBeat.AheadOnHisRoute(g.X, g.Y, g.Facing, g.Route?.Route, PatrolBeat.AheadDu);
 
         /// <summary>#833 · The controls come back and he goes back to the round — from the car, which is where
         /// the round starts anyway, with the cooldown running so the doors are not a place you get asked twice.</summary>

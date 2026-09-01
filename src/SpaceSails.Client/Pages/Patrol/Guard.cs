@@ -142,7 +142,8 @@ public sealed partial class Map
         public double WalkUpFor { get; private set; }
 
         /// <summary>#833 · Seconds until the next re-plan. A walk-up and an escort chase a MOVING target (the
-        /// captain, and the captain's shoulder), and an A* every frame is not free in WASM — nor is it what a
+        /// captain, and the pace of his own route the captain walks in front of him), and an A* every frame is
+        /// not free in WASM — nor is it what a
         /// man crossing a corridor does.</summary>
         public double RePlanIn { get; private set; }
 

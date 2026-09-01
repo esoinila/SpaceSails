@@ -429,6 +429,32 @@ public sealed class EveryRoundFingerprintsTheSameTests
     /// route and its cursor, the card, the pulse, the log and the end-of-case "what this case moved on the
     /// page" section included. Nothing else moved by a digit. <b>If either digest below ever moves again, that
     /// is not this lane's kind of change and the same line-by-line diff is what settles it.</b></para>
+    ///
+    /// <h3>#804 · EIGHT OF THE FOURTEEN WERE RE-RECORDED, AND THE SAME DIFF SETTLED IT</h3>
+    ///
+    /// <para>The canon pass (2026-09-02) rewrote four authored sentences and turned the escort round: the
+    /// captain is walked <b>in front of</b> the guard now, not in his wake. All fourteen transcripts were
+    /// written out whole on the base (<c>2b94e25</c>) and on the lane and compared line by line, and the eight
+    /// that moved fall into exactly two groups:</para>
+    ///
+    /// <list type="bullet">
+    /// <item><b>FIVE ARE PROSE AND NOTHING ELSE.</b> <i>he hails you and you walk away from it</i>, and the
+    /// four cubicle cases. Drop every line carrying one of the four rewritten sentences — the same COUNT of
+    /// them on each side (858 / 411 / 400 / 411 / 200) — and the remainder is byte-identical. Not one
+    /// coordinate, clock, arm or decision moved.</item>
+    /// <item><b>THREE WALK AN ESCORT</b> — <i>reads your papers and walks you to the car</i>, <i>does not
+    /// press the button for your floor</i>, <i>comes at a run and he has you</i> — and the escort is where the
+    /// geometry changed. Every differing line in the three is the captain's own position, a guard's numbers on
+    /// the frames beside it, or a pulse whose clock has shifted with them; the first difference in each is the
+    /// frame the walk back begins, and everything before it is byte-identical. The DECISIONS are unchanged and
+    /// were counted rather than eyeballed: <c>escorts=</c>, <c>walkedAway=</c>, <c>ride=</c> and the arm each
+    /// man takes have identical tallies on both sides in all three. The one clock that moved is the kick-out
+    /// case's, by <b>eight frames of 1,800</b> (0.13 s) — the same events, in the same order, arriving a
+    /// heartbeat apart because the man being walked out is now taking the corner first.</item>
+    /// </list>
+    ///
+    /// <para>The other six — the empty floor, the surface, both plain rounds, <i>by the time he moves you are
+    /// gone</i> and the gunshot — are byte-identical and their digests are untouched.</para>
     /// </summary>
     private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
     {
@@ -438,15 +464,15 @@ public sealed class EveryRoundFingerprintsTheSameTests
         ["one man walks the round, all the way round it"] = "11c4a45bcf8bc5264099ba24343ce57433152cba227fd2714cd37ce05af3dc43",
         // #920 · re-recorded (was 11047c53… / e28da120…) — the walk-up clock now stops when the walk-up does,
         // and the transcript writes the clock down. 1,972 lines, WalkUpFor and nothing else. See above.
-        ["he hails you and you walk away from it"] = "df04406d32e2a8b7a1976d86c4b3d3cb4fb8b3d7a48f2235cbbf8a2aa84ddb86",
-        ["he crosses the floor, reads your papers, and walks you to the car"] = "c61af7ba65721b6df96fa87d5f56473f0885021899e7dd7c4c35d16c3dfccb7c",
-        ["…and this time he does not press the button for your floor"] = "a5e4b2a86ccc31b32346959aedd538af55b9b05a38cf2afbf20bf2448a8d4140",
-        ["he calls it in, comes at a run, and he has you"] = "6b5da25dd0810d31fb57a276925f43b3292795059265c08f33456636a64f583d",
+        ["he hails you and you walk away from it"] = "7b6929d931c9fff8ccc54fbe6ce467115e887445fc0a4ce96c8347766473d689",
+        ["he crosses the floor, reads your papers, and walks you to the car"] = "ca437e5449b5f27d46b055748c5d2f6406eabfdb831b073e8372c03e1de77bba",
+        ["…and this time he does not press the button for your floor"] = "8042c18a1b6966915e825f740bfb47ce31a5e5415550b5aa039a60d73f313a14",
+        ["he calls it in, comes at a run, and he has you"] = "4e6269e42d74fac27af5c06bb02813a260117885a9f33a8c792576d5f8fce2a8",
         ["he calls it in, and by the time he moves you are gone"] = "23bd65d4552be534fcbfc6b59b8ecdc2a4d3209a700982b2ba0869f217aa01e1",
-        ["you duck into a cubicle and he watched the catch turn"] = "79fa953a17e87de5e336ddb9fd76e1fa4e6618ba8c5520bc9a220dde16ec9fc1",
-        ["you duck into a cubicle and nobody saw a thing"] = "4599ddbf4a51a9bf29c26029e818d4ca861f46c3bc933f92da882459b82dbe8e",
-        ["he called it in, and then you shut a door in his face"] = "23cb583bbfd91ae873af33f5eef7fef73a71a3615086d87d791a5d4ff6ca5890",
-        ["you duck in while he is already walking over"] = "653e6acf180cdf9cebe314f4cd9da594faccac2c588998fb93518b60836a9ab0",
+        ["you duck into a cubicle and he watched the catch turn"] = "8716c9594350386f7b789b1fb65fa1b36e0c2091deafeb799d46bbd1c1fe148a",
+        ["you duck into a cubicle and nobody saw a thing"] = "14c60f2925c7f1349f83e23853df0d24a9e12438f8fbca9a4404cc9b29e34975",
+        ["he called it in, and then you shut a door in his face"] = "107c5cd2f2c0afca6ae7e1429b3ee30799e339f559c0e10638e281a362689e99",
+        ["you duck in while he is already walking over"] = "2217725ba64fe571b5a3652934fb15c75429aa7bbff0852bcb860dfa9ee71130",
 
         // #618 · THE FOURTEENTH, and the ONLY digest in this file taken on new code — stated here rather than
         // left for somebody to work out from a git blame. It could not have been taken anywhere else: before
