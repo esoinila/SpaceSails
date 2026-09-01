@@ -80,6 +80,7 @@ public static class VaultSerializer
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
     private const string SecLogbook = "logbook";        // #948 · the captain's name, the title, the note
+    private const string SecVoid = "void";              // #638 · the adrift countdown, when one is running
 
     /// <summary>Serialize a vault to its on-disk JSON string (envelope + checksum). Only non-null
     /// sections are written, so the file is exactly as large as the pirate's life is rich.</summary>
@@ -117,6 +118,7 @@ public static class VaultSerializer
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
         AddSection(sections, SecLogbook, vault.Logbook);
+        AddSection(sections, SecVoid, vault.Void);
 
         // Build the payload (everything the checksum protects), hash it, THEN stamp the checksum in.
         var envelope = new JsonObject
@@ -266,6 +268,7 @@ public static class VaultSerializer
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),
             Logbook = Harvest<LogbookSection>(sections, SecLogbook, warnings),
+            Void = Harvest<VoidSection>(sections, SecVoid, warnings),
         };
 
         // Recompute the checksum over the payload exactly as written (raw node, unknown fields and

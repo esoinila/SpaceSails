@@ -128,6 +128,19 @@ public sealed class Vault
     /// back to the seeded captain and a derived title, which is the honest truth about a save nobody named.</summary>
     public LogbookSection? Logbook { get; init; }
 
+    /// <summary>#638 · THE COUNTDOWN THE VOID IS RUNNING, if one is running at all.
+    ///
+    /// <para><b>Written only while the clock is live</b> — the client hands over <c>null</c> whenever nothing
+    /// is counting down, which is every voyage that has never gone dry with nowhere to go. That is deliberate
+    /// and it is what makes the save-compat proof cheap: the section is simply absent from the file, so a
+    /// vault written before #638 re-loaded and re-saved by this build comes back BYTE FOR BYTE — same keys,
+    /// same order, same checksum (the digest is taken over the payload, so a written-but-idle section would
+    /// change the hash of every save ever made and hang the 📛 tampered marker on an honest voyage). The
+    /// #1057 precedent, one level up: there it was a nullable FIELD carrying
+    /// <c>JsonIgnore(WhenWritingNull)</c>; here the whole section is the thing that stays unwritten.
+    /// <c>ALegacyVaultRoundTripsByteForByteAcrossTheVoid</c> in the Core suite holds that line.</para></summary>
+    public VoidSection? Void { get; init; }
+
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
     /// the payload — the file was edited outside the game. The vault still loads (honesty speed-bump,
     /// not DRM); the game surfaces a permanent 📛 marker line in the Captain's ledger. Never persisted
@@ -412,6 +425,30 @@ public sealed record NerveSection
     /// <summary>True once the captain has laid eyes on the monolith. Persisted so the big first-sight hit
     /// (<see cref="NerveModel.MonolithSightShock"/>) fires once in a life and never again on a revisit.</summary>
     public bool MonolithSeen { get; init; }
+}
+
+// ── #638 · The void's countdown, which is a clock and therefore has to survive a save. ──
+
+/// <summary>
+/// #638 · The adrift countdown, as it stands. Present in the file ONLY while a clock is actually running —
+/// see <see cref="Vault.Void"/> for why that is the whole save-compat story.
+///
+/// <para>Two numbers and nothing else, because everything else about the void is derived: the day the run
+/// began, and the last day the captain was told anything on. <see cref="VoidRule"/> turns them back into a
+/// countdown, and a resumed voyage that slept through a telling gets it on the next tick
+/// (<see cref="VoidRule.TellingsBetween"/>), because a beat you can miss by loading is not a beat.</para>
+/// </summary>
+public sealed record VoidSection
+{
+    /// <summary>The whole sim-day (<see cref="VoidRule.DayIndex"/>) the ship was declared ADRIFT on.
+    /// Defaults to <see cref="VoidRule.ClockNotRunning"/> so a file that carries the section but not this
+    /// field reads as "no clock", which is the safe direction: the worst a wrong default can do here is kill
+    /// a captain who was fine.</summary>
+    public long DeclaredDay { get; init; } = VoidRule.ClockNotRunning;
+
+    /// <summary>The last day-count of THIS run the captain has already been told about. Defaults to
+    /// <see cref="VoidRule.NothingToldYet"/> — below day 0, because day 0 is itself a telling.</summary>
+    public int LastToldDay { get; init; } = VoidRule.NothingToldYet;
 }
 
 // ── Overheard at the bar (#308/#283 → owner 2026-07-18): the words the player paid a round to hear. ──
