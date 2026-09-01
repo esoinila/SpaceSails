@@ -111,6 +111,37 @@ public static class SeatedSpread
     public const string SpreadHint =
         "Spread the satchel out and dig through it — the book keeps what you finish";
 
+    // ── #1052 (L2) · THE OTHER THING YOU CAN DO IN A CHAIR ────────────────────────────────────────────
+    //
+    // Owner, 2026-09-01: "Reading the news pop-up could be option when sitting at table, instead of working
+    // the case, but we could get even new breadcrumbs from the news into our detective book."
+    //
+    // So the verb lives HERE, beside SpreadLabel, because it is the same kind of thing: a sentence the
+    // seated strip prints on a button. It is SEAT-tied and never place-tied (owner ruling 2026-08-30) —
+    // which paper the press hands you is NewsWire.ScopeAt's answer about where the chair is standing, and
+    // nothing in this file knows or cares.
+
+    /// <summary>What the strip calls the act of reading the local paper. #1052's own words, verbatim.</summary>
+    public const string ReadTheNewsLabel = "📰 Read the news";
+
+    /// <summary>The hint on that control. FLAGGED FOR CANON REVIEW (#1052 authored the label and not the
+    /// hover); it says only what the press does and takes no view on what the paper says.</summary>
+    public const string ReadTheNewsHint =
+        "Read whatever paper they print here — the room stays where it is while you read";
+
+    /// <summary>What a row's scissors say. #1052's own words, verbatim.</summary>
+    public const string ClipLabel = "✂ Clip";
+
+    /// <summary>The hint behind the scissors. FLAGGED FOR CANON REVIEW alongside
+    /// <see cref="ReadTheNewsHint"/>. It carries the law rather than a flourish: reading files nothing and
+    /// clipping is a decision (#602's ammo-as-evidence — what is in the book got there on purpose).</summary>
+    public const string ClipHint =
+        "Cut this story out and keep it — reading files nothing, clipping does";
+
+    /// <summary>…and what the row says once this story is already in the book. Never disabled (#212/#603):
+    /// the control says where the paper is, and pressing it again is simply nothing.</summary>
+    public const string ClippedLabel = "✂ clipped";
+
     /// <summary>What the spread page says over the rows, so a captain knows what the list IS before they
     /// press anything on it.</summary>
     public const string SpreadBlurb =
@@ -175,6 +206,11 @@ public static class SeatedSpread
         yield return NotOnASharedBenchLine;
         yield return SpreadLabel;
         yield return SpreadHint;
+        yield return ReadTheNewsLabel;
+        yield return ReadTheNewsHint;
+        yield return ClipLabel;
+        yield return ClipHint;
+        yield return ClippedLabel;
         yield return SpreadBlurb;
         yield return SpreadAgainLabel;
         yield return SpreadAgainHint;

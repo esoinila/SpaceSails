@@ -324,6 +324,12 @@ public static class NebulaLore
         "fourteenth consecutive period. No objections were entered. The schedule of annexes remains " +
         "available to policyholders on request.";
 
+    /// <summary>#1052 (L2) · WHO FILED IT — the office <see cref="TermsRefiledHeadline"/> already prints, as
+    /// a name a clipped story can be filed under (<c>NewsWire.SubjectsFor</c>). Not a new name and not a new
+    /// sentence: it is lifted out of the headline directly above so the wire and the field book cannot come
+    /// to spell one office two ways.</summary>
+    public const string TermsRefiledOffice = "Nebula Mutual";
+
     /// <summary>The line the first read of a 📋 PIRATE INSURANCE poster leaves the captain with — the tell
     /// that arrives one beat early (#380's law), in the captain's own voice rather than as a parenthesised
     /// instruction. It has to keep saying "come back and read it", because the SECOND read is the beat and a

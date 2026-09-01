@@ -203,4 +203,10 @@ public static class CyclerWindow
     public const string BerthListedHeadline =
         "Exchange housekeeping: one dormant long-haul berth has come back onto the active listing after " +
         "decades on the held register. The Exchange notes only that a hull has filed against it.";
+
+    /// <summary>#1052 (L2) · WHO FILED IT — the office <see cref="BerthListedHeadline"/> already prints,
+    /// as a name a clipped story can be filed under (<c>NewsWire.SubjectsFor</c>). Lifted out of the
+    /// headline directly above rather than typed a second time, so the wire and the field book cannot come
+    /// to spell one office two ways.</summary>
+    public const string BerthListedOffice = "The Exchange";
 }

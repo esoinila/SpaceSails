@@ -250,7 +250,18 @@ public sealed partial class Map
     /// <c>TheyCameToYou</c> stays FALSE on purpose: #865's card belongs to the visitor scene's own ladder,
     /// and HER face is on her own card. Two modals with the same woman on them is #777's stacked card.</para>
     /// </summary>
-    private void SheReachesYourTable()
+    /// <remarks>#1052 · …AND SHE WAITS IF SOMETHING IS ALREADY WEARING THE SCRIM. Her card is a
+    /// <c>.view-object-backdrop</c> like the salesman's, and the one-scrim law forbids a second dim over a
+    /// first. She is held rather than turned away — she is standing at the table, and the beat she hosts is
+    /// only counted once her card really is on the screen (#777) — so the arbiter holds the WHOLE of the
+    /// arrival, beat included, and lets it through on the first clear frame. <c>TheWalkInIsStillWanted</c>
+    /// is asked again at that far end: a captain who stood up and walked off while reading something else
+    /// has ended the scene she was walking into, exactly as the room's own stepper already has it.</remarks>
+    private void SheReachesYourTable() =>
+        RaiseAScrimCard(HerArrivalLands, TheWalkInIsStillWanted);
+
+    /// <summary>The arrival itself, once the glass is hers.</summary>
+    private void HerArrivalLands()
     {
         if (_walkInWho is not { } who || SeatedTable is not { } t)
         {

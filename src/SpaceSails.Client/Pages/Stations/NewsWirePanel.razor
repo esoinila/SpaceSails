@@ -72,7 +72,10 @@ else
             }
             else
             {
-                <div class="news-wire-headline mb-2">@Shown[0].Headline</div>
+                <div class="news-wire-headline mb-2">
+                    @Shown[0].Headline
+                    @TheRowsOwnControl(Shown[0])
+                </div>
                 @if (Shown.Count > 1)
                 {
                     <div class="fw-bold mb-1 text-secondary small">Earlier on the wire</div>
@@ -83,7 +86,10 @@ else
             <ul class="list-unstyled mb-0">
                 @foreach (NewsWire.NewsItem item in Shown.Skip(1))
                 {
-                    <li class="text-secondary small mb-1"><span class="text-info">@DayLabel(item.SimTime)</span> — @item.Headline</li>
+                    <li class="text-secondary small mb-1">
+                        <span class="text-info">@DayLabel(item.SimTime)</span> — @item.Headline
+                        @TheRowsOwnControl(item)
+                    </li>
                 }
             </ul>
         </ChildContent>
@@ -124,6 +130,26 @@ else
     /// dates — required all the same, because a wire that could be drawn without one is a wire whose next
     /// shape gets its dates wrong.</summary>
     [Parameter, EditorRequired] public double SimTime { get; set; }
+
+    /// <summary>
+    /// #1052 (L2) · <b>WHAT A ROW CAN DO, HANDED IN BY WHOEVER IS DRAWING THE WIRE.</b>
+    ///
+    /// <para>The seated panel puts a <c>✂ Clip</c> on every line; the galley card and the comms ticker put
+    /// nothing on any line, and pass nothing here. So the two shipped consumers draw exactly the markup they
+    /// drew before this lane, and the third one gains its control WITHOUT a second reading of the feed
+    /// living next door — which is the whole reason #1021 made this a component rather than a file move.
+    /// </para>
+    ///
+    /// <para>A <c>RenderFragment&lt;NewsItem&gt;</c> and not a <c>Clip</c> callback: filing a headline into
+    /// a field book is the PAGE's business (it owns the book, the place-name and the vault save), and a
+    /// component that grew a verb of its own would be a second author of a note.</para>
+    /// </summary>
+    [Parameter] public RenderFragment<NewsWire.NewsItem>? RowAction { get; set; }
+
+    /// <summary>The row's control, or nothing at all. Written once so the headline row and the dated rows
+    /// cannot come to offer different controls — they are the same story, one of them merely newer.</summary>
+    private RenderFragment TheRowsOwnControl(NewsWire.NewsItem item) =>
+        RowAction is null ? _ => { } : RowAction(item);
 
     private IReadOnlyList<NewsWire.NewsItem> Shown =>
         Feed.Count <= ItemCount ? Feed : Feed.Take(ItemCount).ToList();
