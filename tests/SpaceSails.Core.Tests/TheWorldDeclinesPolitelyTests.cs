@@ -48,6 +48,26 @@ public sealed class TheWorldDeclinesPolitelyTests
         }
     }
 
+    /// <summary>The one floor of the site the world declines on — the concourse, asked of the building and
+    /// asserted to be exactly one floor.</summary>
+    private static int TheConcourse()
+    {
+        int? found = null;
+        WithDeclined([new PoliteDecline.Decline(Ground, 0)], () =>
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(Ground))
+            {
+                if (UndergroundComplex.DeclinesOn(Ground, level))
+                {
+                    Assert.True(found is null, $"{Ground} declines on two floors — one door, one floor.");
+                    found = level;
+                }
+            }
+        });
+        Assert.True(found is not null, $"{Ground} declines on no floor at all.");
+        return found!.Value;
+    }
+
     /// <summary>Every listed floor of a site, top to bottom — the floors the subtraction may touch.</summary>
     private static IEnumerable<int> ListedFloors(string bodyId)
     {
@@ -303,33 +323,51 @@ public sealed class TheWorldDeclinesPolitelyTests
     [Fact]
     public void TheWorldNeverTakesTheOnlyWayOutOfAnywhere()
     {
-        long window = AWindowThatTakesADoor(Ground);
-        int swept = 0;
+        int swept = 0, doorsTaken = 0;
 
-        WithDeclined([new PoliteDecline.Decline(Ground, window)], () =>
+        // SWEPT OVER MANY WINDOWS, not the one window that happens to take a door. Which leaf the seed picks
+        // is a fact about the window, so a guard that asked once would be asking about one of two dozen
+        // candidates and would pass on a rule that lets the other twenty-three seal a captain in. Watched
+        // exactly that: with the third-door clause deleted, a single-window guard stayed green.
+        for (long window = 0; window < 48; window++)
         {
-            foreach (int level in ListedFloors(Ground))
+            WithDeclined([new PoliteDecline.Decline(Ground, window)], () =>
             {
-                UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(Ground, level, Field);
-                foreach (UndergroundComplex.Room room in floor.TheRooms)
+                foreach (int level in ListedFloors(Ground))
                 {
-                    swept++;
-                    Assert.True(room.MeetsFireCode,
-                        $"{Ground} B{-level}: '{room.Plate}' was left with {room.Exits} way(s) out.");
-                }
-
-                foreach (UndergroundComplex.LockedDoor leaf in floor.Locked)
-                {
-                    double mx = (leaf.X1 + leaf.X2) / 2.0, my = (leaf.Y1 + leaf.Y2) / 2.0;
-                    foreach (UndergroundComplex.Refuge r in floor.Refuges)
+                    UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(Ground, level, Field);
+                    foreach (UndergroundComplex.Room room in floor.TheRooms)
                     {
-                        Assert.True(Math.Abs(r.X - mx) > 1e-6 || Math.Abs(r.Y - my) > 1e-6);
+                        swept++;
+                        Assert.True(room.MeetsFireCode,
+                            $"window {window}, {Ground} B{-level}: '{room.Plate}' was left with "
+                            + $"{room.Exits} way(s) out.");
+
+                        // …and never sealed outright, which MeetsFireCode lets a booth do: its own exemption
+                        // is about how far you are from your one exit and has nothing to say about somebody
+                        // taking it away.
+                        Assert.True(room.Exits > 0,
+                            $"window {window}, {Ground} B{-level}: '{room.Plate}' was sealed shut.");
+                    }
+
+                    foreach (UndergroundComplex.LockedDoor leaf in floor.Locked)
+                    {
+                        double mx = (leaf.X1 + leaf.X2) / 2.0, my = (leaf.Y1 + leaf.Y2) / 2.0;
+                        foreach (UndergroundComplex.Refuge r in floor.Refuges)
+                        {
+                            Assert.True(Math.Abs(r.X - mx) > 1e-6 || Math.Abs(r.Y - my) > 1e-6,
+                                $"window {window}: the world shut the refuge's own door.");
+                        }
                     }
                 }
-            }
-        });
 
-        Assert.True(swept > 40, $"the fire-code sweep only saw {swept} room(s) — this proves little.");
+                UndergroundComplex.FloorPlan bare = UndergroundComplex.Build(Ground, TheConcourse(), Field);
+                doorsTaken += bare.Doorways.Count;
+            });
+        }
+
+        Assert.True(swept > 2_000, $"the fire-code sweep only saw {swept} room(s) — this proves little.");
+        Assert.True(doorsTaken > 0, "the sweep never built the concourse.");
     }
 
     /// <summary>
@@ -343,23 +381,41 @@ public sealed class TheWorldDeclinesPolitelyTests
     [Fact]
     public void TheTakenDoorIsNeverTheRefugeAndNeverAnAmenity()
     {
-        long window = AWindowThatTakesADoor(Ground);
-        (_, UndergroundComplex.FloorPlan open, UndergroundComplex.FloorPlan shut) =
-            TheFloorAndItsTwin(Ground, window);
+        int level = TheConcourse();
+        UndergroundComplex.FloorPlan open = UndergroundComplex.Build(Ground, level, Field);
+        int checkedWindows = 0;
 
-        SurfaceLayout.Doorway gone = open.Doorways.Single(d => !shut.Doorways.Any(s => Same(s, d)));
-        UndergroundComplex.Room was = open.TheRooms.Single(r => r.Ways.Any(w => Same(w, gone)));
+        // Swept over many windows for the reason the fire-code guard is: which leaf the seed picks is a fact
+        // about the window, and one window is one of two dozen candidates.
+        for (long window = 0; window < 48; window++)
+        {
+            UndergroundComplex.FloorPlan shut = default;
+            WithDeclined([new PoliteDecline.Decline(Ground, window)],
+                () => shut = UndergroundComplex.Build(Ground, level, Field));
+            if (shut.Doorways.Count != open.Doorways.Count - 1)
+            {
+                continue;
+            }
 
-        Assert.True(was.Ways.Count - 1 >= UndergroundComplex.FireCodeMinExits,
-            $"the world took a door the room could not spare: '{was.Plate}' had {was.Ways.Count} way(s).");
-        foreach (UndergroundComplex.Refuge r in open.Refuges)
-        {
-            Assert.False(was.Contains(r.X, r.Y), $"the world shut the refuge's own door on {Ground}.");
+            SurfaceLayout.Doorway gone = open.Doorways.Single(d => !shut.Doorways.Any(s => Same(s, d)));
+            UndergroundComplex.Room was = open.TheRooms.Single(r => r.Ways.Any(w => Same(w, gone)));
+            checkedWindows++;
+
+            Assert.True(was.Ways.Count - 1 >= UndergroundComplex.FireCodeMinExits,
+                $"window {window}: the world took a door '{was.Plate}' could not spare "
+                + $"({was.Ways.Count} way(s)).");
+            foreach (UndergroundComplex.Refuge r in open.Refuges)
+            {
+                Assert.False(was.Contains(r.X, r.Y), $"window {window}: the world shut the refuge's door.");
+            }
+            foreach (UndergroundComplex.Amenity a in open.Amenities)
+            {
+                Assert.False(was.Contains(a.X, a.Y), $"window {window}: the world shut an amenity's door.");
+            }
         }
-        foreach (UndergroundComplex.Amenity a in open.Amenities)
-        {
-            Assert.False(was.Contains(a.X, a.Y), $"the world shut an amenity's own door on {Ground}.");
-        }
+
+        Assert.True(checkedWindows > 20,
+            $"only {checkedWindows} window(s) took a door — this proves little about which door.");
     }
 
     /// <summary>

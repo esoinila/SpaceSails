@@ -59,6 +59,7 @@ public sealed class TheSlowGateRosterTests
             { nameof(YouCanWalkTheHiveTests), 19 },
             { nameof(ClickToWalkIsStillWalkingTests), 19 },
             { nameof(TheCirculationIsWalkableTests), 14 },
+            { nameof(TheDeclinedDoorIsStillAWayHomeTests), 30 },
             { nameof(NothingLocksTheUiWhileAnNpcWalksTests), 12 },
 
             // ── The shell / host censuses: a booted page, swept member by member ──
