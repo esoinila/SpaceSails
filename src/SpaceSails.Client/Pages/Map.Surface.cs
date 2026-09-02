@@ -1345,6 +1345,10 @@ public partial class Map
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;
         bool droppedAndLeft = ex.ChestDropped; // read before the excursion (and its dropped pile) is folded away
+        // #455 rule 2 · …and a chest left on the regolith now stays there as a REAL cache, in the open, on
+        // the harder roll. See LeaveTheDroppedChestInTheOpen (Map.Surface.Dig) for why that is the build the
+        // rule was asking for rather than a nicety.
+        TreasureCache? dropped = LeaveTheDroppedChestInTheOpen(ex);
 
         // #314: carried sentries come home (with their drained magazines); any left DEPLOYED on the
         // ground is abandoned — a write-off with a ledger line (#119 voice). Retrieve them before liftoff
@@ -1411,21 +1415,28 @@ public partial class Map
 
         // #313 · THE CHEST YOU DROPPED AND NEVER WENT BACK FOR. Dropping it (G) says "come back for it when
         // the ground's clear", and inside the excursion that is exactly true — walk over the spot and it is
-        // back in the sling. Lift off without it and the ✗-less pile on the regolith is simply gone with the
-        // excursion. What the SIM does is the honest news, and it was the one thing never said: nothing went
-        // into the ground, so nothing ever left the ship's books — the coin never left the purse, the hold
-        // never emptied. Say it, or the captain flies home believing they abandoned a fortune out there.
-        string dropTail = droppedAndLeft
-            ? " 🧰 You lifted off without the chest you dropped — but nothing went into the ground, so nothing left the books: the coin is still in the purse and the hold is untouched."
-            : "";
-        if (buried is { } cache)
+        // back in the sling.
+        //
+        // #455 rule 2 · Lift off without it and it is no longer simply gone. It stays where it fell, in the
+        // open, on the harder roll — a real chest in the ledger with a real map card, which is what makes
+        // "buried beats dropped, by a lot" a thing the game can be wrong about instead of a thing it merely
+        // says. The coin and cargo therefore DO leave the books now (#648's honest "nothing left the books"
+        // line was honest about a world that no longer exists), so the news is what the chest reads as.
+        string dropTail = dropped is { } open
+            ? $" 🧰 You lifted off without the chest you dropped — it stays where it fell. {open.Safety.Sentence} Map filed (🗺)."
+            : droppedAndLeft
+                ? " 🧰 You lifted off without the chest you dropped — but it was empty, so nothing was left out there."
+                : "";
+        if ((buried ?? dropped) is { } cache)
         {
             _treasureMapCard = cache;
             RendererInterop.PlayCue("reveal");
             string tail = escapedWithWatchdogs
                 ? $" {cache.ReeverLevel} Old One(s) haunt this ground now — the best kind of lock."
                 : "";
-            ShowPulseMessage($"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}{botTail}");
+            ShowPulseMessage(buried is not null
+                ? $"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}{botTail}"
+                : $"🛸 Lifted off {ex.Stop.Body.Name}.{tail}{botTail}{dropTail}");
         }
         else if (!settledExpedition && !settledDeflection) // an away-gig settle already spoke its payout line
         {

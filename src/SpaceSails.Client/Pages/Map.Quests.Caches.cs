@@ -116,8 +116,10 @@ public partial class Map
             // Never roll a cache for days before it was in the ground: start its scan at the later of
             // the global last-check and its own burial day.
             long from = Math.Max(lastChecked, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
-            // #295: a Reever-haunted stash is harder for rivals to work — the watchdogs guard it too.
-            if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime, c.ReeverLevel) is not null)
+            // #455: the odds this chest actually earned — the carry, the shovel and the ground's own Reever
+            // weight, read off the ONE oracle (CacheSafety) that also wrote the line the captain was shown
+            // when he put it down. The promise and the dice cannot drift because they are the same call.
+            if (DiscoveryRule.DiscoveredWithin(c, from, SimTime) is not null)
             {
                 _caches.Remove(c.Id);
                 RendererInterop.PlayCue("alarm");

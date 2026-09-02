@@ -62,17 +62,24 @@ public static class CacheMint
     /// <para>#650 · <paramref name="siteIndex"/> is WHICH GROUND on that body the shovel went in at
     /// (<see cref="LandingSite.Index"/>). Left null the chest is body-wide, exactly as every cache minted
     /// before the field existed — which is why a rumour map, minted with no ground under it, still reads
-    /// and digs the way it always has.</para></summary>
+    /// and digs the way it always has.</para>
+    ///
+    /// <para>#455 · <paramref name="buried"/> and <paramref name="padDistance"/> are the other two terms of
+    /// the safety oracle (<see cref="CacheSafety"/>): whether the shovel went in, and how far from the pad
+    /// the captain carried it. Left null — a rumour map, a job's chest — the cache reads under exactly the
+    /// odds it always has.</para></summary>
     public static TreasureCache Bury(
         string id, string bodyId, int mintIndex, int coin, IReadOnlyList<CacheCargo> cargo,
         double buriedSimTime, string owner, bool playerOwned, int reeverLevel = 0,
-        double? digX = null, double? digY = null, int? siteIndex = null)
+        double? digX = null, double? digY = null, int? siteIndex = null,
+        bool? buried = null, double? padDistance = null)
     {
         Landmark site = Landmarks.For(bodyId);
         string seed = SeedKey(bodyId, owner, buriedSimTime, mintIndex);
         return new TreasureCache(
             id, bodyId, site.Name, Bearing(seed), Paces(seed),
-            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex);
+            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex,
+            buried, padDistance);
     }
 }
 
@@ -81,10 +88,15 @@ public static class CacheMint
 /// stumble on our hoards, which is exactly the reason to split loot across many small caches. The
 /// mirror direction (we find THEIRS) is played through rumour maps, not this roll.
 ///
-/// <para><b>TODO — converge on the shared engine.</b> This is a tiny LOCAL d100 seeded from the
+/// <para><b>TODO — converge on the shared engine.</b> This is a tiny LOCAL d1000 seeded from the
 /// cache id and the period index, standing in until the BUSTED lane's <c>DiceRule</c> lands; when it
 /// does, swap <see cref="Roll"/> for a call into it (same seed inputs) so every consequence system
 /// rolls on one engine (ruling 0, "the dice are the engine").</para>
+///
+/// <para>#455 · <b>The threshold is not computed here.</b> Every number this class compares a roll against
+/// comes out of <see cref="CacheSafety"/>, which is also what the bury line reads — one oracle, so the
+/// promise a captain was given and the dice thrown behind his back are the same arithmetic. This class owns
+/// the CLOCK and the DIE; it does not own the odds.</para>
 /// </summary>
 public static class DiscoveryRule
 {
@@ -92,34 +104,43 @@ public static class DiscoveryRule
     /// purpose: a hoard is meant to survive a while, and splitting it is the hedge.</summary>
     public const double PeriodSeconds = 86400.0;
 
-    /// <summary>Per-cache, per-period chance of being found, as a d100 threshold. Modest — a single
-    /// well-placed chest is likely to survive many days, but a big undivided hoard is a standing bet.</summary>
-    public const int DiscoveryChancePercent = 4;
+    /// <summary>The percent view of <see cref="CacheSafety.BaseChancePerMille"/> — an unhidden chest's
+    /// per-day odds. Modest: a single well-placed chest is likely to survive many days, but a big undivided
+    /// hoard is a standing bet.</summary>
+    public const int DiscoveryChancePercent = CacheSafety.BaseChancePerMille / 10;
 
     /// <summary>The floor the watchdog discount can never breach (#295): even a fully Reever-haunted
     /// stash carries a whisper of discovery risk, so a hoard is never truly immortal.</summary>
-    public const int MinDiscoveryChancePercent = 1;
+    public const int MinDiscoveryChancePercent = CacheSafety.MinChancePerMille / 10;
 
-    /// <summary>The effective discovery chance for a stash with a standing Reever presence (#295): each
-    /// watchdog level shaves a point off the base chance (a rival's search faces the same pack that
-    /// haunts our return), floored at <see cref="MinDiscoveryChancePercent"/>. Level 0 is the plain
-    /// <see cref="DiscoveryChancePercent"/>; a full pack (3) drives it to the floor — the best vault in
-    /// the system, guarded by the most dangerous key.</summary>
+    /// <summary>The face of the die the threshold is compared against. #455 widened it from a d100: with
+    /// three terms pushing on one number, whole percents were too coarse to let more than one of them
+    /// matter (any single term hit the floor on its own and silently ate the other two).</summary>
+    public const int DieFaces = 1000;
+
+    /// <summary>The effective discovery chance, in whole percent, for a stash whose only recorded term is
+    /// its standing Reever presence (#295) — the legacy read, and the one every chest buried before #455
+    /// still lives under: 4%, 3%, 2%, 1%. It is the oracle's own answer, divided by ten, not a second
+    /// ladder kept beside it.</summary>
     public static int DiscoveryChanceFor(int reeverLevel) =>
-        Math.Max(MinDiscoveryChancePercent, DiscoveryChancePercent - Math.Max(0, reeverLevel));
+        CacheSafety.Read(padDistanceDu: null, buried: null, reeverLevel).ChancePerMille / 10;
 
     /// <summary>The discovery period index containing a sim time (whole days since epoch).</summary>
     public static long PeriodIndex(double simTime) => (long)Math.Floor(simTime / PeriodSeconds);
 
-    /// <summary>The deterministic d100 [1..100] for one cache in one period. Same inputs → same roll,
+    /// <summary>The deterministic d1000 [1..1000] for one cache in one period. Same inputs → same roll,
     /// forever (the test gate). Replace the body with the shared DiceRule when it lands.</summary>
     public static int Roll(string cacheId, long periodIndex) =>
-        1 + (int)(StableHash.Of(cacheId, periodIndex) % 100UL);
+        1 + (int)(StableHash.Of(cacheId, periodIndex) % (ulong)DieFaces);
 
-    /// <summary>True when a cache is found in a given period. <paramref name="reeverLevel"/> is the
-    /// stash's standing watchdog presence, which hardens it against discovery (#295).</summary>
+    /// <summary>True when a cache is found in a given period, under the legacy read (watchdogs only).</summary>
     public static bool IsDiscovered(string cacheId, long periodIndex, int reeverLevel = 0) =>
-        Roll(cacheId, periodIndex) <= DiscoveryChanceFor(reeverLevel);
+        Roll(cacheId, periodIndex) <= CacheSafety.Read(null, null, reeverLevel).ChancePerMille;
+
+    /// <summary>#455 · True when THIS chest is found in a given period — the full three-term read (carry,
+    /// shovel, watchdogs). The overload above is the same call with the other two terms unrecorded.</summary>
+    public static bool IsDiscovered(TreasureCache cache, long periodIndex) =>
+        Roll(cache.Id, periodIndex) <= CacheSafety.Read(cache).ChancePerMille;
 
     /// <summary>Whether a cache buried at <paramref name="buriedSimTime"/> gets discovered somewhere
     /// in the span (<paramref name="lastCheckedPeriod"/>, nowPeriod] — the client passes the last
@@ -131,6 +152,21 @@ public static class DiscoveryRule
         for (long p = lastCheckedPeriod + 1; p <= nowPeriod; p++)
         {
             if (IsDiscovered(cacheId, p, reeverLevel))
+            {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>#455 · The same skipped-span scan for a WHOLE chest, so the return-trip roll prices the
+    /// carry and the shovel as well as the ground. This is the one the discovery watch calls.</summary>
+    public static long? DiscoveredWithin(TreasureCache cache, long lastCheckedPeriod, double nowSimTime)
+    {
+        long nowPeriod = PeriodIndex(nowSimTime);
+        for (long p = lastCheckedPeriod + 1; p <= nowPeriod; p++)
+        {
+            if (IsDiscovered(cache, p))
             {
                 return p;
             }

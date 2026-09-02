@@ -131,13 +131,19 @@ public class HoardTests
         Assert.NotEqual(DiscoveryRule.Roll("cache-you-0", 12), DiscoveryRule.Roll("cache-you-0", 13));
     }
 
+    // #455 · The die grew from a d100 to a d1000. With three terms pushing on one threshold, whole percents
+    // were too coarse for more than one of them to matter — any single term drove the odds to the floor on
+    // its own and the other two silently stopped meaning anything. The FACE is asked of the rule rather than
+    // copied down here, so the day it changes again this guard moves with it instead of going on auditing a
+    // die that no longer exists (#573's lesson, one level up from geometry).
     [Fact]
-    public void DiscoveryRoll_StaysInD100()
+    public void DiscoveryRoll_StaysOnTheFaceOfItsDie()
     {
+        Assert.Equal(1000, DiscoveryRule.DieFaces);
         for (long p = 0; p < 500; p++)
         {
             int r = DiscoveryRule.Roll("cache-you-7", p);
-            Assert.InRange(r, 1, 100);
+            Assert.InRange(r, 1, DiscoveryRule.DieFaces);
         }
     }
 
