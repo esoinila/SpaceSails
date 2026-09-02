@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using SpaceSails.Core;
 using Xunit;
 
@@ -483,6 +484,16 @@ public sealed class TheBurialTests
 
     // ══ LAW 5 · THE SCULLY LAW, AND §8's RESERVED WORD ══════════════════════════════════════════════════
 
+    /// <summary>§8 — there is ONE of these and a hall never borrows the word. Everything else in the list is
+    /// a word that would settle the question the feature exists to leave open. Held in one place because two
+    /// guards sweep it now: the whole burial path, and the ledger paper's three entries in particular.
+    /// </summary>
+    private static readonly string[] Forbidden =
+    [
+        "monolith", "ancient", "alien", "reever", "old one", "pre-human", "not human", "artefact",
+        "artifact", "civilisation", "civilization", "millennia", "aeon", "eon",
+    ];
+
     /// <summary>
     /// #1063/#672 · NO STRING ANYWHERE ON THE BURIAL PATH CONTAINS THE WORD §8 RESERVES, and none of them
     /// settles which reading of §10 is true. Every one is a piece of ordinary facilities paperwork.
@@ -493,14 +504,6 @@ public sealed class TheBurialTests
     [Fact]
     public void NoStringOnTheBurialPathNamesTheReservedThing()
     {
-        // §8 — there is ONE of these and a hall never borrows the word. Everything else here is a word that
-        // would settle the question the feature exists to leave open.
-        string[] forbidden =
-        [
-            "monolith", "ancient", "alien", "reever", "old one", "pre-human", "not human", "artefact",
-            "artifact", "civilisation", "civilization", "millennia", "aeon", "eon",
-        ];
-
         var strings = new List<(string Where, string Text)>();
         foreach (string s in Burial.AllProse())
         {
@@ -519,7 +522,7 @@ public sealed class TheBurialTests
         var named = new List<string>();
         foreach ((string where, string text) in strings)
         {
-            foreach (string word in forbidden)
+            foreach (string word in Forbidden)
             {
                 if (text.Contains(word, StringComparison.OrdinalIgnoreCase))
                 {
@@ -529,9 +532,10 @@ public sealed class TheBurialTests
         }
         Assert.True(named.Count == 0, "a burial string settles what it must leave open:\n  " + string.Join("\n  ", named));
 
-        // …and the type that decides WHEN a ground is filled publishes no prose beyond those six, which is
-        // the same shape #677 gave the clock: a mechanism with nothing to say cannot say the wrong thing.
-        Assert.Equal(6, Burial.AllProse().Count());
+        // …and the type that decides WHEN a ground is filled publishes no prose beyond those eight — the six
+        // of slice 1 plus the canon pass's two bracketing ledger entries — which is the same shape #677 gave
+        // the clock: a mechanism with nothing to say cannot say the wrong thing.
+        Assert.Equal(8, Burial.AllProse().Count());
     }
 
     // ══ LAW 6 · THE THREE AUTHORED LINES, VERBATIM AND REACHABLE ════════════════════════════════════════
@@ -561,6 +565,84 @@ public sealed class TheBurialTests
 
         // The ledger line carries NO instruction number, which is the whole of the evidence.
         Assert.DoesNotContain(Burial.LedgerLine, c => char.IsDigit(c));
+    }
+
+    /// <summary>
+    /// #1063 · THE PAPER IS THREE ENTRIES AND THE CLUE IS THE ARITHMETIC BETWEEN THEM. The canon pass of
+    /// 2026-09-02 brackets the anomalous entry with two cited ones, and what the pair buys is not atmosphere:
+    /// it is that the omission becomes MEASURABLE. 2211, then a job citing nothing, then 2213 — the ledger's
+    /// own numbering says an instruction 2212 was issued and that its line is the line with no number on it.
+    /// Nobody ever writes that down, and this guard holds that nobody ever does: 2212 appears nowhere.
+    ///
+    /// <para>Every word of all three is authored, so all three are compared character for character and in
+    /// the clerk's own order; a reworded entry is a piece of canon an implementer wrote.</para>
+    ///
+    /// <para><b>Reverts that reddened it (watched, 2026-09-02):</b> the first entry dropped from the
+    /// composition — <i>"the ledger paper does not carry, in order, the entry "B3 sump: seal and impeller
+    /// renewed…""</i>; and the three composed in reverse, which is the revert that matters most because a
+    /// shuffled paper still CONTAINS all three — <i>"the ledger paper does not carry, in order, the entry
+    /// "Sub-level access no longer required…""</i>.</para>
+    /// </summary>
+    [Fact]
+    public void TheLedgerPaperCarriesThreeEntriesAndTheOmittedNumberIsTheOnlyTell()
+    {
+        string[] entries = [Burial.LedgerLineBefore, Burial.LedgerLine, Burial.LedgerLineAfter];
+
+        // ── VERBATIM. The issue's own sentences, and an implementer may not reword one of them.
+        Assert.Equal(
+            "B3 sump: seal and impeller renewed, six hours, two hands. Per instruction 2211/M, Plant.",
+            entries[0]);
+        Assert.Equal(
+            "Sub-level access no longer required. Filled and remediated per instruction.",
+            entries[1]);
+        Assert.Equal(
+            "Upper walks: handrail re-fixed, bays four to nine, three hours, one hand. "
+            + "Per instruction 2213/M, Plant.",
+            entries[2]);
+
+        // ── ONE PAPER, IN ORDER. Checked as rising positions rather than as three Contains, because three
+        //    Contains pass on a paper that carries the entries shuffled — and shuffled, there is no clue.
+        string paper = UndergroundComplex.MaintenanceLedgerLine;
+        int at = -1;
+        foreach (string entry in entries)
+        {
+            int next = paper.IndexOf(entry, StringComparison.Ordinal);
+            Assert.True(next > at, $"the ledger paper does not carry, in order, the entry \"{entry}\"");
+            at = next;
+        }
+        Assert.Equal("📋 " + string.Join(" ", entries), paper);
+
+        // ── THE HOUSE STYLE, AND THE ONE BREAK IN IT. Every entry files under "per instruction"; exactly the
+        //    middle one names no number after it.
+        var cited = new List<int>();
+        foreach (string entry in entries)
+        {
+            Assert.Contains("er instruction", entry, StringComparison.Ordinal);
+            MatchCollection numbered = Regex.Matches(entry, @"[Pp]er instruction (\d+)");
+            Assert.True(numbered.Count <= 1, $"an entry cites two instructions: \"{entry}\"");
+            if (numbered.Count == 1)
+            {
+                cited.Add(int.Parse(
+                    numbered[0].Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
+        Assert.Equal(2, cited.Count);
+        Assert.DoesNotMatch(@"[Pp]er instruction (\d+)", entries[1]);
+
+        // ── THE ARITHMETIC. Consecutive but for one, and the one is never written anywhere on the paper.
+        Assert.Equal([2211, 2213], cited);
+        Assert.Equal(2, cited[1] - cited[0]);
+        Assert.DoesNotContain("2212", paper, StringComparison.Ordinal);
+
+        // ── AND IT IS STILL FACILITIES PAPERWORK. §8's reserved word, and every word that would settle §10,
+        //    are absent from all three — the same sweep the whole burial path gets, aimed at the new prose.
+        foreach (string entry in entries)
+        {
+            foreach (string word in Forbidden)
+            {
+                Assert.DoesNotContain(word, entry, StringComparison.OrdinalIgnoreCase);
+            }
+        }
     }
 
     /// <summary>
