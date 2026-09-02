@@ -290,17 +290,26 @@ shuttle not returning when the window closes.
 
 1. Launch **Sol (Electric)**. Confirm the HUD shows a Charge bar under the main readouts.
 2. Warp toward the sun (or into a visible plasma stream). Confirm the charge percentage climbs.
-3. Let it reach 90%+. Confirm the HUD flags "⚡ ARCING — visible system-wide" and a halo ring
-   appears around your ship on the map.
-4. Press `V`. Confirm charge drops to roughly half its prior value and the arcing warning clears
-   once under 90%.
-5. Press `V` again immediately. Confirm a "Vent recharging…" message appears (cooldown) rather
+3. Let it reach 90%+. Confirm the HUD flags "⚡ ARCING — visible system-wide" **and that you can see
+   it on the map without reading the HUD at all**: a short whip stands off her beam with three
+   filaments crawling slowly off its tip (#528 §7). It is a PLUME off one extremity, never a ring
+   around the hull — field strength is potential over radius of curvature, so a discharge leaves the
+   sharpest thing she has and a sphere is the one shape it cannot be.
+4. **Pause** (`space`) while she is arcing. Confirm the filaments FREEZE. The crawl is seeded from
+   sim time, so a stopped world draws a stopped plume; a plume that keeps dancing while paused is
+   the wall clock leaking into the picture.
+5. Press `V`. Confirm charge drops to roughly half its prior value, the arcing warning clears once
+   under 90%, and the dump itself SNAPS — five brighter, longer filaments off the same masthead,
+   gone inside about two-thirds of a second. Do it again from a nearly cold hull and confirm the
+   flash is dimmer and shorter: the brightness is the charge that actually left her.
+6. Press `V` again immediately. Confirm a "Vent recharging…" message appears (cooldown) rather
    than a second instant halving.
-6. Fly into a plasma stream while charged and confirm you feel a push along the stream's
+7. Fly into a plasma stream while charged and confirm you feel a push along the stream's
    direction (speed changes without spending a pulse).
 
-**Broken looks like:** charge never climbing near the sun, arcing warning never appearing, or
-venting not reducing the charge value.
+**Broken looks like:** charge never climbing near the sun, arcing warning never appearing, venting
+not reducing the charge value — or the discharge drawn as a ring centred on the ship, drawn while
+she is merely GLOWING, the same brightness whatever she dumped, or still dancing on a paused map.
 
 ---
 
