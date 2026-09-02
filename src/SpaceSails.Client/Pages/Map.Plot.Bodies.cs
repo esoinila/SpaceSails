@@ -283,15 +283,19 @@ public partial class Map
     }
 
     /// <summary>
-    /// Her mast, and whatever is coming off it. Two states, both from Lab 43:
+    /// Her mast, and whatever is coming off it. Two states, both from Lab 43 — and <b>the geometry is not
+    /// here</b>. It is <see cref="DischargePlume"/> in Core, where a test can ask it questions; this method is
+    /// a pen that walks what Core hands back and nothing else. A client geometry literal nobody can put a test
+    /// on is this repo's first named bug class, and a plume is a physical claim.
     ///
-    /// <para>ARCING is a slow crawl of short filaments — visible from the map without reading a panel, the same
-    /// principle as the vacuum clocks being readable from the corridor.</para>
+    /// <para>ARCING is a slow crawl of short filaments — readable from the map without opening a panel, the
+    /// same principle as the vacuum clocks being readable from the corridor. Its phase comes off <b>SIM</b>
+    /// time, so a paused map draws the same frame twice and the fingerprint ledgers hold still.</para>
     ///
-    /// <para>A DUMP is one bright frame and an afterglow. The honest event is 2.2 ms through the contactor; the
-    /// screen gets ~0.6 s, which is a stylisation of about 300× and the smallest lie that still reads. What it
-    /// must NOT be is slow-motion lightning: 0.22 J is a static shock off a door handle, so the picture is a
-    /// filament and a snap, never a fireball.</para>
+    /// <para>A DUMP is one bright snap and an afterglow on the real clock, scaled by <b>how much she actually
+    /// let go of</b> — <see cref="DischargePlume.DumpBrightness"/>, which is
+    /// <see cref="HullCharge.SeenFartherFactor"/>'s own excess rather than a second opinion about it. What it
+    /// must NOT be is slow-motion lightning: 0.22 J is a static shock off a door handle.</para>
     /// </summary>
     private void DrawDischarge(float sx, float sy)
     {
@@ -300,72 +304,63 @@ public partial class Map
             return;
         }
 
-        double now = _lastTimestampMs ?? 0;
-        double sinceDump = now - _lastDischargeMs;
-        bool flashing = sinceDump >= 0 && sinceDump < DischargeFlashMs;
-        bool arcing = _ship.Charge >= ArcChargeThreshold;
-        if (!flashing && !arcing)
+        double sinceDump = (_lastTimestampMs ?? 0) - _lastDischargeMs;
+        DischargePlume.Plume plume =
+            DischargePlume.Shape(_lastDischargeShed, HullCharge.BandOf(_ship.Charge), sinceDump);
+        if (!plume.Draws)
         {
             return;
         }
 
         // The whip stands off her beam — read as an antenna rather than as the gun, which already draws along
-        // the heading. Screen space: the glyph is a fixed size on the map, so the mast is too.
-        double heading = ShipHeadingRad();
-        float mastX = sx + (float)(Math.Cos(heading + Math.PI / 2) * MastPx);
-        float mastY = sy + (float)(Math.Sin(heading + Math.PI / 2) * MastPx);
+        // the heading. World Y is up and canvas Y is down (Camera.WorldToScreen flips it), so her world heading
+        // crosses over to a SCREEN angle here, once, at the one call that crosses — the same rule
+        // DrawVelocityArrowhead obeys. Before #528 §7 this mast was built from an unflipped world angle, so it
+        // swung the opposite way round the hull from her own barrel line as she slewed.
+        double mastAngle = -ShipHeadingRad() - (Math.PI / 2);
+        (double mastOffsetX, double mastOffsetY) = DischargePlume.Masthead(mastAngle);
+        float mastX = sx + (float)mastOffsetX;
+        float mastY = sy + (float)mastOffsetY;
 
         Span<float> mast = stackalloc float[4];
         mast[0] = sx; mast[1] = sy; mast[2] = mastX; mast[3] = mastY;
         _renderer!.DrawPolyline(mast, ArcHaloColor with { A = 140 }, 1f);
 
-        // Intensity: full for the first instant of a dump, decaying away; a low simmer while merely arcing.
-        double intensity = flashing ? 1.0 - (sinceDump / DischargeFlashMs) : 0.35;
-        byte alpha = (byte)Math.Clamp(60 + (intensity * 195), 0, 255);
-        int filaments = flashing ? 5 : 3;
-        float reach = (float)(MastPx * (flashing ? 1.6 : 0.7) * (0.55 + (intensity * 0.45)));
+        double phase = plume.Flashing
+            ? DischargePlume.FlashPhase(sinceDump)
+            : DischargePlume.CrawlPhase(SimTime);
 
-        // Deterministic flicker: quantised time drives a cheap hash, so the filaments dance without a Random
-        // and without dancing differently on every re-render of the same instant.
-        long tick = (long)(now / 70.0);
+        // One buffer for the whole plume: CA2014 is right that a stackalloc inside the loop is a frame-rate
+        // shaped foot-gun, and this runs on every rendered frame while she is arcing. Both spans are stack
+        // room the frame already owns — the plume allocates nothing.
+        Span<double> bolts = stackalloc double[DischargePlume.MaxFilaments * DischargePlume.FloatsPerFilament];
+        int written = DischargePlume.Filaments(plume, mastAngle, phase, bolts);
 
-        // One buffer for every filament: CA2014 is right that a stackalloc inside the loop is a frame-rate
-        // shaped foot-gun, and this runs on every rendered frame while she is arcing.
-        Span<float> bolt = stackalloc float[6];
-
-        for (int i = 0; i < filaments; i++)
+        RgbaColor ink = ArcHaloColor with { A = DischargePlume.Alpha(plume) };
+        float widthPx = DischargePlume.StrokePx(plume);
+        Span<float> bolt = stackalloc float[DischargePlume.FloatsPerFilament];
+        for (int i = 0; i < written; i += DischargePlume.FloatsPerFilament)
         {
-            uint h = (uint)HashCode.Combine(tick, i);
-            double spread = ((h & 0xFFFF) / 65535.0 - 0.5) * 1.9;          // radians off the mast's line
-            double length = reach * (0.45 + (((h >> 16) & 0xFF) / 255.0) * 0.55);
-            double angle = heading + (Math.PI / 2) + spread;
-
-            // One kink each, so they read as discharge rather than as spokes.
-            float midX = mastX + (float)(Math.Cos(angle) * length * 0.5);
-            float midY = mastY + (float)(Math.Sin(angle) * length * 0.5);
-            double kink = angle + ((((h >> 24) & 0xFF) / 255.0) - 0.5) * 1.2;
-            float tipX = midX + (float)(Math.Cos(kink) * length * 0.5);
-            float tipY = midY + (float)(Math.Sin(kink) * length * 0.5);
-
-            bolt[0] = mastX; bolt[1] = mastY;
-            bolt[2] = midX; bolt[3] = midY;
-            bolt[4] = tipX; bolt[5] = tipY;
-            _renderer!.DrawPolyline(bolt, ArcHaloColor with { A = alpha }, flashing ? 1.6f : 1f);
+            bolt[0] = sx + (float)bolts[i];
+            bolt[1] = sy + (float)bolts[i + 1];
+            bolt[2] = sx + (float)bolts[i + 2];
+            bolt[3] = sy + (float)bolts[i + 3];
+            bolt[4] = sx + (float)bolts[i + 4];
+            bolt[5] = sy + (float)bolts[i + 5];
+            _renderer!.DrawPolyline(bolt, ink, widthPx);
         }
 
-        // The core sits ON the tip, because that is where the field is — small, and brightest at the snap.
-        _renderer!.DrawCircle(mastX, mastY, flashing ? 3.4f : 1.8f,
-                              ArcHaloColor with { A = alpha }, ArcHaloColor with { A = alpha });
+        // The core sits ON the masthead, because that is where the field is — small, and brightest at the snap.
+        _renderer!.DrawCircle(mastX, mastY, DischargePlume.CoreRadiusPx(plume), ink, ink);
     }
-
-    /// <summary>How far her whip stands off the hull on screen, in pixels. Cosmetic: the map glyph is a fixed
-    /// size, so the mast is too.</summary>
-    private const float MastPx = 11f;
-
-    /// <summary>How long a dump stays on screen. The physical event is 2.2 ms (Lab 43 §C); this is the smallest
-    /// stylisation that a player can actually see happen.</summary>
-    private const double DischargeFlashMs = 600.0;
 
     /// <summary>When she last let go, in renderer-clock milliseconds.</summary>
     private double _lastDischargeMs = double.NegativeInfinity;
+
+    /// <summary>…and HOW MUCH she let go of, 0…1 of hull charge. The brightness of the flash is this number
+    /// read through <see cref="DischargePlume.DumpBrightness"/> — a dump off a nearly cold hull is a tick at
+    /// the masthead, and a dump off an arcing one is the whole picture. Kept beside the timestamp because the
+    /// two are one event: without it the flash would be the same size whatever she was carrying, which is the
+    /// one thing #528 §7 asked it not to be.</summary>
+    private double _lastDischargeShed;
 }
