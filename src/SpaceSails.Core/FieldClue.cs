@@ -103,6 +103,20 @@ public static class FieldClue
     {
         ArgumentNullException.ThrowIfNull(paperId);
 
+        // #1061 · THE ONE SHEET IN THIS GAME THAT WAS WRITTEN RATHER THAN SEEDED, and it is here rather than
+        // in a second reader for the reason UndergroundComplex.IsHallRecord is inside RelicReveal: everything
+        // that reads a paper — the sleeve's row, the free glance, the dig at a table, the gist filed when it
+        // is put down — goes through this function and Title below. A second composition for one authored
+        // sheet would be a document that read one way in the pocket and another on the card.
+        //
+        // It returns the body ALONE. The seeded tail below ("there is a place named on it…") is the paper
+        // telling you how well it pins a place, and a rate schedule's answer to that is the whole of what it
+        // already says: it prices the ground and never names what happens on it.
+        if (HardcaseRep.IsTheSchedule(paperId))
+        {
+            return HardcaseRep.ScheduleBody;
+        }
+
         string[] papers =
         [
             "A duplicate movement order, carbon third copy, the top two long gone. Somebody has ticked a " +
@@ -164,6 +178,13 @@ public static class FieldClue
     public static string Title(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
+
+        // #1061 · …and the authored sheet is called what it is called. See Document above for why the branch
+        // is here and not in a reader of its own.
+        if (HardcaseRep.IsTheSchedule(paperId))
+        {
+            return HardcaseRep.ScheduleLabel;
+        }
 
         string[] titles =
         [

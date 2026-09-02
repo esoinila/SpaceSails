@@ -454,7 +454,7 @@ public static partial class UndergroundComplex
 
         string line = haul switch
         {
-            Haul.Records => "  🎒 Into your pocket: operational paper.",
+            Haul.Records => PaperPocketLine,
             Haul.Dirt => "  🎒 Into your pocket: a file on somebody.",
 
             // #677 · A record out of the halls is the SAME law as the pallet — what goes in the pocket is the
@@ -476,6 +476,14 @@ public static partial class UndergroundComplex
 
         return new Pickup(take, line, RoomEmptied: true);
     }
+
+    /// <summary>#678 · What the game says when a sheet of operational paper goes into the sleeve.
+    ///
+    /// <para>#1061 · Lifted out of the switch above, where it was a literal, the day a sheet that came off a
+    /// MOON rather than out of a room needed the same sentence. A pickup line may only be printed for
+    /// something that actually went in (#678's own law), and that law is much easier to keep when there is
+    /// one sentence to print rather than one per place a paper can be found.</para></summary>
+    public const string PaperPocketLine = "  🎒 Into your pocket: operational paper.";
 
     /// <summary>#678 · What a full pocket says. It is the only refusal in the game that leaves the world
     /// unchanged, and it has to be unmistakable about that: the find is still there.</summary>

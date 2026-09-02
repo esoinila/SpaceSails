@@ -97,10 +97,21 @@ public static class CarriedObject
     public static Reveal PaperReveal(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
-        return new Reveal(
-            "",
-            $"📋 {FieldClue.Label(FieldClue.CertaintyOf(paperId)).ToUpperInvariant()}",
-            FieldClue.Document(paperId));
+
+        // #1061 · THE AUTHORED SHEET IS TITLED WITH ITS OWN NAME. Every other paper in the game is anonymous
+        // by design — a captain holding six of them is holding six certainties and no titles worth reading —
+        // so the head of this card is the CERTAINTY. That is exactly wrong for the one sheet somebody wrote:
+        // the plate on the regolith, the row in the sleeve and the head of this card all have to be the same
+        // four words, or the thing the captain walked over to pick up is not the thing that opened.
+        //
+        // Caption-only (#528's deliberate no-picture idiom), like every other paper: a document is not a
+        // portrait, and no plate in this repository is a photograph of a rate schedule.
+        return HardcaseRep.IsTheSchedule(paperId)
+            ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
+            : new Reveal(
+                "",
+                $"📋 {FieldClue.Label(FieldClue.CertaintyOf(paperId)).ToUpperInvariant()}",
+                FieldClue.Document(paperId));
     }
 
     /// <summary>#677 · WHICH relic-class card, asked of the find's own id.

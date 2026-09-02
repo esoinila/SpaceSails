@@ -714,6 +714,27 @@ public sealed record InsuranceWeatherSection
     /// <summary>One row per station the captain has drunk at: <c>stationId|visits|lastSaidAtVisit</c>, where
     /// the last field is −1 for a station the weather has never blown through.</summary>
     public IReadOnlyList<string> Stations { get; init; } = [];
+
+    /// <summary>
+    /// #1061 beat 2 · <b>THE GROUNDS BREM KOLT HAS BEEN FOUND ON</b> — one row per ground
+    /// (<see cref="HardcaseRep.GroundKey"/>), at most <see cref="HardcaseRep.GroundsAtMost"/> of them.
+    ///
+    /// <para>It rides the vault because the cap is a fact about a UNIVERSE and not about a walk: <i>"They all
+    /// decline on the first moon. The book says you'll sign on the second"</i> is a promise the game keeps
+    /// across a save, and a captain who quit between moons and came back to a third Kolt would have caught
+    /// the game forgetting its own line. It is kept beside the insurance weather because it is the same
+    /// arc's bookkeeping and this section is already the file's answer to <i>what has Nebula Mutual done to
+    /// this captain</i>.</para>
+    ///
+    /// <para><b>Written only when he has actually been found somewhere</b> — the #1057/#1066 pattern, and
+    /// not a stylistic choice: the checksum is taken over the payload, so an extra <c>"hardcase": []</c> on
+    /// every save would change the digest of every vault ever written and hang the 📛 tampered marker on an
+    /// honest voyage. Null means "this universe has never met him", which is the truth about every save
+    /// written before this lane.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Hardcase { get; init; }
 }
 
 public sealed record AuthoritiesSection

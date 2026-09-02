@@ -1717,6 +1717,45 @@
     }
 
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #1061 beat 2 · BREM KOLT, HAZARDOUS ACCOUNTS. The same firm as the panel above and deliberately the
+       same markup — one .rep-card, one scrim, one shell — because he is a salesman from Nebula Mutual and
+       drawing him differently would be the page claiming a difference the fiction does not have.
+
+       WHAT IS DIFFERENT IS TWO THINGS. There is NO PORTRAIT: Fess has the one portrait arc 2 allows, and
+       hanging his face over Kolt's name would be the third named bug class with a photograph on it (the
+       picture reporting a man the sim is not holding). Caption-only is #528's deliberate no-picture idiom
+       and it is taken on purpose here, not by omission — no plate in this repository is a picture of him.
+       And his line is TWO sentences, because the canon is two: the opener and the pitch, in that order.
+
+       AND THE WAY OUT IS HIS REFUSAL. A ✕ that only took the panel away would leave a man standing at your
+       elbow on open regolith with nothing left to answer — so the dismiss runs the verb "Not today" runs:
+       he says the third line, and it is the only thing he has to say about being turned down.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_hardcaseCard is { } koltOffers)
+    {
+        <div class="view-object-backdrop rep-backdrop">
+            <OverlayShell class="view-object rep-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          DismissLabel="Step away from the underwriter — the same as declining"
+                          DismissTitle="Walk on without signing. He has one thing left to say about that"
+                          OnClose="() => Dismiss(TellKoltNo)">
+                <div class="view-object-title">@SpaceSails.Core.HardcaseRep.DisplayName</div>
+                <div class="rep-desk">@SpaceSails.Core.HardcaseRep.Desk</div>
+                <div class="view-object-caption rep-pitch">@SpaceSails.Core.HardcaseRep.Opener</div>
+                <div class="view-object-caption rep-pitch">@SpaceSails.Core.HardcaseRep.Pitch</div>
+                <div class="rep-offers">
+                    @foreach (var koltOffer in koltOffers)
+                    {
+                        var koltMove = koltOffer.Move;
+                        <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheHardcase(koltMove))">@koltOffer.Label</button>
+                    }
+                </div>
+            </OverlayShell>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
        #973 L5b · THE WALK-IN. She came in through a leaf that does not open for you, crossed the floor on
        the real A*, and is standing at the top the captain took for himself. She is not sitting: she said
        she would not stay.
