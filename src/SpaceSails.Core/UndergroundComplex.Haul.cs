@@ -375,9 +375,9 @@ public static partial class UndergroundComplex
         // #411 · The head office's designated sheet reads as itself; everywhere else, operational paper.
         Haul.Records when StandingOrderRoomFor(bodyId) is { } o && level == o.Level && roomIndex == o.RoomIndex
             => StandingOrderLine,
-        // #1063 · …and on a ground somebody has filled in, the maintenance ledger, open at the three lines
-        // that record it. The anomaly is the BREVITY: everything else this ledger has ever recorded cites an
-        // instruction number, and this job cites none. See MaintenanceLedgerLine.
+        // #1063 · …and on a ground somebody has filled in, the maintenance ledger, open at the three entries
+        // that bracket the job. The anomaly is the BREVITY and it is read off the numbering: instruction
+        // 2211, then an entry citing none, then 2213. See MaintenanceLedgerLine.
         Haul.Records when MaintenanceLedgerRoomFor(bodyId) is { } l && level == l.Level && roomIndex == l.RoomIndex
             => MaintenanceLedgerLine,
         Haul.Records =>

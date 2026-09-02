@@ -211,12 +211,13 @@ public static class Burial
         }
     }
 
-    // ── THE EVIDENCE LIFECYCLE — THREE AUTHORED LINES, VERBATIM FROM #1063 ───────────────────────────────
+    // ── THE EVIDENCE LIFECYCLE — THE AUTHORED LINES, VERBATIM FROM #1063 ─────────────────────────────────
     //
     // The issue authored every player-facing word of this beat and they are lifted character-for-character.
     // The way this feature dies is one helpful sentence written to fill a gap (§13.20's own lesson), and the
     // gap here is enormous: nobody in the world may ever say what happened, so every temptation to explain
-    // has to be answered with a line that was already written.
+    // has to be answered with a line that was already written. The two bracketing ledger entries are the
+    // issue's canon pass of 2026-09-02 and are authored exactly as strictly as the rest.
     //
     // Read them in order and the whole event is there, told entirely by ordinary paperwork: a works notice
     // goes up; the ledger records the job in three lines and cites no instruction; the local paper is pleased
@@ -228,12 +229,26 @@ public static class Burial
     public const string NoticeLine =
         "Resurfacing of the lower galleries begins Monday. Please use the upper walks.";
 
+    /// <summary>#1063 · <b>DURING, the entry ABOVE</b> — an ordinary job on an ordinary day, and it cites
+    /// its instruction: <b>2211/M</b>. Authored (canon pass, 2026-09-02), verbatim. It exists to establish
+    /// the house style the next entry breaks: department, hours, hands, number. Nothing about it is
+    /// interesting, which is the entire job it does.</summary>
+    public const string LedgerLineBefore =
+        "B3 sump: seal and impeller renewed, six hours, two hands. Per instruction 2211/M, Plant.";
+
     /// <summary>#1063 · <b>DURING</b> — the entry in an otherwise meticulous maintenance ledger, and
     /// <b>the anomaly IS the brevity</b>: the ledger cites an instruction number for everything else it has
     /// ever recorded, and this job has none. Authored, verbatim; the absence of a number is the evidence, so
     /// nothing may ever be appended to it.</summary>
     public const string LedgerLine =
         "Sub-level access no longer required. Filled and remediated per instruction.";
+
+    /// <summary>#1063 · <b>DURING, the entry BELOW</b> — the next ordinary job, citing <b>2213/M</b>, and
+    /// between them the two cited numbers do the arithmetic no sentence on the paper is allowed to do: 2211,
+    /// then a job with no number, then 2213. An instruction 2212 was issued and the one line that would cite
+    /// it is the one line that cites nothing. Authored (canon pass, 2026-09-02), verbatim.</summary>
+    public const string LedgerLineAfter =
+        "Upper walks: handrail re-fixed, bays four to nine, three hours, one hand. Per instruction 2213/M, Plant.";
 
     /// <summary>#1063 · <b>AFTER</b> — the rag, cheerful, once. The owner's own cherry on the cake: <i>"of
     /// course we do a ton of work to raise our streets for no apparent purpose"</i>, reported as good news.
@@ -278,7 +293,9 @@ public static class Burial
     {
         yield return NoticeHead;
         yield return NoticeLine;
+        yield return LedgerLineBefore;
         yield return LedgerLine;
+        yield return LedgerLineAfter;
         yield return RagLine;
         yield return MasonPlate;
         yield return MasonLine;

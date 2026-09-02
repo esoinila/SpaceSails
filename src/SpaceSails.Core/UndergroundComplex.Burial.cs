@@ -30,20 +30,33 @@ public static partial class UndergroundComplex
     // for the specimen and this file invents none — the object is the whole statement, and a caption would be
     // the one helpful sentence that kills the feature (§13.20's own lesson).
 
-    /// <summary>#1063 · What the captain reads in the room the ledger is kept in. <b>The authored line and
-    /// nothing else</b>, behind the paper glyph every operational-paper line in this building already wears.
+    /// <summary>#1063 · What the captain reads in the room the ledger is kept in: <b>one paper, three
+    /// entries, in the order the clerk wrote them</b>, behind the paper glyph every operational-paper line in
+    /// this building already wears. All three are authored — the middle one by the issue, the two that
+    /// bracket it by its canon pass of 2026-09-02 — and no word of any of them is composed here.
     ///
-    /// <para><b>The anomaly is the brevity, and the brevity is the whole evidence.</b> The issue's own
-    /// framing is that this ledger is otherwise meticulous — it cites an instruction number for every job it
-    /// has ever recorded — and that this job cites none. Those two contrasting cited lines are NOT authored
-    /// anywhere, and this file does not write them: a pair of invented ledger entries either side of the
-    /// authored one would be two sentences of canon written by an implementer to make a point the authored
-    /// sentence already makes on its own. <i>"…per instruction"</i>, with no instruction named, is a whole
-    /// piece of evidence by itself.</para></summary>
-    // FABLE: line needed — the two CITED maintenance-ledger entries that bracket this one (each with its own
-    // instruction number), so the missing number reads as an omission rather than as a house style. #1063
-    // authored the anomalous entry only. Shipping it alone reads; the pair would read better.
-    public const string MaintenanceLedgerLine = "📋 " + Burial.LedgerLine;
+    /// <para><b>THE CLUE IS THE NUMBERING AND NOTHING ELSE.</b> Read the instruction citations down the page
+    /// and they go <b>2211</b>, then <i>nothing</i>, then <b>2213</b>. The ledger's own arithmetic therefore
+    /// says an instruction 2212 was issued, and the one line that would cite it is the one line that cites
+    /// nothing: an absence in the exact shape of the thing that was removed. That is the missing-middle clue
+    /// this issue is about, and it is delivered by <b>a clerk's habit</b> rather than by a sentence — nobody
+    /// writes down that a number is missing, and nobody has to.</para>
+    ///
+    /// <para><b>Why the brackets are not filler.</b> Alone, <i>"…per instruction"</i> with no instruction
+    /// named is evidence a reader has to take on trust: it might simply be how this ledger writes. With a
+    /// cited job either side of it, in the same form to the comma — work, hours, hands, instruction,
+    /// department — the omission is measurable off the page rather than asserted. Every other word on the
+    /// paper is hours, hands and a department, which is what a Scully needs and all a Scully gets. No new
+    /// noun is introduced: PLANT is one of the eight <see cref="Departments"/> the signage already deals
+    /// (#605), and the one that owns sumps and handrails.</para>
+    ///
+    /// <para><b>Why one run of text.</b> The haul line is a single pulse string and the client concatenates
+    /// the pickup sentence straight onto it (<c>Map.Surface.Hive</c>), which is the same shape
+    /// <see cref="StandingOrderLine"/> — this building's other multi-entry paper — already ships in. The
+    /// three read as three entries because they are three closed sentences in one rigid clerical form, not
+    /// because of any punctuation invented here.</para></summary>
+    public const string MaintenanceLedgerLine =
+        "📋 " + Burial.LedgerLineBefore + " " + Burial.LedgerLine + " " + Burial.LedgerLineAfter;
 
     /// <summary>#1063 · Which floor of this site carries the specimen, or null where there is none.
     ///
