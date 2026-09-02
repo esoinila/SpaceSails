@@ -36,6 +36,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>Map.Dispose</c> — that one line is the whole difference between a boot that stops when its page
 /// goes and the boot that did not.</para>
 /// </summary>
+[SlowGate] // #251 · 14 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheBootStopsWhenYouLeaveTests
 {
     [Fact]

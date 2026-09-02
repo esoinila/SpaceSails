@@ -10,6 +10,7 @@ namespace SpaceSails.Core.Tests;
 /// would give. Plus the guard rules (refuse while hunted / in-well / short / off-course), the
 /// arrival-at-capture-range placement, the promise wording, and Miranda's ephemeris + shuttle-range.
 /// </summary>
+[SlowGate] // #251 · 12 s over 42 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class LongHaulTests
 {
     private const double SunMu = 1.32712440018e20;

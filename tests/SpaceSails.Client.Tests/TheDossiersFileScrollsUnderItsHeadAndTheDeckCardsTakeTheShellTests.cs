@@ -37,6 +37,7 @@ namespace SpaceSails.Client.Tests;
 /// register or its not-a-pop-up list, and none of them changed identity. What a MIGRATION can break is
 /// narrower, and this file asks that instead.</para>
 /// </summary>
+[SlowGate] // #251 · 55 s over 16 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShellTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════════════════

@@ -64,6 +64,7 @@ namespace SpaceSails.Client.Tests;
 /// <see cref="TheUndrivenListOnlyEverGetsShorter"/> pins how many there are. The number can go down without
 /// anybody's permission and cannot go up without a deliberate edit to a written-down count.</para>
 /// </summary>
+[SlowGate] // #251 · 152 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryPopUpCanBeDismissedTests
 {
     // ── What the law calls a pop-up ───────────────────────────────────────────────────────────────────

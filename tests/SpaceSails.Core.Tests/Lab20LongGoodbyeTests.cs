@@ -11,6 +11,7 @@ namespace SpaceSails.Core.Tests;
 /// leg 3.4 yr, b-plane aim −1485 Mm — the values lesson 19's scan/sweep produce) rather than
 /// re-running the full 20-year window scan, so the whole file stays well under a minute.
 /// </summary>
+[SlowGate] // #251 · 49 s over 3 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class Lab20LongGoodbyeTests
 {
     private const double Day = 86400.0;

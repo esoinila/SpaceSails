@@ -2,6 +2,7 @@ using SpaceSails.Contracts;
 
 namespace SpaceSails.Core.Tests;
 
+[SlowGate] // #251 · 28 s over 22 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class SimulatorTests
 {
     private const double SunMu = 1.32712440018e20;

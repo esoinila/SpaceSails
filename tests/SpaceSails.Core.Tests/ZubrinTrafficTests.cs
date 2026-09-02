@@ -10,6 +10,7 @@ namespace SpaceSails.Core.Tests;
 /// distribution so a future scenario edit can't quietly re-Earth-center the sky. Deterministic:
 /// the schedule is a pure function of (scenario, seed, count).
 /// </summary>
+[SlowGate] // #251 · 349 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class ZubrinTrafficTests
 {
     private static readonly string[] Giants = ["jupiter", "saturn", "uranus", "neptune"];

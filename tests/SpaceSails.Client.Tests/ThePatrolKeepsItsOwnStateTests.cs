@@ -71,6 +71,7 @@ namespace SpaceSails.Client.Tests;
 /// of a moved verb, by adding a twenty-second row to the host, and by taking one partial out of the sweep's
 /// reach. Every verbatim output is in the two PR bodies.</para>
 /// </summary>
+[SlowGate] // #251 · 47 s over 11 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class ThePatrolKeepsItsOwnStateTests
 {
     /// <summary>The fourteen files the patrol is, relative to <c>src/SpaceSails.Client</c>.

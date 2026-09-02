@@ -29,6 +29,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>TheRoundStopsAtYou</c> ended in <c>StandCaptainAt(sx, sy, ...)</c>. Both are asserted absent.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 26 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheEscortIsAWalkTests
 {
     private static readonly string[] Bodies = ["luna", "miranda", "titan", "europa"];

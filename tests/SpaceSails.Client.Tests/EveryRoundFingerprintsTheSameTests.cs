@@ -73,6 +73,7 @@ namespace SpaceSails.Client.Tests;
 /// chain by <c>TheRoundIsNotStandingStillTests</c>, which both read the step's own source.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 29 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryRoundFingerprintsTheSameTests
 {
     private const BindingFlags Hidden =

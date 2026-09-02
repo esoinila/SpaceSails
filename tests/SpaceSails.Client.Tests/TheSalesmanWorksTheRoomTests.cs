@@ -33,6 +33,7 @@ namespace SpaceSails.Client.Tests;
 /// stands a real room up, runs the frame the way the game runs it, and reads the answer off the floor.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 23 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheSalesmanWorksTheRoomTests
 {
     private const BindingFlags Hidden =

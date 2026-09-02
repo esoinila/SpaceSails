@@ -49,6 +49,7 @@ namespace SpaceSails.Client.Tests;
 /// forwarder block the fourth fact currently insists on. When that lands, the Map half of the fifteen is the
 /// clause to relax — deliberately, in that lane, and never by deleting a row to make a sweep quiet.</para>
 /// </summary>
+[SlowGate] // #251 · 31 s over 8 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheSeatKeepsItsOwnStateTests
 {
     /// <summary>The one file the seat's state is allowed to be declared in, relative to

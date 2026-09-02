@@ -101,6 +101,7 @@ namespace SpaceSails.Client.Tests;
 /// have been a different lane's bug wearing this lane's clothes.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 148 s over 3 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheBootBuildsTheSameWorldTests
 {
     /// <summary>Set to a file path to DUMP every URL's rendered fingerprint text instead of asserting —

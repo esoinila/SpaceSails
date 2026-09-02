@@ -22,6 +22,7 @@ namespace SpaceSails.Client.Tests;
 /// a hole in a wall nobody built.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 20 s over 3 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheFarGatesLeadSomewhereTests
 {
     private static readonly string[] Bodies =

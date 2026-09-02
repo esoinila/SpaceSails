@@ -11,6 +11,7 @@ namespace SpaceSails.Core.Tests;
 /// buildings enough"</i> — so these hold the two things that make one a building rather than a drawing: the
 /// wall is solid mass you cannot stand inside, and the inside is somewhere you can actually get to.
 /// </summary>
+[SlowGate] // #251 · 104 s over 8 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class SurfaceStructureTests
 {
     private const double AvatarRadius = 0.7;

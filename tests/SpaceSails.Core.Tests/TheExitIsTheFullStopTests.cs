@@ -37,6 +37,7 @@ namespace SpaceSails.Core.Tests;
 /// legal here could still be refused by a chair — which is why the client's own guards
 /// (<c>TheExitIsTheFullStopTests</c> over there) drive the shipping deck as well.</para>
 /// </summary>
+[SlowGate] // #251 · 39 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheExitIsTheFullStopTests
 {
     /// <summary>The captain's own width. <c>DeckPlan.AvatarRadius</c> lives in the client and a Core test may

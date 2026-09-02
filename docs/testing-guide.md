@@ -9,6 +9,12 @@ sweeps these rows headless after a release, using each row's "what a tester shou
 oracle — one more reason to keep those expectations written down and current. The workflow shelf
 index is [docs/workflows/README.md](workflows/README.md).
 
+**Running the xUnit suites:** the full run is `dotnet test SpaceSails.slnx -c Release` and takes
+about six minutes; the inner-loop run is `--filter "speed!=slow"` (or `./test-fast.ps1`) and takes
+about forty seconds. A green fast run means the rules hold, not that the ship flies — see
+[Appendix C](#appendix-c--the-fast-run-and-the-full-run-251-item-4) for exactly what it skips and
+why. CI always runs the whole suite.
+
 **Before you start:** run `./run.ps1` (Release build) and open the printed localhost URL.
 Debug WASM runs on the IL interpreter and is roughly **100× slower** — choppy frames, sluggish
 plotting, and timings in these scripts (rum wobble, boarding time, warp behavior) will all read
@@ -1717,3 +1723,156 @@ Run it once on the base and once on your lane, then diff the two directories.
 
 > `EveryRoundFingerprintsTheSameTests` still keeps its pins in source. It is the fourth snapshot
 > guard and the next candidate for a ledger; nothing about #1055 changes what it measures.
+
+---
+
+## Appendix C — the fast run and the full run (#251, item 4)
+
+The suite is not slow. A small, nameable set of gates inside it is slow, and until #251 everybody
+paid for them on every red-proof cycle. Measured over the whole solution on 2026-09-02 at
+`e7c1915` — **5,759 tests, 3,552 s of test time, 551 test classes**:
+
+| per-test wall time | tests | share of tests | share of the clock |
+| --- | ---: | ---: | ---: |
+| under 1 ms | 2,886 | 50.1% | 0.0% |
+| 1–10 ms | 1,324 | 23.0% | 0.1% |
+| 10–100 ms | 733 | 12.7% | 0.7% |
+| 0.1–1 s | 524 | 9.1% | 5.0% |
+| 1–5 s | 171 | 3.0% | 13.3% |
+| 5–15 s | 79 | 1.4% | 19.0% |
+| 15 s and up | **42** | **0.7%** | **61.9%** |
+
+Half the suite finishes in under a millisecond and costs nothing at all. Forty-two tests hold
+five-eighths of the clock.
+
+### The cut: ten seconds of CLASS total
+
+The unit is the **class**, not the test, because the class is the unit xUnit schedules — it
+parallelises across test classes and serialises within one. That is not theory. In the baseline run
+each assembly's wall clock *was* its single slowest class:
+
+| assembly | wall clock | its slowest class | that class alone |
+| --- | ---: | --- | ---: |
+| `SpaceSails.Core.Tests` | 5 m 51 s | `ZubrinTrafficTests` | 349 s |
+| `SpaceSails.Client.Tests` | 5 m 1 s | `EveryDeskBootsTests` | 300 s |
+
+Tagging half of a slow class would leave the other half holding the floor, so a class carries the
+mark or it does not. **63 classes** cost ten seconds or more: 21 in Core, 42 in the Client. Between
+them they are **732 tests — 12.7% of the suite — and 93.0% of its measured seconds.**
+
+Ten is a budget, not a discovered boundary: the class-total distribution is a continuum here, with
+the nearest class above the line at 10.5 s and the nearest below it at 9.8 s. It is chosen because
+it puts the fast run's own floor — the slowest class it still runs — at about ten seconds, which is
+roughly where the test host's own start-up begins to dominate anyway.
+
+### The invocations
+
+```bash
+# FAST — the inner loop. Everything except the slow gates.
+dotnet test SpaceSails.slnx -c Release --filter "speed!=slow"
+
+# FULL — the contract. Exactly what CI runs; nothing is filtered.
+dotnet test SpaceSails.slnx -c Release
+
+# ONLY the slow gates — for when you touched one of them.
+dotnet test SpaceSails.slnx -c Release --filter "speed=slow"
+
+# One suite at a time, and with your own filter ANDed on.
+dotnet test tests/SpaceSails.Core.Tests -c Release --filter "speed!=slow"
+dotnet test tests/SpaceSails.Core.Tests -c Release --filter "(speed!=slow)&(FullyQualifiedName~Airlock)"
+```
+
+PowerShell has a wrapper that prints the command it is about to run and what the fast run cannot
+tell you:
+
+```powershell
+./test-fast.ps1              # the fast run
+./test-fast.ps1 -Full        # the full run, same as CI
+./test-fast.ps1 -Slow        # only the gates on the roster
+./test-fast.ps1 -Core        # one suite; -Client for the other
+./test-fast.ps1 -Trx         # also write .trx, so you can re-measure the class totals
+```
+
+Measured on the same box, same build, back to back:
+
+| run | invocation | wall clock | tests |
+| --- | --- | ---: | ---: |
+| FULL, before #251 | (no filter) | **6 m 0 s** | 5,759, all green |
+| FULL, after #251 | (no filter) | **5 m 27 s** | 5,767, all green |
+| FAST | `--filter "speed!=slow"` | **38 s** | 5,035, all green |
+| the gates alone | `--filter "speed=slow"` | **5 m 55 s** | 732, all green |
+
+The two full runs are the zero-change proof: same tests, all green, the eight extra being this
+lane's own roster guards and nothing else (Core 4,178 -> 4,182; Client 1,581 -> 1,585). The fast run
+is the win — **9.5x**, six minutes down to thirty-eight seconds.
+
+The fourth row is the cut's own receipt. The 732 tagged tests take 5 m 55 s *by themselves*, which
+is the whole of the original six-minute run; the other 5,035 tests are very nearly free. That is the
+finding in one line: the suite was never slow, sixty-three classes were.
+
+### What the fast run does not tell you
+
+This matters more than the number. A green fast run means **the rules still hold.** It does not mean
+the ship still flies, the floors are still walkable, or the boot still builds the world it always
+built — those are exactly the tests it skipped. What it leaves out, by family:
+
+- **The N-body and long-flight gates** — `Lab20LongGoodbyeTests`, `SimulatorTests`, `LongHaulTests`,
+  `TheCyclerArrivalIsAKeptCoOrbitalTests`, `TheParkedShipIsNotRunDownByTheMoonTests`,
+  `TheAutopilotFliesAtATenthTests`, `EveryLaneItLaysHashesTheSameTests`.
+- **The traffic and surface generators** — `ZubrinTrafficTests` (349 s on its own),
+  `EncounterRuleTests`, `SurfaceReachabilityTests`, `SurfaceStructureTests`,
+  `OneCounterAndOnlyOneTests`, `TrafficAndPredictionTests`, `OuterReachesTests`, `ArchiveNodeTests`,
+  `TheRefugesUndergroundTests`.
+- **The A-star walkability audits** — every square of a floor proved reachable:
+  `TheParkTakesAClickTests`, `TheLandingPutsYouSomewhereYouCanWALKTests`, `TheHallIsWalkableTests`,
+  `TheRoundIsWalkableTests`, `YouCanWalkTheHiveTests`, `TheExitIsTheFullStopTests`,
+  `StationWreckTests`, and the rest.
+- **The boot sweeps** — `EveryDeskBootsTests` (300 s), `EveryPopUpCanBeDismissedTests`,
+  `TheBootBuildsTheSameWorldTests`, `TheBootStopsWhenYouLeaveTests`.
+- **The snapshot fingerprints of Appendix B** — `EveryFrameLeavesTheSameFingerprintTests`,
+  `EveryRoundFingerprintsTheSameTests`, `EverySeatTheCaptainTakesFingerprintsTheSameTests`. A
+  re-pin is never done off a fast run.
+
+**Run it full before you push**, and know that CI does regardless: `.github/workflows/ci.yml` runs
+`dotnet test SpaceSails.slnx` with no filter and is deliberately untouched by #251. The fast run is
+a convenience for the person typing; the merge gate is the whole contract, as it always was.
+
+### The roster, and how to change it
+
+The mark is an xUnit trait — `[SlowGate]` on the class, which a discoverer turns into
+`speed=slow`. It is declared once per test assembly (`tests/*/SlowGate.cs`) because the two test
+assemblies cannot see each other; what travels between them is the trait name, not the type.
+
+Every tag is written down with the seconds that earned it, in
+`tests/SpaceSails.Core.Tests/TheSlowGateRosterTests.cs` and its Client twin, and three laws hold the
+two halves together:
+
+1. **No unwritten tag.** A class carrying `[SlowGate]` with no row goes red — a tag nobody wrote
+   down is a test the fast run silently stops running.
+2. **No stale row.** A row naming a class that is gone, or that no longer carries the mark, goes red
+   with "REMOVE ME".
+3. **The mark reaches the runner.** The discoverer is asked directly what trait it emits, and the
+   attribute's wiring is checked to point at *its own* assembly's discoverer. Without this, laws 1
+   and 2 would stay green forever while `--filter "speed!=slow"` quietly ran everything.
+
+Plus the anti-vacuous half: the sweep must find the assembly's test classes, the roster must be
+non-empty and must match the tagged set exactly, the tagged set must stay a small minority (a mark
+on everything would make the fast run empty and still pass), and no row may sit under the documented
+cut. All four laws were **shown RED** before they were trusted — a planted tag, a stale row, a
+reworded trait key and an under-cut number; the messages are quoted in the #251 PR body.
+
+**The guard does not re-measure.** Asserting "this class really does take ten seconds" would be
+asserting a property of the machine it happens to be running on — a loaded dev box, a cold runner, a
+laptop on battery — and would redden for reasons that have nothing to do with the code. The numbers
+in the roster are evidence, dated and quoted; only tag-versus-roster agreement is re-checked, because
+that is a property of the source and cannot drift with the weather.
+
+To re-measure the class totals yourself:
+
+```bash
+dotnet test SpaceSails.slnx -c Release --logger "trx" --results-directory TestResults
+```
+
+then sum each class's `UnitTestResult/@duration` from the `.trx`. Tag or untag the class, edit its
+row in the same commit, and quote what you measured in the PR — the laws above will tell you, by
+name, if you did only half of it.

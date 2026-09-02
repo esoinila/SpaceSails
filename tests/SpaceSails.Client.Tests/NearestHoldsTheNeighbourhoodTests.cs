@@ -35,6 +35,7 @@ namespace SpaceSails.Client.Tests;
 /// where it does not, that is asserted too rather than skipped.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 34 s over 99 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class NearestHoldsTheNeighbourhoodTests
 {
     private const BindingFlags Hidden =

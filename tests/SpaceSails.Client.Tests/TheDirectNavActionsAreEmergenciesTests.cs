@@ -53,6 +53,7 @@ namespace SpaceSails.Client.Tests;
 /// before this file was written — the runs are quoted in the pull request.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 12 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheDirectNavActionsAreEmergenciesTests
 {
     private const BindingFlags Hidden =

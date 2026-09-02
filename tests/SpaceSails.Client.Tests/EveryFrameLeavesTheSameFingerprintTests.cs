@@ -100,6 +100,7 @@ namespace SpaceSails.Client.Tests;
 /// this lane's clothes.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 36 s over 32 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryFrameLeavesTheSameFingerprintTests
 {
     private const BindingFlags Hidden =

@@ -126,3 +126,15 @@ hash ⇒ the claim did not move.
 PowerShell mojibakes emoji titles and this project's titles are emoji. And **merge in its own command,
 then verify the PR reads `MERGED` before deleting anything** — a cleanup chained onto an unverified
 merge is how a branch disappears with work still on it.
+
+**The inner loop is a filter, not a shorter suite (#251, item 4).** The whole solution is 5,759
+tests and about six minutes; 63 of its 551 test classes hold 93% of that time, and they are tagged
+`[SlowGate]`. `dotnet test SpaceSails.slnx -c Release --filter "speed!=slow"` — or
+`./test-fast.ps1` — runs the other 5,027 in **38 seconds**, which is the difference between
+iterating and waiting. What it skips is the part that proves the ship flies: the N-body and
+long-flight gates, the traffic and surface generators, the A-star walkability audits, the boot
+sweeps and every snapshot fingerprint above. So a green fast run means the RULES hold and nothing
+more — **run it full before you push**, and never re-pin off a fast run. CI is untouched and always
+runs the whole suite; the roster of what is skipped is checked in beside the tags and guarded
+against drift in both directions. Full instructions, the measured distribution and the reasoning
+behind the ten-second cut are in [docs/testing-guide.md, Appendix C](testing-guide.md).

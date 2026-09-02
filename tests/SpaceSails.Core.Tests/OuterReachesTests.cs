@@ -6,6 +6,7 @@ namespace SpaceSails.Core.Tests;
 /// PR-3, de-Earth-centering (vision par. 8): scenario-driven traffic, moons as real bodies,
 /// stations/havens at the outer reaches, and secretive He3 haulers that never hit the board.
 /// </summary>
+[SlowGate] // #251 · 33 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class OuterReachesTests
 {
     private static CircularOrbitEphemeris Sol() =>

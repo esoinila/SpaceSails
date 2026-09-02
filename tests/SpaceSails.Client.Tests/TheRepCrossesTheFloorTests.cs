@@ -30,6 +30,7 @@ namespace SpaceSails.Client.Tests;
 /// giving him a slot of his own; this is what would have caught it.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 43 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheRepCrossesTheFloorTests
 {
     private const BindingFlags Hidden =

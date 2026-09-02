@@ -37,6 +37,7 @@ namespace SpaceSails.Client.Tests;
 /// says which.</item>
 /// </list>
 /// </summary>
+[SlowGate] // #251 · 50 s over 23 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
 {
     // ── The family, read off the markup as typed ──────────────────────────────────────────────────────

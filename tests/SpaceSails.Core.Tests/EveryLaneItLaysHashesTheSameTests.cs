@@ -33,6 +33,7 @@ namespace SpaceSails.Core.Tests;
 /// refuses, piers on the lane's own line, a segment refused with both ends already on the centre, and the
 /// two routes too short to lane at all.</para>
 /// </summary>
+[SlowGate] // #251 · 18 s over 3 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryLaneItLaysHashesTheSameTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;

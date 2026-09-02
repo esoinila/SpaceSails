@@ -30,6 +30,7 @@ namespace SpaceSails.Core.Tests;
 /// floor of SUIT-WORK, staffed all day by people in suits, and a building that staffs one and gives them
 /// nowhere to go is one busy lift away from killing somebody.</para>
 /// </summary>
+[SlowGate] // #251 · 11 s over 12 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheRefugesUndergroundTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;

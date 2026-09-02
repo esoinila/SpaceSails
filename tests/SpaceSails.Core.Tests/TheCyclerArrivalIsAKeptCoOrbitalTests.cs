@@ -29,6 +29,7 @@ namespace SpaceSails.Core.Tests;
 /// of every park, because the mechanism was never one unlucky number. The anti-vacuity block below then
 /// refuses to let any of it pass on a world that is not moving.</para>
 /// </summary>
+[SlowGate] // #251 · 28 s over 13 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class TheCyclerArrivalIsAKeptCoOrbitalTests
 {
     /// <summary>Enceladus's rail period, from <c>sol.json</c> — quoted ONCE, only to pin the issue's own

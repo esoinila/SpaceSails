@@ -27,6 +27,7 @@ namespace SpaceSails.Client.Tests;
 /// guard drawn through a wall.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 33 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheRoundIsWalkableTests
 {
     private static readonly string[] Bodies =

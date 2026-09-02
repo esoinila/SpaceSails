@@ -37,6 +37,7 @@ namespace SpaceSails.Core.Tests;
 /// <c>TheTenthIsQuotedAndOnlyTheAutopilotsTests</c> (Client.Tests), because the manual sites are client
 /// code.</para>
 /// </summary>
+[SlowGate] // #251 · 14 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class TheAutopilotFliesAtATenthTests
 {
     private readonly Xunit.Abstractions.ITestOutputHelper _out;
