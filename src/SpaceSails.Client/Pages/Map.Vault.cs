@@ -446,6 +446,13 @@ public partial class Map
                 // ShoreLeaveIsALedgerLineTests against a real pre-#1066 file).
                 WorkingStopsSinceShoreLeave =
                     _workingStopsSinceShoreLeave > 0 ? _workingStopsSinceShoreLeave : null,
+                // #677 · the disclosure clock's register — which grounds this thread has been past the seam
+                // of, and the world-side window each was opened in. A clock that forgot across a reload
+                // would not be a clock. Null while empty: an eager [] would move every legacy vault's
+                // checksum (the #1078 byte guard's law).
+                HallsOpened = _hallsOpened.Count > 0
+                    ? [.. _hallsOpened.Select(o => new HallOpeningRecord(o.BodyId, o.Window))]
+                    : null,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -992,6 +999,16 @@ public partial class Map
         if (vault.Progress?.OddBooksRead is { } books)
         {
             _oddBooksRead = [.. books];
+        }
+
+        // #677: and the disclosure clock's register — the grounds whose halls this thread has crossed into,
+        // with the world-side window each was opened in. Restored rather than re-derived, because there is
+        // nothing to derive it FROM: which window a captain first stood past a seam in is not a fact about
+        // the world, it is the one fact about the visit the clock keeps (a pre-#677 save lacks the field, so
+        // an old captain's clock starts on their next crossing — the harmless direction).
+        if (vault.Progress?.HallsOpened is { } opened)
+        {
+            _hallsOpened = [.. opened.Select(o => new DisclosureClock.Opening(o.BodyId, o.Window))];
         }
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking

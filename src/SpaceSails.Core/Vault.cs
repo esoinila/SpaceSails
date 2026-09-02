@@ -447,7 +447,35 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public int? WorkingStopsSinceShoreLeave { get; init; }
+    /// <summary>#677 — THE DISCLOSURE CLOCK'S REGISTER: the grounds whose halls this thread has been past the
+    /// seam of, and the world-side window each was opened in (<see cref="DisclosureClock"/>).
+    ///
+    /// <para>Persisted per-universe, the same idiom as <see cref="SecretLabsFound"/> and for a harder version
+    /// of its reason. That one remembers WHERE a door is; this one remembers WHEN a ground was opened, and a
+    /// clock that forgot across a reload would not be a clock — every threshold written against it would
+    /// silently reset to zero the moment a captain closed the tab, and nothing on screen would ever say so.
+    /// The first crossing is the one kept (<see cref="DisclosureClock.Note"/>), so a revisit can never move
+    /// it.</para>
+    ///
+    /// <para>Null until somebody has crossed a seam — the #1057/#1072/#1066 pattern, and here for their
+    /// exact reason: the checksum is taken over the payload, so an eager <c>"hallsOpened": []</c> on every
+    /// save would change the digest of every vault ever written and hang the 📛 tampered marker on honest
+    /// voyages (the #1078 byte guard caught precisely that when this section met the shore-leave line).
+    /// A pre-#677 file simply lacks the field, and a captain who walked a gallery before this existed has
+    /// their clock start on their next crossing, which is the harmless direction to be wrong in.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<HallOpeningRecord>? HallsOpened { get; init; }
 }
+
+/// <summary>#677 — one row of <see cref="ProgressSection.HallsOpened"/>: a ground, and the world-side window
+/// its halls were first entered in.
+///
+/// <para>A wire record of its own rather than <see cref="DisclosureClock.Opening"/> serialized directly, for
+/// the reason <see cref="DiceItemRecord"/> is one: this file is a FORMAT, and a format that is spelled as a
+/// domain type moves every time the domain type is renamed — with old saves silently losing the field, which
+/// is the one failure mode this serializer's two promises exist to prevent.</para></summary>
+public sealed record HallOpeningRecord(string BodyId, long Window);
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
 

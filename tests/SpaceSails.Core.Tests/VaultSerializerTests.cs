@@ -89,6 +89,10 @@ public class VaultSerializerTests
             TutorialPlayed = true,
             SecretLabsFound = ["phobos", "the-hermits-rock"],
             OddBooksRead = ["the-travels", "the-fat-paperback"],
+            // #677 — the disclosure clock's register. Two grounds, opened in two different world-side
+            // windows, because a register that only ever held one row would round-trip a shape the game
+            // cannot produce and would say nothing about the window travelling with the ground.
+            HallsOpened = [new HallOpeningRecord("phobos", 0), new HallOpeningRecord("miranda", 17)],
         },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
@@ -136,6 +140,11 @@ public class VaultSerializerTests
         Assert.Equal(["phobos", "the-hermits-rock"], loaded.Progress.SecretLabsFound); // #409 — found labs persist per thread
         // #701 — and the shelves whose gist the casebook already carries, so a reload never re-files one
         Assert.Equal(["the-travels", "the-fat-paperback"], loaded.Progress.OddBooksRead);
+        // #677 — and the disclosure clock's register, WITH the window each ground was opened in. A clock
+        // that forgot across a reload would reset every threshold written against it, silently.
+        Assert.Equal(
+            [new HallOpeningRecord("phobos", 0), new HallOpeningRecord("miranda", 17)],
+            loaded.Progress.HallsOpened);
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet

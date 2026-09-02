@@ -1920,10 +1920,42 @@ the unlisted band's shaft head — correct for a building with ONE gap in it, an
 rock the day there were two. `NearestFloorTo` is the building's own answer now. This is §13.15's second cause
 for the third time.
 
-**Two things this v1 deliberately does NOT build**, both filed and neither snuck in: the **disclosure clock**
-(what a captain is shown riding the slow world-side windows, so what you find is a fact about *when you went*)
-and any **inhabitant** content. §13.19's judgement call applies again — a feature that ships its own second
-half unasked is a feature nobody reviewed.
+**And the clock, which is the other half of v1 and shipped after the band.** #677's second mechanic in the
+issue's own words: *what a captain is shown rides slow world-side windows, not search effort — what you find
+is a fact about **when you went**; later windows may show more; it is never a progress bar and never
+announced.* `DisclosureClock` is that sentence and nothing else. It starts on the seam beat, once per ground,
+and it reads in **the monolith's own foot-offering windows** (`Monolith.EpochAt`, asked and never re-derived —
+the issue names that clock by name, and two copies of a window length is the mirrored-constant bug this
+document keeps a table of). The register — which grounds this thread has been past the seam of, and the window
+each was opened in — rides the vault beside `SecretLabsFound`, because a clock that forgot across a reload
+would reset every threshold written against it and nothing on screen would ever say so.
+
+> **Five laws, each guarded and each watched go red.** (1) *One clock*: the window is the monolith's.
+> (2) *Only the band nobody dug starts it* — not §13.7's band, which is human all the way down: a captain who
+> reaches one has found somebody's SECRET, not somebody's SCHEDULE. (3) *Never announced, and the proof is
+> that there is nothing to say*: the type publishes **no prose at all** — no label, no line, no percentage,
+> not one string — which is the never-announced law in its strongest form and settles §8 for free, because a
+> type with no strings cannot contain the reserved word. (4) *Not farmable*: nothing in any signature is
+> effort, and a hundred rides inside one window read what one ride reads. (5) *Never runs backwards*: the
+> register keeps the FIRST crossing and the reading is monotone and floored at zero, because *later windows
+> may show more* is a promise about direction.
+
+> **What it deliberately is not: a stage, a level, or a bar.** The obvious shape is a small capped integer,
+> and it was written that way first and taken out. A cap needs a cadence and a ceiling, and neither is
+> derivable from anything in the world — they would be two invented facts about the schedule of a decision no
+> card may state, authored by an implementer in code where no canon review looks. And a capped counter is a
+> progress bar with the drawing left off. So what is published is the raw reading — **how many world windows
+> since this ground was opened** — and every beat that reads it picks its own threshold and writes that
+> threshold's reason beside its own words.
+
+**Nothing reads the clock yet, and that is the sequencing every downstream issue asked for in the same
+words**: #1063's burial needs *"a place worth burying"*, #1068's watcher channels wait for *"#677 giving the
+thresholds something to guard"*, and #1074's stop orders wait for *"#677 giving the world a threshold worth
+enforcing"*. The threshold is here; the consequences are theirs.
+
+**The one thing this v1 still deliberately does NOT build**, filed and not snuck in: any **inhabitant**
+content. §13.19's judgement call applies again — a feature that ships its own second half unasked is a
+feature nobody reviewed.
 
 *(Enforced. Core: `TheFoundBandTests` — the rate measured off a 4 000-site sweep and proved strictly rarer
 than §13.7's; the whole band of nothing, with every floor of it proved absent, unauthorisable and unofferable;
@@ -1951,6 +1983,25 @@ no card — the halls are unreachable`; the find id forgetting its prefix → th
 pallet's photograph; the reserved word transcribed into the empty line → `Found: "monolith" in: …`; and the
 wall flag plumbed and honoured by nobody → `secret-lab-site-halls-116 B17: 120 of 120 wall(s) drawn in the
 facility's material`, with `0 seamless stroke(s) drawn for 120 seamless wall(s)`.)*
+
+*(**And the clock is enforced too.** Core: `TheDisclosureClockTests` — the window proved to be the monolith's
+across twelve boundaries; the clock proved to start on every gallery of sixty ground-truth sites (240 gallery
+floors, on `probe-moon-116/170/176/245/421/459/641/704…` and the cheat rock) **and on nothing else**, with
+the vacuity twin sweeping 400 sites that have no halls and asking 2 400-odd floors for a clock none of them
+starts; the never-announced law swept by reflection over the whole public surface with a coverage floor under
+it; the not-farmable law driven by a hundred re-entries across three windows reading exactly what one reading
+reads; the monotone law walked over forty windows; null-is-not-zero; and one row per ground carrying that
+ground's own window. `VaultSerializerTests` round-trips the register with two grounds opened in two different
+windows, and `EveryVaultSectionReachesTheFileTests` reaches the new field by reflection like every other. —
+Watched go **RED**, eight reverts: the window typed as its own copy and the monolith re-timed → the sweep
+fails at the first boundary; `OpensOn` loosened to any deep floor → the no-halls sweep fails on the first
+ordinary rock; `OpensOn` to `false` → six guards fail together, naming zero galleries; a label added to the
+type → `the disclosure clock is never announced, so it publishes no prose. Found: field Label`; `Note` taking
+the latest crossing → the hundred re-entries read 0 where they should read 3; the zero floor removed from the
+reading → the pre-opening half goes negative; a never-opened ground reading 0 instead of null; and `Note`
+allocating unconditionally → the save is asked for on every ride in a familiar building. And the vault
+assertion proved non-vacuous by dropping the register from the fixture → `Assert.Equal() Failure: Collections
+differ`.)*
 
 13.21 **There are people in the bar, they are all outsiders, and they stop at B1** (#709, v1 of the social
 layer).

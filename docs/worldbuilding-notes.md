@@ -229,8 +229,23 @@ palette at all**, and its chambers get **bigger** the deeper you go — the game
 inverted, said by the room scale and by no prose. Almost every chamber is empty; about one in
 nine holds the record of a wall that cannot be brought back. The register is the owner's own —
 *"Horror served as smooth comfy pillow"*: the halls are comfortable, and a pillow means you were
-expected. Cheat `?found=1`. Details: `features/the-landing-site.md` §13.20. **Still open and
-deliberately unbuilt: the disclosure clock, and any inhabitant content.**
+expected. Cheat `?found=1`. Details: `features/the-landing-site.md` §13.20.
+
+**Shipped (#677, v1 — the clock).** The disclosure schedule above is a mechanic now, and only a
+mechanic: `DisclosureClock` starts on the seam, once per ground, and reads in the **same slow
+world-side windows the monolith's foot-offerings use** — asked of `Monolith.EpochAt` and never
+re-derived, because the issue names that clock by name. Its register (which grounds have been
+opened, and in which window) rides the vault, so it survives a reload. It is **never announced and
+never a progress bar**, and the proof is that the type publishes no prose at all — no label, no
+line, no percentage, not one string — which also settles §8 for free. It is **not farmable**:
+nothing in any signature is effort, and a hundred rides inside one window read what one ride reads.
+It **never runs backwards**: the first crossing is the one kept, and the reading is monotone. What
+is deliberately NOT published is a capped *stage* — a cap needs a cadence and a ceiling, and neither
+is derivable from anything in the world; they would be two invented facts about the schedule of a
+decision no card may state. **Nothing reads it yet**, which is the sequencing #1063, #1068 and #1074
+each asked for in their own words: the threshold is here, the consequences are theirs.
+
+**Still open and deliberately unbuilt: any inhabitant content.**
 
 ## Suggested landing spots
 
@@ -245,4 +260,4 @@ deliberately unbuilt: the disclosure clock, and any inhabitant content.**
 | Shuttle boarding sequence | post-M12 | walk to bay → fly shuttle across (rel-velocity drift minigame) → prey interior |
 | Third-person deck camera | post-M12 | deck renderer + avatar-following camera |
 | Phobos, strangest port | after #225 arc | Lab 31 beanstalk numbers -> elevator haven pair at Phobos (#164/#231/#234) |
-| The found halls (fourth world) | **v1 SHIPPED (#677)** | the band itself: `UndergroundComplex` found band, dark, sealed, smooth-walled, chambers growing with depth, `?found=1`. Open: the disclosure clock, and the inhabitants (§10) |
+| The found halls (fourth world) | **v1 SHIPPED (#677)** | the band itself: `UndergroundComplex` found band, dark, sealed, smooth-walled, chambers growing with depth, `?found=1`; and the **disclosure clock** (`DisclosureClock` — the seam starts it, the monolith's windows measure it, nothing announces it, nothing reads it yet). Open: the inhabitants (§10) |
