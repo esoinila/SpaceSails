@@ -484,7 +484,32 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? HallsBuried { get; init; }
+
+    /// <summary>#1068 — THE GROUNDS THE WORLD HAS DECLINED ON, and the world-side window each declined in
+    /// (<see cref="PoliteDecline"/>): the sites where one door that used to open no longer does, and where
+    /// the scope's one-shot comes back with nothing.
+    ///
+    /// <para>The window is persisted and not just the id, and it has to be: the door is CHOSEN out of the
+    /// floor's own candidates against that number, so a reload that forgot it would shut a DIFFERENT door —
+    /// and a lock that moves between two visits is an event, which is exactly the fact about somebody
+    /// deciding that #672's Scully law is spent on. Kept, the world declines once and stays declined, which
+    /// is what a locked door is.</para>
+    ///
+    /// <para>Null until the world has declined somewhere — the #1057/#1072/#1066/#677/#1063 pattern, and here
+    /// for their exact reason: the checksum is taken over the payload, so an eager <c>"hallsDeclined": []</c>
+    /// on every save would change the digest of every vault ever written and hang the 📛 tampered marker on
+    /// honest voyages. A pre-#1068 file simply lacks the field and loads with nothing declined.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<HallDeclineRecord>? HallsDeclined { get; init; }
 }
+
+/// <summary>#1068 — one row of <see cref="ProgressSection.HallsDeclined"/>: a ground, and the world-side
+/// window the world declined on it in. A wire record of its own rather than
+/// <see cref="PoliteDecline.Decline"/> serialized directly, for <see cref="HallOpeningRecord"/>'s own
+/// reason — this file is a FORMAT, and a format spelled as a domain type moves the day the domain type is
+/// renamed, with old saves silently losing the field.</summary>
+public sealed record HallDeclineRecord(string BodyId, long Window);
 
 /// <summary>#677 — one row of <see cref="ProgressSection.HallsOpened"/>: a ground, and the world-side window
 /// its halls were first entered in.

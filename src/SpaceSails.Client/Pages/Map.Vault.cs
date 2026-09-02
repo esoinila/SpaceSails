@@ -457,6 +457,12 @@ public partial class Map
                 // empty law, same reason. A burial that forgot across a reload would un-bury a ground the
                 // field book says is gone, and the book being the only witness is the whole feature.
                 HallsBuried = _hallsBuried.Count > 0 ? [.. _hallsBuried] : null,
+                // #1068 · …and which of them the world has since declined on, WITH the window each declined
+                // in. Same null-while-empty law, same reason; the window rides along because the door is
+                // chosen against it, and a reload that forgot the number would shut a different leaf.
+                HallsDeclined = _hallsDeclined.Count > 0
+                    ? [.. _hallsDeclined.Select(d => new HallDeclineRecord(d.BodyId, d.Window))]
+                    : null,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -1023,9 +1029,20 @@ public partial class Map
             _hallsBuried = [.. buried];
         }
 
+        // #1068: and which of them the world has since declined on, with the window each declined in.
+        // Restored rather than re-derived for the hardest version of the reason again: the window is what
+        // the door is chosen against, so a save that dropped it would re-open the shut leaf and shut another
+        // one somewhere else — a lock that moved by itself, which is the one reading this beat may not have.
+        if (vault.Progress?.HallsDeclined is { } declined)
+        {
+            _hallsDeclined = [.. declined.Select(d => new PoliteDecline.Decline(d.BodyId, d.Window))];
+        }
+
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
-        // ground must come back to a shaft that already ends where the burial left it.
+        // ground must come back to a shaft that already ends where the burial left it, and to the same one
+        // door the world had already declined.
         InstallBurialRegister();
+        InstallDeclineRegister();
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.

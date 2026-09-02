@@ -852,6 +852,14 @@ public static partial class UndergroundComplex
             bodyId, level, walls, doorways, centres, amenities, refuges, ribList, park, ring,
             shaftX, shaftY);
 
+        // #1068 · …AND LAST OF ALL, THE WORLD DECLINES ONE DOOR. Taken after every placer above has laid its
+        // work against a building whose doors were all open, so what the captain comes back to is the floor
+        // he walked out of with one leaf shut — the poster still beside it, the canteen still where it was,
+        // the room still where its centre says it is. See UndergroundComplex.Decline.cs: on every floor of
+        // every site in a world where nobody has been past a seam a whole window ago it returns before it
+        // builds so much as a list, which is almost every floor of almost every world.
+        DeclineOneDoor(bodyId, level, doorways, locked, published, refuges, amenities);
+
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
             glass, park, bins, published, posters, board, specimen);

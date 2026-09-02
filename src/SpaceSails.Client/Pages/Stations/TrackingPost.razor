@@ -576,6 +576,17 @@
 
         foreach (CompletedPass pass in _schedule.Advance(SimTime, DurationOf))
         {
+            // #1068 · CHANNEL TWO — THE PASS THAT DOES NOT LAND. The telescope worked the job for its full
+            // duration and the job left the carousel exactly as a finished one-shot does; what does not
+            // happen is the RESULT. No fix, no ledger row, no reveal, no flash, and — the whole point —
+            // no message: a desk that said "returned no data" would be the instrument reporting on itself,
+            // which is the one thing #672's sensor law forbids. The failure IS the manifestation, and it
+            // happens on one ground only, on the captain's own one-shot only. See PoliteDecline.
+            if (Ephemeris is not null && PoliteDecline.BringsNothingBack(pass.Task, Ephemeris, pass.CompleteTime))
+            {
+                continue;
+            }
+
             HandlePass(pass);
         }
     }

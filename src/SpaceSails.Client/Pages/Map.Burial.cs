@@ -81,6 +81,14 @@ public partial class Map
         // who has buried nothing all share one static, and a world that inherited the last one's register
         // would be the worst bug this feature could have.
         InstallBurialRegister();
+
+        // #1068 · …AND IN THE SAME BREATH, THE OTHER TWO CHANNELS. Not a second hook in the descent: it is
+        // ONE moment, and both events want exactly the same three things out of it — the crossing's time
+        // already spent, no excursion standing on the ground, and not one wall of the arriving floor laid
+        // yet. #1068's threshold is #1063's threshold on purpose (the watchers act on the schedule the
+        // neighbours do), so a second call site a few lines apart would be two places that have to be kept
+        // agreeing about when a shift is. See Map.Decline.cs; it does nothing at all on almost every voyage.
+        TheWorldDeclines();
     }
 
     /// <summary>#1063 · <b>AFTER</b> — the rag, cheerful, once. The owner's own cherry on the cake: a ton of
