@@ -673,6 +673,15 @@ many and each is half again as large, which is the only sentence the plan is all
 Pair with `&dark=0` — there is no such switch, and there does not need to be: these floors are dark because
 they declare it, and `?dark=1` is for the ordinary ones.
 
+**And the disclosure clock: what a tester should see is NOTHING.** Crossing the seam starts `DisclosureClock`
+for that ground (#677's second mechanic), and the mechanic's own law is that it is *never a progress bar and
+never announced* — so there is no line, no counter, no glyph, no card and nothing on the HUD to look for, and
+a build that grew one has a bug. The only place it is visible is the save file: open the vault JSON and the
+`progress` section carries `hallsOpened`, one row per ground, each with the world-side window the seam was
+first crossed in. Re-enter the same galleries and the row does not move — the FIRST crossing is the one kept,
+because a clock you can restart by going back again is a farm. Nothing in the game reads the clock yet; the
+beats that will are #1063, #1068 and #1074, and each will author its own words when it is built.
+
 ### Reading the whole shelf — `?book=N` (#701)
 
 One would-be-empty room in six holds a book, which is rare on purpose and unplayable to test. `?book=N` takes

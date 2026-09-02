@@ -7,6 +7,34 @@ namespace SpaceSails.Client.Pages;
 // Part of Map.Surface (#870 split; the header note lives in Map.Surface.cs) — the shaft down and back up, the detector, the dossier, and the foot of the monolith.
 public partial class Map
 {
+    // ── #677 · THE DISCLOSURE CLOCK'S REGISTER ───────────────────────────────────────────────────────────
+    //
+    // The grounds this game-thread has been past the seam of, and the world-side window each was opened in.
+    // Persisted per-universe in the vault's ProgressSection, the same idiom as _secretLabsFound — and for a
+    // harder version of its reason: that one remembers where a door is, this one remembers WHEN, and a clock
+    // that forgot across a reload would reset every threshold written against it with nothing on screen ever
+    // saying so.
+    //
+    // Nothing reads it yet, on purpose. Core's DisclosureClock carries the whole argument.
+    private IReadOnlyList<DisclosureClock.Opening> _hallsOpened = [];
+
+    // The clock starts, once per ground. DisclosureClock.Note keeps the FIRST crossing, so a revisit cannot
+    // move it, and the register is handed back by reference when there is nothing to add — which is what the
+    // save is asked for on.
+    private void MarkHallsOpened(string bodyId, int level)
+    {
+        if (DisclosureClock.Open(bodyId, level, SimTime) is not { } opening)
+        {
+            return;
+        }
+        IReadOnlyList<DisclosureClock.Opening> next = DisclosureClock.Note(_hallsOpened, opening);
+        if (!ReferenceEquals(next, _hallsOpened))
+        {
+            _hallsOpened = next;
+            RequestVaultSave();
+        }
+    }
+
     // ── #585 · THE HIVE: down the shaft, and back up ───────────────────────────────
     //
     // Owner: "I just don't want the secret lab to be puny 2 door apartment, but look like it could facilitate
@@ -382,9 +410,18 @@ public partial class Map
                     RequestVaultSave();
                     break;
 
-                // #677 · The pour stopping, said in the shaft on the way.
+                // #677 · The pour stopping, said in the shaft on the way — and the moment the DISCLOSURE
+                // CLOCK starts. Here rather than on the arrival beat below, because the seam is the crossing:
+                // the clock is about the ground having been opened, and the ground is open the instant the
+                // tunnel keeps going in a material the light does not grip.
+                //
+                // NOTHING IS SAID AND NOTHING IS SHOWN. That is the mechanic (#677: "never a progress bar and
+                // never announced"), and it is why this arm looks like a book-keeping line: what the clock
+                // buys is a threshold later beats guard (#1063's burial, #1068's channels, #1074's stop
+                // orders), and every one of those authors its own words when it is built.
                 case UndergroundComplex.ArrivalBeat.Seam:
                     ex.HiveSeamCrossed = true;
+                    MarkHallsOpened(ex.Stop.Body.Id, level);
                     break;
 
                 // #677 · The first gallery. The same price as the floor nobody listed, and not bigger,
