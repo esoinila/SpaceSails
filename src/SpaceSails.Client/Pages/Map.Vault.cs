@@ -438,6 +438,14 @@ public partial class Map
                 TubeRearmSeen = _tubeRearmSeen,       // #562: and the tube-feeds-you card
                 AirCardSeen = _airCardSeen,           // #573: and the tank-is-low card
                 OddBooksRead = [.. _oddBooksRead],    // #701: the shelves whose gist this thread already has
+
+                // #1066 · Berths since the crew were last ashore — and NULL while nobody is counting, which
+                // is not tidiness: the checksum is taken over the payload, so writing a zero here on every
+                // save would change the digest of every vault ever written and hang the 📛 tampered marker
+                // on an honest voyage (#1057/#1072's pattern; the bytes are pinned in
+                // ShoreLeaveIsALedgerLineTests against a real pre-#1066 file).
+                WorkingStopsSinceShoreLeave =
+                    _workingStopsSinceShoreLeave > 0 ? _workingStopsSinceShoreLeave : null,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -963,6 +971,11 @@ public partial class Map
         // taught the supply line again (a pre-#562 save defaults false: they get it once, on their next).
         _tubeRearmSeen = vault.Progress?.TubeRearmSeen ?? _tubeRearmSeen;
         _airCardSeen = vault.Progress?.AirCardSeen ?? _airCardSeen;   // #573
+        // #1066: and the berths since anybody was ashore. A crew kept aboard for six working stops do not
+        // forget it over a reload, and neither does the promise it breaks. A pre-#1066 save simply lacks the
+        // field and wakes as a ship that has just come off a gangway, which is the kind direction to be
+        // wrong in — nobody is owed a run ashore they were never denied.
+        _workingStopsSinceShoreLeave = vault.Progress?.WorkingStopsSinceShoreLeave ?? _workingStopsSinceShoreLeave;
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)

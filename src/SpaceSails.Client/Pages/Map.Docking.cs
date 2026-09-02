@@ -897,7 +897,15 @@ public partial class Map
         // place is." Raised LAST, so the clamp, the settled match tab and the quest payouts have all had their say
         // first — this is scene-setting, and it goes through the one story-beat door like everything else. Once per
         // berth, ever, which is what taught that seam the OncePerSubject cadence.
-        RaiseStoryBeat(ArrivalTube.BeatFor(ArrivalTube.TierFor(_ephemeris!, dock.Id)), dock.Name);
+        //
+        // #1066 · AND THE SAME TIER IS WHAT THE CREW GOT OUT OF THIS BERTH. Worked out ONCE and handed to
+        // both readers, which is #1065's one-event law: the picture that says "two streams of people … and
+        // nobody who has any idea who you are" and the ledger line that says the crew went ashore are the
+        // same statement about the same berth, and a second place deciding the tier again would be a second
+        // set of books that could disagree with the shot on the screen.
+        ArrivalTube.Tier tier = ArrivalTube.TierFor(_ephemeris!, dock.Id);
+        NoteTheBerthTheCrewGot(tier);
+        RaiseStoryBeat(ArrivalTube.BeatFor(tier), dock.Name);
 
         // #973 L4 · …and then the place says its own thing, if it has one to say: a page this captain does not
         // remember writing that NAMES this berth is finished by standing on it, and a hull impounded here is

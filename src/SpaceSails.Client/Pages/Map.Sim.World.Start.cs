@@ -156,7 +156,10 @@ public partial class Map
 
         if (q.CrewCheat is not null)
         {
-            SeedCrewCheat(); // #663: the voyage the crew send a deputation over — bodies, and no money to show for them
+            // #663 / #1066: the voyage the crew send a deputation over — bodies, and no money to show for
+            // them — or, one landing further down, that same voyage with nobody ashore in five berths,
+            // which is what convenes the meeting.
+            SeedCrewCheat(q.CrewCheat);
         }
 
         if (q.ConvergeCheat)

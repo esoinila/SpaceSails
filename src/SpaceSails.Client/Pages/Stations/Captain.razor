@@ -319,6 +319,18 @@
                     </div>
                 }
 
+                @* #1066 / #761 · SHORE LEAVE, WHERE THE CAPTAIN CAN SEE IT COMING. The crew's report is the
+                   warning at every step — "a captain who is surprised was not reading it" — so the one
+                   number that can convene the meeting is on the sheet BEFORE it breaks, with the line it is
+                   measured against beside it. Same idiom as the cohesion line under it: a fact, a figure,
+                   and no advice. *@
+                <div class="crew-shore crew-shore-@(CrewTemp.ShoreLeavePromisesBroken(WorkingStopsSinceShoreLeave) > 0 ? "overdue" : "kept")">
+                    Shore leave: <strong>@WorkingStopsSinceShoreLeave</strong>
+                    working stop@(WorkingStopsSinceShoreLeave == 1 ? "" : "s") since a run ashore,
+                    against a line at <strong>@CrewTemp.WorkingStopsBetweenRunsAshore</strong>.
+                    @CrewTemp.ShoreLeaveLine(WorkingStopsSinceShoreLeave)
+                </div>
+
                 <div class="crew-cohesion">
                     Cohesion: <strong>+@CrewTemp.Cohesion(Voyage)</strong> —
                     what this crew has been through <em>with</em> you. It does not make them happier; it makes
@@ -754,6 +766,12 @@
     /// <summary>Everything the crew have formed an opinion from. A plain aggregate of the voyage, so the
     /// sheet is a pure function of what actually happened.</summary>
     [Parameter] public CrewTemp.Voyage Voyage { get; set; }
+
+    /// <summary>#1066 · Berths since the crew were last ashore. It reaches <see cref="Voyage"/> already,
+    /// folded into <c>PromisesBroken</c> — but the sheet has to show the COUNTER and not only what it costs,
+    /// because a warning the captain can only read backwards off a bar is not a warning (#761).</summary>
+    [Parameter] public int WorkingStopsSinceShoreLeave { get; set; }
+
     [Parameter] public int ActiveTutorial { get; set; } = -1; // index of the in-progress lesson, -1 = none
     [Parameter] public EventCallback<int> OnStartTutorial { get; set; }
     // A one-shot request to open this desk straight on the lessons. (The Nav "New here? Learn the

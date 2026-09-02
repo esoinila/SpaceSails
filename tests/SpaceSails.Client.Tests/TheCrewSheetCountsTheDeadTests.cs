@@ -116,10 +116,12 @@ public sealed class TheCrewSheetCountsTheDeadTests
         Assert.Equal(2, v.Heat);
         Assert.True(v.VentedOwnCompartment);
 
-        // The two hooks that are STILL honest zeroes, and the reason CrewMeeting keeps its place on
-        // EveryStoryBeatHasACallerTests.KnownOrphans: nothing in the game promises anything TO THE CREW,
-        // and nothing tracks shore leave. A bar that moved for invented reasons would be worse than a bar
-        // that does not move.
+        // The hooks that are STILL honest zeroes. #1066 struck the third name off this list — shore leave IS
+        // tracked now, in berths, and it reaches the sheet as PromisesBroken, which reads zero here only
+        // because this harness leaves the crew freshly ashore (TheCrewSheetCountsTheStopsAshoreTests is what
+        // drives that input). What is left dormant: nothing in the game makes a promise TO THE CREW and then
+        // keeps it, and DaysSinceShoreLeave is the DAYS version of a thing the game counts in BERTHS —
+        // deriving one from the other would be the invented number this sheet exists to refuse.
         Assert.Equal(0, v.PromisesKept);
         Assert.Equal(0, v.PromisesBroken);
         Assert.Equal(0, v.DaysSinceShoreLeave);
@@ -129,6 +131,12 @@ public sealed class TheCrewSheetCountsTheDeadTests
     /// AND THE WORLD CAN ACTUALLY GET THERE — the half that makes the deputation's caller a caller rather
     /// than a scanner-satisfying gesture. The sweep is over the page's own voyage, so what it measures is
     /// the reach of the SHIPPED inputs, and it says: a Petition, and no further.
+    ///
+    /// <para>#1066 · <b>The harness leaves the crew freshly ashore</b> (<c>VoyageOf</c> never writes
+    /// <c>_workingStopsSinceShoreLeave</c>), so what this sweep now measures is the reach of a captain WHO
+    /// TAKES HIS CREW ASHORE — and the answer is still a deputation and no further. That is the kept half of
+    /// #1066's vacuity pair; the other half, the same sweep with nobody ashore, lives next door in
+    /// <see cref="TheCrewSheetCountsTheStopsAshoreTests"/> and reaches the ultimatum the meeting sits on.</para>
     /// </summary>
     [Fact]
     public void TheShippedInputsReachADeputationAndNoFurther()
@@ -174,8 +182,8 @@ public sealed class TheCrewSheetCountsTheDeadTests
         Assert.True(worst == CrewTemp.Standing.Petition,
             $"the shipped inputs reach {worst} ({worstVoyage}), not a Petition. BELOW it the deputation's " +
             "caller in Map.CrewTemp can never fire, and StoryBeats.Beat.CrewDeputation must go back on " +
-            "EveryStoryBeatHasACallerTests.KnownOrphans; ABOVE it StoryBeats.Beat.CrewMeeting is wireable " +
-            "at last and should come OFF that list (#663).");
+            "EveryStoryBeatHasACallerTests.KnownOrphans; ABOVE it the deputation is no longer the worst " +
+            "thing this sweep can build and the beat that IS should be raised here too (#663).");
 
         // …and the sweep is not a loop over one answer: the same page, kept well, is Solid.
         Assert.Equal(CrewTemp.Standing.Solid, CrewTemp.StandingOf(VoyageOf(credits: 50_000, rumTots: 10)));
@@ -220,7 +228,7 @@ public sealed class TheCrewSheetCountsTheDeadTests
         var map = new Pages.Map();
         MethodInfo seed = typeof(Pages.Map).GetMethod("SeedCrewCheat", Hidden)
             ?? throw new InvalidOperationException("Map has no SeedCrewCheat — /map?crew=petition has lost its seat.");
-        seed.Invoke(map, []);
+        seed.Invoke(map, ["petition"]);
 
         MethodInfo voyage = typeof(Pages.Map).GetMethod("CrewVoyage", Hidden)!;
         var seeded = (CrewTemp.Voyage)voyage.Invoke(map, [])!;
@@ -266,7 +274,7 @@ public sealed class TheCrewSheetCountsTheDeadTests
         Assert.Null(card.GetValue(map));
 
         // …and then the dev door's voyage, read on the ship's own clock.
-        typeof(Pages.Map).GetMethod("SeedCrewCheat", Hidden)!.Invoke(map, []);
+        typeof(Pages.Map).GetMethod("SeedCrewCheat", Hidden)!.Invoke(map, ["petition"]);
         watch.Invoke(map, []);
 
         object? raised = card.GetValue(map);

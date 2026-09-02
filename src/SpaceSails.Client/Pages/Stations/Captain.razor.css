@@ -342,6 +342,21 @@
     margin-top: 0.75rem;
 }
 
+/* #1066 · Shore leave, in the cohesion line's own idiom — same size, same grey, same rule above it, so the
+   two footnotes under the five bars read as a pair rather than as a new panel. The overdue state warms the
+   text and nothing else: the sheet reports, and a red box would be the sheet giving orders. */
+.crew-shore {
+    font-size: 0.88rem;
+    color: #8fa1b8;
+    border-top: 1px solid rgba(120, 140, 165, 0.25);
+    padding-top: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.crew-shore-overdue {
+    color: #d8a45c;
+}
+
 /* #959 · THE JOB'S PLAIN BLOCK on the ledger row — the twin of .job-plain in Pages/Map.razor.css, which
    dresses the same three Core-written lines on the bar's offer card. Same order, same colours, same left
    rule, so the row a captain reads AFTER accepting is visibly the row he accepted. (Blazor scoped CSS is

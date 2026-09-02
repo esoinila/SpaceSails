@@ -428,6 +428,25 @@ public sealed record ProgressSection
     /// once. Defaults empty — a pre-#701 file simply lacks the field, and a captain who has read a shelf
     /// they cannot remember reading files it again, which is the harmless direction to be wrong in.</summary>
     public IReadOnlyList<string> OddBooksRead { get; init; } = [];
+
+    /// <summary>
+    /// #1066 · CONSECUTIVE WORKING STOPS SINCE THE CREW WERE LAST ASHORE — the whole of the shore-leave
+    /// mechanic, as one integer. A clamp at a great port (<see cref="ArrivalTube.Tier.GreatPort"/>) puts it
+    /// back to nothing; every other berth adds one, and <see cref="CrewTemp.ShoreLeavePromisesBroken"/>
+    /// turns the tally into the broken promise the crew's report reads.
+    ///
+    /// <para><b>Written only when somebody is counting</b>, which is the #1057/#1072 pattern and not a
+    /// stylistic choice: the checksum is taken over the payload, so an extra
+    /// <c>"workingStopsSinceShoreLeave": 0</c> on every save would change the digest of every vault ever
+    /// written and hang the 📛 tampered marker on an honest voyage. Null means "this file never counted" —
+    /// the truth about every save written before shore leave was a number, and about every ship that has
+    /// just walked off a great port's gangway.
+    /// <c>ShoreLeaveIsALedgerLineTests.ALegacyVaultRoundTripsByteForByteAcrossTheShoreLeaveLine</c> holds
+    /// that line against a real pre-#1066 file.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? WorkingStopsSinceShoreLeave { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
