@@ -182,11 +182,20 @@ public static class SurfaceOutpost
     /// <summary>How many seeded spots a tile tries before it accepts that it has no room for a hut. A tile
     /// dense enough to reject all of them simply has none — an emptier tile beats a hut built through
     /// somebody's wall, which is the same trade the ground's own generator makes (#563 / #585).</summary>
-    private const int PlacementAttempts = 24;
+    private const int PlacementAttempts = 40;
 
-    /// <summary>The clear ground kept between a hut and anything already standing. Matches the elbow room the
-    /// ground generator keeps between its own features.</summary>
-    private const double Elbow = 1.5;
+    /// <summary>The clear ground kept between a hut and anything already standing.
+    ///
+    /// <para>It is NOT the 1.5 du elbow the ground generator keeps between its own rubble, and the difference
+    /// is a lesson the audit taught on the first run: a hut has a DOORWAY, and rubble does not. At 1.5 du
+    /// <c>phobos · The Ridge Camp</c> seeded a hut whose hatch faced a wall 1.9 du away — technically passable
+    /// for a captain of radius 0.7, half a deck unit of walkable lane, and the reachability flood duly
+    /// reported the whole room as sealed. A gap you can only cross by being exactly on the middle of it is
+    /// not a way in.</para>
+    ///
+    /// <para>Four deck units leaves 2.6 du a captain can actually walk down, which is wider than the hut's own
+    /// doorway. Sized against the body that has to use it rather than against the neighbouring number.</para></summary>
+    private const double Elbow = 4.0;
 
     /// <summary>Resolve where the HOME tile's hut stands — the old question, unchanged for every caller that
     /// still asks it in field terms.</summary>
