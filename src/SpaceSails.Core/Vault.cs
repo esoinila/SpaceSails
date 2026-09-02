@@ -457,10 +457,15 @@ public sealed record ProgressSection
     /// The first crossing is the one kept (<see cref="DisclosureClock.Note"/>), so a revisit can never move
     /// it.</para>
     ///
-    /// <para>Defaults empty — a pre-#677 file simply lacks the field, and a captain who walked a gallery
-    /// before this existed has their clock start on their next crossing, which is the harmless direction to
-    /// be wrong in.</para></summary>
-    public IReadOnlyList<HallOpeningRecord> HallsOpened { get; init; } = [];
+    /// <para>Null until somebody has crossed a seam — the #1057/#1072/#1066 pattern, and here for their
+    /// exact reason: the checksum is taken over the payload, so an eager <c>"hallsOpened": []</c> on every
+    /// save would change the digest of every vault ever written and hang the 📛 tampered marker on honest
+    /// voyages (the #1078 byte guard caught precisely that when this section met the shore-leave line).
+    /// A pre-#677 file simply lacks the field, and a captain who walked a gallery before this existed has
+    /// their clock start on their next crossing, which is the harmless direction to be wrong in.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<HallOpeningRecord>? HallsOpened { get; init; }
 }
 
 /// <summary>#677 — one row of <see cref="ProgressSection.HallsOpened"/>: a ground, and the world-side window

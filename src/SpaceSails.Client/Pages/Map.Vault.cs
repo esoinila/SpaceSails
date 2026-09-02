@@ -448,8 +448,11 @@ public partial class Map
                     _workingStopsSinceShoreLeave > 0 ? _workingStopsSinceShoreLeave : null,
                 // #677 · the disclosure clock's register — which grounds this thread has been past the seam
                 // of, and the world-side window each was opened in. A clock that forgot across a reload
-                // would not be a clock.
-                HallsOpened = [.. _hallsOpened.Select(o => new HallOpeningRecord(o.BodyId, o.Window))],
+                // would not be a clock. Null while empty: an eager [] would move every legacy vault's
+                // checksum (the #1078 byte guard's law).
+                HallsOpened = _hallsOpened.Count > 0
+                    ? [.. _hallsOpened.Select(o => new HallOpeningRecord(o.BodyId, o.Window))]
+                    : null,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
