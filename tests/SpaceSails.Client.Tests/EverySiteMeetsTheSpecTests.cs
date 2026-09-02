@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -213,19 +213,42 @@ public sealed class EverySiteMeetsTheSpecTests
     }
 
     [Fact]
-    public void EverySiteKeepsItsEdgeUnseen()
+    public void NoSiteFencesItsGroundAtAll()
     {
-        // Spec 1.2. "the rectangular fence spoils the site feeling" — the boundary must collide and never be
-        // drawn. If a site ever ships with a visible box again, this says so before he has to.
+        // Spec 1.2, and it is a STRONGER rule than the one it replaces. "the rectangular fence spoils the
+        // site feeling" was first answered by making the boundary unseen (it collided and was never drawn)
+        // and then by making it wander, and this test used to check that the wandering bound was still there
+        // — at least twenty unseen segments.
+        //
+        // #563 · There is no bound. The ground is an unbounded lattice of addressed tiles (SurfaceTiles) and
+        // what stops a captain is the tank and the walk home, so the thing to assert is not that the fence is
+        // well hidden but that NOTHING IS BUILT ALONG THE EDGE AT ALL. A wall lying on the field's port,
+        // starboard or deep line would be the fence coming back — visible or not, wandering or not — and
+        // would stop a captain walking onto the next tile.
+        //
+        // The TOP is exempt and always has been: that edge is the ship's own underside, a made thing with a
+        // real outside, and drawing it as hull is correct (owner: "The space ships come with outside borders
+        // but the landing site out-doors should not").
+        SurfaceLayout.Field env = MoonSurface.ExpeditionField();
+        const double Grazing = 1.0;   // how close to the line counts as lying on it
+
         AuditEverySite((_, _, deck) =>
         {
-            int unseen = deck.Walls.Count(w => w.Unseen);
-            if (unseen < 20)
+            foreach (DeckPlan.Wall w in deck.Walls)
             {
-                return $"only {unseen} unseen boundary segments — the field's edge is not the wandering bound.";
+                bool onPort = Math.Abs(w.X1 - env.LeftX) < Grazing && Math.Abs(w.X2 - env.LeftX) < Grazing;
+                bool onStarboard = Math.Abs(w.X1 - env.RightX) < Grazing && Math.Abs(w.X2 - env.RightX) < Grazing;
+                bool onDeep = Math.Abs(w.Y1 - env.BottomY) < Grazing && Math.Abs(w.Y2 - env.BottomY) < Grazing;
+
+                if (onPort || onStarboard || onDeep)
+                {
+                    string side = onPort ? "port" : onStarboard ? "starboard" : "deep";
+                    return $"a wall lies along the {side} edge at ({w.X1:F1}, {w.Y1:F1})-({w.X2:F1}, {w.Y2:F1}) " +
+                        "— the ground is fenced again.";
+                }
             }
             return null;
-        }, "spec 1.2 — the edge is hidden, not fenced");
+        }, "spec 1.2 — there is no edge to hide");
     }
 
     [Fact]

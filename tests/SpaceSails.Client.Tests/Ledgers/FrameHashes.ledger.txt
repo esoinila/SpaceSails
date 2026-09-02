@@ -21,66 +21,66 @@
 calls | ship · under way | 364
 calls | ship · docked, the shuttle away and the machine stalling | 338
 calls | ship · hatches dogged, seated at the table | 338
-calls | haven · the-space-bar | 387
-calls | haven · cinder-roost | 391
-calls | haven · ringside-exchange | 393
-calls | haven · the-tilt | 387
-calls | haven · selene-gate | 391
-calls | haven · red-eye | 391
-calls | haven · the-deep | 393
-calls | wreck · HullBreach | 592
-calls | luna B1 | 1591
-calls | luna B2 | 426
-calls | luna B3 | 315
-calls | luna B4 | 316
-calls | luna B5 | 317
-calls | luna B6 | 367
-calls | luna B7 | 317
-calls | luna B8 | 329
-calls | luna B9 | 491
-calls | luna B10 | 456
-calls | luna B11 | 289
-calls | luna B12 | 309
-calls | luna B13 | 421
+calls | haven · the-space-bar | 369
+calls | haven · cinder-roost | 373
+calls | haven · ringside-exchange | 375
+calls | haven · the-tilt | 369
+calls | haven · selene-gate | 373
+calls | haven · red-eye | 373
+calls | haven · the-deep | 375
+calls | wreck · HullBreach | 582
+calls | luna B1 | 951
+calls | luna B2 | 251
+calls | luna B3 | 150
+calls | luna B4 | 150
+calls | luna B5 | 146
+calls | luna B6 | 197
+calls | luna B7 | 150
+calls | luna B8 | 169
+calls | luna B9 | 273
+calls | luna B10 | 270
+calls | luna B11 | 139
+calls | luna B12 | 145
+calls | luna B13 | 227
 calls | luna B1 · the lamps are all there is | 128
-calls | luna B1 · sat down at a desk | 1607
-calls | luna B1 · the round is out, and the buzzer went | 1617
-calls | phobos B1 | 1563
-calls | titan B1 | 1512
-calls | surface · luna site 0 | 3800
-calls | surface · luna site 0, the whole excursion | 3907
+calls | luna B1 · sat down at a desk | 964
+calls | luna B1 · the round is out, and the buzzer went | 977
+calls | phobos B1 | 934
+calls | titan B1 | 888
+calls | surface · luna site 0 | 313
+calls | surface · luna site 0, the whole excursion | 420
 calls | surface · luna site 0, dark, and the fan hears something | 263
-calls | surface · titan site 0, a derelict's instruments (none) | 4390
+calls | surface · titan site 0, a derelict's instruments (none) | 442
 sha256 | ship · under way | 58db0ba402b4b3545c170303bc0d73eb37e5dde9f9b704849260d8cc2405b1b0
 sha256 | ship · docked, the shuttle away and the machine stalling | d3e9fda8acbf8860a159cea9724adc86b198b6a919d3329c6bf76948457b815c
 sha256 | ship · hatches dogged, seated at the table | 59002f36dab94347fe6ba76bc324a2adb06ff473088f58d8d1cc9958fad53edf
-sha256 | haven · the-space-bar | 5174fa8883666bbad704fdb78a349b91527dc3409a2c51e06b432f76ac1bc8d8
-sha256 | haven · cinder-roost | 5f45add2144875253468b55249f9030b99cf2ed4a2ae3e64d983a23aad3c07fc
-sha256 | haven · ringside-exchange | 203fb9100cee4d1e41f0120ff761a18ec3c715b2b160969de4d87d7f4fc728fd
-sha256 | haven · the-tilt | 46e4d3aa1ece00fa44036415f125e54219784ee58f2ee27ef5db1764a196add1
-sha256 | haven · selene-gate | 0c3bbc7cbfd21d06c7a5995083a7716734e152aacca40c0491994ec707eee734
-sha256 | haven · red-eye | 2c88a55c7ba306a7d809f3bfb0edd967146a1c127c24bda1f15f6d325c8c330f
-sha256 | haven · the-deep | 973827c654a4c7dc8f8032982c9451ea9d1eefb02cf4e4b3b02e5533897d8d1f
-sha256 | wreck · HullBreach | 637ac91e25acf9143c9eb2c7dcdadb66187e9e98a81dcf1dd33d5aba5d50b020
-sha256 | luna B1 | c59db7d380b195118ff46b0371c8838164d9b669322b3e01e567156ed9ae2aab
-sha256 | luna B2 | 86f3ae775d664ce67df63edd1d7bc1a63e2884ef9b1e24baecfc98fed7a628f0
-sha256 | luna B3 | 21e74fcfe4bd6ce83a778d2650e7ed14764d31f31c92fe55d1070e91a7800cc7
-sha256 | luna B4 | 655cf2360b2f47918790bdb851ff8c6eb77c40e0b88a4df3cb1535c8ff12630a
-sha256 | luna B5 | 59a6d0a562e6c3b1e59e549fc2a1a0be21107e0a917c7a0c1bf4278a8eb5fea0
-sha256 | luna B6 | 180c39e1a02cc244423d90f65e4e43de246f5ee738795b6c756804313e6c7fba
-sha256 | luna B7 | 9a3a15ce73ab249404bc38847d857eaca83da475d506c1b3ab2fe2a6051c8828
-sha256 | luna B8 | edfdbae890ac40711e14ac32c860b07c18d90d01102a73496132403cd9f730d8
-sha256 | luna B9 | 9733f98860e23a5646086a414e4b9017430898ca61248cb141fedde13d46012f
-sha256 | luna B10 | 06bfd0920970c41fcbce5fef8a5b17e5c25e55cb4aaa8dbb44a719d37312d085
-sha256 | luna B11 | 58f4d7e970fd6afe821931328e2753ba24b3e53baedfb214e1249bebe2b5e61f
-sha256 | luna B12 | bc3cc0671734f0b7fbfca6f4f90aa3fd608554caf5942e4258132c5af50bd5fe
-sha256 | luna B13 | 5ca280d45659b39791b90e5dffe6b0512cb5d03450e6d1cb1e8ef9591ce4fc2b
+sha256 | haven · the-space-bar | df98efa2a021d38fa83e933f36037526ef8b51943d1138b4c962c001135e3baa
+sha256 | haven · cinder-roost | 8b8f1c17294c13f734a430f942a520988f52b34c7699c4a230ede023cd290eb3
+sha256 | haven · ringside-exchange | abc6916f59db49ceb0485aad9f9ca8a1f3bd9a610bb6f7e77987289e5947ca60
+sha256 | haven · the-tilt | 9dfe50b9203cc6ff19a846f68e506696183aa091bc9a0d7682c85bbd512642af
+sha256 | haven · selene-gate | 048ded996f39d3c1d366c5531564ec8c261edbaeca59d43fc9756f08d3e76bb3
+sha256 | haven · red-eye | 2212c80ffcb98545be3c73f5b8f28e98568993771b09ee9856bf6fd6f74a9fac
+sha256 | haven · the-deep | 9c7b02785be411b269008ae95cf05f6c083641424304807f45f9f7d760d0b955
+sha256 | wreck · HullBreach | 94a838b8b6ad6e38c06cf13d1b20916d6323077738a3e422ed019744e584fa5b
+sha256 | luna B1 | 63e1f1f3b0979f5eff9e05267dec545ade222d4fb88e6034b902c3cde7ba3b0c
+sha256 | luna B2 | a9ab8c91650fc25ec812d7ff2612f188010a6dace5982bcf541871e5b9ca3480
+sha256 | luna B3 | 09ef0fe7289c5d2c085850e2777fca67fe547beca3240b1a136001830750916c
+sha256 | luna B4 | 7e70d2da79386704603f82e68046567c8ef646ff6e93fc53b024db709016875f
+sha256 | luna B5 | b4dd57ed8a5815d82a455e5b6ba0a8bbe4450b88e0627ff381873a3ff3757019
+sha256 | luna B6 | b896c6221fc5d42ac27394b9c3d387993796b460188dc798181ebd2ed8a0448c
+sha256 | luna B7 | 613bdc7a57f72bfe058cf9865f15e735200856dbe7ec92fdfabda41beb18969f
+sha256 | luna B8 | 05cd9d5f9b56ca9d9d1d38046d4ff49b594752c69b14eb46fdb249564b0a25df
+sha256 | luna B9 | 142b7ae06d985a5d1eaa19ec4ec3bcc1195c73d7e85b929121cbdf8d3d53e339
+sha256 | luna B10 | 7549b143f51826a51c335abed7d6bca8129bd1436eda1874b9e16bde9d50ea19
+sha256 | luna B11 | fd133dff45494295a9d189144fac4eca47beee1b6fa2a7dbb7fd61027a956566
+sha256 | luna B12 | 374601433afd6648b6ea50eef8781bf9672ea51ff3dbcdd153cad87bd5ba4f43
+sha256 | luna B13 | 0209b0c3bcc7cb12e3c7051287e8f885964f4d605e762986c1b873d6fc651381
 sha256 | luna B1 · the lamps are all there is | b5d4a27b5482f54a4c31bdeb0993b613395be552dfbcf7ddb380f3d94656988f
-sha256 | luna B1 · sat down at a desk | 6c6224e19d84aad5de289486f5d533f683c2d9da104718310ada860105c3c76b
-sha256 | luna B1 · the round is out, and the buzzer went | 45921c657a779c388d7003d4b69dbfb6fb8ba9159ad8d582f2bcb040758c8b3d
-sha256 | phobos B1 | 879b888c16f95fa9910223a9a2a4f136f289f7bcabb426a1c38abb43fdec860c
-sha256 | titan B1 | 3af501a6b5a5bfa70f70ff7ed104763293b71e722871ee95ab8a08495408509a
-sha256 | surface · luna site 0 | 6ea3dbef056a998cd4904a29f9c932be45a4fd529367ed6088a0baa0b84f176b
-sha256 | surface · luna site 0, the whole excursion | 46668299078192e2ba90d9ae36a81b8a38aadf8b35ec0dacded7821f631ddf8d
+sha256 | luna B1 · sat down at a desk | cae85ed41b8043daf0aff6387a931bd893624bf882e6c30bfaf28c4a95b71922
+sha256 | luna B1 · the round is out, and the buzzer went | 8a2a71e6d2803ff47229abcf7ee3374bb97985d860e88e5b743a36575ee13a89
+sha256 | phobos B1 | 2966056796585e62c588b76aed867f6aebb81ac9a651bce25c38081e7b1136a6
+sha256 | titan B1 | d4bc154f77d67ef8298016b8000b6b782ab291b13d176f92df674064e6d29e03
+sha256 | surface · luna site 0 | 02de0dd1f13fea1c748efb0f3461a1de6e5e6cc40e602c018afdafd5f2a28f53
+sha256 | surface · luna site 0, the whole excursion | f71a7f19ceed39e293db15fec04a8294fc626b2eeedce9f30eab4b3558e45b83
 sha256 | surface · luna site 0, dark, and the fan hears something | 34020834f957d7b8d3db8b5c02a14ab017a4553a34fe1100346246a418522e71
-sha256 | surface · titan site 0, a derelict's instruments (none) | cecd8a7e26ee1aa6fe651c485cbe755a4cd02cfdbc2172ee2977641fdbb806f4
+sha256 | surface · titan site 0, a derelict's instruments (none) | 9688158ccc4f029e6613d1ff4ac1d414508ca47a67c5debe17de8c6c75b53ea1

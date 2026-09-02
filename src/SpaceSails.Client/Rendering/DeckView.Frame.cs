@@ -31,6 +31,7 @@ public sealed partial class DeckView
 
         Placement place = PlacementFor(plan, widthPx, heightPx, state.AvatarX, state.AvatarY, panX, panY);
         float scale = place.Scale, ox = place.Ox, oy = place.Oy;
+        (_viewW, _viewH) = (widthPx, heightPx);
 
         // #870 lane 7b · THE PROJECTION, WRITTEN DOWN ONCE AND HANDED ROUND. Every pass below is given
         // this rather than a scale and an origin to multiply out for itself: the arithmetic that says
@@ -203,6 +204,23 @@ public sealed partial class DeckView
         // collided — they live in their own array precisely so no oversight can give them substance.
         foreach (SpaceSails.Core.SurfaceScenery.Mark m in plan.Scenery)
         {
+            // #563 · OFF THE GLASS IS NOT DRAWN. The regolith used to be one field's worth of weather and
+            // could be painted whole without anybody noticing; it is a lattice of tiles now, and the frame
+            // carries nine of them. Measured on the pinned regolith run, welding the chunk in put the
+            // walked-view pen up by 661,200 calls — two and a half times the frame — and every one of the
+            // new ones was a crater rim several hundred deck units off the side of the screen.
+            //
+            // This is the trap the issue named (the collision index exists because surface cost once timed
+            // the shuttle ride out), arriving through the renderer rather than through the sim. The cull is
+            // a screen-space reject on a segment whose ends are both past one edge: no picture changes,
+            // because nothing that was visible is skipped.
+            (float sx1, float sy1) = project(m.X1, m.Y1);
+            (float sx2, float sy2) = project(m.X2, m.Y2);
+            if (OffTheGlass(sx1, sy1, sx2, sy2))
+            {
+                continue;
+            }
+
             (RgbaColor ink, float wide) = m.Of switch
             {
                 SpaceSails.Core.SurfaceScenery.Kind.CraterRim => (new RgbaColor(74, 70, 64, 190), 1.4f),
@@ -210,7 +228,7 @@ public sealed partial class DeckView
                 SpaceSails.Core.SurfaceScenery.Kind.Ridge => (new RgbaColor(84, 78, 70, 200), 1.7f),
                 _ => (new RgbaColor(58, 60, 66, 175), 1.3f),
             };
-            DrawSeg(project(m.X1, m.Y1), project(m.X2, m.Y2), ink, wide);
+            DrawSeg((sx1, sy1), (sx2, sy2), ink, wide);
         }
 
         DrawUnseenFalloff(plan, scale, ox, oy);
@@ -376,6 +394,15 @@ public sealed partial class DeckView
             // object in the world to be. It is checked before the fog so it stays invisible in every
             // lighting state, including the lit deck where the fog test passes everything.
             if (w.Unseen)
+            {
+                continue;
+            }
+
+            // #563 · …and neither is a wall that is off the glass. Same reject as the scenery above and for
+            // the same reason: the frame carries a chunk of tiles now, not one field.
+            (float wsx1, float wsy1) = project(w.X1, w.Y1);
+            (float wsx2, float wsy2) = project(w.X2, w.Y2);
+            if (OffTheGlass(wsx1, wsy1, wsx2, wsy2))
             {
                 continue;
             }
