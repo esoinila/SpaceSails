@@ -826,6 +826,7 @@ public partial class Map
         }
 
         RefillTraffic();
+        KeepTheLessonsPreyInTheWorld(); // #351 — …and a running lesson's own prey is part of that sky
     }
 
     // ---- The world keeps living (owner: the sky must never empty) ----

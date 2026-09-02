@@ -81,6 +81,10 @@ public partial class Map
     // hole her sail). docs/MondayPonder/UIUsabilityNotes.md — "the gun tutorial" (owner's idea).
     private const int FirstHuntSteps = 6;              // indices 0..5 belong to the first hunt
 
+    // …and the last step of the first hunt that still NEEDS the pod out there (board her). Steps 4 and 5
+    // are the sell and the spend, which happen at a market with the catch already in the hold (#351).
+    private const int StepBoardPod = 3;
+
     // Second-hunt (the gun) step indices — kept named so the AdvanceTutorial wiring stays legible.
     private const int StepSelectFreighter = 6;
     private const int StepWarnFreighter = 7;
@@ -261,6 +265,82 @@ public partial class Map
             .ToArray();
     }
 
+    // ── #351 · THE LESSON KEEPS ITS OWN PREY IN THE WORLD ────────────────────────────────────────────
+    //
+    // Owner, 2026-07-18, six sim-days into the same voyage: "It showed me the tutorial soft catch window
+    // here even though all the targets it talks about are long gone. A schedule based tutorial only works
+    // at certain time. It is kind of a bad design like this. THE TUTORIAL SELECTION SHOULD TRIGGER THE
+    // LAUNCH OF THE TARGET VEHICLES."
+    //
+    // Ruling-2 answered the first half that same day: the soft catch's pod is no longer cast at boot off a
+    // T=0 Earth clock (see the note in Map.Sim.World.Build.PlanTheTrafficAsync) — taking the lesson ON
+    // launches her, abeam wherever the ship actually is THEN (SeedFirstHuntTarget / SeedSecondHuntTarget).
+    //
+    // This is the other half, and it is the half his screenshot was actually taken in. A launch is a
+    // MOMENT; the checklist is a thing that stays up. Between the two the world can take the prey away
+    // entirely — ReseedWorldForJump (Map.LongHaul) drops every non-depot mover on a long haul, a cycler
+    // crossing and a vault resume, StepNpcs retires one the clock has left an epoch behind, and the pod's
+    // own 60-day expiry despawns her at her destination — and none of that told the checklist, which went
+    // on naming a Sitting Duck that was nowhere in the world. So: while the lesson still NEEDS her, she is
+    // out there. Launched again, abeam the ship NOW, which is the same sentence the owner wrote.
+    //
+    // Two doors, one method. Opening the checklist is the captain's own selection and relaunches at once
+    // (ToggleTutorial); and the sensor sweep, which is already where "the sky must never empty" is kept
+    // (RefillTraffic), keeps the promise for a window that was left open across a jump — rate-limited to a
+    // sim-hour like its neighbour, so a pod that despawns where she is launched cannot spawn every frame.
+    private const double LessonPreyCheckSeconds = 3600;
+    private double _lastLessonPreyCheckSimTime = double.NegativeInfinity;
+
+    private void KeepTheLessonsPreyInTheWorld()
+    {
+        // Only while the captain is actually looking at a lesson: _tutorialStep rests at 0 for every
+        // captain who never took one (it is not vaulted), so the checklist being UP is what says a lesson
+        // is running. Cheap enough to sit in the sweep — an int compare before anything is scanned.
+        if (!_showTutorial || SimTime - _lastLessonPreyCheckSimTime < LessonPreyCheckSeconds)
+        {
+            return;
+        }
+
+        _lastLessonPreyCheckSimTime = SimTime;
+        RelaunchTheLessonsPreyIfSheIsGone();
+    }
+
+    /// <summary>Launch the active lesson's target again if the world no longer has her — the owner's
+    /// ruling applied to every moment the lesson is on, not just the moment it was taken on. A prey that
+    /// is still out there is left strictly alone, so a plotted intercept is never yanked out from under
+    /// the captain.</summary>
+    private void RelaunchTheLessonsPreyIfSheIsGone()
+    {
+        if (_tutorialStep <= StepBoardPod)
+        {
+            if (!SheIsStillOutThere(TrafficSchedule.StarterPodId))
+            {
+                SeedFirstHuntTarget();
+            }
+        }
+        else if (_tutorialStep >= StepSelectFreighter && _tutorialStep <= StepBoardFreighter
+                 && !SheIsStillOutThere(TrafficSchedule.StarterFreighterId))
+        {
+            SeedSecondHuntTarget();
+        }
+    }
+
+    /// <summary>Is that hull still a thing in this world? Retired by a jump (gone from the roster
+    /// outright) and despawned/expired (still on it, flagged Arrived) both answer no. Boarded does not —
+    /// a robbed pod keeps flying, and the lesson's next steps are about her cargo, not her.</summary>
+    private bool SheIsStillOutThere(string shipId)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == shipId && !npc.Arrived)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // #266 — the rescue offer pop-up (piracy-pop-up family): a real modal with the terms visible before
     // accepting. Auto-opens the instant we go adrift (UpdateShipAlerts); re-openable from the inline
     // adrift affordance while stranded; Decline just dismisses (the offer stands until we're under way).
@@ -276,7 +356,16 @@ public partial class Map
         await RefocusMap();
     }
 
-    private void ToggleTutorial() => _showTutorial = !_showTutorial;
+    private void ToggleTutorial()
+    {
+        _showTutorial = !_showTutorial;
+        if (_showTutorial)
+        {
+            // #351 — raising the checklist IS the tutorial selection the owner's ruling names, so it
+            // launches the lesson's target if the world no longer has her. A live prey is untouched.
+            RelaunchTheLessonsPreyIfSheIsGone();
+        }
+    }
 
     // #292: a lesson engaged (started or run to its end) means this captain is no longer truly new —
     // the fresh-Earth greeting must never raise itself again, this run or any future one. Persisted
