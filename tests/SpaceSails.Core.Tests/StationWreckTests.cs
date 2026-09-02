@@ -12,6 +12,7 @@ namespace SpaceSails.Core.Tests;
 /// in this repo proves you CAN get somewhere; this one has to prove you cannot, because a blockage that
 /// quietly stops blocking turns the shuttle hop into a decoration and nothing fails.
 /// </summary>
+[SlowGate] // #251 · 29 s over 15 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class StationWreckTests
 {
     private const double AvatarRadius = 0.7;

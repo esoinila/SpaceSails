@@ -43,6 +43,7 @@ namespace SpaceSails.Client.Tests;
 /// wears two (<c>btn-light</c> and <c>btn-outline-light</c>) — repainting five buttons is a change to the
 /// screen. #1001 gave that second reason first; wave 7 keeps it.</para>
 /// </summary>
+[SlowGate] // #251 · 53 s over 18 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
 {
     /// <summary>The four panels a death can end on — #970's own list, and the four rows this wave moved.

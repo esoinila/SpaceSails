@@ -45,6 +45,7 @@ namespace SpaceSails.Client.Tests;
 /// rubber stamp: it still only promises what it has flown.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 42 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheArrivalIsArmedThenNotOnlyNowTests
 {
     private readonly Xunit.Abstractions.ITestOutputHelper _out;

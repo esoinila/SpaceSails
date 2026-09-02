@@ -38,6 +38,7 @@ namespace SpaceSails.Client.Tests;
 /// <para>§3 is <c>?target=</c>, the dev door onto #960's dossier. Three waves of this migration measured
 /// that card by hand because no URL could raise it; this is the URL.</para>
 /// </summary>
+[SlowGate] // #251 · 71 s over 13 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════════════════

@@ -71,6 +71,7 @@ namespace SpaceSails.Client.Tests;
 /// asserted in <c>SpaceSails.UiGate.ThePeekLeavesAWayOutTests</c>, on real pixels, through the player's own
 /// keystroke.</para>
 /// </summary>
+[SlowGate] // #251 · 15 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class ThePeekIsAModeYouCanSeeYourWayOutOfTests
 {
     // Spelled exactly as the dismissibility law and the cancel-chain law spell it, so a page driven here and

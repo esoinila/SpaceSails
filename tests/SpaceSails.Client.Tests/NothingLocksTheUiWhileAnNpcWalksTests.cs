@@ -51,6 +51,7 @@ namespace SpaceSails.Client.Tests;
 /// the shipping fields, exactly as <c>ApproachTheTable</c> leaves them. There is no off-browser way to walk a
 /// body across a floor, and there does not need to be: what the room draws is a function of these fields.</para>
 /// </summary>
+[SlowGate] // #251 · 12 s over 1 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class NothingLocksTheUiWhileAnNpcWalksTests
 {
     /// <summary>A great port with a bar behind it — the tier the walk-in's own venue gate asks for.</summary>

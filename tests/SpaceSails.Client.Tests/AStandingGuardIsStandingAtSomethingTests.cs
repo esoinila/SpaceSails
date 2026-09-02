@@ -35,6 +35,7 @@ namespace SpaceSails.Client.Tests;
 /// the replica cannot quietly drift from the page.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 25 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class AStandingGuardIsStandingAtSomethingTests
 {
     private static readonly string[] Bodies = ["luna", "miranda", "titan", "europa"];

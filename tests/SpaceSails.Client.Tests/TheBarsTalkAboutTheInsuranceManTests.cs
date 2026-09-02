@@ -21,6 +21,7 @@ namespace SpaceSails.Client.Tests;
 /// through <see cref="DeskBench"/>, and the round is stood by pressing the button the render tree drew.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 60 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheBarsTalkAboutTheInsuranceManTests
 {
     private const string Station = "the-space-bar";

@@ -41,6 +41,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>KeyboardEventArgs</c> at the <c>onkeydown</c> handler id the render tree wrote for
 /// <c>.map-page</c>, and the road the key takes is the player's road.</para>
 /// </summary>
+[SlowGate] // #251 · 26 s over 13 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════════════════

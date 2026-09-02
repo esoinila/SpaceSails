@@ -30,6 +30,7 @@ namespace SpaceSails.Core.Tests;
 /// route over the captain's own lattice to a free booth; and the CONTACT is one the scene itself marks as
 /// having something worth a room to say.</para>
 /// </summary>
+[SlowGate] // #251 · 26 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class FollowMeIntoTheCabinetTests
 {
     /// <summary>The captain's own body, which is every walker's body: one law, one width.</summary>

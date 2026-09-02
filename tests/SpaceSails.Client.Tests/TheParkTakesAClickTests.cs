@@ -29,6 +29,7 @@ namespace SpaceSails.Client.Tests;
 /// walk, every bed, every bench, and a grid over the whole box, which is what a finger actually does.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 96 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheParkTakesAClickTests
 {
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();

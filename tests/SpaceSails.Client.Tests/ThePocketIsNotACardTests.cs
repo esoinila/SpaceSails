@@ -35,6 +35,7 @@ namespace SpaceSails.Client.Tests;
 /// cascade order that makes it stick, and the two keyboard chains — asserted the day they are typed rather
 /// than the day somebody thinks to drive to them.</para>
 /// </summary>
+[SlowGate] // #251 · 24 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class ThePocketIsNotACardTests
 {
     private const string Ashore = "/map?dock=the-tilt&site=0&land=1";

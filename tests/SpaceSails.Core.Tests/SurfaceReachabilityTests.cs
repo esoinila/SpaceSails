@@ -21,6 +21,7 @@ namespace SpaceSails.Core.Tests;
 /// <para>The predicate is the same one the live avatar moves by (<see cref="DeckReachability.Standable"/>
 /// wraps <see cref="SurfaceCollision.Blocked"/>), so the audit and the game agree by construction.</para>
 /// </summary>
+[SlowGate] // #251 · 142 s over 2 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class SurfaceReachabilityTests
 {
     // The shared field envelope MoonSurface hands in — mirrors its constants, the same way

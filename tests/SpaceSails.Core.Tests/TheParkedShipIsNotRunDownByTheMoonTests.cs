@@ -33,6 +33,7 @@ namespace SpaceSails.Core.Tests;
 /// — the frozen hull and the diving coast — stay on <c>CoMoving</c> on purpose and say so: they are #733's
 /// kept evidence, and evidence you have quietly re-based is not evidence.</para>
 /// </summary>
+[SlowGate] // #251 · 25 s over 8 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class TheParkedShipIsNotRunDownByTheMoonTests
 {
     private static CircularOrbitEphemeris Sol() =>

@@ -2,6 +2,7 @@ using SpaceSails.Contracts;
 
 namespace SpaceSails.Core.Tests;
 
+[SlowGate] // #251 · 35 s over 21 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class TrafficAndPredictionTests
 {
     private const double Day = 86400;

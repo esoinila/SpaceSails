@@ -56,6 +56,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>ThereIsOnePlaceASittingIsOpened</c>, which reads the sites themselves.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 25 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
 {
     private const BindingFlags Hidden =

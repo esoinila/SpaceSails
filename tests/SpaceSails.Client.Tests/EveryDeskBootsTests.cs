@@ -69,6 +69,7 @@ namespace SpaceSails.Client.Tests;
 /// boots hand you RENDERS — so this sweep reuses that file's own
 /// <see cref="TheBootBuildsTheSameWorldTests.EveryBootUrl"/> enumeration and adds the render half.</para>
 /// </summary>
+[SlowGate] // #251 · 300 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryDeskBootsTests
 {
     // ── The matrix: one row per desk, one row per world ──────────────────────────────────────────────

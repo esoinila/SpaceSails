@@ -4,6 +4,7 @@ namespace SpaceSails.Core.Tests;
 /// THE ARCHIVE NODE — the rules that make standing near it a decision rather than a cutscene.
 /// See <c>docs/features/the-archive-node.md</c>.
 /// </summary>
+[SlowGate] // #251 · 23 s over 51 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class ArchiveNodeTests
 {
     private static ArchiveNode.Confrontation Fresh => new(

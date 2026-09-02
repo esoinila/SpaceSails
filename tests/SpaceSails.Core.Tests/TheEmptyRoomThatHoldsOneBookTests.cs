@@ -17,6 +17,7 @@ namespace SpaceSails.Core.Tests;
 /// <para>So the split is <b>measured over generated sites</b> rather than asserted off the constant, and the
 /// prose is grepped. Both were watched go red — see the PR body.</para>
 /// </summary>
+[SlowGate] // #251 · 12 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheEmptyRoomThatHoldsOneBookTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;

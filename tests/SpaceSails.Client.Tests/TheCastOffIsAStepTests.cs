@@ -42,6 +42,7 @@ namespace SpaceSails.Client.Tests;
 /// nothing is armed. So the carve-out is the cast-off's, not a hole in the lock.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 39 s over 23 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheCastOffIsAStepTests
 {
     private readonly Xunit.Abstractions.ITestOutputHelper _out;

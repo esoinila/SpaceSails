@@ -24,6 +24,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>ClipThisStory</c> by name would prove a method files a note and say nothing at all about whether
 /// anything on the screen reaches it, which is #992's own lesson.</para>
 /// </summary>
+[SlowGate] // #251 · 42 s over 9 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheNewsIsASeatVerbTests
 {
     /// <summary>A CABINET TOP IN THE B1 CANTEEN OF A DEEP SITE — the seat under a facility, on an

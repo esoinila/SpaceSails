@@ -45,6 +45,7 @@ namespace SpaceSails.Client.Tests;
 /// face. Rename the member and the card stops compiling; change its value and the card follows without an
 /// edit; type it by hand and this goes red naming the string.</para>
 /// </summary>
+[SlowGate] // #251 · 11 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheHelpCardTeachesTodaysPanelTests
 {
     /// <summary>Docked at Selene Gate — the same world the pop-up law raises its cards in, and a berth is

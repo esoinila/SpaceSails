@@ -22,6 +22,13 @@ jobs:
       - name: Build
         run: dotnet build SpaceSails.slnx --no-restore -c Release
 
+      # #251 (item 4) — THE FULL SUITE, AND IT STAYS THE FULL SUITE. 63 test classes now carry a
+      # [SlowGate] trait so a crew's inner loop can say --filter "speed!=slow" and get the rule
+      # checks back in 38 s instead of six minutes (docs/testing-guide.md, Appendix C). That filter
+      # is a convenience for the person typing and MUST NOT appear on this line: those 63 classes
+      # are the N-body gates, the traffic and surface generators, the A-star walkability audits, the
+      # boot sweeps and every snapshot fingerprint — precisely the tests that prove the ship still
+      # flies. The merge gate is the whole contract. This step is deliberately unfiltered.
       - name: Test
         run: dotnet test SpaceSails.slnx --no-build -c Release --logger "trx" --results-directory TestResults
 
