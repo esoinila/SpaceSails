@@ -96,8 +96,13 @@ public static class PoliteDecline
     /// answer: the world has declined nowhere.
     ///
     /// <para>Tests restore what they installed in a <c>finally</c>. Because the register only ever changes the
-    /// answer for the ids IN it, a guard that installs a ground of its own cannot move any other guard's
-    /// world — which is what makes an ambient safe here rather than merely convenient.</para></summary>
+    /// answer for the ids IN it, a guard that installs a ground of its OWN cannot move any other guard's
+    /// world — which is what makes an ambient safe here rather than merely convenient. <b>And the emphasis on
+    /// "its own" is paid for:</b> xUnit runs test classes in parallel, and the first full run of this feature
+    /// reddened two audits with nothing to do with it (<c>TheParkIsTheCentreOfTheBlockTests</c> and
+    /// <c>TheRingIsWalkableTests</c>) because this feature's guards had declined on the found-band cheat site
+    /// while those two were walking the same site's concourse. A guard that installs a SHIPPED id here is
+    /// shutting a door under somebody else's floor.</para></summary>
     public static void Install(IReadOnlyList<Decline>? declined) => _declined = declined ?? [];
 
     /// <summary>#1068 · <b>THE EVENT.</b> Which of the grounds this captain has opened the world has declined
