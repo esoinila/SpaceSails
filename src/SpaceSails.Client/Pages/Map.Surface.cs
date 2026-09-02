@@ -541,7 +541,6 @@ public partial class Map
         _parrotSquawk = null;
 
         ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
-        ResolveOutpost(excursion);   // #563: does this SITE carry an outpost hut? (three in four do)
         if (_airCheatSeconds is { } startingAir)
         {
             excursion.AirSeconds = startingAir;   // #564 ?air=N — a short tank, for testing the line

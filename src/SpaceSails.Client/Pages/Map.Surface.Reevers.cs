@@ -998,10 +998,13 @@ public partial class Map
     // player learns the deep is alive. Marked Tide so StepReevers leashes it to the home range.
     private void SpawnTideReever(SurfaceExcursion ex)
     {
-        (double x, double y) = MoonSurface.TideSpawnPoint(ex.ThreatSeed, ex.TideSpawnIndex);
+        (double x, double y) = MoonSurface.TideSpawnPoint(ex.ThreatSeed, ex.TideSpawnIndex, _avatarX, _avatarY);
         _reevers.Add(new Reever
         {
-            X = x, Y = y, Facing = Math.PI / 2, Tide = true,
+            // #563 · Facing THE CAPTAIN, not "up". It used to claw out of the bottom rim and could only ever
+            // be looking one way; it rises on a ring around the captain now, so half of them would have been
+            // born with their back to the only thing on the moon they care about.
+            X = x, Y = y, Facing = Math.Atan2(_avatarY - y, _avatarX - x), Tide = true,
             // A distinct phase per tide contact (the spawn index, salted apart from the pack stream) so a
             // deep field of leash-held Old Ones all shiver independently at their home range.
             JitterSeed = (ex.ThreatSeed * 0xD1B54A32D192ED03UL) + (ulong)ex.TideSpawnIndex + 1UL,

@@ -593,11 +593,22 @@ public partial class Map
         // on stepping out, so coming back in says it again — arriving in a refuge is worth noticing twice.
         public bool ShelterBreathNoted { get; set; }
 
-        public SurfaceOutpost.Placement? Outpost { get; set; }
-        public bool OutpostForced { get; set; }
-        public bool OutpostLooted { get; set; }
-        public bool OutpostEffectsRead { get; set; }
+        // #563 · THE GROUND IS A LATTICE, so a hut is not "the site's hut" any more. Everything below is
+        // keyed on a TILE ADDRESS, because a state keyed on the site would have every hut in the world open
+        // the moment the captain forced the first one — the exact "the world quietly becomes wallpaper"
+        // failure the treadmill decision names. Huts is the resolved placement per loaded tile (a cache of a
+        // pure function, so it can be dropped and recomputed at will); the three sets are what the CAPTAIN
+        // did, which cannot be recomputed from a seed by definition and so is remembered.
+        public Dictionary<SurfaceTiles.Address, SurfaceOutpost.Placement> Huts { get; } = [];
+        public HashSet<SurfaceTiles.Address> HutsForced { get; } = [];
+        public HashSet<SurfaceTiles.Address> HutsLooted { get; } = [];
+        public HashSet<SurfaceTiles.Address> HutsRead { get; } = [];
+        public SurfaceTiles.Address? OutpostDoorTile { get; set; }
         public DoorChannel? OutpostDoorChannel { get; set; }
+
+        // #563 · Which tiles are carried right now, and how many times that has changed. Never null: an
+        // excursion always stands on ground, even before it has walked a step.
+        public SurfaceStream Stream { get; } = new();
 
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
 

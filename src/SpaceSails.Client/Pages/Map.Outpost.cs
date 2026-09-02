@@ -22,22 +22,6 @@ namespace SpaceSails.Client.Pages;
 // prose; this composes it onto the live deck, runs the force channel, and spends what is inside.
 public partial class Map
 {
-    /// <summary>Resolve whether this excursion's site carries a hut. Called once as the excursion begins,
-    /// the <c>ResolveSecretLab</c> idiom. A dev override (<c>?outpost=1</c>) guarantees one for playtesting
-    /// a site that seeded bare.</summary>
-    private void ResolveOutpost(SurfaceExcursion ex)
-    {
-        // A derelict is a ship, not a moon: no regolith, no field, nowhere to put a shed.
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
-        {
-            ex.Outpost = null;
-            return;
-        }
-
-        ex.Outpost = SurfaceOutpost.For(
-            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField(), _outpostCheat);
-    }
-
     // #563 dev cheat (/map?outpost=1): force a hut onto whatever site this excursion lands on, so the lane
     // can be playtested without hunting for a site that seeded one. Documented in docs/testing-guide.md.
     private bool _outpostCheat;
@@ -70,33 +54,35 @@ public partial class Map
     // purpose — and a scene nobody can reach on demand is a scene that ships broken.
     private double? _collectorCheatSeconds;
 
-    /// <summary>Compose the hut onto the surface deck: the dogged hatch while it stands, the whole room once
-    /// it has been forced. Called from <c>RebuildSurfaceDeck</c>, so it survives every rebuild (a dig, a
-    /// lifted cache) exactly like the lab does.</summary>
+    /// <summary>Compose every hut on the ground the captain is currently carrying: the dogged hatch while it
+    /// stands, the whole room once it has been forced. Called from <c>RebuildSurfaceDeck</c>, so it survives
+    /// every rebuild (a dig, a lifted cache, a tile crossing) exactly like the lab does.
+    ///
+    /// <para>#563 · It used to compose ONE hut, because a site had one. A site is a lattice now and each tile
+    /// seeds its own at the same per-area rarity, so this walks the carried chunk. Everything the captain did
+    /// to a hut is looked up by that hut's TILE — force one and the one you forced is the one that opens.</para></summary>
     private void ComposeOutpost(SurfaceExcursion ex)
     {
-        if (ex.Outpost is not { HasOutpost: true } p)
-        {
-            return;
-        }
-
         var walls = new List<DeckPlan.Wall>();
         var labels = new List<(float X, float Y, string Text)>();
         var consoles = new List<DeckPlan.ConsoleSpot>();
 
-        SurfaceOutpost.OutpostCover cover = SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt);
+        foreach (SurfaceOutpost.Placement p in HutsInReach(ex))
+        {
+            SurfaceOutpost.OutpostCover cover =
+                SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, p.Tile);
 
-        if (!ex.OutpostForced)
-        {
-            // Unforced, the hut is a LANDMARK you can see from across the field, not a secret you must
-            // detect. That is deliberate: the owner's design is that a captain plans a route out and back
-            // (#562), and you cannot plan toward something invisible. The hut is the reason to go; the walk
-            // home is the price. Only the hatch is on the plan — the room behind it is not drawn yet.
-            consoles.Add(new(DeckPlan.ConsoleKind.OutpostDoor, (float)p.DoorX, (float)p.DoorY,
-                SurfaceOutpost.DoorLabel(cover)));
-        }
-        else
-        {
+            if (!ex.HutsForced.Contains(p.Tile))
+            {
+                // Unforced, the hut is a LANDMARK you can see from across the ground, not a secret you must
+                // detect. That is deliberate: the owner's design is that a captain plans a route out and back
+                // (#562), and you cannot plan toward something invisible. The hut is the reason to go; the
+                // walk home is the price. Only the hatch is on the plan — the room behind it is not drawn yet.
+                consoles.Add(new(DeckPlan.ConsoleKind.OutpostDoor, (float)p.DoorX, (float)p.DoorY,
+                    SurfaceOutpost.DoorLabel(cover)));
+                continue;
+            }
+
             SurfaceOutpost.Region region = SurfaceOutpost.Build(ex.Stop.Body.Id, ex.Site.LayoutSalt, p);
             foreach (SurfaceLayout.Wall w in region.Walls)
             {
@@ -112,8 +98,8 @@ public partial class Map
                 // its walls and its landmark, so it still reads as a place you have been.
                 bool spent = c.Kind switch
                 {
-                    SurfaceOutpost.OutpostConsoleKind.AmmoCache => ex.OutpostLooted,
-                    _ => ex.OutpostEffectsRead,
+                    SurfaceOutpost.OutpostConsoleKind.AmmoCache => ex.HutsLooted.Contains(p.Tile),
+                    _ => ex.HutsRead.Contains(p.Tile),
                 };
                 if (spent)
                 {
@@ -126,6 +112,10 @@ public partial class Map
             }
         }
 
+        if (walls.Count == 0 && consoles.Count == 0 && labels.Count == 0)
+        {
+            return;
+        }
         _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
             [.. walls], [.. consoles], [.. labels], []));
     }
@@ -134,7 +124,7 @@ public partial class Map
     //    away. The tracker keeps sweeping the whole time, which is the actual price of the room. ──
     private void OutpostDoorInteract()
     {
-        if (_surface is not { } ex || AnySlowThingUnderYourHands || ex.Outpost is not { HasOutpost: true })
+        if (_surface is not { } ex || AnySlowThingUnderYourHands)
         {
             return;
         }
@@ -142,7 +132,12 @@ public partial class Map
         {
             return;
         }
+        if (HutUnderYourHand(ex, spot.X, spot.Y) is not { } hut)
+        {
+            return;
+        }
 
+        ex.OutpostDoorTile = hut.Tile;
         ex.OutpostDoorChannel = new DoorChannel { DoorId = "outpost", AnchorX = spot.X, AnchorY = spot.Y };
         RendererInterop.PlayCue("board");
         ShowPulseMessage(
@@ -177,12 +172,12 @@ public partial class Map
     /// pressing. The map grew, so the #563 card fires here too if this is the captain's first time.</summary>
     private void ForceOutpostHatch(SurfaceExcursion ex)
     {
-        if (ex.Outpost is not { HasOutpost: true })
+        if (ex.OutpostDoorTile is not { } tile)
         {
             return;
         }
 
-        ex.OutpostForced = true;
+        ex.HutsForced.Add(tile);
 
         // #573 · THE JOB COSTS AIR. Levering a dogged hatch is not a five-second thing; the five seconds you
         // held E is the game being polite about it. The clock jumps to the far side of the work and the
@@ -195,7 +190,8 @@ public partial class Map
         RebuildSurfaceDeck();   // the hatch console goes, the room arrives — one rebuild, no teleport
         RendererInterop.PlayCue("reveal");
 
-        SurfaceOutpost.OutpostCover cover = SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt);
+        SurfaceOutpost.OutpostCover cover =
+            SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, tile);
         ShowPulseMessage(SurfaceOutpost.ForcedLine(cover));
 
         // The ground just grew. On an ordinary moon this is now the FIRST way that can ever happen to a
@@ -207,16 +203,20 @@ public partial class Map
     // ── The ammunition locker [E]: rounds across the sentries you are carrying. ──
     private void OutpostCacheInteract()
     {
-        if (_surface is not { } ex || ex.OutpostLooted)
+        if (_surface is not { } ex)
         {
             return;
         }
-        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.OutpostCache })
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.OutpostCache } at)
+        {
+            return;
+        }
+        if (HutUnderYourHand(ex, at.X, at.Y) is not { } hut || ex.HutsLooted.Contains(hut.Tile))
         {
             return;
         }
 
-        int rounds = SurfaceOutpost.CacheRounds(ex.Stop.Body.Id, ex.Site.LayoutSalt);
+        int rounds = SurfaceOutpost.CacheRounds(ex.Stop.Body.Id, ex.Site.LayoutSalt, hut.Tile);
 
         // Spread across every sentry you have with you — carried OR planted. A bot standing out on the line
         // is exactly the one you want fed, and unlike the tube (#562) you are the one walking the rounds to
@@ -259,7 +259,7 @@ public partial class Map
             left -= take;
         }
 
-        ex.OutpostLooted = true;
+        ex.HutsLooted.Add(hut.Tile);
         RebuildSurfaceDeck();
         RendererInterop.PlayCue("board");
         ShowPulseMessage(SurfaceOutpost.CacheLine(rounds - left));
@@ -273,17 +273,22 @@ public partial class Map
     // ── Somebody's effects [E]: the only story this place tells, and it tells it by what is in a wallet. ──
     private void OutpostEffectsInteract()
     {
-        if (_surface is not { } ex || ex.OutpostEffectsRead)
+        if (_surface is not { } ex)
         {
             return;
         }
-        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.OutpostEffects })
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.OutpostEffects } at)
+        {
+            return;
+        }
+        if (HutUnderYourHand(ex, at.X, at.Y) is not { } hut || ex.HutsRead.Contains(hut.Tile))
         {
             return;
         }
 
-        SurfaceOutpost.OutpostCover cover = SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt);
-        ex.OutpostEffectsRead = true;
+        SurfaceOutpost.OutpostCover cover =
+            SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, hut.Tile);
+        ex.HutsRead.Add(hut.Tile);
         RebuildSurfaceDeck();
 
         // #588 · FILED, AND IT COUNTS AS A PIECE OF SOMEBODY'S KIT. Owner, finding the hut mid-playtest: "now
@@ -312,7 +317,7 @@ public partial class Map
         // DIFFERENT person's last hour each time and it rides this card. The subject is the site, not the
         // body: two huts on one moon are two people.
         RaiseStoryBeat(StoryBeats.Beat.OutpostEffectsRead,
-            $"{ex.Stop.Body.Id}#{ex.Site.LayoutSalt}",
+            $"{ex.Stop.Body.Id}#{ex.Site.LayoutSalt}#{hut.Tile.X}_{hut.Tile.Y}",
             outcome: SurfaceOutpost.EffectsLine(cover));
 
         // Reading somebody's last effects on a floor they did not walk off costs a little nerve. Small: the

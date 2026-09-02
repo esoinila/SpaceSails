@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -717,7 +717,12 @@ public sealed class DeckPlan
     public readonly record struct DeckRegion(
         Wall[] Walls, ConsoleSpot[] Consoles,
         (float X, float Y, string Text)[] Labels, Backdrop[] Backdrops,
-        Structure[]? Structures = null);
+        Structure[]? Structures = null,
+        // #563 · …and TERRAIN. The treadmill's tiles arrive through this door like everything else that
+        // grows a live plan, and a tile is mostly weather: craters, scree, rille banks. Scenery is drawn and
+        // never collides (SurfaceScenery), so appending it cannot seal anything and cannot fail an audit —
+        // it is the one part of a tile that is pure picture.
+        SpaceSails.Core.SurfaceScenery.Mark[]? Scenery = null);
 
     /// <summary>Grow this plan by one region. The walls (and ONLY the new walls) get fresh collision
     /// segments appended after the existing ones; consoles, labels and backdrops concatenate. Existing
@@ -748,6 +753,7 @@ public sealed class DeckPlan
         RoomLabels = Concat(RoomLabels, region.Labels);
         Backdrops = Concat(Backdrops, region.Backdrops);
         Structures = Concat(Structures, region.Structures);
+        Scenery = Concat(Scenery, region.Scenery);
         AppendedRegionCount++;
     }
 
