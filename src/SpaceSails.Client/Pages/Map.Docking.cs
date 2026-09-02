@@ -64,16 +64,34 @@ public partial class Map
 
     // Approach coaching for a mass-less haven dock — no orbit, you clamp on (the dock mirror of
     // OrbitStatusLine). Keyed off the same DockReachMeters/DockMatchSpeedMps gates as the ⚓ button.
+    // #200: the four sentences moved to Core (DockFocus) — unchanged in wording — so the focus panel's
+    // verdict and this line are one copy of one telling, not two that can drift.
     private string DockStatusLine(OrbitAssistInfo oi)
     {
-        string km(double m) => (m / 1000).ToString("N0", CultureInfo.InvariantCulture);
-        if (_dockedHavenId == oi.Body.Id) return "clamped on — lying low";
-        if (oi.Distance > DockReachMeters) return $"coast within {km(DockReachMeters)} km to clamp on";
+        if (_dockedHavenId == oi.Body.Id) return DockFocus.ClampedOnLine;
+        if (oi.Distance > DockReachMeters) return DockFocus.CoastCloserLine();
         // #213: in range but too hot — the ⚓ Match & clamp button flies the terminal match; the line
         // names the same act instead of the old "slow it down yourself, then hit ⚓ Dock".
-        if (oi.RelSpeed > DockMatchSpeedMps) return "alongside but hot — hit ⚓ Match & clamp to null the drift into the window";
-        return "alongside and matched — hit ⚓ Dock to clamp on";
+        if (oi.RelSpeed > DockMatchSpeedMps) return DockFocus.MatchClampLine;
+        return DockFocus.ClampNowLine;
     }
+
+    // ---- #200 · THE DOCKING FOCUS PANEL ----
+    // Owner: "I want to see CLEARLY how close I am to docking distance and speed limits… Own pop-up of the
+    // numbers to hit, just like in piracy-hold." The piracy model is the autosteal criterion box (Map.razor,
+    // the prey dossier): one row per gate, reading vs required, green inside. These two members are the
+    // panel's whole data path — and both go through DockFocus, which reads the ALREADY-RESOLVED affordance
+    // and DockRule's own constants. Nothing about the panel is computed a second time here, so the rows
+    // cannot claim "inside" about a number the clamp refuses.
+
+    // The panel is on the glass exactly when docking is the live intent — a dock haven armed or chosen as
+    // the destination, or the clamp in (latched) range of one. Never while already clamped on: the
+    // affordance is Hidden there (UpdateDockAffordance) and the 🚀 Undock button owns that moment.
+    private bool DockFocusLive => DockFocus.IsLive(_dockAffordance);
+
+    // The tank the panel quotes is the tank the affordance was JUDGED against (#268: pulses already on a
+    // pending match tab are spoken for), so the "match burn" row and the ⚓ button's own refusal agree.
+    private int EffectiveDockTankPulses => Math.Max(0, _reactionMassPulses - _matchLedger.Pulses);
 
     // Start ids that begin already DOCKED at a station, mapped to the station body. Owner ruling
     // (2026-07-18 playtest, verbatim): "All starting points should be the docked positions… We walk to
@@ -261,9 +279,9 @@ public partial class Map
 
         // #268: the affordance reads the EFFECTIVE tank — pulses already on a pending match tab are
         // spoken-for (committed, just not yet settled), so the ⚓ offer and its affordability reflect what's
-        // actually free to burn, not the full tank the deferred take hasn't hit yet.
-        int effectiveTank = Math.Max(0, _reactionMassPulses - _matchLedger.Pulses);
-        _dockAffordance = DockAffordanceRule.Evaluate(_ship, havens, effectiveTank, _dockLatched);
+        // actually free to burn, not the full tank the deferred take hasn't hit yet. #200's focus panel
+        // quotes the SAME property, so its "match burn" row is judged against the same mass.
+        _dockAffordance = DockAffordanceRule.Evaluate(_ship, havens, EffectiveDockTankPulses, _dockLatched);
         _dockLatched = _dockAffordance.Latched;
 
         // #268: a match tab whose berth is no longer under the clamp button — the ship diverged out of the
