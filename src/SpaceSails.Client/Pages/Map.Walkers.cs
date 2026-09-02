@@ -64,7 +64,7 @@ public partial class Map
         int feet = 0;
         foreach (Walker w in ex.Walkers)
         {
-            if (w.For is not (Errand.RepRounds or Errand.RepPitching))
+            if (w.For is not (Errand.RepRounds or Errand.RepPitching or Errand.RepLeaving))
             {
                 feet++;
             }
@@ -163,6 +163,13 @@ public partial class Map
         /// goes up on the frame he lands on.</summary>
         RepPitching,
 
+        /// <summary>#1061 · …AND THE SHIFT ENDING. The room is worked, and the salesman goes out through a
+        /// leaf the captain's own TRY is refused at, exactly like a regular who has finished a drink. It is
+        /// his own errand and not <see cref="Leaving"/> for one reason: he is not one of the room's people,
+        /// so he must not eat a slot of <see cref="Egress.MostAtOnce"/> on his way out of a room he does not
+        /// live in.</summary>
+        RepLeaving,
+
         /// <summary>
         /// #731 · <b>THE EXIT THAT IS A GESTURE.</b> The issue's second customer, in its own words: <i>"the
         /// agency temp leaving at watch change through the staff door, showing the pass nobody inside asks
@@ -247,7 +254,7 @@ public partial class Map
             // The salesman's two errands are the escort's shape, not the haulier's: he walks somewhere and
             // then he is THERE, beside a fixture or at your elbow, until something moves him on. The
             // decision of what that means is Map.Rep.cs's; this loop only owns the clock.
-            if (w.For is Errand.RepRounds or Errand.RepPitching)
+            if (w.For is Errand.RepRounds or Errand.RepPitching or Errand.RepLeaving)
             {
                 if (StepTheRep(ex.Walkers, w, dt, walls, i))
                 {
