@@ -201,15 +201,46 @@ the same one on all ten hulls, and the per-cause CAPTION does every bit of the w
 - The manifest's seals are deliberately *just seals*: neither intact nor re-set. Whether they were opened is
   a sentence, and the sentence is the captain's to read.
 
-### Still unpainted in this family
+### 11 · `art/castaway.jpg` — ALIVE AND SHIPLESS
 
-- `art/castaway.jpg` — **alive and shipless.** Every other end state in the game has a picture; the one
-  that is supposed to be a *beginning* has none, and it cannot be painted before the moment exists (#525).
-  When the castaway wake lands: a cold boat, no drive plume, a very long way from anything, and nothing in
-  frame explaining who is in it.
-- `art/death-suffocated.jpg` — the name `ArtFile(cause)` carried for a year with nothing behind it. Now
-  unreachable (every away place answers before it), so it is a *nice-to-have*, not a gap: a card for a
-  suffocation with no place named at all.
+Slot: `ShipScuttle.CastawayArt`, on the castaway card (`Map.razor`, `_shipEpitaph` · "☢ SHE IS GONE, AND YOU
+ARE NOT"). Every other end state in the game has a picture; the one that is supposed to be a *beginning* had
+none.
+
+> **Prompt used**: not recorded. The canvas was generated in #915's session and that lane's manifest pass
+> did not reach this family, so the prompt is genuinely not in the repo — writing a plausible one here would
+> put a sentence in a manifest that no image was ever made from, which is worse than the gap. Everything
+> below is read off the shipped file rather than off a prompt, and it is enough to regenerate against: the
+> **specification** for a re-paint is the composition and the discipline, not the wording that got there.
+
+- **Composition, as it shipped:** the boat sits low and left against an unbroken starfield, tail toward the
+  viewer, one engine bell fully lit and the second half in shadow. The plating reads as *repairs* rather than
+  design — a dozen colours of patch, rivet lines that do not line up. The sun is a pinpoint in the upper
+  right with one lesser star beneath it, and there is nothing else in frame at all: no world, no horizon, no
+  wreck, no scale.
+- **Mood:** quiet, cold and enormous. It is not a disaster picture — nothing is burning and nothing is
+  tumbling — which is exactly the ending's own register: *he got clear*, and getting clear looks like this.
+- **The discipline it keeps:** the cockpit glass shows sky and no face. The caption says the captain is *"a
+  man in a small cold boat who is worth the fuel to nobody"* and the frame never confirms he is in it. Same
+  law as the wrecks: evidence, and not one word about who.
+- **Painted 2026-08-17 by #915** ("the eight posters of the eternally promising, the castaway, and the last
+  unnamed death") and then **wired by #528** — and the gap between those two dates is the point. The file was
+  in `wwwroot/art` and the card went on rendering three lines of text under a stamp, because
+  `onerror`-hide makes art-before-code exactly as silent as code-before-art. `EveryPaintingHasAMomentTests`
+  now sweeps the folder rather than the code and will not let a twelfth painting sit here unshown.
+
+### The whole family is painted now
+
+This heading used to read **"Still unpainted in this family"** and it named two canvases that were both on
+disk. `art/death-suffocated.jpg` — the name `ArtFile(cause)` carried for a year with nothing behind it —
+shipped with #915 alongside the castaway's boat; it stays a *nice-to-have* rather than a gap for the reason
+it always was, that every away place answers before it, so the card it belongs to is a suffocation with no
+place named at all.
+
+A manifest that files a shipped painting as unpainted is the same silent drift in the paperwork that the
+`onerror`-hide is in the build, and it is what kept the castaway's boat off its own card for a fortnight.
+`EveryPaintingHasAMomentTests.NoManifestFilesAShippedPaintingAsUnpainted` reads **every** `art-manifest-*.md`
+for a to-paint heading now, rather than one file for one phrasing.
 
 ### What the set taught us
 
