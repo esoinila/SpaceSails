@@ -64,6 +64,12 @@ public static class CacheMint
     /// before the field existed — which is why a rumour map, minted with no ground under it, still reads
     /// and digs the way it always has.</para>
     ///
+    /// <para>#1058 · …and the LANDMARK is dealt off that same ground (<see cref="Landmarks.At"/>), so a chest
+    /// on the Ridge Camp paces from a stone that stands on the Ridge Camp rather than from the monolith over
+    /// the horizon. A null site still resolves through <see cref="Landmarks.For(string)"/>, and so does site 0
+    /// (the canon ground), which is why a body-wide chest — a legacy save, a bought rumour, the hoard cheat —
+    /// mints the landmark name it has always minted, character for character.</para>
+    ///
     /// <para>#455 · <paramref name="buried"/> and <paramref name="padDistance"/> are the other two terms of
     /// the safety oracle (<see cref="CacheSafety"/>): whether the shovel went in, and how far from the pad
     /// the captain carried it. Left null — a rumour map, a job's chest — the cache reads under exactly the
@@ -74,7 +80,7 @@ public static class CacheMint
         double? digX = null, double? digY = null, int? siteIndex = null,
         bool? buried = null, double? padDistance = null)
     {
-        Landmark site = Landmarks.For(bodyId);
+        Landmark site = Landmarks.At(bodyId, siteIndex);
         string seed = SeedKey(bodyId, owner, buriedSimTime, mintIndex);
         return new TreasureCache(
             id, bodyId, site.Name, Bearing(seed), Paces(seed),
