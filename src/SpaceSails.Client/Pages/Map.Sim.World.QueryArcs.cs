@@ -385,10 +385,20 @@ public partial class Map
             // card: the ship's own clock reads the sheet on the next tick, finds the crew past the edge, and
             // the beat arrives through the one door with its cadence spent and its line in the log — which
             // is the whole point of wiring the deputation at the standing rather than at a cheat.
+            //
+            // #1066 · …and one landing further down. The Ultimatum edge the crew MEETING sits on needs the
+            // two counters above AND a run of berths with no shore leave, and reaching it honestly means
+            // losing the rock's dice, filing a dozen wrecks straight, and then working the Mars/Venus/Luna
+            // circuit for five berths without once calling at Ringside or the Red Eye. That is most of a
+            // session for one card, so it gets a door too — and the door still only grants COUNTERS.
             string candidate = Uri.UnescapeDataString(pair["crew=".Length..]).ToLowerInvariant();
             if (candidate is "petition" or "deputation")
             {
                 q.CrewCheat = "petition";
+            }
+            else if (candidate is "meeting" or "ultimatum")
+            {
+                q.CrewCheat = "meeting";
             }
         }
         else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))

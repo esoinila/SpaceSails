@@ -72,7 +72,12 @@ public static class CrewTemp
     /// <param name="NearMisses">Times it nearly went wrong and everyone got back — which CUTS both ways, see
     /// <see cref="Cohesion"/>.</param>
     /// <param name="TotsPoured">The galley's own counter. Cheap, and they notice.</param>
-    /// <param name="DaysSinceShoreLeave">How long since anybody stood on something that was not the ship.</param>
+    /// <param name="DaysSinceShoreLeave">How long since anybody stood on something that was not the ship.
+    /// STILL DORMANT after #1066, and deliberately so: the game counts STOPS, not days — see
+    /// <see cref="WorkingStopsBetweenRunsAshore"/> and <see cref="ShoreLeavePromisesBroken"/>, which reach
+    /// this sheet through <see cref="PromisesBroken"/> instead. Turning a stop count into a day count to
+    /// move REST would be a number invented to fill a bar, which is the one thing this record refuses to
+    /// do.</param>
     /// <param name="Heat">What the authorities think of them, which the crew carry too.</param>
     /// <param name="VentedOwnCompartment">The captain opened one of HER compartments with somebody in it.
     /// Recorded separately because it is not a shade of anything — it is its own fact.</param>
@@ -264,6 +269,66 @@ public static class CrewTemp
             sum += r.Score;
         }
         return sum / rs.Count;
+    }
+
+    // ── #1066 · Shore leave, as a ledger line ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #1066 · HOW MANY WORKING STOPS THE ARTICLES ALLOW BETWEEN RUNS ASHORE. <b>FLAGGED for the owner's
+    /// tuning</b> — this is the dial, and it is worth knowing what it currently decides: at four, a captain
+    /// working the Mars/Venus/Luna circuit breaks his word on the fourth berth in a row that has no town on
+    /// the other end of the gangway, and every berth after that breaks it again.
+    ///
+    /// <para>Raising it makes shore leave a formality; dropping it to one makes it a leash, and the crew
+    /// would be right to say so. Nothing else in the game reads it.</para>
+    /// </summary>
+    public const int WorkingStopsBetweenRunsAshore = 4;
+
+    /// <summary>
+    /// #1066 · WHAT AN OVERDUE RUN ASHORE COSTS THE CAPTAIN'S WORD.
+    ///
+    /// <para><see cref="Dimension.TheWord"/> names the promises it is made of and this one is first on the
+    /// list — <i>"a run ashore, a share, a rescue"</i>. So shore leave does not reach the sheet as a mood or
+    /// a second dial: it reaches it as <see cref="Voyage.PromisesBroken"/>, weighted three times a kept
+    /// promise, on the one dimension that <i>"actually ends captaincies"</i>. Which is exactly the edge
+    /// <c>StoryBeats.Beat.CrewMeeting</c> sits on.</para>
+    ///
+    /// <para><b>It compounds rather than latching.</b> The stop that passes the line breaks the word once,
+    /// and every stop the crew are kept aboard past it breaks it again — that is how an overdue thing
+    /// behaves, and it is what makes the meeting cost more than one missed berth. And it RESETS, because
+    /// this sheet is a temperature and not a court record: <i>"it is what the crew said when he was not in
+    /// the room"</i>, and what they say after a night ashore is different from what they said before it.</para>
+    /// </summary>
+    /// <param name="workingStopsSinceShoreLeave">Consecutive berths with no run ashore. A negative count —
+    /// a save written under a different dial — is not a debt.</param>
+    public static int ShoreLeavePromisesBroken(int workingStopsSinceShoreLeave) =>
+        System.Math.Max(0, workingStopsSinceShoreLeave - WorkingStopsBetweenRunsAshore + 1);
+
+    /// <summary>
+    /// #1066 / #761 · What the sheet prints about the counter, so the captain is told BEFORE the promise
+    /// breaks and not only after. It states where the line is and where he stands against it, and — like
+    /// every other line on this sheet — it never tells him what to do about it.
+    /// </summary>
+    public static string ShoreLeaveLine(int workingStopsSinceShoreLeave)
+    {
+        int stops = System.Math.Max(0, workingStopsSinceShoreLeave);
+        int broken = ShoreLeavePromisesBroken(stops);
+
+        if (broken > 0)
+        {
+            return $"A run ashore is overdue by {broken} berth{(broken == 1 ? "" : "s")}. " +
+                   "They are counting, and it is on his word that it lands.";
+        }
+
+        if (stops == 0)
+        {
+            return "They were ashore at the last port. Nobody is counting.";
+        }
+
+        int left = WorkingStopsBetweenRunsAshore - stops;
+        return $"{stops} working stop{(stops == 1 ? "" : "s")} since anybody stood on something that was not " +
+               $"this ship. The articles say a run ashore every {WorkingStopsBetweenRunsAshore} — " +
+               $"{left} to go.";
     }
 
     // ── What happens when it goes bad ─────────────────────────────────────────────────────────────────

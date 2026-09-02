@@ -84,6 +84,11 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?counter=1&watch=5"] = "91afeecd815de1d882847c2baf39c65a",
             ["/map?credits=1234&fuel=7&simhours=9"] = "f45272cfecb6d77059b0e9998bafe2c2",
             ["/map?credits=50000"] = "20eccdc7a590cb759c33b62f903e5a56",
+            // #1066 · the meeting's door. One new ROW and no moved ones: CrewCheat was already the 34th
+            // field on the holder (#663 put it there), so every other URL's rendering is untouched and only
+            // the value this key answers is new. It differs from ?crew=petition below by exactly that value,
+            // which is the whole of what this file measures.
+            ["/map?crew=meeting"] = "c65ee9a8f9755e37f23e4f5d217f500b",
             ["/map?crew=petition"] = "bf1842abb0822a4cc70009b135f2fa5b",
             ["/map?death=collector&dock=selene-gate"] = "ee3391b9363b93cc435540908991739d",
             ["/map?death=impact"] = "7cf26d3bf542170bdd3415fd0bd411bf",

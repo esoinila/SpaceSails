@@ -243,10 +243,13 @@ public class CrewTempTests
         // deputation.
         Assert.Equal(CrewTemp.Standing.Grumbling, CrewTemp.StandingOf(honestAndBereaved with { NearMisses = 5 }));
 
-        // The edge BELOW is still out of the world's reach, and this is the assertion that keeps
-        // StoryBeats.Beat.CrewMeeting honestly caller-less: an Ultimatum needs a broken promise or a crew
-        // kept aboard for months, and NOTHING in the shipped game writes either number. Wiring the meeting
-        // to this edge today would be a caller that can never fire.
+        // The edge BELOW is what the meeting sits on, and these two are what it costs. #1066 · IT IS NO
+        // LONGER OUT OF THE WORLD'S REACH: the first shape — a broken promise on a poor, bereaved ship — is
+        // exactly what tracked shore leave now writes, because a run ashore is the FIRST promise THE
+        // CAPTAIN'S WORD is made of ("a run ashore, a share, a rescue"). The rule and its dial live next
+        // door in ShoreLeaveIsALedgerLineTests; what stays here is the arithmetic that prices a broken
+        // promise, unchanged by that lane. (The second shape is still the DAYS road, and it is still
+        // nobody's number — the game counts berths.)
         Assert.Equal(CrewTemp.Standing.Ultimatum,
             CrewTemp.StandingOf(new CrewTemp.Voyage(HonestFilings: 6, PromisesBroken: 1, CrewLost: 2,
                                                     DaysSinceShoreLeave: 200, Heat: 3)));

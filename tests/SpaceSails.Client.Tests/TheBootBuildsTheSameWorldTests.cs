@@ -165,6 +165,12 @@ public sealed class TheBootBuildsTheSameWorldTests
             // seeded in SeedTheArcsAndTheJobs — well past the browser gate this sweep stops at. What the URL
             // ANSWERS differently is pinned next door in TheBootReadsTheSameQueryTests; what it LEADS to is
             // proved on the shipping sheet, in TheCrewSheetCountsTheDeadTests.
+            // #1066 · the meeting's door, one landing down the same staircase — and it hashes the bare world
+            // to the BYTE, identically to ?crew=petition beneath it. That is the sentence above said twice:
+            // both doors grant counters only, in SeedTheArcsAndTheJobs, long past the browser gate this
+            // sweep stops at. Where the two DO diverge is next door in TheBootReadsTheSameQueryTests, whose
+            // holder carries "meeting" rather than "petition".
+            ["/map?crew=meeting"] = "bebac09be550f3e488747ed9b4e5e82a",
             ["/map?crew=petition"] = "bebac09be550f3e488747ed9b4e5e82a",
             ["/map?death=collector&dock=selene-gate"] = "faa031689c86edd6a251477d3383b2a1",
             ["/map?death=impact"] = "faa031689c86edd6a251477d3383b2a1",

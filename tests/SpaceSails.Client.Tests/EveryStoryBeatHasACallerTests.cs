@@ -45,8 +45,11 @@ namespace SpaceSails.Client.Tests;
 public sealed class EveryStoryBeatHasACallerTests
 {
     /// <summary>
-    /// The beats #663 recorded as having a canvas, a cadence and no caller — minus the one this lane wired.
-    /// Each entry is a debt, not a decision. Removing one is the fix; adding one needs an issue.
+    /// The beats #663 recorded as having a canvas, a cadence and no caller. Each entry is a debt, not a
+    /// decision. Removing one is the fix; adding one needs an issue.
+    ///
+    /// <para>#1066 · <b>It is empty.</b> All four debts are paid — see the comments below for which lane
+    /// paid which, and <see cref="NothingIsExcusedAnyMore"/> for why the emptiness itself is asserted.</para>
     /// </summary>
     private static readonly Dictionary<StoryBeats.Beat, string> KnownOrphans = new()
     {
@@ -57,15 +60,20 @@ public sealed class EveryStoryBeatHasACallerTests
         // lost". The counter is live, the Petition edge is crossable, and the beat is raised where the
         // standing is read. See TheCrewSheetCountsTheDeadTests.
         //
-        // CrewMeeting stays, and for the reason the list is FOR. The Ultimatum edge needs a broken promise
-        // to the crew or months without shore leave, and those two hooks really are numbers nobody keeps —
-        // pinned from both ends: the rules' half in Core
-        // (CrewTempTests.ADeadCrewmanIsWhatBuysTheDeputationAndItIsStillNotEnoughForTheMeeting) and the
-        // world's half against the shipping page
-        // (TheCrewSheetCountsTheDeadTests.TheShippedInputsReachADeputationAndNoFurther, which fails the day
-        // the reach passes a Petition). Wiring the meeting today would be a caller that satisfies this
-        // scanner and can never fire, which is this house's fifth bug class wearing the fix's clothes.
-        [StoryBeats.Beat.CrewMeeting] = "#663 — the CrewTemp Ultimatum edge cannot be crossed yet (see TheCrewSheetCountsTheDeadTests)",
+        // #1066 · CrewMeeting CAME OFF THIS LIST TOO — and the list is now EMPTY. Its entry read "the
+        // CrewTemp Ultimatum edge cannot be crossed yet", and it named the price: a promise TO THE CREW that
+        // can be broken, or tracked shore leave. #1066 keeps the second. A clamp at a great port is a run
+        // ashore and every other berth is a working stop; the tally rides the vault as one integer; and
+        // Core turns it into the broken promise THE CAPTAIN'S WORD is made of ("a run ashore, a share, a
+        // rescue" — this one is first on that list). The edge is crossable, the beat is raised beside its
+        // sibling in Map.CrewTemp.WatchWhereTheCrewStand, and the claim is pinned from both ends: the rules'
+        // half in Core (ShoreLeaveIsALedgerLineTests) and the world's half against the shipping page
+        // (TheCrewSheetCountsTheStopsAshoreTests).
+        //
+        // An EMPTY dictionary is what a ratchet is for, not an accident of one. #663's own words: this guard
+        // "is what stops beat number twelve from being painted and orphaned" — and with nothing left to
+        // excuse, the next canvas that ships without a caller fails on its first run, which is the day this
+        // file was written for.
 
         // #777 · CollectorHail CAME OFF THIS LIST. Its entry read "the BUSTED card IS the hail's card; the
         // seam has no hosted presentation" — a debt against the SEAM rather than against the wiring, and the
@@ -242,5 +250,42 @@ public sealed class EveryStoryBeatHasACallerTests
     {
         Assert.DoesNotContain(StoryBeats.Beat.CrewDeputation, KnownOrphans.Keys);
         Assert.Contains(StoryBeats.Beat.CrewDeputation, BeatsWithACaller());
+    }
+
+    /// <summary>
+    /// #1066 · And the fourth, which is the last. The meeting's excuse was the honest one this list exists
+    /// to hold: its <c>CrewTemp.Standing.Ultimatum</c> edge needed <i>a broken promise TO THE CREW or months
+    /// without shore leave</i>, and both were numbers nobody kept. Shore leave is kept now — a clamp at a
+    /// great port is a run ashore, every other berth is a working stop, and the tally reaches the sheet as
+    /// the broken promise THE CAPTAIN'S WORD is made of — so the edge is crossable and the beat is raised
+    /// where the standing is read. <see cref="TheCrewSheetCountsTheStopsAshoreTests"/> holds the half a
+    /// scanner cannot see: that the shipped world can actually get there, and that a route WITH shore leave
+    /// never does.
+    ///
+    /// <para>Both halves of the ratchet on one beat, as with its three siblings.</para>
+    /// </summary>
+    [Fact]
+    public void TheCrewMeetingIsRaisedAndIsNotOnTheExcuseList()
+    {
+        Assert.DoesNotContain(StoryBeats.Beat.CrewMeeting, KnownOrphans.Keys);
+        Assert.Contains(StoryBeats.Beat.CrewMeeting, BeatsWithACaller());
+    }
+
+    /// <summary>
+    /// #1066 · AND THE LIST IS EMPTY, which is the state #663 was aiming at from the first line it wrote:
+    /// <i>"That guard is worth more than the four fixes above, because it is what stops beat number twelve
+    /// from being painted and orphaned."</i> Four debts were filed; four have been paid.
+    ///
+    /// <para>This is not a decorative assertion. An empty excuse list means the forward ratchet
+    /// (<see cref="EveryBeatIsEitherRaisedOrAKnownOrphan"/>) now has nothing to forgive, so the next painted
+    /// canvas that ships without a caller reddens on its first run — and if somebody adds a row back, this
+    /// goes red and asks them to say why in an issue, which is the same demand the list itself makes.</para>
+    /// </summary>
+    [Fact]
+    public void NothingIsExcusedAnyMore()
+    {
+        Assert.True(KnownOrphans.Count == 0,
+            "a beat is excused from having a caller again — that is allowed, but it needs an issue and a " +
+            $"sentence, and this assertion is where it is asked for: {string.Join(", ", KnownOrphans.Keys)}");
     }
 }
