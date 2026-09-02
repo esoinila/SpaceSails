@@ -1,4 +1,4 @@
-# Captain's Guide
+﻿# Captain's Guide
 
 *(This document mirrors the in-game guide at /guide.)*
 
@@ -466,8 +466,11 @@ your **satchel**. `T` still sets a sentry; `G` still handles a chest.
   and nothing here ever asks you to type a number. When a door refuses you, it says *why*.
 - **Air is the clock, not a health bar.** Your suit carries a working shift and a reserve, and
   you breathe faster when you are frightened or hurt. Pressurised floors cost you nothing, and
-  every airless floor keeps a **pressure refuge** within a short detour — there is no corridor
-  down here that is fatal by construction. Know where the nearest one is anyway.
+  every airless floor keeps a **pressure refuge** within a short detour. The lift panel says
+  which floors have one. What it cannot tell you is whether it still works: about one in five
+  still has air in the rack, two in five hold pressure with nothing to give, and two in five
+  will not cycle at all. The floors that kept their air are the ones whose department could
+  still get a maintenance line approved — so the colour on the corridor wall is worth learning.
 - **The tracker gets worse as you go deeper.** Read the floor designation off the plate and
   trust that instead.
 - **Nothing will tell you it matters.** Papers you find each carry their own title, and not one
