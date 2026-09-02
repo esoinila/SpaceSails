@@ -967,6 +967,16 @@ public partial class Map
         public double CollectorBoatX { get; set; }
         public double CollectorBoatY { get; set; }
 
+        /// <summary>#731 · Whether the writ is settled and the crew are walking back to their own boat.
+        ///
+        /// <para>The state this scene has never had, and its absence was a bug rather than an omission: the
+        /// only two things that ever took a repo crew off a moon were the captain lifting off and the captain
+        /// dying, so a captain who PAID was still standing in front of them a frame later and was served
+        /// again. Set where an encounter ends (<c>TheirBusinessHereIsDone</c>), read by
+        /// <c>TheyFileHomeThroughTheirOwnHatch</c>, and never saved — the whole scene is client-owned and
+        /// rebuilt from the seeded roll, exactly like the bodies it is about.</para></summary>
+        public bool CollectorsGoingHome { get; set; }
+
         // How long this excursion has been running, in surface seconds. The boat's ETA is measured against
         // it, so the arrival lands MID-MISSION rather than at the hatch.
         public double SecondsOnTheGround { get; set; }
@@ -1381,7 +1391,11 @@ public partial class Map
         // #583 · IF THEY WERE STILL COMING, YOU GOT AWAY — and the game says so, because an escape that is
         // narrated as nothing is indistinguishable from an escape that never happened. The heat is untouched:
         // outwalking a writ is not settling one, and they know the ship and they will know the next port.
-        bool outwalkedTheWrit = ex.CollectorsLanded && _busted is null;
+        //
+        // #731 · …and a crew who are WALKING HOME were not outwalked. Once the writ is settled the escape
+        // line is a lie of the same family as the one that sentence exists to prevent: the captain paid, or
+        // fought clear, and watched them go. Nothing is said in that case, which is the correct amount.
+        bool outwalkedTheWrit = ex.CollectorsLanded && !ex.CollectorsGoingHome && _busted is null;
 
         // #696 · A HOLD THAT THE SHUTTLE ENDS IS STILL AN INTERRUPTION, AND IT IS SAID. Nothing to undo —
         // the sleeve was never emptied and the book was never written in — but a captain who lifted off in

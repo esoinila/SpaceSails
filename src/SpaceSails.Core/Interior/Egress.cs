@@ -51,6 +51,51 @@ public static class Egress
     /// out of existence while visibly still in the middle of the room.</para></summary>
     public const double DoorStandoffDu = 1.0;
 
+    /// <summary>
+    /// #731 · <b>WHERE THE Nth BODY IN A QUEUE FOR ONE DOOR STANDS.</b> The arithmetic of a single-file
+    /// exit, stated once because two crews now walk one.
+    ///
+    /// <para>#731 v2 gave the hull sweep team a file at a wreck's shuttle lock and worked this out inline
+    /// (<c>Map.SweepTeam.cs</c>): the head of the queue stands <see cref="DoorStandoffDu"/> off the leaf, and
+    /// everybody behind them one spacing further back along the way they came. The repo crew walking home to
+    /// their own boat wants the SAME queue at a hatch that is not on a spine and not at <c>y = 0</c>, and a
+    /// second copy of this sum is this repository's oldest bug class with a body standing in it — two files
+    /// disagreeing by a body-width is two figures drawn inside one another.</para>
+    ///
+    /// <para>So the door is a point, the queue runs along a DIRECTION away from it (whichever side the people
+    /// are on — a wreck's file runs back down the spine, a boat's runs off its hatch), and rank 0 is whoever
+    /// is working the leaf. The direction is normalised here rather than trusted, because a caller handing a
+    /// two-unit vector would silently double every spacing in the file.</para>
+    /// </summary>
+    /// <param name="doorX">The leaf, or the hatch, or whatever the queue is for.</param>
+    /// <param name="doorY">…the same.</param>
+    /// <param name="awayX">Which way the queue runs, as a direction from the door. Its length is ignored.</param>
+    /// <param name="awayY">…the same.</param>
+    /// <param name="rank">0 for whoever is working it, 1 for the next one back, and so on.</param>
+    /// <param name="spacingDu">How far apart two bodies in the file stand.</param>
+    /// <exception cref="ArgumentOutOfRangeException">A negative rank, a spacing that is not positive and
+    /// finite, or a direction with no length — none of which is a queue.</exception>
+    public static (double X, double Y) PlaceInTheFile(
+        double doorX, double doorY, double awayX, double awayY, int rank, double spacingDu)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(rank);
+        if (!(spacingDu > 0) || double.IsInfinity(spacingDu))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(spacingDu), spacingDu, "Two bodies in a file stand a positive, finite distance apart.");
+        }
+
+        double length = Math.Sqrt((awayX * awayX) + (awayY * awayY));
+        if (!(length > 0) || double.IsInfinity(length))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(awayX), (awayX, awayY), "A file runs in some direction away from the door it is for.");
+        }
+
+        double back = DoorStandoffDu + (rank * spacingDu);
+        return (doorX + (awayX / length * back), doorY + (awayY / length * back));
+    }
+
     /// <summary>How many walkers one room may have afoot at once.
     ///
     /// <para>Two, and the number is about the READ rather than about the frame cost. One person standing up

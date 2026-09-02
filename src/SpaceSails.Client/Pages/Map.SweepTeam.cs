@@ -370,7 +370,13 @@ public sealed partial class Map
             }
         }
 
-        double gx = WreckLayout.ShuttleLockX - Egress.DoorStandoffDu - (rank * InspectionTeam.FileSpacingDu);
+        // #731 (airlock egress) · The sum is Core's now — `Egress.PlaceInTheFile` — because the repo crew
+        // filing home to their own boat queues at a hatch the same way, and two copies of "a body-width
+        // behind the one in front" is the mirrored-constant bug with somebody standing in it. The numbers
+        // are unchanged: the head one standoff off the lock, everybody else a spacing further back down
+        // the spine (the file runs in -x, which is the way they came).
+        (double gx, _) = Egress.PlaceInTheFile(
+            WreckLayout.ShuttleLockX, 0, -1, 0, rank, InspectionTeam.FileSpacingDu);
         if (s.Walk is null || System.Math.Abs(s.Walk.For.X - gx) > 1e-9)
         {
             s.Walk = OnFoot(

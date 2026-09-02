@@ -589,6 +589,15 @@ public partial class Map
         }
     }
 
+    /// <summary>This hunter is off you now — the one place in the game that means it.
+    ///
+    /// <para>#731 · And it means it on the GROUND too. A repo crew serves its writ on foot under an id of its
+    /// own (<see cref="CollectorLanding.GroundHunterIdPrefix"/>) and was never in <c>_hunters</c>, so every
+    /// caller here — the bribe, the resist, the Bolivia flee — removed nothing, and the captain who had just
+    /// been told the crew <i>"sheers off"</i> was served again by the same people on the next frame. They
+    /// walk back to their own boat now (<c>TheirBusinessHereIsDone</c>), which is #731's full stop and not a
+    /// despawn: the ONE call that ends an encounter ends it in both places, so a future caller cannot end
+    /// half of one.</para></summary>
     private void RemoveHunter(string hunterId)
     {
         for (int i = _hunters.Count - 1; i >= 0; i--)
@@ -598,6 +607,8 @@ public partial class Map
                 _hunters.RemoveAt(i);
             }
         }
+
+        TheirBusinessHereIsDone(hunterId);
     }
 
     private static readonly RgbaColor DriverReachColor = new(120, 210, 255, 170);
