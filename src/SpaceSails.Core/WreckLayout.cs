@@ -108,11 +108,46 @@ public static class WreckLayout
     /// built round them. A void inside one looks exactly like every other stretch of it until somebody knocks —
     /// which is the entire mechanic, and it did not work until now.</para>
     /// </summary>
-    public static IEnumerable<(float X0, float Y0, float X1, float Y1)> StructuralFills()
+    public static IEnumerable<(float X0, float Y0, float X1, float Y1)> StructuralFills() =>
+        StructuralFills(null);
+
+    /// <summary>
+    /// #537 slice 3 · …AND WHAT A CAPTAIN HAS ALREADY CUT INTO. The fill is the ship's own ignorance made
+    /// visible: every run is drawn solid because a captain who has not knocked on it has no reason to think
+    /// it is anything else. Once a plate has come out, the section behind it is space he has stood in, and
+    /// the map draws it as space — the rest of the band stays hatched, because the rest of the band is still
+    /// only a guess.
+    ///
+    /// <para>The band is split around the pocket rather than dropped: cutting one section of shielding does
+    /// not tell a captain anything about the sixty frames either side of it, and a map that quietly opened
+    /// the whole run would be the map knowing more than the man drawing it.</para>
+    /// </summary>
+    public static IEnumerable<(float X0, float Y0, float X1, float Y1)> StructuralFills(
+        HullStowage.OpenVoid? opened)
     {
         // The shielding band, both sides, the length of the parallel middle body.
-        yield return (TransomX, OuterTopY, ShieldingForwardEnd, TopY);
-        yield return (TransomX, BottomY, ShieldingForwardEnd, OuterBottomY);
+        foreach (bool top in new[] { true, false })
+        {
+            float y0 = top ? OuterTopY : BottomY;
+            float y1 = top ? TopY : OuterBottomY;
+
+            if (opened is not { } pocket || pocket.Top != top)
+            {
+                yield return (TransomX, y0, ShieldingForwardEnd, y1);
+                continue;
+            }
+
+            // Aft of the pocket, then forward of it. Either stretch can be nothing at all when the void sits
+            // hard against one end of the band, and a zero-width fill is a drawing bug rather than a cover.
+            if (pocket.X0 > TransomX + 0.01)
+            {
+                yield return (TransomX, y0, (float)pocket.X0, y1);
+            }
+            if (pocket.X1 < ShieldingForwardEnd - 0.01)
+            {
+                yield return ((float)pocket.X1, y0, ShieldingForwardEnd, y1);
+            }
+        }
 
         // …and every interior bulkhead's own run.
         float half = BulkheadDepth / 2f;
@@ -270,15 +305,32 @@ public static class WreckLayout
     /// <summary>Every wall on the wreck: hull, spine (with its doorways), compartment bulkheads, and the
     /// damage that killed her. This is the exact geometry the client turns into a DeckPlan, so what the
     /// audit walks is what the captain walks.</summary>
-    public static IReadOnlyList<SurfaceCollision.Segment> Walls(Derelict.WreckCause cause)
+    public static IReadOnlyList<SurfaceCollision.Segment> Walls(Derelict.WreckCause cause) =>
+        Walls(cause, null);
+
+    /// <summary>
+    /// #537 slice 3 · THE SAME HULL, WITH A HOLE CUT IN HER. <paramref name="opened"/> is the one void this
+    /// captain has cut into on this boarding, or null on every hull nobody has opened — which is every hull,
+    /// almost always, so the ordinary geometry above is byte-for-byte what it was.
+    ///
+    /// <para><b>Two changes and no more.</b> The pressure hull is broken by a
+    /// <see cref="HullStowage.PlateHalfWidth"/> gap at the plate — unless the plate is fitted back in, in
+    /// which case it is a wall again and the captain behind it is hidden by #324's law rather than by a
+    /// stealth flag. And the pocket gets an end at each of its own ends, so a cut into six frames of
+    /// shielding is a hole six frames long and not the run of the ship: a captain who could walk the whole
+    /// band would be able to enter any compartment through its outboard wall, which is not a hiding place,
+    /// it is a second corridor.</para>
+    /// </summary>
+    public static IReadOnlyList<SurfaceCollision.Segment> Walls(
+        Derelict.WreckCause cause, HullStowage.OpenVoid? opened)
     {
         var walls = new List<SurfaceCollision.Segment>();
 
         // Outer shell. The bow tapers; the aft is a flat transom where the drive used to be — and it now sits
         // a MACHINERY SPACE aft of the last bulkhead rather than flush against it, because a ship is her rooms
         // plus everything that makes the rooms work.
-        walls.Add(new(TransomX, TopY, BowX - 6, TopY));
-        walls.Add(new(TransomX, BottomY, BowX - 6, BottomY));
+        AddPressureHull(walls, TopY, top: true, opened);
+        AddPressureHull(walls, BottomY, top: false, opened);
         walls.Add(new(BowX - 6, TopY, BowX, -2f));
         walls.Add(new(BowX - 6, BottomY, BowX, 2f));
         walls.Add(new(BowX, -2f, BowX, 2f));
@@ -297,6 +349,16 @@ public static class WreckLayout
         walls.Add(new(TransomX, BottomY, TransomX, OuterBottomY));
         walls.Add(new(ShieldingForwardEnd, OuterTopY, ShieldingForwardEnd, TopY));
         walls.Add(new(ShieldingForwardEnd, BottomY, ShieldingForwardEnd, OuterBottomY));
+
+        // …and the two ends of a pocket somebody has cut into it. Present only once the plate is out, because
+        // until then there is nothing in there to be at either end of.
+        if (opened is { } pocket)
+        {
+            float yOut = pocket.Top ? OuterTopY : OuterBottomY;
+            float yIn = pocket.Top ? TopY : BottomY;
+            walls.Add(new((float)pocket.X0, yIn, (float)pocket.X0, yOut));
+            walls.Add(new((float)pocket.X1, yIn, (float)pocket.X1, yOut));
+        }
 
         // The spine corridor: two long walls, broken by a doorway into each compartment.
         foreach ((float x0, float x1) in SpineSegments())
@@ -346,6 +408,29 @@ public static class WreckLayout
 
         walls.AddRange(DamageWalls(cause));
         return walls;
+    }
+
+    /// <summary>
+    /// ONE SIDE OF THE PRESSURE HULL, WITH OR WITHOUT A HOLE IN IT. The hole is cut the same way the spine's
+    /// doorways are — by laying two runs and leaving a gap between them, never by drawing a wall and then
+    /// pretending it is transparent. A gap the collision field does not have is a gap nothing can walk
+    /// through, and a wall the player is shown open that still stops a body is this repo's third named bug
+    /// class (the sim doing one thing while a drawn shape reports another).
+    /// </summary>
+    private static void AddPressureHull(
+        List<SurfaceCollision.Segment> walls, float y, bool top, HullStowage.OpenVoid? opened)
+    {
+        if (opened is not { PlateShut: false } pocket || pocket.Top != top)
+        {
+            walls.Add(new(TransomX, y, BowX - 6, y));
+            return;
+        }
+
+        float gapAft = (float)(pocket.PlateX - HullStowage.PlateHalfWidth);
+        float gapFwd = (float)(pocket.PlateX + HullStowage.PlateHalfWidth);
+
+        walls.Add(new(TransomX, y, gapAft, y));
+        walls.Add(new(gapFwd, y, BowX - 6, y));
     }
 
     /// <summary>The spine's wall runs, with the doorways left out.</summary>

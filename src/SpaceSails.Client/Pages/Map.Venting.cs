@@ -197,14 +197,28 @@ public sealed partial class Map
         _ventMessage = null;
     }
 
-    /// <summary>The dead bridge panel: a signpost, not a wall. Nobody should have to guess the answer is aft.</summary>
-    private void TryDeadBridgePanel() => ShowPulseMessage(HullVenting.DeadBridgePanelLine);
+    /// <summary>The dead bridge panel: a signpost, not a wall. Nobody should have to guess the answer is aft.
+    ///
+    /// <para>#537 slice 3 · …and it is the second place a hull can be caught lying. The board is dead, which
+    /// is exactly what makes ONE warm breaker on it worth a sentence — a standing load on a bus that runs to
+    /// a section nobody has been in. Deniable on its own (a stuck breaker on a dead ship is not evidence of
+    /// anything), and on every hull that is not lying here it says so and stops.</para></summary>
+    private void TryDeadBridgePanel()
+    {
+        ShowPulseMessage(HullVenting.DeadBridgePanelLine);
+        ShowPulseMessage(ReadTheseFramesAgainst(HullSounding.ClueKind.StandingLoad));
+    }
 
     /// <summary>The placard at the lock — the first thing aboard, and the one that answers "where do I go".
-    /// Reads in full once and briefly after that: a briefing the first time, a reminder every time.</summary>
+    /// Reads in full once and briefly after that: a briefing the first time, a reminder every time.
+    ///
+    /// <para>#537 slice 3 · The plate at the lock is also the BUILDER's plate, and a builder numbers frames.
+    /// So it is the third place a lie can sit: a numbering that steps over a run of frames it never writes
+    /// down. Deniable (a renumbering after a refit is an ordinary thing), and honest on an honest hull.</para></summary>
     private void ReadDamageControlPlacard()
     {
         ShowPulseMessage(_placardRead ? HullVenting.PlacardAgainLine : HullVenting.PlacardLine);
+        ShowPulseMessage(ReadTheseFramesAgainst(HullSounding.ClueKind.SkippedFrame));
 
         if (!_placardRead)
         {
