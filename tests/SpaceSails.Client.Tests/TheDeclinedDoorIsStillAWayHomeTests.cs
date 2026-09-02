@@ -29,17 +29,15 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
 {
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
 
-    /// <summary>The one ground in the game guaranteed to have halls to open, and therefore the one guaranteed
-    /// to be able to decline. Without it every sweep in this file would audit a universe where nothing has
-    /// ever been opened and pass for the wrong reason.</summary>
-    private static string Ground => UndergroundComplex.FoundBandCheatSiteId;
+    private static void WithDeclined(long window, Action body) =>
+        WithDeclined([new PoliteDecline.Decline(Ground, window)], body);
 
-    private static void WithDeclined(long window, Action body)
+    private static void WithDeclined(IReadOnlyList<PoliteDecline.Decline> declined, Action body)
     {
         IReadOnlyList<PoliteDecline.Decline> had = PoliteDecline.Declined;
         try
         {
-            PoliteDecline.Install([new PoliteDecline.Decline(Ground, window)]);
+            PoliteDecline.Install(declined);
             body();
         }
         finally
@@ -47,6 +45,61 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
             PoliteDecline.Install(had);
         }
     }
+
+    /// <summary>
+    /// <b>A GROUND OF THIS SUITE'S OWN — never a shipped moon and never the cheat site.</b>
+    ///
+    /// <para>The decline register is AMBIENT and xUnit runs test classes in parallel, so a guard that
+    /// declines on a site another class builds shuts a door underneath that class's own audit. That is not
+    /// hypothetical: the first full run of this lane reddened
+    /// <c>TheRingIsWalkableTests.EveryRingRoomIsReachedFromTheCarWithoutCrossingAnother</c>, a test with
+    /// nothing whatever to do with this feature, because both suites were building the found-band cheat
+    /// site at the same moment. <see cref="Burial"/>'s own register is safe as an ambient precisely because
+    /// it only ever changes the answer for the ids IN it — and that argument only holds if the ids in it
+    /// belong to nobody else.</para>
+    ///
+    /// <para><b>Searched, not typed.</b> Which probe has a concourse with a door to spare is a fact about
+    /// the seed, so the seed is asked: the first <c>decline-probe-N</c> whose building actually gives up a
+    /// leaf. A typed id would be an implementer's guess that could quietly stop qualifying.</para>
+    /// </summary>
+    private static readonly string Ground = AGroundOfOurOwn();
+
+    private static string AGroundOfOurOwn()
+    {
+        for (int i = 0; i < 200; i++)
+        {
+            string body = $"decline-probe-{i}";
+            bool takes = false;
+            WithDeclined([new PoliteDecline.Decline(body, 0)], () =>
+            {
+                foreach (int level in UndergroundComplex.FloorsOf(body))
+                {
+                    if (!UndergroundComplex.DeclinesOn(body, level))
+                    {
+                        continue;
+                    }
+                    takes |= UndergroundComplex.Build(body, level, Field).Doorways.Count
+                        != BuildOpen(body, level).Doorways.Count;
+                }
+            });
+            if (takes)
+            {
+                return body;
+            }
+        }
+
+        Assert.Fail("no probe site in 200 has a concourse with a door to spare — this suite proves nothing.");
+        return "";
+    }
+
+    /// <summary>The same floor with the register empty — the building the captain walked out of.</summary>
+    private static UndergroundComplex.FloorPlan BuildOpen(string bodyId, int level)
+    {
+        UndergroundComplex.FloorPlan plan = default;
+        WithDeclined([], () => plan = UndergroundComplex.Build(bodyId, level, Field));
+        return plan;
+    }
+
 
     /// <summary>Which floor of the site the world declines on — the concourse, asked of the building rather
     /// than assumed, and asserted to be exactly one floor.</summary>
@@ -82,8 +135,7 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
     /// convenience.</para></summary>
     private static List<(long Window, List<SurfaceLayout.Doorway> Leaves)> WhatTheWorldTook(int level)
     {
-        IReadOnlyList<SurfaceLayout.Doorway> open =
-            UndergroundComplex.Build(Ground, level, Field).Doorways;
+        IReadOnlyList<SurfaceLayout.Doorway> open = BuildOpen(Ground, level).Doorways;
         var taken = new List<(long, List<SurfaceLayout.Doorway>)>();
 
         for (long window = 0; window < 12; window++)
@@ -108,6 +160,14 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
 
     private static DeckPlan DeckFor(int level) =>
         HiveInterior.FloorDeck(Ground, level, Field, 0, (_, _) => { }, []);
+
+    /// <summary>The same deck with the register empty — the floor the captain walked out of.</summary>
+    private static DeckPlan BareDeckFor(int level)
+    {
+        DeckPlan deck = default!;
+        WithDeclined([], () => deck = DeckFor(level));
+        return deck;
+    }
 
     /// <summary>Two points, one either side of a leaf, and the little box that contains both — the whole
     /// question "is this door a way through" in three numbers. <b>The box is bounded to the jamb's own
@@ -142,7 +202,7 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
     public void TheDeclinedLeafIsAWallOnTheDeck()
     {
         int level = TheConcourse();
-        DeckPlan before = DeckFor(level);
+        DeckPlan before = BareDeckFor(level);
 
         foreach ((long window, List<SurfaceLayout.Doorway> leaves) in WhatTheWorldTook(level))
         {
@@ -187,7 +247,7 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
     public void EveryOtherLeafOnTheFloorStillOpens()
     {
         int level = TheConcourse();
-        DeckPlan before = DeckFor(level);
+        DeckPlan before = BareDeckFor(level);
         int stillOpen = 0;
 
         foreach ((long window, List<SurfaceLayout.Doorway> leaves) in WhatTheWorldTook(level))
@@ -202,7 +262,7 @@ public sealed class TheDeclinedDoorIsStillAWayHomeTests
         WithDeclined(first, () =>
         {
             DeckPlan after = DeckFor(level);
-            foreach (SurfaceLayout.Doorway d in UndergroundComplex.Build(Ground, level, Field).Doorways)
+            foreach (SurfaceLayout.Doorway d in BuildOpen(Ground, level).Doorways)
             {
                 if (took.Any(t => Same(t, d)))
                 {

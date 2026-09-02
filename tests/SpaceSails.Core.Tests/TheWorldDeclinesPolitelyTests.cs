@@ -27,9 +27,60 @@ public sealed class TheWorldDeclinesPolitelyTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
 
-    /// <summary>The site the found-band cheat parks, which is the one ground in the game guaranteed to have
-    /// halls to open — every other candidate is about one seeded site in fifty.</summary>
-    private static string Ground => UndergroundComplex.FoundBandCheatSiteId;
+    /// <summary>
+    /// <b>A GROUND OF THIS SUITE'S OWN — never a shipped moon and never the cheat site.</b>
+    ///
+    /// <para>The decline register is AMBIENT and xUnit runs test classes in parallel, so a guard that
+    /// declines on a site another class builds shuts a door underneath that class's own audit. That is not
+    /// hypothetical: the first full run of this lane reddened
+    /// <c>TheRingIsWalkableTests.EveryRingRoomIsReachedFromTheCarWithoutCrossingAnother</c>, a test with
+    /// nothing whatever to do with this feature, because both suites were building the found-band cheat
+    /// site at the same moment. <see cref="Burial"/>'s own register is safe as an ambient precisely because
+    /// it only ever changes the answer for the ids IN it — and that argument only holds if the ids in it
+    /// belong to nobody else.</para>
+    ///
+    /// <para><b>Searched, not typed.</b> Which probe has a concourse with a door to spare is a fact about
+    /// the seed, so the seed is asked: the first <c>decline-probe-N</c> whose building actually gives up a
+    /// leaf. A typed id would be an implementer's guess that could quietly stop qualifying.</para>
+    /// </summary>
+    private static readonly string Ground = AGroundOfOurOwn();
+
+    private static string AGroundOfOurOwn()
+    {
+        for (int i = 0; i < 200; i++)
+        {
+            string body = $"decline-probe-{i}";
+            bool takes = false;
+            WithDeclined([new PoliteDecline.Decline(body, 0)], () =>
+            {
+                foreach (int level in UndergroundComplex.FloorsOf(body))
+                {
+                    if (!UndergroundComplex.DeclinesOn(body, level))
+                    {
+                        continue;
+                    }
+                    takes |= UndergroundComplex.Build(body, level, Field).Doorways.Count
+                        != BuildOpen(body, level).Doorways.Count;
+                }
+            });
+            if (takes)
+            {
+                return body;
+            }
+        }
+
+        Assert.Fail("no probe site in 200 has a concourse with a door to spare — this suite proves nothing.");
+        return "";
+    }
+
+    /// <summary>The same floor with the register empty — the building the captain walked out of.</summary>
+    private static UndergroundComplex.FloorPlan BuildOpen(string bodyId, int level)
+    {
+        UndergroundComplex.FloorPlan plan = default;
+        WithDeclined([], () => plan = UndergroundComplex.Build(bodyId, level, Field));
+        return plan;
+    }
+
 
     /// <summary>Install a register, run the body, put back what was there. Every guard in this file goes
     /// through here: the ambient is shared with the whole Core suite and xUnit runs classes in parallel, so a
@@ -100,7 +151,7 @@ public sealed class TheWorldDeclinesPolitelyTests
 
         Assert.True(level is not null, $"{bodyId} named no floor to decline on.");
 
-        UndergroundComplex.FloorPlan open = UndergroundComplex.Build(bodyId, level!.Value, Field);
+        UndergroundComplex.FloorPlan open = BuildOpen(bodyId, level!.Value);
         UndergroundComplex.FloorPlan shut = default;
         WithDeclined([new PoliteDecline.Decline(bodyId, window)],
             () => shut = UndergroundComplex.Build(bodyId, level.Value, Field));
@@ -361,8 +412,7 @@ public sealed class TheWorldDeclinesPolitelyTests
                     }
                 }
 
-                UndergroundComplex.FloorPlan bare = UndergroundComplex.Build(Ground, TheConcourse(), Field);
-                doorsTaken += bare.Doorways.Count;
+                doorsTaken += UndergroundComplex.Build(Ground, TheConcourse(), Field).Doorways.Count;
             });
         }
 
@@ -382,7 +432,7 @@ public sealed class TheWorldDeclinesPolitelyTests
     public void TheTakenDoorIsNeverTheRefugeAndNeverAnAmenity()
     {
         int level = TheConcourse();
-        UndergroundComplex.FloorPlan open = UndergroundComplex.Build(Ground, level, Field);
+        UndergroundComplex.FloorPlan open = BuildOpen(Ground, level);
         int checkedWindows = 0;
 
         // Swept over many windows for the reason the fire-code guard is: which leaf the seed picks is a fact
