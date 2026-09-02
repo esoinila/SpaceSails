@@ -1362,7 +1362,9 @@ those honest criminal scientists are hard to recruit :-D"*
   toward. This is also how #608's hardest requirement is met without a map or a tutorial: *a refuge you
   discover after you needed it is a cruelty*, so the instrument the captain already watches has it on it.
 - **The dead-air card no longer says "there are no shelters down here".** It said so honestly when it was
-  written (#609) and it would now be the most dangerous sentence in the game.
+  written (#609) and it would now be the most dangerous sentence in the game. It ends instead on the one
+  sentence that is true of every band: *"The plan marks a refuge on this band. Whether it still holds is not
+  on the plan."*
 
 *(Enforced: `TheRefugesUndergroundTests` — one on every airless floor and none on a pressurised one, over
 1 100 floors of 100 sites; never beside the lift; never also a room to search; never emptying a floor or
@@ -1373,6 +1375,47 @@ is the standing lesson that a reachability test is only as honest as its endpoin
 `TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt` measures the detour over the real corridors rather than in a
 straight line. Every one of these was watched go **red** on a deliberately broken generator before it
 shipped.)*
+
+13.12a **The room is a fact; the seal is a story** (#608). Owner, in the same comment that asked for the
+refuges: *"their state after decades is the story. The ones that still hold are the ones somebody maintained;
+the ones that do not are the ones somebody stopped being paid to"* — and the warning that makes it worth
+building: *"If every ADMINISTRATION floor is safe, deep ADMINISTRATION floors stop costing anything. The state
+of the seal is what keeps it honest."* So every airless floor still has its refuge (13.12 is untouched) and
+`UndergroundComplex.StateOfTheRefugeOn` decides what the decades did to it. Measured over 815 dead floors of
+100 sites:
+
+| seal | what happens at the door | share |
+| --- | --- | --- |
+| **HOLDING** | the door cycles, the rack has bottles, the tank fills | 21.2 % |
+| **EMPTY** | the door cycles and the room holds; nothing to fill from | 38.5 % |
+| **FAILED** | the seal went. On the plan, on the tracker, and dead | 40.2 % |
+
+- **Which floors kept theirs is #601's answer, not a roll.** The departments whose maintenance line survived
+  (`DepartmentsThatKeptTheLine` — ADMINISTRATION, LABORATORIES) still have air; the head office keeps *all* of
+  its seals, because its livery is "still being kept up, by nobody, on a schedule" (#411's rank difference);
+  the band nobody listed (§13.7) keeps none, because a maintenance line is a budget code and that floor has no
+  budget. Empty-versus-failed on the rest is a seeded coin, because the department that stopped being funded
+  stopped keeping records too. **A captain who has learnt the livery has learnt where the air is** — which is
+  #605's colour language doing real work rather than decorating.
+- **EMPTY is not a consolation prize.** The owner's reason for the whole feature is staffing — *"otherwise the
+  elevator being busy could kill employees"* — and a room you can wait a busy car out in answers that exactly.
+  It buys **time**; only a maintained rack buys **range**.
+- **The lift panel row says `REFUGE` where the plan carries one, and never which state it is in.** The plan is
+  a drawing made when the building was new; finding out whether the compressor still turns is the walk. The
+  honest hint is the department already printed beside it.
+- **A failed refuge still paints on the tracker, and reads as failed.** Owner: *"a refuge whose seal has failed
+  must still paint, and must read as failed. Walking to one and finding it dead is a real beat; walking to one
+  that was never marked is just a bad map."* Grey, hollow and not breathing — the calm ring has meant *air you
+  can reach* since #573 and may not be spent on a room with none. The plate over the door loses the word AIR
+  and takes the dead ink the plate by the lift already uses (§13.13's tone 2).
+
+*(Enforced: `TheRefugesUndergroundTests` pins the three shares, proves the biconditional between a surviving
+maintenance line and a working rack in both directions, proves the carved room carries the law's own answer,
+and proves no drawable field of a panel row differs between the three seals. `TheSealOnTheRefugeTests` stands
+the shipping component in the generator's own refuge on one floor per seal and drives `StepSuitAir`: the rack
+fills a tank and is spent doing it, an empty room stops the drain and adds nothing, a failed one spends tank —
+with the gauge asserted against the drain each time. Every one of them was watched go **red** on a
+deliberately broken build.)*
 
 13.13 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
 lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off

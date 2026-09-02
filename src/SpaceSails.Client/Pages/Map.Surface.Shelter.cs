@@ -11,18 +11,19 @@ public partial class Map
     //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
     /// <summary>#573 · The fixed places the fan should point at: the way home, and every shelter. Bearings
     /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.</summary>
-    private List<(double Bearing, double Range, bool IsHome, bool IsLab)> BuildBeacons(SurfaceExcursion ex)
+    private List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)> BuildBeacons(
+        SurfaceExcursion ex)
     {
-        var list = new List<(double, double, bool, bool)>();
+        var list = new List<(double, double, bool, bool, bool)>();
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
             return list;   // a hull has neither a tube mouth nor a shelter
         }
 
-        void Add(double x, double y, bool home, bool lab = false)
+        void Add(double x, double y, bool home, bool lab = false, bool dead = false)
         {
             double dx = x - _avatarX, dy = y - _avatarY;
-            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab));
+            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab, dead));
         }
 
         // ── #591 · UNDERGROUND, THE BEACONS ARE DIFFERENT PLACES ──
@@ -75,9 +76,17 @@ public partial class Map
             // Nothing is painted on a floor that holds pressure, because there is nothing to point at: the
             // whole floor is the refuge, and a ring saying "air, 40 du that way" while you are standing in
             // air is an instrument disagreeing with the room.
+            //
+            // #608 · AND A DEAD ONE STILL PAINTS, IN A DEAD RING. Owner, in the same comment: "A refuge
+            // whose seal has failed must still paint, and must read as failed. Walking to one and finding it
+            // dead is a real beat; walking to one that was never marked is just a bad map." Both halves are
+            // enforced here — the ring is drawn, and it is drawn in an ink that is not the promise the calm
+            // ring makes, because a tracker that painted a room with no air in it in the same colour as one
+            // with air in it would be the map lying (#573) in the one place it costs a tank.
+            bool failed = RefugeSealHere(ex) == UndergroundComplex.RefugeState.Failed;
             foreach ((double rx, double ry) in RefugesOn())
             {
-                Add(rx, ry, home: false);
+                Add(rx, ry, home: false, dead: failed);
             }
             return list;
         }
@@ -398,6 +407,16 @@ public partial class Map
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.HiveRefuge })
         {
+            return;
+        }
+
+        // #608 · …AND ON MOST FLOORS THERE IS NOTHING TO READ, which the verb has to say out loud rather
+        // than answer with a gauge quoting zero. The state line IS the answer: an empty rack has a valve
+        // with a date on it and a failed one has a door that will not cycle, and either of those is worth
+        // more to a captain deciding whether to walk back than a needle resting on the pin.
+        if (RefugeSealHere(ex) is { } seal && seal != UndergroundComplex.RefugeState.Holding)
+        {
+            ShowPulseMessage(UndergroundComplex.RefugeEntryLine(seal));
             return;
         }
 

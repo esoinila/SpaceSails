@@ -297,8 +297,16 @@ public static class HiveInterior
         // was flown in, versus what was cut out of the moon).
         foreach (UndergroundComplex.Refuge refuge in floor.Refuges)
         {
+            // #608 · The console stays on all three states and the CAPTION is what changes. It has to stay:
+            // the [E] on a dead refuge is the only thing that can say why it is dead, and #212's law is that
+            // a refusal said out loud beats an affordance that quietly is not there. What it may not do is
+            // go on advertising a RACK in a room whose inner door will not cycle — a prompt that names a
+            // machine you cannot reach is the affordance-you-see differing from the affordance-you-get.
             consoles.Add(new(DeckPlan.ConsoleKind.HiveRefuge,
-                (float)refuge.X, (float)refuge.Y, UndergroundComplex.RefugeTankLabel));
+                (float)refuge.X, (float)refuge.Y,
+                UndergroundComplex.RefugeStillHolds(refuge.State)
+                    ? UndergroundComplex.RefugeTankLabel
+                    : UndergroundComplex.RefugeFailedGlyph));
             labels.Add(((float)refuge.X, (float)(refuge.Y - UndergroundComplex.RefugeHalfHeight - 2.0),
                 refuge.Sign));
         }
@@ -1061,8 +1069,15 @@ public static class HiveInterior
         // because all three now read TankIsDrawing.
         foreach (UndergroundComplex.Refuge refuge in floor.Refuges)
         {
+            // #608 · …AND TONE 2 WHERE THE SEAL WENT. A failed refuge is still drawn — owner, on the fan:
+            // "a refuge whose seal has failed must still paint, and must read as failed" — and the two
+            // things that change are the two that carry the claim: the word AIR comes off the plate, and the
+            // ink becomes the one the plate by the lift is already using to say your tank is running. A room
+            // that will not cycle drawn in the relief green would be the exact instrument-lies fault #612
+            // exists to prevent, said at the one door on the floor a captain would spend a tank reaching.
             bigLabels.Add(((float)refuge.X, (float)(refuge.Y + UndergroundComplex.RefugeHalfHeight + 3.2),
-                UndergroundComplex.RefugeGlyph, 26f, 1));
+                UndergroundComplex.RefugeGlyphFor(refuge.State), 26f,
+                UndergroundComplex.RefugeStillHolds(refuge.State) ? 1 : 2));
         }
 
         return new DeckPlan(

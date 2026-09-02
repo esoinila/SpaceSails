@@ -690,6 +690,13 @@ Every airless floor carries at least one pressure refuge. The tracker paints the
 shelters. The plate over the lift car says the depth, the department, **and whether you can breathe** — check
 it agrees with the HUD, because §13.13's whole law is that those two may never disagree.
 
+**And what the decades did to it (§13.12a).** The room is on every dead floor; the seal is not. A floor whose
+department is `ADMINISTRATION` or `LABORATORIES` still has air in the rack (the tank climbs, and the rack goes
+down as it does); everywhere else the room either holds with nothing to give (the drain stops, the gauge sits
+still) or has failed outright (the plate loses the word AIR, the tracker ring goes grey and hollow, and your
+tank goes on running while you stand in it). The lift panel prints `REFUGE` against every dead floor and never
+says which of the three you are about to walk to.
+
 ---
 
 ## 9 · The rounds on the restricted floors, and the badge (#804, #830/#832 instruments, #833 the walk)

@@ -136,7 +136,10 @@ public sealed partial class DeckView
         // meant ONE thing since it was built — something is moving and it wants you — so anything else
         // painted on it has to be unmistakably not that. Red things move; blue rings are places, and places
         // do not come to you.
-        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome, bool IsLab)>? Beacons = null,
+        // #608 · IsDead is a place still worth KNOWING about that is no longer worth running to — a pressure
+        // refuge whose seal went. Owner: "a refuge whose seal has failed must still paint, and must read as
+        // failed", so it is on the fan and it is not in the ink that means air.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)>? Beacons = null,
         // #573 · Your OWN caches, once they are inside the fan's reach. Owner: "we would like our own caches
         // onto the detector also.... since now finding them is a real task :-D (only if in range though)".
         // The range gate is the whole point — a map that always knows where your treasure is has taken the
