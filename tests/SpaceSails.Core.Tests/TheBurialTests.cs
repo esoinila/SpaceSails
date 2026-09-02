@@ -578,9 +578,10 @@ public sealed class TheBurialTests
     /// the clerk's own order; a reworded entry is a piece of canon an implementer wrote.</para>
     ///
     /// <para><b>Reverts that reddened it (watched, 2026-09-02):</b> the first entry dropped from the
-    /// composition — <i>"the ledger paper does not carry, in order, the entry \"B3 sump: …\""</i>; and the
-    /// order swapped so the cited pair reads 2213 then 2211 — <i>"Assert.Equal() Failure: Values differ …
-    /// Expected: [2211, 2213] Actual: [2213, 2211]"</i>.</para>
+    /// composition — <i>"the ledger paper does not carry, in order, the entry "B3 sump: seal and impeller
+    /// renewed…""</i>; and the three composed in reverse, which is the revert that matters most because a
+    /// shuffled paper still CONTAINS all three — <i>"the ledger paper does not carry, in order, the entry
+    /// "Sub-level access no longer required…""</i>.</para>
     /// </summary>
     [Fact]
     public void TheLedgerPaperCarriesThreeEntriesAndTheOmittedNumberIsTheOnlyTell()
