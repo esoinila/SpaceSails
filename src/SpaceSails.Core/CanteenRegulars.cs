@@ -136,11 +136,33 @@ public static class CanteenRegulars
 
         new("◈ A QUIET ONE, FACING THE DOOR",
             "..."),
+
+        // ── #1063 · AND THE ONE WHO IS NOT ALWAYS HERE ───────────────────────────────────────────────────
+        //
+        // THE MASON ON THE JOB. Last in this array and dealt out of a pool that stops one short of him, so on
+        // every ground nobody has been past a seam of — which is every ground in almost every world — this
+        // cast is the ten it has always been, dealt by the same dice against the same length, and not one
+        // person in the game moves seat.
+        //
+        // He is the dullest man in the room and he passes the register test hardest: he is a tradesman
+        // reciting what he wrote on a form. He is not mysterious, he is not hiding anything, and he is not
+        // lying — HE MEANS IT, AND HE FILED IT, AND THAT IS THE WHOLE TESTIMONY (#1063). The horror is
+        // entirely in the fact that a filing phrase is all there is, and he is the only man alive who was
+        // standing in front of the thing.
+        new(Burial.MasonPlate, Burial.MasonLine),
     ];
 
     /// <summary>How many authored regulars exist. Public so a guard can pin the catalog's size without
     /// reaching into it.</summary>
     public static int CastSize => Cast.Length;
+
+    /// <summary>#1063 · Which of the cast is the mason — the last, and the one the ordinary deal stops short
+    /// of. Named rather than written as <c>Length - 1</c> in two places.</summary>
+    private static int Mason => Cast.Length - 1;
+
+    /// <summary>#1063 · …and how many of them the ordinary seeded rota may deal. Everybody but the mason,
+    /// which is why a site nobody has opened seats exactly the people it always seated.</summary>
+    private static int OrdinaryCast => Cast.Length - 1;
 
     /// <summary>Every authored plate and line, for the canon grep. Nothing in this list may explain the Old
     /// Ones, and the guard that checks it walks THIS, so a line added tomorrow is checked tomorrow.</summary>
@@ -718,10 +740,20 @@ public static class CanteenRegulars
                 DiceRule.Roll(DiceRule.Seed($"hive:canteen:table:{bodyId}:{i}", watch), amenity.Tables.Count).Face - 1,
                 amenity.Tables.Count, usedTables);
             int cast = PickUnused(
-                DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}", watch), Cast.Length).Face - 1,
-                Cast.Length, usedCast);
+                DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}", watch), OrdinaryCast).Face - 1,
+                OrdinaryCast, usedCast);
 
             seating.Add((table, cast));
+        }
+
+        // #1063 · …and where the works are on, the mason has the first of those chairs. He REPLACES whoever
+        // the shift dealt into it rather than being added beside them, for the reason the board's own notice
+        // takes a slot rather than making a fifth: a room that grew a person while a captain was away is the
+        // room saying that something happened, and the whole beat is that nothing did. One mason, one chair,
+        // every watch, deterministically — and on every ground nobody has opened, this does nothing at all.
+        if (seating.Count > 0 && Burial.WorksAreOn(bodyId))
+        {
+            seating[0] = (seating[0].Table, Mason);
         }
 
         return seating;

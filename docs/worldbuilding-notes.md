@@ -245,6 +245,36 @@ is derivable from anything in the world; they would be two invented facts about 
 decision no card may state. **Nothing reads it yet**, which is the sequencing #1063, #1068 and #1074
 each asked for in their own words: the threshold is here, the consequences are theirs.
 
+**Shipped (#1063, slice 1 — THE BURIAL, and the clock's first customer).** Owner ruling 2026-09-01, on the
+watcher doctrine (§672): the creepiest reaction is not the world declining but *people hiding the truth
+themselves* — told so convincingly they obey like automatons, bury what was found, and forget they did it.
+Between two visits a ground the captain opened is GONE the way a street grade goes: filled, floored,
+resurfaced. **The threshold, and its written reason:** one whole world window since the opening (a work order
+takes a shift — a crew already standing there with the trucks would be a fact about THEM, and the Scully law
+is spent the moment one act is only explicable by them), **and** the captain not on that body (the neighbours
+do not fill a hall while he is standing in it). Evaluated once, on the descent, after the crossing's clock is
+spent and before one wall of the arriving ground is laid — so a ground can only ever be filled while he is in
+flight, and the burial LANDS on his return.
+
+The erasure procedure is the issue's four clauses and it is implemented as written. **(1) Remove the element**
+and **(2) remove its marks** are one gate: `UndergroundComplex.HasFoundBand` asks `Burial.IsFilled` first, and
+every question the game has about the halls already goes through it — so the shaft ends at the listed bottom,
+the found-key card room stops generating, the darkness stops being declared, the room scale stops growing, and
+the clock stops opening. **(3) The town above keeps living**: nothing else about the site changes, and a world
+where nothing has been buried is byte-identical to the world before this shipped. **(4) One specimen is kept**:
+on the listed bottom, a short recess off the corridor with a single old door at the back of it that does not
+open, drawn in the found band's **own** no-texture idiom on a floor that is otherwise entirely poured. It has
+no plate, no sign, no card and no line, because the object is the whole statement.
+
+The evidence lifecycle is four authored sentences and not one more, all of them ordinary facilities
+paperwork: the **works notice** on the canteen board while the job is on; the **maintenance ledger**, three
+lines with no instruction number where the ledger cites one for everything else; the **rag**, cheerful, once,
+about the drainage and the handsome course of old kerbs in the new wall; and, if pressed, **a mason** — *"and
+he means it, and he files it, and that is the whole testimony."* **LAW: THE BOOK NEVER LIES.** Nothing the
+burial does removes or rewrites one field-book note, clipped story, red thread or satchel row: the captain's
+record is the only witness and it stays correct, which is what the player stands on. Cheat `?buried=1`.
+Details: `features/the-landing-site.md` §13.30.
+
 **Still open and deliberately unbuilt: any inhabitant content.**
 
 ## Suggested landing spots
