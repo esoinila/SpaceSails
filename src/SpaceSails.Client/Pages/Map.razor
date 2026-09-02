@@ -1785,6 +1785,12 @@
                           DismissClass="view-object-close" DismissFace="…take the berth"
                           OnClose="() => Dismiss(CloseShipEpitaph)">
                 <div class="view-object-title">☢ SHE IS GONE, AND YOU ARE NOT</div>
+                @* #528 · The one end state in the game that had no picture — and the painting for it has
+                   been sitting in wwwroot since #915. Same markup and the same onerror-hide as every other
+                   view-object card; the file is named in Core so the boat and the sentence about the boat
+                   cannot drift apart in two files. *@
+                <img class="view-object-img" src="@SpaceSails.Core.ShipScuttle.CastawayArt"
+                     alt="☢ SHE IS GONE, AND YOU ARE NOT" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@castaway.Went</div>
                 <div class="view-object-caption">@castaway.Survives</div>
                 <div class="view-object-caption">@castaway.Rescue</div>
