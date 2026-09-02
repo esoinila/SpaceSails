@@ -675,8 +675,10 @@ public partial class Map
         // #763 · The kit, named as it is named. A tool this build does not know is still a tool and says so
         // rather than falling through to the default arm, which would print a receiver as a file on
         // somebody — the third named bug class, in a row of a list.
-        Core.Satchel.Kind.Tool => Core.SdrScanner.IsTheKit(item)
-            ? Core.SdrScanner.ItemName
+        // #537 · …and the cutting rig, which is the one tool whose COUNT is its state: the cell IS the item,
+        // so the row prints what is left in it or a captain cannot tell a full rig from a last cut.
+        Core.Satchel.Kind.Tool => Core.SdrScanner.IsTheKit(item) ? Core.SdrScanner.ItemName
+            : Core.HullCutter.IsTheCutter(item) ? Core.HullCutter.RowLabel(item.Count)
             : "🧰 a piece of kit",
 
         _ => "🗃 a file on somebody",

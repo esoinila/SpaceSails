@@ -153,24 +153,36 @@ public sealed partial class Map
     /// and it is an honest dead end, which it has to be: a document that only speaks up when there is
     /// something to find is a pointer, not a clue.
     /// </summary>
-    private string ManifestFindingWithTheClue(in Derelict.Wreck w)
-    {
-        string cargo = Derelict.ManifestFinding(w);
-        _manifestRead = true;
+    private string ManifestFindingWithTheClue(in Derelict.Wreck w) =>
+        Derelict.ManifestFinding(w) + " " + ReadTheseFramesAgainst(HullSounding.ClueKind.Manifest);
 
-        if (_hullVoid is not { } hidden)
+    /// <summary>
+    /// #537 slice 3 · ONE PAPER, ASKED THE SAME QUESTION. Three stations can carry the lie now — the
+    /// manifest, the builder's frame plate at the lock, and the one warm breaker on a dead board — and
+    /// <b>a hull tells exactly one of them</b>.
+    ///
+    /// <para>So this is the whole of the reading, for all three: does THIS document not add up? If it does,
+    /// the captain gets the measurement and nothing else (#533: the question, never the answer). If it does
+    /// not — either because she is honest or because she lies somewhere else — he gets an honest dead end,
+    /// which is the law the manifest already shipped under. A document that only speaks up when there is
+    /// something to find is a pointer, and a captain learns in two boardings to read the silence.</para>
+    /// </summary>
+    private string ReadTheseFramesAgainst(HullSounding.ClueKind kind)
+    {
+        if (_hullVoid is not { } hidden || hidden.Says != kind)
         {
-            return cargo + " Her shielding is booked section by section, and every section holds the same.";
+            return HullSounding.HonestLine(kind);
         }
 
         HullSounding.Discrepancy clue = HullSounding.AsDiscrepancy(hidden);
+        _clueRead = true;
 
         LogAutopilotEvent(HullSounding.ClueLine(clue));
         LogAutopilotEvent(HullSounding.BlindSearchLine(
             SoundingGear,
             HullSounding.HullArea(WreckLayout.AftX, WreckLayout.BowX, WreckLayout.TopY, WreckLayout.BottomY)));
 
-        return cargo + " " + HullSounding.ClueLine(clue);
+        return HullSounding.ClueLine(clue);
     }
 
     /// <summary>The causes the captain may put their name to: the ones their evidence supports. Reading
@@ -571,7 +583,11 @@ public sealed partial class Map
 
         _deckPlan = WreckInterior.WreckDeck(
             w, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling, FillSurfaceDroids,
-            HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
+            HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged,
+            // #537 slice 3 · the plate, the hole and the captain behind it are STATE, so the deck is built
+            // from them. The plate console used to be appended to the live plan, which meant any rebuild —
+            // a dogged hatch, a pump, a purge — silently deleted the one find of the whole search.
+            plate: _plateFound ? _hullVoid : null, voidOpen: _voidOpened, plateShut: _inTheVoid);
     }
 
     /// <summary>The wreck's own header line, and the loiter promise under it — the reason the away team is

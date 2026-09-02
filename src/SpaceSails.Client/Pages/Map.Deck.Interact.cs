@@ -211,7 +211,8 @@ public partial class Map
                 DrillPointInteract(); // #394: drill the charge (a long channel), or fire it once armed
                 break;
             case DeckPlan.ConsoleKind.SecretDoor when OnWreck:
-                OpenTheFalsePlate();    // #537: the plate a sounding found — "a tool to get at it"
+                // #537: the plate a sounding found. One press, three lives — cut it, get in, get out.
+                WorkTheFalsePlate();
                 break;
             case DeckPlan.ConsoleKind.SecretDoor:
                 SecretDoorInteract(); // #409: force the hidden lab door — the channel that appends the lab region

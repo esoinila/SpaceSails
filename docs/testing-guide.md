@@ -1254,11 +1254,19 @@ lock, when you want to leave.
 
 ### Knocking on her walls — the hidden-void search (#537)
 
-Some hulls hide a space that is not on the deck plan. **Her plating is honest and her manifest is not**: a lying
-hull books one section of her shielding at a third of what every other section holds. Read the **cargo manifest**
-(a console that was always there) and the discrepancy is the clue; on a clean hull it says the frame numbers match
-all the way down the page, which it has to, or a document that only speaks up when there is something to find is
-a pointer rather than a clue.
+Some hulls hide a space that is not on the deck plan. **Her plating is honest and her paperwork is not** — and
+since slice 3 there are **three papers a lie can sit in, and a hull lies in exactly one**:
+
+| read it at | what does not add up |
+|---|---|
+| 📦 **the cargo manifest** | one section of her shielding booked at a third of what every other section holds |
+| 🪧 **the placard at the lock** | the builder's frame numbering steps over a run of frames it never writes down |
+| ⚙ **the dead bridge panel** | the board is dead except one breaker, warm, on a bus to a section nobody uses |
+
+Each is deniable on its own, and **every one dead-ends on a clean hull** — and on a lying hull the two she does
+NOT lie in dead-end as well. So reading one document is not a search: read the manifest on a hull whose lie is in
+her frame numbering and you are told, truthfully, that her shielding books out, and you learn nothing. A document
+that only speaks up when there is something to find is a pointer rather than a clue.
 
 Then **`K` to knock**, standing still. Two gears, chosen on the remote:
 
@@ -1268,12 +1276,35 @@ Then **`K` to knock**, standing still. Two gears, chosen on the remote:
 | ✊ knuckles | 12 | 2 du | 13 du — as loud as dogging a hatch by hand |
 
 Moving abandons the reading and does **not** refund the noise. Three answers: `SOLID`, `ODD` (near, not here), and
-`HOLLOW` — which puts a **FALSE PLATE** on the deck to force.
+`HOLLOW` — which puts a **FALSE PLATE** on the deck.
 
-**What to check.** The clock strip shows the knock and, once the manifest is read, the band to search. About one
-hull in five hides something (Lab 44 probe F prints which of the ten seeded causes lie, and where). A void sits
-either in the **shielding band** outboard of a room or inside a **bulkhead run** between two rooms — and what is
-in it decides which: a rack of keys fits a bulkhead, a folded gun mount or a cold locker needs the band.
+**Then you need the rig.** Forcing the plate costs a **🔥 HULL CUTTER** — 240 cr over the same back counter that
+sells the SDR scanner, three cuts to a cell, bulky enough to cost a pocket space. `E` at the plate is a **9 s
+channel** that dies if you step off it and is loud at the start, and it spends one cut; the last cut leaves the
+rig in the hole. The satchel row prints what is left in the cell.
+
+**And then you can get IN.** A void in the **shielding band** is walkable once cut: `E` again and the captain
+folds in and pulls the plate to behind him. The deck draws the pocket as space (only that stretch of the band —
+the rest stays hatched), the header says *A SPACE NOBODY DREW*, and `E` pushes the plate off again to get out. A
+void inside a **bulkhead run** is a hand's width of pipework and refuses — what is in a void decides where it
+can be, so a rack of keys fits a bulkhead and a folded gun mount needs the band.
+
+**What a sweep team (#538) finds.** With the plate fitted, the pressure hull is a wall and they genuinely cannot
+see you — walls are law for everyone (#324). Three things still give you away, all deterministic:
+
+1. **You are not in it** — standing in a corridor is exactly as fatal as it always was.
+2. **They watched you get in** — a lamp on the plate as it closes. Wait for the cone to pass.
+3. **The cut is still warm** — for **40 s** after the rig goes through, a lamp landing on the plate opens it.
+   The clock strip shows it counting down (`🔥 WARM CUT · the cut is still bright`). Cut early and let it cool.
+
+Making a racket is deliberately not a fourth tell: noise already walks them to the place, which puts a lamp on
+the plate, which asks the warm-cut question. The best outcome in the game is the one you hear from inside —
+*boots on the deck plating, and then the sound goes forward, unhurried, and keeps going.*
+
+**What to check.** The clock strip shows the knock, the cut, the warm-cut countdown and, once the right paper is
+read, the band to search. About one hull in five hides something (Lab 44 probe F prints which of the ten seeded
+causes lie, and where). The false plate must **survive a deck rebuild** — dog a hatch or run a pump after finding
+it and it is still there.
 
 ### The mountain lab — doors that lock, a board, and an alarm to hack (#409)
 

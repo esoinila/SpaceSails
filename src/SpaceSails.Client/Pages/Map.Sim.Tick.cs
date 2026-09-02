@@ -554,6 +554,7 @@ public partial class Map
         AdvanceBoatSpinUp(dtRealSeconds);
         AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
         AdvanceSounding(dtRealSeconds);     // #537: the clock on a knock
+        AdvanceTheCut(dtRealSeconds);       // #537 slice 3: the clock on a cut — and the scar going cold
         AdvanceLabAlarm(dtRealSeconds);     // #409+: the mountain counting
 
         // #663 · …and the crew's own standing, which is a pure reading of the whole voyage rather than an

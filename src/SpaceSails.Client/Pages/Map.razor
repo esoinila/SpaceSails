@@ -4194,6 +4194,10 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-warning"
                             title="@Core.SdrScanner.CardStory" @onclick="BuyTheKit">@Core.SdrScanner.BuyLabel</button>
+                    @* #537 · The other half of the owner's combi, over the same counter — the kit that finds
+                       a false plate and the rig that opens one. Same never-disabled rule. *@
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@Core.HullCutter.CardStory" @onclick="BuyTheCutter">@Core.HullCutter.BuyLabel</button>
                 }
                 @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
                    (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@
@@ -5174,6 +5178,7 @@
     @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
                        || LabAlarmSecondsLeft is not null
                        || SoundingSecondsLeft is not null || SearchBandLine is not null
+                       || CutSecondsLeft is not null || WarmCutSecondsLeft is not null
                        || (OnWreck
                            ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
                            : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
@@ -5241,6 +5246,28 @@
                     <span class="wc-tag">📐 UNACCOUNTED</span>
                     <span class="wc-room">@band</span>
                     <span class="wc-time">K</span>
+                </div>
+            }
+
+            @* #537 slice 3 · THE CUT, and then the scar cooling. The second is the one that matters: a warm
+               cut is what a lamp on the plate reads, so a captain hiding behind one has to be able to SEE how
+               long it has left, or the rule is a trap rather than a decision. It is drawn as an overload
+               because that is exactly what it is — a clock counting down to being safe, that you cannot do
+               anything about once it has started. *@
+            @if (CutSecondsLeft is { } cut)
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">🔥 CUTTING</span>
+                    <span class="wc-room">stand still · @CutsLeftInTheCell in the cell</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(cut)</span>
+                </div>
+            }
+            @if (WarmCutSecondsLeft is { } warm)
+            {
+                <div class="wc-line overload no-recall">
+                    <span class="wc-tag">🔥 WARM CUT</span>
+                    <span class="wc-room">@Core.HullStowage.WarmCutWatchLine</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(warm)</span>
                 </div>
             }
 

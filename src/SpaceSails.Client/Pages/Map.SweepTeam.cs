@@ -187,7 +187,14 @@ public sealed partial class Map
             s.StateSeconds += dt;
 
             InspectionTeam.Member member = new(s.Callsign, s.X, s.Y, s.Facing, s.State, s.StateSeconds);
-            bool seesCaptain = !CaptainBeyondReach && InspectionTeam.Sees(member, _avatarX, _avatarY, sight);
+
+            // #537 slice 3 · WHAT THIS SWEEPER MAKES OF THE CAPTAIN. On a hull with no void this is exactly
+            // the sighting test it replaced — one call to InspectionTeam.Sees and nothing else. With a void
+            // cut into her it also asks the two questions a plate raises: did this one watch it close, and
+            // is the cut round it still bright. Being SEEN outranks both, so no arrangement of hiding state
+            // can make a visible captain invisible (HullStowage.WhatGivesYouAway asks it first).
+            HullStowage.Tell tell = WhatGivesTheStowawayAway(member, sight);
+            bool seesCaptain = !CaptainBeyondReach && HullStowage.Caught(tell);
 
             // THE PACK OUTRANKS THE CAPTAIN whenever it is actually there. Owner: "It might be sweet if they
             // fought off some reevers etc while the pirates hide." A sweeper busy with an Old One is a sweeper
@@ -228,6 +235,11 @@ public sealed partial class Map
                     s.LastSeenX = _avatarX;
                     s.LastSeenY = _avatarY;
                     EnterState(s, InspectionTeam.Awareness.Challenging);
+                    // #537 slice 3 · WHAT THEY SAW, before what they say. A captain taken out of a hole he
+                    // thought was safe is owed the reason, and the reason is a fact about the world — a lamp
+                    // that was on the plate as it closed, or a cut still warm enough to read.
+                    ShowPulseMessage(HullStowage.TellLine(tell, s.Callsign));
+                    LogAutopilotEvent(HullStowage.TellLine(tell, s.Callsign));
                     ShowPulseMessage(InspectionTeam.ChallengeLine(s.Callsign));
                     LogAutopilotEvent(InspectionTeam.ChallengeLine(s.Callsign));
                     RendererInterop.PlayCue("alarm");

@@ -64,6 +64,11 @@ public static class CarriedObject
             Satchel.Kind.Tool when SdrScanner.IsTheKit(item)
                 => new Reveal(SdrScanner.ArtUrl, SdrScanner.CardLabel, SdrScanner.CardStory),
 
+            // #537 · The cutting rig. Caption-only — the deliberate no-picture idiom rather than a broken
+            // one — and the story says what the object IS and never which wall to point it at.
+            Satchel.Kind.Tool when HullCutter.IsTheCutter(item)
+                => new Reveal(string.Empty, HullCutter.CardLabel, HullCutter.CardStory),
+
             // ── #828 · THE GLANCE: A SHEET HAS A FACE, AND LOOKING AT IT IS FREE ─────────────────────────
             //
             // Owner, naming the semantic the loop already leaned on: "the read from inventory and dig at
