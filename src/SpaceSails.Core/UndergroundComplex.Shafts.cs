@@ -296,9 +296,18 @@ public static partial class UndergroundComplex
     /// by the gate in completely different voices — one is an office still obeying an office nobody can find,
     /// the other is a tired man reading a timesheet. The row draws the same either way; the ARRIVAL does not,
     /// and the ride carries the stop with it, so the discrimination belongs on the stop.</param>
+    /// <param name="HasRefuge">#608 · Whether the plan for that floor carries a pressure refuge — the one
+    /// thing a captain can learn about the air BEFORE the doors open, which is the requirement the issue
+    /// states as an absolute: <i>"a refuge you discover AFTER you needed it is a cruelty"</i>. It says a
+    /// refuge is THERE and never what state it is in, because the panel is reading a drawing and a drawing
+    /// does not know which compressors are still turning. What the row does carry beside it — the
+    /// department's own plate — is the honest hint (#605, #601): the floors that kept their maintenance line
+    /// are the floors whose refuge still has air, and a captain who has learnt the livery has learnt that
+    /// without being told. Asked of <see cref="RefugeOnThePlan"/>, never counted off a built floor: a panel
+    /// that generated twenty floors to draw twenty buttons is a panel nobody presses twice.</param>
     public readonly record struct LiftStop(
         int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null,
-        bool OpenedByChit = false);
+        bool OpenedByChit = false, bool HasRefuge = false);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -370,14 +379,18 @@ public static partial class UndergroundComplex
         var stops = new List<LiftStop>();
         if (car == ShaftKind.Cage)
         {
-            stops.Add(new(0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null));
+            stops.Add(new(
+                0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null,
+                HasRefuge: RefugeOnThePlan(bodyId, 0)));   // #608 · never, and it ASKS rather than typing false
         }
 
         int band = BandOf(Math.Min(level, -1));
         int deepest = BandFloor(bodyId, band);
         for (int f = BandTop(band); f >= deepest; f--)
         {
-            stops.Add(new(f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null));
+            stops.Add(new(
+                f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null,
+                HasRefuge: RefugeOnThePlan(bodyId, f)));
         }
 
         if (car != ShaftKind.Cage)
@@ -490,7 +503,8 @@ public static partial class UndergroundComplex
             wantsAFace ? null
                 : carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
                 : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
-            OpenedByChit: chitOpens && !wantsAFace));
+            OpenedByChit: chitOpens && !wantsAFace,
+            HasRefuge: RefugeOnThePlan(bodyId, BandTop(next))));
         return stops;
     }
 

@@ -179,7 +179,7 @@ public sealed class EveryFrameHashesTheSameTests
             Echoes: [(0.0, 5.0, 0.4)],
             StandingPrompt: "BURY THE CHEST — [G]",
             BloodSplash: 0.55,
-            Beacons: [(1.0, 20.0, true, false), (2.5, 33.0, false, true)],
+            Beacons: [(1.0, 20.0, true, false, false), (2.5, 33.0, false, true, false)],
             CacheBeacons: [(2.0, 15.0)],
             Rumours: [(3.0, 25.0, 0.4)],
             AirSeconds: 240,

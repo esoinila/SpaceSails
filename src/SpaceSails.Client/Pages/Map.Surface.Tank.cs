@@ -76,15 +76,39 @@ public partial class Map
             // What it does NOT do is make the floor free. It is one room, never beside the lift, and its
             // regulator stops at the same two thirds somebody set on the surface for the next person
             // through the door — so depth still costs air (#585), and the refuge buys RANGE.
+            //
+            // ── #608 · …AND ON MOST FLOORS IT BUYS LESS THAN THAT ───────────────────────────────────────
+            //
+            // The room is a fact and the SEAL is a story (StateOfTheRefugeOn). Three states and the branch
+            // reads all three off the one Core answer, never off a second opinion:
+            //
+            //   HOLDING · what this always did: the drain stops and the rack pumps.
+            //   EMPTY   · the drain stops and NOTHING pumps. Still exactly the thing the owner asked for —
+            //             "otherwise the elevator being busy could kill employees" is answered by a room you
+            //             can wait in — so it buys time to think and never a metre of range.
+            //   FAILED  · nothing at all. The line is said, once, at the door, and then this falls straight
+            //             through to the drain below: standing in a room whose seal went is standing on a
+            //             dead floor, and the tank knows it even if the plan does not.
             int refuge = RefugeUnderfoot(ex);
+            UndergroundComplex.RefugeState? seal = refuge >= 0
+                ? UndergroundComplex.StateOfTheRefugeOn(ex.Stop.Body.Id, ex.Floor)
+                : null;
             if (refuge >= 0)
             {
+                bool holds = seal is { } s && UndergroundComplex.RefugeStillHolds(s);
                 if (!ex.RefugeBreathNoted)
                 {
                     ex.RefugeBreathNoted = true;
-                    ShowPulseMessage(UndergroundComplex.RefugeBreathingLine);
-                    string found = SurfaceShelter.PartialLine(
-                        RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds);
+                    ShowPulseMessage(
+                        UndergroundComplex.RefugeEntryLine(seal ?? UndergroundComplex.RefugeState.Failed));
+
+                    // #573's idiom, and only where there is a rack to have been drawn on. On an empty or a
+                    // failed one "somebody was here before you" would be a sentence about a reservoir that
+                    // does not exist — the game telling a story off a number it is not running.
+                    string found = seal == UndergroundComplex.RefugeState.Holding
+                        ? SurfaceShelter.PartialLine(
+                            RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds)
+                        : "";
                     if (found.Length > 0)
                     {
                         // The same fact told by state rather than by a card, and down here it is a colder
@@ -94,22 +118,32 @@ public partial class Map
                     }
                 }
 
-                ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
-                    ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
-                if (intoTheTank > 0)
+                if (seal == UndergroundComplex.RefugeState.Holding)
                 {
-                    if (ex.RefugePumpNoted.Add(refuge))
+                    ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
+                        ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
+                    if (intoTheTank > 0)
                     {
-                        ShowPulseMessage(SurfaceShelter.PumpingLine);
+                        if (ex.RefugePumpNoted.Add(refuge))
+                        {
+                            ShowPulseMessage(SurfaceShelter.PumpingLine);
+                        }
+                    }
+                    else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+                    {
+                        ShowPulseMessage(SurfaceShelter.PumpDoneLine);
                     }
                 }
-                else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+
+                if (holds)
                 {
-                    ShowPulseMessage(SurfaceShelter.PumpDoneLine);
+                    return;   // the room holds: the tank stops, with or without anything to fill it from
                 }
-                return;
             }
-            ex.RefugeBreathNoted = false;
+            else
+            {
+                ex.RefugeBreathNoted = false;
+            }
 
             // Anywhere else on a dead floor drains exactly like open regolith: this is the price of going
             // deeper, and it is the only thing stopping the facility from being somewhere to live.
@@ -625,7 +659,7 @@ public partial class Map
             ex.Floor,
             StandingInTheShelter(ex),                        // #573 the deep shelter
             CaptainBeyondReach,                              // her tube — or past a wreck's lock: breathing hers
-            ex.Floor < 0 && RefugeUnderfoot(ex) >= 0);       // #608 a pressure refuge on a dead floor
+            BreathingRefugeUnderfoot(ex));                   // #608 a pressure refuge that still holds
 
     /// <summary>Is the tank running? The one bit of <see cref="AirSupplyOf"/>, for callers that want no
     /// more than that.</summary>
@@ -669,7 +703,26 @@ public partial class Map
         return found;
     }
 
-    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground.</summary>
+    /// <summary>#608 · What the seal on this floor's refuge has done with the decades, or null off a floor
+    /// that has one. Asked of Core rather than carried, because the state is a fact about the FLOOR and
+    /// there is one refuge on it: <see cref="UndergroundComplex.StateOfTheRefugeOn"/> is the one answer the
+    /// suit, the plate, the tracker and the panel all read.</summary>
+    private UndergroundComplex.RefugeState? RefugeSealHere(SurfaceExcursion ex) =>
+        ex.Floor >= 0 ? null : UndergroundComplex.StateOfTheRefugeOn(ex.Stop.Body.Id, ex.Floor);
+
+    /// <summary>#608 · Is the captain standing in air that a refuge is providing? Both halves — inside the
+    /// box AND the box still holds — because a failed refuge is a room on a dead floor and nothing else, and
+    /// the gauge saying ROOM in one would be the instrument lying at the one door on the floor a captain
+    /// walked a tank to reach.</summary>
+    private bool BreathingRefugeUnderfoot(SurfaceExcursion ex) =>
+        ex.Floor < 0
+        && RefugeUnderfoot(ex) >= 0
+        && RefugeSealHere(ex) is { } seal
+        && UndergroundComplex.RefugeStillHolds(seal);
+
+    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground.
+    /// GEOMETRY ONLY — whether that room has anything in it is <see cref="RefugeSealHere"/>'s business, and
+    /// keeping the two apart is what lets a failed refuge still say its line at the door.</summary>
     private int RefugeUnderfoot(SurfaceExcursion ex)
     {
         if (ex.Floor >= 0)
@@ -693,6 +746,14 @@ public partial class Map
     private double RefugeReservoirNow(SurfaceExcursion ex, int index)
     {
         if (index < 0)
+        {
+            return 0;
+        }
+
+        // #608 · A rack only exists where the maintenance line did. On an empty or a failed refuge this is
+        // zero at the source rather than zero by the caller remembering to ask — a reservoir that could be
+        // read out of a room with no bottles in it is one refactor away from filling a tank from one.
+        if (RefugeSealHere(ex) != UndergroundComplex.RefugeState.Holding)
         {
             return 0;
         }

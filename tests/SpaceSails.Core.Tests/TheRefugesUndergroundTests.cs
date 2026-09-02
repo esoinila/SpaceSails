@@ -357,9 +357,13 @@ public sealed class TheRefugesUndergroundTests
 
         var prose = new List<string>
         {
-            UndergroundComplex.RefugeBreathingLine,
+            UndergroundComplex.RefugeEntryLine(UndergroundComplex.RefugeState.Holding),
+            UndergroundComplex.RefugeEntryLine(UndergroundComplex.RefugeState.Empty),
+            UndergroundComplex.RefugeEntryLine(UndergroundComplex.RefugeState.Failed),
             UndergroundComplex.RefugeTankLabel,
             UndergroundComplex.RefugeGlyph,
+            UndergroundComplex.RefugeFailedGlyph,
+            UndergroundComplex.RefugeRowTag,
             UndergroundComplex.VacuumCard("miranda", -2, 600),
             UndergroundComplex.VacuumCard("miranda", -7, 90),
         };
@@ -543,5 +547,251 @@ public sealed class TheRefugesUndergroundTests
             Assert.Contains("OCCUPANCY", sign, StringComparison.Ordinal);
             Assert.Equal(sign, UndergroundComplex.RefugeSign("miranda", level, 0));   // deterministic
         }
+    }
+
+    // ── #608 · AND WHAT THE DECADES DID TO IT ───────────────────────────────────────────────────────────
+    //
+    // The guards above are about what was BUILT, and none of them is touched: every airless floor still
+    // carries a refuge, it is still never beside the lift, and the plan still marks it. What follows is the
+    // other half of the issue's own "Done when" — "its state is part of the story (holds / holds but empty /
+    // failed), and a working one can refill a tank" — and the reason it matters is the owner's warning in
+    // the same comment: "If every ADMINISTRATION floor is safe, deep ADMINISTRATION floors stop costing
+    // anything. The state of the seal is what keeps it honest."
+
+    [Fact]
+    public void MostDeadFloorsHaveNothingLeftToRefillFrom()
+    {
+        // THE RARITY PIN, and it is a measurement rather than a wish. Every one of these rooms was built and
+        // paid for; a fifth of them still has air in the rack, and the rest is what an unpaid maintenance
+        // line does over decades.
+        //
+        // WHAT MAKES THIS ABLE TO FAIL, which is the house rule this repo names out loud: it counts all
+        // THREE states and demands all three in quantity. An assertion that "few floors refill" would pass
+        // beautifully on a build where no refuge anywhere works, and one that "most floors do not" would
+        // pass on a build with no refuges at all. Both ends are nailed down, so the only build that goes
+        // green is one that actually deals three states.
+        int holding = 0, empty = 0, failed = 0;
+        foreach (string body in ManySites())
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                switch (UndergroundComplex.StateOfTheRefugeOn(body, level))
+                {
+                    case UndergroundComplex.RefugeState.Holding: holding++; break;
+                    case UndergroundComplex.RefugeState.Empty: empty++; break;
+                    case UndergroundComplex.RefugeState.Failed: failed++; break;
+                    default: break;   // a floor that holds pressure has no refuge to have a state
+                }
+            }
+        }
+
+        int dead = holding + empty + failed;
+        Assert.True(dead > 500, $"only {dead} dead floor(s) swept — this net proves nothing.");
+
+        // Measured at this commit over 100 sites: 815 dead floors — 173 holding (21.2%), 314 empty (38.5%),
+        // 328 failed (40.2%). The bands are wide enough to survive a site being added and narrow enough that
+        // making every refuge work, or none of them, is red.
+        double works = 100.0 * holding / dead;
+        Assert.True(works is > 12 and < 32,
+            $"{holding} of {dead} dead floors ({works:F1}%) still have air in the rack. Pinned at 21.2%: "
+            + "well under half is the whole of #585 surviving this feature, and well over none is the whole "
+            + "of the owner's 'at least one ... for pure safety' surviving it.");
+
+        double waits = 100.0 * empty / dead;
+        Assert.True(waits is > 25 and < 50,
+            $"{empty} of {dead} refuges hold and cannot refill ({waits:F1}%) — pinned at 38.5%. This is the "
+            + "state that keeps the owner's staffing argument true: a room you can wait out a busy lift in, "
+            + "which is not the same thing as a tank of air.");
+
+        double gone = 100.0 * failed / dead;
+        Assert.True(gone is > 25 and < 50,
+            $"{failed} of {dead} seals have gone ({gone:F1}%) — pinned at 40.2%.");
+    }
+
+    [Fact]
+    public void TheAirIsOnlyWhereTheMaintenanceLineSurvived()
+    {
+        // #601, stated as a law rather than as a roll: "the refuge that works is on the floor whose
+        // department could get the funding line approved". Both directions, because only the biconditional
+        // is learnable — the owner's whole argument for the livery (#605) is that "a captain who has learnt
+        // the livery has learnt where the air is", and a rule that is true one way round teaches nothing.
+        //
+        // The head office keeps all of its seals, which is the rank difference (#411) and not a kindness:
+        // its corridors are "still being kept up, by nobody, on a schedule". The band nobody listed (#592)
+        // keeps none, because a maintenance line is a budget code and that floor has no budget.
+        int funded = 0, unfunded = 0, head = 0, hidden = 0;
+        foreach (string body in ManySites())
+        {
+            bool headOffice = UndergroundComplex.IsHeadOffice(body);
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                if (UndergroundComplex.StateOfTheRefugeOn(body, level) is not { } state)
+                {
+                    continue;
+                }
+
+                bool unlisted = UndergroundComplex.IsUnlisted(body, level);
+                bool kept = headOffice
+                    || (!unlisted && Array.IndexOf(
+                        UndergroundComplex.DepartmentsThatKeptTheLine,
+                        UndergroundComplex.DepartmentOf(body, level)) >= 0);
+
+                Assert.True(kept == (state == UndergroundComplex.RefugeState.Holding),
+                    $"{body} B{-level} ({UndergroundComplex.DepartmentOf(body, level)}"
+                    + $"{(unlisted ? ", unlisted" : "")}): the department "
+                    + $"{(kept ? "kept" : "lost")} its line and the rack is {state}. The livery is the only "
+                    + "advance warning a captain gets about the air, and it has just stopped being true.");
+
+                if (headOffice) { head++; }
+                else if (unlisted) { hidden++; }
+                else if (kept) { funded++; }
+                else { unfunded++; }
+            }
+        }
+
+        // …and the world can tell pass from fail: all four cases really occur in the sweep. Without this the
+        // biconditional above is satisfiable by a build where every floor is unfunded.
+        Assert.True(funded > 100, $"only {funded} funded dead floor(s) — the working case is untested.");
+        Assert.True(unfunded > 300, $"only {unfunded} unfunded dead floor(s) — the failing case is untested.");
+        Assert.True(head > 10, $"only {head} head-office dead floor(s) — the rank exception is untested.");
+        Assert.True(hidden > 20, $"only {hidden} unlisted dead floor(s) — the hidden band is untested.");
+    }
+
+    [Fact]
+    public void TheRoomAgreesWithTheLawAboutItsOwnDoor()
+    {
+        // One answer, everywhere. The suit asks StateOfTheRefugeOn, the tracker asks it, the panel asks it,
+        // and the ROOM the renderer draws carries the answer it was built with — so nothing on screen can
+        // report a seal the sim is not running. A room holding a second opinion about its own door is this
+        // repo's oldest and most expensive shape.
+        AuditEveryFloor((body, level, floor) =>
+        {
+            UndergroundComplex.RefugeState? law = UndergroundComplex.StateOfTheRefugeOn(body, level);
+            if (law is null)
+            {
+                return floor.Refuges.Count == 0 ? null
+                    : "the law says this floor has no refuge and the generator built one.";
+            }
+            foreach (UndergroundComplex.Refuge r in floor.Refuges)
+            {
+                if (r.State != law)
+                {
+                    return $"the room says {r.State} and the law says {law}.";
+                }
+            }
+            return floor.Refuges.Count > 0 ? null
+                : "the law marks a refuge on the plan and the generator built none.";
+        }, "the room the renderer draws carries the seal the suit is reading");
+    }
+
+    [Fact]
+    public void TheSameSealIsFoundOnEveryVisit()
+    {
+        // A captain is meant to LEARN a building (the same reason the refuge itself never moves). A seal
+        // that was re-rolled per ride would be worse than a random one, because the captain would have
+        // walked back to a room that worked yesterday.
+        foreach (string body in new[] { "miranda", "titan", "generated-moon-7", "generated-moon-61" })
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                Assert.Equal(
+                    UndergroundComplex.StateOfTheRefugeOn(body, level),
+                    UndergroundComplex.StateOfTheRefugeOn(body, level));
+            }
+        }
+    }
+
+    [Fact]
+    public void ThePanelSaysARefugeIsThereAndNeverWhetherItHolds()
+    {
+        // #608's hardest requirement is that the captain can learn about the air BEFORE they need it — "a
+        // refuge you discover AFTER you needed it is a cruelty" — and the panel is where a captain looks
+        // before a ride. So the row carries the plan's own fact, and the plan is a drawing made when the
+        // building was new: it knows the room is there and it does not know whether the compressor turns.
+        var shapesByState = new Dictionary<UndergroundComplex.RefugeState, HashSet<string>>();
+        int tagged = 0, plain = 0;
+
+        foreach (string body in ManySites())
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                foreach (UndergroundComplex.LiftStop row in UndergroundComplex.LiftPanel(
+                    body, level, UndergroundComplex.ShaftKind.Cage, []))
+                {
+                    Assert.True(row.HasRefuge == UndergroundComplex.RefugeOnThePlan(body, row.Level),
+                        $"{body} B{-row.Level}: the row says HasRefuge={row.HasRefuge} and the plan says "
+                        + $"{UndergroundComplex.RefugeOnThePlan(body, row.Level)}.");
+
+                    if (row.HasRefuge) { tagged++; } else { plain++; }
+
+                    // …AND THE ROW LOOKS THE SAME IN ALL THREE STATES. Every drawable thing about the button
+                    // is written down and grouped by the seal behind it; if any of it leaked the state, one
+                    // state would own a shape the others do not have.
+                    if (UndergroundComplex.StateOfTheRefugeOn(body, row.Level) is not { } state)
+                    {
+                        continue;
+                    }
+                    string shape = string.Join('|',
+                        row.HasRefuge, row.Pressurised, row.IsCurrent,
+                        row.Refusal is null, row.OpenedBy is null, row.OpenedByChit);
+                    if (!shapesByState.TryGetValue(state, out HashSet<string>? set))
+                    {
+                        shapesByState[state] = set = [];
+                    }
+                    set.Add(shape);
+                }
+            }
+        }
+
+        Assert.True(tagged > 500, $"only {tagged} tagged row(s) — this sweep proved little.");
+        Assert.True(plain > 100, $"only {plain} untagged row(s) — the negative case is untested.");
+        Assert.Equal(3, shapesByState.Count);   // all three seals really appear on the panel
+
+        foreach (UndergroundComplex.RefugeState state in shapesByState.Keys)
+        {
+            foreach (UndergroundComplex.RefugeState other in shapesByState.Keys)
+            {
+                foreach (string shape in shapesByState[state])
+                {
+                    Assert.True(shapesByState[other].Contains(shape),
+                        $"a row shape ({shape}) occurs behind a {state} seal and never behind a {other} "
+                        + "one — the panel has started telling the captain which refuges work, and the walk "
+                        + "to find out is the whole feature.");
+                }
+            }
+        }
+
+        // The tag itself says the room and nothing about the room's state.
+        foreach (string word in new[] { "AIR", "SEAL", "EMPTY", "FAILED", "WORK", "DEAD" })
+        {
+            Assert.DoesNotContain(word, UndergroundComplex.RefugeRowTag, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void TheDeadAirCardStopsPromisingWhatTheBuildingCannotKeep()
+    {
+        // #608's last "Done when": the card said "there are no shelters down here" before the refuges
+        // existed, and the day they landed that became the most dangerous sentence in the game. It now says
+        // the opposite — and, since only a fifth of the racks have anything in them, it may not let the
+        // captain read the good news as air either.
+        int cards = 0;
+        foreach (string body in ManySites())
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                if (UndergroundComplex.HoldsPressure(body, level))
+                {
+                    continue;
+                }
+                string card = UndergroundComplex.VacuumCard(body, level, 900);
+                cards++;
+                Assert.Contains(
+                    "The plan marks a refuge on this band. Whether it still holds is not on the plan.",
+                    card, StringComparison.Ordinal);
+                Assert.DoesNotContain("no shelters", card, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        Assert.True(cards > 500, $"only {cards} dead-air card(s) read — this sweep proved little.");
     }
 }

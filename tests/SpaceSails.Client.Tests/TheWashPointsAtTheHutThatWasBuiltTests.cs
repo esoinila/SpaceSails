@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -191,7 +191,8 @@ public sealed class TheWashPointsAtTheHutThatWasBuiltTests
             {
                 Pages.Map map = Standing(body, site, revealed: true);
                 var beacons =
-                    (List<(double Bearing, double Range, bool IsHome, bool IsLab)>)Call(map, "BuildBeacons");
+                    (List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)>)Call(
+                        map, "BuildBeacons");
 
                 var lab = beacons.FindAll(b => b.IsLab);
                 Assert.True(lab.Count == 1,
