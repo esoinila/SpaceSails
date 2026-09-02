@@ -5972,6 +5972,44 @@
                     }
                 </div>
             }
+            @* #200 · THE DOCKING FOCUS PANEL — "Own pop-up of the numbers to hit, just like in piracy-hold."
+               The owner, inbound to Venus Haven, could not read off this HUD how close he was to the clamp's
+               distance and speed limits; the line he had was one sentence of coaching, and the readout beside
+               it toggled between whichever body was nearest. The flicker half is closed (#966's latch, #1033's
+               Hill-sphere deferral). This is the other half, and it is deliberately the SAME BOX the piracy
+               run already uses — the 🎯 autosteal criterion box on a prey dossier below: one row per gate,
+               reading against required, green the moment the number is inside.
+
+               ITS HOUSING IS THE PIRACY HOUSING. The plunder opportunity and the boarding progress are both
+               in-FLOW sections of this same .map-readouts block, not floating cards, and so is this. That is
+               the whole of its geometry answer (#1043): a box that claims real document height in a column
+               already bound to the window (.map-flowcolumn, #992) cannot fight the nav-target lines above it
+               or the Plotting panel below it for a pixel, and .map-readouts' own `overflow-y: auto` means it
+               scrolls only when the window is genuinely too short. No z-index, no position, nothing to lose a
+               stacking argument with.
+
+               IT SPEAKS ON THE CLAMP'S OWN GATE. DockFocusLive is the affordance's phase — a dock haven
+               armed or chosen, or the clamp in latched range of one — so a haven merely drifting past does
+               not raise it, and being clamped on puts it away (the affordance is Hidden there). Every number
+               in it comes off that same resolved affordance through DockFocus, whose gates are DockRule's
+               constants: the panel and the ⚓ button are reading one judgement, so a row can never be green
+               about a limit the arm refuses. #761: when the door refuses, the offending row is the one drawn
+               outside its gate, and the verdict names it. *@
+            @if (DockFocusLive)
+            {
+                <div class="map-dock-focus border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="fw-bold">⚓ Clamp at @(_dockAffordance.HavenName ?? "the berth") needs:</div>
+                    @foreach (DockGateRow row in DockFocus.Rows(_dockAffordance, EffectiveDockTankPulses))
+                    {
+                        <div class="@(row.Inside ? "text-success" : "text-warning")">
+                            @(row.Inside ? "✅" : "❌") @row.Label — @row.Reading @row.Gate
+                        </div>
+                    }
+                    <div class="@(_dockAffordance.CanClampNow ? "text-success fw-bold" : "text-secondary")">
+                        @DockFocus.Verdict(_dockAffordance, EffectiveDockTankPulses)
+                    </div>
+                </div>
+            }
             <div>
                 @* #954: one line for a fact that needs two — the neighbourhood and the thing in it, and the
                    ⚓ hint follows the neighbourhood's haven rather than blinking with the nearest slot. *@
