@@ -177,49 +177,30 @@ public static class PoliteDecline
 
     // ── CHANNEL 1 · SUBTRACTION — WHICH DOOR ─────────────────────────────────────────────────────────────
     //
-    // ONE door, on ONE floor, of ONE site. Chosen in two stages so nothing ever has to build a whole
-    // building to find out which floor of it is interesting: the floor comes off the site's own listed
-    // depth (a number, no generator), and the door comes off the floor's own candidate list at the moment
-    // that floor is laid. Both are seeded on (body, window) through the house dice, so the answer is stable
-    // for as long as the decline is — a captain who comes back a third time finds the SAME door shut, which
-    // is what a locked door is, and what a die would not be.
-
-    /// <summary>#1068 · Which LISTED floor of this site keeps the door the world took, or null where the
-    /// world has not declined here.
-    ///
-    /// <para><b>Listed, and never the found band.</b> The galleries hang no doors at all (#677: an imported
-    /// leaf down there would say somebody flew it in and fitted it), so there is nothing down there to take;
-    /// and the whole point of the channel is that the subtraction happens in the ordinary building a captain
-    /// walks through on the way to work, not in the part of the site that is already strange.</para></summary>
-    public static int? FloorOn(string bodyId)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-        if (WindowOn(bodyId) is not { } window)
-        {
-            return null;
-        }
-
-        int floors = -UndergroundComplex.DepthOf(bodyId);   // −1 down to DepthOf, inclusive
-        if (floors <= 0)
-        {
-            return null;
-        }
-        return -DiceRule.Roll(DiceRule.Seed($"decline:floor:{bodyId}", window), floors).Face;
-    }
+    // ONE door, on ONE floor, of ONE site — and the floor is not chosen at all. It is the one floor of this
+    // building that has a door to SPARE, which is the concourse round the park: every other floor is ribs of
+    // two-way chambers, and a chamber that lost a leaf would be a room with one way out. See
+    // UndergroundComplex.Decline.cs for the whole of that argument; the seed's only job is to pick one door
+    // out of the list that floor hands it.
 
     /// <summary>#1068 · Which of this floor's candidate doors the world took, or null where this floor keeps
-    /// none — which is every floor of every site the world has not declined on, and every floor but one of
-    /// the sites it has.
+    /// none — which is every floor of every site the world has not declined on.
     ///
-    /// <para>The candidate list is the caller's, because only the caller has one: which doors are eligible is
-    /// a question about a building, and the building is
-    /// <see cref="UndergroundComplex.Build(string, int, in SurfaceLayout.Field)"/>'s own business. See
-    /// <c>UndergroundComplex.Decline.cs</c> for what makes a door eligible and, more to the point, what
-    /// makes one ineligible.</para></summary>
+    /// <para><b>The candidate list is the caller's, because only the caller has one</b>, and <b>WHICH floor
+    /// is the caller's too</b>. Both are questions about a building and the building is
+    /// <see cref="UndergroundComplex.Build(string, int, in SurfaceLayout.Field)"/>'s own business; a seeded
+    /// floor number chosen in this file would be an opinion about a topology this file cannot see, which is
+    /// §13.15's second cause exactly. See <c>UndergroundComplex.Decline.cs</c> for what makes a door eligible
+    /// and, much more to the point, what makes one ineligible.</para>
+    ///
+    /// <para>The pick is seeded on <b>(ground, floor, the window it declined in)</b> and on nothing else, so
+    /// it is the same door on the second visit and the tenth. A captain who comes back a third time finds the
+    /// same leaf in the same wall wearing the same plate, which is what a locked door IS — and what a die
+    /// would not be.</para></summary>
     public static int? TakenDoor(string bodyId, int level, int candidates)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        if (candidates <= 0 || WindowOn(bodyId) is not { } window || FloorOn(bodyId) != level)
+        if (candidates <= 0 || WindowOn(bodyId) is not { } window)
         {
             return null;
         }
