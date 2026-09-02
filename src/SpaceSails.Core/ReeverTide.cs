@@ -54,10 +54,14 @@ public static class ReeverTide
         return System.Math.Max(MinGapSeconds, gap);
     }
 
-    /// <summary>Where along the deep edge the <paramref name="spawnIndex"/>-th tide Reever claws out — a
-    /// deterministic x in [<paramref name="leftX"/>, <paramref name="rightX"/>], salted apart from the
-    /// gap stream so the two never correlate. Spreads the tide across the whole bottom rim rather than a
-    /// single file.</summary>
+    /// <summary>Where along a straight edge the <paramref name="spawnIndex"/>-th tide Reever claws out — a
+    /// deterministic x in [<paramref name="leftX"/>, <paramref name="rightX"/>], salted apart from the gap
+    /// stream so the two never correlate.
+    ///
+    /// <para>#563 · SUPERSEDED FOR THE OPEN GROUND. It spread the tide along the field's bottom rim, and an
+    /// unbounded world has no rim. Kept because an edge is still the right shape for a tide that rises along
+    /// one — a corridor, a shaft — and because deleting a pure function to prove a point is how a pinned
+    /// cadence gets lost. The moon's tide uses <see cref="SpawnAround"/>.</para></summary>
     public static double SpawnX(ulong seed, int spawnIndex, double leftX, double rightX)
     {
         if (rightX < leftX)
@@ -66,6 +70,36 @@ public static class ReeverTide
         }
         double u = Fraction(seed, $"tide-x:{spawnIndex}");
         return leftX + (u * (rightX - leftX));
+    }
+
+    /// <summary>#563 law 3 · HOW FAR OUT THE TIDE CLAWS UP, measured from the captain rather than from a rim.
+    ///
+    /// <para>The tide used to rise at <c>SurfaceBottomY + 1.5</c> — just inside the field's deep edge — and an
+    /// unbounded ground has no deep edge to rise at. It rises around the CAPTAIN now, which is more honest
+    /// anyway: what the deep is answering is somebody standing on it, not a coordinate.</para>
+    ///
+    /// <para><b>The distance is the one the rim actually gave</b>, computed rather than chosen. A captain
+    /// working a landing site was somewhere between the landing band and the deep anchor; the rim stood at
+    /// the field's bottom; so this is the rim's distance from the middle of the ground people walk. Read off
+    /// the field rather than typed, so a field that changes shape takes the tide with it.</para>
+    ///
+    /// <para><b>And it must not sneak y-graded danger back in</b> (#453, owner: <i>"Let's not have any don't
+    /// venture too far set-up by y-coordinate"</i>). The ring is ISOTROPIC — the bearing is a uniform sample
+    /// over the whole circle, with no term in it that knows which way is deep — so the tide is exactly as
+    /// thick a hundred du north of the tube as a hundred du south of it. <c>TheTreadmillTests</c> measures
+    /// that: the spawns around a captain must be evenly spread over every quadrant.</para></summary>
+    public static double SpawnRingDu(in SurfaceLayout.Field field) =>
+        ((field.LandingBandY + field.AnchorY) / 2.0) - field.BottomY;
+
+    /// <summary>Where the <paramref name="spawnIndex"/>-th tide Reever claws out around a captain standing at
+    /// (<paramref name="captainX"/>, <paramref name="captainY"/>): a point on the ring of radius
+    /// <paramref name="ringDu"/>, at a deterministic bearing salted apart from the gap stream.</summary>
+    public static (double X, double Y) SpawnAround(
+        ulong seed, int spawnIndex, double captainX, double captainY, double ringDu)
+    {
+        double bearing = Fraction(seed, $"tide-bearing:{spawnIndex}") * System.Math.Tau;
+        return (captainX + (ringDu * System.Math.Cos(bearing)),
+                captainY + (ringDu * System.Math.Sin(bearing)));
     }
 
     // A uniform [0,1) sample: one large-faced die off the shared rule, salted by the purpose tag so the

@@ -142,7 +142,11 @@ public static class SurfaceLayout
     /// seeded deterministically from its id, so no two grounds are the same by construction.</summary>
     public static Plan For(string bodyId, in Field field) => For(bodyId, field, null);
 
-    /// <summary>#585 · WHERE THE SHELTERS ALREADY STAND, so nothing else is laid on top of one.
+    /// <summary>#585 · WHERE THINGS ALREADY STAND on one site's ground, so nothing else is laid on top of
+    /// one. #563 made it public: the outpost hut is placed AFTER the ground now (it is no longer confined to
+    /// an edge lane, because an unbounded world has no edge lane), and it has to place around the same
+    /// ledger everything else places around — asked of this one function rather than re-derived, which is
+    /// the whole reason the ledger exists.
     ///
     /// <para>Owner, on a site where the buildings had grown together: <i>"check this structure out... it
     /// functions but is kind of funny"</i>. It was funny because THREE placers wrote into this one field and
@@ -153,7 +157,7 @@ public static class SurfaceLayout
     /// <para>The shelters are claimed FIRST and are never yielded, because a shelter is the answer to the
     /// air mechanic: a hut that has to move is a cosmetic loss, a shelter that has to move is a captain who
     /// dies looking for it. Everything else places around them.</para></summary>
-    private static System.Collections.Generic.List<(double X, double Y, double R)> ShelterKeepOuts(
+    public static System.Collections.Generic.List<(double X, double Y, double R)> StandingClaims(
         string bodyId, string? siteSalt, in Field field)
     {
         var list = new System.Collections.Generic.List<(double X, double Y, double R)>();
@@ -214,7 +218,7 @@ public static class SurfaceLayout
             return ForExpedition(kind, field);
         }
 
-        var keepOut = ShelterKeepOuts(bodyId ?? "", siteSalt, field);
+        var keepOut = StandingClaims(bodyId ?? "", siteSalt, field);
         if (string.IsNullOrEmpty(siteSalt))
         {
             return (bodyId ?? "") switch
@@ -229,6 +233,28 @@ public static class SurfaceLayout
             };
         }
         return Seeded($"{bodyId ?? ""}~{siteSalt}", field, keepOut);
+    }
+
+    /// <summary>#563 · GROUND FOR AN ARBITRARY SEEDED KEY, on an arbitrary field — the treadmill's per-tile
+    /// entry point (<see cref="SurfaceTiles"/>).
+    ///
+    /// <para>This is the same generator every non-authored site has been laid by since #320; it merely had
+    /// no public door. A tile out in the world is not a body and not a landing site — it has no shelters to
+    /// place around, no hidden lab, no monolith and no landing square — so it hands in its own key and its
+    /// own rectangle and gets rubble, buildings and a deep fixture, exactly as a seeded site does.</para>
+    ///
+    /// <para><paramref name="keepOut"/> is anything ALREADY STANDING on that tile which the generator must
+    /// not build through. Kept as a parameter rather than looked up here for the reason this file keeps
+    /// re-learning: a generator that finds its own keep-outs has a second opinion about what is on the
+    /// ground, and two opinions is how a hut ends up inside a shelter.</para></summary>
+    public static Plan SeededGround(
+        string key, in Field field,
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, double R)>? keepOut = null)
+    {
+        System.ArgumentNullException.ThrowIfNull(key);
+        return Seeded(key, field, keepOut is null
+            ? []
+            : new System.Collections.Generic.List<(double X, double Y, double R)>(keepOut));
     }
 
     /// <summary>A stable order-independent hash of a plan's wall set — the test's "Luna ≠ Miranda"
@@ -623,7 +649,7 @@ public static class SurfaceLayout
         ExpeditionSiteKind kind, in Field field)
     {
         string rock = ExpeditionSite.BodyIdFor(kind);
-        var all = ShelterKeepOuts(rock, "", field);
+        var all = StandingClaims(rock, "", field);
         return WithRoomsToCome(kind, field, all);
     }
 
