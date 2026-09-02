@@ -57,6 +57,19 @@ public readonly record struct CacheCargo(string CargoClass, int Units, bool Hot)
 /// was: a legacy save loads with no site, keeps today's behaviour on every site of its body, and writes
 /// back byte-for-byte (the vault omits the key entirely when it is null). New burials record their site,
 /// so the ✗ is drawn only on the one ground it is actually under, and the map card names that ground.</para></param>
+/// <param name="Buried">#455 · HOW it was left: true = the shovel went in, false = it lies in the open where
+/// it was dropped and the captain lifted off without it. Null for every chest recorded before the field
+/// existed and for every rumour/NPC chest — and null is not "unknown, guess": it means the chest keeps the
+/// exact discovery odds it was buried under (<see cref="CacheSafety"/>'s legacy read), because a chest
+/// already in the ground is not re-priced under a rule invented after it went in. Omitted from the vault
+/// when null, so a legacy save round-trips byte-for-byte.</param>
+/// <param name="PadDistance">#455 · HOW FAR the chest was carried from the landing pad, in deck units,
+/// measured at bury time (<see cref="CacheSafety.PadDistanceOf"/>). The owner's law — <i>the same distance
+/// that makes the walk dangerous is what makes the cache safe</i> — is this number paying out on the return
+/// trip. Recorded rather than re-derived from <see cref="DigX"/>/<see cref="DigY"/> on the way out, because
+/// the carry is a HISTORICAL FACT about a walk somebody made: a field that is later retuned must not
+/// silently re-price a chest that is already in the ground. Null (and unwritten) for a legacy or rumour
+/// chest.</param>
 public readonly record struct TreasureCache(
     string Id,
     string BodyId,
@@ -71,8 +84,19 @@ public readonly record struct TreasureCache(
     int ReeverLevel = 0,
     double? DigX = null,
     double? DigY = null,
-    int? SiteIndex = null)
+    int? SiteIndex = null,
+    bool? Buried = null,
+    double? PadDistance = null)
 {
+    /// <summary>#455 · How safe this hiding place reads — the ONE oracle, forwarded. The bury-time line, the
+    /// ledger row and the return-trip discovery roll all come through here, so the promise the game made and
+    /// the dice it throws are the same arithmetic and cannot drift apart.</summary>
+    public CacheSafetyRead Safety => CacheSafety.Read(this);
+
+    /// <summary>#455 · True when this chest is lying in the open where it was dropped rather than under a
+    /// shovel's worth of regolith. False for a bury AND for every chest that never recorded which it was.</summary>
+    public bool LeftInTheOpen => Buried is false;
+
     /// <summary>True when this cache recorded the actual dug spot (free-form bury) rather than leaning on
     /// the hash-scatter — both coords present. A legacy or rumour cache has neither and falls back.</summary>
     public bool HasDigSpot => DigX is not null && DigY is not null;

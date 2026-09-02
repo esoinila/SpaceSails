@@ -291,6 +291,27 @@ public sealed record CacheRecord
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public int? SiteIndex { get; init; }
+
+    /// <summary>#455 · Whether the SHOVEL went in (true) or the chest was left lying where it was dropped
+    /// (false). Null = the chest never recorded it, which is every hoard saved before #455 and every rumour
+    /// map; those keep the exact discovery odds they were buried under.
+    ///
+    /// <para>Omitted when null for the same reason <see cref="SiteIndex"/> is, and it is worth restating
+    /// because #650's guard caught it at byte 564 of a real legacy file: the checksum is taken over the
+    /// PAYLOAD, so one extra <c>"buried": null</c> per chest changes the digest of every hoard ever saved
+    /// and the game opens each one flying the 📛 tampered flag on an honest captain's voyage.
+    /// <c>ALegacyVaultRoundTripsByteForByte</c> (#650) and <c>TheDeepBuriedChestSurvivesTheVaultByteForByte</c>
+    /// (#455) both hold that line.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Buried { get; init; }
+
+    /// <summary>#455 · How far from the landing pad the chest was carried, in deck units, measured when it
+    /// went down. The carried courage that the return-trip roll pays out on. Written only when it has a
+    /// value — see <see cref="Buried"/> for why that matters to the byte.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public double? PadDistance { get; init; }
 }
 
 public sealed record CacheCargoRecord(string CargoClass, int Units, bool Hot);

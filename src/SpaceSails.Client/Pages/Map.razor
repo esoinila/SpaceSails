@@ -4632,6 +4632,10 @@
                 <div class="tm-caption">@map.Caption(BodyName(map.BodyId))</div>
                 <div class="tm-bearing">🧭 @map.BearingLine</div>
                 <div class="tm-contents">🧰 @map.ContentsLine()</div>
+                @* #455 rule 3 · How safe this hiding place reads — the rung word and its authored line, off
+                   the same oracle the return-trip roll compares against. The card is where a returning
+                   captain (or his successor, after a rebirth) reads back what was promised. *@
+                <div class="tm-bearing">🛡 @map.Safety.Word — @map.Safety.Line</div>
                 @if (map.ReeverLevel > 0)
                 {
                     <div class="tm-bearing">🐕 @map.ReeverLevel Reever@(map.ReeverLevel == 1 ? "" : "s") haunt this ground — the most dangerous lock in the system.</div>

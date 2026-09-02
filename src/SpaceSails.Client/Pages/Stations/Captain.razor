@@ -552,6 +552,11 @@
                                 <div class="fw-bold">🗺 @map.Caption</div>
                                 <div class="captain-card-blurb text-secondary small">🧭 @map.Bearing</div>
                                 <div class="captain-card-blurb text-secondary small">🧰 @map.Contents</div>
+                                @if (map.SafetyWord.Length > 0)
+                                {
+                                    @* #455 · The rung the captain promised himself when he put it down. *@
+                                    <div class="captain-card-blurb text-secondary small" title="@map.SafetyLine">🛡 @map.SafetyWord</div>
+                                }
                                 <div class="captain-ledger-prov text-secondary small fst-italic">@(map.PlayerOwned ? "your hoard" : $"{map.Owner}'s hoard — a map you hold")</div>
                             </div>
                         }
@@ -864,9 +869,15 @@
     [Parameter] public string HoardSummary { get; set; } = "";
 
     /// <summary>One map in the ledger's 🗺 section — the caption, the bearing line, the contents, and
-    /// whose hoard it is. The cache id drives the "view the card" jump.</summary>
+    /// whose hoard it is. The cache id drives the "view the card" jump.
+    ///
+    /// <para>#455 · <paramref name="SafetyWord"/> and <paramref name="SafetyLine"/> are the hiding place's
+    /// rung — "Exposed" / "Considered" / "Guarded" and its authored sentence — handed down ALREADY COMPUTED
+    /// by the one oracle the return-trip discovery roll compares against. The desk never derives it; a second
+    /// place deciding how safe a chest is is exactly the drift this issue exists to close.</para></summary>
     public sealed record CacheMapItem(
-        string CacheId, string Caption, string Bearing, string Contents, string Owner, bool PlayerOwned);
+        string CacheId, string Caption, string Bearing, string Contents, string Owner, bool PlayerOwned,
+        string SafetyWord = "", string SafetyLine = "");
 
     // PR-WIRE — the favor bank's accounts, projected by Map for the ledger's 💰 Accounts section.
     [Parameter] public IReadOnlyList<AccountRow> Accounts { get; set; } = [];

@@ -226,10 +226,13 @@ public partial class Map
     // is attached where we recorded it (Fixer fetches, Gilt-Eye tips, the cheats); older/bought entries
     // render unattributed rather than being withheld.
     // #223: the ledger's 🗺 treasure-maps section — every known cache as a viewable map card.
+    // #455 rule 3 (#761) · …and the row now carries HOW SAFE the captain promised himself it was: the one
+    // word off the same oracle the return-trip roll compares against, so a captain coming back after a
+    // rebirth knows which kind of hiding place his predecessor made without having to remember the walk.
     private Stations.Captain.CacheMapItem[] LedgerMaps() =>
         _caches.Caches.Select(c => new Stations.Captain.CacheMapItem(
             c.Id, c.Caption(BodyName(c.BodyId)), c.BearingLine, c.ContentsLine(),
-            GiverDisplay(c.Owner), c.PlayerOwned)).ToArray();
+            GiverDisplay(c.Owner), c.PlayerOwned, c.Safety.Word, c.Safety.Line)).ToArray();
 
     // Open the full-screen map card for a cache the captain clicked in the ledger.
     private void ViewMapFromLedger(string cacheId)
