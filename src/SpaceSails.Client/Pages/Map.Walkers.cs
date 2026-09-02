@@ -189,6 +189,26 @@ public partial class Map
         /// the escort's and the rep's, arriving is not an ending: they stand at the top and look at you until
         /// whatever brought them there is over.</summary>
         Approaching,
+
+        /// <summary>#1061 beat 2 · BREM KOLT STANDING ABOUT ON THE REGOLITH, waiting for the captain to come
+        /// out of their own airlock. The rep's <see cref="RepRounds"/> shape on open ground: arriving is not
+        /// an ending, he is simply THERE until something moves him — see <c>Map.Hardcase.cs</c>.</summary>
+        HardcaseWaiting,
+
+        /// <summary>#1061 beat 2 · …and crossing the ground to the captain with the card. He does not sit
+        /// down and he is not invited: there are no chairs on a moon.</summary>
+        HardcasePitching,
+
+        /// <summary>
+        /// #1061 beat 2 · <b>HE HAS SEEN ONE, AND HE IS RUNNING.</b> The one errand in this enum whose whole
+        /// content is the walking — no card, no pulse, no plate, nothing said at the far end of it. The route
+        /// running out is the end of him for this excursion, exactly as a leaf clicking is the end of a
+        /// regular who has finished a drink, and the game says nothing about either.
+        ///
+        /// <para>It is its own errand and not <see cref="Leaving"/> because there is no DOOR: a moon has no
+        /// leaf that refuses the captain, so what ends this walk is the far edge of the ground and the fact
+        /// that he is no longer between the captain and it.</para></summary>
+        HardcaseFleeing,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard

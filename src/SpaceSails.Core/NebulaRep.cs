@@ -243,7 +243,7 @@ public static class NebulaRep
                 line = $"Captain {name} — Premium. Nothing to sell you, then. I only stopped to say the file "
                      + "is in order. It is a comfort, isn't it, a file in order.";
                 offers.Add(new RepOffer(RepMove.AlreadyHaveAPolicy, AlreadyHaveAPolicyLabel, 0));
-                offers.Add(new RepOffer(RepMove.GoodDay, "Good day", 0));
+                offers.Add(new RepOffer(RepMove.GoodDay, GoodDayLabel, 0));
                 break;
 
             case InsuranceTier.Basic:
@@ -296,6 +296,14 @@ public static class NebulaRep
 
     /// <summary>The refusal.</summary>
     public const string NotTodayLabel = "Not today";
+
+    /// <summary>The Premium captain's way out — nothing to sell, nothing to refuse.
+    ///
+    /// <para>#1061 · Lifted out of <see cref="PitchFor"/>'s Premium branch, where it was a literal, the day a
+    /// SECOND salesman needed to put the same button on his own card (<see cref="HardcaseRep.OffersFor"/>).
+    /// Two men from one firm typing one word two places is how a button's meaning drifts from its
+    /// words.</para></summary>
+    public const string GoodDayLabel = "Good day";
 
     /// <summary>
     /// His answer to the captain's line. The first life he is reassuring about a file; after the captain has

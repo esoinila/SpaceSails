@@ -22,7 +22,7 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?rep=</c>, <c>?walkin=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?kolt=</c>, <c>?walkin=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
     /// <c>?roll=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
@@ -61,6 +61,25 @@ public partial class Map
             // ones a captain gets.
             string candidate = Uri.UnescapeDataString(pair["rep=".Length..]).ToLowerInvariant();
             _repCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("kolt=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1061 beat 2 dev cheat: /map?kolt=1 puts Brem Kolt on this ground whatever his rota says;
+            // /map?kolt=0 keeps him off it.
+            //
+            // The same argument as ?rep= above, and a sharper one, because his rota has a CEILING as well as
+            // a period: one ground in three, and never more than two grounds in a whole universe. Without a
+            // lever the entire beat — the approach, the three lines, the break, the run, the sheet in the
+            // dust — is reachable only by landing on moon after moon and hoping, and then only twice ever.
+            // It forces WHETHER and never WHO or WHAT: his lines, his prices, what he drops and the fact
+            // that he runs are all the ones a captain gets.
+            string candidate = Uri.UnescapeDataString(pair["kolt=".Length..]).ToLowerInvariant();
+            _hardcaseCheat = candidate switch
             {
                 "1" or "true" or "yes" or "now" => true,
                 "0" or "false" or "no" or "never" => false,

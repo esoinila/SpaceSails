@@ -273,7 +273,12 @@ public partial class Map
     /// bar writes no section at all.</summary>
     private InsuranceWeatherSection? BuildTheWeatherSection()
     {
-        if (_weatherHeard.Count == 0 && _weatherStationVisits.Count == 0)
+        // #1061 beat 2 · …and the grounds Brem Kolt has been found on, which ride this section because they
+        // are the same arc's bookkeeping. The empty gate takes them in: a universe that has met him but has
+        // never stood in a bar still has something to write, and a universe that has done neither still
+        // writes nothing at all — which is what keeps every pre-#1061 save byte-identical.
+        IReadOnlyList<string>? hardcase = TheGroundsKoltHasWorked();
+        if (_weatherHeard.Count == 0 && _weatherStationVisits.Count == 0 && hardcase is null)
         {
             return null;
         }
@@ -296,7 +301,7 @@ public partial class Map
 
         heard.Sort(StringComparer.Ordinal);       // a stable file, whatever order the dictionary walked in
         stations.Sort(StringComparer.Ordinal);
-        return new InsuranceWeatherSection { Heard = heard, Stations = stations };
+        return new InsuranceWeatherSection { Heard = heard, Stations = stations, Hardcase = hardcase };
     }
 
     /// <summary>Read it back. A row this build cannot parse is dropped rather than thrown over — the same
@@ -311,6 +316,10 @@ public partial class Map
         _weatherSaidId = null;
         _weatherSpeaker = null;
         _weatherShared = false;
+
+        // #1061 beat 2 · …and his two moons, re-capped on the way in so an edited file cannot hand this
+        // build a third one.
+        RestoreTheGroundsKoltHasWorked(section?.Hardcase);
 
         foreach (string row in section?.Heard ?? [])
         {

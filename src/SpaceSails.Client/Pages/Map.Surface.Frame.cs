@@ -147,6 +147,9 @@ public partial class Map
         ComposeSecretLabSite(ex);
         ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
         ComposeWhatYouLeft(ex);      // #698: and whatever the captain themselves put down on this ground
+        // #1061 beat 2 · …and the one thing on this ground somebody ELSE put down, which is why it is not in
+        // the store above: every sentence that store prints says "where YOU left it".
+        ComposeTheDroppedSchedule(ex);
     }
 
     /// <summary>
@@ -358,6 +361,12 @@ public partial class Map
             _reevers.Clear();
         }
         StepReevers(dtRealSeconds);
+        // #1061 beat 2 · …and the one person out here who is frightened of them. AFTER the pack, deliberately
+        // and for the rep's own reason further down: what he decides about is a field whose Old Ones have
+        // already moved this frame, so the sightline he breaks on is this frame's and not the last one's. And
+        // BEFORE the walkers, so a captain who steps into a lift finds him already off the excursion's band
+        // rather than standing in a corridor of B1.
+        AdvanceTheHardcase(dtRealSeconds);
         StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
         // #804 · …and the ROUNDS, which are the other thing about the clause above: the pack is cleared on
         // descent and what walks the restricted floors instead is somebody on a payroll. Stepped AFTER the

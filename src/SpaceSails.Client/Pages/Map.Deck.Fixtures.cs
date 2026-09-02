@@ -78,6 +78,14 @@ public partial class Map
                 return;
             }
 
+            // #1061 beat 2 · …and the sheet a frightened man dropped in the dust, which is a PICKUP as well
+            // as a read and therefore cannot fall through to the plain look below. Recognised by its own
+            // plate, exactly as the two consoles above are, so this lane adds no dispatch of its own.
+            if (_surface is { } dropEx && TryTheDroppedSchedule(dropEx, spot.Label))
+            {
+                return;
+            }
+
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
 
             // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place

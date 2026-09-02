@@ -686,6 +686,12 @@ public partial class Map
         // sim does not have. Within the walk it is exactly where they left it, which is #615's whole law.
         public LeftBehind Ground { get; } = new();
 
+        // #1061 beat 2 · WHAT BREM KOLT DROPPED WHEN HE RAN — where the sheet is lying (null on a ground he
+        // has not bolted from) and whether it has been taken. Excursion-scoped for the store's own reason
+        // above, and deliberately NOT in it; the whole argument is in Map.Hardcase.cs.
+        public DeckReachability.Point? HardcaseDrop { get; set; }
+        public bool HardcaseScheduleTaken { get; set; }
+
         // #590 · Which shaft bands this excursion has already talked its way into. Only gates the once-per-
         // shaft beat when a card is accepted; the CARD itself is durable and lives in the vault, because a
         // possession that evaporated when the shuttle lifted would not be a possession.
