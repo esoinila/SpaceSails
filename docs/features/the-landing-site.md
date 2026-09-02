@@ -2563,6 +2563,113 @@ turns away, so the gravel and everything behind it stay the bench figure's.
 **Reaching it.** `/map?goodscar=1` — B1, standing at the second car. Then walk to the other one and see how
 far that is.
 
+13.30 **A ground you opened gets FILLED IN while you are away, and the neighbours do not remember doing it**
+(#1063, slice 1 — the disclosure clock's first customer).
+
+> Owner, 2026-09-01: *"suppose the people them selves were told really convincingly that they need to hide the
+> truth… all the people suddenly were told and obeyed like automatons them selves hiding the truth and then
+> just forgot they did it… all that mud."* And the register: *"the cheerful… of course we do a ton of work to
+> raise our streets for no apparent purpose is the cherry on the cake."*
+
+§13.20 gave the halls a clock and deliberately gave it no readers: *"every beat that reads it chooses its own
+threshold and writes that threshold's reason down beside its own words."* This is the first beat to read it,
+and these are those words.
+
+**THE THRESHOLD.** One whole world window since the ground was opened — `Burial.WindowsBeforeFilling`, read
+off `DisclosureClock.WindowsSince` and never re-derived, so the window stays the monolith's own. **The
+reason:** filling, flooring and resurfacing a set of galleries is a SHIFT of work, and a shift is the shortest
+thing the world's own clock measures; a burial inside the window a captain opened the ground in would be a
+crew already standing there with the trucks running, which is a fact about THEM — and #672's Scully law is
+spent the moment one act is only explicable by them. **The second condition:** the captain is not on that
+body. The neighbours do not fill a hall while he is standing in it; a crew that walked past him is a thing
+that happened TO him and therefore a thing he could describe, and a ground that closed under a captain eleven
+floors down would be a death by book-keeping.
+
+**Evaluated once, in one place**, in the descent (`Map.Burial.cs`, called from `BeginSurfaceExcursion` after
+`AdvanceShuttleClock`): after the crossing's time is spent and before one wall of the arriving ground is laid.
+`_surface` is null there, so "not while he is standing on it" is true **by construction** rather than by a
+check somebody has to remember — and it is also why the burial LANDS on a return: he comes back down and the
+shaft ends at the listed bottom, and nothing at any point said so.
+
+**THE ERASURE PROCEDURE, implemented as the issue writes it.**
+
+- **(1) remove the element** and **(2) remove its marks** are **one gate**. `UndergroundComplex.HasFoundBand`
+  asks `Burial.IsFilled` first, and every public question the game has about the halls already goes through
+  it: `IsFound`, `FoundKeyRoomFor`, `TrueDepthOf`, `FloorsOf`, `NextShaftBelow` (through `SiteHasBand`),
+  `DeclaresDarkness`, `RoomScaleOn`, and `DisclosureClock.OpensOn`, which delegates to `IsFound` by design. So
+  the shaft ends at the listed bottom, the found-key card room stops generating, the hall-record find id stops
+  being minted, the floor stops declaring darkness and the chambers stop growing — all of it from one line.
+  The alternative was thirty callers each taught what a burial is, which is §13.15's second cause said thirty
+  times. **The list is guarded for COMPLETENESS by reflection**, so a predicate added tomorrow cannot quietly
+  become a way to see a filled ground's halls with every guard still green.
+- **(3) the town above keeps living.** Nothing else about the site changes. The works notice and the mason are
+  dealt out of pools that stop one short of them (`OrdinaryNotices`, `OrdinaryCast`), so a ground nobody has
+  opened pins exactly the notices it always pinned and seats exactly the people it always seated — a room that
+  changed while a captain was away would be the world saying that something happened, and the whole beat is
+  that nothing did.
+- **(4) one specimen is kept** — the set-piece the owner's research kept finding: **a short stair down to a
+  single old door, preserved for display.** On the listed bottom, a recess off the spine at the blind end
+  (`SpecimenRecessAt`, measured with `ServiceShaftAt`'s own two numbers and cut into the upper face so the
+  goods car can never be beside it), five du deep — the lift alcove's own depth, because a pocket a captain
+  could stand three abreast in is a room and a room is a thing with a purpose. Its sides are ordinary poured
+  hull; **the leaf at the back is the one segment on any listed floor in the game drawn in the third idiom**
+  (`IsSeamless`, §13.20 — no palette, no texture, heaviest stroke), and it is a door drawn shut on a wall a
+  body cannot cross, which is what a display piece that does not open IS. It carries **no plate, no sign
+  console, no card and no line**: #1063 authored no words for it, the object is the whole statement, and a
+  caption would be the one helpful sentence that kills the feature. The rag's own line is the same sentence
+  and does not know it — *"the old kerbs make a handsome course of masonry in the new wall."*
+
+**THE EVIDENCE LIFECYCLE — four authored sentences and not one more.** Every one of them is ordinary
+facilities paperwork and every one is verbatim from the issue, checked character for character.
+
+| when | where | what |
+|---|---|---|
+| **before** | the canteen board (`CanteenBoard`), while the works are on and the job is not done | *"Resurfacing of the lower galleries begins Monday. Please use the upper walks."* |
+| **during** | the maintenance ledger, room 0 of the top pressurised floor (`MaintenanceLedgerRoomFor`) | *"Sub-level access no longer required. Filled and remediated per instruction."* — **no instruction number, where the ledger cites one for everything else** |
+| **after** | the wire, once (`NewsEventKind.ArcBeatBreaks`, filed under the site's own operator) | *"The concourse reopens a full meter higher, and the drainage is much improved. The old kerbs make a handsome course of masonry in the new wall."* |
+| **if pressed** | a regular at a table in the upper canteen | *"pre-existing masonry, origin undetermined"* — and he means it, and he files it, and that is the whole testimony |
+
+The gate the notice and the mason hang on says something the game never states out loud: **the work order
+exists because the captain went down there.** A player who notices the notice was not on the board last time
+has worked out the whole feature from a piece of paper about upper walks, which is the only way it may ever be
+worked out. The mundane reading is not even strained: a site that has just had somebody go down a shaft
+nobody listed is exactly a site about to have its lower levels looked at.
+
+**LAW — THE BOOK NEVER LIES.** Nothing the burial does removes or rewrites one field-book note, one clipped
+story, one red thread or one satchel row. `IsHallRecord` is asked of the find's own ID and never re-derived
+from the world, so a rubbing carried out of a gallery is still a rubbing out of a gallery after the gallery is
+gone. Without one fixed point the player has no floor to stand the horror on: **the captain's record is the
+only witness, and it stays the only witness.** The register rides the vault
+(`ProgressSection.HallsBuried`) for the same reason — a reload that un-buried a ground would make the book
+wrong about the one thing it is guaranteed right about, and nothing on screen would ever say which.
+
+**SCULLY PROTECTION.** Every burial reads as renovation. No card explains it, no stat is published, no sensor
+returns anything, there is no art of THEM, and the word §8 reserves appears in none of it — swept, along with
+every other word that would settle which reading of §10 is true, by `TheBurialTests`.
+
+**Reaching it.** `/map?buried=1` — `?found=1`'s rock with the ground already opened a window ago, so the
+burial fires on the way down. It seeds the clock's register and nothing else: the fill itself runs through the
+ordinary `Burial.Fill` on the ordinary descent, because a cheat that wrote a filled ground straight in would
+be testing a code path the game does not have. Compare with `/map?found=1`, which is the same ground before
+the job.
+
+*(Guarded by `TheBurialTests` (Core, 13) and `TheBurialKeepsOneSpecimenTests` (Client, 2). — Watched go
+**RED**, sixteen reverts: the burial clause dropped from `HasFoundBand`; a new public `HasFoundBandAnyway`
+added to the partial → the completeness roster names it; `IsFilled` answering true for everything → the sweep
+finds zero grounds with halls; the specimen kept on the unlisted bottom; the specimen kept on a ground nobody
+buried; the recess mouth never handed to the spine's sweep → *"the recess mouth is walled over on B8"*; the
+threshold set to zero windows; the `standingOn` clause dropped → *"the ground closed under a captain standing
+on it"*; `IsHallRecord` re-derived through the world → the book lies; the reserved word planted in the rag's
+line; a full stop moved in the ledger's line; the works notice dealt out of the ordinary pool; the mason dealt
+out of the ordinary rota; the ledger's `HaulLine` arm removed; the ledger designated on the listed bottom
+where the way down already is; the leaf never drawn → *"only 0 specimen(s) were drawn"*; the leaf drawn in the
+facility's own poured ink; and the register dropped from the vault fixture.)*
+
+**What is deliberately NOT in slice 1**, and is filed rather than half-built: the **missing middle** — the
+absence in the exact shape of the thing removed, as its own note kind, with the four clue tags the research
+offers — and the **spent-once "sealed ≠ full"** empty forced seal. Both are design calls about the field book
+and about a one-shot disappointment, and neither is a ten-line addition to a seam that exists.
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

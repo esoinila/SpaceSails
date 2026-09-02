@@ -123,10 +123,32 @@ public static class CanteenBoard
             "Drivers are not to be asked what they are carrying and are not to answer. This is for their " +
             "benefit as much as anyone else's.",
             "◈ A DRIVER, NOT SAYING WHO FOR"),
+
+        // ── #1063 · AND THE ONE THAT IS NOT ALWAYS THERE ─────────────────────────────────────────────────
+        //
+        // THE WORKS NOTICE. It is LAST in this array and it is dealt out of a pool that stops one short of
+        // it, so on every ground nobody has been past a seam of — which is every ground in almost every
+        // world — this array is the ten notices it has always been, dealt by the same dice against the same
+        // length, and no board in the game changes by one character.
+        //
+        // It goes up when the works go on (Burial.NoticeIsUp) and comes down when the job is done, which is
+        // what happens to a notice about a job. Its heading is the board's own form and its body is #1063's
+        // authored sentence, verbatim: the dullest possible piece of paper, about upper walks.
+        new(Burial.NoticeHead, Burial.NoticeLine, Burial.MasonPlate),
     ];
 
     /// <summary>How many notices are authored.</summary>
     public static int CatalogSize => Catalog.Length;
+
+    /// <summary>#1063 · Which entry is the works notice — the last, and the one the ordinary deal below stops
+    /// short of. Named rather than written as <c>Length - 1</c> at the two places that need it, because two
+    /// copies of "which one is special" is the mirrored constant this ground keeps a table of.</summary>
+    private static int WorksNotice => Catalog.Length - 1;
+
+    /// <summary>#1063 · …and how many notices the ordinary seeded deal may choose from. Everything but the
+    /// works notice, which is the whole reason a board that has never had works on it is byte-identical to
+    /// the board it was before this shipped.</summary>
+    private static int OrdinaryNotices => Catalog.Length - 1;
 
     /// <summary>Every authored heading and body, for the canon grep. The pairing is deliberately absent: it is
     /// never shown to anybody, and grepping it would only be grepping the cast's plates twice.</summary>
@@ -186,16 +208,27 @@ public static class CanteenBoard
         // slot machine, and would break the one thing it is for: matching a notice to a face in the room.
         var up = new List<Notice>(PinnedAtOnce);
         var used = new List<int>(PinnedAtOnce);
-        for (int i = 0; i < Math.Min(PinnedAtOnce, Catalog.Length); i++)
+
+        // #1063 · THE WORKS NOTICE GOES UP FIRST, and only while the works are on. It takes one of the four
+        // slots rather than making a fifth: a board that grew a row would say, in its own shape, that
+        // something new had happened here — and the whole beat is that nothing did. The three below it are
+        // dealt by the same dice, against the same length, in the same order they always were.
+        bool works = Burial.NoticeIsUp(bodyId);
+        if (works)
+        {
+            up.Add(Catalog[WorksNotice]);
+        }
+
+        for (int i = 0; up.Count < Math.Min(PinnedAtOnce, OrdinaryNotices); i++)
         {
             int wanted =
-                DiceRule.Roll(DiceRule.Seed($"hive:board:{bodyId}:{i}"), Catalog.Length).Face - 1;
+                DiceRule.Roll(DiceRule.Seed($"hive:board:{bodyId}:{i}"), OrdinaryNotices).Face - 1;
 
             // Take the rolled notice, or the next free one after it. A re-roll loop on a seeded die is how a
             // generator stops being deterministic, and the same notice pinned twice is a board nobody wrote.
-            for (int step = 0; step < Catalog.Length; step++)
+            for (int step = 0; step < OrdinaryNotices; step++)
             {
-                int candidate = (wanted + step) % Catalog.Length;
+                int candidate = (wanted + step) % OrdinaryNotices;
                 if (!used.Contains(candidate))
                 {
                     used.Add(candidate);

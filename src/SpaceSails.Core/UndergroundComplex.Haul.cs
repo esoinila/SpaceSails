@@ -156,6 +156,27 @@ public static partial class UndergroundComplex
         return IsHeadOffice(bodyId) ? (StandingOrderLevel, 0) : null;
     }
 
+    /// <summary>
+    /// #1063 · THE MAINTENANCE LEDGER — <b>the DURING evidence</b>, and the only paper the burial leaves.
+    ///
+    /// <para>Designated for exactly the reason all four of its siblings are: it is the one surviving record
+    /// of the job, and a seeded one-in-nine would leave it absent forever on some worlds with nothing on
+    /// screen ever saying so. It is room 0 of the <b>top pressurised floor</b> — the floor the facility
+    /// actually works on, where its paperwork is kept, and the only floor #608's law lets paper exist on at
+    /// all (nobody wrote a roster in a suit). Not the listed bottom, which is <see cref="KeyRoomFor"/>'s;
+    /// not the unlisted bottom, which is <see cref="RelicRoomFor"/>'s; not the unlisted shaft head, which is
+    /// <see cref="FoundKeyRoomFor"/>'s. Five designations, five floors, no collision — and that is guarded
+    /// rather than asserted here.</para>
+    ///
+    /// <para>Only on a ground that has been filled in, because before the job there is nothing to have
+    /// recorded. On every site in every world nobody has buried anything in, this is null and the floor is
+    /// exactly the floor it always was.</para></summary>
+    public static (int Level, int RoomIndex)? MaintenanceLedgerRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return Burial.IsFilled(bodyId) && TopPressurisedFloor(bodyId) is { } works ? (works, 0) : null;
+    }
+
     /// <summary>What is in this room. Weighted so the place feels stripped but worth walking: about a third
     /// empty, and DIRT is the rarest thing in the building because it is the most valuable.</summary>
     public static Haul InRoom(string bodyId, int level, int roomIndex)
@@ -195,6 +216,14 @@ public static partial class UndergroundComplex
         if (FoundKeyRoomFor(bodyId) is { } hall && level == hall.Level && roomIndex == hall.RoomIndex)
         {
             return Haul.Key;
+        }
+
+        // #1063 · And, on a ground somebody has filled in, the room the maintenance ledger is kept in.
+        // Designated for the reason above and not for a new one — see MaintenanceLedgerRoomFor.
+        if (MaintenanceLedgerRoomFor(bodyId) is { } ledger
+            && level == ledger.Level && roomIndex == ledger.RoomIndex)
+        {
+            return Haul.Records;
         }
 
         // ── #677 · AND THE HALLS, WHERE ALMOST NOTHING IS IN ALMOST EVERY ROOM ────────────────────────────
@@ -346,6 +375,11 @@ public static partial class UndergroundComplex
         // #411 · The head office's designated sheet reads as itself; everywhere else, operational paper.
         Haul.Records when StandingOrderRoomFor(bodyId) is { } o && level == o.Level && roomIndex == o.RoomIndex
             => StandingOrderLine,
+        // #1063 · …and on a ground somebody has filled in, the maintenance ledger, open at the three lines
+        // that record it. The anomaly is the BREVITY: everything else this ledger has ever recorded cites an
+        // instruction number, and this job cites none. See MaintenanceLedgerLine.
+        Haul.Records when MaintenanceLedgerRoomFor(bodyId) is { } l && level == l.Level && roomIndex == l.RoomIndex
+            => MaintenanceLedgerLine,
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",

@@ -16,6 +16,7 @@ public static partial class UndergroundComplex
             {
                 KeyRoomFor(bodyId), RelicRoomFor(bodyId), StandingOrderRoomFor(bodyId),
                 FoundKeyRoomFor(bodyId),   // #677 · the way down to the halls is a designation too
+                MaintenanceLedgerRoomFor(bodyId),   // #1063 · …and so is the room the ledger is kept in
             })
         {
             if (designated is { } d && d.Level == level && d.RoomIndex == index)

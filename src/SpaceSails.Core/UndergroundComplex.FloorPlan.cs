@@ -35,8 +35,18 @@ public static partial class UndergroundComplex
         // #853 · The conference posters on a laboratories floor's corridor walls. Appended, same reason.
         IReadOnlyList<LabPosters.Poster>? Posters = null,
         // #864 · THE INCIDENT BOARD, on the one lab chamber wall that carries one. Appended, same reason.
-        IncidentBoard.Board? Board = null)
+        IncidentBoard.Board? Board = null,
+        // #1063 · THE PRESERVED DOORWAY at the back of the burial's recess, on the listed bottom of a ground
+        // somebody filled in — and NOWHERE else. It is kept out of Walls on purpose, exactly as #759's
+        // glazing is: the list a segment arrives in is what decides its ink, and this one is drawn in the
+        // found band's own no-texture idiom on a floor that is otherwise entirely poured. Appended, for the
+        // reason above.
+        Specimen? Specimen = null)
     {
+        /// <summary>#1063 · The preserved doorway on this floor, where this floor keeps one — which is the
+        /// listed bottom of a filled ground and no other floor in the game.</summary>
+        public Specimen? TheSpecimen => Specimen;
+
         /// <summary>#853 · The framed posters on this floor, never null. Empty on every floor that is not a
         /// laboratories floor, which is a true statement about them rather than a missing one.</summary>
         public IReadOnlyList<LabPosters.Poster> TheWalls => Posters ?? [];
@@ -208,6 +218,13 @@ public static partial class UndergroundComplex
         {
             alcoveMouths.Add((shaftY - CorridorHalf, sx2 - ShaftHalf, sx2 + ShaftHalf));
         }
+
+        // #1063 · …and, on a ground the neighbours have filled in, the recess the old door is kept in. Cut
+        // HERE because it is a mouth in the spine's own face and the sweep below is what carries it, and
+        // because it must claim its ground before any room placer runs. On every site nobody has buried —
+        // which is every site in almost every world — this returns having done nothing at all.
+        CarveSpecimen(bodyId, level, field, walls, alcoveMouths, claimed);
+        Specimen? specimen = SpecimenOn(bodyId, level, field);
 
         // #775 · THE DOORS THE HALL CUTS IN THE SPINE'S OWN FACE, filled in by the carve below and read by
         // the wall builder — one list, so the gap the corridor leaves and the door the hall publishes are
@@ -837,7 +854,7 @@ public static partial class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins, published, posters, board);
+            glass, park, bins, published, posters, board, specimen);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,

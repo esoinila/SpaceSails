@@ -466,6 +466,24 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<HallOpeningRecord>? HallsOpened { get; init; }
+
+    /// <summary>#1063 — THE GROUNDS THE NEIGHBOURS HAVE FILLED IN: the sites whose found halls have been
+    /// buried, floored over and resurfaced (<see cref="Burial"/>).
+    ///
+    /// <para>Persisted for a harder version of <see cref="HallsOpened"/>'s own reason. That one remembers WHEN
+    /// a ground was opened; this one remembers that a ground is GONE — and a burial that forgot across a
+    /// reload would put a set of galleries back under a site the captain's own field book says were filled in.
+    /// <b>The book never lies</b> is the feature's load-bearing law, and a world that could un-bury a ground
+    /// by reloading is a world where the book is wrong and nothing on screen ever says which.</para>
+    ///
+    /// <para>Null until something has actually been filled in — the #1057/#1072/#1066/#677 pattern, and here
+    /// for their exact reason: the checksum is taken over the payload, so an eager <c>"hallsBuried": []</c> on
+    /// every save would change the digest of every vault ever written and hang the 📛 tampered marker on
+    /// honest voyages. A pre-#1063 file simply lacks the field and loads with nothing buried, which is the
+    /// truth about every voyage played before the neighbours started work.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? HallsBuried { get; init; }
 }
 
 /// <summary>#677 — one row of <see cref="ProgressSection.HallsOpened"/>: a ground, and the world-side window

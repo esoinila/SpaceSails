@@ -181,6 +181,31 @@ public partial class Map
                 q.SecretlabCheat = true;
             }
         }
+        else if (pair.StartsWith("buried=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1063 dev cheat: /map?buried=1 is ?found=1 with the ground already OPENED, a whole world
+            // window ago — so the burial fires on the way down and the tester lands on a site whose halls
+            // have been filled in, floored over and resurfaced.
+            //
+            // It seeds the disclosure clock's register and NOTHING ELSE: the burial itself runs through the
+            // ordinary Burial.Fill on the ordinary descent, so what a tester walks is exactly what a captain
+            // who went away for a shift would walk. A cheat that wrote a filled ground straight into the
+            // register would be testing a code path the game does not have.
+            //
+            // WHAT A TESTER SHOULD SEE: the lift panel has no button past the listed bottom; on the listed
+            // bottom, a short recess off the main corridor with one old door at the back of it, drawn in a
+            // flat grey that belongs to no palette, which does not open and says nothing; in the upper
+            // canteen a mason at a table, and the works notice already DOWN because the job is done; the
+            // ledger in the first room searched on that floor; and one cheerful line about drainage on the
+            // wire. Nothing else, anywhere, says a word. Use /map?found=1 for the same ground before the job.
+            string candidate = Uri.UnescapeDataString(pair["buried=".Length..]).ToLowerInvariant();
+            if (candidate is "1" or "true" or "yes")
+            {
+                _buriedCheat = true;
+                _foundCheat = true;
+                q.SecretlabCheat = true;
+            }
+        }
         else if (pair.StartsWith("card=", StringComparison.OrdinalIgnoreCase))
         {
             // #693 dev cheat: /map?card=next puts ONE authority in the wallet — the one the gate in front

@@ -1061,6 +1061,12 @@ public partial class Map
         await DescentPhaseAsync("clearing the bay…");
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
+        // #1063 · …and the clock having moved, the neighbours have had their shift. THE BURIAL IS EVALUATED
+        // HERE and only here: after the crossing's time is spent and before one wall of this ground has been
+        // laid, which is the only moment a filled ground can be filled without a captain standing in it. See
+        // Map.Burial.cs — on every voyage where nobody has been past a seam this does nothing at all.
+        BuryWhatWasOpened();
+
         // #733 · …and the mothership FLIES that crossing now instead of standing still through it, so a
         // free-flying ship whose track really was diving ends the flight there rather than tunnelling
         // through the rock. Nothing further belongs under a captain who has just been collected by a

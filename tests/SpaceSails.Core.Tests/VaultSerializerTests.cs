@@ -93,6 +93,11 @@ public class VaultSerializerTests
             // windows, because a register that only ever held one row would round-trip a shape the game
             // cannot produce and would say nothing about the window travelling with the ground.
             HallsOpened = [new HallOpeningRecord("phobos", 0), new HallOpeningRecord("miranda", 17)],
+            // #1063 — …and which of those grounds the neighbours have since filled in. ONE of the two, so
+            // the round trip carries a register that is a SUBSET rather than a copy of the one above it: a
+            // file where every opened ground is also a buried one would round-trip a shape the game reaches
+            // only at the very end and would say nothing about the two lists being independent.
+            HallsBuried = ["miranda"],
         },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
@@ -145,6 +150,10 @@ public class VaultSerializerTests
         Assert.Equal(
             [new HallOpeningRecord("phobos", 0), new HallOpeningRecord("miranda", 17)],
             loaded.Progress.HallsOpened);
+        // #1063 — and which of them were filled in. A burial that forgot across a reload would put a set of
+        // galleries back under a site the captain's own field book says are gone, and the book is the only
+        // witness there is.
+        Assert.Equal(["miranda"], loaded.Progress.HallsBuried);
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet

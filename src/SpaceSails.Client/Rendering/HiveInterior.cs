@@ -157,6 +157,27 @@ public static class HiveInterior
                 IsWindow: true, IsHull: !pastTheSeam));
         }
 
+        // ── #1063 · THE ONE SPECIMEN THE BURIAL KEEPS ───────────────────────────────────────────────────
+        //
+        // A short recess off the corridor on the listed bottom of a ground somebody filled in, with a single
+        // old door at the back of it, kept for display. The recess itself is ordinary poured hull and came in
+        // with `floor.Walls` above; THIS is the leaf, and it is the only segment on any listed floor in the
+        // game drawn in the third idiom (#677's `IsSeamless`, which belongs to no palette and says who built
+        // nothing). The material is the whole statement — the rag's own line is the same sentence and does
+        // not know it: "the old kerbs make a handsome course of masonry in the new wall."
+        //
+        // BOTH HALVES OFF ONE SEGMENT, exactly as the glazing above and every locked door below: a leaf that
+        // is drawn shut and a wall a body cannot cross. It has no sign console and no card, because #1063
+        // authored no words for it and a caption would be the one helpful sentence that kills the beat.
+        if (floor.TheSpecimen is { } kept)
+        {
+            walls.Add(new(
+                (float)kept.X1, (float)kept.Y1, (float)kept.X2, (float)kept.Y2,
+                IsWindow: false, IsHull: false, IsSeamless: true));
+            doors.Add(new(
+                (float)kept.X1, (float)kept.Y1, (float)kept.X2, (float)kept.Y2, Locked: true));
+        }
+
         // ── #821 · WHICH CUBICLE LEAVES HAVE THE CATCH OVER ────────────────────────────────────────────
         //
         // Worked out BEFORE the doorway loop, because a shut cubicle is a door that is drawn shut AND a wall
