@@ -2713,6 +2713,108 @@ absence in the exact shape of the thing removed, as its own note kind, with the 
 offers — and the **spent-once "sealed ≠ full"** empty forced seal. Both are design calls about the field book
 and about a one-shot disappointment, and neither is a ten-line addition to a seam that exists.
 
+13.31 **A door that opened yesterday does not open today, and the scope's one-shot comes back with nothing**
+(#1068, slice 1 — the disclosure clock's second customer, and two of the watchers' three manifestation
+channels).
+
+> #672's doctrine, owner-blessed 2026-09-01: *"we may show wonders, but a Scully must always be able to
+> plausibly say no. Any single watcher act must have a mundane reading that a reasonable person can hold."*
+> The three channels are **subtraction** (a door that opened yesterday doesn't; the autopilot recomputes, no
+> fault logged), **structured instrument failure** (the scope's one-shot never completes on one contact only
+> — *"the sensor law survives because the sensor's failure IS the manifestation"*), and **people who don't
+> know why** — which is §13.30's burial and is already built. This is the other two.
+
+**THE THRESHOLD, AND ITS WRITTEN REASON.** `PoliteDecline.WindowsBeforeDeclining` — one whole world window
+since the ground was opened, read off `DisclosureClock.WindowsSince` and never re-derived. It is **the
+burial's own number, on purpose: the watchers act on the schedule the neighbours do.** Never on the visit
+that opened the ground, because a door that had stopped opening by the time the captain climbed back out of
+the seam he had just crossed would be an answer to what he had just done, arriving inside the hour, from
+something that was watching him do it — a sensor return by another name, and the one thing #672 forbids
+outright. A shift later it is a maintenance decision, and a maintenance decision is a thing a reasonable
+person can hold. Second condition, the burial's again: not while the captain is on that body.
+
+**Evaluated once, in the same breath as the burial** — `Map.Decline.cs`, called at the end of
+`BuryWhatWasOpened`, not from a second hook a few lines away in the descent. It is ONE moment, and both
+events want exactly the same three things out of it: the crossing's time already spent, no excursion standing
+on the ground, and not one wall of the arriving floor laid yet. Two call sites would be two places that have
+to be kept agreeing about when a shift is.
+
+**ONE REGISTER, TWO CHANNELS.** A ground has declined or it has not, and both acts are that same declining
+read in two rooms: the door is what the captain meets standing on it, the blank pass is what he meets looking
+at it from a hundred million kilometres away. It rides the vault as `HallsDeclined` — **with the window**,
+because the door is chosen against that number and a save that dropped it would re-open the shut leaf and
+shut a different one, which is a lock that moved by itself, which is an event, which is a fact about somebody
+deciding.
+
+**CHANNEL 1 · SUBTRACTION.** One leaf leaves `FloorPlan.Doorways`; an ordinary `LockedDoor` is appended in
+its place wearing the plate the room already had; the room loses that way out of `Room.Ways`. The client
+needed no change at all — it has drawn forty of these on every floor since §13.1: leaf shut, wall behind,
+`🔒` plate. **No new sign, no fault, no card, no line.**
+
+- **It is a POST-PASS, not a flag inside the carve.** The obvious place is beside `AddRoomsAlong`'s `shut`
+  seed, and it is the wrong place: a room that never opened is a room the amenity pass, the refuge pass and
+  the room-centre pool never saw, so shutting one there moves the canteen, moves the refuge, renumbers the
+  searchable rooms and re-seeds the furniture. The captain would come back to forty differences and no way to
+  tell which one was the world declining. Guarded: `NothingBUTTheLeafChanges` compares the declined floor
+  against the very floor it was made from — same walls, same room boxes, same centres in the same order, same
+  amenities, refuges, bins and specimen.
+- **THE FLOOR IS NOT CHOSEN. It is the one floor with a door to spare** — the concourse round the park. Every
+  other listed floor is ribs of two-way chambers (a corridor leaf and a fire recess), and a chamber that lost
+  either would be a room with one way out, which breaks §13.24's own law. The concourse is the only floor
+  whose rooms have three and four ways, because a suite round the green has street doors AND a gate onto the
+  gravel. **The world only ever takes a THIRD door.** Not `Room.MeetsFireCode`, which would let a
+  bedroom-small booth off with its LAST leaf — that exemption is about how far you are from your one exit and
+  has nothing to say about somebody taking it away. *(Watched: with the clause deleted, `'🚻 CUBICLE 3 · STEP
+  IN' was sealed shut`.)* **A captain is never shut out of anywhere; he is sent round the other way**, which
+  is what declining politely means said in geometry.
+- **Never** the refuge (§13.19's air rack), never an amenity, never the lift's alcove or the specimen recess
+  (neither is a room), never the found band (it publishes no doorways), and never a leaf with no plate.
+
+**CHANNEL 2 · STRUCTURED INSTRUMENT FAILURE.** The captain's own one-shot aimed at a declined ground —
+`SensorTask.AreaScan`, which is what the body menu's *scan the vicinity* queues — runs its full duration,
+leaves the carousel the way a finished one-shot does, and returns **nothing**: no fix, no ledger row, no
+reveal, no flash and **no message**. A desk that said *"pass returned no data"* would be the instrument
+reporting on itself, which makes the failure a datum, and a datum about them spends the Scully law. Standing
+custody passes are untouched, and so is a zero-radius look at a hull: what declines is a GROUND. Containment
+is the exact predicate the wreck reveal already uses, so "the scope was pointed at that moon" means one thing
+to both.
+
+**ZERO PLAYER-FACING STRINGS in the whole feature.** `PoliteDecline` publishes no prose at all — the
+strongest available form of *"no dialog explaining a declined door"*, and it settles §8's reserved word for
+free, since a type with no strings in it cannot contain it. The one thing on screen is the plate the room
+already wore, and that is swept for the reserved word anyway.
+
+**Guards:** `TheWorldDeclinesPolitelyTests` (Core, 14) and `TheDeclinedDoorIsStillAWayHomeTests` (Client, 3 —
+`[SlowGate]`, 30 s). *(**RED**, nineteen reverts: the threshold set to zero windows; the already-declined
+check dropped → the same ground declined twice in two windows; the `standingOn` clause dropped; the register
+ignored → *"luna declines in a world nobody has been anywhere in"*; the door seeded on wall-clock time; the
+doorway never removed → the leaf drawn both open and locked; the `Room.Ways` rewrite dropped → a room
+publishing a way out through a locked door; the third-door clause dropped → a WC sealed shut; the
+refuge/amenity containment dropped → *"the world shut an amenity's door"*; the declined room dropped from the
+published rooms; the blank pass not restricted to declined grounds → *"the one-shot over second-moon did not
+land"*; the `Recurring` clause dropped → the standing carousel stopped landing; containment replaced by
+`true`; a string const added to the channel type; the reserved word planted on the declined leaf; the locked
+door never appended → *"not drawn as a locked door on the deck"*; every candidate leaf of the picked room
+taken → *"the world took 4 leaves, not one"*; the room's remaining ways walled → *"1 of 20 places cannot be
+reached from the lift"*; and the register dropped from the vault fixture.)*
+
+**Two of those reverts found holes in the guards themselves**, which is the whole reason the house proves
+them red. The fire-code guard asked ONE window and stayed green on a rule that sealed a captain into a WC —
+which leaf the seed picks is a fact about the window, so one window is one of two dozen candidate doors; it
+sweeps 48 now. And *"exactly one leaf"* was a helper's precondition rather than a law: the helper skipped any
+window where two doors went, quietly excusing the very bug the law is about.
+
+**What is deliberately NOT in slice 1.** The **optional route re-plan** ("one plotted route to that body gets
+recomputed once with no fault logged") — the autopilot's re-plan has no seam that recomputes silently, and
+giving it one means either a new state field or a new sentence, and a sentence is the thing this feature
+dies of. Filed on #1068. The **ribbon ending early near one body** — the drawn ribbon and
+`RibbonHorizonNote` may never disagree (that guard exists), so honouring it needs a new sentence; the scope
+carries channel 2 alone and carries it cleanly. And the **spent-once exception** (the Reever crowd that parts
+around the captain) stays where #672 put it: at the end, once, and not here.
+
+**Reaching it.** `/map?buried=1` seeds an opening a whole window old, so the same descent that lands the
+burial lands the decline: come back down to the concourse and one leaf on it is shut.
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible
