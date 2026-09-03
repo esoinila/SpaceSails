@@ -230,20 +230,45 @@ public sealed class EverySiteMeetsTheSpecTests
         // real outside, and drawing it as hull is correct (owner: "The space ships come with outside borders
         // but the landing site out-doors should not").
         SurfaceLayout.Field env = MoonSurface.ExpeditionField();
-        const double Grazing = 1.0;   // how close to the line counts as lying on it
+
+        // A fence is not "a wall near the line" — the seeded ground has always been allowed to drop a stub of
+        // rubble a du or two past the span its centre was placed in, and three sites do. A fence is COVERAGE:
+        // the old bound ran the WHOLE of each edge in four-du steps. So the measure is how much of an edge's
+        // length is walled, and the band is wide enough to catch a bound that wandered outward — a guard that
+        // only looked at the nominal line would have missed the very thing it is here to catch.
+        double bandDu = SurfaceEdge.MaxBulgeDu + 2.0;
+        const double MaxCoverage = 0.10;
 
         AuditEverySite((_, _, deck) =>
         {
+            double width = env.RightX - env.LeftX, height = env.TopY - env.BottomY;
+            double port = 0, starboard = 0, deep = 0;
+
             foreach (DeckPlan.Wall w in deck.Walls)
             {
-                bool onPort = Math.Abs(w.X1 - env.LeftX) < Grazing && Math.Abs(w.X2 - env.LeftX) < Grazing;
-                bool onStarboard = Math.Abs(w.X1 - env.RightX) < Grazing && Math.Abs(w.X2 - env.RightX) < Grazing;
-                bool onDeep = Math.Abs(w.Y1 - env.BottomY) < Grazing && Math.Abs(w.Y2 - env.BottomY) < Grazing;
+                double dx = Math.Abs(w.X2 - w.X1), dy = Math.Abs(w.Y2 - w.Y1);
+                double loX = Math.Min(w.X1, w.X2), hiX = Math.Max(w.X1, w.X2);
+                double loY = Math.Min(w.Y1, w.Y2), hiY = Math.Max(w.Y1, w.Y2);
 
-                if (onPort || onStarboard || onDeep)
+                // Running ALONG a flank (mostly vertical) and lying in its band.
+                if (dy >= dx)
                 {
-                    string side = onPort ? "port" : onStarboard ? "starboard" : "deep";
-                    return $"a wall lies along the {side} edge at ({w.X1:F1}, {w.Y1:F1})-({w.X2:F1}, {w.Y2:F1}) " +
+                    if (loX >= env.LeftX - bandDu && hiX <= env.LeftX + 1.0) { port += dy; }
+                    if (loX >= env.RightX - 1.0 && hiX <= env.RightX + bandDu) { starboard += dy; }
+                }
+                // Running ALONG the deep rim (mostly horizontal) and lying in its band.
+                else if (loY >= env.BottomY - bandDu && hiY <= env.BottomY + 1.0)
+                {
+                    deep += dx;
+                }
+            }
+
+            foreach ((string side, double walled, double span) in
+                new[] { ("port", port, height), ("starboard", starboard, height), ("deep", deep, width) })
+            {
+                if (walled > span * MaxCoverage)
+                {
+                    return $"{walled / span:P0} of the {side} edge is walled ({walled:F0} du of {span:F0}) " +
                         "— the ground is fenced again.";
                 }
             }

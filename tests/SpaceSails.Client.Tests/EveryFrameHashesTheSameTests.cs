@@ -554,7 +554,11 @@ public sealed class EveryFrameHashesTheSameTests
             + Environment.NewLine + "  " + PinLedger.Invocation);
 
         Assert.True(cases >= 20, $"only {cases} frame(s) were drawn — this sweep proves little.");
-        Assert.True(calls > 20_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
+        // #563 · The floor came down from 20,000 with the viewport cull, and this is a re-measurement rather
+        // than a nudge to get green: the sweep laid 25,062 marks and now lays 12,776, because every one of the
+        // missing ones was drawn past the edge of the glass. The floor's job is to catch a sweep that has
+        // stopped drawing anything, so it goes just under what the sweep genuinely lays.
+        Assert.True(calls > 10_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
 
         // …and the ledger holds two rows for every case and not one row more: a pin for a case that is no
         // longer drawn is a number nothing measures, and it would sit there green forever.
