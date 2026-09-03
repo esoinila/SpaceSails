@@ -58,9 +58,16 @@ public partial class Map
         }
 
         var seen = new HashSet<string>();
-        void Add(string? id)
+        // #351 — a chip carries the body's NAME, so an uncharted body may not have one. The single
+        // exception is the frame the captain is standing in: orphaning the active frame would leave a
+        // ruler nothing can switch off, which is the law the last Add below exists to keep.
+        void Add(string? id, bool evenIfUncharted = false)
         {
             if (id is null || id == "sun" || !seen.Add(id))
+            {
+                return;
+            }
+            if (!evenIfUncharted && IsBodyHidden(id))
             {
                 return;
             }
@@ -92,7 +99,7 @@ public partial class Map
         {
             Add(_selectedTargetId);
         }
-        Add(_plotFrameBodyId);   // never orphan the active frame
+        Add(_plotFrameBodyId, evenIfUncharted: true);   // never orphan the active frame
         return opts;
     }
 
@@ -225,10 +232,20 @@ public partial class Map
         SetPlotFrame(string.IsNullOrEmpty(picked) ? null : picked);
     }
 
-    // #206 — every body in the scenario, grouped by parent for the overflow picker: the Sun's children
-    // (the planets, plus any sun-orbiting station) under "Planets", then each planet's moons + stations
-    // under the planet's name. Body order within a group follows the ephemeris. A parent with no
-    // children yields no group.
+    // #206 — every CHARTED body in the scenario, grouped by parent for the overflow picker: the Sun's
+    // children (the planets, plus any sun-orbiting station) under "Planets", then each planet's moons +
+    // stations under the planet's name. Body order within a group follows the ephemeris. A parent with
+    // no charted children yields no group.
+    //
+    // #351 (owner, 2026-07-18, one minute into a brand-new adventure): "After starting a new adventure I
+    // have the Roadster already in my scopes? How is it there in a new adventure where I have not even
+    // taken the job or done the sensor scan?" — and the screenshot under that sentence is THIS control,
+    // the frame dropdown, with "Derelict Roadster" reading out between Mars and Jupiter under Planets.
+    // Every other player-facing list of bodies had already learned PR-A's rule — the click picker, the
+    // nav search, the scope carousel, the Nearest sweep, the dock roster, the plot labels all skip an
+    // IsBodyHidden body — but this one walked `_ephemeris.Bodies` raw, so the single body the scenario
+    // marks `"hidden": true` named ITSELF, by name, in a chooser, before the Fixer had said a word about
+    // it. Nothing else leaked; the name is the whole of the secret.
     private List<(string Label, List<CelestialBody> Members)> FramePickerGroups()
     {
         var groups = new List<(string, List<CelestialBody>)>();
@@ -238,7 +255,13 @@ public partial class Map
         }
         foreach (CelestialBody parent in _ephemeris.Bodies)
         {
-            List<CelestialBody> members = _ephemeris.Bodies.Where(b => b.ParentId == parent.Id).ToList();
+            if (IsBodyHidden(parent.Id))
+            {
+                continue;   // an uncharted parent would name itself in the group's own label
+            }
+
+            List<CelestialBody> members = _ephemeris.Bodies
+                .Where(b => b.ParentId == parent.Id && !IsBodyHidden(b.Id)).ToList();
             if (members.Count == 0)
             {
                 continue;
