@@ -91,8 +91,8 @@ public sealed class ThePreservationZoneTests
     /// a guard about the clause rather than about the clock.</para>
     ///
     /// <para><b>Revert that reddened it:</b> <c>WindowsBeforePreserving</c> lowered to 1, so the fence went
-    /// up on the order's own shift — <i>"Assert.Empty() Failure: Collection was not empty. Collection: [\"…\"]"</i>
-    /// on the one-window call.</para>
+    /// up on the order's own shift — <i>"Assert.Empty() Failure: Collection was not empty / Collection:
+    /// ["care-ground-43"]"</i>, printed against the ONE-window call.</para>
     /// </summary>
     [Fact]
     public void TheFenceComesAfterTwoWholeWindowsAndNeverWhileHeIsThere()
@@ -142,8 +142,8 @@ public sealed class ThePreservationZoneTests
     /// grounds would pass this guard perfectly while proving nothing (the fifth named bug class).</para>
     ///
     /// <para><b>Revert that reddened it:</b> the <c>Contains(stopped, …)</c> clause taken out of
-    /// <c>PreservationZone.Note</c> — <i>"the office fenced ground nobody closed: 104 of 104 open grounds
-    /// came back fenced"</i>.</para>
+    /// <c>PreservationZone.Note</c> (with the early return relaxed to match) — <i>"the office fenced ground
+    /// nobody closed: 86 of 86 open grounds came back fenced"</i>.</para>
     /// </summary>
     [Fact]
     public void NothingIsFencedOnAGroundNobodyClosed()
@@ -209,10 +209,11 @@ public sealed class ThePreservationZoneTests
     /// building whose size, thickness and angle are all seeded, and a guard that fenced a tidy box of its own
     /// would be auditing a site the game does not ship.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the gap side drawn like every other side (the loop started at
-    /// <c>k = 0</c>) — <i>"the ring is not a ring with one gap: care-ground-11: 0 dangling ends, expected
-    /// exactly 1"</i>; and the ring laid on a fixed bearing instead of the home bearing —
-    /// <i>"care-ground-11: the gap bears 1.9060 rad from the centre and the tube bears -1.4835 rad"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> the gap side drawn like every other side (the rail loop started
+    /// at <c>k = 0</c>) — <i>"the ring is not a ring with one gap facing the tube: care-ground-43: 0 dangling
+    /// ends, expected exactly 1"</i>, and eighty-five more lines exactly like it; and the ring laid on a
+    /// fixed bearing instead of the home bearing — <i>"care-ground-43: the gap bears 1.5708 rad from the
+    /// centre and the tube bears 2.1905 rad"</i>.</para>
     /// </summary>
     [Fact]
     public void TheRingHasExactlyOneGapAndItFacesTheTube()
@@ -306,10 +307,13 @@ public sealed class ThePreservationZoneTests
     /// and only from that sweep — the notice is SHOUTED, the way every plate in this game is, and shouting is
     /// not naming.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the sign re-authored with the canon's own excluded date
-    /// (<i>"…under study since 1879."</i>) — <i>"the notice carries a date: '1', '8', '7', '9'"</i>; and the
-    /// stamp swapped for a department (<c>PLANT</c>) — <i>"Assert.Contains() Failure: Sub-string not found.
-    /// String: PLANT — THIS SITE IS PRESERVED. Its s… Not found: AUTHORITY"</i>.</para>
+    /// <para><b>Reverts that reddened it, all three.</b> The date and the name were planted with the verbatim
+    /// literal moved to match, so that the clause under test is the clause that fires rather than the
+    /// character-for-character one above it. The sign re-authored with the canon's own excluded date,
+    /// <i>"…is under study since 1879."</i> — <i>"the notice carries a date: '1', '8', '7', '9'"</i>; the
+    /// stamp swapped for a department (<c>PLANT</c>) — <i>"Assert.Contains() Failure: Sub-string not found /
+    /// String: "PLANT — THIS SITE IS PRESERVED. Its signi"··· / Not found: "AUTHORITY""</i>; and a person put
+    /// on it, <i>"…is under study by Vantar."</i> — <i>"the notice names somebody: Vantar"</i>.</para>
     /// </summary>
     [Fact]
     public void TheNoticeIsVerbatimAndStampedAndCarriesNoDateAndNoName()
@@ -379,9 +383,10 @@ public sealed class ThePreservationZoneTests
     ///
     /// <para><b>Plant that reddened it</b> (there is no behaviour of mine to revert — the law is that a
     /// second beat did NOT reach into a first one's building, so the failure it guards against has to be
-    /// planted): <c>UndergroundComplex.StopSealFloorOf</c> taught to return null once
-    /// <c>PreservationZone.On</c> is true, i.e. "the fence replaces the seal" —
-    /// <i>"care changed the building: care-ground-11 B7: 1 locked door stopped, 0 in care"</i>.</para>
+    /// planted): <c>UndergroundComplex.StopSealFloorOf</c> taught to answer null once
+    /// <c>PreservationZone.On</c> is true, i.e. "the fence replaces the seal" — <i>"care changed the
+    /// building: care-ground-43: the seal moved under the fence / care-ground-43 B8: 177 walls / 9 locked
+    /// doors stopped, 174 / 8 in care"</i>.</para>
     /// </summary>
     [Fact]
     public void CareChangesNothingBelowGround()
@@ -482,12 +487,12 @@ public sealed class ThePreservationZoneTests
     /// clock, so a helpful sentence added later cannot escape the canon grep by not being in
     /// <c>AllProse</c>.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the word planted in the sign — <i>"a preservation string
-    /// settles what it must leave open: PreservationZone.AllProse: 'ancient' in 'AUTHORITY — THIS SITE IS
-    /// PRESERVED. Its ancient significance is under study.'"</i>; and a second sentence added to the type
+    /// <para><b>Plants that reddened it:</b> the word put in the sign — <i>"a preservation string settles
+    /// what it must leave open: PreservationZone.AllProse: "ancient" in "AUTHORITY — THIS SITE IS PRESERVED.
+    /// Its significance is an ancient one and is under study.""</i>; and a second sentence added to the type
     /// (<c>public const string Assurance = "Access will be restored in due course.";</c>) —
-    /// <i>"PreservationZone publishes a string no canon grep can see: 'Access will be restored in due
-    /// course.'"</i>.</para>
+    /// <i>"Assert.All() Failure: 1 out of 3 items in the collection did not pass. [2]: Item: "Access will be
+    /// restored in due course." Error: PreservationZone publishes a string no canon grep can see"</i>.</para>
     /// </summary>
     [Fact]
     public void NoStringOnThePreservationPathNamesTheReservedThing()

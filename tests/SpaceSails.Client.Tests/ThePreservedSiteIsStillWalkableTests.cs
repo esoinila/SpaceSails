@@ -94,9 +94,10 @@ public sealed class ThePreservedSiteIsStillWalkableTests
     /// lattice is symmetric and asking twice is cheap; what it buys is that the guard has said both.</para>
     ///
     /// <para><b>Revert that reddened it:</b> the gap side drawn like the other fifteen (the rail loop started
-    /// at <c>k = 0</c>), which is a ring with no way out — <i>"the fence shut somebody in: miranda/The Ridge
-    /// Camp: the car floor cannot be walked to from the tube / miranda/The Ridge Camp: the tube cannot be
-    /// walked to from the car floor"</i>.</para>
+    /// at <c>k = 0</c>), which is a ring with no way out — <i>"the fence shut somebody in: miranda/The Wild
+    /// Plain: the shed's doorstep cannot be walked to from the tube / miranda/The Wild Plain: the tube cannot
+    /// be walked to from the shed's doorstep / miranda/The Wild Plain: the car floor cannot be walked to from
+    /// the tube"</i>, and on down every body and every landing site.</para>
     /// </summary>
     [Fact]
     public void TheFenceNeverStandsBetweenTheCaptainAndHisBoat()
@@ -165,8 +166,10 @@ public sealed class ThePreservedSiteIsStillWalkableTests
     /// ground; it is not allowed to seal any.</para>
     ///
     /// <para><b>Revert that reddened it:</b> the same one — the gap side drawn like the others —
-    /// <i>"the rail sealed ground off: miranda/The Ridge Camp: the biggest pocket went 12.0 du² → 743.0 du²
-    /// around (-118.0, -207.0)"</i>, which is the whole inside of the ring with the shed in it.</para>
+    /// <i>"the rail sealed ground off: miranda/The Wild Plain: the biggest pocket went 0.0 du² → 494.0 du²
+    /// around (90.0, -219.0) / miranda/The Ridge Camp: the biggest pocket went 9.0 du² → 442.0 du² around
+    /// (21.0, -268.0)"</i>, and so on down the list: that is the whole inside of the ring, with the shed
+    /// standing in it.</para>
     /// </summary>
     [Fact]
     public void TheRailSealsNoGroundOffThatWasOpenBeforeIt()
@@ -208,10 +211,10 @@ public sealed class ThePreservedSiteIsStillWalkableTests
     /// constant says. One sign and not two, because the sign is posted at THE gate and a ring has one.</para>
     ///
     /// <para><b>Reverts that reddened it:</b> the <c>preserved</c> arm dropped from <c>BuildLayout</c>, so
-    /// the notice went up on every ground with a shed on it — <i>"Assert.Equal() Failure: Values differ.
-    /// Expected: 0. Actual: 1"</i> on the plain build; and <c>preserved</c> left out of
-    /// <see cref="SurfaceDeckKey"/>, which served the plain deck back for the fenced build out of the memo —
-    /// <i>"Expected: 1. Actual: 0"</i>.</para>
+    /// the notice went up on every ground with a shed on it — <i>"Assert.Equal() Failure: Values differ /
+    /// Expected: 0 / Actual: 1"</i> on the PLAIN build; and <c>preserved</c> passed as <c>false</c> into
+    /// <see cref="SurfaceDeckKey"/>, so the memo served the plain deck back for the fenced build —
+    /// <i>"Expected: 1 / Actual: 0"</i>.</para>
     /// </summary>
     [Fact]
     public void TheNoticeIsPostedOnAPreservedSiteAndOnNoOther()
