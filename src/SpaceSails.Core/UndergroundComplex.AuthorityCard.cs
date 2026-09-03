@@ -27,9 +27,36 @@ public static partial class UndergroundComplex
     //    can open, every one of them becomes a puzzle and the illusion of scale turns into a lock hunt.
     //    A card never opens a SECTOR door, and TheAuthorityCardTests pins that.
     //
-    // 3. NEVER A CODE THE PLAYER TYPES. You have the card or you do not. A keypad minigame would be out of
-    //    register with everything around it, and the owner's own phrasing — "allows us access" — is about
-    //    possession, not about a puzzle.
+    // 3. ~~NEVER A CODE THE PLAYER TYPES.~~ **OVERRULED BY THE OWNER, 2026-08-02 (#602), DELIBERATELY.**
+    //    This call read: "You have the card or you do not. A keypad minigame would be out of register with
+    //    everything around it." The reasoning behind it was sound and is worth keeping on the record — a lock
+    //    you can ATTEMPT turns a wall into a puzzle, and a building full of attemptable walls is a lock hunt
+    //    rather than a place. What it missed is the second half of the owner's own sentence: "getting that
+    //    wrong would bring security to the site."
+    //
+    //    THE AFFORDANCE STATES ITS OWN COST, which is how this game has always resolved these. A vicious
+    //    warning notice beside the pad (THREE WRONG ENTRIES CALL SECURITY. THE PAD REMEMBERS.) removes the
+    //    puzzle entirely: the building has told you exactly what happens, so entering a guess is not
+    //    problem-solving, it is gambling with a stated stake. Three tries is small enough to be uncrackable
+    //    by construction — nobody enumerates a keypad with three attempts — so the code can only ever come
+    //    from HAVING FOUND IT, which was the condition #602 set for allowing a pad at all. And the count is a
+    //    ninety-second DECAY WINDOW, not a ledger (owner, same day): a building whose staff idly try the pad
+    //    in passing cannot summon a patrol every third lifetime attempt, so it tolerates the curious and
+    //    reacts to the persistent. The two rules hold each other up — the code being FINDABLE ONLY is what
+    //    makes the reset harmless, and the reset is what makes the sticker fair rather than punitive. If
+    //    anyone ever makes the code deducible, the reset becomes an exploit.
+    //
+    //    WHAT THE PAD DOES NOT TOUCH. It is the gated FLOORS on the lift panel and nothing else. Call 2 above
+    //    stands unchanged — a SECTOR door has no reader, no pad and no way in — and so does the stop order's
+    //    seal (see UndergroundComplex.Signs.HasNoReader). The pad lives beside the panel, on a row that is
+    //    already drawn and already refusing; it never appears on a leaf somebody welded shut.
+    //
+    //    AND THE CARD IS NOT DEMOTED. A right code opens that band for THIS EXCURSION ONLY. The card remains
+    //    the durable way in — it is in the wallet and it is still there next visit — which is the whole
+    //    difference between the paper you earned and the paper you found in somebody's drawer.
+    //
+    //    Lives here rather than in a test comment because the ruling is about the CARD IDIOM's scope, and the
+    //    machinery it authorises is UndergroundComplex.LiftCode.
     //
     // Canon holds: a card may be countersigned by an office that denies existing. It never says what the
     // building was for.
