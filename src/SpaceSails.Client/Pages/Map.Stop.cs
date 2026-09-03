@@ -28,6 +28,28 @@ public partial class Map
     /// </summary>
     private bool _stoppedCheat;
 
+    /// <summary>#1074 · The register as the vault's own rows, or null while nothing has been closed.
+    ///
+    /// <para>Null-while-empty is the #1057/#1072/#1066/#677/#1063/#1068 law and it is here for their exact
+    /// reason: the checksum is taken over the payload, so an eager <c>"hallsStopped": []</c> on every save
+    /// would change the digest of every vault ever written and hang the 📛 tampered marker on an honest
+    /// voyage. No window rides along either, unlike #1068's rows — nothing about a closure is CHOSEN, so
+    /// there is nothing here for a number to keep stable.</para></summary>
+    private IReadOnlyList<string>? StopRows() => _hallsStopped.Count > 0 ? [.. _hallsStopped] : null;
+
+    /// <summary>#1074 · …and back off them on load. Restored rather than re-derived for the burial's own
+    /// reason and one harder: the closure and the fill are one trigger's two outcomes, so a load that
+    /// remembered the fills and forgot the closures would let a ground an office had already closed be
+    /// filled in by the neighbours on the very next descent. A pre-#1074 file simply lacks the field and
+    /// wakes with nothing stopped, which is the truth about every voyage played before the order.</summary>
+    private void RestoreStop(ProgressSection? progress)
+    {
+        if (progress?.HallsStopped is { } stopped)
+        {
+            _hallsStopped = [.. stopped];
+        }
+    }
+
     /// <summary>#1074 · Hand Core the world's closure state — the ONE writer. Everything downstream (the gate
     /// the panel stops offering, the seal at the blind end of the spine, the valve-book, the roster on the
     /// board) reads this and nothing else.</summary>
