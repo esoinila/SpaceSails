@@ -862,7 +862,17 @@ public partial class Map
         // rail instead: the co-moving berth state (a berth offset out, the haven's orbital velocity), the
         // SAME construction a vault resume boots with. One body, one rail — the arm's reach is now a
         // berth's width, not a third of the map.
-        _ship = BerthState.CoMoving(_ephemeris!, dock.Id, SimTime, BerthState.BerthOffsetMeters, _ship.Charge);
+        //
+        // #1068 · AND WHICH SLOT IS THE ROSTER'S. Until now every port in the game had exactly one berth and
+        // pinned every hull in it. DockRoster reads how many slots a port keeps off the tube it has earned
+        // and hands over the one this captain always gets — unless the harbour retyped its roster overnight,
+        // in which case he is tied up somewhere else round the same station, once, with nothing said. Same
+        // port, same tube, same tier, same walk ashore: nothing here goes near ArrivalTube.TierFor, which is
+        // what #1066's shore-leave tally and #1078's establishing shot both read, a few lines below.
+        _ship = BerthState.CoMoving(
+            _ephemeris!, dock.Id, SimTime, BerthState.BerthOffsetMeters, _ship.Charge,
+            DockRoster.BearingAt(_ephemeris!, dock.Id));
+        TakeTheBerthTheRosterGave(dock.Id);                  // …and a reassignment is spent by being given
         _dockOffset = _ship.Position - dockPos;               // the arm's reach is now the berth offset
         HoldAtDock();                                        // and HoldAtDock keeps it pinned every tick
         StaleFutureNodes();                                  // a berth cancels any pending burns
