@@ -33,6 +33,29 @@ Dark-on-dark is a defect anywhere it occurs. Two guards stand behind that senten
 `Map.razor`, and `SpaceSails.UiGate.EveryTextReadsTests` boots `?stool=1` at 390 × 700 and measures
 the real contrast of every visible text run against the deck canvas's own pixels.
 
+**And ask this of every change you make (owner ruling 2026-08-08, #761): _does anything
+plot-significant happen here, and where does the player read it?_** — plot-significant means it
+changes what the captain **knows, owes, is owed, or can do**: a reveal, a debt, a standing gained or
+lost, a door that will now open, somebody who will now remember. The player is told **at the moment
+it happens, on the surface they are looking at** — never only in a log. The field book and the
+autopilot ledger are the record; they are not the telling, and *"it is in the book"* is the answer
+this rule exists to refuse.
+
+Three surfaces, and which one is right is a question about where the eye is, not about how loud the
+moment is:
+
+| The captain is… | Say it on | Seam |
+| --- | --- | --- |
+| doing nothing else — the moment IS the pause | a card, or a plate at the edge | `RaiseStoryBeat(…)` |
+| looking at a pop-up | that pop-up's own outcome region | `SayItWhereTheyAreLooking(…)` (#736) |
+| flying, walking, being chased | the HUD pulse, at a rank that cannot lose the slot | `ShowPulseMessage(line, Telling.Floor)` (#693) |
+
+`SpaceSails.Client.Tests.ThePlayerIsToldTests` holds every answer already given — one row per
+moment, checked against the shipping source — and it goes **red** if you give a line a
+plot-significant rank without saying in that table what moment it is and where it is read. What it
+cannot do is decide whether YOUR new event is plot-significant: that judgement is the question
+above, and this is the only place it gets asked.
+
 ---
 
 ## 1. Launch + scenario select

@@ -216,7 +216,15 @@ public partial class Map
         // this hunter, but the fit-out delay meant muscle appeared days later with no causal link. This
         // pulse draws the chain in-voice the moment the collector is spawned; the callsign rides the news
         // headline behind it.
-        ShowPulseMessage($"Word's out — your last job bought you a collector ({callsign}). It's fitting out at {origin.Name}; days, not weeks.");
+        //
+        // #761 · …AT A RANK THAT CANNOT LOSE IT. The line is unchanged; what changes is that a hull
+        // temperature or a fuel reading written in the same breath can no longer stand on top of it. This
+        // is the sentence #380 item 5 exists to deliver — the causal chain from the robbery to the muscle
+        // that arrives days later — and a captain who does not read it is the mystified new player that
+        // ruling was about, whatever the news wire says at a desk he has not walked to yet. Somebody is
+        // now coming for this ship: it changes what he can do, which is the whole of what Telling.Floor
+        // means.
+        ShowPulseMessage($"Word's out — your last job bought you a collector ({callsign}). It's fitting out at {origin.Name}; days, not weeks.", Telling.Floor);
     }
 
     private void FireWarningShot(string npcId)
