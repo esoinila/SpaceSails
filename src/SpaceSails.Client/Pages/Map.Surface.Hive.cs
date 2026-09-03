@@ -638,13 +638,43 @@ public partial class Map
         // as a string literal it was one place; the moment a second class of relic existed it would have
         // been the client teaching itself a fact about a band it does not own.
         string findId = UndergroundComplex.FindId(ex.Stop.Body.Id, ex.Floor, which);
+        string room = UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which, found);
+        var find = new KeepOrLeave.Pending(
+            ex.Stop.Body.Id, ex.Floor, which, haul, findId, found, farLead, room);
+
+        // ── #615 · A FIND IS A DECISION, NOT AN AUTOMATIC PICKUP ───────────────────────
+        //
+        // Owner: "should we have like keep / leave option when we find stuff?"
+        //
+        // Everything past this gate used to run on the frame the room was searched — the sentence, the
+        // pocket, the strike-off, the book. With a twelve-slot sleeve that filled the captain with paper
+        // they had already decided was worthless, and it took the decision away from the one system in this
+        // game built entirely out of them (#603).
+        //
+        // Asked of what the ROOM WOULD HAND OVER and never of what the pocket would accept: a captain with
+        // no room left is precisely the captain the question is worth asking, and a gate that read capacity
+        // here would go quiet at the one moment it means anything. The key is exempt — it is the way down
+        // and not a paper (#1069) — and the argument for that, and for the crate, is in KeepOrLeave.
+        if (UndergroundComplex.WhatTheRoomHandsOver(haul, found, findId) is { } offered
+            && KeepOrLeave.IsADecision(haul, offered))
+        {
+            // The sleeve's own row name for the thing lying there, and the room's own sentence under it. No
+            // picture: the pallet's photograph and the sheet's page are what KEEPING it buys (#828's tiers),
+            // and a card that read the document out before the decision would be the pickup back again.
+            OfferKeepOrLeave(find, SatchelLabel(offered), null);
+            return;
+        }
+
         UndergroundComplex.Pickup pick = UndergroundComplex.WhatGoesInThePocket(
             haul, ex.Stop.Body.Id, found, findId, _satchel);
 
-        string room = UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which, found);
-
         if (!pick.RoomEmptied)
         {
+            // Core's own refusal, kept because Core's own contract keeps it: every find a compartment can
+            // refuse now goes through the decision above, and the one haul that reaches here carrying
+            // anything is the KEY, whose wallet has no ceiling. The day a wallet grows one, this is the line
+            // that stops a card being destroyed by the act of looking at it.
+            //
             // Nothing changes but the sentence. The room is not struck off, so searching it again offers the
             // same find — which is the enforcement side of #615 (leaving a thing must never destroy it).
             // The deck is deliberately NOT rebuilt: the console has to still be standing there.
@@ -653,145 +683,9 @@ public partial class Map
             return;
         }
 
-        ex.HiveRoomsEmptied.Add(roomKey);
-
-        // #684 · NOW the lead is spent — the room has been turned over for good and whatever it held is in
-        // the pocket. Said BEFORE the room's own line for the reason everything in this method is ordered:
-        // the pulse keeps one slot and the last write wins, and the haul is the sentence worth surviving.
-        if (farLead is { } lead)
-        {
-            AnnounceLabLead(lead);
-        }
-
-        if (haul == UndergroundComplex.Haul.Equipment)
-        {
-            _credits += 900;
-            RendererInterop.PlayCue("board");
-        }
-
-        // #677/#603 \u00b7 WHAT THE BOOK KEEPS. Everywhere in the game the pulse line and the casebook line are
-        // the same sentence, because what happened IS what is worth remembering. A record out of the halls
-        // is the exception #603's law was written for: looking is free, knowledge is one-shot, so the screen
-        // gets the event (a rubbing went into a pocket) and the book gets what the captain now KNOWS about a
-        // wall. Filing both would put one wall in the book twice in two registers \u2014 #701's rule, learned on
-        // the shelves \u2014 and there are several of these records in a band.
-        if (UndergroundComplex.CasebookGistOf(haul, ex.Stop.Body.Id, ex.Floor) is { } hallGist)
-        {
-            ShowPulseMessage(room + pick.Line);
-            if (!ex.HiveHallRecordShown)
-            {
-                FileNote(hallGist, "\u2b55");
-            }
-        }
-        else
-        {
-            ShowAndFile(room + pick.Line, haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
-        }
-
-        if (haul == UndergroundComplex.Haul.Dirt)
-        {
-            ApplyNerveShock(4.0, "reading somebody's file in a building that should not exist");
-        }
-
-        // #585 · A facility keeps records of the OTHER facilities. Operational paper and files are the
-        // strongest leads in the game, which is the right shape: the deeper into one of these you go, the
-        // more of the map opens up.
-        // ── #603 · PAPER IS NOW A THING YOU CARRY, NOT A LEAD YOU ARE GIVEN ──
-        //
-        // Operational paper used to grant a lead the moment you picked it up — the game did the thinking and
-        // handed you the answer. The owner's version is better: the decision to read a document AS A CLUE is
-        // the player's, and making it is what lights the tracker. A paper you have not connected to anything
-        // is just paper.
-        //
-        // A file on somebody is carried too, but it is never offered to a door: it is leverage on a PERSON,
-        // which is the only currency down here you spend on somebody you can go and meet.
-        //
-        // #678 · ONE ADD, and it is the one the sentence was written about. There used to be four of these
-        // scattered down the method, each deciding for itself what this room hands over — which is how the
-        // authority card came to be added AFTER the full-pocket check and to slip through it entirely.
-        if (pick.Take is { } took)
-        {
-            _satchel = [.. Core.Satchel.Add(_satchel, took)];
-        }
-
-        if (haul == UndergroundComplex.Haul.Relic)
-        {
-            // The card is raised on the spot. For the thing on the pallet that is unconditional and every
-            // time: it is the one object in the game a captain will want to look at again the moment they
-            // find it, and #528's once-per-excursion gate is for things that RECUR — a rib mouth, a card, a
-            // dead floor. There is one of those in a facility and most facilities do not have one.
-            //
-            // #677 · A HALL RECORD DOES RECUR, so it takes the gate. Several galleries in a band hold one
-            // and they are all the same wall; the fifth full-screen card about it would be a slideshow, and
-            // it is the same call the authority card makes twenty lines below. WHICH card is Core's — the
-            // find's own id knows what it came out of, so this seam can never show a photograph of a pallet
-            // to a captain standing in an empty gallery.
-            CarriedObject.Reveal shown = CarriedObject.RelicReveal(findId);
-            bool recurs = UndergroundComplex.IsHallRecord(findId);
-            if (!recurs || !ex.HiveHallRecordShown)
-            {
-                _viewObject = new DeckPlan.ConsoleSpot(
-                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                    shown.Label, shown.ArtUrl, shown.Story);
-
-                // The fright is on the FIRST one for the same reason the card is. It is also the same size
-                // as the pallet's and not larger: nothing down here threatens, everything accommodates, and
-                // a place that bills a captain by the room for standing in it is a predator whatever the
-                // prose says. What is frightening about a hall is arithmetic, not attention.
-                ApplyNerveShock(9.0, recurs
-                    ? "putting a tape measure against something that does not answer to one"
-                    : "standing next to something that was measured for a neck");
-            }
-
-            ex.HiveHallRecordShown |= recurs;
-        }
-        else if (haul == UndergroundComplex.Haul.Dirt)
-        {
-            // A file still names a moon on its own — it is about a PERSON and the person is somewhere. Only
-            // the operational paper became a thing you have to decide about.
-            GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
-        }
-
-        // #678 · Said only when something actually went in — "that was the last space" is a fact about a
-        // pickup, and on a room that handed over nothing it would be a warning attached to nothing.
-        //
-        // #688 · And it is a fact about ONE COMPARTMENT, because after the restructure "the satchel is full"
-        // has no meaning: a sleeve stuffed with manifests says nothing about the pockets, and neither of them
-        // says anything about the wallet, which never fills at all. The warning names what ran out.
-        if (pick.Take is { } went && Core.Satchel.IsFull(_satchel, went.Kind))
-        {
-            ShowPulseMessage(Core.Satchel.CompartmentOf(went.Kind) == Core.Satchel.Compartment.Sleeve
-                ? "🎒 That was the last sheet the document sleeve will hold. Something has to be read or " +
-                  "left behind before you can carry any more paper out of here."
-                : "🎒 Your hands and pockets are full. Something has to be spent or left behind before you " +
-                  "can carry anything else out of here.");
-        }
-
-        // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
-        // way deeper into a facility is earned by working the floors you are on — and it is durable, so the
-        // gate still reads it a month and a moon later.
-        //
-        // On the bottom band there is no shaft below to authorise, and rather than hand out an authority for
-        // a hole nobody dug, that Key names another moon: the same payoff Records and Dirt give, which keeps
-        // the deepest floor of a site pointing outward instead of at itself.
-        //
-        // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to really
-        // tell the story here :-D" — the right pair with the sealed way, because the Hive has exactly two
-        // objects about the idea of passage and this is the one that works. It is raised for a card that is
-        // IN THE POCKET and never for one the world declined to mint (#678).
-        if (found is { } card && pick.Take is not null && !ex.HiveAuthorityShown)
-        {
-            ex.HiveAuthorityShown = true;
-            _viewObject = new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                UndergroundComplex.AuthorityCardLabel,
-                UndergroundComplex.AuthorityCardArtUrl(card),
-                UndergroundComplex.AuthorityCardStory(card));
-        }
-
-        RebuildSurfaceDeck();
-        RequestVaultSave();
+        TheFindGoesInThePocket(ex, find, pick);
     }
+
 
     /// <summary>#585 - A door that never opens, read out loud. It is a WALL with a world behind it, and the
     /// game never once pretends otherwise - a door that teases would turn scale into a puzzle.</summary>

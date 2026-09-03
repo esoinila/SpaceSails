@@ -142,6 +142,14 @@ public partial class Map
     private void CloseViewObject()
     {
         _viewObject = null;
+
+        // #615 · …and a find waiting on an answer is answered BY the closing. Every road out of this card is
+        // LEAVE, which is why the two-verb card needs no special case in the general closing law (no pop-up
+        // that cannot be closed): the safe answer is the one the ✕ already gives — nothing is taken and the
+        // room keeps what it holds. A pending find that outlived its card would be a state nothing on screen
+        // was saying, and the next Keep pressed anywhere would empty a room the captain had walked out of.
+        _pendingFind = null;
+
         ReleaseHeldSayings();
     }
 

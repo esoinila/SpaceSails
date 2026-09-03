@@ -420,22 +420,22 @@ public static partial class UndergroundComplex
     /// room searched — the find is still lying there.</param>
     public readonly record struct Pickup(Satchel.Item? Take, string Line, bool RoomEmptied);
 
-    /// <summary>#678 · What goes in the pocket, said in the same breath as the decision to put it there.</summary>
-    /// <param name="haul">What the room holds.</param>
-    /// <param name="hereBodyId">The site being searched — used only to tell a card for THIS building from a
-    /// card for another one, which is the one thing worth saying about an authority as it goes in.</param>
-    /// <param name="minted">For a <see cref="Haul.Key"/>, the card the caller actually minted. Null means no
-    /// card exists to hand over, and then the room says so rather than describing one.</param>
-    /// <param name="findId">The durable id of this find — the seed tag the prose is rebuilt from.</param>
-    /// <param name="carried">What is already in the pocket.</param>
-    public static Pickup WhatGoesInThePocket(
-        Haul haul, string hereBodyId, AuthorityCard? minted, string findId,
-        IReadOnlyList<Satchel.Item>? carried)
+    /// <summary>
+    /// #615 · <b>WHAT THIS ROOM WOULD HAND OVER, ASKED WITHOUT A POCKET IN THE ROOM.</b>
+    ///
+    /// <para>Lifted verbatim out of <see cref="WhatGoesInThePocket"/>, which still asks it and nothing else,
+    /// the day a find became a DECISION. The offer of KEEP or LEAVE has to name the thing being decided
+    /// about, and it has to do so for a captain whose sleeve is already full — that captain is the whole
+    /// point of the question — so the identity of a find and the capacity for it are two questions now
+    /// instead of one answer that goes null when the answer to the other is no.</para>
+    ///
+    /// <para>Null is most rooms: a stripped room hands over nothing, a crate is carried out and sold rather
+    /// than pocketed, and a Key room with no card left to mint describes no card.</para>
+    /// </summary>
+    public static Satchel.Item? WhatTheRoomHandsOver(Haul haul, AuthorityCard? minted, string findId)
     {
-        ArgumentNullException.ThrowIfNull(hereBodyId);
         ArgumentNullException.ThrowIfNull(findId);
-
-        Satchel.Item? take = haul switch
+        return haul switch
         {
             Haul.Records => new Satchel.Item(Satchel.Kind.Paper, findId),
             Haul.Dirt => new Satchel.Item(Satchel.Kind.Dirt, findId),
@@ -446,6 +446,28 @@ public static partial class UndergroundComplex
             Haul.Key when minted is { } card => new Satchel.Item(Satchel.Kind.Authority, card.Id),
             _ => null,
         };
+    }
+
+    /// <summary>#678 · What goes in the pocket, said in the same breath as the decision to put it there.</summary>
+    /// <param name="haul">What the room holds.</param>
+    /// <param name="hereBodyId">The site being searched — used only to tell a card for THIS building from a
+    /// card for another one, which is the one thing worth saying about an authority as it goes in.</param>
+    /// <param name="minted">For a <see cref="Haul.Key"/>, the card the caller actually minted. Null means no
+    /// card exists to hand over, and then the room says so rather than describing one.</param>
+    /// <param name="findId">The durable id of this find — the seed tag the prose is rebuilt from.</param>
+    /// <param name="carried">What is already in the pocket.</param>
+    /// <remarks>#615 · The identity of the find is <see cref="WhatTheRoomHandsOver"/>'s and no longer this
+    /// method's own switch — one source of truth, because the KEEP/LEAVE offer has to know WHAT is being
+    /// decided about at a moment when the pocket may well refuse it, and a second transcription of this
+    /// table is how a room would come to offer a decision over one object and hand over another.</remarks>
+    public static Pickup WhatGoesInThePocket(
+        Haul haul, string hereBodyId, AuthorityCard? minted, string findId,
+        IReadOnlyList<Satchel.Item>? carried)
+    {
+        ArgumentNullException.ThrowIfNull(hereBodyId);
+        ArgumentNullException.ThrowIfNull(findId);
+
+        Satchel.Item? take = WhatTheRoomHandsOver(haul, minted, findId);
 
         if (take is { } wanted && !Satchel.CanTake(carried, wanted))
         {

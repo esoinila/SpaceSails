@@ -508,6 +508,7 @@ public partial class Map
             WorkedUp = _workedUp.Count > 0
                 ? new WorkedUpSection { Sheets = [.. _workedUp] }
                 : null,
+            TurnedOver = TheRoomsGoneThrough(),   // #615/#573 · the rooms already gone through, by site
             // #973 L1 · the filing line's marks on the Captain's ledger: which pages this captain does not
             // remember writing, which have been read at already, and the hidden originals of the ones that
             // came back wrong. Opaque rows — the file carries the FACT, never the sentences.
@@ -1082,6 +1083,8 @@ public partial class Map
                 _workedUp.Add(sheet);
             }
         }
+
+        RestoreTheRoomsGoneThrough(vault);   // #615/#573 · …and which rooms have already been gone through
 
         // #590 → #603 MIGRATION. An older save carries its cards in their own section and knows nothing
         // about a satchel. They are read in rather than dropped: a captain who earned an authority eleven

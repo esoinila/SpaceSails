@@ -515,6 +515,13 @@ public partial class Map
             excursion.HitsTaken = Math.Clamp(blowsAlready, 0, CaptainCondition.MaxHits - 1);
         }
 
+        // #615/#573 · AND THE BUILDING REMEMBERS BEING WALKED. The rooms this captain has already gone
+        // through under THIS moon, out of the register that rides the vault and into the live set the deck
+        // builder reads. Here, before the first frame of the walk, because a floor drawn ahead of the seeding
+        // would put a console back on a room that was emptied a month ago — and because LEAVE's whole promise
+        // is that a declined find is still there, which is a promise you can only keep if a KEPT one is not.
+        SeedTurnedOverRooms(excursion);
+
         _surface = excursion;
 
         // ── #583 · DOES THE HEAT FOLLOW YOU DOWN? Rolled ONCE, here, off the heat this captain earned and

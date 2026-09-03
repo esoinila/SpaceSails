@@ -258,15 +258,35 @@ public sealed class ThePanelReadIsToldAsACardTests
         int mint = haul.IndexOf("NameAMoonWorthLookingAt(", StringComparison.Ordinal);
         int asked = haul.IndexOf("UndergroundComplex.WhatGoesInThePocket(", StringComparison.Ordinal);
         int refused = haul.IndexOf("if (!pick.RoomEmptied)", StringComparison.Ordinal);
-        int said = haul.IndexOf("AnnounceLabLead(", StringComparison.Ordinal);
 
         Assert.True(mint >= 0,
             "the Key mint no longer NAMES the far site without granting it — it is back to a call with a " +
             "side effect in the middle of an arithmetic (#684).");
         Assert.True(asked > mint, "the pocket is asked before the card is minted; this guard needs re-reading.");
         Assert.True(refused > asked, "the refusal branch has moved; this guard needs re-reading.");
-        Assert.True(said > refused,
-            "the lead is announced before the pocket has had its say — a captain with no room left hears " +
+
+        // ── #615 · THE SAYING LEFT THIS METHOD, AND THAT IS THE LAW HOLDING HARDER ──────────────────────
+        //
+        // A find is a decision now, so the whole pickup — the strike-off, the credits, the book and this
+        // announcement — moved behind KEEP into TheFindGoesInThePocket. The law is unchanged and is
+        // asserted in the two halves it now has: the search verb may not say the news AT ALL, and the
+        // pickup may only say it after the room has actually been emptied.
+        Assert.True(!haul.Contains("AnnounceLabLead(", StringComparison.Ordinal),
+            "the search verb announces the lead itself — it can now do so on a find the captain has not " +
+            "even been asked about, which is #684's leak with a card in front of it.");
+
+        string keepOrLeave = Pages("Map.Surface.KeepOrLeave.cs");
+        int pickupAt = keepOrLeave.IndexOf(
+            "private void TheFindGoesInThePocket(", StringComparison.Ordinal);
+        Assert.True(pickupAt >= 0, "the pickup has moved out of Map.Surface.KeepOrLeave.cs; re-read this guard.");
+        string pickup = keepOrLeave[pickupAt..];   // it is the last method in the file
+
+        int struck = pickup.IndexOf("TheRoomHasBeenGoneThrough(", StringComparison.Ordinal);
+        int said = pickup.IndexOf("AnnounceLabLead(", StringComparison.Ordinal);
+
+        Assert.True(struck >= 0, "the pickup no longer strikes the room off; this guard needs re-reading.");
+        Assert.True(said > struck,
+            "the lead is announced before the room has been emptied — a captain with no room left hears " +
             "the news and never carries the card (#684/#678).");
 
         // …and the side-effecting call is not in the mint at all. Order alone would not catch a second,
@@ -277,9 +297,9 @@ public sealed class ThePanelReadIsToldAsACardTests
             "WhatGoesInThePocket can refuse the card. The captain keeps the lead without ever carrying " +
             "the card (#684/#678).");
 
-        // The sweep can find the thing it is looking for elsewhere in the same method, so the absence above
+        // The sweep can find the thing it is looking for elsewhere on the pickup path, so the absence above
         // is a finding rather than a broken search (the house's fifth bug class).
-        Assert.True(haul.Contains("GrantLabLead(", StringComparison.Ordinal),
-            "GrantLabLead has left this method entirely — this guard is now blind.");
+        Assert.True(pickup.Contains("GrantLabLead(", StringComparison.Ordinal),
+            "GrantLabLead has left the pickup entirely — this guard is now blind.");
     }
 }
