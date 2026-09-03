@@ -349,6 +349,12 @@ public sealed class TheBundleIsTheSameCascadeTests
         Assert.Contains(cascade, r => r.Selector == ".vent-actions" && r.Sheet == "Pages/Map/VentPanel.razor.css");
         Assert.Contains(cascade, r => r.Selector == "@keyframes busted-flash" && r.Sheet == "Pages/Map/BustedCard.razor.css");
 
+        // Specificity is modelled for the selectors this cascade actually writes. `:where()` contributes
+        // ZERO — argument included — and Specificity() does not model that, so the day somebody writes one
+        // here this says so instead of the relation quietly over-counting that rule and calling a real
+        // conflict harmless.
+        Assert.DoesNotContain(cascade, r => r.Selector.Contains(":where(", StringComparison.Ordinal));
+
         // The relation is not vacuous in either direction.
         List<Shape> shapes = cascade.Select(ShapeOf).ToList();
         int fights = 0, cannot = 0;
@@ -418,13 +424,27 @@ public sealed class TheBundleIsTheSameCascadeTests
     private static IReadOnlySet<string> Names(string s, string pattern) =>
         new HashSet<string>(Regex.Matches(s, pattern).Select(m => m.Groups[1].Value), StringComparer.Ordinal);
 
+    /// <summary>
+    /// (ids, classes+attributes+pseudo-classes, types+pseudo-elements). <c>::deep</c> is already gone by the
+    /// time this is called, and the scope attribute the compiler adds is worth exactly +1 to the middle
+    /// number for EVERY rule in the sheet — <c>.a .b</c> becomes <c>.a .b[b-scope]</c> and
+    /// <c>.a ::deep .b</c> becomes <c>.a[b-scope] .b</c> — so comparing source selectors compares compiled
+    /// ones.
+    ///
+    /// <para><c>:not()</c> and <c>:is()</c> contribute their ARGUMENT and not themselves, and the argument's
+    /// simple selectors are already counted by the patterns above, so the function itself adds nothing.
+    /// <c>:has()</c> and the <c>:nth-*()</c> family do count as one pseudo-class each. <c>:where()</c>
+    /// contributes ZERO, argument included, which this does not model — so <see cref="THE_LAW_CanTellPassFromFail"/>
+    /// asserts the Map cascade contains none, and the day one is written the law says so rather than
+    /// silently over-counting it.</para>
+    /// </summary>
     private static (int, int, int) Specificity(string s)
     {
         int ids = Regex.Matches(s, @"#[-\w]+").Count;
         int classes = Regex.Matches(s, @"\.[-\w]+").Count
                     + Regex.Matches(s, @"\[[^\]]*\]").Count
                     + Regex.Matches(s, @"(?<!:):[-\w]+(?!\()").Count
-                    + Regex.Matches(s, @"(?<!:):(?:not|is|where|has|nth-child|nth-of-type)\(").Count;
+                    + Regex.Matches(s, @"(?<!:):(?:has|nth-child|nth-last-child|nth-of-type|nth-last-of-type)\(").Count;
         int elements = Regex.Matches(s, @"(?:^|[\s>+~])[a-zA-Z][-\w]*").Count
                      + Regex.Matches(s, @"::[-\w]+").Count;
         return (ids, classes, elements);
