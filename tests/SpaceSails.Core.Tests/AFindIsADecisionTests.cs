@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using SpaceSails.Core;
@@ -130,19 +131,70 @@ public sealed class AFindIsADecisionTests
         Assert.False(Satchel.IsFull(AFullSleeve(), key.Value.Kind));
     }
 
-    /// <summary>The pickup and the offer name the SAME object. They are two calls now — identity without a
-    /// pocket, then capacity — and a room that offered one thing and handed over another would be the third
-    /// named bug class inside one press.</summary>
+    /// <summary>
+    /// <b>THE PICKUP AND THE OFFER READ ONE TABLE.</b>
+    ///
+    /// <para>Written as a STRUCTURAL guard and not as a value comparison, and that is the whole lesson of it:
+    /// the first draft asserted that <c>WhatGoesInThePocket(...).Take</c> equalled
+    /// <c>WhatTheRoomHandsOver(...)</c>, watched it stay green against every reversion, and found out why —
+    /// the two agree BY CONSTRUCTION today, so the comparison could not tell a repaired world from a broken
+    /// one. It is a guard about the construction, then: the pickup owns no table of its own, and a room can
+    /// never offer one object and hand over another because there is only one place that answers.</para>
+    /// </summary>
     [Fact]
-    public void WhatIsOfferedIsWhatIsHandedOver()
+    public void ThePickupOwnsNoTableOfItsOwnAndAsksTheOfferInstead()
     {
-        foreach (UndergroundComplex.Haul haul in Enum.GetValues<UndergroundComplex.Haul>())
+        string source = CoreSource("UndergroundComplex.AuthorityCard.cs");
+        string pickup = MethodBody(source, "public static Pickup WhatGoesInThePocket(");
+
+        Assert.Contains("WhatTheRoomHandsOver(", pickup, StringComparison.Ordinal);
+
+        // …and it MINTS NOTHING. The pickup keeps a switch of its own, and must: the sentence a find goes in
+        // with is its business. What it may not keep is a second table of OBJECTS — the day one of these
+        // reappears here is the day the room offers one thing and hands over another.
+        Assert.DoesNotContain("new Satchel.Item(", pickup, StringComparison.Ordinal);
+        Assert.Contains("new Satchel.Item(",
+            MethodBody(source, "public static Satchel.Item? WhatTheRoomHandsOver("), StringComparison.Ordinal);
+
+        // The pickup still says its own PROSE — the half that does belong to it — so this guard is not
+        // passing because the method has been emptied.
+        Assert.Contains("PocketFullLine", pickup, StringComparison.Ordinal);
+    }
+
+    private static string CoreSource(string file)
+    {
+        DirectoryInfo? at = new(AppContext.BaseDirectory);
+        while (at is not null && !Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
         {
-            Satchel.Item? offered = UndergroundComplex.WhatTheRoomHandsOver(haul, Card, FindId);
-            UndergroundComplex.Pickup pick =
-                UndergroundComplex.WhatGoesInThePocket(haul, Body, Card, FindId, carried: []);
-            Assert.Equal(offered, pick.Take);
+            at = at.Parent;
         }
+
+        Assert.NotNull(at);
+        return File.ReadAllText(Path.Combine(at.FullName, "src", "SpaceSails.Core", file));
+    }
+
+    /// <summary>The text of one method, brace-counted from its signature — enough for "does THIS method
+    /// mention that", which a whole-file search is not.</summary>
+    private static string MethodBody(string source, string signature)
+    {
+        int at = source.IndexOf(signature, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"could not find `{signature}` — the guard is reading a method that has moved");
+
+        int open = source.IndexOf('{', at);
+        int depth = 0;
+        for (int i = open; i < source.Length; i++)
+        {
+            if (source[i] == '{')
+            {
+                depth++;
+            }
+            else if (source[i] == '}' && --depth == 0)
+            {
+                return source[open..(i + 1)];
+            }
+        }
+
+        throw new InvalidOperationException($"`{signature}` never closes");
     }
 
     // ── The words ─────────────────────────────────────────────────────────────────────────────────────
