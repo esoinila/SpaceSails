@@ -140,6 +140,71 @@ public class TheGroundRemembersWhatYouDidToItTests
         }
     }
 
+    /// <summary>#563 · THE ONLY INVISIBLE BOUND LEFT IS THE SHIP'S OWN LINE — which is the whole answer to
+    /// the issue's last open item, the boundary fade.
+    ///
+    /// <para>The fade exists and still runs: <c>DeckView.DrawUnseenFalloff</c> darkens the ground for several
+    /// deck units in from every <c>DeckPlan.Wall.Unseen</c>, with an irregular inner edge so the eye cannot
+    /// recover a corner. What changed is that there is almost nothing left for it to hang off. The field
+    /// envelope's three sides are gone (slice 1), and the backstop is a RADIUS — never a wall, never drawn,
+    /// never reached — so it has no edge to fade.</para>
+    ///
+    /// <para>What remains is the northern rim of the top tile row: the line the landing band's own edge
+    /// continues along once a captain has walked out from under the shuttle. It is a real bound, it is
+    /// invisible, and it is exactly the kind of thing the fade was built for. This holds it to that: every
+    /// unseen wall a welded tile brings is horizontal, and it is on the top edge of a top-row tile.</para></summary>
+    [Fact]
+    public void TheOnlyUnseenBoundOnAWeldedTile_IsTheTopRowsRim()
+    {
+        int rims = 0;
+
+        foreach (string body in new[] { "luna", "phobos" })
+        {
+            LandingSite site = LandingSites.For(body)[0];
+
+            // Up against the ship: the chunk that carries top-row tiles, where the rim lives.
+            foreach ((float x1, float y1, float x2, float y2, bool unseen) in
+                     Walls(ComposeChunk(body, site.LayoutSalt, new SurfaceTiles.Address(2, 0))))
+            {
+                if (!unseen)
+                {
+                    continue;
+                }
+                rims++;
+                Assert.Equal(y1, y2, 4);
+                (double _, double _, double _, double topY) =
+                    SurfaceTiles.Rect(SurfaceTiles.At((x1 + x2) / 2.0, y1 - 0.5));
+                Assert.Equal(topY, y1, 4);
+                Assert.Equal(SurfaceTiles.TopRow, SurfaceTiles.At((x1 + x2) / 2.0, y1 - 0.5).Y);
+            }
+
+            // And out in the deep there is no invisible bound at all — nothing to fade, because nothing
+            // stops you.
+            foreach ((float _, float _, float _, float _, bool unseen) in
+                     Walls(ComposeChunk(body, site.LayoutSalt, new SurfaceTiles.Address(-2, -3))))
+            {
+                Assert.False(unseen, "a tile three rows deep laid an invisible bound — the fence is back.");
+            }
+        }
+
+        Assert.True(rims > 0, "no unseen rim was found at all — this guard is measuring nothing.");
+    }
+
+    private static IEnumerable<(float X1, float Y1, float X2, float Y2, bool Unseen)> Walls(object region)
+    {
+        Array walls = (Array)region.GetType().GetProperty("Walls")!.GetValue(region)!;
+        foreach (object? w in walls)
+        {
+            Type t = w!.GetType();
+            yield return (
+                (float)t.GetProperty("X1")!.GetValue(w)!,
+                (float)t.GetProperty("Y1")!.GetValue(w)!,
+                (float)t.GetProperty("X2")!.GetValue(w)!,
+                (float)t.GetProperty("Y2")!.GetValue(w)!,
+                (bool)t.GetProperty("Unseen")!.GetValue(w)!);
+        }
+    }
+
     // ── the composer, reached the way a private static is reached ───────────────────────────────────────
 
     /// <summary>The tile region the live deck is grown by, built for the chunk around one address.</summary>

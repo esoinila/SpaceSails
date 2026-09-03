@@ -137,9 +137,16 @@ public static class SurfaceTiles
         return (leftX, topY, rightX, topY);
     }
 
-    /// <summary>Where the way home stands — the tube mouth on the home tile. Every distance in this file is
-    /// measured from here, because that is what the suit measures from too (#453: the route, never the
-    /// coordinate).</summary>
+    /// <summary>Where the way home stands — the tube mouth on the home tile, on the landing band. Every
+    /// distance in THIS file is measured from here: the backstop's radius, and which tiles are within it.
+    ///
+    /// <para>#563 slice 2 · <b>It is not quite the point the SUIT measures from,</b> and saying so is worth
+    /// more than pretending otherwise. The tank and the tracker measure to <c>MoonSurface.SpawnY</c> — the
+    /// square just outside the tube's surface door, where the boots actually land — which is 5.5 du up-field
+    /// of the landing band this returns. Both are honest answers to "where is the way home", they are the
+    /// two ends of the same tube, and at a backstop ten thousand eight hundred du out the difference is five
+    /// parts in ten thousand. What matters is that neither is a COORDINATE the game grades danger by (#453):
+    /// they are both the route, and the route is what the suit prices.</para></summary>
     public static (double X, double Y) TubeMouth() =>
         (SurfaceLayout.DefaultField.HomeX, SurfaceLayout.DefaultField.LandingBandY);
 
