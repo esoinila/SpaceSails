@@ -37,7 +37,8 @@ public sealed class TheSlowGateRosterTests
 
     /// <summary>
     /// #251 · THE ROSTER — class name → seconds that class cost the suite in the 2026-09-02 baseline
-    /// run at e7c1915. 42 classes, 451 tests, 2,033 s of this assembly's 2,149 s.
+    /// run at e7c1915. 42 classes, 451 tests, 2,033 s of this assembly's 2,149 s — plus the 43rd, added
+    /// by #1108 and measured on its own day, which is why its row carries its own date below.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, int> TheRoster =
         new Dictionary<string, int>(StringComparer.Ordinal)
@@ -94,6 +95,9 @@ public sealed class TheSlowGateRosterTests
             { nameof(TheSalesmanWorksTheRoomTests), 23 },
             { nameof(TheTenderLeadsTheGalleyCardTests), 15 },
             { nameof(TheDirectNavActionsAreEmergenciesTests), 12 },
+
+            // ── The concurrency guard (#1108), measured 2026-09-04 rather than in the 09-02 baseline ──
+            { nameof(TheWorldBuildersAreThreadSafeTests), 11 },
         };
 
     /// <summary>

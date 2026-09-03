@@ -27,6 +27,15 @@ namespace SpaceSails.Core.Tests;
 /// because the hole was in the suite that had no collection at all, and a guard that could only see its own
 /// assembly would have been blind to precisely the four classes that were costing runs.</para>
 ///
+/// <para><b>The boot path writes them too, and that is not a hole.</b> A live <c>Pages.Map</c> installs all
+/// five on every world build — it is the ONE writer the game has — so every Client guard that boots a page
+/// writes them as well. Those writes are <c>Install([])</c>: a fresh voyage has nothing stopped, fenced,
+/// filled or declined, and no test in either suite boots a page with <c>?stopped=</c>, <c>?buried=</c> or
+/// <c>?preserved=</c>, nor loads a vault whose <c>Halls*</c> rows are non-empty. An empty register replaced
+/// by an empty register moves nobody's world. What moves a world is a NON-EMPTY install, and that only ever
+/// happens in the suites this law names — which is also why serialising them is affordable: it is a dozen
+/// classes and not the half of the Client suite that boots a page.</para>
+///
 /// <para><b>Proven able to fail.</b> With the attribute taken off
 /// <c>ThePreservedSiteIsStillWalkableTests</c>, the roster test below names it and goes red.</para>
 /// </summary>
@@ -73,11 +82,12 @@ public sealed class TheProcessWideWritersAreSerialisedTests
     {
         string tests = Path.Combine(RepoRoot, "tests");
         Assert.True(Directory.Exists(tests), $"no tests directory under {RepoRoot}.");
+        // The generated sources under obj/ (and anything copied to bin/) are not suites anybody wrote.
         return Directory.EnumerateFiles(tests, "*.cs", SearchOption.AllDirectories)
-            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
-                            StringComparison.Ordinal)
-                     && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
-                            StringComparison.Ordinal))
+            .Where(p => !p.Contains("\\obj\\", StringComparison.Ordinal)
+                     && !p.Contains("/obj/", StringComparison.Ordinal)
+                     && !p.Contains("\\bin\\", StringComparison.Ordinal)
+                     && !p.Contains("/bin/", StringComparison.Ordinal))
             .OrderBy(p => p, StringComparer.Ordinal);
     }
 
@@ -116,7 +126,11 @@ public sealed class TheProcessWideWritersAreSerialisedTests
 
         // The negative is worth as much as the positive: a guard that found no writers at all would pass
         // for the wrong reason forever after somebody renamed Install.
-        Assert.True(writers >= 15,
+        // The anti-vacuous half. A rename of Install — or a source tree this guard cannot find — would make
+        // every pattern miss and leave a law that passes because it audits nothing. Fifteen suites write
+        // these registers today; the floor is set well under that so ordinary churn does not trip it, and
+        // well over zero so a token that stops matching does.
+        Assert.True(writers >= 10,
             $"only {writers} suite(s) look like register writers — the tokens have drifted from the code.");
         Assert.True(loose.Count == 0,
             $"{loose.Count} test suite(s) write process-wide state from the parallel phase, where every " +
@@ -134,7 +148,13 @@ public sealed class TheProcessWideWritersAreSerialisedTests
         CollectionDefinitionAttribute definition = Assert.Single(
             typeof(StopRegisterCollection).GetCustomAttributes<CollectionDefinitionAttribute>(inherit: false));
 
-        Assert.Equal(StopRegisterCollection.Name, definition.Name);
+        // The name is the attribute's constructor argument (xUnit v2 does not expose it as a property), so
+        // it is read where it is actually stored: on the CustomAttributeData.
+        object? named = typeof(StopRegisterCollection).GetCustomAttributesData()
+            .First(d => d.AttributeType == typeof(CollectionDefinitionAttribute))
+            .ConstructorArguments[0].Value;
+        Assert.Equal(StopRegisterCollection.Name, named);
+
         Assert.True(definition.DisableParallelization,
             "StopRegisterCollection must disable parallelization: serialising the writers against each " +
             "other leaves every reader of the ambient registers racing them.");

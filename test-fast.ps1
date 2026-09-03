@@ -13,7 +13,7 @@ Everything here is a wrapper around one `dotnet test --filter` invocation, print
 you can copy it. There is no build system magic and no second project: the tags are xUnit traits and
 the filter is `speed!=slow`.
 
-WHAT THE FAST RUN DOES NOT TELL YOU. It skips 63 test classes — 732 tests, 12.7% of the suite — that
+WHAT THE FAST RUN DOES NOT TELL YOU. It skips 64 test classes — 733 tests, 12.7% of the suite — that
 between them hold 93% of the suite's measured seconds: the N-body and long-flight gates, the traffic
 and surface generators, the A* walkability audits, the boot sweeps and the snapshot fingerprints. A
 green fast run means the RULES still hold. It does not mean the ship still flies, the floors are
@@ -23,7 +23,7 @@ CI ALWAYS RUNS THE FULL SUITE (.github/workflows/ci.yml is untouched by this). T
 convenience for the person typing; the merge gate is the whole contract, as it always was.
 
 The roster of what is skipped, with the seconds each class cost, is checked in and guarded:
-tests/SpaceSails.Core.Tests/TheSlowGateRosterTests.cs (21 classes) and its Client twin (42). See
+tests/SpaceSails.Core.Tests/TheSlowGateRosterTests.cs (21 classes) and its Client twin (43). See
 docs/testing-guide.md, Appendix C.
 #>
 param(
@@ -65,8 +65,8 @@ if ($Trx) { $argv += @("--logger", "trx", "--results-directory", "TestResults") 
 
 $label =
     if ($Full) { "FULL - the whole contract, same as CI" }
-    elseif ($Slow) { "SLOW GATES ONLY - the 63 classes on the roster" }
-    else { "FAST - skipping the 63 [SlowGate] classes (732 tests, 12.7% of the suite)" }
+    elseif ($Slow) { "SLOW GATES ONLY - the 64 classes on the roster" }
+    else { "FAST - skipping the 64 [SlowGate] classes (733 tests, 12.7% of the suite)" }
 
 Write-Host ""
 Write-Host "  $label" -ForegroundColor Cyan

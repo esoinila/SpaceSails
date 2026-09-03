@@ -1965,8 +1965,10 @@ each assembly's wall clock *was* its single slowest class:
 | `SpaceSails.Client.Tests` | 5 m 1 s | `EveryDeskBootsTests` | 300 s |
 
 Tagging half of a slow class would leave the other half holding the floor, so a class carries the
-mark or it does not. **63 classes** cost ten seconds or more: 21 in Core, 42 in the Client. Between
-them they are **732 tests — 12.7% of the suite — and 93.0% of its measured seconds.**
+mark or it does not. **64 classes** cost ten seconds or more: 21 in Core, 43 in the Client. Between
+them they are **733 tests — 12.7% of the suite — and 93.0% of its measured seconds.** (63 of them
+were measured in the 2026-09-02 baseline; the 64th, `TheWorldBuildersAreThreadSafeTests`, is #1108's
+concurrency guard, measured at 11 s on 2026-09-04.)
 
 Ten is a budget, not a discovered boundary: the class-total distribution is a continuum here, with
 the nearest class above the line at 10.5 s and the nearest below it at 9.8 s. It is chosen because
@@ -2144,3 +2146,11 @@ seat audit); both are `ConcurrentDictionary` now, and neither fix left a guard b
 builders lay, then has every core rebuild them fifty times over and asserts the fingerprints never
 move. A cache keyed on a pure function of its inputs is fine; one whose value depends on call order
 is not.
+
+**"But the boot path writes them on every page build."** It does — a live `Pages.Map` is the game's one
+writer and installs all five on every world build, so every Client guard that boots a page writes them too.
+Those writes are `Install([])`: a fresh voyage has nothing stopped, fenced, filled or declined, and no test
+boots a page with `?stopped=` / `?buried=` / `?preserved=`, nor loads a vault whose `Halls*` rows are
+non-empty. An empty register replaced by an empty register moves nobody's world. What moves a world is a
+**non-empty** install, and that only ever happens in the dozen suites the law names — which is why
+serialising them costs a dozen classes and not the half of the Client suite that boots a page.

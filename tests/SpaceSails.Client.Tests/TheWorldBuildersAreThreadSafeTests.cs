@@ -61,6 +61,10 @@ public sealed class TheWorldBuildersAreThreadSafeTests
 
     private static string F(float v) => v.ToString("R", CultureInfo.InvariantCulture);
 
+    private static string B(bool v) => v ? "1" : "0";
+
+    private static string N(int v) => v.ToString(CultureInfo.InvariantCulture);
+
     private static ulong Fingerprint(DeckPlan deck)
     {
         var sb = new StringBuilder();
@@ -68,12 +72,12 @@ public sealed class TheWorldBuildersAreThreadSafeTests
         {
             sb.Append("w ").Append(F(w.X1)).Append(' ').Append(F(w.Y1)).Append(' ')
               .Append(F(w.X2)).Append(' ').Append(F(w.Y2)).Append(' ')
-              .Append(w.IsWindow).Append(w.IsHull).Append(w.Unseen).Append(w.IsStone).Append(w.IsSeamless)
-              .Append('\n');
+              .Append(B(w.IsWindow)).Append(B(w.IsHull)).Append(B(w.Unseen))
+              .Append(B(w.IsStone)).Append(B(w.IsSeamless)).Append('\n');
         }
         foreach (DeckPlan.ConsoleSpot c in deck.Consoles)
         {
-            sb.Append("c ").Append(c.Kind).Append(' ').Append(F(c.X)).Append(' ').Append(F(c.Y)).Append(' ')
+            sb.Append("c ").Append(c.Kind.ToString()).Append(' ').Append(F(c.X)).Append(' ').Append(F(c.Y)).Append(' ')
               .Append(c.Label).Append(' ').Append(c.ImageUrl ?? "-").Append(' ').Append(c.Caption ?? "-")
               .Append('\n');
         }
@@ -84,17 +88,17 @@ public sealed class TheWorldBuildersAreThreadSafeTests
         foreach (DeckPlan.Door d in deck.Doors)
         {
             sb.Append("d ").Append(F(d.X1)).Append(' ').Append(F(d.Y1)).Append(' ')
-              .Append(F(d.X2)).Append(' ').Append(F(d.Y2)).Append(' ').Append(d.Locked).Append(' ')
-              .Append(d.Interlock.ToString(CultureInfo.InvariantCulture)).Append('\n');
+              .Append(F(d.X2)).Append(' ').Append(F(d.Y2)).Append(' ').Append(B(d.Locked)).Append(' ')
+              .Append(N(d.Interlock)).Append('\n');
         }
         foreach (SurfaceScenery.Mark m in deck.Scenery)
         {
-            sb.Append("s ").Append(m.Of).Append(' ').Append(F((float)m.X1)).Append(' ')
+            sb.Append("s ").Append(m.Of.ToString()).Append(' ').Append(F((float)m.X1)).Append(' ')
               .Append(F((float)m.Y1)).Append(' ').Append(F((float)m.X2)).Append(' ')
               .Append(F((float)m.Y2)).Append('\n');
         }
-        sb.Append("n ").Append(deck.Structures.Length.ToString(CultureInfo.InvariantCulture)).Append(' ')
-          .Append(deck.Furniture.Length.ToString(CultureInfo.InvariantCulture)).Append(' ')
+        sb.Append("n ").Append(N(deck.Structures.Length)).Append(' ')
+          .Append(N(deck.Furniture.Length)).Append(' ')
           .Append(F((float)deck.SpawnX)).Append(' ').Append(F((float)deck.SpawnY)).Append('\n');
 
         ulong h = 14695981039346656037UL;
