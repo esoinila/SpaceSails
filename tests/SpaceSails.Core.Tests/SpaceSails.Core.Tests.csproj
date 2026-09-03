@@ -18,6 +18,15 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- #251 item 1 - THIS SUITE READS THE CLIENT'S MARKUP TOO, so it needs the same composed reader.
+       TheDeathCardReadsTheNarrationSeamTests states its law over Map.razor, and the wake card moved into
+       Pages/Map/BustedCard.razor with the rest of the surfaces. MapMarkup hands back the page with every
+       surface spliced in at its invocation site; it is LINKED rather than copied so there is exactly one
+       of it, and it is held to its own law next door in TheComposedPageIsThePageTests. -->
+  <ItemGroup>
+    <Compile Include="..\SpaceSails.Client.Tests\MapMarkup.cs" Link="MapMarkup.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceSails.Core\SpaceSails.Core.csproj" />
     <ProjectReference Include="..\..\labs\SpaceSails.LabViz\SpaceSails.LabViz.csproj" />

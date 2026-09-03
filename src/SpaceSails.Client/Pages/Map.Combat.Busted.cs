@@ -769,7 +769,7 @@ public partial class Map
 
     // The open BUSTED pop-up's state — grappled, at 1×, the captain choosing. The dice are rolled Core-
     // side (BustedRule / BoliviaEncounter); this holds what's been rolled and which panel to show.
-    private sealed class BustedEncounter
+    public sealed class BustedEncounter
     {
         // Impact (#264): a body's surface collected the ship — no collector, no dice, straight to the
         // freeze-frame → clinic re-birth. Reuses this whole encounter so the death machinery is shared.

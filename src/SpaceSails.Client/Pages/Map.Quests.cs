@@ -127,7 +127,7 @@ public partial class Map
     // lists them, one card each, and starting one (re)seeds its scenario. Order here IS play order:
     // finishing a track flows _tutorialStep into the next (rob in "the gun" → arrive in "use a haven"
     // already carrying heat), while the picker can jump to any.
-    private sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
+    public sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
 
     private static readonly TutorialTrack[] TutorialTracks =
     [

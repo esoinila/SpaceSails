@@ -30,7 +30,7 @@ public sealed partial class Map
     /// <param name="Volume">Every space this run will empty, from <see cref="HullVenting.SharedAtmosphere"/>.</param>
     /// <param name="Total">Its whole run in seconds — the sum of what is in it.</param>
     /// <param name="Charges">What it banks at the rough mark, likewise summed.</param>
-    private sealed record PumpRun(
+    public sealed record PumpRun(
         IReadOnlyList<string> Volume, double Total, int Charges, double SecondsLeft, bool RoughBanked);
 
     /// <summary>The key a volume is filed under. Its members, in order — so the same atmosphere can never be

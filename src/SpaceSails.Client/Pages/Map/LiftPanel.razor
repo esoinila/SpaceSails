@@ -1,0 +1,187 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SurfaceExcursion = SpaceSails.Client.Pages.Map.SurfaceExcursion
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE LIFT PANEL, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
+            <OverlayShell class="lift-panel" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Step out of the car"
+                          OnClose="() => Dismiss(CloseLiftPanel)">
+                <div class="view-object-title">🛗 CAR PANEL</div>
+                @* #801 · WHICH car. The line is the panel's own no longer: two cars serve this band and
+                   only one of them climbs out, so the sentence under the title is decided beside the stops
+                   it is describing. *@
+                <div class="lift-sub">
+                    @LiftPanelLine() You are at
+                    <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
+                </div>
+
+                @* #686 · A refusing button answers HERE, inside the panel's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_liftOutcome is { } refusedLine)
+                {
+                    <div class="lift-outcome">@refusedLine</div>
+                }
+
+                <div class="lift-stops">
+                    @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
+                    {
+                        string cls = "lift-stop"
+                            + (stop.IsCurrent ? " here" : "")
+                            + (stop.Refusal is not null ? " sealed" : "")
+                            + (stop.OpenedBy is not null ? " carded" : "")
+                            + (stop.Pressurised ? "" : " dead");
+                        <button type="button" class="@cls" disabled="@stop.IsCurrent"
+                                title="@(stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
+                                @onclick="() => PressLiftButton(stop)">
+                            <span class="lift-stop-depth">@SpaceSails.Core.UndergroundComplex.DepthPaint(stop.Level)</span>
+                            <span class="lift-stop-name">@stop.Name</span>
+                            <span class="lift-stop-air">
+                                @if (stop.IsCurrent)
+                                {
+                                    <text>◄ you are here</text>
+                                }
+                                else if (stop.OpenedBy is not null)
+                                {
+                                    @* #689 · The positive twin of "🔒 sealed" — the row a captain who went
+                                       and FOUND the thing has earned. Core decides whether it is true. *@
+                                    <text>🎫 opens for you</text>
+                                }
+                                else if (stop.Refusal is not null)
+                                {
+                                    <text>🔒 sealed</text>
+                                }
+                                else if (stop.Pressurised)
+                                {
+                                    <text>🫁 air</text>
+                                }
+                                else if (stop.HasRefuge)
+                                {
+                                    @* #608 · The one thing about the air a captain can learn BEFORE the
+                                       doors open. The plan carries a pressure refuge on this floor; whether
+                                       it still holds is not on the plan and this row never claims it is.
+                                       What is beside it — the department's own plate — is the honest hint,
+                                       because the floors that kept a maintenance line kept their air. *@
+                                    <text>dead air · @SpaceSails.Core.UndergroundComplex.RefugeRowTag</text>
+                                }
+                                else
+                                {
+                                    <text>dead air</text>
+                                }
+                            </span>
+                            @* #689 · …and WHICH paper does it, in the office's own register, so the card in
+                               the satchel and the promise on the panel are the same words. Owner: "there was
+                               no story point about it being needed or used." *@
+                            @if (stop.OpenedBy is { } carriedCard)
+                            {
+                                <span class="lift-stop-card">@carriedCard — the gate will read it</span>
+                            }
+                        </button>
+                        @* #602 · THE PAD, AND THE STICKER BESIDE IT. Owner, 2026-08-02, overruling #590's
+                           call 3 deliberately: "a vicious security sticked warning next to it and it gives
+                           you 3 tries before calling security".
+
+                           THE STICKER IS DRAWN BEFORE THE KEYS, ALWAYS, and never behind a press. That is
+                           the whole reason a keypad is allowed on this ground: the affordance states its own
+                           cost, so a guess is not problem-solving, it is gambling with a price you were
+                           told. A pad whose warning appeared after the first miss would be the punishment
+                           without the bargain.
+
+                           Which row carries one is Core's (LiftStop.HasPad) — one row, on the SEALED gate
+                           into the first band, and never the ID CHECK. This file only draws it. *@
+                        @if (stop.HasPad)
+                        {
+                            SpaceSails.Core.UndergroundComplex.LiftStop padStop = stop;
+                            <div class="lift-pad">
+                                <div class="lift-pad-sticker">⚠ @SpaceSails.Core.UndergroundComplex.LiftCode.Sticker</div>
+                                <div class="pin-pad-display">@LiftPadDisplay</div>
+                                <div class="pin-pad-keys">
+                                    @foreach (string d in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+                                    {
+                                        string digit = d;
+                                        <button type="button" class="pin-pad-key" disabled="@LiftPadIsDark"
+                                                title="Key this digit into the lift code"
+                                                @onclick="() => LiftPadPush(digit)">@digit</button>
+                                    }
+                                    <button type="button" class="pin-pad-key pin-pad-key-fn" disabled="@LiftPadIsDark"
+                                            title="Clear the code and start over" @onclick="LiftPadClear">C</button>
+                                    <button type="button" class="pin-pad-key" disabled="@LiftPadIsDark"
+                                            title="Key a zero into the lift code" @onclick='() => LiftPadPush("0")'>0</button>
+                                    <button type="button" class="pin-pad-key pin-pad-key-go" disabled="@LiftPadIsDark"
+                                            title="Try this code on the gate"
+                                            @onclick="() => LiftPadSubmit(padStop)">↵</button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                @* #602 · What the pad answered, in its own words and nobody else's — one of Core's four
+                   plates. It is OUTSIDE the loop because the pad comes off the row the instant a code
+                   works, and OPEN is exactly the answer a captain most needs to still be able to read. *@
+                @if (LiftPadSaid is { } padSaid)
+                {
+                    <div class="lift-pad-said">@padSaid</div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string? _liftOutcome`</summary>
+    [Parameter] public string? _liftOutcome { get; set; }
+    /// <summary>the page's `void CloseLiftPanel()`</summary>
+    [Parameter] public Action CloseLiftPanel { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void LiftPadClear()`</summary>
+    [Parameter] public Action LiftPadClear { get; set; } = default!;
+    /// <summary>the page's `string LiftPadDisplay`</summary>
+    [Parameter] public string LiftPadDisplay { get; set; } = default!;
+    /// <summary>the page's `bool LiftPadIsDark`</summary>
+    [Parameter] public bool LiftPadIsDark { get; set; }
+    /// <summary>the page's `void LiftPadPush(string digit)`</summary>
+    [Parameter] public Action<string> LiftPadPush { get; set; } = default!;
+    /// <summary>the page's `string? LiftPadSaid`</summary>
+    [Parameter] public string? LiftPadSaid { get; set; }
+    /// <summary>the page's `void LiftPadSubmit(UndergroundComplex.LiftStop stop)`</summary>
+    [Parameter] public Action<UndergroundComplex.LiftStop> LiftPadSubmit { get; set; } = default!;
+    /// <summary>the page's `string LiftPanelLine()`</summary>
+    [Parameter] public Func<string> LiftPanelLine { get; set; } = default!;
+    /// <summary>the page's `IReadOnlyList<UndergroundComplex.LiftStop> LiftStops()`</summary>
+    [Parameter] public Func<IReadOnlyList<UndergroundComplex.LiftStop>> LiftStops { get; set; } = default!;
+    /// <summary>the page's `void PressLiftButton(UndergroundComplex.LiftStop stop)`</summary>
+    [Parameter] public Action<UndergroundComplex.LiftStop> PressLiftButton { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public SurfaceExcursion liftEx { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

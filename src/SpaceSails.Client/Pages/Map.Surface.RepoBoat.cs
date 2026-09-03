@@ -12,7 +12,7 @@ public partial class Map
     // They are not Old Ones and they do not behave like them: they walk, they spread out, they do not tire,
     // and what happens if one reaches you is a WRIT, not a mauling. Client-owned position, exactly like a
     // Reever's — never saved, rebuilt from the seeded roll on any reload.
-    private sealed class Collector
+    internal sealed class Collector
     {
         public double X, Y, Facing;
         public double Vx, Vy;

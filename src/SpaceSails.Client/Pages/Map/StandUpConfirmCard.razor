@@ -1,0 +1,76 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE STAND-UP CONFIRMATION, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
+            @* #997 wave 9 · A DECISION, AND THE SHELL HAS A WORD FOR THAT. Wave 5 walked past this card and
+               left it to the lore lane; #1004 landed and the lane is closed, and what is left is the plainest
+               ByDecision in the client — a question and its two answers, both of which really are a way out
+               (StandUpFromTable and KeepYourSeat each clear Seating.StandUpAsk, which is the whole of the
+               gate above). No ✕: this card has never carried one, and the critical-decision exception is
+               exactly the shape it already is. Proved by PRESSING both, in this wave's own guard, rather than
+               believed from this comment.
+
+               THE TWO ANSWERS STAY THE PAGE'S OWN MARKUP, for #1001's reason as the bank sheet restated it in
+               wave 6: they wear different colours (btn-warning on the stand, btn-outline-light on the stay)
+               and `ChoiceClass` is one class list for all of them, so routing them through `Choices` would
+               repaint two buttons and lift them out of `.deck-offer-actions` into the shell's own column.
+               This migration does not move a pixel.
+
+               `Bare`, because the card has no head row to give up. `StopClicks` is the stopPropagation that
+               was typed on the div — the backdrop behind it closes on a click and this card must not. *@
+            <OverlayShell class="deck-offer-card stand-up-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
+                <div class="deck-offer-giver">@SpaceSails.Core.SeatedPosture.StandUpAsk</div>
+                @if (StandingUpCostsARest)
+                {
+                    <div class="table-outcome">@SpaceSails.Core.SeatedPosture.StandUpCostsTheRest</div>
+                }
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            @onclick="() => Dismiss(StandUpFromTable)">@SpaceSails.Core.SeatedPosture.StandUpYes</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            @onclick="() => Dismiss(KeepYourSeat)">@SpaceSails.Core.SeatedPosture.StandUpNo</button>
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void KeepYourSeat()`</summary>
+    [Parameter] public Action KeepYourSeat { get; set; } = default!;
+    /// <summary>the page's `bool StandingUpCostsARest`</summary>
+    [Parameter] public bool StandingUpCostsARest { get; set; }
+    /// <summary>the page's `void StandUpFromTable()`</summary>
+    [Parameter] public Action StandUpFromTable { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

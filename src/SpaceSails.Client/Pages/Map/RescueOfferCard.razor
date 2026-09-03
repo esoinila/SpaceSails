@@ -1,0 +1,96 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE RESCUE OFFER, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        IReadOnlyList<RescueOffer.FeeLine> _rescueLines = RescueFeeLines();
+        <div class="rescue-backdrop" @onclick="CloseRescueOffer">
+            @* THE SECOND ByDecision SURFACE IN THE CLIENT, and #992's audit is right about this one. Both
+               answers really do end it: 🛟 Accept runs AcceptRescue (tow, tank, hold gone, offer closed) and
+               Decline runs CloseRescueOffer — which is the SAME verb the scrim behind it runs, and the
+               .map-adrift lifeline above stands the offer back up, so declining strands nobody. No dismiss
+               is drawn. The two answers stay the page's own markup inside `.rescue-options` rather than
+               going through the shell's `Choices`, for #997 wave 3's reason: routing them would flatten
+               each button's title and its two-line face into one string, and that is a change to the words.
+
+               …and unlike the rep's card (#997 wave 1) and the collector's demand (wave 3), where that
+               exact claim turned out to be FALSE the moment somebody pressed one, this one is now proved by
+               pressing: Adrift is `_reactionMassPulses == 0 && !_docked`, two fields rather than the
+               unreachable sim state its register row records, so the offer can be stood up and both of its
+               answers taken. TheShellOwnsTheBeatCardsTests does it. *@
+            <OverlayShell class="rescue-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
+                <div class="rescue-hail">🛟 ADRIFT — OUT OF REACTION MASS</div>
+                <div class="rescue-quote">"We're dry, captain. Not a pulse left, and no pump in reach. Shall I whistle for a tow?"</div>
+                <div class="rescue-terms">
+                    <div class="rescue-brings">🚀 @RescueOffer.TowPromise(ReactionMassCapacity)</div>
+                    <div class="rescue-fee">💸 @RescueOffer.FeeHeadline(_rescueLines)</div>
+                    @if (_rescueLines.Count > 0)
+                    {
+                        <ul class="rescue-manifest">
+                            @foreach (RescueOffer.FeeLine _line in _rescueLines)
+                            {
+                                <li><span title="@(_line.Hot ? HotGlossTitle : null)">@(_line.Hot ? "🔥" : "📦")</span> @_line.Units @_line.CargoClass (@_line.Value.ToString("N0", CultureInfo.InvariantCulture) cr)@(_line.Hot ? " — hot" : "")</li>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="rescue-options">
+                    <button type="button" class="btn btn-warning rescue-accept" title="Whistle for the tug — top the tank, surrender the hold" @onclick="AcceptRescue">
+                        🛟 Accept the tow — surrender the hold
+                    </button>
+                    <button type="button" class="btn btn-outline-light rescue-decline" title="Wave the tug off — you stay adrift; the offer stands" @onclick="CloseRescueOffer">
+                        Decline — stay adrift
+                    </button>
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `bool _docked`</summary>
+    [Parameter] public bool _docked { get; set; }
+    /// <summary>the page's `int _reactionMassPulses`</summary>
+    [Parameter] public int _reactionMassPulses { get; set; }
+    /// <summary>the page's `void AcceptRescue()`</summary>
+    [Parameter] public Action AcceptRescue { get; set; } = default!;
+    /// <summary>the page's `bool Adrift`</summary>
+    [Parameter] public bool Adrift { get; set; }
+    /// <summary>the page's `Task CloseRescueOffer()`</summary>
+    [Parameter] public Func<Task> CloseRescueOffer { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `string HotGlossTitle`</summary>
+    [Parameter] public string HotGlossTitle { get; set; } = default!;
+    /// <summary>the page's `int ReactionMassCapacity`</summary>
+    [Parameter] public int ReactionMassCapacity { get; set; }
+    /// <summary>the page's `IReadOnlyList<RescueOffer.FeeLine> RescueFeeLines()`</summary>
+    [Parameter] public Func<IReadOnlyList<RescueOffer.FeeLine>> RescueFeeLines { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

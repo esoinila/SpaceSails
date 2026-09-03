@@ -1,0 +1,78 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PAPER ON THE TABLE, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="seated-news">
+            @* The shell's Bare frame and the .view-object family's own foot, exactly as the galley card
+               wears them — this is the same wire in a different box, and the box is the only new thing. *@
+            <OverlayShell class="view-object seated-news-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissLabel="Put the paper down"
+                          DismissTitle="Put the paper down — Esc does the same"
+                          OnClose="() => Dismiss(CloseSeatedNews)">
+                @* THE ✂ ON EVERY ROW, handed to the wire component rather than written beside it, so the
+                   headline row and the dated rows below it cannot come to offer different controls.
+
+                   READING FILES NOTHING. The scissors is the only thing on this panel that touches the
+                   book, and it is a press — #602's ammo-as-evidence, one system over: what is in the book
+                   got there because a hand put it there. The row says where the paper is once it is in
+                   (SeatedSpread.ClippedLabel) rather than going dead, which is #212/#603's rule. *@
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="SeatedNewsFeed()" ItemCount="SeatedNewsItemCount">
+                    <RowAction Context="story">
+                        <button type="button" class="news-clip"
+                                title="@SpaceSails.Core.SeatedSpread.ClipHint"
+                                @onclick="() => ClipThisStory(story)">@(AlreadyClipped(story)
+                                    ? SpaceSails.Core.SeatedSpread.ClippedLabel
+                                    : SpaceSails.Core.SeatedSpread.ClipLabel)</button>
+                    </RowAction>
+                </SpaceSails.Client.Pages.Stations.NewsWirePanel>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `bool AlreadyClipped(NewsWire.NewsItem item)`</summary>
+    [Parameter] public Func<NewsWire.NewsItem, bool> AlreadyClipped { get; set; } = default!;
+    /// <summary>the page's `void ClipThisStory(NewsWire.NewsItem item)`</summary>
+    [Parameter] public Action<NewsWire.NewsItem> ClipThisStory { get; set; } = default!;
+    /// <summary>the page's `void CloseSeatedNews()`</summary>
+    [Parameter] public Action CloseSeatedNews { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `IReadOnlyList<NewsWire.NewsItem> SeatedNewsFeed()`</summary>
+    [Parameter] public Func<IReadOnlyList<NewsWire.NewsItem>> SeatedNewsFeed { get; set; } = default!;
+    /// <summary>the page's `int SeatedNewsItemCount`</summary>
+    [Parameter] public int SeatedNewsItemCount { get; set; }
+    /// <summary>the page's `double SimTime`</summary>
+    [Parameter] public double SimTime { get; set; }
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

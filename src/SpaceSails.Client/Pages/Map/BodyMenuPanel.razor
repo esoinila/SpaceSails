@@ -1,0 +1,203 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE BODY CLICK MENU, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #253/#290: up to four action rows on Nav (set dest · arm · 🚀 long haul · 🪂 aerobrake), two on Sensors. *@
+        var bodyAt = ClampMenu(_bodyMenuX, _bodyMenuY, 4);
+        @* #997 wave 10 · Card · Close, on the longest list in the family. Every row here ends the menu and
+           the ✕ is still the only one that ends it without spending something — see the chooser above for
+           why that makes this a Close rather than the critical-decision exception. *@
+        <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+                      style="@MenuAnchorStyle(bodyAt)"
+                      Dismiss="OverlayDismiss.Close" OnClose="CloseBodyMenu"
+                      HeadClass="d-flex justify-content-between align-items-center mb-1"
+                      Title="@menuBody.Name" TitleClass="fw-bold me-2"
+                      DismissClass="btn-close btn-close-white btn-sm"
+                      DismissLabel="Close" DismissTitle="Close this body's menu">
+            <div class="d-grid gap-1">
+                @* PR-C desk separation (F7): navigation verbs live on the Nav desk; the same
+                   click on Sensors talks scanning. Navigation is done at the Navigation desk. *@
+                @if (_activeDesk == ShipDesk.Nav)
+                {
+                    @if (_destinationBodyId == menuBody.Id)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning" title="Drop this body as the destination — the autopilot stops steering to it"
+                                @onclick="() => SetDestination(null)">
+                            ✕ Clear destination
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-info"
+                                title="@(HarborClassOf(menuBody.Id) == HarborClass.Dock ? "Make this haven the destination — the autopilot flies you in to its dock" : "Make this body the destination — the autopilot navigates to its orbit")"
+                                @onclick="() => SetDestination(menuBody.Id)">
+                            🎯 Set destination — @(HarborClassOf(menuBody.Id) == HarborClass.Dock ? "navigate to dock" : "navigate to orbit")
+                        </button>
+                    }
+                    <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                            disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : ArmMenuHint(menuBody.Id))"
+                            @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
+                        @(_armedOrbitBodyId == menuBody.Id
+                            ? "🛰 Armed — click to disarm"
+                            : HarborClassOf(menuBody.Id) == HarborClass.Dock
+                                ? HarborVocabulary.ArmAction(HarborClass.Dock, menuBody.Name)
+                                : "🛰 Arm auto-insert at window")
+                    </button>
+                    @* #246/#249 🚀 LONG HAUL — the PRIMARY entry (owner: "autopilot into vicinity from clicking
+                       the target"). When the clicked body sits across the void, the menu recognizes the long-
+                       haul distance and offers it as a third action that SETS the destination AND engages in
+                       one press — no card-hunting. Visible-but-disabled with the reason (#212), even docked
+                       (the undock is part of engaging). *@
+                    @if (LongHaulTargetPlanet(menuBody.Id) is { } lhMenuPlanet)
+                    {
+                        LongHaul.Departure lhMenuDep = LongHaul.SolveDeparture(_ship, _ephemeris!, lhMenuPlanet);
+                        string? lhMenuBlock = LongHaulOfferBlock(lhMenuDep, lhMenuPlanet, LongHaulClearanceBlock(lhMenuDep, lhMenuPlanet));
+                        <button type="button" class="btn btn-sm @(lhMenuBlock is null ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(lhMenuBlock is not null)"
+                                title="@(lhMenuBlock ?? $"Set {menuBody.Name} as destination and autopilot the whole void in one jump — wake at {lhMenuPlanet.Name}'s capture range; the last mile stays premium")"
+                                @onclick="() => EngageLongHaulFromMenu(menuBody.Id)">
+                            @(lhMenuDep.Ok
+                                ? LongHaul.MenuAction(lhMenuPlanet.Name, lhMenuDep.DeparturePulses, FormatSimTime(lhMenuDep.ArrivalCenterTime))
+                                : $"🚀 Long haul to {lhMenuPlanet.Name} — no window from here")
+                        </button>
+                    }
+                    @* #411 ❄ THE CYCLER WINDOW — the KAAMOS route, and the only body in the system it is
+                       ever offered at. Shown only to a captain whose berth-code has resolved (the fiction may
+                       not arrive before the arc does, #380), and visible-but-disabled with the reason when the
+                       run is not filed or the arc is simply not here yet (#212). Core owns every word. *@
+                    @if (KaamosCyclerRowVisible(menuBody.Id))
+                    {
+                        string? cyBlock = KaamosCyclerBlock();
+                        <button type="button" class="btn btn-sm @(cyBlock is null ? "btn-info" : "btn-outline-secondary")"
+                                disabled="@(cyBlock is not null)"
+                                title="@(cyBlock ?? "Put her on the slow arc and be carried all the way in — 38 days, no burn, no brake at the far end")"
+                                @onclick="RideTheCyclerWindow">
+                            @KaamosCyclerLabel()
+                        </button>
+                    }
+                    @* #290 🪂 AEROBRAKE — the third way to pay the arrival bill (beside the propulsive insert
+                       and the warn-and-coast). Shown only for skim-atmosphere worlds (Uranus first; the
+                       giants, Earth, Mars — never Titan/Venus). Quotes the honest trade, or is visible-but-
+                       disabled with the reason (#212). The quote is priced once on menu-open (it flies drag). *@
+                    @if (AerobrakeMenuQuote(menuBody) is { } abQuote)
+                    {
+                        bool abArmed = _aerobrakeArmedBodyId == menuBody.Id;
+                        <button type="button" class="btn btn-sm @(abArmed ? "btn-success" : abQuote.Offered ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(!abQuote.Offered && !abArmed)"
+                                title="@Aerobrake.Trade(menuBody.Name, abQuote)"
+                                @onclick="() => EngageAerobrakeFromMenu(menuBody.Id)">
+                            @(abArmed ? $"🪂 Aerobrake armed at {menuBody.Name} — click to disarm" : Aerobrake.MenuAction(menuBody.Name, abQuote))
+                        </button>
+                    }
+                }
+                else
+                {
+                    double vicinity = Math.Max(1.2e10, 8 * menuBody.BodyRadius);
+                    Vector2d bodyPosition = _ephemeris!.Position(menuBody.Id, SimTime);
+                    string bodyScanLabel = $"scan around {menuBody.Name}";
+                    <div class="text-secondary">@ScanCostText(bodyPosition, vicinity)</div>
+                    <button type="button" class="btn btn-sm btn-info" title="Sweep the telescope around this body — approaches and local space"
+                            @onclick="() => ScanAreaFromMenu(bodyPosition, vicinity, bodyScanLabel)">
+                        🔭 Scan around @menuBody.Name — approaches &amp; local space
+                    </button>
+                }
+            </div>
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
+    /// <summary>the page's `string? _aerobrakeArmedBodyId`</summary>
+    [Parameter] public string? _aerobrakeArmedBodyId { get; set; }
+    /// <summary>the page's `string? _armedOrbitBodyId`</summary>
+    [Parameter] public string? _armedOrbitBodyId { get; set; }
+    /// <summary>the page's `string? _destinationBodyId`</summary>
+    [Parameter] public string? _destinationBodyId { get; set; }
+    /// <summary>the page's `ICelestialEphemeris? _ephemeris`</summary>
+    [Parameter] public ICelestialEphemeris? _ephemeris { get; set; }
+    /// <summary>the page's `ShipState _ship`</summary>
+    [Parameter] public ShipState _ship { get; set; } = default!;
+    /// <summary>the page's `Aerobrake.Quote? AerobrakeMenuQuote(CelestialBody body)`</summary>
+    [Parameter] public Func<CelestialBody, Aerobrake.Quote?> AerobrakeMenuQuote { get; set; } = default!;
+    /// <summary>the page's `string ArmMenuHint(string? bodyId)`</summary>
+    [Parameter] public Func<string?, string> ArmMenuHint { get; set; } = default!;
+    /// <summary>the page's `(double X, double Y) ClampMenu(double anchorX, double anchorY, int rows)`</summary>
+    [Parameter] public Func<double, double, int, (double X, double Y)> ClampMenu { get; set; } = default!;
+    /// <summary>the page's `void CloseBodyMenu()`</summary>
+    [Parameter] public Action CloseBodyMenu { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `string DockNavLockTip`</summary>
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    /// <summary>the page's `void EngageAerobrakeFromMenu(string bodyId)`</summary>
+    [Parameter] public Action<string> EngageAerobrakeFromMenu { get; set; } = default!;
+    /// <summary>the page's `Task EngageLongHaulFromMenu(string bodyId)`</summary>
+    [Parameter] public Func<string, Task> EngageLongHaulFromMenu { get; set; } = default!;
+    /// <summary>the page's `string FormatSimTime(double simTime)`</summary>
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    /// <summary>the page's `HarborClass HarborClassOf(string? bodyId)`</summary>
+    [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
+    /// <summary>the page's `string? KaamosCyclerBlock()`</summary>
+    [Parameter] public Func<string?> KaamosCyclerBlock { get; set; } = default!;
+    /// <summary>the page's `string KaamosCyclerLabel()`</summary>
+    [Parameter] public Func<string> KaamosCyclerLabel { get; set; } = default!;
+    /// <summary>the page's `bool KaamosCyclerRowVisible(string bodyId)`</summary>
+    [Parameter] public Func<string, bool> KaamosCyclerRowVisible { get; set; } = default!;
+    /// <summary>the page's `string? LongHaulClearanceBlock(LongHaul.Departure departure, CelestialBody planet)`</summary>
+    [Parameter] public Func<LongHaul.Departure, CelestialBody, string?> LongHaulClearanceBlock { get; set; } = default!;
+    /// <summary>the page's `string? LongHaulOfferBlock(LongHaul.Departure? departure, CelestialBody planet, string? clearanceBlock)`</summary>
+    [Parameter] public Func<LongHaul.Departure?, CelestialBody, string?, string?> LongHaulOfferBlock { get; set; } = default!;
+    /// <summary>the page's `CelestialBody? LongHaulTargetPlanet(string? destBodyId)`</summary>
+    [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
+    /// <summary>the page's `string MenuAnchorStyle((double X, double Y) at)`</summary>
+    [Parameter] public Func<(double X, double Y), string> MenuAnchorStyle { get; set; } = default!;
+    /// <summary>the page's `bool NavLockedByDock`</summary>
+    [Parameter] public bool NavLockedByDock { get; set; }
+    /// <summary>the page's `Task RideTheCyclerWindow()`</summary>
+    [Parameter] public Func<Task> RideTheCyclerWindow { get; set; } = default!;
+    /// <summary>the page's `void ScanAreaFromMenu(Vector2d center, double radius, string label)`</summary>
+    [Parameter] public Action<Vector2d, double, string> ScanAreaFromMenu { get; set; } = default!;
+    /// <summary>the page's `string ScanCostText(Vector2d center, double radius)`</summary>
+    [Parameter] public Func<Vector2d, double, string> ScanCostText { get; set; } = default!;
+    /// <summary>the page's `void SetDestination(string? bodyId)`</summary>
+    [Parameter] public Action<string?> SetDestination { get; set; } = default!;
+    /// <summary>the page's `double SimTime`</summary>
+    [Parameter] public double SimTime { get; set; }
+    /// <summary>the page's `void ToggleArmedInsertionFromMenu(string bodyId)`</summary>
+    [Parameter] public Action<string> ToggleArmedInsertionFromMenu { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public CelestialBody menuBody { get; set; } = default!;
+
+    /// <summary>the page's `double _bodyMenuX`</summary>
+    [Parameter] public double _bodyMenuX { get; set; }
+    /// <summary>the page's `double _bodyMenuY`</summary>
+    [Parameter] public double _bodyMenuY { get; set; }
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

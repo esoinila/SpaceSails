@@ -1,0 +1,87 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE DOOR BOARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseDoorBoard)">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step back"
+                          OnClose="() => Dismiss(CloseDoorBoard)">
+                <div class="view-object-title">🎛 DOOR BOARD — VANTAR LABS</div>
+                <div class="view-object-caption">
+                    Every door in the mountain, on one wall. @(_hasVantarCard
+                        ? "The card is in your hand, so they will key as well as shut."
+                        : "They will shut. Keying wants a card you are not carrying.")
+                </div>
+
+                <div class="vent-actions">
+                    @* #633 · named `labDoor`, not `door`: razor compiles this whole file into ONE method, so
+                       the #602 locked-door card's `door` on the other branch and this loop's `door` became the
+                       same scope the moment the branches met. *@
+                    @foreach (var labDoor in _labDoors.OrderBy(d => d.Key, StringComparer.Ordinal))
+                    {
+                        string id = labDoor.Key;
+                        <button type="button"
+                                class="btn btn-sm @(labDoor.Value == LockedDoor.State.Locked ? "btn-warning" : "btn-outline-warning")"
+                                title="@LockedDoor.Label(labDoor.Value, _hasVantarCard)"
+                                @onclick="() => WorkTheDoor(id)">
+                            @LockedDoor.Label(labDoor.Value, _hasVantarCard)
+                        </button>
+                    }
+                </div>
+
+                @* #736 · What the last door did — the one answer on this board a captain cannot check by
+                   looking, because the door is two rooms away. The refusal that names the missing card was
+                   pulsing under this board's own backdrop. *@
+                @if (_doorBoardOutcome is { } doorSaid)
+                {
+                    <div class="panel-outcome">@doorSaid</div>
+                }
+
+                <div class="vent-sub">@LockedDoor.WhichSideLine</div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string? _doorBoardOutcome`</summary>
+    [Parameter] public string? _doorBoardOutcome { get; set; }
+    /// <summary>the page's `bool _hasVantarCard`</summary>
+    [Parameter] public bool _hasVantarCard { get; set; }
+    /// <summary>the page's `Dictionary<string, LockedDoor.State> _labDoors`</summary>
+    [Parameter] public Dictionary<string, LockedDoor.State> _labDoors { get; set; } = default!;
+    /// <summary>the page's `void CloseDoorBoard()`</summary>
+    [Parameter] public Action CloseDoorBoard { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void WorkTheDoor(string doorId)`</summary>
+    [Parameter] public Action<string> WorkTheDoor { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

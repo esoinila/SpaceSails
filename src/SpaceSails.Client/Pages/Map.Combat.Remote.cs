@@ -95,7 +95,7 @@ public partial class Map
 
     /// <summary>One thing a gun can see: what is painted on it, where it is, how far, what it would cost,
     /// and whether there is anything on it worth a round.</summary>
-    private sealed record DesignateTarget(
+    public sealed record DesignateTarget(
         string Sign, double X, double Y, double RangeDu, int Cost, bool Shootable);
 
     private void CloseDesignate()

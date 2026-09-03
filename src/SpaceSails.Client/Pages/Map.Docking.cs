@@ -355,7 +355,7 @@ public partial class Map
     // boardable: current separation, the shuttle's reach for contrast, and whether the gap is closing or
     // opening now. Parent system carried for the "Ganymede (Jupiter)" read. Classification is the pure Core
     // rule ShuttleExcursion.NearestOutOfReach.
-    private sealed record ShuttleFarStop(
+    public sealed record ShuttleFarStop(
         CelestialBody Body, string ParentName, double DistanceMeters, double RangeMeters,
         ShuttleExcursion.RangeTrend Trend);
 

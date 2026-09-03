@@ -1,0 +1,171 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using DestPassInfo = SpaceSails.Client.Pages.Map.DestPassInfo
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PLOTTED-ARRIVAL READOUT, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="map-dest-panel bg-dark bg-opacity-75 rounded p-3 text-light">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold fs-6">🎯 Navigation target: @BodyName(_destinationBodyId)</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                        title="Clear the navigation target" @onclick="() => SetDestination(null)">clear target</button>
+            </div>
+            @if (_destinationPass is { } dp && DestinationPassInfo(dp) is { } info)
+            {
+                <div class="mb-1">
+                    Closest approach on the plotted course: <strong>@FormatDistance(dp.Distance)</strong>
+                    at @FormatSimTime(dp.SimTime)
+                    <button type="button" class="btn btn-sm btn-outline-info py-0 ms-1"
+                            title="Jump the scrub clock to the closest approach" @onclick="() => ScrubToDestinationPass(dp)">scrub to it</button>
+                </div>
+                @if (info.InRange)
+                {
+                    <div class="text-success mb-1">
+                        ✓ This course passes <strong>inside capture range</strong>
+                        (@FormatDistance(info.CaptureRange)). Arm the autopilot and the ship parks
+                        itself: approach burn, tidal trims, insertion.
+                    </div>
+                }
+                else
+                {
+                    <div class="text-warning mb-1">
+                        ✗ Capture range is @FormatDistance(info.CaptureRange) — this course misses it by
+                        <strong>@FormatDistance(dp.Distance - info.CaptureRange)</strong>.
+                        Trim a burn (usually brake a touch earlier) until this line turns green.
+                    </div>
+                }
+                <div class="text-secondary mb-2">
+                    Speed at the pass: @((info.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                    relative — the autopilot's burns from there cost ≈ @info.EstPulses pulses.
+                </div>
+                <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == dp.BodyId ? "btn-success" : !NavLockedByDock && info.InRange ? "btn-info" : "btn-outline-info")"
+                        disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : ArmMenuHint(dp.BodyId))"
+                        @onclick="() => ToggleArmedInsertion(dp.BodyId)">
+                    @(_armedOrbitBodyId == dp.BodyId
+                        ? $"🛰 Autopilot ARMED for {dp.BodyName} — click to disarm"
+                        : HarborClassOf(dp.BodyId) == HarborClass.Dock
+                            ? HarborVocabulary.ArmAction(HarborClass.Dock, dp.BodyName)
+                            : $"🛰 Arm auto-orbit at {dp.BodyName}")
+                </button>
+            }
+            else
+            {
+                <div class="text-secondary">Projecting the course… the closest pass appears here in a moment.</div>
+            }
+
+            @* #246/#249 🚀 LONG HAUL — the destination's OWN planet is the void mode's stop. The OFFER is the
+               solved cheap DEPARTURE (reachable from a berth or any coast), never gated on the current coast
+               reaching. The current-coast Reach still speaks the honest PROMISE VERDICT ("does NOT reach —
+               closest pass X AU") for a manual coast. Visible-but-disabled with the reason, never hidden (#212). *@
+            @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhPlanet)
+            {
+                string lhDestName = _destinationBodyId is { } lhDestId ? BodyName(lhDestId) : lhPlanet.Name;
+                string? lhBlock = LongHaulOfferBlock(_longHaulDeparture, lhPlanet, _longHaulClearanceBlock);
+                <div class="mt-2 pt-2 border-top border-secondary">
+                    @* The manual-coast verdict: does THIS course reach, or how far does it miss? *@
+                    @if (_longHaulReach is { } lhReach)
+                    {
+                        <div class="@(lhReach.Reaches ? "text-info" : "text-secondary") small mb-1">
+                            🚀 @LongHaul.ReachVerdict(lhPlanet.Name, lhReach, SimTime)
+                        </div>
+                    }
+                    @if (_longHaulDeparture is { Ok: true } lhDep)
+                    {
+                        <div class="text-secondary small mb-1">
+                            @LongHaul.Promise(lhPlanet.Name, LongHaulCaptureRange(lhPlanet), FormatSimTime(lhDep.ArrivalCenterTime), lhDep.DeparturePulses, LongHaulLastMilePulses())
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm @(lhBlock is null ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(lhBlock is not null)"
+                                title="@(lhBlock ?? "Autopilot the whole void in one jump — charge the departure, wake at the capture gate; the last mile stays premium")"
+                                @onclick="EngageLongHaul">
+                            @LongHaul.Offer(lhDestName, lhDep.DeparturePulses, FormatSimTime(lhDep.ArrivalCenterTime))
+                        </button>
+                    }
+                    @if (lhBlock is not null)
+                    {
+                        <div class="text-warning small mt-1">@lhBlock</div>
+                    }
+                </div>
+            }
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string? _armedOrbitBodyId`</summary>
+    [Parameter] public string? _armedOrbitBodyId { get; set; }
+    /// <summary>the page's `string? _destinationBodyId`</summary>
+    /// <summary>the page's `string? _destinationBodyId`, never null here: the `@if (PlotMode &&
+    /// _destinationBodyId is not null)` that stays in the page is what decides this card renders at all,
+    /// and that flow narrowing does not cross a component boundary.</summary>
+    [Parameter] public string _destinationBodyId { get; set; } = default!;
+    /// <summary>the page's `ClosestApproach.Pass? _destinationPass`</summary>
+    [Parameter] public ClosestApproach.Pass? _destinationPass { get; set; }
+    /// <summary>the page's `string? _longHaulClearanceBlock`</summary>
+    [Parameter] public string? _longHaulClearanceBlock { get; set; }
+    /// <summary>the page's `LongHaul.Departure? _longHaulDeparture`</summary>
+    [Parameter] public LongHaul.Departure? _longHaulDeparture { get; set; }
+    /// <summary>the page's `LongHaul.Reach? _longHaulReach`</summary>
+    [Parameter] public LongHaul.Reach? _longHaulReach { get; set; }
+    /// <summary>the page's `string ArmMenuHint(string? bodyId)`</summary>
+    [Parameter] public Func<string?, string> ArmMenuHint { get; set; } = default!;
+    /// <summary>the page's `string BodyName(string id)`</summary>
+    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    /// <summary>the page's `DestPassInfo? DestinationPassInfo(ClosestApproach.Pass cp)`</summary>
+    [Parameter] public Func<ClosestApproach.Pass, DestPassInfo?> DestinationPassInfo { get; set; } = default!;
+    /// <summary>the page's `string DockNavLockTip`</summary>
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    /// <summary>the page's `Task EngageLongHaul()`</summary>
+    [Parameter] public Func<Task> EngageLongHaul { get; set; } = default!;
+    /// <summary>the page's `string FormatDistance(double meters)`</summary>
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    /// <summary>the page's `string FormatSimTime(double simTime)`</summary>
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    /// <summary>the page's `HarborClass HarborClassOf(string? bodyId)`</summary>
+    [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
+    /// <summary>the page's `double LongHaulCaptureRange(CelestialBody planet)`</summary>
+    [Parameter] public Func<CelestialBody, double> LongHaulCaptureRange { get; set; } = default!;
+    /// <summary>the page's `int LongHaulLastMilePulses()`</summary>
+    [Parameter] public Func<int> LongHaulLastMilePulses { get; set; } = default!;
+    /// <summary>the page's `string? LongHaulOfferBlock(LongHaul.Departure? departure, CelestialBody planet, string? clearanceBlock)`</summary>
+    [Parameter] public Func<LongHaul.Departure?, CelestialBody, string?, string?> LongHaulOfferBlock { get; set; } = default!;
+    /// <summary>the page's `CelestialBody? LongHaulTargetPlanet(string? destBodyId)`</summary>
+    [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
+    /// <summary>the page's `bool NavLockedByDock`</summary>
+    [Parameter] public bool NavLockedByDock { get; set; }
+    /// <summary>the page's `void ScrubToDestinationPass(ClosestApproach.Pass cp)`</summary>
+    [Parameter] public Action<ClosestApproach.Pass> ScrubToDestinationPass { get; set; } = default!;
+    /// <summary>the page's `void SetDestination(string? bodyId)`</summary>
+    [Parameter] public Action<string?> SetDestination { get; set; } = default!;
+    /// <summary>the page's `double SimTime`</summary>
+    [Parameter] public double SimTime { get; set; }
+    /// <summary>the page's `void ToggleArmedInsertion(string bodyId)`</summary>
+    [Parameter] public Action<string> ToggleArmedInsertion { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

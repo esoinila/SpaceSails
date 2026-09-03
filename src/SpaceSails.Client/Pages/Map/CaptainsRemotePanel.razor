@@ -1,0 +1,233 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using DesignateTarget = SpaceSails.Client.Pages.Map.DesignateTarget
+@using SurfaceBot = SpaceSails.Client.Pages.Map.SurfaceBot
+@using SurfaceExcursion = SpaceSails.Client.Pages.Map.SurfaceExcursion
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE CAPTAIN'S REMOTE, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseCaptainsRemote)">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Pocket it"
+                          OnClose="() => Dismiss(CloseCaptainsRemote)">
+                <div class="view-object-title">@(_designateOpen ? ShootTheLock.PanelTitle : SilentRunning.PanelTitle)</div>
+                <div class="view-object-caption">@(_designateOpen ? ShootTheLock.PanelBlurb : SilentRunning.PanelBlurb)</div>
+
+                @* #803 · DESIGNATE — the handset's fourth verb, and the only one that spends anything. Two
+                   pages on one panel rather than a second pop-up: the answer to a press must be readable on
+                   the pop-up that was pressed (#769), and a captain who opened the remote to point a gun has
+                   not changed rooms. Every row here is a full sentence at phone size (#782) — a gun's row
+                   says what is in it, a target's row says how far and what it costs, and the trigger says
+                   the price on its own face, so nothing is spent by a press whose consequence was a glyph. *@
+                @if (_designateOpen)
+                {
+                    @if (_designateUnit is null)
+                    {
+                        <div class="vent-readout">WHICH GUN</div>
+                        <div class="vent-actions">
+                            @foreach (var gun in DesignatableGuns())
+                            {
+                                string unit = gun.Unit;
+                                <button type="button" class="btn btn-sm btn-outline-warning"
+                                        title="Point this one"
+                                        @onclick="() => PickTheGun(unit)">
+                                    @ShootTheLock.GunRow(unit, gun.Rounds, Ammunition.ById(gun.AmmoId))
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="vent-readout">@_designateUnit — WHAT IT CAN SEE</div>
+                        <div class="vent-actions">
+                            @foreach (var mark in _designateTargets)
+                            {
+                                DesignateTarget aimedAt = mark;
+                                <button type="button"
+                                        class="btn btn-sm @(mark.Shootable ? "btn-warning" : "btn-outline-secondary")"
+                                        title="@(mark.Shootable ? ShootTheLock.FireLabel(mark.Cost) : ShootTheLock.RefusalLine(mark.Sign))"
+                                        @onclick="() => FireOnTheLock(aimedAt)">
+                                    @ShootTheLock.TargetRow(mark.Sign, mark.RangeDu, mark.Cost)
+                                </button>
+                            }
+                        </div>
+                        @if (_designateTargets.Count > 0)
+                        {
+                            <div class="vent-sub">Press one to fire on it. Anything with nothing to break on it will say so and cost you nothing.</div>
+                        }
+                    }
+
+                    <button type="button" class="btn btn-sm btn-outline-info" @onclick="BackToTheSwitches">
+                        @ShootTheLock.BackLabel
+                    </button>
+                }
+                else
+                {
+                <div class="vent-actions">
+                    <button type="button"
+                            class="btn btn-sm @(_weaponsTight ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_weaponsTight ? SentryBot.WeaponsFreeLine : SentryBot.WeaponsTightLine)"
+                            @onclick="ToggleWeaponsTight">
+                        @(_weaponsTight ? "🤖 WEAPONS TIGHT — press to free" : "🤖 Weapons tight (bots hold)")
+                    </button>
+
+                    @* #540 · THE WARM-UP IS ORDERED FROM HERE. Owner: "Shuttle warm up should work from remote."
+                       So this one button is the whole boat: it reverses whatever standing order she is under, and
+                       says which way she is currently travelling on the dial. *@
+                    <button type="button"
+                            class="btn btn-sm @(_boatOrderedCold ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_boatOrderedCold ? SilentRunning.BoatWakingLine : SilentRunning.BoatDarkLine)"
+                            @onclick="ToggleBoatPower">
+                        @SilentRunning.BoatButtonLabel(BoatState)
+                    </button>
+                    @* #537 · THE THIRD SWITCH OF THE SAME FAMILY. Owner: "Sweeping could cost time… Also it
+                       might be noisy to say knock on walls etc." Quiet or quick is exactly the trade the other
+                       two buttons make, so it belongs on the same handheld and not on a console somewhere. *@
+                    @if (OnWreck)
+                    {
+                        <button type="button"
+                                class="btn btn-sm @(_soundQuietly ? "btn-warning" : "btn-outline-warning")"
+                                title="@HullSounding.OfferLine(SoundingGear)"
+                                @onclick="ToggleQuietSearch">
+                            @(_soundQuietly ? "✊ QUIET SEARCH — knuckles only" : "📡 Sounder (quick, and heard)")
+                        </button>
+                    }
+
+                    @* #803 · The fourth switch, and the only one that points at something. On the ground
+                       only: the guns it commands are machines a captain has SET DOWN, and there is nowhere
+                       to set one down from the bridge. *@
+                    @if (_surface is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@ShootTheLock.PanelBlurb"
+                                @onclick="OpenDesignate">
+                            @ShootTheLock.OpenLabel
+                        </button>
+                    }
+
+                    @* #760 · THE FIFTH SWITCH, and the only one that addresses a company. Owner: "the ship
+                       remote … can use it over the air: send messages that open places and enable things — a
+                       door unbolted before you reach it, a lift enabled from the surface."
+
+                       On the ground only, like DESIGNATE, and LIVE whether or not there is anything to send
+                       (#212/#603): a handset with no standing in it answers with the sentence that says what
+                       would fix it, and a handset on a moon nobody wired answers with the silence. A switch
+                       that vanished where it would refuse would teach a captain nothing except that the game
+                       is arbitrary. *@
+                    @if (_surface is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@RemoteSend.Blurb"
+                                @onclick="SendTheStanding">
+                            @RemoteSend.OpenLabel
+                        </button>
+                    }
+                </div>
+
+                <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
+                <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+
+                @* #955 NAV-2 · THE RETURN-WINDOW CLOCK. Owner: "with a pre-plotted, armed route you can LEAVE
+                   the ship by shuttle mid-voyage … with a return-window clock on the captain's remote." The
+                   ship flies her own plan and is NOT waiting, so the only number that matters while standing
+                   on a rock is when the boat must lift. Built by the Core copy (RouteShuttleWindow.RemoteLine)
+                   so the away-site HUD line quotes the identical numbers — never a second clock. *@
+                @if (AwayWindowRemoteLine() is { } awayWindow)
+                {
+                    <div class="vent-readout">@awayWindow</div>
+                    <div class="vent-sub">@AwayWindowRemoteSubLine()</div>
+                }
+                }
+
+                @* #736 · What the last switch DID. Every switch on this handset orders something that is
+                   somewhere else — bots across the field, a boat on the pad — so the sentence is the whole
+                   of the feedback, and it was pulsing under this panel's own backdrop. *@
+                @if (_remoteOutcome is { } remoteSaid)
+                {
+                    <div class="panel-outcome">@remoteSaid</div>
+                }
+
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `bool _boatOrderedCold`</summary>
+    [Parameter] public bool _boatOrderedCold { get; set; }
+    /// <summary>the page's `double _boatWarmth`</summary>
+    [Parameter] public double _boatWarmth { get; set; }
+    /// <summary>the page's `bool _designateOpen`</summary>
+    [Parameter] public bool _designateOpen { get; set; }
+    /// <summary>the page's `List<DesignateTarget> _designateTargets`</summary>
+    [Parameter] public List<DesignateTarget> _designateTargets { get; set; } = default!;
+    /// <summary>the page's `string? _designateUnit`</summary>
+    [Parameter] public string? _designateUnit { get; set; }
+    /// <summary>the page's `string? _remoteOutcome`</summary>
+    [Parameter] public string? _remoteOutcome { get; set; }
+    /// <summary>the page's `bool _soundQuietly`</summary>
+    [Parameter] public bool _soundQuietly { get; set; }
+    /// <summary>the page's `SurfaceExcursion? _surface`</summary>
+    [Parameter] public SurfaceExcursion? _surface { get; set; }
+    /// <summary>the page's `bool _weaponsTight`</summary>
+    [Parameter] public bool _weaponsTight { get; set; }
+    /// <summary>the page's `string? AwayWindowRemoteLine()`</summary>
+    [Parameter] public Func<string?> AwayWindowRemoteLine { get; set; } = default!;
+    /// <summary>the page's `string AwayWindowRemoteSubLine()`</summary>
+    [Parameter] public Func<string> AwayWindowRemoteSubLine { get; set; } = default!;
+    /// <summary>the page's `void BackToTheSwitches()`</summary>
+    [Parameter] public Action BackToTheSwitches { get; set; } = default!;
+    /// <summary>the page's `SilentRunning.BoatState BoatState`</summary>
+    [Parameter] public SilentRunning.BoatState BoatState { get; set; } = default!;
+    /// <summary>the page's `void CloseCaptainsRemote()`</summary>
+    [Parameter] public Action CloseCaptainsRemote { get; set; } = default!;
+    /// <summary>the page's `List<SurfaceBot> DesignatableGuns()`</summary>
+    [Parameter] public Func<List<SurfaceBot>> DesignatableGuns { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void FireOnTheLock(DesignateTarget target)`</summary>
+    [Parameter] public Action<DesignateTarget> FireOnTheLock { get; set; } = default!;
+    /// <summary>the page's `bool OnWreck`</summary>
+    [Parameter] public bool OnWreck { get; set; }
+    /// <summary>the page's `void OpenDesignate()`</summary>
+    [Parameter] public Action OpenDesignate { get; set; } = default!;
+    /// <summary>the page's `void PickTheGun(string unit)`</summary>
+    [Parameter] public Action<string> PickTheGun { get; set; } = default!;
+    /// <summary>the page's `void SendTheStanding()`</summary>
+    [Parameter] public Action SendTheStanding { get; set; } = default!;
+    /// <summary>the page's `HullSounding.Method SoundingGear`</summary>
+    [Parameter] public HullSounding.Method SoundingGear { get; set; } = default!;
+    /// <summary>the page's `void ToggleBoatPower()`</summary>
+    [Parameter] public Action ToggleBoatPower { get; set; } = default!;
+    /// <summary>the page's `void ToggleQuietSearch()`</summary>
+    [Parameter] public Action ToggleQuietSearch { get; set; } = default!;
+    /// <summary>the page's `void ToggleWeaponsTight()`</summary>
+    [Parameter] public Action ToggleWeaponsTight { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

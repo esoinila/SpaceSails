@@ -1,0 +1,114 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PRESSURE DOOR CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        var pdVacuumSide = pdSpace.Vented;
+        var pdLoaded = HullVenting.DoorHeldByPressure(pdSpace, _spinePressurised);
+        <div class="view-object-backdrop" @onclick="() => Dismiss(ClosePressureDoorCard)">
+            <OverlayShell class="vent-board pressure-door" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(ClosePressureDoorCard)">
+                <div class="view-object-title">
+                    @(pdLoaded ? $"⛔ {pdName} — THE DOOR IS LOADED" : $"🚪 {pdName} — HATCH")
+                </div>
+
+                @* The gauge. A needle hard over on its stop, which is the whole message — and slack in the
+                   middle of its travel when there is nothing across the door at all. *@
+                <div class="pd-gauge" role="img" aria-label="pressure differential">
+                    <div class="pd-face">
+                        <div class="pd-needle @(pdLoaded ? "hard-over" : "slack")"></div>
+                        <div class="pd-scale"><span>0</span><span>Δp</span><span class="hot">MAX</span></div>
+                    </div>
+                    <div class="pd-sides">
+                        <span class="@(pdVacuumSide ? "vac" : "air")">@(pdVacuumSide ? "VACUUM" : "AIR") — that side</span>
+                        <span class="@(_spinePressurised ? "air" : "vac")">@(_spinePressurised ? "AIR" : "VACUUM") — this side</span>
+                    </div>
+                </div>
+
+                @if (pdLoaded)
+                {
+                    <div class="vent-message">@HullVenting.PressureLockLine(pdName, pdVacuumSide)</div>
+                    <div class="vent-actions">
+                        <button type="button" class="btn btn-warning btn-sm"
+                                title="@HullVenting.EqualiseWarnsLine"
+                                @onclick="() => { EqualiseAtDoor(pdName); ClosePressureDoorCard(); }">
+                            🎚 Crack the equalisation valve
+                        </button>
+                        <div class="vent-refusal">@HullVenting.EqualiseWarnsLine</div>
+                        <div class="vent-refusal">
+                            One valve empties the corridor and every room standing open to it. What survives is
+                            whatever somebody dogged a hatch on.
+                        </div>
+                        <div class="vent-refusal">
+                            Or keep the ship's air: bring @pdName back to pressure at the valve board aft
+                            (@_refillCharges of the shuttle's breaths left).
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @* The hand-dogs. The counterplay to somebody cracking a valve two compartments away —
+                       and the infestation will never use it, because it has not read the manual. *@
+                    <div class="vent-actions">
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                @onclick="() => { ToggleSealAtHand(pdName); ClosePressureDoorCard(); }">
+                            @(pdSpace.DoorShut ? $"🔓 Undog the {pdName} hatch" : $"🔒 Dog the {pdName} hatch down")
+                        </button>
+                        <div class="vent-refusal">
+                            @(pdSpace.DoorShut
+                                ? "Sealed. Whatever happens to the pressure in the rest of this ship happens without it — and you are not walking through it either."
+                                : "Standing open. It shares the corridor's air, which means it shares whatever happens to the corridor's air.")
+                        </div>
+                    </div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `int _refillCharges`</summary>
+    [Parameter] public int _refillCharges { get; set; }
+    /// <summary>the page's `bool _spinePressurised`</summary>
+    [Parameter] public bool _spinePressurised { get; set; }
+    /// <summary>the page's `void ClosePressureDoorCard()`</summary>
+    [Parameter] public Action ClosePressureDoorCard { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void EqualiseAtDoor(string name)`</summary>
+    [Parameter] public Action<string> EqualiseAtDoor { get; set; } = default!;
+    /// <summary>the page's `void ToggleSealAtHand(string name)`</summary>
+    [Parameter] public Action<string> ToggleSealAtHand { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public string pdName { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public HullVenting.Space pdSpace { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

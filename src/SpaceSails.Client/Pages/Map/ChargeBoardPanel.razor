@@ -1,0 +1,135 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE CHARGE BOARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseChargeBoard)">
+            <OverlayShell class="vent-board" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseChargeBoard)">
+                <div class="view-object-title">⚡ HULL CHARGE — HER OWN POTENTIAL</div>
+
+                @if (_plasma is null)
+                {
+                    <div class="vent-sub">
+                        Nothing out here charges her: this voyage runs without the plasma layer, so the board is
+                        a row of dead needles and the dump is a party trick.
+                    </div>
+                }
+                else
+                {
+                    double hullNow = HullChargeNow();
+                    double ambientNow = AmbientChargeNow();
+                    HullCharge.Band band = HullCharge.BandOf(hullNow);
+                    <div class="vent-sub">
+                        HULL: <strong>@HullCharge.BandWord(band)</strong> ·
+                        holding @((hullNow * 100).ToString("0", CultureInfo.InvariantCulture))% of what this
+                        space could put on her
+                    </div>
+                    <div class="vent-readout">@HullCharge.DrivenByLine(ambientNow)</div>
+                    <div class="vent-readout @(band >= HullCharge.Band.Glowing ? "alive" : "")">
+                        @HullCharge.VisibilityLine(hullNow)
+                    </div>
+                    @if (band == HullCharge.Band.Arcing)
+                    {
+                        <div class="vent-refusal">
+                            ⚡ She is arcing across herself. Everything with a telescope has already noticed.
+                        </div>
+                    }
+
+                    <div class="vent-actions">
+                        @* THE AUTOMATIC — the owner's ask, and a real device: a hollow-cathode plasma contactor,
+                           two of which fly on the ISS for exactly this reason. It costs expellant while it runs,
+                           which is what keeps it a decision. *@
+                        <button type="button"
+                                class="btn btn-sm @(_contactorOn ? "btn-success" : "btn-outline-success")"
+                                title="@(_contactorOn ? HullCharge.ContactorOnLine : HullCharge.ContactorOffLine)"
+                                @onclick="ToggleContactor">
+                            @(_contactorOn ? "🜁 CONTACTOR RUNNING — click to secure" : "🜁 Run the contactor (automatic)")
+                        </button>
+                        @* LAB 43: inside a stream the plasma delivers more current than the cathode can emit, so
+                           the automatic can only take the edge off. Ride the river or go unheard, never both. *@
+                        @if (_contactorOn && !HullCharge.ContactorWinsHere(ambientNow))
+                        {
+                            <span class="text-warning small">🜁 outmatched here — she will sit high while you ride the stream</span>
+                        }
+
+                        @* And the switch that was the whole console: dump the hull to space. Instant, free, and
+                           it does not touch what has soaked into the boards. *@
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                title="Dump the hull charge to space now — instant, free, and it will start climbing again immediately."
+                                @onclick="VentCharge">
+                            ⚡ Dump her charge
+                        </button>
+                    </div>
+
+                    <div class="vent-readout">
+                        🜁 Expellant: @_reactionMassPulses pulses ·
+                        the contactor sips @HullCharge.ContactorPulsesPerMinute.ToString("0.0", CultureInfo.InvariantCulture) per minute while it runs
+                    </div>
+
+                    @* THE ADMISSION, always shown. Deep dielectric charging buries itself in the boards over
+                       hours; the hull gauge reads fine the whole time and the contactor does not help. Same law
+                       the wreck's life-sign sensor lives by: the instrument says something is happening, never
+                       what. *@
+                    <div class="vent-sub">@HullCharge.WhatTheGaugeCannotSee</div>
+                }
+
+                @if (_chargeBoardMessage is { Length: > 0 } chargeMsg)
+                {
+                    <div class="vent-message">@chargeMsg</div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string? _chargeBoardMessage`</summary>
+    [Parameter] public string? _chargeBoardMessage { get; set; }
+    /// <summary>the page's `bool _contactorOn`</summary>
+    [Parameter] public bool _contactorOn { get; set; }
+    /// <summary>the page's `PlasmaEnvironment? _plasma`</summary>
+    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
+    /// <summary>the page's `int _reactionMassPulses`</summary>
+    [Parameter] public int _reactionMassPulses { get; set; }
+    /// <summary>the page's `double AmbientChargeNow()`</summary>
+    [Parameter] public Func<double> AmbientChargeNow { get; set; } = default!;
+    /// <summary>the page's `void CloseChargeBoard()`</summary>
+    [Parameter] public Action CloseChargeBoard { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `double HullChargeNow()`</summary>
+    [Parameter] public Func<double> HullChargeNow { get; set; } = default!;
+    /// <summary>the page's `void ToggleContactor()`</summary>
+    [Parameter] public Action ToggleContactor { get; set; } = default!;
+    /// <summary>the page's `void VentCharge()`</summary>
+    [Parameter] public Action VentCharge { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

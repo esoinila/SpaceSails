@@ -23,7 +23,7 @@ public sealed partial class Map
 {
     /// <summary>One sweeper, walking. Mutable and client-side for the same reason the Reevers are: the rules are
     /// pure in Core and the list is the client's business.</summary>
-    private sealed class Sweeper
+    public sealed class Sweeper
     {
         public required string Callsign { get; init; }
 

@@ -1,0 +1,69 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE AEROBRAKE GATE CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #997 wave 9 · The third of this wave's plain decisions, and the same shape as the stand-up card and
+           the selfie nudge: two answers and nothing else on the card, and both of them end this ask — Fire
+           runs the settle path (Gate → Fired) and Hold snoozes it (Gate → Held), so `_brakeGate.Asking` is
+           false either way and the gate above closes. Pressed both ways in this wave's guard, on a gate poked
+           to Asking rather than believed from this comment. The answers stay the page's own markup: two
+           colours, and the fire button's face changes with the kind of arrival. *@
+        <OverlayShell class="deck-offer-card arrival-brake-card"
+                      Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
+            <div class="deck-offer-giver">🛬 Arrival brake — @_brakeDestName</div>
+            <div class="deck-offer-blurb">@ArrivalBrakeAskText()</div>
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-warning"
+                        title="Fire the arrival brake now — sheds into the clamp window through the one settle path"
+                        @onclick="FireArrivalBrake">@(BrakeIsAerobrake ? "🪂 Commit the pass" : "🔥 Fire the brake")</button>
+                <button type="button" class="btn btn-sm btn-outline-light"
+                        title="Hold the brake — you have the ship; it'll ask again while you're still coming in hot"
+                        @onclick="DeclineArrivalBrake">Hold — I'll shed by hand</button>
+            </div>
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string _brakeDestName`</summary>
+    [Parameter] public string _brakeDestName { get; set; } = default!;
+    /// <summary>the page's `ArrivalBrake.Gate _brakeGate`</summary>
+    [Parameter] public ArrivalBrake.Gate _brakeGate { get; set; } = default!;
+    /// <summary>the page's `string ArrivalBrakeAskText()`</summary>
+    [Parameter] public Func<string> ArrivalBrakeAskText { get; set; } = default!;
+    /// <summary>the page's `bool BrakeIsAerobrake`</summary>
+    [Parameter] public bool BrakeIsAerobrake { get; set; }
+    /// <summary>the page's `void DeclineArrivalBrake()`</summary>
+    [Parameter] public Action DeclineArrivalBrake { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void FireArrivalBrake()`</summary>
+    [Parameter] public Action FireArrivalBrake { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

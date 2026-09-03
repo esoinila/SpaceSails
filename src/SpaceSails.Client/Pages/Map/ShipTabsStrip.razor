@@ -1,0 +1,83 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE DESK TABS, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #1038 · peek-keep: this bar is the one thing peek leaves standing, because the 👁 button on the
+           end of it is the labelled way out of the mode. It has been meant to survive since peek was
+           written; until now the exemption named it as a direct child of .map-page and #992's flow column
+           quietly repealed that. *@
+        <div class="desk-tab-bar peek-keep bg-dark bg-opacity-75 rounded p-1">
+            @foreach (ShipDesk desk in TabBarOrder)
+            {
+                @* #1021 · The Galley chip is still on the bar and is no longer a desk — pressing it raises
+                   the galley CARD over whatever is showing (and presses again to shut it), so its hint says
+                   that rather than promising a screen the band no longer has. #195's law: every control
+                   states what pressing it will do. It never lights, because nothing it does makes it the
+                   desk you are sitting at — the tab bar goes on carrying exactly one lit tab. *@
+                <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
+                        title="@(desk == ShipDesk.Galley
+                                 ? "Open the galley over this desk — the news wire and the rum locker (press again to shut it)"
+                                 : $"Switch to the {DeskLabel(desk)} desk")"
+                        @onclick="() => SwitchDeskFromClick(desk)">
+                    @DeskKeyLabel(desk) @DeskLabel(desk)
+                </button>
+            }
+            @* Owner request: temporarily clear every panel to read the map, and back. Toggles the
+               .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` .
+               #1038 · While peeking, this button IS the way out, so it says so in words and names the key
+               that also works — #195's law that every control states what pressing it will do, and the
+               shell wave's rule that a way out is visible AND worded. *@
+            <button type="button" class="btn btn-sm desk-tab @(_peekMap ? "btn-warning" : "btn-outline-light")"
+                    title="@(_peekMap
+                             ? "Bring the panels back — or press Esc (` toggles too)"
+                             : "Peek at the map — hide the panels (` toggles, Esc brings them back)")"
+                    @onclick="TogglePeekMapFromClick">
+                @(_peekMap ? "👁 Show panels (Esc)" : "👁 Peek")
+            </button>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
+    /// <summary>the page's `bool _peekMap`</summary>
+    [Parameter] public bool _peekMap { get; set; }
+    /// <summary>the page's `string DeskKeyLabel(ShipDesk desk)`</summary>
+    [Parameter] public Func<ShipDesk, string> DeskKeyLabel { get; set; } = default!;
+    /// <summary>the page's `string DeskLabel(ShipDesk desk)`</summary>
+    [Parameter] public Func<ShipDesk, string> DeskLabel { get; set; } = default!;
+    /// <summary>the page's `Task SwitchDeskFromClick(ShipDesk desk)`</summary>
+    [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
+    /// <summary>the page's `ShipDesk[] TabBarOrder`</summary>
+    [Parameter] public ShipDesk[] TabBarOrder { get; set; } = default!;
+    /// <summary>the page's `Task TogglePeekMapFromClick()`</summary>
+    [Parameter] public Func<Task> TogglePeekMapFromClick { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}
