@@ -102,7 +102,21 @@ public sealed partial class DeckView
             // It still retracts. SEALED is what it looks like, not what it does: a door here that refused to
             // open would strand a captain in a lift head, and the reachability audits would be right to say so.
             float weight = d.Machined ? 6f : 3.5f;
-            bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius);
+
+            // #442 · …AND A LEAF WITH A WALL ACROSS IT NEVER RETRACTS. The look is DERIVED from the one
+            // list (DeckPlan.DoorwayIsWalledUp) rather than declared beside it. The ship's own shuttle
+            // hatch while she is docked, and every dogged compartment hatch, are a wall PLUS an unlocked
+            // door drawn over it — so the pen used to slide the leaf aside as the captain came up, and the
+            // boot was then refused by stone behind an opening the player had just watched open. That is
+            // #442's second direction, and it is the parallel construct the issue names by the plan's own
+            // comment ("decoration only, and is backed by a real wall so you can't pass").
+            //
+            // Drawn SHUT and not cold-and-locked: it is not locked, and the locked treatment would tell a
+            // captain they need a card for a hatch that only wants the shuttle gone or the room un-dogged.
+            // The machined lift-head door above is untouched by this — nothing is ever walled across it,
+            // which is exactly why its own paragraph can promise that it still retracts.
+            bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius)
+                        && !plan.DoorwayIsWalledUp(d);
             if (open)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).

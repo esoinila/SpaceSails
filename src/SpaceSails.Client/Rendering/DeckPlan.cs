@@ -16,7 +16,7 @@ namespace SpaceSails.Client.Rendering;
 /// (port) / three cabins + a space HEAD 🚽 (starboard) → midship corridor → shuttle bay (port,
 /// where the boarding-droid infantry is stationed) / cargo hold (starboard) → engine room.
 /// </summary>
-public sealed class DeckPlan
+public sealed partial class DeckPlan
 {
     public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, ShelterDoor, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves,
         // #563 · The outpost hut: its dogged hatch (force it, the room appends), the ammunition locker

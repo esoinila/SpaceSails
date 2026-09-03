@@ -48,9 +48,9 @@ calls | luna B1 · the round is out, and the buzzer went | 675
 calls | phobos B1 | 641
 calls | titan B1 | 610
 calls | surface · luna site 0 | 210
-calls | surface · luna site 0, the whole excursion | 317
+calls | surface · luna site 0, the whole excursion | 318
 calls | surface · luna site 0, dark, and the fan hears something | 263
-calls | surface · titan site 0, a derelict's instruments (none) | 322
+calls | surface · titan site 0, a derelict's instruments (none) | 323
 sha256 | ship · under way | 58db0ba402b4b3545c170303bc0d73eb37e5dde9f9b704849260d8cc2405b1b0
 sha256 | ship · docked, the shuttle away and the machine stalling | d3e9fda8acbf8860a159cea9724adc86b198b6a919d3329c6bf76948457b815c
 sha256 | ship · hatches dogged, seated at the table | 59002f36dab94347fe6ba76bc324a2adb06ff473088f58d8d1cc9958fad53edf
@@ -81,6 +81,6 @@ sha256 | luna B1 · the round is out, and the buzzer went | 5c7fc76bad716acaddbc
 sha256 | phobos B1 | b2400bdfc6805eb828e42edd446dce073c3bccac566a33d9f701f95b80a63dc9
 sha256 | titan B1 | 932050c8bbb8bec0e9e7bfb7a1883edd82bb0b26745ded436123b3cf2c833aee
 sha256 | surface · luna site 0 | 3905d4655083d74204ac9a2b8fe3b1f5a0ca0c518a854e505725014c57b2db0b
-sha256 | surface · luna site 0, the whole excursion | bb8a67420d213085f2d5ace30895ad4304aed131ce11ec4db5f6a9b7d55c2511
+sha256 | surface · luna site 0, the whole excursion | 6991ebf39947afcccf68a9998e5ec09f8552b0008159d9c9c267551ea0a39632
 sha256 | surface · luna site 0, dark, and the fan hears something | 34020834f957d7b8d3db8b5c02a14ab017a4553a34fe1100346246a418522e71
-sha256 | surface · titan site 0, a derelict's instruments (none) | 356b7006e26d38a9922012004c2e7968a0ffe66f9c678c5f914302a5d396a07b
+sha256 | surface · titan site 0, a derelict's instruments (none) | 87cf37fc3a558a1694463c319241bf01bb5bdff67b756b2817d8e26a28121d9a
