@@ -150,9 +150,15 @@ public static class HavenInterior
     /// in and sat down (<see cref="RoomChurn"/>). Null, or a churn with nothing in it, is the rota's own
     /// answer. A churn that HAS something in it is part of the cache key, for the reason the watch is: two
     /// rooms with different people in them are two rooms.</param>
+    /// <param name="tier">#380 item 10 · Which tube this berth earned (<see cref="ArrivalTube.TierFor"/>), so the
+    /// customs desk at the immigration gate can say what the gate is for. It is a PARAMETER and not something
+    /// this file works out, because the tier is derived from the scenario's traffic and this renderer has no
+    /// ephemeris — passing the page's own answer in is what makes the desk and the arrival plate one reading of
+    /// one berth rather than two. Null is "nobody asked": the desk is left off, which is what every caller that
+    /// only wants the geometry has always got. Part of the cache key, for the reason the watch is.</param>
     public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
         bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null,
-        RoomChurn? churn = null)
+        RoomChurn? churn = null, ArrivalTube.Tier? tier = null)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -163,17 +169,18 @@ public static class HavenInterior
             : DeckExpansions.ActiveWings(WingCatalog(bodyId), bodyId, unlockedHatchIds).ToList();
         if (fillWalkers is not null)
         {
-            return BuildComplex(spec, active, simTime, forceOracle, fillWalkers, churn);
+            return BuildComplex(spec, active, simTime, forceOracle, fillWalkers, churn, tier);
         }
         long watch = PatronRota.WatchIndex(simTime);
         string wingKey = active.Count == 0
             ? bodyId
             : bodyId + "|" + string.Join(",", active.Select(w => w.UnlockHatchId).OrderBy(s => s, System.StringComparer.Ordinal));
         string room = churn is { Anything: true } c ? "+" + c.Signature : "";
-        string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}{room}"; // the seated-regular rota re-rolls each watch, so it keys the cache
+        string gate = tier is { } t ? "+" + t : "";
+        string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}{room}{gate}"; // the seated-regular rota re-rolls each watch, so it keys the cache
         if (!Cache.TryGetValue(key, out DeckPlan? deck))
         {
-            deck = BuildComplex(spec, active, simTime, forceOracle, null, churn);
+            deck = BuildComplex(spec, active, simTime, forceOracle, null, churn, tier);
             Cache[key] = deck;
         }
         return deck;
@@ -192,6 +199,11 @@ public static class HavenInterior
     private static readonly float HallApothem = (float)(HallR * System.Math.Cos(System.Math.PI / HallSides));
     private static readonly float HallBottomY = HallCenterY - HallApothem; // the tube mates here (south edge)
     private static readonly float HallTopY = HallCenterY + HallApothem;    // the bar opens off here (north edge)
+
+    /// <summary>Where the customs officer stands, beside the immigration gate — the droid in
+    /// <see cref="FillComplexDroids"/> AND the card [E] raises at him (#380 item 10). One constant, because a
+    /// figure and the console that speaks for him standing a du apart is a man talking from the next square.</summary>
+    private static readonly (float X, float Y) CustomsDesk = (6.5f, HallBottomY + 7);
 
     // --- The bar, off the hall's north door — big and cavernous, a local-planet view along the back ---
     private const float BarLeft = -14f;
@@ -704,7 +716,7 @@ public static class HavenInterior
 
     private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime,
         bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null,
-        RoomChurn? churn = null)
+        RoomChurn? churn = null, ArrivalTube.Tier? tier = null)
     {
         DeckPlan ship = DeckPlan.Ship;
         bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
@@ -798,26 +810,9 @@ public static class HavenInterior
         walls.Add(new(4, deskY, 9, deskY, false, false));  // counter, starboard of the gate (gate gap x 1..4)
         labels.Add((HallCenterX, HallBottomY + 7.5f, $"{spec.Authority} IMMIGRATION"));
         labels.Add((HallCenterX, HallBottomY + 2.5f, spec.Quip));
-        // #380 item 10 — THE ONE MYSTIFIER THIS LANE COULD NOT CLOSE. The audit's complaint: a counter, a
-        // gate, a signed authority and an officer standing at it set an expectation of being CHECKED, and
-        // the captain walks through carrying whatever he likes, every time, for ever. Two of the three
-        // pieces have arrived since the audit was written and the third is a sentence:
-        //   · the RULE exists — ArrivalTube.WalkLine says, on the arrival plate, exactly how far you carry
-        //     something you should not be carrying before anybody can ask about it, per tier;
-        //   · the MECHANIC exists — InspectionTeam / HullStowage (#537, #538) is a real sweep with real
-        //     eyes, but it happens aboard somebody else's hull, never at a port's own gate;
-        //   · the OFFICER is mute. buffer[3] in FillComplexDroids is a facing droid with no console, so
-        //     this gate is scenery promising a check the port never performs.
-        //
-        // FABLE: line needed — one card, on a 🛃 CUSTOMS ViewObject console at the officer's own square
-        // (6.5, HallBottomY + 7 — over an interact radius from the plaque, the poster, the lifeboat and
-        // the three ad plates, which is the clearance rule this hall is placed by), in the house voice,
-        // saying WHY this gate waves this captain through: the checking is the walk, not the counter — a
-        // great port's queue is where anybody who wanted to look already looked, and the officer at the
-        // end of it is stamping an answer somebody else arrived at. Ideally a pair keyed on
-        // ArrivalTube.TierFor, so a working berth's gate reads as a formality nobody funds rather than one
-        // nobody enforces. NOT invented here: it is the port's first sentence to a new captain and it has
-        // to agree with the tube plate he read ninety seconds earlier.
+        // #380 item 10 — the officer at that gate is not mute any more. He stands at CustomsDesk and the
+        // console that gives him his sentence goes on the same square, below, where the concourse's other
+        // fixtures are hung. See ArrivalTube.CustomsLine for what he says and why it is per-tier.
         //
         // A big lobby welcome poster so you know at a glance which port you're standing in.
         labels.Add((HallCenterX, HallCenterY + 8, $"★  WELCOME TO {spec.Name}  ★"));
@@ -961,6 +956,29 @@ public static class HavenInterior
         labels.Add((HallCenterX + 9, HallCenterY - 6.5f, Plaques.LifeboatLabel));
         consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX + 9, HallCenterY - 5,
             Plaques.LifeboatLabel, null, Plaques.LifeboatMuster(spec.BodyId)));
+
+        // ── #380 item 10 · THE CUSTOMS DESK SAYS WHAT THE GATE IS FOR ───────────────────────────────────
+        //
+        // The audit's last open complaint, and it was about a PROMISE: a counter, a gate, a signed authority
+        // and an officer standing at it set an expectation of being CHECKED, and the captain walked through
+        // carrying whatever he liked, every time, for ever. The rule was already written down (the arrival
+        // plate's ArrivalTube.WalkLine) and the sweep was already built (#537/#538) — aboard somebody else's
+        // hull, never at a port's own gate. What was missing was the officer's own sentence.
+        //
+        // It is a ViewObject card in the plaque/lifeboat idiom, on the OFFICER'S OWN SQUARE — CustomsDesk,
+        // the same constant FillComplexDroids stands him on, so the man and the card can never drift a du
+        // apart. The words come from Core, per tier, out of the same switch WalkLine lives in: the desk and
+        // the plate he read ninety seconds ago are one reading of one berth. No line at an outpost means no
+        // console at an outpost — there is no queue and no officer there to have an opinion.
+        //
+        // Clearance: over an interact radius from the plaque (−3.5, 35), the lifeboat (11.5, 35), the poster,
+        // the three ad plates and every ring hatch — the same rule the whole concourse is placed by, and
+        // asserted at each fixture's own square in TheWallsAreHungAndReadTests.
+        if (tier is { } berth && ArrivalTube.CustomsLine(berth) is { } stamped)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, CustomsDesk.X, CustomsDesk.Y,
+                ArrivalTube.CustomsLabel, null, stamped));
+        }
 
         // PIRATE INSURANCE — the Gen-AI dock poster (#380 item 1: pre-seed the brain-backup / Pirate
         // Insurance premise with port advertising, so a new player meets the fiction BEFORE the death card,
@@ -1115,7 +1133,7 @@ public static class HavenInterior
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
         double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
-        buffer[3] = new DeckPlan.Droid(6.5, HallBottomY + 7, -System.Math.PI / 2, "Customs"); // officer beside the gate
+        buffer[3] = new DeckPlan.Droid(CustomsDesk.X, CustomsDesk.Y, -System.Math.PI / 2, "Customs"); // officer beside the gate
 
         // The four regulars sit at [4..8). A present one gets a tiny seeded thermal shuffle around their
         // seated anchor + a look-around facing twitch (ReeverIdle, #390) so they read alive, not carved;

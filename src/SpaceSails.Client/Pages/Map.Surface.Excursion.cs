@@ -631,8 +631,28 @@ public partial class Map
         // are already in the magazine, so there is nothing half-finished to persist.
         public int? RearmBotIndex { get; set; }
         public double RearmProgress { get; set; }
-        public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
+        // #314/#316 · The downed Old Ones this visit can SEE, left where they fell — carrying the sim-time
+        // they fell at, because a husk's whole value as a clue is how old it is.
+        //
+        // #316 law 1 · IT IS NOT WHERE THEY ARE KEPT ANY MORE, and that was the bug. This was the only
+        // record of a firefight and lift-off threw it away with the visit, so the footprints died with the
+        // shuttle and a captain could never come back and read what had happened in a field. What the GROUND
+        // kept lives on the ship's ledger now (Map._groundMemory / Core GroundMemory), keyed on
+        // (body, site, tile, position, when) and written to the vault, and this list is SEEDED FROM IT on
+        // arrival (SeedTheHusksLeftHere) — so what is drawn on a return visit is what was written on the
+        // last one.
+        //
+        // It is still a list on the visit because it is what the RENDERER walks, and because it holds the
+        // ones the ground has no opinion about: a husk on a poured floor two hundred metres down, or on
+        // somebody else's steel deck, is not a mark in the regolith. Everything in it that IS a mark in the
+        // regolith went through the one writer, so the two cannot disagree.
+        public List<GroundMemory.Husk> Husks { get; init; } = [];
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
+
+        // #316 law 2 · Which husks this visit has already been told about, by their ledger key. Presentation
+        // state and per-visit by design, the same class as ShelterBreathNoted above: a line said once as you
+        // walk over the pile is a scene, and the same line every frame is a nag.
+        public HashSet<string> HusksRead { get; } = [];
 
         // A chest is in hand right now: something was loaded, not yet buried, not dropped.
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;

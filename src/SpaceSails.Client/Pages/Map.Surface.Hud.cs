@@ -504,9 +504,9 @@ public partial class Map
         // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316).
         if (LayerVisible("finds.husks"))
         {
-            foreach ((double hx, double hy) in ex.Husks)
+            foreach (GroundMemory.Husk husk in ex.Husks)
             {
-                _hudHusks.Add((hx, hy));
+                _hudHusks.Add((husk.X, husk.Y));
             }
         }
 
