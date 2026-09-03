@@ -281,6 +281,11 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
         string razor = File.ReadAllText(
             Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
+        // THE GATE ITSELF, and not merely the two controls behind it. The first version of this guard read
+        // only the labels and the handlers, and stayed green against a card whose region had been switched
+        // off at the `@if` — the controls were in the file and unreachable on the screen, which is a
+        // decision the captain is never offered wearing a passing test.
+        Assert.Contains("@if (TheFindIsWaitingOnAnAnswer)", razor, StringComparison.Ordinal);
         Assert.Contains("KeepOrLeave.KeepLabel", razor, StringComparison.Ordinal);
         Assert.Contains("KeepOrLeave.LeaveLabel", razor, StringComparison.Ordinal);
         Assert.Contains("@onclick=\"KeepTheFind\"", razor, StringComparison.Ordinal);
