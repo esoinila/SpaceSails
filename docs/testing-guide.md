@@ -1968,7 +1968,7 @@ Tagging half of a slow class would leave the other half holding the floor, so a 
 mark or it does not. **64 classes** cost ten seconds or more: 21 in Core, 43 in the Client. Between
 them they are **733 tests — 12.7% of the suite — and 93.0% of its measured seconds.** (63 of them
 were measured in the 2026-09-02 baseline; the 64th, `TheWorldBuildersAreThreadSafeTests`, is #1108's
-concurrency guard, measured at 11 s on 2026-09-04.)
+concurrency guard, measured at 15 s on 2026-09-04.)
 
 Ten is a budget, not a discovered boundary: the class-total distribution is a continuum here, with
 the nearest class above the line at 10.5 s and the nearest below it at 9.8 s. It is chosen because

@@ -20,7 +20,7 @@ namespace SpaceSails.Client.Tests;
 /// against Core.Tests' 4,178, and it holds 2,149 s of the baseline's 3,552 s — because almost
 /// everything in it BOOTS the shipping page (the deck sweeps, the pop-up register, the boot
 /// fingerprints, the A* walkability audits) rather than checking a rule. 42 of its classes are over
-/// the cut, holding 2,033 s across 451 tests.</para>
+/// the cut, holding 2,033 s across 451 tests — 43 since #1108 added the concurrency guard.</para>
 ///
 /// <para><b>Adding or removing a tag.</b> Tag the class, add its row here with the seconds you
 /// measured, quote the measurement in the PR; untag and delete the row in the same commit. See
@@ -97,7 +97,7 @@ public sealed class TheSlowGateRosterTests
             { nameof(TheDirectNavActionsAreEmergenciesTests), 12 },
 
             // ── The concurrency guard (#1108), measured 2026-09-04 rather than in the 09-02 baseline ──
-            { nameof(TheWorldBuildersAreThreadSafeTests), 11 },
+            { nameof(TheWorldBuildersAreThreadSafeTests), 15 },
         };
 
     /// <summary>

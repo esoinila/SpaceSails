@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -23,15 +24,16 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para><b>What it asserts.</b> A fingerprint of every mark the builder lays — walls with their flags,
 /// consoles with their labels, room labels, doors, scenery and structures, at round-trip float precision —
-/// taken once on a quiet thread, and then taken again by <see cref="Environment.ProcessorCount"/> workers
-/// hammering the same builders for fifty rounds. Every fingerprint must equal the quiet one. That covers
-/// both halves of what a shared cache can get wrong: a corrupted dictionary (which throws) and a cache that
-/// hands back somebody else's answer (which does not).</para>
+/// taken once on a quiet thread, and then taken again by half the machine's cores for fifty rounds each,
+/// while the OTHER half does nothing but insert grounds nobody has ever asked for. Every fingerprint must
+/// equal the quiet one. That covers both halves of what a shared cache can get wrong: a corrupted dictionary
+/// (which throws) and a cache that hands back somebody else's answer (which does not).</para>
 ///
 /// <para><b>Proven able to fail.</b> With <c>MoonSurface._layoutCache</c> reverted from
-/// <c>ConcurrentDictionary</c> to <c>Dictionary</c> — the #585 code, exactly — this class goes red on the
-/// first round with <c>InvalidOperationException: Operations that change non-concurrent collections must
-/// have exclusive access</c>.</para>
+/// <c>ConcurrentDictionary</c> to <c>Dictionary</c> — the #585 code, exactly — this class goes red with
+/// <c>InvalidOperationException: Operations that change non-concurrent collections must have exclusive
+/// access. A concurrent update was performed on this collection and corrupted its state.</c>, which is
+/// word for word what #585 was reported as.</para>
 ///
 /// <para><b>What it deliberately does NOT do</b> is install a process-wide register from a worker. The
 /// registers are ambients the generators read on purpose (§13.15: thirty callers must not each learn what a
@@ -40,11 +42,12 @@ namespace SpaceSails.Client.Tests;
 /// see <c>StopRegisterCollection</c> and <c>TheProcessWideWritersAreSerialisedTests</c>.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
-[SlowGate] // #251 · 21 s over 1 test, measured 2026-09-04; see TheSlowGateRosterTests.
+[SlowGate] // #251 · 15 s over 1 test, measured 2026-09-04; see TheSlowGateRosterTests.
 public sealed class TheWorldBuildersAreThreadSafeTests
 {
-    /// <summary>How many times each worker rebuilds the whole set. Fifty is enough that a plain dictionary
-    /// throws on the first round and small enough that the class stays inside the slow gate's budget.</summary>
+    /// <summary>How many times each reader rebuilds the whole set while the writers churn. Fifty is long
+    /// enough that a plain dictionary is corrupted well before the end and short enough that the class costs
+    /// fifteen seconds rather than a minute.</summary>
     private const int Rounds = 50;
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
@@ -144,6 +147,35 @@ public sealed class TheWorldBuildersAreThreadSafeTests
     }
 
     /// <summary>
+    /// #1108 · THE CHURN — a ground nobody has ever built, over and over, for as long as the comparison
+    /// runs. Every call is a cache MISS and therefore an <b>insert</b>, and because
+    /// <c>MoonSurface</c>'s memo is capped at 64 entries the cap's <c>Clear()</c> fires every sixty-odd
+    /// iterations, with every other worker reading the same dictionary at the time.
+    ///
+    /// <para><b>Without this the guard proves nothing, and it was written without it twice.</b> The quiet
+    /// baseline warms every key the comparison uses, so the concurrent phase was pure <c>TryGetValue</c> —
+    /// and a plain <c>Dictionary</c> under nothing but readers is perfectly safe. Reverting
+    /// <c>_layoutCache</c> to the #585 code left this class GREEN. One churn build per round did not fix it
+    /// either: 600 inserts spread over eleven seconds is one write every eighteen milliseconds, and threads
+    /// simply do not meet that rarely. It took a DEDICATED writer per core, looping as fast as it can, to
+    /// make the window the bug actually lives in. That is the "a green test that asserts nothing" bug class
+    /// twice over: the assertion was right both times and the world could not tell pass from fail.</para>
+    ///
+    /// <para>The decks it builds are thrown away; only the writes they cause matter. The haven memo is
+    /// churned once per comparison round rather than in this loop, because it has no cap — a tight loop of
+    /// distinct watches would grow it without bound, which is a real property of that cache and not
+    /// something a guard should discover by exhausting the runner's memory.</para></summary>
+    private static void ChurnUntil(CancellationToken stop, int worker)
+    {
+        for (long n = 0; !stop.IsCancellationRequested; n++)
+        {
+            MoonSurface.SurfaceDeck(
+                "luna", "luna", [], 0, static (_, _) => { },
+                siteSalt: $"churn-{worker}-{n}", siteName: "churn", hasSecretSite: true);
+        }
+    }
+
+    /// <summary>
     /// #1108 · THE SAME WORLD, WHOEVER IS ASKING AND HOWEVER MANY OF THEM ARE ASKING AT ONCE.
     /// </summary>
     [Fact]
@@ -153,13 +185,23 @@ public sealed class TheWorldBuildersAreThreadSafeTests
         Assert.True(quiet.Count > 20,
             $"only {quiet.Count} deck(s) were built — this proves little about a shared cache.");
 
-        int workers = Math.Max(4, Environment.ProcessorCount);
+        int workers = Math.Max(2, Environment.ProcessorCount / 2);
         var wrong = new System.Collections.Concurrent.ConcurrentBag<string>();
 
-        await Task.WhenAll(Enumerable.Range(0, workers).Select(worker => Task.Run(() =>
+        using var stop = new CancellationTokenSource();
+        Task[] churners = [.. Enumerable.Range(0, workers)
+            .Select(w => Task.Run(() => ChurnUntil(stop.Token, w), CancellationToken.None))];
+
+        Task[] readers = [.. Enumerable.Range(0, workers).Select(worker => Task.Run(() =>
         {
             for (int round = 0; round < Rounds; round++)
             {
+                // …and the other memo, keyed on the docking watch among other things: a watch nobody has
+                // docked at is a key nobody has built, so this round inserts into it too.
+                HavenInterior.DockedDeck(
+                    HavenInterior.InteriorBodyIds[0],
+                    simTime: 100_000.0 * ((worker * Rounds) + round + 1));
+
                 List<ulong> mine = BuildTheWorld();
                 if (mine.Count != quiet.Count)
                 {
@@ -176,7 +218,13 @@ public sealed class TheWorldBuildersAreThreadSafeTests
                     }
                 }
             }
-        })));
+        }))];
+
+        await Task.WhenAll(readers);
+        await stop.CancelAsync();
+        // Awaited, not abandoned: a churner that died on a corrupted dictionary must be the thing this
+        // test reports, and an unobserved faulted task reports nothing at all.
+        await Task.WhenAll(churners);
 
         Assert.True(wrong.IsEmpty,
             $"{wrong.Count} worker(s) were handed a different world by a shared generator:\n  " +
