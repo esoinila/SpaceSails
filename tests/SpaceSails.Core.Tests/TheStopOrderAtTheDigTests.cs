@@ -90,7 +90,8 @@ public sealed class TheStopOrderAtTheDigTests
     /// nobody could reach.</para>
     ///
     /// <para><b>Revert that reddened it:</b> the <c>StopOrder.TheOfficeGetsThisOne</c> clause taken out of
-    /// <c>Burial.Fill</c> — <i>"46 ground(s) were filled in AND closed by order"</i>.</para>
+    /// <c>Burial.Fill</c> — <i>"Assert.Equal() Failure: Values differ. Expected: 69. Actual: 104"</i>, which
+    /// is the partition counted: sixty-nine grounds went to the neighbours AND to the office both.</para>
     /// </summary>
     [Fact]
     public void EveryDueGroundGoesToTheNeighboursOrToTheOfficeAndNeverToBoth()
@@ -142,9 +143,9 @@ public sealed class TheStopOrderAtTheDigTests
     /// posted while he is standing on the floor would be a thing that happened TO him and therefore a thing
     /// he could describe.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> <c>WindowsBeforeStopping</c> set to 0 — <i>"the working was
-    /// closed inside the window it was opened in"</i>; and the <c>standingOn</c> clause removed —
-    /// <i>"the working was closed with the captain standing on it"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> <c>WindowsBeforeStopping</c> set to 0, and (separately) the
+    /// <c>standingOn</c> clause deleted — each gave the same shape of failure from its own line,
+    /// <i>"Assert.Empty() Failure: Collection was not empty. Collection: [stop-ground-69]"</i>.</para>
     /// </summary>
     [Fact]
     public void TheOrderComesAfterOneWholeWindowAndNeverWhileHeIsThere()
@@ -181,8 +182,8 @@ public sealed class TheStopOrderAtTheDigTests
     /// answers must be identical, which is the whole law said in one comparison.</para>
     ///
     /// <para><b>Revert that reddened it:</b> <c>HasFoundBand</c> taught to answer no on a stopped ground the
-    /// way it does on a buried one — <i>"stop-ground-1284 B21 stopped answering IsFound after the
-    /// order"</i>.</para>
+    /// way it does on a buried one — <i>"a stop order moved the ground: stop-ground-69: HasFoundBand went
+    /// false under the order / stop-ground-69: the true depth moved under the order"</i>.</para>
     /// </summary>
     [Fact]
     public void AStoppedGroundKeepsEveryHallItHad()
@@ -248,7 +249,8 @@ public sealed class TheStopOrderAtTheDigTests
     /// what makes the halls unreachable is that everything under the listed bottom hangs off that one.</para>
     ///
     /// <para><b>Revert that reddened it:</b> the <c>StopSealsTheGateTo</c> clause taken out of
-    /// <c>LiftPanel</c> — <i>"stop-ground-1284: the panel still offers the way down under the order"</i>.</para>
+    /// <c>LiftPanel</c> — <i>"Assert.DoesNotContain() Failure: Filter matched in collection"</i>, the row
+    /// into the band nobody listed still on the panel with the order posted at the seal.</para>
     /// </summary>
     [Fact]
     public void TheGateIntoTheDeepIsNotOfferedOnAStoppedGroundAndIsOnEveryOther()
@@ -313,10 +315,10 @@ public sealed class TheStopOrderAtTheDigTests
     /// over <c>floor.Walls</c> alone would walk straight through the seal and would be auditing a building
     /// the game does not ship — the drawing-lies-about-the-sim failure, wearing a lab coat.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> the recess's two side walls dropped from <c>CarveStopSeal</c>,
-    /// so the seal became a leaf hanging in open corridor — <i>"the pocket behind the seal is walkable
-    /// ground"</i>; and the mouth left out of <c>alcoveMouths</c>, which walls the recess shut and takes the
-    /// plate out of the captain's reach.</para>
+    /// <para><b>Revert that reddened it:</b> the mouth left out of <c>alcoveMouths</c> in
+    /// <c>CarveStopSeal</c>, which walls the recess shut and takes the plate out of the captain's reach —
+    /// <i>"the seal shut somebody in: stop-ground-69 B6: the ground in front of the plate cannot be walked
+    /// to"</i>.</para>
     /// </summary>
     [Fact]
     public void NoRoomOnTheSealedFloorIsShutInByTheSeal()
@@ -406,9 +408,11 @@ public sealed class TheStopOrderAtTheDigTests
     /// sentence a captain reads when he presses it is the order itself and nothing has been composed around
     /// it.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> <c>CarveStopSeal</c> made unconditional — <i>"a ground nobody
-    /// stopped has an order posted on it"</i>; and the <c>StopOrder.IsPlate</c> arm removed from
-    /// <c>LockedLine</c> — <i>"the seal reads as an ordinary lock and the order is never shown"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> <c>StopSealFloorOf</c> made unconditional —
+    /// <i>"Assert.DoesNotContain() Failure: Filter matched in collection … Sign = AUTHORITY — WORKING
+    /// CLOSED"</i>, on a ground nobody had stopped; and the <c>StopOrder.IsPlate</c> arm inverted in
+    /// <c>LockedLine</c> — <i>"Assert.Contains() Failure: Sub-string not found. String: AUTHORITY —
+    /// WORKING CLOSED. The lock i… Not found: By order of the Authority this working is…"</i>.</para>
     /// </summary>
     [Fact]
     public void TheOrderIsPostedAtTheSealAndNowhereElse()
@@ -452,9 +456,11 @@ public sealed class TheStopOrderAtTheDigTests
     /// sentence is <b>Authority</b>, and there is no signature line of any kind. A stop order that named
     /// somebody would mint a villain official, and the horror is that any office will do.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the order re-authored as <i>"…closed by order of Director
-    /// Vantar"</i> — <i>"the order names a person: Director, Vantar"</i>; and the plate re-authored as
-    /// <c>"PLANT — WORKING CLOSED"</c> — <i>"the plate names a department: PLANT"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> <i>"Countersigned by Director Vantar."</i> appended to the
+    /// order — <i>"Assert.DoesNotContain() Failure: Sub-string found … s published. Countersigned by
+    /// Director Va…"</i>; and the plate re-authored as <c>PLANT — WORKING CLOSED</c> —
+    /// <i>"Assert.Contains() Failure: Sub-string not found. String: PLANT — WORKING CLOSED. Not found:
+    /// AUTHORITY"</i>.</para>
     /// </summary>
     [Fact]
     public void ThePlateCarriesTheStampAndNeitherStringCarriesAName()
@@ -504,8 +510,9 @@ public sealed class TheStopOrderAtTheDigTests
     /// somebody shut.</para>
     ///
     /// <para><b>Revert that reddened it:</b> <c>Judge</c> asking <c>IsSealedWay</c> again instead of
-    /// <c>HasNoReader</c> — <i>"the seal reads rather than latches"</i>, which would have had a captain
-    /// putting rounds through a panel that is not there.</para>
+    /// <c>HasNoReader</c> — <i>"Assert.Equal() Failure: Values differ. Expected: NoLockToBreak. Actual:
+    /// ReadsRatherThanLocks"</i>, which would have had a captain putting rounds through a panel that is not
+    /// there.</para>
     /// </summary>
     [Fact]
     public void TheSealHasNoReaderAndNoHasp()
@@ -535,9 +542,10 @@ public sealed class TheStopOrderAtTheDigTests
     /// wrote. The second tell is the preposition — the unnumbered line says <i>per order</i> where both
     /// others say <i>per instruction</i> — and no sentence anywhere points either of them out.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> a number written into the middle entry —
-    /// <i>"every entry cites an instruction; there is no missing middle"</i>; and the two bracketing entries
-    /// swapped — <i>"the cited instructions do not rise: 2233 then 2231"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> <i>"per instruction 2232/M, Plant"</i> written into the middle
+    /// entry — <i>"Assert.Equal() Failure: Values differ. Expected: 0. Actual: 1"</i>; and the two bracketing
+    /// entries swapped on the paper — <i>"the valve-book paper does not carry, in order: Working closed.
+    /// Services isolated per order. Review pending."</i>.</para>
     /// </summary>
     [Fact]
     public void TheValveBookNamesAnInstructionNobodyWrote()
@@ -592,9 +600,10 @@ public sealed class TheStopOrderAtTheDigTests
     /// so. It is on the listed bottom because that is what makes it evidence rather than a document — the
     /// book that goes terse for one line is kept on the floor whose working was closed.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> <c>ValveBookRoomFor</c> returning room 0 — <i>"the valve-book
-    /// stands on the Key room"</i>; and the <c>HaulLine</c> arm removed — <i>"the valve-book room reads as
-    /// generic operational paper"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> <c>ValveBookRoomFor</c> returning room 0 —
+    /// <i>"Assert.NotEqual() Failure: Values are equal. Expected: Not Tuple (-6, 0). Actual: Tuple (-6,
+    /// 0)"</i>, the book standing on the Key room; and the <c>HaulLine</c> arm removed —
+    /// <i>"Assert.Equal() Failure: Strings differ"</i>, the room reading as generic operational paper.</para>
     /// </summary>
     [Fact]
     public void TheValveBookIsKeptOnTheFloorTheOrderClosed()
@@ -636,9 +645,10 @@ public sealed class TheStopOrderAtTheDigTests
     /// <para>It takes one of the four slots and never a fifth, and it is pinned once: a board that grew a row
     /// would say in its own shape that something new had happened here.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the roster pin removed from <c>Pinned</c> — <i>"the rota is not
-    /// up on a stopped ground"</i>; and the <c>StopOrder.On</c> clause taken out of <c>Burial.NoticeIsUp</c>
-    /// — <i>"a sealed site is advertising resurfacing of the galleries"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> the roster pin removed from <c>Pinned</c> —
+    /// <i>"Assert.Single() Failure: The collection did not contain any matching items"</i>; and the
+    /// <c>StopOrder.On</c> clause taken out of <c>Burial.NoticeIsUp</c> — <i>"Assert.False() Failure.
+    /// Expected: False. Actual: True"</i>, a sealed site advertising resurfacing of the galleries.</para>
     /// </summary>
     [Fact]
     public void TheRotaIsUpOnAStoppedGroundAndTheWorksNoticeIsNot()
@@ -700,8 +710,9 @@ public sealed class TheStopOrderAtTheDigTests
     /// reflection, exactly as the clock's own guard sweeps the clock, so a helpful sentence added later
     /// cannot escape the canon grep by not being in <c>AllProse</c>.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> the word planted in the order —
-    /// <i>"a stop-order string names the reserved object: OrderLine"</i>.</para>
+    /// <para><b>Revert that reddened it:</b> the word planted in the order — <i>"a stop-order string
+    /// settles what it must leave open: StopOrder.AllProse: ancient in By order of the Authority this
+    /// ancient working is closed pending structural review…"</i>.</para>
     /// </summary>
     [Fact]
     public void NoStringOnTheStopOrdersPathNamesTheReservedThing()
