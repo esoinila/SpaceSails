@@ -2047,6 +2047,21 @@
                 </div>
                 <div class="tm-caption">@salvageOutcome.Line</div>
                 <div class="tm-contents">💰 @salvageOutcome.CreditsNow.ToString("N0") cr</div>
+                @* #938 D4 · THE MONEY WAS TAKEN FOR A REASON NOBODY COULD READ. #553 has shaved
+                   ComplianceSurcharge.Rate off every filed report since it landed — off the finder's fee AND
+                   off the correct-cause bonus — while its five explanatory members had zero consumers
+                   anywhere in src. The captain saw a smaller number and was given no clause, which is the
+                   one shape this design must not have: "referenced but not described" still needs the
+                   reference. It is on the receipt now, where a line item belongs, in the words Core already
+                   wrote — the line item cites the clause, the caption is the only summary the game ever
+                   offers, and the tooltip is what the office says when a captain asks, seeded off this hull
+                   so the same wreck always gives the same non-answer. Nothing here describes the incident.
+                   Nothing ever will. *@
+                @if (salvageOutcome.SurchargeCr > 0)
+                {
+                    <div class="tm-bearing" title="@TheClauseNonAnswer">@ComplianceSurcharge.LineItem(salvageOutcome.SurchargeCr)</div>
+                    <div class="tm-caption">@ComplianceSurcharge.WhatItIsLine</div>
+                }
                 @if (salvageOutcome.CargoIsHot)
                 {
                     <div class="tm-bearing">🔥 It is in the hold, and it is hot. A collector will know it on sight.</div>

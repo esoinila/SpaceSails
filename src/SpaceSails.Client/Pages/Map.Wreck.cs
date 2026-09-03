@@ -335,6 +335,14 @@ public sealed partial class Map
     /// that earned nobody.</summary>
     private string? _wreckContact;
 
+    /// <summary>#938 D4 · What the office says when a captain asks about cl. 14(b), for the receipt's own
+    /// tooltip. <see cref="ComplianceSurcharge.AskAbout"/> is seeded off the hull the filing is about, so
+    /// the same wreck always gets the same non-answer — an office that changed its story would be a
+    /// conspiracy, and #553's whole point is that this is worse than a conspiracy: there is nobody to ask.
+    /// Falls back to the accountant's summary when the hull is already out of scope.</summary>
+    private string TheClauseNonAnswer =>
+        _wreck is { } filed ? ComplianceSurcharge.AskAbout(filed.Id) : ComplianceSurcharge.WhatItIsLine;
+
     private void DismissWreckOutcome() => _wreckOutcome = null;
 
     // ── The hull ──────────────────────────────────────────────────────────────────────────────────────
