@@ -235,6 +235,40 @@ public partial class Map
                 q.SecretlabCheat = true;
             }
         }
+        else if (pair.StartsWith("preserved=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1074 beat 2 dev cheat: /map?preserved=1 is ?stopped=1 one shift further along — the same rock,
+            // the same ground handed to the Authority by the split, opened TWO whole windows ago instead of
+            // one. Both stages of the office's paperwork therefore fire on the way down: the working is
+            // closed, and then the closed working passes into official care.
+            //
+            // It seeds the disclosure clock's register and NOTHING ELSE, for ?buried=1's reason: the order
+            // and the fence both run through the ordinary StopOrder.Note and PreservationZone.Note on the
+            // ordinary descent, so what a tester walks is exactly what a captain who went away for two shifts
+            // would walk.
+            //
+            // WHAT A TESTER SHOULD SEE, and it is all ON THE SURFACE — everything below is exactly what
+            // ?stopped=1 shows and no more: walk down the field to the survey shed the lift comes up in, and
+            // there is a RAIL round it, a ring of ordinary low wall with exactly ONE gap in it, and the gap
+            // is turned to face the tube he walked out of. At the gap, on the regolith, one line —
+            // AUTHORITY — THIS SITE IS PRESERVED. Its significance is under study. No date, no department,
+            // no name.
+            //
+            // WHAT A TESTER MUST NOT SEE: a second gap; a gap facing anywhere but the tube; a fence he has to
+            // walk round to reach his own boat; a date, a department or a signature on the notice; a card, a
+            // beat, a nerve hit or a line on the wire; or any change at all below ground — the halls are
+            // still there, the shaft under the listed bottom is still sealed by the order, and the lift still
+            // rides to the bottom the building admits to. Use /map?stopped=1 for the same ground one shift
+            // earlier, and /map?found=1 for it before the order.
+            string candidate = Uri.UnescapeDataString(pair["preserved=".Length..]).ToLowerInvariant();
+            if (candidate is "1" or "true" or "yes")
+            {
+                _preservedCheat = true;
+                _stoppedCheat = true;
+                _foundCheat = true;
+                q.SecretlabCheat = true;
+            }
+        }
         else if (pair.StartsWith("card=", StringComparison.OrdinalIgnoreCase))
         {
             // #693 dev cheat: /map?card=next puts ONE authority in the wallet — the one the gate in front

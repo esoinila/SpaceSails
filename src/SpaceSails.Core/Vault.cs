@@ -542,6 +542,28 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? HallsStopped { get; init; }
+
+    /// <summary>#1074 beat 2 — THE GROUNDS THE AUTHORITY HAS TAKEN INTO CARE (<see cref="PreservationZone"/>):
+    /// the closed workings that are now fenced, signed and permanently under study.
+    ///
+    /// <para>A bare list of ids and no window, for <see cref="HallsStopped"/>'s reason: nothing about a zone
+    /// is CHOSEN, so there is nothing for a number to keep stable.</para>
+    ///
+    /// <para><b>It has to ride the same file as <see cref="HallsStopped"/></b>, and harder than that pair
+    /// needed each other: a zone stands on a CLOSED working, so a save that kept the fence and dropped the
+    /// order would come back to a site fenced against a shaft that was open again — the drawing and the
+    /// building disagreeing about one place. And nothing ever removes an id: the study does not end, so a
+    /// reload that quietly un-preserved a site would be the one mechanical fact of the beat going missing.
+    /// </para>
+    ///
+    /// <para>Null until something has actually been fenced — the #1057/#1072/#1066/#677/#1063/#1068/#1074
+    /// pattern, and here for their exact reason: the checksum is taken over the payload, so an eager
+    /// <c>"hallsPreserved": []</c> on every save would change the digest of every vault ever written and
+    /// hang the 📛 tampered marker on honest voyages. A pre-#1074 file simply lacks the field and loads with
+    /// nothing under study.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? HallsPreserved { get; init; }
 }
 
 /// <summary>#1068 — one row of <see cref="ProgressSection.HallsDeclined"/>: a ground, and the world-side
