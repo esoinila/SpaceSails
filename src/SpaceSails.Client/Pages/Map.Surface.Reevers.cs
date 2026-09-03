@@ -419,6 +419,19 @@ public partial class Map
 
         double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
         (double, double)? best = null;
+
+        // #442 · THE SAME STONE THE VOLLEY IS MEASURED AGAINST, WHICH IS WHAT THE PARAGRAPH ABOVE ALREADY
+        // CLAIMED. This read `_deckPlan.CollisionField` while StepSentries three hundred lines down hands
+        // SentryBot.Step the SightBlockers — so the beam and the round were asked about two different
+        // worlds, and the one thing between them is exactly the thing #465 exists for: a SHUT DOOR stops an
+        // eye and a round and never stops a boot, so it is in the sight list and never in the collision
+        // list. A bot behind a dogged hatch therefore painted its beam at an Old One the volley had already
+        // refused to spend a round on. Caught by OneWallOneTruthTests, which now reads this page and insists
+        // every SentryBot sight call is handed the list that knows about doors — spelled out at each call
+        // site rather than hoisted into a local, so the guard reads a literal and cannot be satisfied by a
+        // variable that once held the right thing. SightBlockers() is memoized on the stone's identity and
+        // the doors' shut-state (#858), so asking it per candidate is a handful of comparisons, which is
+        // the same idiom PinnedBySentry already uses one screen down.
         foreach (Reever r in _reevers)
         {
             double dx = r.X - bot.X, dy = r.Y - bot.Y;
@@ -427,7 +440,7 @@ public partial class Map
             {
                 continue;   // inside the arming distance: it would take the gun with it
             }
-            if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, _deckPlan.CollisionField))
+            if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, SightBlockers()))
             {
                 bestSq = d2;
                 best = (r.X, r.Y);
