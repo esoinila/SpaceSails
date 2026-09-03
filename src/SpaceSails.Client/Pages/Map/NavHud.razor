@@ -1197,17 +1197,20 @@
 }
 
 @code {
-    /// <summary>the page's `bool _activeRadar`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public bool _activeRadar { get; set; }
-    /// <summary>the page's `int _ancientCharges`</summary>
     [Parameter] public int _ancientCharges { get; set; }
-    /// <summary>the page's `int _armedBudgetPulses`</summary>
     [Parameter] public int _armedBudgetPulses { get; set; }
-    /// <summary>the page's `string? _armedOrbitBodyId`</summary>
     [Parameter] public string? _armedOrbitBodyId { get; set; }
-    /// <summary>the page's `string? _armedTransferSummary`</summary>
     [Parameter] public string? _armedTransferSummary { get; set; }
-    /// <summary>the page's `ArriveStep? _arrive`</summary>
     [Parameter] public ArriveStep? _arrive { get; set; }
     /// <summary>the page's `bool _burnAngleAbsolute` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -1216,413 +1219,209 @@
     /// <summary>The page's `_burnAngleAbsolute = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<bool> _burnAngleAbsoluteSet { get; set; } = default!;
     private bool _burnAngleAbsolute { get => _burnAngleAbsoluteValue; set { _burnAngleAbsoluteValue = value; _burnAngleAbsoluteSet(value); } }
-    /// <summary>the page's `Camera _camera`</summary>
     [Parameter] public Camera _camera { get; set; } = default!;
-    /// <summary>the page's `bool _captureEngaged`</summary>
     [Parameter] public bool _captureEngaged { get; set; }
-    /// <summary>the page's `double _captureProgress`</summary>
     [Parameter] public double _captureProgress { get; set; }
-    /// <summary>the page's `double _captureRequiredSeconds`</summary>
     [Parameter] public double _captureRequiredSeconds { get; set; }
-    /// <summary>the page's `string? _captureTargetCallsign`</summary>
     [Parameter] public string? _captureTargetCallsign { get; set; }
-    /// <summary>the page's `int _cargoUnits`</summary>
     [Parameter] public int _cargoUnits { get; set; }
-    /// <summary>the page's `int _cargoValue`</summary>
     [Parameter] public int _cargoValue { get; set; }
-    /// <summary>the page's `ClosestApproach.Pass? _closestPass`</summary>
     [Parameter] public ClosestApproach.Pass? _closestPass { get; set; }
-    /// <summary>the page's `int _credits`</summary>
     [Parameter] public int _credits { get; set; }
-    /// <summary>the page's `string? _destinationBodyId`</summary>
     [Parameter] public string? _destinationBodyId { get; set; }
-    /// <summary>the page's `string? _disarmConfirmBodyId`</summary>
     [Parameter] public string? _disarmConfirmBodyId { get; set; }
-    /// <summary>the page's `DockAffordance _dockAffordance`</summary>
     [Parameter] public DockAffordance _dockAffordance { get; set; } = default!;
-    /// <summary>the page's `string? _dockedHavenId`</summary>
     [Parameter] public string? _dockedHavenId { get; set; }
-    /// <summary>the page's `int _effectiveWarp`</summary>
     [Parameter] public int _effectiveWarp { get; set; }
-    /// <summary>the page's `bool _followDest`</summary>
     [Parameter] public bool _followDest { get; set; }
-    /// <summary>the page's `string _horizonChoice`</summary>
     [Parameter] public string _horizonChoice { get; set; } = default!;
-    /// <summary>the page's `int _keepTrimPulsesPerDay`</summary>
     [Parameter] public int _keepTrimPulsesPerDay { get; set; }
-    /// <summary>the page's `string? _longHaulClearanceBlock`</summary>
     [Parameter] public string? _longHaulClearanceBlock { get; set; }
-    /// <summary>the page's `LongHaul.Departure? _longHaulDeparture`</summary>
     [Parameter] public LongHaul.Departure? _longHaulDeparture { get; set; }
-    /// <summary>the page's `Vector2d _nearestBodyPosition`</summary>
     [Parameter] public Vector2d _nearestBodyPosition { get; set; } = default!;
-    /// <summary>the page's `Vector2d _nearestBodyVelocity`</summary>
     [Parameter] public Vector2d _nearestBodyVelocity { get; set; } = default!;
-    /// <summary>the page's `CelestialBody? _nearestHaven`</summary>
     [Parameter] public CelestialBody? _nearestHaven { get; set; }
-    /// <summary>the page's `FlightEditorKind _openEditor`</summary>
     [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
-    /// <summary>the page's `bool _orbitKept`</summary>
     [Parameter] public bool _orbitKept { get; set; }
-    /// <summary>the page's `List<PlanNode> _planNodes`</summary>
     [Parameter] public List<PlanNode> _planNodes { get; set; } = default!;
-    /// <summary>the page's `PlasmaEnvironment? _plasma`</summary>
     [Parameter] public PlasmaEnvironment? _plasma { get; set; }
-    /// <summary>the page's `string? _plotFrameBodyId`</summary>
     [Parameter] public string? _plotFrameBodyId { get; set; }
-    /// <summary>the page's `string? _plunderOpportunityTargetId`</summary>
     [Parameter] public string? _plunderOpportunityTargetId { get; set; }
-    /// <summary>the page's `PulseSlot _pulse`</summary>
     [Parameter] public PulseSlot _pulse { get; set; } = default!;
-    /// <summary>the page's `int _reactionMassPulses`</summary>
     [Parameter] public int _reactionMassPulses { get; set; }
-    /// <summary>the page's `string _scenarioName`</summary>
     [Parameter] public string _scenarioName { get; set; } = default!;
-    /// <summary>the page's `double _scrubOffsetSeconds`</summary>
     [Parameter] public double _scrubOffsetSeconds { get; set; }
-    /// <summary>the page's `PlanNode? _selectedPlanNode`</summary>
     [Parameter] public PlanNode? _selectedPlanNode { get; set; }
-    /// <summary>the page's `ShipState _ship`</summary>
     [Parameter] public ShipState _ship { get; set; } = default!;
-    /// <summary>the page's `bool _showTutorial`</summary>
     [Parameter] public bool _showTutorial { get; set; }
-    /// <summary>the page's `double _skimAltKm`</summary>
     [Parameter] public double _skimAltKm { get; set; }
-    /// <summary>the page's `string? _skimFailure`</summary>
     [Parameter] public string? _skimFailure { get; set; }
-    /// <summary>the page's `ClosestApproach.Pass? _skimmablePass`</summary>
     [Parameter] public ClosestApproach.Pass? _skimmablePass { get; set; }
-    /// <summary>the page's `SkimGauge? _skimResult`</summary>
     [Parameter] public SkimGauge? _skimResult { get; set; }
-    /// <summary>the page's `bool _skimSolving`</summary>
     [Parameter] public bool _skimSolving { get; set; }
-    /// <summary>the page's `bool _skipActive`</summary>
     [Parameter] public bool _skipActive { get; set; }
-    /// <summary>the page's `WarpSkip.NextEvent _skipNext`</summary>
     [Parameter] public WarpSkip.NextEvent _skipNext { get; set; } = default!;
-    /// <summary>the page's `double _skipTargetEpoch`</summary>
     [Parameter] public double _skipTargetEpoch { get; set; }
-    /// <summary>the page's `string _skipTargetLabel`</summary>
     [Parameter] public string _skipTargetLabel { get; set; } = default!;
-    /// <summary>the page's `ClosestApproach.Pass? _slingablePass`</summary>
     [Parameter] public ClosestApproach.Pass? _slingablePass { get; set; }
-    /// <summary>the page's `string? _slingFailure`</summary>
     [Parameter] public string? _slingFailure { get; set; }
-    /// <summary>the page's `double _slingPassRadii`</summary>
     [Parameter] public double _slingPassRadii { get; set; }
-    /// <summary>the page's `SlingPlanner.Result? _slingResult`</summary>
     [Parameter] public SlingPlanner.Result? _slingResult { get; set; }
-    /// <summary>the page's `SlingPlanner.PassSide _slingSide`</summary>
     [Parameter] public SlingPlanner.PassSide _slingSide { get; set; } = default!;
-    /// <summary>the page's `bool _slingSolving`</summary>
     [Parameter] public bool _slingSolving { get; set; }
-    /// <summary>the page's `Quest? ActiveCargoRunTo(string bodyId)`</summary>
     [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
-    /// <summary>the page's `int ActiveTutorialIndex()`</summary>
     [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
-    /// <summary>the page's `void AddArriveAtScrub(ArrivalStepRule.ArrivalKind kind)`</summary>
     [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
-    /// <summary>the page's `void AddBurnAtScrub()`</summary>
     [Parameter] public Action AddBurnAtScrub { get; set; } = default!;
-    /// <summary>the page's `void AddCastOffAtTop()`</summary>
     [Parameter] public Action AddCastOffAtTop { get; set; } = default!;
-    /// <summary>the page's `void AddSkimBurn()`</summary>
     [Parameter] public Action AddSkimBurn { get; set; } = default!;
-    /// <summary>the page's `void AddSlingBurn()`</summary>
     [Parameter] public Action AddSlingBurn { get; set; } = default!;
-    /// <summary>the page's `void ApplyPulses(PlanNode node, int value)`</summary>
     [Parameter] public Action<PlanNode, int> ApplyPulses { get; set; } = default!;
-    /// <summary>the page's `double ArcChargeThreshold`</summary>
     [Parameter] public double ArcChargeThreshold { get; set; }
-    /// <summary>the page's `void ArmArriveStep()`</summary>
     [Parameter] public Action ArmArriveStep { get; set; } = default!;
-    /// <summary>the page's `bool ArmedArrivalStillAhead`</summary>
     [Parameter] public bool ArmedArrivalStillAhead { get; set; }
-    /// <summary>the page's `double? ArmedInsertionSimTime`</summary>
     [Parameter] public double? ArmedInsertionSimTime { get; set; }
-    /// <summary>the page's `string ArriveButtonLabel(ArrivalStepRule.ArrivalKind kind)`</summary>
     [Parameter] public Func<ArrivalStepRule.ArrivalKind, string> ArriveButtonLabel { get; set; } = default!;
-    /// <summary>the page's `ClosestApproach.Pass? ArriveCandidate(ArrivalStepRule.ArrivalKind kind)`</summary>
     [Parameter] public Func<ArrivalStepRule.ArrivalKind, ClosestApproach.Pass?> ArriveCandidate { get; set; } = default!;
-    /// <summary>the page's `ArrivalStepRule.ArrivalCheck? ArriveCheck()`</summary>
     [Parameter] public Func<ArrivalStepRule.ArrivalCheck?> ArriveCheck { get; set; } = default!;
-    /// <summary>the page's `bool ArriveCoversArmed`</summary>
     [Parameter] public bool ArriveCoversArmed { get; set; }
-    /// <summary>the page's `string ArriveGlanceLine(ArriveStep step)`</summary>
     [Parameter] public Func<ArriveStep, string> ArriveGlanceLine { get; set; } = default!;
-    /// <summary>the page's `bool ArriveIsAThen(ArriveStep step)`</summary>
     [Parameter] public Func<ArriveStep, bool> ArriveIsAThen { get; set; } = default!;
-    /// <summary>the page's `ClosestApproach.Pass? ArrivePassFor(string bodyId)`</summary>
     [Parameter] public Func<string, ClosestApproach.Pass?> ArrivePassFor { get; set; } = default!;
-    /// <summary>the page's `string? ArrivePlanCompleteLine()`</summary>
     [Parameter] public Func<string?> ArrivePlanCompleteLine { get; set; } = default!;
-    /// <summary>the page's `string? ArriveRibbonTooShortLine()`</summary>
     [Parameter] public Func<string?> ArriveRibbonTooShortLine { get; set; } = default!;
-    /// <summary>the page's `void AuthorizePlunder()`</summary>
     [Parameter] public Action AuthorizePlunder { get; set; } = default!;
-    /// <summary>the page's `bool AutopilotFlyingApproach`</summary>
     [Parameter] public bool AutopilotFlyingApproach { get; set; }
-    /// <summary>the page's `void Board(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    /// <summary>the page's `string BodyName(string id)`</summary>
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;
-    /// <summary>the page's `string BurnGlanceLine(PlanNode node)`</summary>
     [Parameter] public Func<PlanNode, string> BurnGlanceLine { get; set; } = default!;
-    /// <summary>the page's `bool CanFollowDestination`</summary>
     [Parameter] public bool CanFollowDestination { get; set; }
-    /// <summary>the page's `int CargoCapacity`</summary>
     [Parameter] public int CargoCapacity { get; set; }
-    /// <summary>the page's `string CargoNextAction(CelestialBody dest)`</summary>
     [Parameter] public Func<CelestialBody, string> CargoNextAction { get; set; } = default!;
-    /// <summary>the page's `double CircularSpeedHere`</summary>
     [Parameter] public double CircularSpeedHere { get; set; }
-    /// <summary>the page's `string ClearanceEtaLine(PlanNode node)`</summary>
     [Parameter] public Func<PlanNode, string> ClearanceEtaLine { get; set; } = default!;
-    /// <summary>the page's `double CurrentPlotHorizonSeconds`</summary>
     [Parameter] public double CurrentPlotHorizonSeconds { get; set; }
-    /// <summary>the page's `void DeclinePlunder()`</summary>
     [Parameter] public Action DeclinePlunder { get; set; } = default!;
-    /// <summary>the page's `void DeleteNode(PlanNode node)`</summary>
     [Parameter] public Action<PlanNode> DeleteNode { get; set; } = default!;
-    /// <summary>the page's `string? DestinationEta()`</summary>
     [Parameter] public Func<string?> DestinationEta { get; set; } = default!;
-    /// <summary>the page's `bool DockFocusLive`</summary>
     [Parameter] public bool DockFocusLive { get; set; }
-    /// <summary>the page's `double DockMatchSpeedMps`</summary>
     [Parameter] public double DockMatchSpeedMps { get; set; }
-    /// <summary>the page's `string DockNavLockTip`</summary>
     [Parameter] public string DockNavLockTip { get; set; } = default!;
-    /// <summary>the page's `double DockReachMeters`</summary>
     [Parameter] public double DockReachMeters { get; set; }
-    /// <summary>the page's `string DockStatusLine(OrbitAssistInfo oi)`</summary>
     [Parameter] public Func<OrbitAssistInfo, string> DockStatusLine { get; set; } = default!;
-    /// <summary>the page's `int EffectiveDockTankPulses`</summary>
     [Parameter] public int EffectiveDockTankPulses { get; set; }
-    /// <summary>the page's `string EmergencyCaptureTip(OrbitAssistInfo oi)`</summary>
     [Parameter] public Func<OrbitAssistInfo, string> EmergencyCaptureTip { get; set; } = default!;
-    /// <summary>the page's `string EmergencyDescentTip(OrbitAssistInfo oi)`</summary>
     [Parameter] public Func<OrbitAssistInfo, string> EmergencyDescentTip { get; set; } = default!;
-    /// <summary>the page's `string EmergencyInsertionTip(OrbitAssistInfo oi)`</summary>
     [Parameter] public Func<OrbitAssistInfo, string> EmergencyInsertionTip { get; set; } = default!;
-    /// <summary>the page's `string EmergencyUndockTip()`</summary>
     [Parameter] public Func<string> EmergencyUndockTip { get; set; } = default!;
-    /// <summary>the page's `Task EngageLongHaul()`</summary>
     [Parameter] public Func<Task> EngageLongHaul { get; set; } = default!;
-    /// <summary>the page's `void EnterOrbit()`</summary>
     [Parameter] public Action EnterOrbit { get; set; } = default!;
-    /// <summary>the page's `FlightPlanStatus FlightNowNext()`</summary>
     [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
-    /// <summary>the page's `int FlightPlanCurrentStep()`</summary>
     [Parameter] public Func<int> FlightPlanCurrentStep { get; set; } = default!;
-    /// <summary>the page's `int FlightPlanStepCount()`</summary>
     [Parameter] public Func<int> FlightPlanStepCount { get; set; } = default!;
-    /// <summary>the page's `string FollowDestTip()`</summary>
     [Parameter] public Func<string> FollowDestTip { get; set; } = default!;
-    /// <summary>the page's `bool FollowShip`</summary>
     [Parameter] public bool FollowShip { get; set; }
-    /// <summary>the page's `string FormatDistance(double meters)`</summary>
     [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
-    /// <summary>the page's `string FormatDuration(double seconds)`</summary>
     [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
-    /// <summary>the page's `string FormatHorizon(double seconds)`</summary>
     [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
-    /// <summary>the page's `string FormatSimTime(double simTime)`</summary>
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    /// <summary>the page's `string FormatZoom(double metersPerPixel)`</summary>
     [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
-    /// <summary>the page's `List<FrameOption> FrameOptions()`</summary>
     [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
-    /// <summary>the page's `List<(string Label, List<CelestialBody> Members)> FramePickerGroups()`</summary>
     [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
-    /// <summary>the page's `string FrameSpeedReadout()`</summary>
     [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;
-    /// <summary>the page's `HarborClass HarborClassOf(string? bodyId)`</summary>
     [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
-    /// <summary>the page's `double HeadingAlongCourseAt(double simTime)`</summary>
     [Parameter] public Func<double, double> HeadingAlongCourseAt { get; set; } = default!;
-    /// <summary>the page's `int HorizonSliderValue`</summary>
     [Parameter] public int HorizonSliderValue { get; set; }
-    /// <summary>the page's `bool IsDockableHaven(CelestialBody body)`</summary>
     [Parameter] public Func<CelestialBody, bool> IsDockableHaven { get; set; } = default!;
-    /// <summary>the page's `string LongCoastAheadReadout`</summary>
     [Parameter] public string LongCoastAheadReadout { get; set; } = default!;
-    /// <summary>the page's `string? LongHaulOfferBlock(LongHaul.Departure? departure, CelestialBody planet, string? clearanceBlock)`</summary>
     [Parameter] public Func<LongHaul.Departure?, CelestialBody, string?, string?> LongHaulOfferBlock { get; set; } = default!;
-    /// <summary>the page's `CelestialBody? LongHaulTargetPlanet(string? destBodyId)`</summary>
     [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
-    /// <summary>the page's `void MatchAndClamp()`</summary>
     [Parameter] public Action MatchAndClamp { get; set; } = default!;
-    /// <summary>the page's `int MaxNodePulses`</summary>
     [Parameter] public int MaxNodePulses { get; set; }
-    /// <summary>the page's `int MinNodePulses`</summary>
     [Parameter] public int MinNodePulses { get; set; }
-    /// <summary>the page's `bool NavLockedByDock`</summary>
     [Parameter] public bool NavLockedByDock { get; set; }
-    /// <summary>the page's `string NearestReadoutName()`</summary>
     [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
-    /// <summary>the page's `bool NodeAimedAlong(PlanNode node, NodeDirection direction)`</summary>
     [Parameter] public Func<PlanNode, NodeDirection, bool> NodeAimedAlong { get; set; } = default!;
-    /// <summary>the page's `void NudgeDepartureEpoch(PlanNode undock, int sign, bool coarse)`</summary>
     [Parameter] public Action<PlanNode, int, bool> NudgeDepartureEpoch { get; set; } = default!;
-    /// <summary>the page's `void NudgeNodeAim(PlanNode node, int sign)`</summary>
     [Parameter] public Action<PlanNode, int> NudgeNodeAim { get; set; } = default!;
-    /// <summary>the page's `void NudgeNodeEpoch(PlanNode node, int sign, bool coarse)`</summary>
     [Parameter] public Action<PlanNode, int, bool> NudgeNodeEpoch { get; set; } = default!;
-    /// <summary>the page's `void NudgeNodePulses(PlanNode node, int sign, bool coarse)`</summary>
     [Parameter] public Action<PlanNode, int, bool> NudgeNodePulses { get; set; } = default!;
-    /// <summary>the page's `void OnFramePicked(ChangeEventArgs e)`</summary>
     [Parameter] public Action<ChangeEventArgs> OnFramePicked { get; set; } = default!;
-    /// <summary>the page's `void OnHorizonSliderInput(ChangeEventArgs e)`</summary>
     [Parameter] public Action<ChangeEventArgs> OnHorizonSliderInput { get; set; } = default!;
-    /// <summary>the page's `void OnSkimAltInput(ChangeEventArgs e)`</summary>
     [Parameter] public Action<ChangeEventArgs> OnSkimAltInput { get; set; } = default!;
-    /// <summary>the page's `void OnSlingRadiiInput(ChangeEventArgs e)`</summary>
     [Parameter] public Action<ChangeEventArgs> OnSlingRadiiInput { get; set; } = default!;
-    /// <summary>the page's `void OnWarpSliderInput(ChangeEventArgs e)`</summary>
     [Parameter] public Action<ChangeEventArgs> OnWarpSliderInput { get; set; } = default!;
-    /// <summary>the page's `string? OpenPlanEditorKey()`</summary>
     [Parameter] public Func<string?> OpenPlanEditorKey { get; set; } = default!;
-    /// <summary>the page's `OrbitAssistInfo? OrbitInfo()`</summary>
     [Parameter] public Func<OrbitAssistInfo?> OrbitInfo { get; set; } = default!;
-    /// <summary>the page's `string OrbitStatusLine(OrbitAssistInfo oi)`</summary>
     [Parameter] public Func<OrbitAssistInfo, string> OrbitStatusLine { get; set; } = default!;
-    /// <summary>the page's `bool Paused`</summary>
     [Parameter] public bool Paused { get; set; }
-    /// <summary>the page's `bool PlanBeginsWithCastOff`</summary>
     [Parameter] public bool PlanBeginsWithCastOff { get; set; }
-    /// <summary>the page's `bool PlanListIsEmpty`</summary>
     [Parameter] public bool PlanListIsEmpty { get; set; }
-    /// <summary>the page's `int PlannedPulseTotal()`</summary>
     [Parameter] public Func<int> PlannedPulseTotal { get; set; } = default!;
-    /// <summary>the page's `string PlanningPrimaryName(double simTime)`</summary>
     [Parameter] public Func<double, string> PlanningPrimaryName { get; set; } = default!;
-    /// <summary>the page's `string? PlanShapeWarningLine()`</summary>
     [Parameter] public Func<string?> PlanShapeWarningLine { get; set; } = default!;
-    /// <summary>the page's `string PlanStepGlanceLine(PlanNode node)`</summary>
     [Parameter] public Func<PlanNode, string> PlanStepGlanceLine { get; set; } = default!;
-    /// <summary>the page's `string PlotButtonTip()`</summary>
     [Parameter] public Func<string> PlotButtonTip { get; set; } = default!;
-    /// <summary>the page's `string PlotFrameName()`</summary>
     [Parameter] public Func<string> PlotFrameName { get; set; } = default!;
-    /// <summary>the page's `bool PlotMode`</summary>
     [Parameter] public bool PlotMode { get; set; }
-    /// <summary>the page's `Task PressAndRefocus(Action act)`</summary>
     [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
-    /// <summary>the page's `int ReactionMassCapacity`</summary>
     [Parameter] public int ReactionMassCapacity { get; set; }
-    /// <summary>the page's `void RemoveArriveStep()`</summary>
     [Parameter] public Action RemoveArriveStep { get; set; } = default!;
-    /// <summary>the page's `void RemoveTheCastOff()`</summary>
     [Parameter] public Action RemoveTheCastOff { get; set; } = default!;
-    /// <summary>the page's `void RetimeToScrub(PlanNode node)`</summary>
     [Parameter] public Action<PlanNode> RetimeToScrub { get; set; } = default!;
-    /// <summary>the page's `(string Text, bool Warn)? RibbonHorizonNote()`</summary>
     [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
-    /// <summary>the page's `Task RunSkimSolveAsync()`</summary>
     [Parameter] public Func<Task> RunSkimSolveAsync { get; set; } = default!;
-    /// <summary>the page's `Task RunSlingSolveAsync()`</summary>
     [Parameter] public Func<Task> RunSlingSolveAsync { get; set; } = default!;
-    /// <summary>the page's `void Say(bool atTheDoor, string line)`</summary>
     [Parameter] public Action<bool, string> Say { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<TransferPlanner.BurnStep> ScheduledAutopilotBurns()`</summary>
     [Parameter] public Func<IReadOnlyList<TransferPlanner.BurnStep>> ScheduledAutopilotBurns { get; set; } = default!;
-    /// <summary>the page's `string ScheduledBurnGlanceLine(TransferPlanner.BurnStep burn)`</summary>
     [Parameter] public Func<TransferPlanner.BurnStep, string> ScheduledBurnGlanceLine { get; set; } = default!;
-    /// <summary>the page's `double ScrubTime`</summary>
     [Parameter] public double ScrubTime { get; set; }
-    /// <summary>the page's `void ScrubToArrive()`</summary>
     [Parameter] public Action ScrubToArrive { get; set; } = default!;
-    /// <summary>the page's `NpcState? SelectedCaptureTarget()`</summary>
     [Parameter] public Func<NpcState?> SelectedCaptureTarget { get; set; } = default!;
-    /// <summary>the page's `double SeparationFromHarbour(PlanNode node)`</summary>
     [Parameter] public Func<PlanNode, double> SeparationFromHarbour { get; set; } = default!;
-    /// <summary>the page's `void SetDestination(string? bodyId)`</summary>
     [Parameter] public Action<string?> SetDestination { get; set; } = default!;
-    /// <summary>the page's `void SetHeading(PlanNode node, ChangeEventArgs e)`</summary>
     [Parameter] public Action<PlanNode, ChangeEventArgs> SetHeading { get; set; } = default!;
-    /// <summary>the page's `void SetHorizonAuto()`</summary>
     [Parameter] public Action SetHorizonAuto { get; set; } = default!;
-    /// <summary>the page's `void SetNodeDirection(PlanNode node, NodeDirection direction)`</summary>
     [Parameter] public Action<PlanNode, NodeDirection> SetNodeDirection { get; set; } = default!;
-    /// <summary>the page's `void SetPercent(PlanNode node, ChangeEventArgs e)`</summary>
     [Parameter] public Action<PlanNode, ChangeEventArgs> SetPercent { get; set; } = default!;
-    /// <summary>the page's `void SetPlotFrame(string? bodyId)`</summary>
     [Parameter] public Action<string?> SetPlotFrame { get; set; } = default!;
-    /// <summary>the page's `void SetPulses(PlanNode node, ChangeEventArgs e)`</summary>
     [Parameter] public Action<PlanNode, ChangeEventArgs> SetPulses { get; set; } = default!;
-    /// <summary>the page's `void SetSlingSide(SlingPlanner.PassSide side)`</summary>
     [Parameter] public Action<SlingPlanner.PassSide> SetSlingSide { get; set; } = default!;
-    /// <summary>the page's `bool ShowLongCoastAdvert`</summary>
     [Parameter] public bool ShowLongCoastAdvert { get; set; }
-    /// <summary>the page's `double SimTime`</summary>
     [Parameter] public double SimTime { get; set; }
-    /// <summary>the page's `string SkimDepthLine(SkimGauge g)`</summary>
     [Parameter] public Func<SkimGauge, string> SkimDepthLine { get; set; } = default!;
-    /// <summary>the page's `string SkimFinePrint()`</summary>
     [Parameter] public Func<string> SkimFinePrint { get; set; } = default!;
-    /// <summary>the page's `string SkimOutcomeLine(SkimGauge g)`</summary>
     [Parameter] public Func<SkimGauge, string> SkimOutcomeLine { get; set; } = default!;
-    /// <summary>the page's `string SkimShedLine(SkimGauge g)`</summary>
     [Parameter] public Func<SkimGauge, string> SkimShedLine { get; set; } = default!;
-    /// <summary>the page's `double SkimShellTopKm()`</summary>
     [Parameter] public Func<double> SkimShellTopKm { get; set; } = default!;
-    /// <summary>the page's `string SlingBurnLine(SlingPlanner.Result r)`</summary>
     [Parameter] public Func<SlingPlanner.Result, string> SlingBurnLine { get; set; } = default!;
-    /// <summary>the page's `string SlingLeverLine(SlingPlanner.Result r)`</summary>
     [Parameter] public Func<SlingPlanner.Result, string> SlingLeverLine { get; set; } = default!;
-    /// <summary>the page's `double SlingMaxRadii`</summary>
     [Parameter] public double SlingMaxRadii { get; set; }
-    /// <summary>the page's `double SlingMinRadii`</summary>
     [Parameter] public double SlingMinRadii { get; set; }
-    /// <summary>the page's `string SlingNodeNoteNow()`</summary>
     [Parameter] public Func<string> SlingNodeNoteNow { get; set; } = default!;
-    /// <summary>the page's `string SlingOutcomeLine(SlingPlanner.Result r)`</summary>
     [Parameter] public Func<SlingPlanner.Result, string> SlingOutcomeLine { get; set; } = default!;
-    /// <summary>the page's `string SlingPassLine(SlingPlanner.Result r)`</summary>
     [Parameter] public Func<SlingPlanner.Result, string> SlingPassLine { get; set; } = default!;
-    /// <summary>the page's `Task StartSkip()`</summary>
     [Parameter] public Func<Task> StartSkip { get; set; } = default!;
-    /// <summary>the page's `void ToggleArmedInsertion(string bodyId)`</summary>
     [Parameter] public Action<string> ToggleArmedInsertion { get; set; } = default!;
-    /// <summary>the page's `void ToggleArriveEditor()`</summary>
     [Parameter] public Action ToggleArriveEditor { get; set; } = default!;
-    /// <summary>the page's `void ToggleBurnEditor(PlanNode node)`</summary>
     [Parameter] public Action<PlanNode> ToggleBurnEditor { get; set; } = default!;
-    /// <summary>the page's `void ToggleDock()`</summary>
     [Parameter] public Action ToggleDock { get; set; } = default!;
-    /// <summary>the page's `void ToggleFollow()`</summary>
     [Parameter] public Action ToggleFollow { get; set; } = default!;
-    /// <summary>the page's `void ToggleFollowDest()`</summary>
     [Parameter] public Action ToggleFollowDest { get; set; } = default!;
-    /// <summary>the page's `void ToggleInsertionEditor()`</summary>
     [Parameter] public Action ToggleInsertionEditor { get; set; } = default!;
-    /// <summary>the page's `void ToggleNavHelp()`</summary>
     [Parameter] public Action ToggleNavHelp { get; set; } = default!;
-    /// <summary>the page's `void TogglePause()`</summary>
     [Parameter] public Action TogglePause { get; set; } = default!;
-    /// <summary>the page's `void TogglePlotMode()`</summary>
     [Parameter] public Action TogglePlotMode { get; set; } = default!;
-    /// <summary>the page's `void ToggleSkimPanel()`</summary>
     [Parameter] public Action ToggleSkimPanel { get; set; } = default!;
-    /// <summary>the page's `Task ToggleSkip()`</summary>
     [Parameter] public Func<Task> ToggleSkip { get; set; } = default!;
-    /// <summary>the page's `void ToggleSlingPanel()`</summary>
     [Parameter] public Action ToggleSlingPanel { get; set; } = default!;
-    /// <summary>the page's `void ToggleTutorial()`</summary>
     [Parameter] public Action ToggleTutorial { get; set; } = default!;
-    /// <summary>the page's `(string? FrameId, string FrameName, string DestinationName)? TripFrameOffer(double simTime)`</summary>
     [Parameter] public Func<double, (string? FrameId, string FrameName, string DestinationName)?> TripFrameOffer { get; set; } = default!;
-    /// <summary>the page's `void Undock()`</summary>
     [Parameter] public Action Undock { get; set; } = default!;
-    /// <summary>the page's `void UseAncientsPilot()`</summary>
     [Parameter] public Action UseAncientsPilot { get; set; } = default!;
-    /// <summary>the page's `int Warp`</summary>
     [Parameter] public int Warp { get; set; }
-    /// <summary>the page's `string WarpReadout`</summary>
     [Parameter] public string WarpReadout { get; set; } = default!;
-    /// <summary>the page's `int WarpSliderValue`</summary>
     [Parameter] public int WarpSliderValue { get; set; }
-    /// <summary>the page's `void ZoomStep(bool zoomIn)`</summary>
     [Parameter] public Action<bool> OnZoomStep { get; set; } = default!;
     private void ZoomStep(bool zoomIn) => OnZoomStep(zoomIn);
 

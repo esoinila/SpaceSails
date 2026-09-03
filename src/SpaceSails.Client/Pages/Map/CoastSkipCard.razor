@@ -24,6 +24,20 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #261 — the COMPUTED skip's short beat: a jump-scale coast is reckoned in closed form (or chunked with
+       yields), never integrated into a frozen tab. A mundane fast-forward, not the long haul's dramatic
+       CROSSING THE VOID — so it says "COAST CONSUMED" and lets out in a beat. #992 gave it the same tile off
+       the same switch: it wears the same full-viewport class, so it inherited the same fault.
+
+       The two sheets are never up together — a coast skip is started from the live loop and both paths set
+       _jumpInProgress first, which freezes the tick that would have started the other. They share the tucked
+       flag for the captain's sake, not the renderer's: a captain who put the void away expects it to stay
+       away on the next crossing too, which is the scope's own stated reason for remembering. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <OverlayShell class="jump-overlay"
@@ -44,9 +58,16 @@
 }
 
 @code {
-    /// <summary>the page's `int _coastSkipDays`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public int _coastSkipDays { get; set; }
-    /// <summary>the page's `string _coastSkipLabel`</summary>
     [Parameter] public string _coastSkipLabel { get; set; } = default!;
     /// <summary>the page's `bool _voidCardTucked` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -55,7 +76,6 @@
     /// <summary>The page's `_voidCardTucked = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<bool> _voidCardTuckedSet { get; set; } = default!;
     private bool _voidCardTucked { get => _voidCardTuckedValue; set { _voidCardTuckedValue = value; _voidCardTuckedSet(value); } }
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

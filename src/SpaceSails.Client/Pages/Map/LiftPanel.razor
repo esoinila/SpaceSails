@@ -25,6 +25,23 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
+       player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
+    @* #600 · THE LIFT PANEL. Owner, having ridden a car that only ever went down: "we should have elevator
+       panel with UI then (I wonder what the elevator music would be like ) :-D"
+
+       The buttons come from Core (UndergroundComplex.LiftPanel) rather than being worked out here, so the
+       #590 card gate and the #592 silence are one tested rule and this file only draws it. SURFACE is always
+       the first button — that is the whole bug fix.
+
+       Each button carries the one fact that decides whether the trip is free: whether that floor still holds
+       air. A refusing button is PRESENT and says why; an absent button and a broken one look identical from
+       the captain's side, and this ground has already shipped that mistake once. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
@@ -155,31 +172,27 @@
 }
 
 @code {
-    /// <summary>the page's `string? _liftOutcome`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _liftOutcome { get; set; }
-    /// <summary>the page's `void CloseLiftPanel()`</summary>
     [Parameter] public Action CloseLiftPanel { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `void LiftPadClear()`</summary>
     [Parameter] public Action LiftPadClear { get; set; } = default!;
-    /// <summary>the page's `string LiftPadDisplay`</summary>
     [Parameter] public string LiftPadDisplay { get; set; } = default!;
-    /// <summary>the page's `bool LiftPadIsDark`</summary>
     [Parameter] public bool LiftPadIsDark { get; set; }
-    /// <summary>the page's `void LiftPadPush(string digit)`</summary>
     [Parameter] public Action<string> LiftPadPush { get; set; } = default!;
-    /// <summary>the page's `string? LiftPadSaid`</summary>
     [Parameter] public string? LiftPadSaid { get; set; }
-    /// <summary>the page's `void LiftPadSubmit(UndergroundComplex.LiftStop stop)`</summary>
     [Parameter] public Action<UndergroundComplex.LiftStop> LiftPadSubmit { get; set; } = default!;
-    /// <summary>the page's `string LiftPanelLine()`</summary>
     [Parameter] public Func<string> LiftPanelLine { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<UndergroundComplex.LiftStop> LiftStops()`</summary>
     [Parameter] public Func<IReadOnlyList<UndergroundComplex.LiftStop>> LiftStops { get; set; } = default!;
-    /// <summary>the page's `void PressLiftButton(UndergroundComplex.LiftStop stop)`</summary>
     [Parameter] public Action<UndergroundComplex.LiftStop> PressLiftButton { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public SurfaceExcursion liftEx { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

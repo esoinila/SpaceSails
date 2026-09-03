@@ -23,6 +23,15 @@
     scope (pinned in SpaceSails.Client.csproj), so every `.scuttle-epitaph-text`/`.scuttle-art` rule the page
     already had goes on matching these elements. #251 item 3 is where the rules themselves move.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #488 · WHAT YOU HEARD ON THE WAY OUT. Owner: "some kind of pop-up with gen AI about hearing clawing
+       of horrible sounds when we went :-D … a confirmation that we did something that made a difference."
+       CONFIRMATION WITHOUT REVELATION — the instrument never once said what was in there, and neither does
+       this. You know there was something. You know it is not out here any more. That is all you get. *@
+
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttleEpitaph)">
             <OverlayShell class="vent-board scuttle-epitaph" StopClicks="true"

@@ -25,6 +25,52 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #746 · THE TABLE. You asked to sit; they waved you in; these are your moves.
+
+       Same overlay family as the barkeep's counter card (deck-offer-card) and the same backdrop as every
+       other modal down here — because it IS the same object: a conversation with somebody, with a row of
+       things you could say. The guard stop, when it comes, renders through this exact block with a different
+       Encounter.Scene in it.
+
+       #680's LAW, APPLIED FROM BIRTH: every outcome is rendered HERE, in the panel's own subtree — the one
+       layer the backdrop cannot blur. Not one move pulses its line while this panel is up. The only pulse in
+       the whole scene is TAKE YOUR LEAVE, and that one is correct precisely because the panel is gone. *@
+    @* #784 PHASE TWO · THE FRAME DOCKS, IT DOES NOT DIM.
+
+       Owner, live at a taken table with the panel up — his screenshot showed the card centred and the
+       backdrop dimming the whole hall AND the brand-new park behind its glass to near-black: "the seated
+       frame docks, it does not dim… the hall stays lit, the A* walkers stay visible, the park stays green.
+       The full card returns only for conversations."
+
+       So the ONE @if below forks on Map.Seated.cs's SeatedIsDocked, and the fork is the whole feature:
+
+         seated-idle  → the strip. No .view-object-backdrop is written into the DOM AT ALL — the guard
+                        asserts the scrim's ABSENCE, which is #780's lesson read in reverse.
+         conversation → the block that was always here, backdrop, art, moves and prose untouched (#778/#787).
+
+       Nothing about the CARD changed. That matters: the haulier ladder, its odds, its one-per-watch law and
+       every line in it ship exactly as they were, and when #731's walker crosses the hall for real she will
+       arrive from outside the strip and this card will come up over a room the player was already watching.
+
+       #865 · …AND THE FORK MOVED OFF SOLO. Owner, live at a weighbridge clerk's table with the whole hall
+       dimmed to black behind one small card: "what if I just sit and eat here... now I am kind of blinded of
+       the surrounding here because somebody else sits in the same table" — then, naming the target: "It
+       should somehow UI wise be same style as the sitting alone case", and sealing it: "Just the social
+       functions as additional options."
+
+       So CO-SEATING IS A STRIP STATE. Joining an occupied top is a posture change like any other seat and it
+       docks; only somebody who CAME OVER TO YOU raises the card (SeatedIsDocked now reads TheyCameToYou).
+       And it is the SAME COMPONENT WITH COMPANY, not a second one styled alike — the neighbour's plate and
+       bark are lines on this strip and their moves are buttons in this row, which is what keeps the rest
+       pips, the spread gating and #829's case-door label working identically whether the chair opposite is
+       empty or not. *@
+    @* #870 lane 6a · SeatedTable is the seat family's own named read of the sitting itself, so this markup
+       renames a receiver instead of reaching into the private state of a partial it does not own. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="seated-dock" role="status" aria-label="@SpaceSails.Core.SeatedHud.StripLabel">
@@ -181,53 +227,38 @@
 }
 
 @code {
-    /// <summary>the page's `List<Core.Satchel.Item> _satchel`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
-    /// <summary>the page's `bool _seatedNewsOpen`</summary>
     [Parameter] public bool _seatedNewsOpen { get; set; }
-    /// <summary>the page's `bool ACabinetLeafToWork`</summary>
     [Parameter] public bool ACabinetLeafToWork { get; set; }
-    /// <summary>the page's `string CabinetLeafHint`</summary>
     [Parameter] public string CabinetLeafHint { get; set; } = default!;
-    /// <summary>the page's `string CabinetLeafLabel`</summary>
     [Parameter] public string CabinetLeafLabel { get; set; } = default!;
-    /// <summary>the page's `bool CanSpreadTheCaseHere`</summary>
     [Parameter] public bool CanSpreadTheCaseHere { get; set; }
-    /// <summary>the page's `void OpenTheSpread()`</summary>
     [Parameter] public Action OpenTheSpread { get; set; } = default!;
-    /// <summary>the page's `double? ProcessingFraction()`</summary>
     [Parameter] public Func<double?> ProcessingFraction { get; set; } = default!;
-    /// <summary>the page's `string? ProcessingUnderway()`</summary>
     [Parameter] public Func<string?> ProcessingUnderway { get; set; } = default!;
-    /// <summary>the page's `string SatchelLabel(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
-    /// <summary>the page's `string? SeatedCompanyLine()`</summary>
     [Parameter] public Func<string?> SeatedCompanyLine { get; set; } = default!;
-    /// <summary>the page's `string? SeatedCustomerLine()`</summary>
     [Parameter] public Func<string?> SeatedCustomerLine { get; set; } = default!;
-    /// <summary>the page's `string? SeatedOverheardLine()`</summary>
     [Parameter] public Func<string?> SeatedOverheardLine { get; set; } = default!;
-    /// <summary>the page's `string SpreadDoorHint`</summary>
     [Parameter] public string SpreadDoorHint { get; set; } = default!;
-    /// <summary>the page's `string SpreadDoorLabel`</summary>
     [Parameter] public string SpreadDoorLabel { get; set; } = default!;
-    /// <summary>the page's `Task TableMoveClicked(string moveId)`</summary>
     [Parameter] public Func<string, Task> TableMoveClicked { get; set; } = default!;
-    /// <summary>the page's `bool TableMoveIsUrged(Encounter.Move move)`</summary>
     [Parameter] public Func<Encounter.Move, bool> TableMoveIsUrged { get; set; } = default!;
-    /// <summary>the page's `bool TableMoveOnOffer(Encounter.Move move)`</summary>
     [Parameter] public Func<Encounter.Move, bool> TableMoveOnOffer { get; set; } = default!;
-    /// <summary>the page's `string TableMoveRefusal(Encounter.Move move)`</summary>
     [Parameter] public Func<Encounter.Move, string> TableMoveRefusal { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Encounter.Move> TableMovesOnTheTable()`</summary>
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> TableMovesOnTheTable { get; set; } = default!;
-    /// <summary>the page's `void TableShow(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> TableShow { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Core.Satchel.Item> TableShowables()`</summary>
     [Parameter] public Func<IReadOnlyList<Core.Satchel.Item>> TableShowables { get; set; } = default!;
-    /// <summary>the page's `void ToggleSeatedNews()`</summary>
     [Parameter] public Action ToggleSeatedNews { get; set; } = default!;
-    /// <summary>the page's `void WorkTheCabinetLeaf()`</summary>
     [Parameter] public Action WorkTheCabinetLeaf { get; set; } = default!;
 
     /// <summary>bound by the OUTER `@if (SeatedTable is { } tab)` that stays in the page</summary>

@@ -62,7 +62,9 @@ public sealed class TheKitIsWorkedFromThePocketTests
 
     /// <summary>The object card's whole subtree — the one surface the kit answers on.</summary>
     private static string TheObjectCard() =>
-        Between(Pages("Map.razor"), "@if (_viewObject is { } vo)", "@* THE CAPTAIN'S SELFIE");
+        // #251 item 1: the selfie card's own comment moved into Pages/Map/SelfieShotCard.razor with it,
+        // so the slice ends where the next surface's guard opens - markup, not prose.
+        Between(Pages("Map.razor"), "@if (_viewObject is { } vo)", "@if (_selfieShot is { } shot)");
 
     // ── (a) THE SWITCH ──────────────────────────────────────────────────────────────────────────────────
 

@@ -24,6 +24,13 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* M24: planet click menu — set the body as THE destination so orbit assist tracks it.
+       M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #253/#290: up to four action rows on Nav (set dest · arm · 🚀 long haul · 🪂 aerobrake), two on Sensors. *@
@@ -131,72 +138,48 @@
 }
 
 @code {
-    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
-    /// <summary>the page's `string? _aerobrakeArmedBodyId`</summary>
     [Parameter] public string? _aerobrakeArmedBodyId { get; set; }
-    /// <summary>the page's `string? _armedOrbitBodyId`</summary>
     [Parameter] public string? _armedOrbitBodyId { get; set; }
-    /// <summary>the page's `string? _destinationBodyId`</summary>
     [Parameter] public string? _destinationBodyId { get; set; }
-    /// <summary>the page's `ICelestialEphemeris? _ephemeris`</summary>
     [Parameter] public ICelestialEphemeris? _ephemeris { get; set; }
-    /// <summary>the page's `ShipState _ship`</summary>
     [Parameter] public ShipState _ship { get; set; } = default!;
-    /// <summary>the page's `Aerobrake.Quote? AerobrakeMenuQuote(CelestialBody body)`</summary>
     [Parameter] public Func<CelestialBody, Aerobrake.Quote?> AerobrakeMenuQuote { get; set; } = default!;
-    /// <summary>the page's `string ArmMenuHint(string? bodyId)`</summary>
     [Parameter] public Func<string?, string> ArmMenuHint { get; set; } = default!;
-    /// <summary>the page's `(double X, double Y) ClampMenu(double anchorX, double anchorY, int rows)`</summary>
     [Parameter] public Func<double, double, int, (double X, double Y)> ClampMenu { get; set; } = default!;
-    /// <summary>the page's `void CloseBodyMenu()`</summary>
     [Parameter] public Action CloseBodyMenu { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string DockNavLockTip`</summary>
     [Parameter] public string DockNavLockTip { get; set; } = default!;
-    /// <summary>the page's `void EngageAerobrakeFromMenu(string bodyId)`</summary>
     [Parameter] public Action<string> EngageAerobrakeFromMenu { get; set; } = default!;
-    /// <summary>the page's `Task EngageLongHaulFromMenu(string bodyId)`</summary>
     [Parameter] public Func<string, Task> EngageLongHaulFromMenu { get; set; } = default!;
-    /// <summary>the page's `string FormatSimTime(double simTime)`</summary>
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    /// <summary>the page's `HarborClass HarborClassOf(string? bodyId)`</summary>
     [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
-    /// <summary>the page's `string? KaamosCyclerBlock()`</summary>
     [Parameter] public Func<string?> KaamosCyclerBlock { get; set; } = default!;
-    /// <summary>the page's `string KaamosCyclerLabel()`</summary>
     [Parameter] public Func<string> KaamosCyclerLabel { get; set; } = default!;
-    /// <summary>the page's `bool KaamosCyclerRowVisible(string bodyId)`</summary>
     [Parameter] public Func<string, bool> KaamosCyclerRowVisible { get; set; } = default!;
-    /// <summary>the page's `string? LongHaulClearanceBlock(LongHaul.Departure departure, CelestialBody planet)`</summary>
     [Parameter] public Func<LongHaul.Departure, CelestialBody, string?> LongHaulClearanceBlock { get; set; } = default!;
-    /// <summary>the page's `string? LongHaulOfferBlock(LongHaul.Departure? departure, CelestialBody planet, string? clearanceBlock)`</summary>
     [Parameter] public Func<LongHaul.Departure?, CelestialBody, string?, string?> LongHaulOfferBlock { get; set; } = default!;
-    /// <summary>the page's `CelestialBody? LongHaulTargetPlanet(string? destBodyId)`</summary>
     [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
-    /// <summary>the page's `string MenuAnchorStyle((double X, double Y) at)`</summary>
     [Parameter] public Func<(double X, double Y), string> MenuAnchorStyle { get; set; } = default!;
-    /// <summary>the page's `bool NavLockedByDock`</summary>
     [Parameter] public bool NavLockedByDock { get; set; }
-    /// <summary>the page's `Task RideTheCyclerWindow()`</summary>
     [Parameter] public Func<Task> RideTheCyclerWindow { get; set; } = default!;
-    /// <summary>the page's `void ScanAreaFromMenu(Vector2d center, double radius, string label)`</summary>
     [Parameter] public Action<Vector2d, double, string> ScanAreaFromMenu { get; set; } = default!;
-    /// <summary>the page's `string ScanCostText(Vector2d center, double radius)`</summary>
     [Parameter] public Func<Vector2d, double, string> ScanCostText { get; set; } = default!;
-    /// <summary>the page's `void SetDestination(string? bodyId)`</summary>
     [Parameter] public Action<string?> SetDestination { get; set; } = default!;
-    /// <summary>the page's `double SimTime`</summary>
     [Parameter] public double SimTime { get; set; }
-    /// <summary>the page's `void ToggleArmedInsertionFromMenu(string bodyId)`</summary>
     [Parameter] public Action<string> ToggleArmedInsertionFromMenu { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public CelestialBody menuBody { get; set; } = default!;
 
-    /// <summary>the page's `double _bodyMenuX`</summary>
     [Parameter] public double _bodyMenuX { get; set; }
-    /// <summary>the page's `double _bodyMenuY`</summary>
     [Parameter] public double _bodyMenuY { get; set; }
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

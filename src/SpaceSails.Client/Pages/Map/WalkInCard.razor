@@ -24,6 +24,25 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L5b · THE WALK-IN. She came in through a leaf that does not open for you, crossed the floor on
+       the real A*, and is standing at the top the captain took for himself. She is not sitting: she said
+       she would not stay.
+
+       EVERYTHING SHE SAYS COMES OUT OF CORE (WalkIn), including the two buttons. Nothing here is typed
+       twice and nothing here is authored — the file that holds her words is the file the ledger row, the
+       note in the book and the plate over her head all read.
+
+       AND THE BEAT IS HOSTED ON THIS PANEL. StoryBeats.Beat.WalkIn is Presentation.Hosted with this card
+       named as its canvas, so the seam spends her cadence, files the seen-set and writes her entrance into
+       the ledger while THIS is the picture on the screen. A plate raised alongside would be the stacked
+       card #777 named — the same woman, twice, on one screen.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop rep-backdrop">
@@ -70,11 +89,17 @@
 }
 
 @code {
-    /// <summary>the page's `void AnswerTheWalkIn(bool yes)`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Action<bool> AnswerTheWalkIn { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public WalkIn.Who sheAsks { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

@@ -24,6 +24,18 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
+       when sitting down it should ask with a pop-up whether I want to stand up again."
+
+       Drawn AFTER the table so it lands on top of it — it is a question about that panel and it has to be
+       the thing the eye and the cancel key both reach first. Plain words and nothing else (#782/#783): the
+       question, what it costs when it costs something, and the two answers. Esc is the second road to "stay
+       where you are", and Enter to "stand up" (see TryConfirmTopOverlay's flagged exception). *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
@@ -62,13 +74,18 @@
 }
 
 @code {
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `void KeepYourSeat()`</summary>
     [Parameter] public Action KeepYourSeat { get; set; } = default!;
-    /// <summary>the page's `bool StandingUpCostsARest`</summary>
     [Parameter] public bool StandingUpCostsARest { get; set; }
-    /// <summary>the page's `void StandUpFromTable()`</summary>
     [Parameter] public Action StandUpFromTable { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

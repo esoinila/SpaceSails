@@ -26,6 +26,13 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* A bar stranger's contract, slid across the table (go-ashore quests, M-Q1): shown over the deck
+       canvas while ashore, with Take / Pass. Same overlay family as the deck-pulse-toast. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #997 wave 10 · THE STRANGER'S CONTRACT, and #1010's blocker answered by #780's own ruling.
@@ -93,25 +100,24 @@
 }
 
 @code {
-    /// <summary>the page's `Quest? _pendingOffer`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Quest? _pendingOffer { get; set; }
-    /// <summary>the page's `void AcceptOffer()`</summary>
     [Parameter] public Action AcceptOffer { get; set; } = default!;
-    /// <summary>the page's `RenderFragment ContactDrinkOffer(string giver, string display, Core.Interior.Barkeep keep)`</summary>
     [Parameter] public Func<string, string, Core.Interior.Barkeep, RenderFragment> ContactDrinkOffer { get; set; } = default!;
-    /// <summary>the page's `Core.Interior.Barkeep? CurrentKeep`</summary>
     [Parameter] public Core.Interior.Barkeep? CurrentKeep { get; set; }
-    /// <summary>the page's `void DeclineOffer()`</summary>
     [Parameter] public Action DeclineOffer { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string GiverDisplay(string giver)`</summary>
     [Parameter] public Func<string, string> GiverDisplay { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<string> JobPlainBlock(Quest q)`</summary>
     [Parameter] public Func<Quest, IReadOnlyList<string>> JobPlainBlock { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<(string Giver, string Display)> PresentBarContacts()`</summary>
     [Parameter] public Func<IReadOnlyList<(string Giver, string Display)>> PresentBarContacts { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public Quest offer { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

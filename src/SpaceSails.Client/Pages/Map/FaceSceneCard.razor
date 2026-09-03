@@ -24,6 +24,15 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #973 L5a · "YOU LOOK DIFFERENT." The first meeting after a rebirth with somebody who knew the old
+       face. Their line, the captain's three answers, and — once he has said one — what they say back. It
+       earns a modal for the reason the vented room does: the captain is standing still at a table, and this
+       is the one moment in the game that is about his own face. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #997 wave 5 · THE ONE CARD OF THE FOURTEEN THAT KEEPS ITS OWN WAY OUT, with the reason, and it is
@@ -76,21 +85,22 @@
 }
 
 @code {
-    /// <summary>the page's `string? _faceSceneReply`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _faceSceneReply { get; set; }
-    /// <summary>the page's `void AnswerTheFace(OldCrewScene.Answer answer)`</summary>
     [Parameter] public Action<OldCrewScene.Answer> AnswerTheFace { get; set; } = default!;
-    /// <summary>the page's `void CloseTheFaceScene()`</summary>
     [Parameter] public Action CloseTheFaceScene { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string OldCrewHistoryLine(string giver)`</summary>
     [Parameter] public Func<string, string> OldCrewHistoryLine { get; set; } = default!;
-    /// <summary>the page's `void Say(bool atTheDoor, string line)`</summary>
     [Parameter] public Action<bool, string> Say { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public string faceGiver { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public OldCrew.Shipmate faceWho { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

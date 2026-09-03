@@ -24,6 +24,15 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #247 — the barkeep's counter menu. Owner ashore: "How do I get a drink at the Rusty bar here?"
+       Walk up to the bar, press E: buy the house special (routes through the Galley's rum-tot law, so
+       overdoing it tilts the deck ashore too), stand a round for the room (warms the regulars), or ask
+       for a rumor. Same overlay family as the deck-offer-card. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="deck-offer-card">
@@ -277,81 +286,52 @@
 }
 
 @code {
-    /// <summary>the page's `string? _barNotice`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _barNotice { get; set; }
-    /// <summary>the page's `int _credits`</summary>
     [Parameter] public int _credits { get; set; }
-    /// <summary>the page's `bool _showBarMenu`</summary>
     [Parameter] public bool _showBarMenu { get; set; }
-    /// <summary>the page's `void AskAboutKaamos()`</summary>
     [Parameter] public Action AskAboutKaamos { get; set; } = default!;
-    /// <summary>the page's `void AskAboutNebula()`</summary>
     [Parameter] public Action AskAboutNebula { get; set; } = default!;
-    /// <summary>the page's `void AskBarkeepForRumor()`</summary>
     [Parameter] public Action AskBarkeepForRumor { get; set; } = default!;
-    /// <summary>the page's `void BookARoom(bool wantBig)`</summary>
     [Parameter] public Action<bool> BookARoom { get; set; } = default!;
-    /// <summary>the page's `string BookingHint`</summary>
     [Parameter] public string BookingHint { get; set; } = default!;
-    /// <summary>the page's `void BuyDrink(Core.Drink drink)`</summary>
     [Parameter] public Action<Core.Drink> BuyDrink { get; set; } = default!;
-    /// <summary>the page's `void BuyHouseSpecial()`</summary>
     [Parameter] public Action BuyHouseSpecial { get; set; } = default!;
-    /// <summary>the page's `void BuyRoundForRoom()`</summary>
     [Parameter] public Action BuyRoundForRoom { get; set; } = default!;
-    /// <summary>the page's `void BuyTheCutter()`</summary>
     [Parameter] public Action BuyTheCutter { get; set; } = default!;
-    /// <summary>the page's `void BuyTheKit()`</summary>
     [Parameter] public Action BuyTheKit { get; set; } = default!;
-    /// <summary>the page's `bool CaptainIsOnAStool`</summary>
     [Parameter] public bool CaptainIsOnAStool { get; set; }
-    /// <summary>the page's `void CloseBarkeep()`</summary>
     [Parameter] public Action CloseBarkeep { get; set; } = default!;
-    /// <summary>the page's `RenderFragment ContactDrinkOffer(string giver, string display, Core.Interior.Barkeep keep)`</summary>
     [Parameter] public Func<string, string, Core.Interior.Barkeep, RenderFragment> ContactDrinkOffer { get; set; } = default!;
-    /// <summary>the page's `bool CounterHasStools()`</summary>
     [Parameter] public Func<bool> CounterHasStools { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `bool KaamosBarSeamAvailable()`</summary>
     [Parameter] public Func<bool> KaamosBarSeamAvailable { get; set; } = default!;
-    /// <summary>the page's `string KaamosBarSeamLabel()`</summary>
     [Parameter] public Func<string> KaamosBarSeamLabel { get; set; } = default!;
-    /// <summary>the page's `string KaamosBarSeamTitle()`</summary>
     [Parameter] public Func<string> KaamosBarSeamTitle { get; set; } = default!;
-    /// <summary>the page's `bool NebulaBarSeamAvailable()`</summary>
     [Parameter] public Func<bool> NebulaBarSeamAvailable { get; set; } = default!;
-    /// <summary>the page's `string NebulaBarSeamLabel()`</summary>
     [Parameter] public Func<string> NebulaBarSeamLabel { get; set; } = default!;
-    /// <summary>the page's `string NebulaBarSeamTitle()`</summary>
     [Parameter] public Func<string> NebulaBarSeamTitle { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<(string Giver, string Display)> PresentBarContacts()`</summary>
     [Parameter] public Func<IReadOnlyList<(string Giver, string Display)>> PresentBarContacts { get; set; } = default!;
-    /// <summary>the page's `string? SeatedStoolPlate`</summary>
     [Parameter] public string? SeatedStoolPlate { get; set; }
-    /// <summary>the page's `Task StoolMoveClicked(string moveId)`</summary>
     [Parameter] public Func<string, Task> StoolMoveClicked { get; set; } = default!;
-    /// <summary>the page's `bool StoolMoveOnOffer(Encounter.Move move)`</summary>
     [Parameter] public Func<Encounter.Move, bool> StoolMoveOnOffer { get; set; } = default!;
-    /// <summary>the page's `string StoolMoveRefusal(Encounter.Move move)`</summary>
     [Parameter] public Func<Encounter.Move, string> StoolMoveRefusal { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Encounter.Move> StoolMovesOnTheTable()`</summary>
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> StoolMovesOnTheTable { get; set; } = default!;
-    /// <summary>the page's `void TakeAStool()`</summary>
     [Parameter] public Action TakeAStool { get; set; } = default!;
-    /// <summary>the page's `bool TheBackCounterIsOpen`</summary>
     [Parameter] public bool TheBackCounterIsOpen { get; set; }
-    /// <summary>the page's `bool TheCounterRentsRooms`</summary>
     [Parameter] public bool TheCounterRentsRooms { get; set; }
-    /// <summary>the page's `string? TheKeepsTell()`</summary>
     [Parameter] public Func<string?> TheKeepsTell { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<string> TheOverheardBlock()`</summary>
     [Parameter] public Func<IReadOnlyList<string>> TheOverheardBlock { get; set; } = default!;
-    /// <summary>the page's `void ToggleBarMenu()`</summary>
     [Parameter] public Action ToggleBarMenu { get; set; } = default!;
-    /// <summary>the page's `string? WhoIsInTonight()`</summary>
     [Parameter] public Func<string?> WhoIsInTonight { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public Core.Interior.Barkeep keep { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

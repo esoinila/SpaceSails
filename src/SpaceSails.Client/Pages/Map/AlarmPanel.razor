@@ -24,6 +24,15 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #409+ · THE ALARM PANEL — "something to try to hack". The die is SHOWN: target, the stack of named
+       modifiers, and the number it landed on, because a roll a captain cannot argue with is a roll they did
+       not take part in. And it states the cost of a wrong answer BEFORE they press it, so declining is a
+       real option. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseAlarmPanel)">
@@ -72,21 +81,22 @@
 }
 
 @code {
-    /// <summary>the page's `string? _alarmOutcome`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _alarmOutcome { get; set; }
-    /// <summary>the page's `LabSecurity.State _labAlarm`</summary>
     [Parameter] public LabSecurity.State _labAlarm { get; set; } = default!;
-    /// <summary>the page's `DiceRoll? _labHackRoll`</summary>
     [Parameter] public DiceRoll? _labHackRoll { get; set; }
-    /// <summary>the page's `void CloseAlarmPanel()`</summary>
     [Parameter] public Action CloseAlarmPanel { get; set; } = default!;
-    /// <summary>the page's `LabSecurity.Approach CurrentApproach()`</summary>
     [Parameter] public Func<LabSecurity.Approach> CurrentApproach { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `void HackTheAlarm()`</summary>
     [Parameter] public Action HackTheAlarm { get; set; } = default!;
-    /// <summary>the page's `int LabHackStack`</summary>
     [Parameter] public int LabHackStack { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

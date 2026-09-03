@@ -25,6 +25,16 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #127 (owner ruling: "WHO IS FLYING THE SHIP must be big and unmissable" — he watched the
+       autopilot fly him into Saturn thinking he had the stick). One persistent banner at the top of
+       the flight view, on every desk. Derived from the same source NavChip reads (_armedOrbitBodyId):
+       armed auto-orbit = the autopilot is in command and will fly the approach + insertion itself;
+       anything else = the helm answers to you. Click jumps to Nav, where the disarm control lives. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         string? _armed = _armedOrbitBodyId;
@@ -105,31 +115,27 @@
 }
 
 @code {
-    /// <summary>the page's `string? _armedOrbitBodyId`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _armedOrbitBodyId { get; set; }
-    /// <summary>the page's `int _bannerRowOffset`</summary>
     [Parameter] public int _bannerRowOffset { get; set; }
-    /// <summary>the page's `string? _dockReadyStatus`</summary>
     [Parameter] public string? _dockReadyStatus { get; set; }
-    /// <summary>the page's `ShipAlerts _shipAlerts`</summary>
     [Parameter] public ShipAlerts _shipAlerts { get; set; } = default!;
-    /// <summary>the page's `void AcknowledgeAlert(AlertKind kind)`</summary>
     [Parameter] public Action<AlertKind> AcknowledgeAlert { get; set; } = default!;
-    /// <summary>the page's `void AuthorizePlunder()`</summary>
     [Parameter] public Action AuthorizePlunder { get; set; } = default!;
-    /// <summary>the page's `bool AutopilotStoodDown`</summary>
     [Parameter] public bool AutopilotStoodDown { get; set; }
-    /// <summary>the page's `void BannerPageDown()`</summary>
     [Parameter] public Action BannerPageDown { get; set; } = default!;
-    /// <summary>the page's `void BannerPageUp()`</summary>
     [Parameter] public Action BannerPageUp { get; set; } = default!;
-    /// <summary>the page's `void Board(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    /// <summary>the page's `void DeclinePlunder()`</summary>
     [Parameter] public Action DeclinePlunder { get; set; } = default!;
-    /// <summary>the page's `FlightPlanStatus FlightNowNext()`</summary>
     [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
-    /// <summary>the page's `Task SwitchDeskFromClick(ShipDesk desk)`</summary>
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

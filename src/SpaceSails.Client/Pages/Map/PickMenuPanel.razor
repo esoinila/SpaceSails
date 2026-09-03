@@ -25,6 +25,13 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* The chooser (owner: "if many objects under click we let the user choose what they
+       meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #253: header + one row per candidate, flipped away from the near edge. *@
@@ -69,26 +76,25 @@
 }
 
 @code {
-    /// <summary>the page's `(double X, double Y) ClampMenu(double anchorX, double anchorY, int rows)`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Func<double, double, int, (double X, double Y)> ClampMenu { get; set; } = default!;
-    /// <summary>the page's `void ClosePickMenu()`</summary>
     [Parameter] public Action ClosePickMenu { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string MenuAnchorStyle((double X, double Y) at)`</summary>
     [Parameter] public Func<(double X, double Y), string> MenuAnchorStyle { get; set; } = default!;
-    /// <summary>the page's `void OpenLayersFromPick()`</summary>
     [Parameter] public Action OpenLayersFromPick { get; set; } = default!;
-    /// <summary>the page's `void OpenPickCandidate(PickCandidate pick)`</summary>
     [Parameter] public Action<PickCandidate> OpenPickCandidate { get; set; } = default!;
-    /// <summary>the page's `string PickHint(PickCandidate pick)`</summary>
     [Parameter] public Func<PickCandidate, string> PickHint { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public List<PickCandidate> pickList { get; set; } = default!;
 
-    /// <summary>the page's `double _pickMenuX`</summary>
     [Parameter] public double _pickMenuX { get; set; }
-    /// <summary>the page's `double _pickMenuY`</summary>
     [Parameter] public double _pickMenuY { get; set; }
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

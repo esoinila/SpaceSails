@@ -24,6 +24,34 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═════════════════════════════════════════════════════════════════════════════════════════════════
+       #1052 (L2) · THE PAPER AT THE TABLE — AND IT IS DOCKED, NOT MODAL.
+
+       Owner, 2026-09-01, and this block is the sentence answered literally: "Just hope there is a way to
+       have both the newsfeed and pop-up-bar walkers visible UI at the same time."
+
+       SO THERE IS NO .view-object-backdrop IN HERE AT ALL — no scrim, no blur, no centring, and the guard
+       asserts the ABSENCE rather than trusting this comment. That is #784's own move made a second time: a
+       strip at the foot for the sitting, a panel at the side for the paper, and between them a hall that is
+       still lit, still walked, and still clickable. A rep who crosses the floor while the captain is reading
+       raises his card at 1320 and lands ON TOP of this panel, which is the right way round: the man talking
+       to you outranks the paper in your hands. The panel does not move and does not close, so putting his
+       card down leaves the captain reading where he was.
+
+       IT LIVES OUTSIDE THE SEATED REGION AND IS GATED ON THE SEAT ANYWAY. Standing up takes the paper with
+       it (there is nowhere to read it from), and the panel is not inside `.seated-dock` because the strip is
+       a short pinned row at the foot of the glass and a paper folded into it would grow the strip into the
+       modal it stopped being.
+
+       CappedScrollPanel is inside NewsWirePanel, so the head — the masthead and today's story — keeps its
+       measured height and only the dated list gives. Elegant minimalism: the scroll bar arrives when the
+       list is longer than the panel and not before.
+       ═════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="seated-news">
@@ -58,19 +86,21 @@
 }
 
 @code {
-    /// <summary>the page's `bool AlreadyClipped(NewsWire.NewsItem item)`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Func<NewsWire.NewsItem, bool> AlreadyClipped { get; set; } = default!;
-    /// <summary>the page's `void ClipThisStory(NewsWire.NewsItem item)`</summary>
     [Parameter] public Action<NewsWire.NewsItem> ClipThisStory { get; set; } = default!;
-    /// <summary>the page's `void CloseSeatedNews()`</summary>
     [Parameter] public Action CloseSeatedNews { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<NewsWire.NewsItem> SeatedNewsFeed()`</summary>
     [Parameter] public Func<IReadOnlyList<NewsWire.NewsItem>> SeatedNewsFeed { get; set; } = default!;
-    /// <summary>the page's `int SeatedNewsItemCount`</summary>
     [Parameter] public int SeatedNewsItemCount { get; set; }
-    /// <summary>the page's `double SimTime`</summary>
     [Parameter] public double SimTime { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

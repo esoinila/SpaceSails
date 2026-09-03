@@ -29,6 +29,15 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
+       bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
+       the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says
+       so honestly; nothing in range keeps the door shut. Same overlay family as the deck-offer-card. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #997 wave 7 · THE LAST ROOT IN #735's CAP LIST TAKES THE SHELL, AND THE FOOT STAYS A ROW.
@@ -178,41 +187,32 @@
 }
 
 @code {
-    /// <summary>the page's `List<ShuttleFarStop> _shuttleBayFarStops`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public List<ShuttleFarStop> _shuttleBayFarStops { get; set; } = default!;
-    /// <summary>the page's `double? AwayReopenSeconds(string bodyId)`</summary>
     [Parameter] public Func<string, double?> AwayReopenSeconds { get; set; } = default!;
-    /// <summary>the page's `string AwayWindowWord(AwayWindow w)`</summary>
     [Parameter] public Func<AwayWindow, string> AwayWindowWord { get; set; } = default!;
-    /// <summary>the page's `void Board(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    /// <summary>the page's `void CloseShuttleBayDoor()`</summary>
     [Parameter] public Action CloseShuttleBayDoor { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string FormatDistance(double meters)`</summary>
     [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
-    /// <summary>the page's `string FormatDuration(double seconds)`</summary>
     [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
-    /// <summary>the page's `void OpenBoardingPanel(ShuttleStop stop)`</summary>
     [Parameter] public Action<ShuttleStop> OpenBoardingPanel { get; set; } = default!;
-    /// <summary>the page's `double? RouteReturnBySimTime(string bodyId)`</summary>
     [Parameter] public Func<string, double?> RouteReturnBySimTime { get; set; } = default!;
-    /// <summary>the page's `string RouteWindowRowText(RouteWindowRow row)`</summary>
     [Parameter] public Func<RouteWindowRow, string> RouteWindowRowText { get; set; } = default!;
-    /// <summary>the page's `string ShuttleReachText(double rangeMeters)`</summary>
     [Parameter] public Func<double, string> ShuttleReachText { get; set; } = default!;
-    /// <summary>the page's `List<RouteWindowRow> ShuttleRouteWindowRows()`</summary>
     [Parameter] public Func<List<RouteWindowRow>> ShuttleRouteWindowRows { get; set; } = default!;
-    /// <summary>the page's `string ShuttleSeparationText(double meters)`</summary>
     [Parameter] public Func<double, string> ShuttleSeparationText { get; set; } = default!;
-    /// <summary>the page's `string ShuttleTrendWord(ShuttleExcursion.RangeTrend trend)`</summary>
     [Parameter] public Func<ShuttleExcursion.RangeTrend, string> ShuttleTrendWord { get; set; } = default!;
-    /// <summary>the page's `void TakeShuttleTo(ShuttleStop stop)`</summary>
     [Parameter] public Action<ShuttleStop> TakeShuttleTo { get; set; } = default!;
-    /// <summary>the page's `AwayWindow WindowOn(string bodyId)`</summary>
     [Parameter] public Func<string, AwayWindow> WindowOn { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public List<ShuttleStop> shuttleStops { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

@@ -24,6 +24,16 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* Station tab bar (StationDesks.md rule 3): visible aboard on every desk — the keyboard-shortcut
+       equivalent for players who'd rather click. Captain (PR-15) leads the bar with its `0` key, ahead
+       of Nav's `1`. #330 (owner: "Should the tile buttons even be there when we are not on the ship?"):
+       HIDDEN on a surface excursion — the captain is off-ship and the desks are a tube ride away. The
+       captain's link to the ship overhead is #327's orbit-comms line, painted across the excursion HUD. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #1038 · peek-keep: this bar is the one thing peek leaves standing, because the 👁 button on the
@@ -63,19 +73,21 @@
 }
 
 @code {
-    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
-    /// <summary>the page's `bool _peekMap`</summary>
     [Parameter] public bool _peekMap { get; set; }
-    /// <summary>the page's `string DeskKeyLabel(ShipDesk desk)`</summary>
     [Parameter] public Func<ShipDesk, string> DeskKeyLabel { get; set; } = default!;
-    /// <summary>the page's `string DeskLabel(ShipDesk desk)`</summary>
     [Parameter] public Func<ShipDesk, string> DeskLabel { get; set; } = default!;
-    /// <summary>the page's `Task SwitchDeskFromClick(ShipDesk desk)`</summary>
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
-    /// <summary>the page's `ShipDesk[] TabBarOrder`</summary>
     [Parameter] public ShipDesk[] TabBarOrder { get; set; } = default!;
-    /// <summary>the page's `Task TogglePeekMapFromClick()`</summary>
     [Parameter] public Func<Task> TogglePeekMapFromClick { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

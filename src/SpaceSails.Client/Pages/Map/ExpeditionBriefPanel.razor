@@ -25,6 +25,14 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #370: THE RESEARCH BRIEF — the charter service's shamelessly optimistic pitch (a gen-AI image +
+       sugar-coated copy). Shown on accept and re-viewable during the gig. The fine-print hedge words ARE
+       the joke; the reveal will later contradict every word of it. Reuses the treasure-map card idiom. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="mission-celebration-backdrop" @onclick="DismissExpeditionBrief">
@@ -46,13 +54,18 @@
 }
 
 @code {
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `Task DismissExpeditionBrief()`</summary>
     [Parameter] public Func<Task> DismissExpeditionBrief { get; set; } = default!;
-    /// <summary>the page's `string ExpeditionBriefArtCss(ExpeditionSiteKind kind)`</summary>
     [Parameter] public Func<ExpeditionSiteKind, string> ExpeditionBriefArtCss { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public ExpeditionBriefCard brief { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

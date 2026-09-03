@@ -24,6 +24,14 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* M29: desk-layer-passthrough — the sensors chief works the SKY, not a form: pointer
+       events fall through the desk's empty space to the live map below (pan, wheel zoom,
+       ship click → contact menu), while every actual instrument re-enables its own events. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
     <div class="desk-layer desk-layer-dimmed desk-layer-passthrough @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
@@ -44,17 +52,20 @@
 }
 
 @code {
-    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
-    /// <summary>the page's `bool _activeRadar`</summary>
     [Parameter] public bool _activeRadar { get; set; }
-    /// <summary>the page's `List<SpaceSails.Client.Pages.Stations.TrackingPost.CourseOpportunity> _courseOpportunities`</summary>
     [Parameter] public List<SpaceSails.Client.Pages.Stations.TrackingPost.CourseOpportunity> _courseOpportunities { get; set; } = default!;
-    /// <summary>the page's `ICelestialEphemeris? _ephemeris`</summary>
     [Parameter] public ICelestialEphemeris? _ephemeris { get; set; }
-    /// <summary>the page's `ShipState _ship`</summary>
     [Parameter] public ShipState _ship { get; set; } = default!;
-    /// <summary>the page's `int _telescopeLevel`</summary>
     [Parameter] public int _telescopeLevel { get; set; }
     /// <summary>the page's `SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -63,25 +74,15 @@
     /// <summary>The page's `_trackingPost = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<SpaceSails.Client.Pages.Stations.TrackingPost?> _trackingPostSet { get; set; } = default!;
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost { get => _trackingPostValue; set { _trackingPostValue = value; _trackingPostSet(value); } }
-    /// <summary>the page's `TransponderMode _transponderMode`</summary>
     [Parameter] public TransponderMode _transponderMode { get; set; } = default!;
-    /// <summary>the page's `void CenterShipOnMap()`</summary>
     [Parameter] public Action CenterShipOnMap { get; set; } = default!;
-    /// <summary>the page's `void OnAreaScanCovered(SpaceSails.Client.Pages.Stations.TrackingPost.CompletedAreaScan scan)`</summary>
     [Parameter] public Action<SpaceSails.Client.Pages.Stations.TrackingPost.CompletedAreaScan> OnAreaScanCovered { get; set; } = default!;
-    /// <summary>the page's `void SetActiveRadar(bool on)`</summary>
     [Parameter] public Action<bool> SetActiveRadar { get; set; } = default!;
-    /// <summary>the page's `void SetInterestTarget(string id)`</summary>
     [Parameter] public Action<string> SetInterestTarget { get; set; } = default!;
-    /// <summary>the page's `void SetTransponder(TransponderMode mode)`</summary>
     [Parameter] public Action<TransponderMode> SetTransponder { get; set; } = default!;
-    /// <summary>the page's `double SimTime`</summary>
     [Parameter] public double SimTime { get; set; }
-    /// <summary>the page's `Task SwitchDeskFromClick(ShipDesk desk)`</summary>
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate> TrackingCandidates()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate>> TrackingCandidates { get; set; } = default!;
-    /// <summary>the page's `void ZoomSensorsBackdrop(double factor)`</summary>
     [Parameter] public Action<double> ZoomSensorsBackdrop { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

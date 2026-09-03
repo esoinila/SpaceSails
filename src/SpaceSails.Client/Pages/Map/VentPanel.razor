@@ -26,6 +26,15 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #488 · THE VALVE BOARD — a damage-control mimic, the Battlestar Galactica shape. The ship drawn as
+       her own compartments, each one a switch: shut the door, read for life, blow the room. It lives aft in
+       ENGINEERING because the bridge panel is dead, so you walk toward the thing to reach the tool that
+       kills it. The sensor cannot tell a survivor from the infestation — that is the whole decision. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseVentPanel)">
@@ -383,90 +392,58 @@
 }
 
 @code {
-    /// <summary>the page's `int _refillCharges`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public int _refillCharges { get; set; }
-    /// <summary>the page's `bool _shipPumpOrder`</summary>
     [Parameter] public bool _shipPumpOrder { get; set; }
-    /// <summary>the page's `bool _spinePressurised`</summary>
     [Parameter] public bool _spinePressurised { get; set; }
-    /// <summary>the page's `double _spineVacuumSeconds`</summary>
     [Parameter] public double _spineVacuumSeconds { get; set; }
-    /// <summary>the page's `SurfaceExcursion? _surface`</summary>
     [Parameter] public SurfaceExcursion? _surface { get; set; }
-    /// <summary>the page's `List<string> _ventLog`</summary>
     [Parameter] public List<string> _ventLog { get; set; } = default!;
-    /// <summary>the page's `string? _ventMessage`</summary>
     [Parameter] public string? _ventMessage { get; set; }
-    /// <summary>the page's `Dictionary<string, (DiceRoll Roll, HullVenting.LifeSign Sign)> _ventReads`</summary>
     [Parameter] public Dictionary<string, (DiceRoll Roll, HullVenting.LifeSign Sign)> _ventReads { get; set; } = default!;
-    /// <summary>the page's `string? _ventSelected`</summary>
     [Parameter] public string? _ventSelected { get; set; }
-    /// <summary>the page's `IReadOnlyList<string> AtmosphereAt(string space)`</summary>
     [Parameter] public Func<string, IReadOnlyList<string>> AtmosphereAt { get; set; } = default!;
-    /// <summary>the page's `string? CaptainCompartment()`</summary>
     [Parameter] public Func<string?> CaptainCompartment { get; set; } = default!;
-    /// <summary>the page's `void CloseVentPanel()`</summary>
     [Parameter] public Action CloseVentPanel { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string Du(double v)`</summary>
     [Parameter] public Func<double, string> Du { get; set; } = default!;
-    /// <summary>the page's `int FloodCost()`</summary>
     [Parameter] public Func<int> FloodCost { get; set; } = default!;
-    /// <summary>the page's `void FloodTheShip()`</summary>
     [Parameter] public Action FloodTheShip { get; set; } = default!;
-    /// <summary>the page's `void OrderWholeShipPumped()`</summary>
     [Parameter] public Action OrderWholeShipPumped { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<string> PumpableRooms()`</summary>
     [Parameter] public Func<IReadOnlyList<string>> PumpableRooms { get; set; } = default!;
-    /// <summary>the page's `void PumpEverySealedRoom()`</summary>
     [Parameter] public Action PumpEverySealedRoom { get; set; } = default!;
-    /// <summary>the page's `PumpRun? PumpOn(string space)`</summary>
     [Parameter] public Func<string, PumpRun?> PumpOn { get; set; } = default!;
-    /// <summary>the page's `void ReadLifeSigns(string name)`</summary>
     [Parameter] public Action<string> ReadLifeSigns { get; set; } = default!;
-    /// <summary>the page's `void RefillCompartment(string name)`</summary>
     [Parameter] public Action<string> RefillCompartment { get; set; } = default!;
-    /// <summary>the page's `void RescueSurvivor(string name)`</summary>
     [Parameter] public Action<string> RescueSurvivor { get; set; } = default!;
-    /// <summary>the page's `void SealTheShip()`</summary>
     [Parameter] public Action SealTheShip { get; set; } = default!;
-    /// <summary>the page's `void SelectVentSpace(string name)`</summary>
     [Parameter] public Action<string> SelectVentSpace { get; set; } = default!;
-    /// <summary>the page's `HullVenting.Space SpaceNow(string name)`</summary>
     [Parameter] public Func<string, HullVenting.Space> SpaceNow { get; set; } = default!;
-    /// <summary>the page's `bool SpinePumpable`</summary>
     [Parameter] public bool SpinePumpable { get; set; }
-    /// <summary>the page's `(string Text, string Class) SpineTag()`</summary>
     [Parameter] public Func<(string Text, string Class)> SpineTag { get; set; } = default!;
-    /// <summary>the page's `void StartPumpDown(string name)`</summary>
     [Parameter] public Action<string> StartPumpDown { get; set; } = default!;
-    /// <summary>the page's `void StartSpinePump()`</summary>
     [Parameter] public Action StartSpinePump { get; set; } = default!;
-    /// <summary>the page's `void StopPump(string name)`</summary>
     [Parameter] public Action<string> StopPump { get; set; } = default!;
-    /// <summary>the page's `void ToggleVentDoor(string name)`</summary>
     [Parameter] public Action<string> ToggleVentDoor { get; set; } = default!;
-    /// <summary>the page's `void UnsealTheShip()`</summary>
     [Parameter] public Action UnsealTheShip { get; set; } = default!;
-    /// <summary>the page's `string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth, (string Text, string Class) tag, float roomHeight = 0f)`</summary>
     [Parameter] public Func<string, float, float, float, (string Text, string Class), float, string> OnVentAreaLabelSvg { get; set; } = default!;
     private string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth,
         (string Text, string Class) tag, float roomHeight = 0f)
         => OnVentAreaLabelSvg(label, cx, cy, roomWidth, tag, roomHeight);
-    /// <summary>the page's `(string Text, string Class) VentAreaTag(string name, HullVenting.Space space, float roomWidth)`</summary>
     [Parameter] public Func<string, HullVenting.Space, float, (string Text, string Class)> VentAreaTag { get; set; } = default!;
-    /// <summary>the page's `void VentCompartment(string name)`</summary>
     [Parameter] public Action<string> VentCompartment { get; set; } = default!;
-    /// <summary>the page's `float VentDoorX(float x0, float x1)`</summary>
     [Parameter] public Func<float, float, float> VentDoorX { get; set; } = default!;
-    /// <summary>the page's `string VentHullOutline`</summary>
     [Parameter] public string VentHullOutline { get; set; } = default!;
-    /// <summary>the page's `string VentViewBox`</summary>
     [Parameter] public string VentViewBox { get; set; } = default!;
-    /// <summary>the page's `double YearsOfVacuumSeconds`</summary>
     [Parameter] public double YearsOfVacuumSeconds { get; set; }
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public Derelict.Wreck ventWreck { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

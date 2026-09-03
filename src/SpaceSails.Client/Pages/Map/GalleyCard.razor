@@ -24,6 +24,38 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #1021 · THE GALLEY, AS A CARD.
+
+       Owner, of the full-screen Galley desk, verbatim: "We want to keep the news feed... refactor it so it
+       can be elsewhere also, but this UI MUST GO!... This was our first version, it has no gen AI or
+       visibility to the bar surroundings. So keep the features but I want it done in pop-up style like the
+       work the case is."
+
+       "LIKE THE WORK THE CASE IS" IS A SPECIFICATION, and it is the card twenty lines above this one: a
+       click-to-close backdrop, StopClicks so the card does not shut under the captain's own hand, an
+       OverlayFrame.Bare shell whose way out is its last direct child, and the room STILL THERE behind it.
+       That last clause is the owner's second complaint answered without drawing anything: opened at the
+       deck's CANTINA console the card hangs over the cantina's own art, which is the "visibility to the bar
+       surroundings" the blacked-out desk never had. No new picture; the room was always there, the desk was
+       just standing in front of it.
+
+       THE FEATURES, VERBATIM AND IN ORDER. Nothing on this card is new prose — the rum locker's heading,
+       its tot count, its two-state steady-legs line, "Pour a tot" and its tooltip, and the wire's own words
+       are all lifted from Stations/Galley.razor, which this replaces. The pour is the SAME PourRumFromGalley
+       the desk called, which is the same PourRum the deck's own locker calls: one rum ledger, and now three
+       doors onto it that cannot disagree about the tot count.
+
+       THE LOCKER LEADS AND THE WIRE SCROLLS UNDER IT. On a desk the two sat side by side because there was
+       a screen's width to fill; on a card there is not, so the order is the one a captain wants — the thing
+       you PRESS is above the thing you READ, and the wire's list is the only part that gives (its
+       CappedScrollPanel lives inside NewsWirePanel). The card's own cap is 92vh, the satchel's, so the page
+       itself never scrolls. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseGalleyCard)">
@@ -91,27 +123,25 @@
 }
 
 @code {
-    /// <summary>the page's `string? _lastRumLine`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _lastRumLine { get; set; }
-    /// <summary>the page's `int _rumTots`</summary>
     [Parameter] public int _rumTots { get; set; }
-    /// <summary>the page's `TheTender.Line? _tenderLine`</summary>
     [Parameter] public TheTender.Line? _tenderLine { get; set; }
-    /// <summary>the page's `void CloseGalleyCard()`</summary>
     [Parameter] public Action CloseGalleyCard { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `int GalleyFeedAmbientDays`</summary>
     [Parameter] public int GalleyFeedAmbientDays { get; set; }
-    /// <summary>the page's `int GalleyFeedItemCount`</summary>
     [Parameter] public int GalleyFeedItemCount { get; set; }
-    /// <summary>the page's `IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount, NewsWire.NewsScope scope = NewsWire.NewsScope.SystemWire, string? salt = null)`</summary>
     [Parameter] public Func<int, IReadOnlyList<NewsWire.NewsItem>> NewsFeed { get; set; } = default!;
-    /// <summary>the page's `void PourRumFromGalley()`</summary>
     [Parameter] public Action PourRumFromGalley { get; set; } = default!;
-    /// <summary>the page's `bool RumWobbleActive`</summary>
     [Parameter] public bool RumWobbleActive { get; set; }
-    /// <summary>the page's `double SimTime`</summary>
     [Parameter] public double SimTime { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

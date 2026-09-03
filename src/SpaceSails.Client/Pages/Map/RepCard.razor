@@ -24,6 +24,24 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #973 L2 · HARLAN FESS, NEBULA MUTUAL. The salesman has crossed the floor and is standing at the
+       table — he is not sitting, because he was not invited, and there is no eighth way to open a sitting
+       in this codebase. Everything he says comes out of Core (NebulaRep): the tier line, the buttons and
+       their prices, his answer to the captain's own line. Nothing here is typed twice.
+
+       AND THE PAGE THAT COMES BACK IS NOT DRAWN HERE. #973 L1 shipped StoryBeats.Beat.Flashback as a
+       PLATE — one bleached painting for every memory, riding the edge for its seven seconds over a surface
+       that stays readable — and a merged guard pins that presentation. So "I already have a policy" raises
+       the beat through the one seam and the seam puts the plate up; this panel draws his pitch and his
+       answer and nothing of the plate, because drawing it here as well would be the stacked card #777 named
+       (the same picture, twice, on one screen).
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop rep-backdrop">
@@ -66,15 +84,19 @@
 }
 
 @code {
-    /// <summary>the page's `string? _repSaid`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _repSaid { get; set; }
-    /// <summary>the page's `void AnswerTheRep(NebulaRep.RepMove move)`</summary>
     [Parameter] public Action<NebulaRep.RepMove> AnswerTheRep { get; set; } = default!;
-    /// <summary>the page's `void CloseTheRepsCard()`</summary>
     [Parameter] public Action CloseTheRepsCard { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public NebulaRep.RepPitch pitch { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

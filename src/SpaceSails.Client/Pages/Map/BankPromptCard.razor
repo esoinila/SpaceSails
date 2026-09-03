@@ -25,6 +25,21 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #948 · THE PAGE, BEFORE THE BANK. Owner: "I would like to save this point with a comment field and a
+       captain's name of my whim. I want this moment, not that I die and that situation overwrites this."
+
+       Banking was one silent click into a berth that then read like every other berth. It now stops for the
+       two lines that make a save findable a month later — a TITLE, offered pre-filled as
+       "<captain> — <place> — day N" so accepting the default costs one keystroke, and a NOTE about what you
+       were doing. The one sheet serves three gestures because all three write the same page: bank into a
+       berth, export a file (the file carries the page with it), and rewrite the page of a bank already on
+       the shelf. The second half of the owner's sentence needs no code: a banked berth was never touched by
+       the autosave (#310's law, pinned by a Core guard in this lane) — the sheet says so out loud. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="start-picker-backdrop">
@@ -89,6 +104,15 @@
 }
 
 @code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     /// <summary>the page's `string _bankNote` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
     /// the moved block still assigns to `_bankNote` and the assignment still lands on the page.</summary>
@@ -96,9 +120,7 @@
     /// <summary>The page's `_bankNote = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<string> _bankNoteSet { get; set; } = default!;
     private string _bankNote { get => _bankNoteValue; set { _bankNoteValue = value; _bankNoteSet(value); } }
-    /// <summary>the page's `BankPromptKind? _bankPrompt`</summary>
     [Parameter] public BankPromptKind? _bankPrompt { get; set; }
-    /// <summary>the page's `string _bankSlotId`</summary>
     [Parameter] public string _bankSlotId { get; set; } = default!;
     /// <summary>the page's `string _bankTitle` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -107,15 +129,10 @@
     /// <summary>The page's `_bankTitle = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<string> _bankTitleSet { get; set; } = default!;
     private string _bankTitle { get => _bankTitleValue; set { _bankTitleValue = value; _bankTitleSet(value); } }
-    /// <summary>the page's `string BankPromptHeading`</summary>
     [Parameter] public string BankPromptHeading { get; set; } = default!;
-    /// <summary>the page's `void CancelBankPrompt()`</summary>
     [Parameter] public Action CancelBankPrompt { get; set; } = default!;
-    /// <summary>the page's `void CommitBankPrompt()`</summary>
     [Parameter] public Action CommitBankPrompt { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public BankPromptKind bankKind { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

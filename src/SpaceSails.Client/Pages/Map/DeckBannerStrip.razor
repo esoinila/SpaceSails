@@ -170,49 +170,36 @@
 }
 
 @code {
-    /// <summary>the page's `bool _hasVantarCard`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public bool _hasVantarCard { get; set; }
-    /// <summary>the page's `Dictionary<string, PumpRun> _pumps`</summary>
     [Parameter] public Dictionary<string, PumpRun> _pumps { get; set; } = default!;
-    /// <summary>the page's `double? _scuttleSecondsLeft`</summary>
     [Parameter] public double? _scuttleSecondsLeft { get; set; }
-    /// <summary>the page's `double? _shipChargesSeconds`</summary>
     [Parameter] public double? _shipChargesSeconds { get; set; }
-    /// <summary>the page's `Dictionary<string, PumpRun> _shipPumps`</summary>
     [Parameter] public Dictionary<string, PumpRun> _shipPumps { get; set; } = default!;
-    /// <summary>the page's `bool _soundQuietly`</summary>
     [Parameter] public bool _soundQuietly { get; set; }
-    /// <summary>the page's `List<Sweeper> _sweepers`</summary>
     [Parameter] public List<Sweeper> _sweepers { get; set; } = default!;
-    /// <summary>the page's `bool _weaponsTight`</summary>
     [Parameter] public bool _weaponsTight { get; set; }
-    /// <summary>the page's `bool AnySweeperOnTheCaptain`</summary>
     [Parameter] public bool AnySweeperOnTheCaptain { get; set; }
-    /// <summary>the page's `bool BoatClockWorthShowing`</summary>
     [Parameter] public bool BoatClockWorthShowing { get; set; }
-    /// <summary>the page's `double BoatSecondsLeft`</summary>
     [Parameter] public double BoatSecondsLeft { get; set; }
-    /// <summary>the page's `SilentRunning.BoatState BoatState`</summary>
     [Parameter] public SilentRunning.BoatState BoatState { get; set; } = default!;
-    /// <summary>the page's `double? CutSecondsLeft`</summary>
     [Parameter] public double? CutSecondsLeft { get; set; }
-    /// <summary>the page's `int CutsLeftInTheCell`</summary>
     [Parameter] public int CutsLeftInTheCell { get; set; }
-    /// <summary>the page's `double? LabAlarmSecondsLeft`</summary>
     [Parameter] public double? LabAlarmSecondsLeft { get; set; }
-    /// <summary>the page's `bool OnWreck`</summary>
     [Parameter] public bool OnWreck { get; set; }
-    /// <summary>the page's `IEnumerable<(string Room, double Seconds)> RoomsSoaking`</summary>
     [Parameter] public IEnumerable<(string Room, double Seconds)> RoomsSoaking { get; set; } = default!;
-    /// <summary>the page's `string? SearchBandLine`</summary>
     [Parameter] public string? SearchBandLine { get; set; }
-    /// <summary>the page's `double? SoundingSecondsLeft`</summary>
     [Parameter] public double? SoundingSecondsLeft { get; set; }
-    /// <summary>the page's `bool SweepersAboard`</summary>
     [Parameter] public bool SweepersAboard { get; set; }
-    /// <summary>the page's `double? WarmCutSecondsLeft`</summary>
     [Parameter] public double? WarmCutSecondsLeft { get; set; }
-    /// <summary>the page's `InspectionTeam.Awareness WorstSweeperState`</summary>
     [Parameter] public InspectionTeam.Awareness WorstSweeperState { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

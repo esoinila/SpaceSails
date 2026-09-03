@@ -24,6 +24,26 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #1061 beat 2 · BREM KOLT, HAZARDOUS ACCOUNTS. The same firm as the panel above and deliberately the
+       same markup — one .rep-card, one scrim, one shell — because he is a salesman from Nebula Mutual and
+       drawing him differently would be the page claiming a difference the fiction does not have.
+
+       WHAT IS DIFFERENT IS TWO THINGS. There is NO PORTRAIT: Fess has the one portrait arc 2 allows, and
+       hanging his face over Kolt's name would be the third named bug class with a photograph on it (the
+       picture reporting a man the sim is not holding). Caption-only is #528's deliberate no-picture idiom
+       and it is taken on purpose here, not by omission — no plate in this repository is a picture of him.
+       And his line is TWO sentences, because the canon is two: the opener and the pitch, in that order.
+
+       AND THE WAY OUT IS HIS REFUSAL. A ✕ that only took the panel away would leave a man standing at your
+       elbow on open regolith with nothing left to answer — so the dismiss runs the verb "Not today" runs:
+       he says the third line, and it is the only thing he has to say about being turned down.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop rep-backdrop">
@@ -50,13 +70,18 @@
 }
 
 @code {
-    /// <summary>the page's `void AnswerTheHardcase(NebulaRep.RepMove move)`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Action<NebulaRep.RepMove> AnswerTheHardcase { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `void TellKoltNo()`</summary>
     [Parameter] public Action TellKoltNo { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public IReadOnlyList<NebulaRep.RepOffer> koltOffers { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

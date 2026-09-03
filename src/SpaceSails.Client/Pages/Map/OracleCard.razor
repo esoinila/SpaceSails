@@ -24,6 +24,18 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #425 — THE STATION ORACLE. Solenne "Static" Marsh, the ranting drunk in the corner whose nonsense
+       hides the truth (owner: the BSG Base Star Hybrid key). Press E at her stool: she perceives reality on
+       channels you can't (x-rays as weather, cosmic dust on the tongue, the archived dead as a chorus), so
+       most of what she says is beautiful noise — but a rare line "sounds nuts but is TRUE" and can leak a
+       real arc shard. Buy her a drink to widen the channel (a drunk oracle is more prophetic). THE TELL: when
+       the room goes quiet the line MIGHT be one of the real ones — but the hush lies sometimes, so the sifting
+       is yours. Same overlay family as the deck-offer-card. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* #997 wave 9 · THE SECOND CONSUMER OF `FootHost`, and it is here for the same reason the logbook
@@ -79,23 +91,23 @@
 }
 
 @code {
-    /// <summary>the page's `int _credits`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public int _credits { get; set; }
-    /// <summary>the page's `int _oracleDrinks`</summary>
     [Parameter] public int _oracleDrinks { get; set; }
-    /// <summary>the page's `string? _oracleNotice`</summary>
     [Parameter] public string? _oracleNotice { get; set; }
-    /// <summary>the page's `void BuyOracleDrink()`</summary>
     [Parameter] public Action BuyOracleDrink { get; set; } = default!;
-    /// <summary>the page's `void CloseOracle()`</summary>
     [Parameter] public Action CloseOracle { get; set; } = default!;
-    /// <summary>the page's `Core.Interior.Barkeep? CurrentKeep`</summary>
     [Parameter] public Core.Interior.Barkeep? CurrentKeep { get; set; }
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `void NextOracleLine()`</summary>
     [Parameter] public Action NextOracleLine { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public OracleLine oline { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

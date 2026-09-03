@@ -24,6 +24,25 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* The scope lives OUTSIDE the Nav-desk if: Blazor must never destroy this canvas — a
+       recreated element leaves renderer.js holding a stale 2D context and the scope goes
+       permanently dark after any desk switch (M26 fix). CSS hides it off-Nav instead. *@
+    @* #997 · ONE ELEMENT NOW, NOT TWO. #963 wrote the window and its tile as separate siblings, each
+       gated on the same pair of conditions; the shell tucks by swapping the root's class list, so the
+       canvas below is the SAME element in both states and the M26 rule above holds by construction rather
+       than by two markup gates agreeing with each other. `Hidden` rides outside that swap on purpose — a
+       d-none written into the class attribute would be lost the moment the shell went to its tile, and a
+       tile that followed the captain onto every other desk is the bug that shape invites.
+
+       #963 — MINIMISE, not close. A closed window needs a switch somewhere else to reopen it (which is
+       exactly the toolbar button the owner sent away); a minimised one leaves its own way back, and the
+       tile names what is in the eyepiece so it reads as an instrument standing by rather than a mystery
+       button. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
     <OverlayShell class="map-scope card bg-dark bg-opacity-75 text-light"
@@ -65,7 +84,15 @@
 }
 
 @code {
-    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
     /// <summary>the page's `string? _scopeManualId` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -81,13 +108,9 @@
     /// <summary>The page's `_scopeMinimized = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<bool> _scopeMinimizedSet { get; set; } = default!;
     private bool _scopeMinimized { get => _scopeMinimizedValue; set { _scopeMinimizedValue = value; _scopeMinimizedSet(value); } }
-    /// <summary>the page's `void CycleScopeTarget(int step)`</summary>
     [Parameter] public Action<int> CycleScopeTarget { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string ScopeCanvasId`</summary>
     [Parameter] public string ScopeCanvasId { get; set; } = default!;
-    /// <summary>the page's `string ScopeTileTargetName()`</summary>
     [Parameter] public Func<string> ScopeTileTargetName { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

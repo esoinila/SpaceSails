@@ -25,6 +25,22 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       HER OWN ATMOSPHERE BOARD. Owner: "I think our ship should also have these controls. They are so cool
+       and it would be consistent in the universe", then "our venting must have captains ok mechanism in it,
+       like firing a shot or looting", and "there must be controls to do so on the bridge, but the bridge
+       position needs captains ok to vent".
+
+       The SAME panel as a derelict's, deliberately — one board, learned once, and the safest ship in the game
+       is the tutorial for the most dangerous one. What is different is the gate in front of the irreversible
+       half (the captain's word, by name), the fact that her board can say what is in the room, and that her
+       repeater actually has a bus behind it.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipBoard)">
@@ -289,66 +305,46 @@
 }
 
 @code {
-    /// <summary>the page's `List<string> _shipBoardLog`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public List<string> _shipBoardLog { get; set; } = default!;
-    /// <summary>the page's `string? _shipBoardMessage`</summary>
     [Parameter] public string? _shipBoardMessage { get; set; }
-    /// <summary>the page's `int _shipReserve`</summary>
     [Parameter] public int _shipReserve { get; set; }
-    /// <summary>the page's `string? _shipSelected`</summary>
     [Parameter] public string? _shipSelected { get; set; }
-    /// <summary>the page's `void CloseShipBoard()`</summary>
     [Parameter] public Action CloseShipBoard { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string Du(double v)`</summary>
     [Parameter] public Func<double, string> Du { get; set; } = default!;
-    /// <summary>the page's `void GiveTheCaptainsWord(string room)`</summary>
     [Parameter] public Action<string> GiveTheCaptainsWord { get; set; } = default!;
-    /// <summary>the page's `void RefillShipCompartment(string room)`</summary>
     [Parameter] public Action<string> RefillShipCompartment { get; set; } = default!;
-    /// <summary>the page's `void SealHerUp()`</summary>
     [Parameter] public Action SealHerUp { get; set; } = default!;
-    /// <summary>the page's `void SelectShipSpace(string name)`</summary>
     [Parameter] public Action<string> SelectShipSpace { get; set; } = default!;
-    /// <summary>the page's `(string Text, string Class) ShipAreaTag(string room)`</summary>
     [Parameter] public Func<string, (string Text, string Class)> ShipAreaTag { get; set; } = default!;
-    /// <summary>the page's `ShipAuthority.VentAuthority ShipAuthorityNow()`</summary>
     [Parameter] public Func<ShipAuthority.VentAuthority> ShipAuthorityNow { get; set; } = default!;
-    /// <summary>the page's `string ShipBreathingLine()`</summary>
     [Parameter] public Func<string> ShipBreathingLine { get; set; } = default!;
-    /// <summary>the page's `string? ShipCompartment()`</summary>
     [Parameter] public Func<string?> ShipCompartment { get; set; } = default!;
-    /// <summary>the page's `bool ShipCorridorPressurised`</summary>
     [Parameter] public bool ShipCorridorPressurised { get; set; }
-    /// <summary>the page's `string ShipCorridorTagSvg()`</summary>
     [Parameter] public Func<string> ShipCorridorTagSvg { get; set; } = default!;
-    /// <summary>the page's `string ShipHullOutline`</summary>
     [Parameter] public string ShipHullOutline { get; set; } = default!;
-    /// <summary>the page's `PumpRun? ShipPumpOn(string space)`</summary>
     [Parameter] public Func<string, PumpRun?> ShipPumpOn { get; set; } = default!;
-    /// <summary>the page's `HullVenting.Space ShipSpaceNow(string room)`</summary>
     [Parameter] public Func<string, HullVenting.Space> ShipSpaceNow { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<HullVenting.Space> ShipSpacesNow()`</summary>
     [Parameter] public Func<IReadOnlyList<HullVenting.Space>> ShipSpacesNow { get; set; } = default!;
-    /// <summary>the page's `string ShipViewBox`</summary>
     [Parameter] public string ShipViewBox { get; set; } = default!;
-    /// <summary>the page's `void StartShipPump(string room)`</summary>
     [Parameter] public Action<string> StartShipPump { get; set; } = default!;
-    /// <summary>the page's `void StopShipPump(string room)`</summary>
     [Parameter] public Action<string> StopShipPump { get; set; } = default!;
-    /// <summary>the page's `void ToggleShipDoor(string room, bool atTheDoor)`</summary>
     [Parameter] public Action<string, bool> ToggleShipDoor { get; set; } = default!;
-    /// <summary>the page's `void UnsealHer()`</summary>
     [Parameter] public Action UnsealHer { get; set; } = default!;
-    /// <summary>the page's `string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth, (string Text, string Class) tag, float roomHeight = 0f)`</summary>
     [Parameter] public Func<string, float, float, float, (string Text, string Class), float, string> OnVentAreaLabelSvg { get; set; } = default!;
     private string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth,
         (string Text, string Class) tag, float roomHeight = 0f)
         => OnVentAreaLabelSvg(label, cx, cy, roomWidth, tag, roomHeight);
-    /// <summary>the page's `void VentShipCompartment(string room)`</summary>
     [Parameter] public Action<string> VentShipCompartment { get; set; } = default!;
-    /// <summary>the page's `void WithdrawTheCaptainsWord()`</summary>
     [Parameter] public Action WithdrawTheCaptainsWord { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

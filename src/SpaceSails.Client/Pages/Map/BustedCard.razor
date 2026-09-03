@@ -27,6 +27,20 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* PR-BUSTED (owner ruling §5): the catch. A hunter runs you down → warp yanks to 1×, the ship is
+       grappled, and this pop-up opens in the collector's voice. SUBMIT / BRIBE / RESIST, GTA-BUSTED
+       grammar — never game over (the Bolivia freeze-frame ends in brain-backup resurrection). The dice
+       are rolled Core-side and shown here, modifiers listed. Reuses the celebration modal's backdrop
+       grammar. *@
+    @* #951 — while the logbook is open OVER a death card, the card yields: the busted backdrop lives in the
+       modal band, above the logbook's own full-screen gate, so without this the drawer would open behind the
+       thing it was opened from. Closing the logbook brings the death card back exactly as it was — the beat
+       is not skipped by looking at your saves. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd ? "busted-sepia" : "")">
@@ -445,44 +459,34 @@
 }
 
 @code {
-    /// <summary>the page's `int _credits`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public int _credits { get; set; }
-    /// <summary>the page's `bool _hasNetJammer`</summary>
     [Parameter] public bool _hasNetJammer { get; set; }
-    /// <summary>the page's `HotCargoLedger _hotCargo`</summary>
     [Parameter] public HotCargoLedger _hotCargo { get; set; } = default!;
-    /// <summary>the page's `int _reactionMassPulses`</summary>
     [Parameter] public int _reactionMassPulses { get; set; }
-    /// <summary>the page's `void Board(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    /// <summary>the page's `void BustedBoliviaChoose(string choiceId)`</summary>
     [Parameter] public Action<string> BustedBoliviaChoose { get; set; } = default!;
-    /// <summary>the page's `void BustedBribe()`</summary>
     [Parameter] public Action BustedBribe { get; set; } = default!;
-    /// <summary>the page's `void BustedResist()`</summary>
     [Parameter] public Action BustedResist { get; set; } = default!;
-    /// <summary>the page's `void BustedResistLostConfirm()`</summary>
     [Parameter] public Action BustedResistLostConfirm { get; set; } = default!;
-    /// <summary>the page's `void BustedResurrect()`</summary>
     [Parameter] public Action BustedResurrect { get; set; } = default!;
-    /// <summary>the page's `void BustedSubmit(bool harsher = false)`</summary>
     [Parameter] public Action<bool> OnBustedSubmit { get; set; } = default!;
     private void BustedSubmit(bool harsher = false) => OnBustedSubmit(harsher);
-    /// <summary>the page's `void CloseBusted()`</summary>
     [Parameter] public Action CloseBusted { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<string>? DeathNerveLedgerLines`</summary>
     [Parameter] public IReadOnlyList<string>? DeathNerveLedgerLines { get; set; }
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `string HeatFlames(int level)`</summary>
     [Parameter] public Func<int, string> HeatFlames { get; set; } = default!;
-    /// <summary>the page's `string HotGlossTitle`</summary>
     [Parameter] public string HotGlossTitle { get; set; } = default!;
-    /// <summary>the page's `void OpenLogbookFromDeath()`</summary>
     [Parameter] public Action OpenLogbookFromDeath { get; set; } = default!;
-    /// <summary>the page's `Task PressAndRefocus(Action act)`</summary>
     [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
-    /// <summary>bound by the @if that stays in the page</summary>
     [Parameter] public BustedEncounter bust { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

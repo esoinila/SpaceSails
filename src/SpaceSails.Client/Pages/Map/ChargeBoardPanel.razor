@@ -24,6 +24,20 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #523 · THE CHARGE BOARD, aft with the machinery. Owner: "I like you make a PR about how spaceships manage
+       their electric charge build up and make us a panel about it into the rear of the ship … Now that desk is
+       kind of lame on the ship, so let's add some kind of on automatic there."
+
+       The mechanic was live and invisible: a charged hull is SEEN THREE TIMES AS FAR (SensorModel
+       .ChargeGlowFactor), and the only instrument that ever mentioned it halved the number and told you about a
+       cat. The dump stays — the joke is good and the act is real — and the board grows around it.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseChargeBoard)">
@@ -109,25 +123,24 @@
 }
 
 @code {
-    /// <summary>the page's `string? _chargeBoardMessage`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string? _chargeBoardMessage { get; set; }
-    /// <summary>the page's `bool _contactorOn`</summary>
     [Parameter] public bool _contactorOn { get; set; }
-    /// <summary>the page's `PlasmaEnvironment? _plasma`</summary>
     [Parameter] public PlasmaEnvironment? _plasma { get; set; }
-    /// <summary>the page's `int _reactionMassPulses`</summary>
     [Parameter] public int _reactionMassPulses { get; set; }
-    /// <summary>the page's `double AmbientChargeNow()`</summary>
     [Parameter] public Func<double> AmbientChargeNow { get; set; } = default!;
-    /// <summary>the page's `void CloseChargeBoard()`</summary>
     [Parameter] public Action CloseChargeBoard { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `double HullChargeNow()`</summary>
     [Parameter] public Func<double> HullChargeNow { get; set; } = default!;
-    /// <summary>the page's `void ToggleContactor()`</summary>
     [Parameter] public Action ToggleContactor { get; set; } = default!;
-    /// <summary>the page's `void VentCharge()`</summary>
     [Parameter] public Action VentCharge { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

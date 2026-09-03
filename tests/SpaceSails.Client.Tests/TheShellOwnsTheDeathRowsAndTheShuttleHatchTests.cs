@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -333,7 +333,10 @@ public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
         Assert.Equal("<div", razor.Substring(line, 4));
 
         // …and the reason itself: a foot of more than one control, one of which walks BACK.
-        string loadOut = razor[at..razor.IndexOf("@* #223: the treasure-map card", at, StringComparison.Ordinal)];
+        // #251 item 1: the end anchor was #223's comment about the treasure-map card, and that paragraph
+        // has gone to live with the card (Pages/Map/TreasureMapCard.razor). The next surface's own guard
+        // is the same edge and is markup rather than prose.
+        string loadOut = razor[at..razor.IndexOf("@if (_treasureMapCard is { } map)", at, StringComparison.Ordinal)];
         Assert.Contains("Load something first", loadOut, StringComparison.Ordinal);
         Assert.Contains("_boardEmptyConfirm = false", loadOut, StringComparison.Ordinal);
         Assert.Contains("CancelBoarding", loadOut, StringComparison.Ordinal);

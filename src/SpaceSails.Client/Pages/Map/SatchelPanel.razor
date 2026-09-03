@@ -27,6 +27,21 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
+       instrument it is a list of things to TRY, and every answer is definite.
+
+       #1027 · `satchel-backdrop` IS THE LAYER, AND IT IS NOT COSMETIC. The pocket used to be one more
+       `.view-object-backdrop` among forty, which meant it shared a z-index with every card the world raises
+       and lost the tie to whichever of them was typed lower in this file. This block is at ~2480 and the
+       arrival card's is at ~3550, so a captain pressing I under 🛗 THE SHAFT opened the satchel BEHIND the
+       picture and saw a dead key. The modifier lifts it one step (OverlayBands.SatchelBackdrop, 1330) —
+       above the cards, below the distress lifeline and below every modal. The Esc chain in
+       Map.Sim.Cancel.cs peels it in the same order. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="view-object-backdrop satchel-backdrop" @onclick="() => Dismiss(CloseSatchel)">
@@ -959,21 +974,22 @@
 }
 
 @code {
-    /// <summary>the page's `HeldMemory.Theory? _bookTag`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public HeldMemory.Theory? _bookTag { get; set; }
-    /// <summary>the page's `List<Core.FieldNote> _fieldNotes`</summary>
     [Parameter] public List<Core.FieldNote> _fieldNotes { get; set; } = default!;
-    /// <summary>the page's `List<SpreadReconcile.Paper> _laid`</summary>
     [Parameter] public List<SpreadReconcile.Paper> _laid { get; set; } = default!;
-    /// <summary>the page's `NotesView _notesView`</summary>
     [Parameter] public NotesView _notesView { get; set; } = default!;
-    /// <summary>the page's `bool _penInHand`</summary>
     [Parameter] public bool _penInHand { get; set; }
-    /// <summary>the page's `SpreadReconcile.Result? _reconciled`</summary>
     [Parameter] public SpreadReconcile.Result? _reconciled { get; set; }
-    /// <summary>the page's `List<Core.Satchel.Item> _satchel`</summary>
     [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
-    /// <summary>the page's `string? _satchelOutcome`</summary>
     [Parameter] public string? _satchelOutcome { get; set; }
     /// <summary>the page's `SatchelPage _satchelPage` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -982,7 +998,6 @@
     /// <summary>The page's `_satchelPage = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<SatchelPage> _satchelPageSet { get; set; } = default!;
     private SatchelPage _satchelPage { get => _satchelPageValue; set { _satchelPageValue = value; _satchelPageSet(value); } }
-    /// <summary>the page's `(SatchelTry.Target Target, string? Context, string Label)? _satchelTarget`</summary>
     [Parameter] public (SatchelTry.Target Target, string? Context, string Label)? _satchelTarget { get; set; }
     /// <summary>the page's `bool _walletOpen` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -991,131 +1006,68 @@
     /// <summary>The page's `_walletOpen = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<bool> _walletOpenSet { get; set; } = default!;
     private bool _walletOpen { get => _walletOpenValue; set { _walletOpenValue = value; _walletOpenSet(value); } }
-    /// <summary>the page's `void BeginProcessing(Core.Processing.Work work, Core.Satchel.Item item, string standing, (SatchelTry.Target Target, string? Context, string Label)? at)`</summary>
     [Parameter] public Action<Core.Processing.Work, Core.Satchel.Item, string, (SatchelTry.Target Target, string? Context, string Label)?> BeginProcessing { get; set; } = default!;
-    /// <summary>the page's `List<Core.Satchel.Item> BinnableFinds()`</summary>
     [Parameter] public Func<List<Core.Satchel.Item>> BinnableFinds { get; set; } = default!;
-    /// <summary>the page's `string BinRowFlag(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> BinRowFlag { get; set; } = default!;
-    /// <summary>the page's `string BinRowHint(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> BinRowHint { get; set; } = default!;
-    /// <summary>the page's `RipAndBin.Bin? BinWithinReach()`</summary>
     [Parameter] public Func<RipAndBin.Bin?> BinWithinReach { get; set; } = default!;
-    /// <summary>the page's `bool CanWriteUp(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, bool> CanWriteUp { get; set; } = default!;
-    /// <summary>the page's `bool CaptainIsSeatedAnywhere`</summary>
     [Parameter] public bool CaptainIsSeatedAnywhere { get; set; }
-    /// <summary>the page's `bool CaseHasBegun`</summary>
     [Parameter] public bool CaseHasBegun { get; set; }
-    /// <summary>the page's `void ClearTheSpread()`</summary>
     [Parameter] public Action ClearTheSpread { get; set; } = default!;
-    /// <summary>the page's `void CloseSatchel()`</summary>
     [Parameter] public Action CloseSatchel { get; set; } = default!;
-    /// <summary>the page's `void CloseTheLoadChooser()`</summary>
     [Parameter] public Action CloseTheLoadChooser { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<CompassLine> CompassOnFoot()`</summary>
     [Parameter] public Func<IReadOnlyList<CompassLine>> CompassOnFoot { get; set; } = default!;
-    /// <summary>the page's `(MissionStep Step, string StatusKind) CurrentStepOf(Quest q)`</summary>
     [Parameter] public Func<Quest, (MissionStep Step, string StatusKind)> CurrentStepOf { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `bool IsLaid(string id)`</summary>
     [Parameter] public Func<string, bool> IsLaid { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpreadReconcile.Paper> LayablePapers()`</summary>
     [Parameter] public Func<IReadOnlyList<SpreadReconcile.Paper>> LayablePapers { get; set; } = default!;
-    /// <summary>the page's `void LayItOnTheSpread(SpreadReconcile.Paper paper)`</summary>
     [Parameter] public Action<SpreadReconcile.Paper> LayItOnTheSpread { get; set; } = default!;
-    /// <summary>the page's `string LeaveHintFor(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> LeaveHintFor { get; set; } = default!;
-    /// <summary>the page's `void LeaveItem(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> LeaveItem { get; set; } = default!;
-    /// <summary>the page's `string LoadHint(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> LoadHint { get; set; } = default!;
-    /// <summary>the page's `void LoadIntoIt(SentryHandLoad.Pick pick)`</summary>
     [Parameter] public Action<SentryHandLoad.Pick> LoadIntoIt { get; set; } = default!;
-    /// <summary>the page's `bool LoadIsOffered(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, bool> LoadIsOffered { get; set; } = default!;
-    /// <summary>the page's `CarriedObject.Reveal? LookAtItem(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, CarriedObject.Reveal?> LookAtItem { get; set; } = default!;
-    /// <summary>the page's `bool NodeIsHeld(string id)`</summary>
     [Parameter] public Func<string, bool> NodeIsHeld { get; set; } = default!;
-    /// <summary>the page's `bool NodeIsOpen(string id)`</summary>
     [Parameter] public Func<string, bool> NodeIsOpen { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Core.CaseThreads.Row> NotebookPage(IReadOnlyList<Core.FieldNote> notes)`</summary>
     [Parameter] public Func<IReadOnlyList<Core.FieldNote>, IReadOnlyList<Core.CaseThreads.Row>> NotebookPage { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Core.FieldNote> NotesFromThisGround()`</summary>
     [Parameter] public Func<IReadOnlyList<Core.FieldNote>> NotesFromThisGround { get; set; } = default!;
-    /// <summary>the page's `void NoteTitlePressed(string id)`</summary>
     [Parameter] public Action<string> NoteTitlePressed { get; set; } = default!;
-    /// <summary>the page's `void NudgeShare(SentryHandLoad.Pick pick, int by)`</summary>
     [Parameter] public Action<SentryHandLoad.Pick, int> NudgeShare { get; set; } = default!;
-    /// <summary>the page's `void OpenItemCard(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> OpenItemCard { get; set; } = default!;
-    /// <summary>the page's `void OpenTheLoadChooser(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> OpenTheLoadChooser { get; set; } = default!;
-    /// <summary>the page's `string PlaceUnderfoot()`</summary>
     [Parameter] public Func<string> PlaceUnderfoot { get; set; } = default!;
-    /// <summary>the page's `double ProcessingSeconds`</summary>
     [Parameter] public double ProcessingSeconds { get; set; }
-    /// <summary>the page's `string? ProcessingUnderway()`</summary>
     [Parameter] public Func<string?> ProcessingUnderway { get; set; } = default!;
-    /// <summary>the page's `string RipHint(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> RipHint { get; set; } = default!;
-    /// <summary>the page's `bool RipIsOffered(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, bool> RipIsOffered { get; set; } = default!;
-    /// <summary>the page's `void RipItUp(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> RipItUp { get; set; } = default!;
-    /// <summary>the page's `void RunThePenDownTheStack(Core.CaseSubjects.SubjectThread stack)`</summary>
     [Parameter] public Action<Core.CaseSubjects.SubjectThread> RunThePenDownTheStack { get; set; } = default!;
-    /// <summary>the page's `string SatchelLabel(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
-    /// <summary>the page's `string ScanHint(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> ScanHint { get; set; } = default!;
-    /// <summary>the page's `bool ScanIsOffered(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, bool> ScanIsOffered { get; set; } = default!;
-    /// <summary>the page's `void ScanWithTheKit(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> ScanWithTheKit { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<HeldMemory.Stack> SheetStacks()`</summary>
     [Parameter] public Func<IReadOnlyList<HeldMemory.Stack>> SheetStacks { get; set; } = default!;
-    /// <summary>the page's `List<Core.Satchel.Item> SpreadableFinds()`</summary>
     [Parameter] public Func<List<Core.Satchel.Item>> SpreadableFinds { get; set; } = default!;
-    /// <summary>the page's `Task SpreadDigClicked(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, Task> SpreadDigClicked { get; set; } = default!;
-    /// <summary>the page's `string SpreadDoorHint`</summary>
     [Parameter] public string SpreadDoorHint { get; set; } = default!;
-    /// <summary>the page's `string? SpreadRefusal`</summary>
     [Parameter] public string? SpreadRefusal { get; set; }
-    /// <summary>the page's `string SpreadRowVerb(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> SpreadRowVerb { get; set; } = default!;
-    /// <summary>the page's `void TakeUpTheRedPen()`</summary>
     [Parameter] public Action TakeUpTheRedPen { get; set; } = default!;
-    /// <summary>the page's `(SatchelTry.Target Target, string? Context, string Label)? TargetFor(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, (SatchelTry.Target Target, string? Context, string Label)?> TargetFor { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Core.CaseSubjects.SubjectThread> TheBookThreads()`</summary>
     [Parameter] public Func<IReadOnlyList<Core.CaseSubjects.SubjectThread>> TheBookThreads { get; set; } = default!;
-    /// <summary>the page's `(Core.Satchel.Item Rounds, int Pocket, string KindName, List<SentryHandLoad.Pick> Picks)? TheLoadChooser()`</summary>
     [Parameter] public Func<(Core.Satchel.Item Rounds, int Pocket, string KindName, List<SentryHandLoad.Pick> Picks)?> TheLoadChooser { get; set; } = default!;
-    /// <summary>the page's `void TheNotebookTurnsTo(NotesView view)`</summary>
     [Parameter] public Action<NotesView> TheNotebookTurnsTo { get; set; } = default!;
-    /// <summary>the page's `void TheSatchelTurnsTo(SatchelPage page)`</summary>
     [Parameter] public Action<SatchelPage> TheSatchelTurnsTo { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<HeldMemory.Sheet> TheSheets()`</summary>
     [Parameter] public Func<IReadOnlyList<HeldMemory.Sheet>> TheSheets { get; set; } = default!;
-    /// <summary>the page's `void TheThreadsFilterTurnsTo(HeldMemory.Theory? tag)`</summary>
     [Parameter] public Action<HeldMemory.Theory?> TheThreadsFilterTurnsTo { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Core.FieldNote> TheWholeCase()`</summary>
     [Parameter] public Func<IReadOnlyList<Core.FieldNote>> TheWholeCase { get; set; } = default!;
-    /// <summary>the page's `void TryItem(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> TryItem { get; set; } = default!;
-    /// <summary>the page's `void TryTheWholeWallet()`</summary>
     [Parameter] public Action TryTheWholeWallet { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Core.Satchel.Item> Wallet()`</summary>
     [Parameter] public Func<IReadOnlyList<Core.Satchel.Item>> Wallet { get; set; } = default!;
-    /// <summary>the page's `(SatchelTry.Target Target, string? Context, string Label)? WalletTarget()`</summary>
     [Parameter] public Func<(SatchelTry.Target Target, string? Context, string Label)?> WalletTarget { get; set; } = default!;
-    /// <summary>the page's `void WriteItUp(Core.Satchel.Item item)`</summary>
     [Parameter] public Action<Core.Satchel.Item> WriteItUp { get; set; } = default!;
-    /// <summary>the page's `string WriteUpHint(Core.Satchel.Item item)`</summary>
     [Parameter] public Func<Core.Satchel.Item, string> WriteUpHint { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

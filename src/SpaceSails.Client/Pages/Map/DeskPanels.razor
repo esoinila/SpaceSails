@@ -28,6 +28,14 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #1021 · ShipDesk.Galley came off this list with the branch below it. The enum member stays (removing
+       it would renumber Deck and Captain under every keyed and persisted thing that reads them) — what has
+       gone is its ability to be `_activeDesk` at all. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         @* The war room dims instead of blanking (long-shots PR): the live map behind it IS the
@@ -523,11 +531,17 @@
 }
 
 @code {
-    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
-    /// <summary>the page's `string? _activeThreadId`</summary>
     [Parameter] public string? _activeThreadId { get; set; }
-    /// <summary>the page's `CacheLedger _caches`</summary>
     [Parameter] public CacheLedger _caches { get; set; } = default!;
     /// <summary>the page's `SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTab` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -536,13 +550,9 @@
     /// <summary>The page's `_captainTab = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<SpaceSails.Client.Pages.Stations.Captain.CaptainView> _captainTabSet { get; set; } = default!;
     private SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTab { get => _captainTabValue; set { _captainTabValue = value; _captainTabSet(value); } }
-    /// <summary>the page's `int _cargoUnits`</summary>
     [Parameter] public int _cargoUnits { get; set; }
-    /// <summary>the page's `int _cargoValue`</summary>
     [Parameter] public int _cargoValue { get; set; }
-    /// <summary>the page's `string? _commsActionMessage`</summary>
     [Parameter] public string? _commsActionMessage { get; set; }
-    /// <summary>the page's `string? _commsHailAnswer`</summary>
     [Parameter] public string? _commsHailAnswer { get; set; }
     /// <summary>the page's `string? _commsSelectedId` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -551,7 +561,6 @@
     /// <summary>The page's `_commsSelectedId = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<string?> _commsSelectedIdSet { get; set; } = default!;
     private string? _commsSelectedId { get => _commsSelectedIdValue; set { _commsSelectedIdValue = value; _commsSelectedIdSet(value); } }
-    /// <summary>the page's `bool _crashNoteCopied`</summary>
     [Parameter] public bool _crashNoteCopied { get; set; }
     /// <summary>the page's `int _credits` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -560,45 +569,25 @@
     /// <summary>The page's `_credits = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<int> _creditsSet { get; set; } = default!;
     private int _credits { get => _creditsValue; set { _creditsValue = value; _creditsSet(value); } }
-    /// <summary>the page's `bool _dcNextActionCleared`</summary>
     [Parameter] public bool _dcNextActionCleared { get; set; }
-    /// <summary>the page's `bool _dcStandingOrder`</summary>
     [Parameter] public bool _dcStandingOrder { get; set; }
-    /// <summary>the page's `string? _dockBodyId`</summary>
     [Parameter] public string? _dockBodyId { get; set; }
-    /// <summary>the page's `bool _docked`</summary>
     [Parameter] public bool _docked { get; set; }
-    /// <summary>the page's `string? _dockedHavenId`</summary>
     [Parameter] public string? _dockedHavenId { get; set; }
-    /// <summary>the page's `ICelestialEphemeris? _ephemeris`</summary>
     [Parameter] public ICelestialEphemeris? _ephemeris { get; set; }
-    /// <summary>the page's `double _fireAimOffsetSeconds`</summary>
     [Parameter] public double _fireAimOffsetSeconds { get; set; }
-    /// <summary>the page's `double _fireAtSimTime`</summary>
     [Parameter] public double _fireAtSimTime { get; set; }
-    /// <summary>the page's `bool _fireAtWill`</summary>
     [Parameter] public bool _fireAtWill { get; set; }
-    /// <summary>the page's `string? _fireBlockedBy`</summary>
     [Parameter] public string? _fireBlockedBy { get; set; }
-    /// <summary>the page's `double _fireDispersionMeters`</summary>
     [Parameter] public double _fireDispersionMeters { get; set; }
-    /// <summary>the page's `OrdnanceKind _fireKind`</summary>
     [Parameter] public OrdnanceKind _fireKind { get; set; } = default!;
-    /// <summary>the page's `FireControl.Solution? _fireSolution`</summary>
     [Parameter] public FireControl.Solution? _fireSolution { get; set; }
-    /// <summary>the page's `string? _fireTip`</summary>
     [Parameter] public string? _fireTip { get; set; }
-    /// <summary>the page's `bool _hasNetJammer`</summary>
     [Parameter] public bool _hasNetJammer { get; set; }
-    /// <summary>the page's `HeatState _heat`</summary>
     [Parameter] public HeatState _heat { get; set; } = default!;
-    /// <summary>the page's `int _holdLevel`</summary>
     [Parameter] public int _holdLevel { get; set; }
-    /// <summary>the page's `IntelLedger _intelLedger`</summary>
     [Parameter] public IntelLedger _intelLedger { get; set; } = default!;
-    /// <summary>the page's `InterceptEstimate.Result? _intercept`</summary>
     [Parameter] public InterceptEstimate.Result? _intercept { get; set; }
-    /// <summary>the page's `string? _interestTargetId`</summary>
     [Parameter] public string? _interestTargetId { get; set; }
     /// <summary>the page's `SpaceSails.Client.Pages.Stations.LocalSpace? _localSpace` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -607,27 +596,16 @@
     /// <summary>The page's `_localSpace = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<SpaceSails.Client.Pages.Stations.LocalSpace?> _localSpaceSet { get; set; } = default!;
     private SpaceSails.Client.Pages.Stations.LocalSpace? _localSpace { get => _localSpaceValue; set { _localSpaceValue = value; _localSpaceSet(value); } }
-    /// <summary>the page's `string? _localTradeMessage`</summary>
     [Parameter] public string? _localTradeMessage { get; set; }
-    /// <summary>the page's `double _localTradeProgress`</summary>
     [Parameter] public double _localTradeProgress { get; set; }
-    /// <summary>the page's `string? _localTradeTargetId`</summary>
     [Parameter] public string? _localTradeTargetId { get; set; }
-    /// <summary>the page's `int _massLevel`</summary>
     [Parameter] public int _massLevel { get; set; }
-    /// <summary>the page's `int _missileAmmo`</summary>
     [Parameter] public int _missileAmmo { get; set; }
-    /// <summary>the page's `ShipMission _mission`</summary>
     [Parameter] public ShipMission _mission { get; set; } = default!;
-    /// <summary>the page's `MissionOptions _missionOptions`</summary>
     [Parameter] public MissionOptions _missionOptions { get; set; } = default!;
-    /// <summary>the page's `bool _openCaptainToTutorials`</summary>
     [Parameter] public bool _openCaptainToTutorials { get; set; }
-    /// <summary>the page's `string? _orbitedBodyId`</summary>
     [Parameter] public string? _orbitedBodyId { get; set; }
-    /// <summary>the page's `bool _pinned`</summary>
     [Parameter] public bool _pinned { get; set; }
-    /// <summary>the page's `int _reactionMassPulses`</summary>
     [Parameter] public int _reactionMassPulses { get; set; }
     /// <summary>the page's `string _renameDraft` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -636,271 +614,141 @@
     /// <summary>The page's `_renameDraft = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<string> _renameDraftSet { get; set; } = default!;
     private string _renameDraft { get => _renameDraftValue; set { _renameDraftValue = value; _renameDraftSet(value); } }
-    /// <summary>the page's `string? _renamingThreadId`</summary>
     [Parameter] public string? _renamingThreadId { get; set; }
-    /// <summary>the page's `int _revealedIterations`</summary>
     [Parameter] public int _revealedIterations { get; set; }
-    /// <summary>the page's `List<ScopeIntel> _scopeIntel`</summary>
     [Parameter] public List<ScopeIntel> _scopeIntel { get; set; } = default!;
-    /// <summary>the page's `int _sensorLevel`</summary>
     [Parameter] public int _sensorLevel { get; set; }
-    /// <summary>the page's `ShipState _ship`</summary>
     [Parameter] public ShipState _ship { get; set; } = default!;
-    /// <summary>the page's `string? _shipAuthorized`</summary>
     [Parameter] public string? _shipAuthorized { get; set; }
-    /// <summary>the page's `List<ShipBot> _shipBots`</summary>
     [Parameter] public List<ShipBot> _shipBots { get; set; } = default!;
-    /// <summary>the page's `bool _shotAuthorized`</summary>
     [Parameter] public bool _shotAuthorized { get; set; }
-    /// <summary>the page's `int _slugAmmo`</summary>
     [Parameter] public int _slugAmmo { get; set; }
-    /// <summary>the page's `int _telescopeLevel`</summary>
     [Parameter] public int _telescopeLevel { get; set; }
-    /// <summary>the page's `SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost`</summary>
     [Parameter] public SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost { get; set; }
-    /// <summary>the page's `bool _weaponsTight`</summary>
     [Parameter] public bool _weaponsTight { get; set; }
-    /// <summary>the page's `int _workingStopsSinceShoreLeave`</summary>
     [Parameter] public int _workingStopsSinceShoreLeave { get; set; }
-    /// <summary>the page's `string ActiveCaptainName`</summary>
     [Parameter] public string ActiveCaptainName { get; set; } = default!;
-    /// <summary>the page's `int ActiveTutorialIndex()`</summary>
     [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData> AllStationChips()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData>> AllStationChips { get; set; } = default!;
-    /// <summary>the page's `void ArmFire()`</summary>
     [Parameter] public Action ArmFire { get; set; } = default!;
-    /// <summary>the page's `void AuthorizeNextDamageControlAct()`</summary>
     [Parameter] public Action AuthorizeNextDamageControlAct { get; set; } = default!;
-    /// <summary>the page's `void AuthorizeShot()`</summary>
     [Parameter] public Action AuthorizeShot { get; set; } = default!;
-    /// <summary>the page's `void AutoAim()`</summary>
     [Parameter] public Action AutoAim { get; set; } = default!;
-    /// <summary>the page's `void BeginRenameCaptain(string threadId)`</summary>
     [Parameter] public Action<string> BeginRenameCaptain { get; set; } = default!;
-    /// <summary>the page's `string? BestWireLenderId()`</summary>
     [Parameter] public Func<string?> BestWireLenderId { get; set; } = default!;
-    /// <summary>the page's `string BodyName(string id)`</summary>
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;
-    /// <summary>the page's `void BribeShip(string npcId)`</summary>
     [Parameter] public Action<string> BribeShip { get; set; } = default!;
-    /// <summary>the page's `void BuyAmmo(OrdnanceKind kind)`</summary>
     [Parameter] public Action<OrdnanceKind> BuyAmmo { get; set; } = default!;
-    /// <summary>the page's `void BuyFuel(int pulsesWanted)`</summary>
     [Parameter] public Action<int> BuyFuel { get; set; } = default!;
-    /// <summary>the page's `void BuyNetJammer()`</summary>
     [Parameter] public Action BuyNetJammer { get; set; } = default!;
-    /// <summary>the page's `void BuyUpgrade(string track)`</summary>
     [Parameter] public Action<string> BuyUpgrade { get; set; } = default!;
-    /// <summary>the page's `void CallInFavorAtPump()`</summary>
     [Parameter] public Action CallInFavorAtPump { get; set; } = default!;
-    /// <summary>the page's `void CancelFiringSolution()`</summary>
     [Parameter] public Action CancelFiringSolution { get; set; } = default!;
-    /// <summary>the page's `void CancelRenameCaptain()`</summary>
     [Parameter] public Action CancelRenameCaptain { get; set; } = default!;
-    /// <summary>the page's `bool CanWarnInterest()`</summary>
     [Parameter] public Func<bool> CanWarnInterest { get; set; } = default!;
-    /// <summary>the page's `CrashNote? CaptainCrashNote()`</summary>
     [Parameter] public Func<CrashNote?> CaptainCrashNote { get; set; } = default!;
-    /// <summary>the page's `int CargoCapacity`</summary>
     [Parameter] public int CargoCapacity { get; set; }
-    /// <summary>the page's `IReadOnlyList<CargoManifestEntry> CargoManifest()`</summary>
     [Parameter] public Func<IReadOnlyList<CargoManifestEntry>> CargoManifest { get; set; } = default!;
-    /// <summary>the page's `void CommitRenameCaptain()`</summary>
     [Parameter] public Action CommitRenameCaptain { get; set; } = default!;
-    /// <summary>the page's `bool CommsCanFence(NpcState npc)`</summary>
     [Parameter] public Func<NpcState, bool> CommsCanFence { get; set; } = default!;
-    /// <summary>the page's `int? CommsFencePrice(NpcState npc)`</summary>
     [Parameter] public Func<NpcState, int?> CommsFencePrice { get; set; } = default!;
-    /// <summary>the page's `List<(string Label, List<NpcState> Members)> CommsGroups()`</summary>
     [Parameter] public Func<List<(string Label, List<NpcState> Members)>> CommsGroups { get; set; } = default!;
-    /// <summary>the page's `void CommsHail(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> CommsHail { get; set; } = default!;
-    /// <summary>the page's `void CommsLaserRange(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> CommsLaserRange { get; set; } = default!;
-    /// <summary>the page's `void CommsSellTrack(NpcState npc)`</summary>
     [Parameter] public Action<NpcState> CommsSellTrack { get; set; } = default!;
-    /// <summary>the page's `(string Label, string Css) CommsStatusBadge(NpcState npc)`</summary>
     [Parameter] public Func<NpcState, (string Label, string Css)> CommsStatusBadge { get; set; } = default!;
-    /// <summary>the page's `int CommsTickerAmbientDays`</summary>
     [Parameter] public int CommsTickerAmbientDays { get; set; }
-    /// <summary>the page's `int CommsTickerItemCount`</summary>
     [Parameter] public int CommsTickerItemCount { get; set; }
-    /// <summary>the page's `void ComputeFiringSolution()`</summary>
     [Parameter] public Action ComputeFiringSolution { get; set; } = default!;
-    /// <summary>the page's `void CopyCrashNote()`</summary>
     [Parameter] public Action CopyCrashNote { get; set; } = default!;
-    /// <summary>the page's `CrewTemp.Voyage CrewVoyage()`</summary>
     [Parameter] public Func<CrewTemp.Voyage> CrewVoyage { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<string> CrossingRows()`</summary>
     [Parameter] public Func<IReadOnlyList<string>> CrossingRows { get; set; } = default!;
-    /// <summary>the page's `bool DarkWebCanTrade()`</summary>
     [Parameter] public Func<bool> DarkWebCanTrade { get; set; } = default!;
-    /// <summary>the page's `string DarkWebDisabledReason()`</summary>
     [Parameter] public Func<string> DarkWebDisabledReason { get; set; } = default!;
-    /// <summary>the page's `double DarkWebDistanceFromEarth()`</summary>
     [Parameter] public Func<double> DarkWebDistanceFromEarth { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip> DarkWebMarketShips()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip>> DarkWebMarketShips { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo> DarkWebTrackedShips()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo>> DarkWebTrackedShips { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact> DarkWebWireContacts()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact>> DarkWebWireContacts { get; set; } = default!;
-    /// <summary>the page's `string DepartureLabel(NpcShip ship)`</summary>
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
-    /// <summary>the page's `void DismissCrashNote()`</summary>
     [Parameter] public Action DismissCrashNote { get; set; } = default!;
-    /// <summary>the page's `string? DockedBodyName()`</summary>
     [Parameter] public Func<string?> DockedBodyName { get; set; } = default!;
-    /// <summary>the page's `void DrawFirePlan()`</summary>
     [Parameter] public Action DrawFirePlan { get; set; } = default!;
-    /// <summary>the page's `NpcState? FindNpc(string id)`</summary>
     [Parameter] public Func<string, NpcState?> FindNpc { get; set; } = default!;
-    /// <summary>the page's `bool FireLocked`</summary>
     [Parameter] public bool FireLocked { get; set; }
-    /// <summary>the page's `string FireTip(FireControl.Solution solution)`</summary>
     [Parameter] public Func<FireControl.Solution, string> FireTip { get; set; } = default!;
-    /// <summary>the page's `void FireWarningShot(string npcId)`</summary>
     [Parameter] public Action<string> FireWarningShot { get; set; } = default!;
-    /// <summary>the page's `string FormatDistance(double meters)`</summary>
     [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
-    /// <summary>the page's `string FormatSimTime(double simTime)`</summary>
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    /// <summary>the page's `string FuelDirectionsLine()`</summary>
     [Parameter] public Func<string> FuelDirectionsLine { get; set; } = default!;
-    /// <summary>the page's `double IntelStaleInDays(string shipId)`</summary>
     [Parameter] public Func<string, double> IntelStaleInDays { get; set; } = default!;
-    /// <summary>the page's `double? InterestDistanceNow()`</summary>
     [Parameter] public Func<double?> InterestDistanceNow { get; set; } = default!;
-    /// <summary>the page's `string? InterestTargetName()`</summary>
     [Parameter] public Func<string?> InterestTargetName { get; set; } = default!;
-    /// <summary>the page's `bool IsHiddenAtHaven()`</summary>
     [Parameter] public Func<bool> IsHiddenAtHaven { get; set; } = default!;
-    /// <summary>the page's `Stations.Captain.AccountRow[] LedgerAccounts()`</summary>
     [Parameter] public Func<Stations.Captain.AccountRow[]> LedgerAccounts { get; set; } = default!;
-    /// <summary>the page's `Stations.Captain.CacheMapItem[] LedgerMaps()`</summary>
     [Parameter] public Func<Stations.Captain.CacheMapItem[]> LedgerMaps { get; set; } = default!;
-    /// <summary>the page's `Stations.Captain.LedgerTip[] LedgerTipsAsRemembered()`</summary>
     [Parameter] public Func<Stations.Captain.LedgerTip[]> LedgerTipsAsRemembered { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Stations.WarRoom.LiveRound> LiveRounds()`</summary>
     [Parameter] public Func<IReadOnlyList<Stations.WarRoom.LiveRound>> LiveRounds { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<CommerceRule.LocalContact> LocalContacts()`</summary>
     [Parameter] public Func<IReadOnlyList<CommerceRule.LocalContact>> LocalContacts { get; set; } = default!;
-    /// <summary>the page's `string? LocalSpaceBodyId`</summary>
     [Parameter] public string? LocalSpaceBodyId { get; set; }
-    /// <summary>the page's `double MaxFireAimOffsetSeconds`</summary>
     [Parameter] public double MaxFireAimOffsetSeconds { get; set; }
-    /// <summary>the page's `double MaxMuzzleSpeed`</summary>
     [Parameter] public double MaxMuzzleSpeed { get; set; }
-    /// <summary>the page's `int MissilePulseCost`</summary>
     [Parameter] public int MissilePulseCost { get; set; }
-    /// <summary>the page's `int NetJammerPriceCr`</summary>
     [Parameter] public int NetJammerPriceCr { get; set; }
-    /// <summary>the page's `IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount, NewsWire.NewsScope scope = NewsWire.NewsScope.SystemWire, string? salt = null)`</summary>
     [Parameter] public Func<int, NewsWire.NewsScope, string?, IReadOnlyList<NewsWire.NewsItem>> OnNewsFeed { get; set; } = default!;
     private IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount,
         NewsWire.NewsScope scope = NewsWire.NewsScope.SystemWire, string? salt = null)
         => OnNewsFeed(ambientCount, scope, salt);
-    /// <summary>the page's `int OffBooksCount`</summary>
     [Parameter] public int OffBooksCount { get; set; }
-    /// <summary>the page's `void OpenBank(string contactId, bool viaWire)`</summary>
     [Parameter] public Action<string, bool> OnOpenBank { get; set; } = default!;
     private void OpenBank(string contactId, bool viaWire) => OnOpenBank(contactId, viaWire);
-    /// <summary>the page's `void OpenDarkWebFromLedger()`</summary>
     [Parameter] public Action OpenDarkWebFromLedger { get; set; } = default!;
-    /// <summary>the page's `void OpenDossierFromLedger(string shipId)`</summary>
     [Parameter] public Action<string> OpenDossierFromLedger { get; set; } = default!;
-    /// <summary>the page's `void OpenSaveDrawer()`</summary>
     [Parameter] public Action OpenSaveDrawer { get; set; } = default!;
-    /// <summary>the page's `double? PlannedImpactEta()`</summary>
     [Parameter] public Func<double?> PlannedImpactEta { get; set; } = default!;
-    /// <summary>the page's `void PointScopeForActiveFetch()`</summary>
     [Parameter] public Action PointScopeForActiveFetch { get; set; } = default!;
-    /// <summary>the page's `void PointScopeFromLedger(string tipId)`</summary>
     [Parameter] public Action<string> PointScopeFromLedger { get; set; } = default!;
-    /// <summary>the page's `void PointScopeWhereIntelSays(ScopeIntel intel)`</summary>
     [Parameter] public Action<ScopeIntel> PointScopeWhereIntelSays { get; set; } = default!;
-    /// <summary>the page's `long PumpLoanPrincipal(int room, int pricePerPulse)`</summary>
     [Parameter] public Func<int, int, long> PumpLoanPrincipal { get; set; } = default!;
-    /// <summary>the page's `void PushNewsEvent(NewsWire.NewsEventKind kind, string subject, string? detail = null)`</summary>
     [Parameter] public Action<NewsWire.NewsEventKind, string, string?> OnPushNewsEvent { get; set; } = default!;
     private void PushNewsEvent(NewsWire.NewsEventKind kind, string subject, string? detail = null)
         => OnPushNewsEvent(kind, subject, detail);
-    /// <summary>the page's `Stations.Captain.QuestItem[] QuestCards()`</summary>
     [Parameter] public Func<Stations.Captain.QuestItem[]> QuestCards { get; set; } = default!;
-    /// <summary>the page's `int ReactionMassCapacity`</summary>
     [Parameter] public int ReactionMassCapacity { get; set; }
-    /// <summary>the page's `void ReadTheGreyPage(string entryId)`</summary>
     [Parameter] public Action<string> ReadTheGreyPage { get; set; } = default!;
-    /// <summary>the page's `void RenameKeyDown(KeyboardEventArgs e)`</summary>
     [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
-    /// <summary>the page's `void ReopenStartPicker()`</summary>
     [Parameter] public Action ReopenStartPicker { get; set; } = default!;
-    /// <summary>the page's `void RestockSentries()`</summary>
     [Parameter] public Action RestockSentries { get; set; } = default!;
-    /// <summary>the page's `string RouteLabel(NpcShip ship)`</summary>
     [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;
-    /// <summary>the page's `void ScanFiringWindows()`</summary>
     [Parameter] public Action ScanFiringWindows { get; set; } = default!;
-    /// <summary>the page's `ScopeIntel? ScopeIntelById(string nodeId)`</summary>
     [Parameter] public Func<string, ScopeIntel?> ScopeIntelById { get; set; } = default!;
-    /// <summary>the page's `void SelectCommsShip(string id)`</summary>
     [Parameter] public Action<string> SelectCommsShip { get; set; } = default!;
-    /// <summary>the page's `NpcState? SelectedTrackedTarget()`</summary>
     [Parameter] public Func<NpcState?> SelectedTrackedTarget { get; set; } = default!;
-    /// <summary>the page's `void SellCargo()`</summary>
     [Parameter] public Action SellCargo { get; set; } = default!;
-    /// <summary>the page's `int SentryRestockCost()`</summary>
     [Parameter] public Func<int> SentryRestockCost { get; set; } = default!;
-    /// <summary>the page's `int SentryRoundsMissing()`</summary>
     [Parameter] public Func<int> SentryRoundsMissing { get; set; } = default!;
-    /// <summary>the page's `void SetFireAimOffset(double seconds)`</summary>
     [Parameter] public Action<double> SetFireAimOffset { get; set; } = default!;
-    /// <summary>the page's `void SetFireKind(OrdnanceKind kind)`</summary>
     [Parameter] public Action<OrdnanceKind> SetFireKind { get; set; } = default!;
-    /// <summary>the page's `void SetInterestTarget(string id)`</summary>
     [Parameter] public Action<string> SetInterestTarget { get; set; } = default!;
-    /// <summary>the page's `void SetMission(ShipMission mission)`</summary>
     [Parameter] public Action<ShipMission> SetMission { get; set; } = default!;
-    /// <summary>the page's `bool ShipBridgeAlive`</summary>
     [Parameter] public bool ShipBridgeAlive { get; set; }
-    /// <summary>the page's `double SimTime`</summary>
     [Parameter] public double SimTime { get; set; }
-    /// <summary>the page's `int SlugPulseCost`</summary>
     [Parameter] public int SlugPulseCost { get; set; }
-    /// <summary>the page's `void StartLocalBuy(string contactId)`</summary>
     [Parameter] public Action<string> StartLocalBuy { get; set; } = default!;
-    /// <summary>the page's `void StartLocalTrade(string contactId)`</summary>
     [Parameter] public Action<string> StartLocalTrade { get; set; } = default!;
-    /// <summary>the page's `void StartTutorial(int trackIndex)`</summary>
     [Parameter] public Action<int> StartTutorial { get; set; } = default!;
-    /// <summary>the page's `string? StraightWindowText()`</summary>
     [Parameter] public Func<string?> StraightWindowText { get; set; } = default!;
-    /// <summary>the page's `void SwitchDesk(ShipDesk desk)`</summary>
     [Parameter] public Action<ShipDesk> SwitchDesk { get; set; } = default!;
-    /// <summary>the page's `Task SwitchDeskFromClick(ShipDesk desk)`</summary>
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
-    /// <summary>the page's `void ToggleDamageControlAuthority()`</summary>
     [Parameter] public Action ToggleDamageControlAuthority { get; set; } = default!;
-    /// <summary>the page's `void ToggleFireAtWill()`</summary>
     [Parameter] public Action ToggleFireAtWill { get; set; } = default!;
-    /// <summary>the page's `void TogglePin()`</summary>
     [Parameter] public Action TogglePin { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<Stations.Captain.TutorialItem> TutorialCards()`</summary>
     [Parameter] public Func<IReadOnlyList<Stations.Captain.TutorialItem>> TutorialCards { get; set; } = default!;
-    /// <summary>the page's `int UpgradePrice(int level)`</summary>
     [Parameter] public Func<int, int> UpgradePrice { get; set; } = default!;
-    /// <summary>the page's `void ViewMapFromLedger(string cacheId)`</summary>
     [Parameter] public Action<string> ViewMapFromLedger { get; set; } = default!;
-    /// <summary>the page's `int Warp`</summary>
     [Parameter] public int Warp { get; set; }
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.Contact> WarRoomContacts()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.Contact>> WarRoomContacts { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.HunterContact> WarRoomHunters()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.HunterContact>> WarRoomHunters { get; set; } = default!;
-    /// <summary>the page's `IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.SensorTrack> WarRoomSensorTracks()`</summary>
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.SensorTrack>> WarRoomSensorTracks { get; set; } = default!;
-    /// <summary>the page's `bool WeaponsAuthorized`</summary>
     [Parameter] public bool WeaponsAuthorized { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

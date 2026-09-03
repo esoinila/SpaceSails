@@ -177,55 +177,39 @@
 }
 
 @code {
-    /// <summary>the page's `bool _boatOrderedCold`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public bool _boatOrderedCold { get; set; }
-    /// <summary>the page's `double _boatWarmth`</summary>
     [Parameter] public double _boatWarmth { get; set; }
-    /// <summary>the page's `bool _designateOpen`</summary>
     [Parameter] public bool _designateOpen { get; set; }
-    /// <summary>the page's `List<DesignateTarget> _designateTargets`</summary>
     [Parameter] public List<DesignateTarget> _designateTargets { get; set; } = default!;
-    /// <summary>the page's `string? _designateUnit`</summary>
     [Parameter] public string? _designateUnit { get; set; }
-    /// <summary>the page's `string? _remoteOutcome`</summary>
     [Parameter] public string? _remoteOutcome { get; set; }
-    /// <summary>the page's `bool _soundQuietly`</summary>
     [Parameter] public bool _soundQuietly { get; set; }
-    /// <summary>the page's `SurfaceExcursion? _surface`</summary>
     [Parameter] public SurfaceExcursion? _surface { get; set; }
-    /// <summary>the page's `bool _weaponsTight`</summary>
     [Parameter] public bool _weaponsTight { get; set; }
-    /// <summary>the page's `string? AwayWindowRemoteLine()`</summary>
     [Parameter] public Func<string?> AwayWindowRemoteLine { get; set; } = default!;
-    /// <summary>the page's `string AwayWindowRemoteSubLine()`</summary>
     [Parameter] public Func<string> AwayWindowRemoteSubLine { get; set; } = default!;
-    /// <summary>the page's `void BackToTheSwitches()`</summary>
     [Parameter] public Action BackToTheSwitches { get; set; } = default!;
-    /// <summary>the page's `SilentRunning.BoatState BoatState`</summary>
     [Parameter] public SilentRunning.BoatState BoatState { get; set; } = default!;
-    /// <summary>the page's `void CloseCaptainsRemote()`</summary>
     [Parameter] public Action CloseCaptainsRemote { get; set; } = default!;
-    /// <summary>the page's `List<SurfaceBot> DesignatableGuns()`</summary>
     [Parameter] public Func<List<SurfaceBot>> DesignatableGuns { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    /// <summary>the page's `void FireOnTheLock(DesignateTarget target)`</summary>
     [Parameter] public Action<DesignateTarget> FireOnTheLock { get; set; } = default!;
-    /// <summary>the page's `bool OnWreck`</summary>
     [Parameter] public bool OnWreck { get; set; }
-    /// <summary>the page's `void OpenDesignate()`</summary>
     [Parameter] public Action OpenDesignate { get; set; } = default!;
-    /// <summary>the page's `void PickTheGun(string unit)`</summary>
     [Parameter] public Action<string> PickTheGun { get; set; } = default!;
-    /// <summary>the page's `void SendTheStanding()`</summary>
     [Parameter] public Action SendTheStanding { get; set; } = default!;
-    /// <summary>the page's `HullSounding.Method SoundingGear`</summary>
     [Parameter] public HullSounding.Method SoundingGear { get; set; } = default!;
-    /// <summary>the page's `void ToggleBoatPower()`</summary>
     [Parameter] public Action ToggleBoatPower { get; set; } = default!;
-    /// <summary>the page's `void ToggleQuietSearch()`</summary>
     [Parameter] public Action ToggleQuietSearch { get; set; } = default!;
-    /// <summary>the page's `void ToggleWeaponsTight()`</summary>
     [Parameter] public Action ToggleWeaponsTight { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

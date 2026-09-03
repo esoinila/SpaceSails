@@ -24,6 +24,28 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #255 — the diegetic long-haul jump overlay: the one loading bar allowed to be a FEATURE. While
+       the world re-seeds at the arrival epoch, the screen SAYS the state — CROSSING THE VOID, the years
+       ticking up, and a charming note that the bus does not stop out here. No cancel is offered.
+
+       #992 · …and no cancel is offered STILL, because cancelling a crossing is a decision about the world
+       and the tick loop is frozen behind _jumpInProgress so the void is never integrated. What #992 added is
+       a decision about the SCREEN: the sheet tucks into a corner tile and the map comes back, while the
+       crossing runs on exactly the clock it always ran on.
+
+       #997 wave 2 · …AND THE GESTURE IS NOT ITS OWN ANY MORE. #992 hand-rolled that minimise, which made it
+       the THIRD independent implementation of one idea after #963's scope and #960's dossier: a third gate
+       written into the open card's @@if, a third bespoke – button, and a tile drawn as a SEPARATE sibling
+       element that had to be kept agreeing with the sheet about which year it is. All three are gone. The
+       shell owns the gesture; the tile is the SAME element with its class list swapped, so sheet and tile
+       cannot disagree because there is only one of them; and _voidCardTucked is now only what the page
+       REMEMBERS rather than a thing it also has to draw. The sheet keeps its own class, its own geometry
+       and its own words, and it still offers no cancel — that decision is about the world, not the screen. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <OverlayShell class="jump-overlay"
@@ -49,13 +71,18 @@
 }
 
 @code {
-    /// <summary>the page's `string _jumpDestName`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public string _jumpDestName { get; set; } = default!;
-    /// <summary>the page's `string _jumpFlavor`</summary>
     [Parameter] public string _jumpFlavor { get; set; } = default!;
-    /// <summary>the page's `int _jumpTotalYears`</summary>
     [Parameter] public int _jumpTotalYears { get; set; }
-    /// <summary>the page's `int _jumpYear`</summary>
     [Parameter] public int _jumpYear { get; set; }
     /// <summary>the page's `bool _voidCardTucked` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -64,7 +91,6 @@
     /// <summary>The page's `_voidCardTucked = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<bool> _voidCardTuckedSet { get; set; } = default!;
     private bool _voidCardTucked { get => _voidCardTuckedValue; set { _voidCardTuckedValue = value; _voidCardTuckedSet(value); } }
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

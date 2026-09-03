@@ -24,6 +24,17 @@
     put the moved lines back in the context they were written in; they are outside the fences, so what
     the source guards read is still exactly the lines that were in the page.
 *@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #563 · THE MAP JUST GOT BIGGER — the card that fires the first time a captain forces something open
+       and real ground joins the plan. Owner: "The expanding site, how we tell that story to user clearly
+       (do we have pop-up with image) is of great interest." Before this it was a toast that faded, while a
+       scuttled ship got a full card with art. Once per captain, then the toast takes over for good.
+       GEN-AI ART (art/ground-grows.jpg): the forced way standing open onto ground that was not on the plan
+       a moment ago. Degrades to no image via the house onerror rule — never a broken frame. *@
+
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundGrew)">
@@ -48,9 +59,16 @@
 }
 
 @code {
-    /// <summary>the page's `void CloseGroundGrew()`</summary>
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
     [Parameter] public Action CloseGroundGrew { get; set; } = default!;
-    /// <summary>the page's `Task Dismiss(Action close)`</summary>
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
