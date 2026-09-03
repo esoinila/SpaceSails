@@ -56,8 +56,17 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
     /// is empty and the hot ledger laundered; the excursion is folded and he is berthed somewhere; and the
     /// frame that ended her asked the vault to write it down, so a reload cannot resurrect her.</para>
     ///
-    /// <para><b>Proven RED</b> by making <c>CaptainWasAboardHer</c> return true: he dies on a moon a hundred
-    /// thousand kilometres from the hull that killed him, and there is no card at all.</para>
+    /// <para><b>Proven RED</b> three ways. By making <c>CaptainWasAboardHer</c> return true — he dies on a
+    /// moon a hundred thousand kilometres from the hull that killed him, and there is no card at all:</para>
+    ///
+    /// <code>
+    /// Assert.Null() Failure: Value is not null
+    /// Actual: BustedEncounter { BoliviaBeatIndex = 0, … }
+    /// </code>
+    ///
+    /// <para>…by dropping <c>_collectors.Clear()</c> from the fold — <c>Assert.Empty() Failure: Collection was
+    /// not empty · [Collector { … }, Collector { … }, Collector { … }]</c> — and by leaving the hold in her:
+    /// <c>Assert.Empty() Failure · [["ore"] = 24]</c>.</para>
     /// </summary>
     [Fact]
     public void THE_CASTAWAY_HappensWithHimStandingOnAMoon()
@@ -120,12 +129,13 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
     /// last seconds are crossed with the boat genuinely away, and the run is asserted to be still flying on the
     /// frame before zero, so the ending cannot be the deck's ending wearing this one's name.</para>
     ///
-    /// <para><b>Proven RED</b> on the shipping code before this lane, twice over: the shuttle-run frame
-    /// returned before her clock was ever spent, so the countdown froze the moment the boat left AND the
-    /// deck-only tick meant it had frozen already —</para>
+    /// <para><b>Proven RED</b> by putting the tick back where it was, inside the walked view: the seventy-five
+    /// seconds on her own corridor still pass, the boat goes out, and then nothing moves at all until the run
+    /// is recovered and she takes him with her —</para>
     ///
     /// <code>
-    /// four hundred seconds of frames and her ninety-second overload never reached zero — it reads 90.
+    /// the boat was already home when the clock ran out, so this is the deck's ending under another name
+    /// and the shuttle half of CaptainWasAboardHer is still untested.
     /// </code>
     /// </summary>
     [Fact]
@@ -199,8 +209,14 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
     /// the frame the view changes). What is being pinned here is that the ninety seconds mean ninety seconds
     /// wherever the captain is standing, which is the only reading under which the PA's count is honest.</para>
     ///
-    /// <para><b>Proven RED</b> the same way as the guard above: the helm reads 90.0 while the corridor reads
-    /// 60.0.</para>
+    /// <para><b>Proven RED</b> the same way as the guard above — thirty seconds at the helm bought nothing at
+    /// all, while the same thirty on her corridor and on a moon bought thirty:</para>
+    ///
+    /// <code>
+    /// Assert.All() Failure: 1 out of 3 items in the collection did not pass.
+    /// [0]: Item:  90
+    ///      Error: Assert.InRange() Failure: Range: (59 - 61)  Actual: 90
+    /// </code>
     /// </summary>
     [Fact]
     public void THE_CLOCK_RunsAtTheSameRateInEveryView()
