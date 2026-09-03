@@ -25,6 +25,36 @@ public partial class Map
     /// </summary>
     private readonly HashSet<string> _roomsTurnedOver = [];
 
+    /// <summary>
+    /// #615/#573 · <b>THE REGISTER, ON ITS WAY TO THE FILE.</b> Null when nothing has been gone through, so
+    /// the save is exactly as large as the captain's history is — the section idiom every other optional
+    /// register on the vault uses.
+    ///
+    /// <para>Here rather than inline in <c>Map.Vault.cs</c> because that file is the one this repo's size
+    /// gate sits closest to: it had ten lines of daylight under the 1,500 line after this lane's first
+    /// draft, and the gate's own margin check went red saying so. The register's two ends belong beside the
+    /// register anyway.</para>
+    /// </summary>
+    private TurnedOverSection? TheRoomsGoneThrough() =>
+        _roomsTurnedOver.Count > 0 ? new TurnedOverSection { Rooms = [.. _roomsTurnedOver] } : null;
+
+    /// <summary>
+    /// #615/#573 · …and on its way back. An unrecognised key is KEPT rather than dropped, the way
+    /// <c>WorkedUp</c>'s is: it costs one string and can only ever say "already emptied" about a room this
+    /// build cannot generate, while dropping it would hand a captain the same file on the same man twice.
+    /// </summary>
+    private void RestoreTheRoomsGoneThrough(Vault vault)
+    {
+        _roomsTurnedOver.Clear();
+        foreach (string turned in vault.TurnedOver?.Rooms ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(turned))
+            {
+                _roomsTurnedOver.Add(turned);
+            }
+        }
+    }
+
     /// <summary>#615 · Seed one landing's live set out of the durable register. Called at the one place an
     /// excursion begins, so no floor of the building can be drawn before the register has had its say.</summary>
     private void SeedTurnedOverRooms(SurfaceExcursion ex)
