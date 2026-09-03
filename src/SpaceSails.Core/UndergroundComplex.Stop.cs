@@ -22,8 +22,11 @@ public static partial class UndergroundComplex
     //   * THE SEAL. A short recess off the spine on the listed bottom, with one leaf at the back of it that
     //     does not open, wearing the order's plate. It is a LockedDoor and therefore it is drawn by the code
     //     that has drawn forty of them since #585 — a leaf shut, a real wall behind it, a 🔒 console reading
-    //     the plate. NO KEYPAD (#602's in-code ruling): there is no reader on it, nothing to try a card
-    //     against and nothing to take a hasp off, and ShootTheLock.Judge and the satchel both say so.
+    //     the plate. NO PAD ON IT — and after #602's numpad landed that is a distinction rather than a
+    //     blanket: the gated FLOORS on the lift panel do get a pad, and a welded leaf does not, because a pad
+    //     is bolted beside a LOCK and this is not one (UndergroundComplex.Signs.HasNoReader carries the
+    //     whole argument). There is no reader on it, nothing to try a card against, nothing to type into and
+    //     nothing to take a hasp off, and ShootTheLock.Judge and the satchel both say so.
     //
     // THE SEAL STANDS IN THE POCKET #1063's PRESERVED DOORWAY STANDS IN, and it may, because a ground is
     // stopped or buried and never both (StopOrder.TheOfficeGetsThisOne is the whole of that split). It is

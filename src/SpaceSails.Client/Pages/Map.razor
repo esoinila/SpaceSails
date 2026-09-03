@@ -2186,8 +2186,52 @@
                                 <span class="lift-stop-card">@carriedCard — the gate will read it</span>
                             }
                         </button>
+                        @* #602 · THE PAD, AND THE STICKER BESIDE IT. Owner, 2026-08-02, overruling #590's
+                           call 3 deliberately: "a vicious security sticked warning next to it and it gives
+                           you 3 tries before calling security".
+
+                           THE STICKER IS DRAWN BEFORE THE KEYS, ALWAYS, and never behind a press. That is
+                           the whole reason a keypad is allowed on this ground: the affordance states its own
+                           cost, so a guess is not problem-solving, it is gambling with a price you were
+                           told. A pad whose warning appeared after the first miss would be the punishment
+                           without the bargain.
+
+                           Which row carries one is Core's (LiftStop.HasPad) — one row, on the SEALED gate
+                           into the first band, and never the ID CHECK. This file only draws it. *@
+                        @if (stop.HasPad)
+                        {
+                            SpaceSails.Core.UndergroundComplex.LiftStop padStop = stop;
+                            <div class="lift-pad">
+                                <div class="lift-pad-sticker">⚠ @SpaceSails.Core.UndergroundComplex.LiftCode.Sticker</div>
+                                <div class="pin-pad-display">@LiftPadDisplay</div>
+                                <div class="pin-pad-keys">
+                                    @foreach (string d in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+                                    {
+                                        string digit = d;
+                                        <button type="button" class="pin-pad-key" disabled="@LiftPadIsDark"
+                                                title="Key this digit into the lift code"
+                                                @onclick="() => LiftPadPush(digit)">@digit</button>
+                                    }
+                                    <button type="button" class="pin-pad-key pin-pad-key-fn" disabled="@LiftPadIsDark"
+                                            title="Clear the code and start over" @onclick="LiftPadClear">C</button>
+                                    <button type="button" class="pin-pad-key" disabled="@LiftPadIsDark"
+                                            title="Key a zero into the lift code" @onclick='() => LiftPadPush("0")'>0</button>
+                                    <button type="button" class="pin-pad-key pin-pad-key-go" disabled="@LiftPadIsDark"
+                                            title="Try this code on the gate"
+                                            @onclick="() => LiftPadSubmit(padStop)">↵</button>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
+
+                @* #602 · What the pad answered, in its own words and nobody else's — one of Core's four
+                   plates. It is OUTSIDE the loop because the pad comes off the row the instant a code
+                   works, and OPEN is exactly the answer a captain most needs to still be able to read. *@
+                @if (LiftPadSaid is { } padSaid)
+                {
+                    <div class="lift-pad-said">@padSaid</div>
+                }
             </OverlayShell>
         </div>
     }

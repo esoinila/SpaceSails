@@ -245,6 +245,16 @@ public static partial class UndergroundComplex
             return Haul.Records;
         }
 
+        // #602 · And the room somebody wrote the lift code down in, on the works floor, one along from the
+        // three above. Designated for the reason above and not for a new one — and DESIGNATED IS THE WHOLE
+        // FEATURE here rather than an insurance policy against a bad roll: the pad on the panel upstairs is
+        // only allowed to exist because its answer is findable, and a site whose code was never written down
+        // anywhere would be a lock that can only be gambled at. See LiftCode.PaperRoomFor.
+        if (LiftCode.PaperRoomFor(bodyId) is { } code && level == code.Level && roomIndex == code.RoomIndex)
+        {
+            return Haul.Records;
+        }
+
         // ── #677 · AND THE HALLS, WHERE ALMOST NOTHING IS IN ALMOST EVERY ROOM ────────────────────────────
         //
         // The emptiness is load-bearing everywhere on this ground (§10.3) and down here it is the whole
@@ -410,6 +420,12 @@ public static partial class UndergroundComplex
         // paper is the whole of what it says. See MoneyTrailLine.
         Haul.Records when MoneyTrailPaperIn(bodyId, level, roomIndex) is { } bought
             => MoneyTrailLine(bought),
+        // #602 · …and the sheet with the pad's answer on it, in somebody's handwriting, on the works floor
+        // where the people who need the code are. Verbatim canon and the site's own four digits — see
+        // LiftCode.PaperLine, and see LiftCode's head for why a code that is FOUND and never derived is the
+        // load-bearing half of allowing a keypad on the panel at all.
+        Haul.Records when LiftCode.PaperRoomFor(bodyId) is { } c && level == c.Level && roomIndex == c.RoomIndex
+            => PaperGlyph + LiftCode.PaperLine(bodyId),
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",

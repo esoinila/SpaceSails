@@ -99,7 +99,11 @@ public partial class Map
                 ex.Stop.Body.Id, ex.Floor, _liftCar, AuthorityCardIds(), _satchel,
                 // #715 · …and what this site's outfit remembers, which is what decides whether the gate is
                 // content with the paper or wants the face as well.
-                IllegalHeat.HeatAtSite(_contacts, ex.Stop.Body.Id))
+                IllegalHeat.HeatAtSite(_contacts, ex.Stop.Body.Id),
+                // #602 · …and which bands the KEYPAD has been talked into on this trip. The excursion's own
+                // set, never the vault's: a code opens a gate for the afternoon and the card opens it
+                // forever, which is the whole line between the two papers.
+                ex.LiftCodeOpened)
             : [];
 
     /// <summary>#801 · Which of the two cars the open panel belongs to — set by the press that opened it,
@@ -188,6 +192,16 @@ public partial class Map
     {
         _showLiftPanel = false;
         _liftOutcome = null;
+
+        // #602 · …and the pad's DISPLAY is cleared with it, along with the plate it last showed. Both belong
+        // to one stand at one panel. What is deliberately NOT cleared is ex.LiftPad: the window forgets by
+        // TIME and by nothing else, which is the owner's ruling — a captain who missed twice and stepped out
+        // of the car for ten seconds has not been forgiven, and one who waited ninety has.
+        if (_surface is { } ex)
+        {
+            ex.LiftPadEntry = "";
+            ex.LiftPadSaid = null;
+        }
     }
 
     /// <summary>#600 · Whether the lift panel is up. The sim keeps running behind it, exactly as it does

@@ -299,6 +299,30 @@ public partial class Map
         // gate eleven times is not eleven findings.
         public HashSet<int> HiveShaftsRefused { get; } = [];
 
+        // ── #602 · THE KEYPAD, WHICH REMEMBERS FOR EXACTLY AS LONG AS THIS TRIP ──────────────────────────
+        //
+        // ALL FOUR OF THESE ARE ON THE EXCURSION AND NOT IN THE VAULT, and that is the ruling rather than a
+        // convenience. A right code opens the gate for the trip you are on and no longer; the card is the
+        // durable way in and stays the durable way in — the whole difference between the paper you earned
+        // and the number you read off somebody's desk. And the pad's memory is a NINETY-SECOND WINDOW, a
+        // building that tolerates the curious and reacts to the persistent, so a counter that survived a
+        // shuttle would be the opposite of what the owner ruled.
+
+        // Which bands the pad has been talked into. Keyed by band, the way HiveShaftsOpened above is.
+        public HashSet<int> LiftCodeOpened { get; } = [];
+
+        // What the pad remembers: when the run of misses started, and how many stand in it. The arithmetic
+        // is Core's (UndergroundComplex.LiftCode) — this is only where it is kept.
+        public UndergroundComplex.LiftCode.Pad LiftPad { get; set; } = UndergroundComplex.LiftCode.Pad.Fresh;
+
+        // The digits keyed so far, at most four. Cleared by every press of ↵, right or wrong.
+        public string LiftPadEntry { get; set; } = "";
+
+        // What the pad last said — one of the four plates, or null before anything has been pressed. A
+        // receipt of the last press rather than a state of the lock, which is why it is a string here and
+        // arithmetic there: OPEN is not a thing the pad remembers, it is a thing the pad answered.
+        public string? LiftPadSaid { get; set; }
+
         // #609 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
         // enough, because by then it is knowledge rather than news.
         public bool HiveVacuumWarned { get; set; }
