@@ -1,0 +1,494 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using BustedEncounter = SpaceSails.Client.Pages.Map.BustedEncounter
+@using Collector = SpaceSails.Client.Pages.Map.Collector
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE BUSTED / WAKE CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* PR-BUSTED (owner ruling §5): the catch. A hunter runs you down → warp yanks to 1×, the ship is
+       grappled, and this pop-up opens in the collector's voice. SUBMIT / BRIBE / RESIST, GTA-BUSTED
+       grammar — never game over (the Bolivia freeze-frame ends in brain-backup resurrection). The dice
+       are rolled Core-side and shown here, modifiers listed. Reuses the celebration modal's backdrop
+       grammar. *@
+    @* #951 — while the logbook is open OVER a death card, the card yields: the busted backdrop lives in the
+       modal band, above the logbook's own full-screen gate, so without this the drawer would open behind the
+       thing it was opened from. Closing the logbook brings the death card back exactly as it was — the beat
+       is not skipped by looking at your saves. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd ? "busted-sepia" : "")">
+            @* ═══════════════════════════════════════════════════════════════════════════════════════════
+               #997 wave 3 · THE LAST MODE, ON THE ONE SURFACE IT WAS BUILT FOR.
+
+               `ByDecision` is the critical-decision exception: no ✕, because every answer IS a way out.
+               #997 shipped it, #992's audit named eleven surfaces that claim it, and until now not one of
+               them had ever been drawn through it — the mode was proved against a test double and nothing
+               else. This is the surface it was written for, and #997's own `Restages` names it by name.
+
+               AND THE CLAIM IS FALSE ON THIS CARD IN A WAY WORTH SAYING OUT LOUD, which is the second time
+               the migration has caught that (#997 found the rep's card registered as something it is not).
+               Read the stages: SUBMIT, BRIBE and RESIST do not close this panel — they TURN ITS PAGE, to
+               Confiscated, to BribedOff, to the Bolivia. The register had the row down as "every control
+               closes it" and, being undriven, nothing had ever pressed one. What is true is narrower and
+               better: every answer ADVANCES, and every chain ends on a card whose single control closes it
+               — "Take the hit", "Fly on", "Board the rustbucket". That is a STAGED decision, which is the
+               whole reason `Restages` exists, and it is stated here rather than asserted from a flag:
+               TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests presses every control of every stage
+               and follows each chain to its close.
+
+               A BARE frame, for the family's reason: `.busted-card > .busted-options` and the close row are
+               pinned by #735's sticky foot, and a wrapper between the card and them would unstick both.
+
+               NO ✕, and none is added. A captain who has been grappled has to answer the collector; the
+               words, the stakes, the dice and the buttons on this panel are exactly as they were. What the
+               shell owns here is that there is no ✕ ON PURPOSE and the audit knows it, rather than a ✕
+               being absent because nobody wrote one. *@
+            <OverlayShell class="busted-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision" Restages="true">
+                @switch (bust.Phase)
+                {
+                    case BustedEncounter.Stage.Demand:
+                        @* PR-BUSTED art (docs/art-manifest-busted.md item 3): busted-collector-hail.jpg —
+                           the hard-eyed repo captain backs ONLY the Demand header (modifier class), with a
+                           dark scrim so the callsign stays readable. Other panels' .busted-hail is untouched. *@
+                        @* #528 · the slot from docs/art-manifest-busted.md item 3, PAINTED at last: grapple
+                           cables across the frame and the collector's hull filling the ports. The heading rides
+                           on the art rather than instead of it — the words are the alarm, the picture is why it
+                           is frightening. *@
+                        @* #777 · AND IT IS THE BEAT'S OWN CANVAS NOW, not a borrowed picture. CollectorHail
+                           is presented HOSTED (StoryBeats.Presentation.Hosted): the caller raises it through
+                           the one seam, which spends the cadence and files the words in the log, and then
+                           raises nothing — because THIS panel is where the beat lands. Which makes the
+                           caption's home here or nowhere. #761: a plot-significant moment is told clearly,
+                           on the surface the player is looking at. #736: the words must not be the ones
+                           behind the backdrop. So the shipped sentence rides the shipped painting, exactly
+                           as it would have on a card of its own — and nothing is shown twice. *@
+                        <div class="busted-hail busted-collector-hail">
+                            <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
+                                 alt="" aria-hidden="true" onerror="this.style.display='none'" />
+                            <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
+                            <div class="busted-hail-caption">@StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign)</div>
+                        </div>
+                        <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
+                        <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        @* #422 arc 2 — THE COLLECTOR'S WRIT. The first time a collector grapples you, you get a
+                           look at the writ they carry, and it names a policy number, not a manifest. The shard
+                           is glimpsed here; the readout below keeps it. *@
+                        @if (bust.CollectorWrit is { Length: > 0 } writ)
+                        {
+                            <div class="busted-nebula busted-writ">
+                                <div class="busted-nebula-head">▓ A GLIMPSE OF THE WRIT — NEBULA MUTUAL · RECOVERY OF INSURED ASSET</div>
+                                <div class="busted-nebula-line">@writ</div>
+                            </div>
+                        }
+                        int _hotUnits = _hotCargo.TotalHotUnits;
+                        int _coinShare = (int)Math.Round(_credits * BustedRule.CoinFraction(bust.Heat));
+                        bool _canBribe = _credits >= bust.Bribe.Total;
+                        <div class="busted-options">
+                            <button type="button" class="btn btn-warning busted-opt" @onclick="() => BustedSubmit(false)">
+                                <span class="bo-title">🤍 SUBMIT</span>
+                                <span class="bo-detail">They take @_hotUnits hot cargo unit@(_hotUnits == 1 ? "" : "s") + ~@_coinShare.ToString("N0") cr. Heat clears to 0.</span>
+                            </button>
+                            <button type="button" class="btn btn-info busted-opt" disabled="@(!_canBribe)" @onclick="BustedBribe">
+                                <span class="bo-title">💰 BRIBE — @bust.Bribe.Total.ToString("N0") cr</span>
+                                <span class="bo-detail">@bust.Bribe.Describe()@(_canBribe ? " · keep the cargo, heat unchanged" : " · you can't cover it")</span>
+                            </button>
+                            <button type="button" class="btn btn-danger busted-opt" @onclick="BustedResist">
+                                <span class="bo-title">🔫 RESIST@(bust.Heat >= EncounterRule.MaxHeatLevel ? " — THE BOLIVIA" : "")</span>
+                                @* #621 · The hint used to price only the LOSS. Winning a heat-1/2 resist
+                                   raises heat by one — the sim does it, and the game said so only in the
+                                   result line, after the button had been pressed. A cost you can confirm
+                                   only once you have paid it is not a tell. And the Bolivia is the one
+                                   option on this card that ends the captain, which the player is entitled
+                                   to know one beat early rather than at the freeze-frame. *@
+                                <span class="bo-detail">@(bust.Heat >= EncounterRule.MaxHeatLevel
+                                    ? "All guns blazing. A last stand on the dice — you fight clear, or the freeze-frame does the rest and the policy issues somebody new."
+                                    : "One opposed roll. Win and they peel off, but heat climbs a notch and the next wave is meaner; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
+                            </button>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.Confiscated:
+                        <div class="busted-hail">⛓ CONFISCATED</div>
+                        @if (bust.Confiscation is { } conf)
+                        {
+                            <div class="busted-receipt">
+                                @if (conf.CoinTaken > 0)
+                                {
+                                    <div>💰 −@conf.CoinTaken.ToString("N0") cr from the purse</div>
+                                }
+                                @foreach (BustedRule.CargoSeizure s in conf.Seizures)
+                                {
+                                    <div><span title="@(s.Hot ? HotGlossTitle : null)">@(s.Hot ? "🔥" : "📦")</span> −@s.Units @s.CargoClass (@s.Value.ToString("N0") cr)@(s.Hot ? " — hot" : " — clean, minimum take")</div>
+                                }
+                                @if (conf.CoinTaken == 0 && conf.Seizures.Count == 0)
+                                {
+                                    <div>Nothing to take — you fly clean. They log it and cut you loose.</div>
+                                }
+                                <div class="busted-math">@string.Join(" · ", conf.Breakdown.Select(m => $"{m.Label}: {m.Value}"))</div>
+                            </div>
+                        }
+                        <div class="busted-quote">"Debt collected. Heat's off the books — for now. Fly straight, captain."</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Take the hit</button>
+                        break;
+
+                    case BustedEncounter.Stage.BribedOff:
+                    case BustedEncounter.Stage.ResistWon:
+                    case BustedEncounter.Stage.Fled:
+                        <div class="busted-hail">@(bust.Phase == BustedEncounter.Stage.Fled ? "🏴 BROKE CLEAR" : bust.Phase == BustedEncounter.Stage.ResistWon ? "🔫 THEY PEEL OFF" : "💰 PAID OFF")</div>
+                        @if (bust.ResistRoll is { } rr)
+                        {
+                            <div class="busted-roll">You: @rr.Challenger.Describe()</div>
+                            <div class="busted-roll">Collector: @rr.Defender.Describe()</div>
+                        }
+                        <div class="busted-quote">@bust.ResultMessage</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
+                        break;
+
+                    case BustedEncounter.Stage.ResistLost:
+                        <div class="busted-hail">🔫 THEY BOARD ANYWAY</div>
+                        @if (bust.ResistRoll is { } rl)
+                        {
+                            <div class="busted-roll">You: @rl.Challenger.Describe()</div>
+                            <div class="busted-roll">Collector: @rl.Defender.Describe()</div>
+                        }
+                        <div class="busted-quote">"Nice try. Now it costs extra." — they take the submission terms plus a harsher cut.</div>
+                        <button type="button" class="btn btn-danger busted-close" @onclick="() => PressAndRefocus(BustedResistLostConfirm)">Brace for it</button>
+                        break;
+
+                    case BustedEncounter.Stage.Bolivia:
+                        <div class="busted-hail">🔫 THE BOLIVIA — the last stand</div>
+                        @if (bust.BoliviaInitiative is { } init)
+                        {
+                            <div class="busted-roll">Initiative — You: @init.Challenger.Total vs Collector: @init.Defender.Total</div>
+                        }
+                        @if (bust.BoliviaBeatIndex < BoliviaEncounter.Script.Count)
+                        {
+                            EncounterBeat beat = BoliviaEncounter.Script[bust.BoliviaBeatIndex];
+                            @* #528 · THE STAND HAS A PICTURE NOW. The freeze-frame that ENDS this scene has
+                               been painted since PR-BUSTED; the three beats that earn it were text with
+                               buttons under them, so a captain who HELD the line never saw one frame of
+                               what they just lived through. Same sepia register as the freeze-frame. Keyed
+                               by the beat's id, never its index — a script is a list somebody will edit —
+                               and onerror-hides, so a missing file leaves this panel as it was. *@
+                            @if (BoliviaEncounter.ArtFile(beat.Id) is { Length: > 0 } beatArt)
+                            {
+                                <img class="bolivia-beat-img" src="@beatArt" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            }
+                            <div class="busted-quote">@beat.Narration</div>
+                            <div class="busted-options">
+                                @foreach (EncounterChoice choice in beat.Choices)
+                                {
+                                    string cid = choice.Id;
+                                    <button type="button" class="btn btn-outline-danger busted-opt" @onclick="() => BustedBoliviaChoose(cid)">
+                                        <span class="bo-title">@choice.Label</span>
+                                        <span class="bo-detail">@choice.Hint (@(choice.Modifier.Value >= 0 ? "+" : "−")@Math.Abs(choice.Modifier.Value))</span>
+                                    </button>
+                                }
+                            </div>
+                            @if (bust.BoliviaOutcomes.Count > 0)
+                            {
+                                <div class="busted-math">Running: net @bust.BoliviaNet — @(bust.BoliviaNet >= 0 ? "holding the line" : "going under")</div>
+                            }
+                        }
+                        break;
+
+                    case BustedEncounter.Stage.Impact:
+                        @* #264: the surface collected the ship. Reuses the freeze-frame grammar (sepia
+                           backdrop, one held beat) and hands off to the SAME brain-backup resurrection —
+                           no collector, no dice; "impact coming" finally arrives. *@
+                        <div class="busted-freeze">
+                            @* PR-BUSTED art (docs/art-manifest-busted.md item 2): busted-ship-explosion.jpg
+                               backs this .busted-explosion slot too — same "kerosene-explosion budget"
+                               hero fireball as the Resurrected panel. Gradient stays as the load fallback. *@
+                            <div class="busted-freeze-art busted-explosion has-art" title="art: the ship folding into the surface at periapsis — the kerosene-explosion budget">
+                                <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
+                            </div>
+                            <div class="busted-freeze-caption">"…the periapsis said 'under the surface'. It wasn't bluffing."</div>
+                            @* #621 · This line was TYPED HERE, word for word off ImpactLines[1], and then
+                               had "The freeze-frame holds." appended — which is BUSTED's own language about
+                               a collector's gun-camera still, on a death with no collector and no camera.
+                               That is the exact append #574 pulled out of every other card and replaced with
+                               DeathNarration.Tail, which answers "" for an impact; the guard that pins the
+                               law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
+                               was quietly going round it. Both faults are one fix: read the seam. *@
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                               The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                               and #951 put it on all four death panels — which makes it the way out every player who dies
+                               meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                               still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                               second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                               Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                               before, handed to the shell instead of to a `<button>`. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="…wake up"
+                                          OnClose="() => PressAndRefocus(BustedResurrect)"
+                                          BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                          BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                          OnBeside="OpenLogbookFromDeath">
+                                @* #951 — the same door, on this death's own card: `…wake up` is canon and does not move, and beside it stands the answer a player who banked a moment actually wants. It opens the SAME logbook the boot door opens, because there is one save surface in this game and this is it. *@
+                            </OverlayShell>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.SurfaceEnd:
+                        @* Evening wind #20 — the nerve-overdraw death on the regolith. The BUSTED freeze-beat
+                           grammar (sepia backdrop, one held beat), but the cause is place-dependent: the Old
+                           Ones took you (Reevers) or, rarely at a shattered sliver, you joined them (Joined).
+                           The cause art + the seeded house-voice line (DeathNarration) hold, then "…wake up"
+                           hands off to the SAME brain-backup resurrection the collector/impact deaths use.
+                           Art is Grok-generated. *@
+                        <div class="busted-freeze">
+                            <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent surface death">
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
+                            </div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
+                            @* #480 follow-up: the caption names the meter that actually ran out. It used to
+                               hardcode the nerve line for everything but Joined — true while nerve was the
+                               only thing that ever killed you, wrong now that the five blows decide. *@
+                            <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                               The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                               and #951 put it on all four death panels — which makes it the way out every player who dies
+                               meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                               still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                               second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                               Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                               before, handed to the shell instead of to a `<button>`. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="…wake up"
+                                          OnClose="() => PressAndRefocus(BustedResurrect)"
+                                          BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                          BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                          OnBeside="OpenLogbookFromDeath">
+                                @* #951 — the same door, on this death's own card: `…wake up` is canon and does not move, and beside it stands the answer a player who banked a moment actually wants. It opens the SAME logbook the boot door opens, because there is one save surface in this game and this is it. *@
+                            </OverlayShell>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.FreezeFrame:
+                        <div class="busted-freeze">
+                            @* PR-BUSTED art (docs/art-manifest-busted.md item 1): busted-freeze-frame.jpg —
+                               the sepia last-charge still. Held, not animated (the freeze holds). The
+                               deterministic gradient stays under it as the load fallback. *@
+                            <div class="busted-freeze-art has-art" title="art: two silhouetted rogues charging into blinding muzzle-flash light — homage, sepia freeze">
+                                <img class="bf-art" src="art/busted-freeze-frame.jpg" alt="" aria-hidden="true" />
+                            </div>
+                            <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
+                            <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
+                            @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                               The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                               and #951 put it on all four death panels — which makes it the way out every player who dies
+                               meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                               still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                               second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                               Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                               before, handed to the shell instead of to a `<button>`. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="…wake up"
+                                          OnClose="() => PressAndRefocus(BustedResurrect)"
+                                          BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                          BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                          OnBeside="OpenLogbookFromDeath">
+                                @* #951 — the same door, on this death's own card: `…wake up` is canon and does not move, and beside it stands the answer a player who banked a moment actually wants. It opens the SAME logbook the boot door opens, because there is one save surface in this game and this is it. *@
+                            </OverlayShell>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.Resurrected:
+                        <div class="busted-hail">🧠 BRAIN-BACKUP RESTORED</div>
+                        @* #422 arc 2 — THE GLITCH IN THE REBIRTH. For one flat second before the welcome loops
+                           clean, the wake card reads a line it should not — the thread you don't know you're
+                           pulling. You experience the Nebula arc by DYING. The flash shows every rebirth; the
+                           shard is gathered once (its full text lives in the Captain's ledger). *@
+                        @if (bust.RebirthGlitch is { Length: > 0 } glitch)
+                        {
+                            <div class="busted-nebula busted-glitch">
+                                <div class="busted-glitch-flash">@glitch</div>
+                                <div class="busted-nebula-line">…then it blinks back to “Welcome back, Captain.” You feel entirely yourself. That is the part they charge for.</div>
+                            </div>
+                        }
+                        @* #380 item 1 — WHAT HAPPENED: the resurrection fiction finally explains itself at the
+                           moment it matters. A cause-specific Grok image + one seeded, place-dependent
+                           house-voice line (DeathNarration), THEN the existing brain-backup copy below. The
+                           two live causes are Collector (BUSTED last stand) and Impact; the surface + void art
+                           is wired ready for the surface-death lane. Art is Grok-generated. *@
+                        <div class="busted-whathappened">
+                            <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent death">
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
+                            </div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)</div>
+                        </div>
+                        @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
+                        <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
+                            <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
+                        </div>
+                        <div class="busted-quote">
+                            You wake at @bust.ClinicName's clinic in @bust.HullDescription. The old ship and
+                            everything visible aboard is gone — but nothing buried or banked was ever on it.
+                            @* #477: the tank used to come up at a "mercy floor" that was exactly the reserve
+                               the autopilot refuses to spend, so the new captain woke unable to fly anywhere.
+                               It is a full tank now — the same fuel a new voyage starts with. *@
+                            The tank's full, at least. They always fill the tank.
+                        </div>
+                        @* #480 — THE NERVE LEDGER, at the moment it explains the most: this is what broke you,
+                           in the captain's own last few named pips. Only shown when the nerve actually kept a
+                           record, so a death with no fear in it (a clean impact) is not padded with an empty box. *@
+                        @if (DeathNerveLedgerLines is { Count: > 0 } deathLedger)
+                        {
+                            <div class="busted-nerve-ledger">
+                                <div class="busted-nerve-ledger-head">WHAT BROKE YOU — the last of the nerve</div>
+                                @foreach (string entry in deathLedger)
+                                {
+                                    <div class="busted-nerve-ledger-line">@entry</div>
+                                }
+                            </div>
+                        }
+                        @* #621 · THE RECEIPT NOW ADDS UP. It printed a 200 cr stake, a −500 cr bill and
+                           "0 cr in hand", which is not arithmetic — the purse is floored at zero and the
+                           three hundred that went missing was never mentioned anywhere. On the standard
+                           uninsured wake the bill ALWAYS exceeds the stake, so this was every death, every
+                           time. The shortfall is stated in the same breath as the numbers that made it, and
+                           it is said the way this clinic says everything: without being asked. *@
+                        <div class="busted-receipt">
+                            <div>💰 @bust.StakeCr.ToString("N0") cr insurance stake</div>
+                            <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
+                            @if (bust.ClinicBillCr > bust.StakeCr)
+                            {
+                                <div>🧾 @((bust.ClinicBillCr - bust.StakeCr).ToString("N0")) cr short — nobody asks you for it. It goes on the policy's tab, with everything else.</div>
+                            }
+                            <div>👛 @_credits.ToString("N0") cr in hand</div>
+                            @* #477: not a "reach-a-pump reserve" any more — that WAS the bug. The floor was
+                               priced at exactly the autopilot's own reserve, so the wake handed over fuel
+                               the autopilot then refused to spend. It is a full tank now. *@
+                            <div>⛽ @_reactionMassPulses p — a full tank, same as a new voyage</div>
+                            <div>🔧 all upgrades reset to starter grade</div>
+                        </div>
+                        @* #422 arc 2 — THE CLINIC'S SECOND PAGE. Surfaces only once you've woken here before:
+                           the bill's ledger carries entries you never made, under a policy number older than
+                           you. The shard is gathered here the once; the full text lives in the ledger. *@
+                        @if (bust.ClinicLedger is { Length: > 0 } clinicLedger)
+                        {
+                            <div class="busted-nebula busted-clinic-ledger">
+                                <div class="busted-nebula-head">📄 THE CLINIC'S LEDGER HAS A SECOND PAGE</div>
+                                <div class="busted-nebula-line">@clinicLedger</div>
+                            </div>
+                        }
+                        @* Evening wind #20 — THE NEW CAPTAIN. On any death-resurrection the piracy insurance
+                           puts a new name on the license and a new face in the mirror; the roster keeps the
+                           retiree (see the captain cards). Shown only when a thread was actually succeeded
+                           (a legacy run with no indexed thread falls back to the brain-backup copy alone). *@
+                        @if (!string.IsNullOrEmpty(bust.NewCaptainName))
+                        {
+                            <div class="busted-succession">
+                                <div class="busted-succession-head">🪪 THE POLICY ISSUES A NEW CAPTAIN</div>
+                                <div class="busted-succession-line">@CaptainSuccession.PolicyPayoutLine</div>
+                                @* #973 L1 · THE FILING LINE, ON THE CARD THAT ALREADY EXISTS. One line, once per
+                                   rebirth, on the succession block rather than a card of its own — the wake is
+                                   already four panels long and the amnesia is a property of the succession, not
+                                   a separate event. Which line it is comes from the POLICY that was in force at
+                                   the death, never from counting how many rows happened to grey. *@
+                                @if (bust.FilingNotice is { Length: > 0 } filing)
+                                {
+                                    <div class="busted-succession-filing">@filing</div>
+                                }
+                                <div class="busted-succession-names">
+                                    @if (!string.IsNullOrEmpty(bust.RetiredCaptainName))
+                                    {
+                                        <span class="succ-old">@bust.RetiredCaptainName</span>
+                                        <span class="succ-arrow">→</span>
+                                    }
+                                    <img class="succ-portrait" src="art/captain-@(bust.NewCaptainAvatar).jpg" alt="" aria-hidden="true"
+                                         onerror="this.style.display='none'" />
+                                    <span class="succ-new">@bust.NewCaptainName</span>
+                                </div>
+                            </div>
+                        }
+                        @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
+                           The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
+                           and #951 put it on all four death panels — which makes it the way out every player who dies
+                           meets. Two ways out, one row: `…wake up` is the dismiss (the brain-backup beat, canon, and it
+                           still turns the page rather than ending the card — the panel is a chain), and the logbook is the
+                           second, drawn by the shell because it IS a way off this surface and was answerable to nothing.
+                           Not one word, colour or tooltip moves: the faces and the class lists are the ones typed here
+                           before, handed to the shell instead of to a `<button>`. *@
+                        <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                      DismissClass="btn btn-light busted-close" DismissFace="Board the rustbucket"
+                                      OnClose="() => Dismiss(CloseBusted)"
+                                      BesideClass="btn btn-outline-light busted-logbook" BesideFace="📖 Load a saved voyage"
+                                      BesideTitle="Open the ship's logbook — Continue where you actually were, or board a moment you banked. The same door the game opens at the start."
+                                      OnBeside="OpenLogbookFromDeath">
+                            @* #951 — and here too, at the last page of the death chain: the new captain's rustbucket is one way on, a moment you banked is the other. *@
+                        </OverlayShell>
+                        break;
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public int _credits { get; set; }
+    [Parameter] public bool _hasNetJammer { get; set; }
+    [Parameter] public HotCargoLedger _hotCargo { get; set; } = default!;
+    [Parameter] public int _reactionMassPulses { get; set; }
+    [Parameter] public Action<NpcState> Board { get; set; } = default!;
+    [Parameter] public Action<string> BustedBoliviaChoose { get; set; } = default!;
+    [Parameter] public Action BustedBribe { get; set; } = default!;
+    [Parameter] public Action BustedResist { get; set; } = default!;
+    [Parameter] public Action BustedResistLostConfirm { get; set; } = default!;
+    [Parameter] public Action BustedResurrect { get; set; } = default!;
+    [Parameter] public Action<bool> OnBustedSubmit { get; set; } = default!;
+    private void BustedSubmit(bool harsher = false) => OnBustedSubmit(harsher);
+    [Parameter] public Action CloseBusted { get; set; } = default!;
+    [Parameter] public IReadOnlyList<string>? DeathNerveLedgerLines { get; set; }
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<int, string> HeatFlames { get; set; } = default!;
+    [Parameter] public string HotGlossTitle { get; set; } = default!;
+    [Parameter] public Action OpenLogbookFromDeath { get; set; } = default!;
+    [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
+    [Parameter] public BustedEncounter bust { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -1,0 +1,268 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using TableTalk = SpaceSails.Client.Pages.Map.TableTalk
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE SEATED-AND-DOCKED STRIP, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #746 · THE TABLE. You asked to sit; they waved you in; these are your moves.
+
+       Same overlay family as the barkeep's counter card (deck-offer-card) and the same backdrop as every
+       other modal down here — because it IS the same object: a conversation with somebody, with a row of
+       things you could say. The guard stop, when it comes, renders through this exact block with a different
+       Encounter.Scene in it.
+
+       #680's LAW, APPLIED FROM BIRTH: every outcome is rendered HERE, in the panel's own subtree — the one
+       layer the backdrop cannot blur. Not one move pulses its line while this panel is up. The only pulse in
+       the whole scene is TAKE YOUR LEAVE, and that one is correct precisely because the panel is gone. *@
+    @* #784 PHASE TWO · THE FRAME DOCKS, IT DOES NOT DIM.
+
+       Owner, live at a taken table with the panel up — his screenshot showed the card centred and the
+       backdrop dimming the whole hall AND the brand-new park behind its glass to near-black: "the seated
+       frame docks, it does not dim… the hall stays lit, the A* walkers stay visible, the park stays green.
+       The full card returns only for conversations."
+
+       So the ONE @if below forks on Map.Seated.cs's SeatedIsDocked, and the fork is the whole feature:
+
+         seated-idle  → the strip. No .view-object-backdrop is written into the DOM AT ALL — the guard
+                        asserts the scrim's ABSENCE, which is #780's lesson read in reverse.
+         conversation → the block that was always here, backdrop, art, moves and prose untouched (#778/#787).
+
+       Nothing about the CARD changed. That matters: the haulier ladder, its odds, its one-per-watch law and
+       every line in it ship exactly as they were, and when #731's walker crosses the hall for real she will
+       arrive from outside the strip and this card will come up over a room the player was already watching.
+
+       #865 · …AND THE FORK MOVED OFF SOLO. Owner, live at a weighbridge clerk's table with the whole hall
+       dimmed to black behind one small card: "what if I just sit and eat here... now I am kind of blinded of
+       the surrounding here because somebody else sits in the same table" — then, naming the target: "It
+       should somehow UI wise be same style as the sitting alone case", and sealing it: "Just the social
+       functions as additional options."
+
+       So CO-SEATING IS A STRIP STATE. Joining an occupied top is a posture change like any other seat and it
+       docks; only somebody who CAME OVER TO YOU raises the card (SeatedIsDocked now reads TheyCameToYou).
+       And it is the SAME COMPONENT WITH COMPANY, not a second one styled alike — the neighbour's plate and
+       bark are lines on this strip and their moves are buttons in this row, which is what keeps the rest
+       pips, the spread gating and #829's case-door label working identically whether the chair opposite is
+       empty or not. *@
+    @* #870 lane 6a · SeatedTable is the seat family's own named read of the sitting itself, so this markup
+       renames a receiver instead of reaching into the private state of a partial it does not own. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="seated-dock" role="status" aria-label="@SpaceSails.Core.SeatedHud.StripLabel">
+            @* THE CUSTOMER LINE, in the AIR gauge's register (#740). Every figure on it is the figure the
+               mechanic is running on — Map.Seated.cs hands Core the pour window the rest engine doubles off,
+               the pip ledger the rest engine writes, and the watch fill the approach roll is scaled by. *@
+            @if (SeatedCustomerLine() is { Length: > 0 } customer)
+            {
+                <div class="seated-dock-line">@customer</div>
+            }
+
+            @* #865 · WHO IS SHARING THE TOP, in the instrument row's own clothes — the plate the deck draws
+               over them, the room's setting, and the chairs. Same separator, same register, one line lower:
+               the strip is the same strip and this is what has changed about the seat. *@
+            @if (SeatedCompanyLine() is { Length: > 0 } company)
+            {
+                <div class="seated-dock-line seated-dock-company">@company</div>
+            }
+
+            @* …and their one breath, OVERHEARD rather than extracted. #751 deals a background patron exactly
+               one line per watch, and it used to take a press inside a card that had eaten the room to hear
+               it. It stands down the moment anything is actually said at this table, because the strip has
+               one outcome slot and a bark left under its own answer would print the sentence twice. *@
+            @if (SeatedOverheardLine() is { Length: > 0 } overheard)
+            {
+                <div class="seated-dock-said seated-dock-bark">@overheard</div>
+            }
+
+            @* The latest thing that happened at this table — #757's silence lines, the body's footnote, the
+               write-up that just landed. One slot, replaced, exactly as the card's own outcome row was. *@
+            @if (tab.Outcome is { Length: > 0 } dockedSaid)
+            {
+                <div class="seated-dock-said">@dockedSaid</div>
+            }
+
+            @* …and a running dig says so here too — the sentence, AND the clock beside it.
+
+               #784, owner live on the phase-2 build: "the progress bar is kind of small there... it might be
+               good to have it on the dialog... took me a while to notice it." The rectangle over the
+               captain's own mark stays (the one progress language, #562/#696, and honest at a glance from
+               across the hall) — but a seated captain's eyes are HERE, and a clock drawn where nobody is
+               looking is #782's readability law failing at time instead of at type. So the strip carries the
+               primary read at the strip's own width, and the fraction is Core's same Fraction() the deck
+               rectangle is fed by, so the two can never disagree about one dig. *@
+            @if (ProcessingUnderway() is { } dockedBusy)
+            {
+                <div class="seated-dock-said seated-dock-busy">@dockedBusy</div>
+                @if (ProcessingFraction() is { } dockedDug)
+                {
+                    <div class="seated-dock-dig"
+                         role="progressbar"
+                         aria-label="@SpaceSails.Core.Processing.Glyph digging"
+                         aria-valuemin="0" aria-valuemax="100"
+                         aria-valuenow="@((int)(dockedDug * 100))">
+                        <div class="seated-dock-dig-fill" style="width:@((int)(dockedDug * 100))%"></div>
+                    </div>
+                }
+            }
+
+            <div class="seated-dock-actions">
+                @* #865/#746 · ASKING FOR THE CHAIR IS STILL ITS OWN BEAT, and it is a strip button now.
+                   Until it is pressed, the only two things you may do at somebody else's top are ask and
+                   walk away — the same two the card offered, in the same order, without the room going
+                   dark to offer them. *@
+                @if (!tab.Joined)
+                {
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Ask for the empty chair"
+                            @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Join)">@SpaceSails.Core.CanteenTable.AskToJoin</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Think better of it. It costs nothing."
+                            @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Leave)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
+                }
+                @* THE MOVE ROW. At a top you took alone this is SIT A WHILE and the goodbye; at one you
+                   joined it is the neighbour's own three — Small talk, Buy the round, Take your leave —
+                   because it is the SAME call over whatever scene this sitting is holding. Owner: "just the
+                   social functions as additional options." *@
+                @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? TableMovesOnTheTable() : [])
+                {
+                    SpaceSails.Core.Encounter.Move m = move;
+                    bool open = TableMoveOnOffer(m);
+                    <button type="button"
+                            class="btn btn-sm @(TableMoveIsUrged(m) ? "btn-warning" : "btn-outline-light")"
+                            disabled="@(!open)"
+                            title="@(open ? m.Label : TableMoveRefusal(m))"
+                            @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
+                }
+                @* #758 · THE CURTAIN AND THE DOOR. One button, at the one seat in this game that has a leaf
+                   of its own, and it always offers the OTHER stage — a room never has to announce the state
+                   it is already standing in. Owner: "something that prevents the sound or sight catching
+                   what happens there too easily but is not a real door." The tooltip carries the cost,
+                   because the cost IS the mechanic: the whole hall watches a cabinet door close. *@
+                @if (ACabinetLeafToWork)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="@CabinetLeafHint"
+                            @onclick="WorkTheCabinetLeaf">@CabinetLeafLabel</button>
+                }
+                @* #784 · [I] IS THE DOOR TO THE SPREAD, and this is the same door with a mouse on it. The
+                   refusal is drawn rather than hidden (#212): the bar desk has to be able to say NO to a
+                   press, because that is how the gumshoe rule gets learned. Once a sheet of this sitting
+                   is in the book the door says so (SpreadDoorLabel) — the owner asked the words to carry
+                   the fact that the NEXT press looks at a different sheet. *@
+                <button type="button"
+                        class="btn btn-sm @(CanSpreadTheCaseHere ? "btn-outline-light" : "btn-outline-secondary")"
+                        title="@SpreadDoorHint"
+                        @onclick="OpenTheSpread">
+                    @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
+                </button>
+                @* #1052 · …AND THE OTHER THING YOU CAN DO IN A CHAIR, beside the case and never instead of
+                   it. Owner, 2026-09-01: "Reading the news pop-up could be option when sitting at table,
+                   instead of working the case."
+
+                   SEAT-TIED AND NOT PLACE-TIED (the 2026-08-30 ruling this strip already lives under). The
+                   button is drawn wherever the captain is sitting; WHICH paper it hands him is
+                   NewsWire.ScopeAt's answer about the chair's own place, asked in Map.Seated.News.cs. That
+                   is what makes it work at a moon canteen table on an excursion, where key 6 is rightly
+                   refused because the nav desk is a tube ride away — and the reason the guard drives
+                   exactly that case.
+
+                   It is a TOGGLE (#688's law, the satchel's and the galley card's): the control that opens
+                   the paper closes it. Never refused, because there is no state a seated captain can be in
+                   that has no paper at all — the wire prints somewhere. *@
+                <button type="button"
+                        class="btn btn-sm @(_seatedNewsOpen ? "btn-warning" : "btn-outline-light")"
+                        title="@SpaceSails.Core.SeatedSpread.ReadTheNewsHint"
+                        @onclick="ToggleSeatedNews">@SpaceSails.Core.SeatedSpread.ReadTheNewsLabel</button>
+            </div>
+
+            @* #865/#746 · …and PUT SOMETHING ON THE TABLE fans the pocket open right here, exactly as it
+               does on the card: a second press and never a mode, for #614's reason — a captain deciding WHAT
+               to put down must not be one mis-click from having put something down. It is inside the strip's
+               own subtree, so the room is still behind it. *@
+            @if (tab.Joined && tab.Showing)
+            {
+                <div class="table-showables seated-dock-showables">
+                    @if (_satchel.Count == 0)
+                    {
+                        <div class="satchel-empty">Nothing in your pockets to put down.</div>
+                    }
+                    @foreach (SpaceSails.Core.Satchel.Item carried in TableShowables())
+                    {
+                        SpaceSails.Core.Satchel.Item show = carried;
+                        <button type="button" class="satchel-item table-showable"
+                                title="Put it on the table where everyone can see it"
+                                @onclick="() => TableShow(show)">
+                            <span class="satchel-item-name">@SatchelLabel(show)</span>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
+    [Parameter] public bool _seatedNewsOpen { get; set; }
+    [Parameter] public bool ACabinetLeafToWork { get; set; }
+    [Parameter] public string CabinetLeafHint { get; set; } = default!;
+    [Parameter] public string CabinetLeafLabel { get; set; } = default!;
+    [Parameter] public bool CanSpreadTheCaseHere { get; set; }
+    [Parameter] public Action OpenTheSpread { get; set; } = default!;
+    [Parameter] public Func<double?> ProcessingFraction { get; set; } = default!;
+    [Parameter] public Func<string?> ProcessingUnderway { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
+    [Parameter] public Func<string?> SeatedCompanyLine { get; set; } = default!;
+    [Parameter] public Func<string?> SeatedCustomerLine { get; set; } = default!;
+    [Parameter] public Func<string?> SeatedOverheardLine { get; set; } = default!;
+    [Parameter] public string SpreadDoorHint { get; set; } = default!;
+    [Parameter] public string SpreadDoorLabel { get; set; } = default!;
+    [Parameter] public Func<string, Task> TableMoveClicked { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, bool> TableMoveIsUrged { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, bool> TableMoveOnOffer { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, string> TableMoveRefusal { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Encounter.Move>> TableMovesOnTheTable { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> TableShow { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Core.Satchel.Item>> TableShowables { get; set; } = default!;
+    [Parameter] public Action ToggleSeatedNews { get; set; } = default!;
+    [Parameter] public Action WorkTheCabinetLeaf { get; set; } = default!;
+
+    /// <summary>bound by the OUTER `@if (SeatedTable is { } tab)` that stays in the page</summary>
+    [Parameter] public TableTalk tab { get; set; } = default!;
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -1,0 +1,103 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArchiveCard = SpaceSails.Client.Pages.Map.ArchiveCard
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE ARCHIVE VISION CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* THE ARCHIVE NODE — what the thing in the hold gave back. See docs/features/the-archive-node.md.
+
+       House rules this card keeps, and they are the whole feature:
+         · The image is the EVIDENCE, never the conclusion. There is no caption telling you what the
+           handlers are; the game does not know either.
+         · The arithmetic is VISIBLE. A bad result is only bearable when you can read exactly why it went
+           that way, so the modifier stack is printed rather than hidden.
+         · The COLLAR line only appears on the bands that got close enough to read it. Knowing whose
+           pattern is in the spar is bought with a bad throw, never given with a good one.
+         · Nothing here explains anything. It never confirms what Nebula keeps, and it never says a word
+           about the Old Ones. *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #997 wave 3 · THE .view-object FAMILY IS ON THE SHELL — all of it, and this is the first of the ten.
+
+       Twelve cards in this client are rooted on `.view-object`. #997 put the rep's pitch on the shell and
+       #997 wave 2 put the walk-in beside him; the other TEN went on hand-rolling the same three lines each
+       — a `@@onclick:stopPropagation` to hold the scrim off, a `<button class="view-object-close">`, and a
+       `</div>`. Ten copies of one gesture is how the minimise came to be written three times.
+
+       So every one of them takes the same three parameters, and this comment is the only one written:
+       `Frame="OverlayFrame.Bare"` (the family's foot is pinned by `::deep .view-object > .view-object-close`
+       — the way out has to be a DIRECT child of the card, which is what Bare guarantees and what Hosted's
+       `display: contents` would silently break), `StopClicks="true"` (the stopPropagation that was typed on
+       the div), and `Dismiss="OverlayDismiss.Close"` wired to the page's OWN close verb — the same method
+       the backdrop behind it already calls.
+
+       NOT ONE WORD MOVED. Each card's face and title are the exact string its own button carried, because
+       this family's idiom is a WORDED way out and not a ✕ — "Get your eyes off it", "…go on", "Stow it",
+       "Pocket it", "Leave it". And not one of the ten needed wave 2's stranding rule: the walk-in's ✕ had
+       to run her own "no" because closing her card would have left a woman at the table with nothing left
+       to answer. Nothing here is standing anywhere. Every one of these cards is a THING the captain picked
+       up, walked up to or switched on, and putting it down is already what its button did. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseArchiveCard)">
+            <OverlayShell class="view-object archive-vision" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Get your eyes off it"
+                          DismissTitle="Get your eyes off it"
+                          OnClose="() => Dismiss(CloseArchiveCard)">
+                <div class="view-object-title">@vision.Title</div>
+                <img class="view-object-img" src="@vision.Art" alt="@vision.Title" onerror="this.style.display='none'" />
+                <div class="archive-band">@vision.BandLine</div>
+                <div class="view-object-caption">@vision.Lore</div>
+                @if (vision.Collar is { Length: > 0 } collar)
+                {
+                    <div class="archive-collar">@collar</div>
+                }
+                <div class="archive-dice">🎲 @vision.Dice</div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Action CloseArchiveCard { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public ArchiveCard vision { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

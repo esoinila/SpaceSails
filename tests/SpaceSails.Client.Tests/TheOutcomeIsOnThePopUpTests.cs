@@ -46,7 +46,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>One method's body, from its signature to the next member at the same indent. The same cut
     /// <see cref="TheTryOutcomeIsReadableTests"/> makes, so a body read here is a body read there.</summary>

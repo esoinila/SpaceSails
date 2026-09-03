@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -285,8 +285,8 @@ public sealed class TheBinTakesTheKeyTests
     {
         var map = new Pages.Map();
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
@@ -333,7 +333,7 @@ public sealed class TheBinTakesTheKeyTests
 
     private static void OnPage(Pages.Map map, string page) =>
         Set(map, "_satchelPage",
-            Enum.Parse(typeof(Pages.Map).GetNestedType("SatchelPage", Hidden | BindingFlags.Static)!, page));
+            Enum.Parse(typeof(Pages.Map).GetNestedType("SatchelPage", Hidden | BindingFlags.Public | BindingFlags.Static)!, page));
 
     private static List<Satchel.Item> WhatThePickerOffers(Pages.Map map) =>
         (List<Satchel.Item>)typeof(Pages.Map).GetMethod("BinnableFinds", Hidden)!.Invoke(map, null)!;
@@ -433,7 +433,7 @@ public sealed class TheBinTakesTheKeyTests
             .Select(File.ReadAllText));
 
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 

@@ -332,8 +332,8 @@ public sealed class TheSweepTeamWalksOutTests
             "sweep-bench", "Bench Hull", Derelict.WreckCause.InsuranceJob, 250_000, 40.0);
         string bodyId = Derelict.BodyIdFor(wreck.Id);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(bodyId, wreck.ShipName, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

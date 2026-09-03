@@ -79,7 +79,7 @@ public partial class Map
     /// to cross a floor and nothing about bars, chairs or quests; what a particular walk means when it ends
     /// is this component's business, and the day a sweep team walks out of an airlock (#731 v2) it will mean
     /// something else again without Core learning a third word.</para></summary>
-    private sealed class Walker
+    public sealed class Walker
     {
         public required NpcWalk Walk { get; init; }
 
@@ -138,7 +138,7 @@ public partial class Map
     /// which is why the errand is a small closed enum rather than the bool it started as: two of them take
     /// the figure off the floor when the route runs out, and the third is the one where arriving is the
     /// beginning of the beat rather than the end of it.</summary>
-    private enum Errand
+    public enum Errand
     {
         /// <summary>Finished, and going — out through a door the captain's own TRY is refused at. The
         /// scheduled ambience and the triggered full stop are both this.</summary>

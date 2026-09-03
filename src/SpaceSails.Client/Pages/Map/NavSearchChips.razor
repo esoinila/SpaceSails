@@ -1,0 +1,144 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE NAV SEARCH CHIPS, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* 🗺 Layers (owner: "filter what is being shown on the map screens"): per-desk checkbox
+       panel, Gemini-consulted placement — small toggle, never a modal over the sky. Only shown on
+       the desks that actually render the solar map (Nav, Sensors, the War-room orrery); the other
+       desks cover the map with a full-screen panel, so the filter would be dead UI there — and on
+       the Captain desk it overlapped the (now three-wide) view-toggle. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="map-layers">
+            <button type="button" class="btn btn-sm @(_layersOpen ? "btn-info" : "btn-outline-info")"
+                    title="Choose what the map draws on this desk"
+                    @onclick="() => _layersOpen = !_layersOpen">🗺 Layers</button>
+            @if (_layersOpen)
+            {
+                <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
+                    @* #405: a collapsible tree. Each parent is a ▸/▾ caret + a tri-state checkbox that
+                       cascades to its children; the children indent under it and only show when open. *@
+                    @foreach (MapLayerTree.Group group in MapLayerTree.Groups)
+                    {
+                        MapLayerTree.Group g = group;
+                        bool collapsed = CollapsedLayerGroups.Contains(g.Key);
+                        MapLayerTree.TriState state = MapLayerTree.GroupStateOf(HiddenLayers, g);
+                        <div class="map-layers-group">
+                            <div class="map-layers-parent">
+                                <button type="button" class="map-layers-caret" title="@(collapsed ? "Expand this family" : "Collapse this family")"
+                                        @onclick="() => ToggleLayerGroupCollapsed(g.Key)">@(collapsed ? "▸" : "▾")</button>
+                                <label class="map-layers-row map-layers-parent-label">
+                                    @if (g.Pinned)
+                                    {
+                                        @* Threats is pinned — always on, never a run can hide the collision warning. *@
+                                        <input type="checkbox" checked disabled title="Pinned — a collision warning is never hidden" />
+                                    }
+                                    else
+                                    {
+                                        @* Native indeterminate is a JS-only property Blazor can't bind — so a
+                                           Mixed parent renders checked with a .mixed class that overlays the
+                                           tri-state dash in CSS. On = checked, Off = unchecked, Mixed = dash. *@
+                                        <input type="checkbox" class="@(state == MapLayerTree.TriState.Mixed ? "map-layers-tri mixed" : "map-layers-tri")"
+                                               checked="@(state != MapLayerTree.TriState.Off)"
+                                               title="Toggle this whole family on or off"
+                                               @onchange="() => ToggleLayerGroup(g)" />
+                                    }
+                                    <span class="fw-semibold">@g.Icon @g.Label</span>
+                                    @if (g.Pinned)
+                                    {
+                                        <span class="map-layers-pin" title="Pinned — always shown">📌</span>
+                                    }
+                                </label>
+                            </div>
+                            @if (!collapsed)
+                            {
+                                @foreach (MapLayerTree.Leaf leaf in g.Leaves)
+                                {
+                                    MapLayerTree.Leaf l = leaf;
+                                    <label class="map-layers-row map-layers-child">
+                                        @if (g.Pinned)
+                                        {
+                                            <input type="checkbox" checked disabled title="Pinned — this warning is never hidden" />
+                                        }
+                                        else
+                                        {
+                                            <input type="checkbox" checked="@LayerVisible(l.Key)" title="Show or hide this on the map"
+                                                   @onchange="() => ToggleLayer(l.Key)" />
+                                        }
+                                        @* #963 — the owner met the 🛬 beside Ganymede and could not tell what it
+                                           meant ("it should have some kind of text pop-up?"). A glyph on a
+                                           canvas cannot carry a tooltip, so the LEGEND does: hover the layer
+                                           that draws the mark and it says what the mark means. *@
+                                        <span title="@(l.Hint.Length > 0 ? l.Hint : null)">@l.Icon @l.Label</span>
+                                    </label>
+                                }
+                            }
+                        </div>
+                    }
+                    <div class="map-layers-foot d-flex justify-content-between align-items-center mt-1">
+                        <span class="text-secondary">remembered per desk</span>
+                        <button type="button" class="btn btn-link btn-sm p-0 map-layers-reset"
+                                title="Drop this desk's layers back to their shipped defaults"
+                                @onclick="ResetLayersToDeskDefaults">↺ reset to desk defaults</button>
+                    </div>
+                </div>
+            }
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    /// <summary>the page's `bool _layersOpen` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_layersOpen` and the assignment still lands on the page.</summary>
+    [Parameter] public bool _layersOpenValue { get; set; }
+    /// <summary>The page's `_layersOpen = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<bool> _layersOpenSet { get; set; } = default!;
+    private bool _layersOpen { get => _layersOpenValue; set { _layersOpenValue = value; _layersOpenSet(value); } }
+    [Parameter] public HashSet<string> CollapsedLayerGroups { get; set; } = default!;
+    [Parameter] public HashSet<string> HiddenLayers { get; set; } = default!;
+    [Parameter] public Func<string, bool> LayerVisible { get; set; } = default!;
+    [Parameter] public Action ResetLayersToDeskDefaults { get; set; } = default!;
+    [Parameter] public Action<string> ToggleLayer { get; set; } = default!;
+    [Parameter] public Action<MapLayerTree.Group> ToggleLayerGroup { get; set; } = default!;
+    [Parameter] public Action<string> ToggleLayerGroupCollapsed { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

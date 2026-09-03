@@ -30,7 +30,7 @@ public partial class Map
 
     /// <summary>What the kiosk just sold you, held up for a look — the ground's answer to the haven gift
     /// shops' view-object cards. Null when nothing is being inspected.</summary>
-    private readonly record struct KioskBuy(string Item, string Line, string Art);
+    public readonly record struct KioskBuy(string Item, string Line, string Art);
 
     private KioskBuy? _kioskCard;
 

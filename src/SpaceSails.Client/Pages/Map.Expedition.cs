@@ -65,10 +65,10 @@ public partial class Map
     // major sanity-throw moment. Popped once per gig at the seeded reveal beat.
     private ExpeditionRevealCard? _expeditionRevealCard;
 
-    private readonly record struct ExpeditionBriefCard(
+    public readonly record struct ExpeditionBriefCard(
         ExpeditionSiteKind Kind, string SiteName, string Title, string Body);
 
-    private readonly record struct ExpeditionRevealCard(
+    public readonly record struct ExpeditionRevealCard(
         ExpeditionSiteKind Kind, string SiteName, string Headline, string Body);
 
     private void ShowExpeditionBrief(ExpeditionPlan plan) =>

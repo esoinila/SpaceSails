@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -265,7 +265,7 @@ public sealed class TheDirectNavActionsAreEmergenciesTests
     /// <summary>Map.razor with the line endings normalised — git hands it out CRLF on Windows and LF on the
     /// runner, and a guard that cannot tell one machine from the other cannot tell pass from fail.</summary>
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"))
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"))
             .Replace("\r\n", "\n");
 
     /// <summary>The whole of a button from its opening angle bracket to the marker inside it, so a guard about

@@ -227,7 +227,7 @@ public sealed class ThePatrolKeepsItsOwnStateTests
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
         const BindingFlags Either = Hidden | BindingFlags.Public;
 
-        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden)
+        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)
             ?? throw new InvalidOperationException(
                 "#870 lane 6′b · Map has no nested `Patrol` type at all. The round's state has gone " +
                 "somewhere this guard cannot see, and every fact in this file is now vacuous.");
@@ -278,8 +278,8 @@ public sealed class ThePatrolKeepsItsOwnStateTests
     {
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
 
-        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden)!;
-        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden)!;
+        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)!;
+        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden | BindingFlags.Public)!;
 
         List<FieldInfo> patrolShaped = [.. typeof(Pages.Map).GetFields(Hidden)
             .Where(f => !f.IsStatic)
@@ -309,7 +309,7 @@ public sealed class ThePatrolKeepsItsOwnStateTests
     {
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
 
-        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden)!;
+        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)!;
         var missing = new List<string>();
 
         foreach (string member in AskTheseInstead)
@@ -588,7 +588,7 @@ public sealed class ThePatrolKeepsItsOwnStateTests
     {
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
 
-        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden)!;
+        Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)!;
         var missing = new List<string>();
 
         foreach (string verb in TheThirteenForwardedVerbs)
@@ -661,7 +661,7 @@ public sealed class ThePatrolKeepsItsOwnStateTests
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
         const BindingFlags Either = Hidden | BindingFlags.Public;
 
-        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden)
+        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden | BindingFlags.Public)
             ?? throw new InvalidOperationException(
                 "#870 lane 6′d · Map has no nested `Guard` type at all. Every fact in this file about the "
                 + "man on the round is now vacuous.");

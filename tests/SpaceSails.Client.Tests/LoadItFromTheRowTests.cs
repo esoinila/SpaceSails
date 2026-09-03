@@ -392,8 +392,8 @@ public sealed class LoadItFromTheRowTests
     {
         var map = new Pages.Map();
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type botType = typeof(Pages.Map).GetNestedType("SurfaceBot", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type botType = typeof(Pages.Map).GetNestedType("SurfaceBot", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
 
         var bots = (System.Collections.IList)exType.GetProperty("Bots")!.GetValue(ex)!;
@@ -523,7 +523,7 @@ public sealed class LoadItFromTheRowTests
     }
 
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 

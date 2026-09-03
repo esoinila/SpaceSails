@@ -1,0 +1,108 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PAPER ON THE TABLE, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═════════════════════════════════════════════════════════════════════════════════════════════════
+       #1052 (L2) · THE PAPER AT THE TABLE — AND IT IS DOCKED, NOT MODAL.
+
+       Owner, 2026-09-01, and this block is the sentence answered literally: "Just hope there is a way to
+       have both the newsfeed and pop-up-bar walkers visible UI at the same time."
+
+       SO THERE IS NO .view-object-backdrop IN HERE AT ALL — no scrim, no blur, no centring, and the guard
+       asserts the ABSENCE rather than trusting this comment. That is #784's own move made a second time: a
+       strip at the foot for the sitting, a panel at the side for the paper, and between them a hall that is
+       still lit, still walked, and still clickable. A rep who crosses the floor while the captain is reading
+       raises his card at 1320 and lands ON TOP of this panel, which is the right way round: the man talking
+       to you outranks the paper in your hands. The panel does not move and does not close, so putting his
+       card down leaves the captain reading where he was.
+
+       IT LIVES OUTSIDE THE SEATED REGION AND IS GATED ON THE SEAT ANYWAY. Standing up takes the paper with
+       it (there is nowhere to read it from), and the panel is not inside `.seated-dock` because the strip is
+       a short pinned row at the foot of the glass and a paper folded into it would grow the strip into the
+       modal it stopped being.
+
+       CappedScrollPanel is inside NewsWirePanel, so the head — the masthead and today's story — keeps its
+       measured height and only the dated list gives. Elegant minimalism: the scroll bar arrives when the
+       list is longer than the panel and not before.
+       ═════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="seated-news">
+            @* The shell's Bare frame and the .view-object family's own foot, exactly as the galley card
+               wears them — this is the same wire in a different box, and the box is the only new thing. *@
+            <OverlayShell class="view-object seated-news-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissLabel="Put the paper down"
+                          DismissTitle="Put the paper down — Esc does the same"
+                          OnClose="() => Dismiss(CloseSeatedNews)">
+                @* THE ✂ ON EVERY ROW, handed to the wire component rather than written beside it, so the
+                   headline row and the dated rows below it cannot come to offer different controls.
+
+                   READING FILES NOTHING. The scissors is the only thing on this panel that touches the
+                   book, and it is a press — #602's ammo-as-evidence, one system over: what is in the book
+                   got there because a hand put it there. The row says where the paper is once it is in
+                   (SeatedSpread.ClippedLabel) rather than going dead, which is #212/#603's rule. *@
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="SeatedNewsFeed()" ItemCount="SeatedNewsItemCount">
+                    <RowAction Context="story">
+                        <button type="button" class="news-clip"
+                                title="@SpaceSails.Core.SeatedSpread.ClipHint"
+                                @onclick="() => ClipThisStory(story)">@(AlreadyClipped(story)
+                                    ? SpaceSails.Core.SeatedSpread.ClippedLabel
+                                    : SpaceSails.Core.SeatedSpread.ClipLabel)</button>
+                    </RowAction>
+                </SpaceSails.Client.Pages.Stations.NewsWirePanel>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Func<NewsWire.NewsItem, bool> AlreadyClipped { get; set; } = default!;
+    [Parameter] public Action<NewsWire.NewsItem> ClipThisStory { get; set; } = default!;
+    [Parameter] public Action CloseSeatedNews { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<NewsWire.NewsItem>> SeatedNewsFeed { get; set; } = default!;
+    [Parameter] public int SeatedNewsItemCount { get; set; }
+    [Parameter] public double SimTime { get; set; }
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

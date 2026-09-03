@@ -1,0 +1,64 @@
+@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #251 item 1 · THE SCUTTLE EPITAPH, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION: not one character of the block below changed. Every page member
+    the markup reads is a [Parameter] with the SAME NAME — the fields keep their leading underscore, the
+    methods keep their signature as a delegate — so the block could be lifted out and dropped back in without
+    a rewrite, and the test suite's fifty-eight source guards read it through MapMarkup exactly as they read
+    it when it lived in the page.
+
+    The `@if (_scuttleEpitaph is { } epitaph)` that used to open this block stays in Map.razor. That is
+    deliberate and not laziness: it keeps the page's own paint order legible in one place, and it keeps this
+    component UNRENDERED while the card is closed, so nothing about what the game costs per frame moved.
+
+    IHandleEvent is copied from the page (Map.Sim.cs) because it is load-bearing: Blazor re-renders the whole
+    component after every event by default, and the page turns that off — the HUD's refresh is owned by
+    OnTick's 200 ms throttle. A child that did not repeat the override would put an automatic render back on
+    every click inside this card.
+
+    ScuttleEpitaphCard.razor.css carries no rules. It exists to give this component Map.razor.css's OWN css
+    scope (pinned in SpaceSails.Client.csproj), so every `.scuttle-epitaph-text`/`.scuttle-art` rule the page
+    already had goes on matching these elements. #251 item 3 is where the rules themselves move.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #488 · WHAT YOU HEARD ON THE WAY OUT. Owner: "some kind of pop-up with gen AI about hearing clawing
+       of horrible sounds when we went :-D … a confirmation that we did something that made a difference."
+       CONFIRMATION WITHOUT REVELATION — the instrument never once said what was in there, and neither does
+       this. You know there was something. You know it is not out here any more. That is all you get. *@
+
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttleEpitaph)">
+            <OverlayShell class="vent-board scuttle-epitaph" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="@(_scuttleHeardIt ? "Sit with that" : "Log it")"
+                          OnClose="() => Dismiss(CloseScuttleEpitaph)">
+                <div class="view-object-title">☢ SHE IS GONE</div>
+                <img class="scuttle-art" src="art/scuttle-she-goes.jpg" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="scuttle-epitaph-text @(_scuttleHeardIt ? "heard" : "")">@epitaph</div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    /// <summary>The sentence the ship's end wrote, bound out of the page's `_scuttleEpitaph`.</summary>
+    [Parameter] public string epitaph { get; set; } = "";
+
+    /// <summary>Was anything still alive aboard when she went. Names the page's own field.</summary>
+    [Parameter] public bool _scuttleHeardIt { get; set; }
+
+    /// <summary>The page's `Dismiss(Action)` — the one way out every card in this game uses.</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+
+    /// <summary>The page's `CloseScuttleEpitaph()`, handed on as the action `Dismiss` runs.</summary>
+    [Parameter] public Action CloseScuttleEpitaph { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event. See the header.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

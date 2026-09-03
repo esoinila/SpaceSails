@@ -1,0 +1,147 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using BankSession = SpaceSails.Client.Pages.Map.BankSession
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE BANK SESSION, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* PR-WIRE — the favor bank card (FridaySecondPlan §0). Opened at a contact's table with 'b' (in
+       person) or from the dark-web desk (wire). Park coin off the purse (safe from confiscation),
+       draw it back, or borrow gas money against a favor. Same overlay family as the deck-offer-card. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        long _bankBal = _contacts.For(bank.ContactId).CreditBalance;
+        int _bankMissions = _contacts.For(bank.ContactId).MissionsCompleted;
+        bool _bankTrusted = ContactSheets.WillStake(_bankMissions);
+        TrustTier _bankTier = ContactSheets.TrustFor(_bankMissions);
+        @* #997 wave 9 · The same shape as the patron's table, one card along: `Done` alone in
+           `.deck-offer-actions` is the ledger's only way out, and every other control on it — deposit,
+           withdraw, repay, the favor wire — leaves the ledger standing. A Close whose row the page names. *@
+        <OverlayShell class="deck-offer-card deck-bank-card" Frame="OverlayFrame.Bare"
+                      Dismiss="OverlayDismiss.Close" OnClose="CloseBank"
+                      WaysClass="deck-offer-actions"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
+                      DismissTitle="Close the ledger and step back">
+            <div class="deck-offer-giver">💰 @bank.DisplayName's ledger @(bank.ViaWire ? "· 🕸 wire" : "· 🤝 in person")</div>
+            <div class="deck-bank-balance small">
+                @if (_bankBal > 0)
+                {
+                    <span class="text-success">They hold @_bankBal.ToString("N0", CultureInfo.InvariantCulture) cr of yours</span>
+                }
+                else if (_bankBal < 0)
+                {
+                    <span class="text-danger">You owe them @((-_bankBal).ToString("N0", CultureInfo.InvariantCulture)) cr</span>
+                }
+                else
+                {
+                    <span class="text-secondary">No coin between you yet</span>
+                }
+                <span class="text-secondary"> · trust: @_bankTier · purse @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</span>
+            </div>
+            @if (_heat.Level > 0)
+            {
+                <div class="deck-bank-warn small text-warning">⚠ Heat @_heat.Level — parking coin now is FENCING: a cut comes off the top (still less than the collectors would take).</div>
+            }
+            <div class="deck-bank-actions">
+                <div class="deck-bank-row small">
+                    <span class="deck-bank-label">Deposit</span>
+                    @foreach (long amt in BankAmounts)
+                    {
+                        long a = amt;
+                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
+                                disabled="@(_credits < a)" title="@($"Park {a:N0} cr with {bank.DisplayName} — off the purse, safe from confiscation")"
+                                @onclick="() => BankDeposit(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    }
+                </div>
+                <div class="deck-bank-row small">
+                    <span class="deck-bank-label">Withdraw</span>
+                    @foreach (long amt in BankAmounts)
+                    {
+                        long a = amt;
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                disabled="@(_bankBal < a)" title="@($"Draw {a:N0} cr back into the purse")"
+                                @onclick="() => BankWithdraw(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    }
+                </div>
+                @if (_bankBal < 0)
+                {
+                    <div class="deck-bank-row small">
+                        <span class="deck-bank-label">Repay</span>
+                        @foreach (long amt in BankAmounts)
+                        {
+                            long a = amt;
+                            <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                    disabled="@(_credits < a)" title="@($"Pay {a:N0} cr toward what you owe {bank.DisplayName}")"
+                                    @onclick="() => BankRepay(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                        }
+                    </div>
+                }
+                @if (_bankTrusted && _bankBal >= 0)
+                {
+                    <div class="deck-bank-row small">
+                        <span class="deck-bank-label">Borrow</span>
+                        <button type="button" class="btn btn-sm btn-warning py-0 px-1"
+                                title="@($"Take {BankLoanPrincipal:N0} cr on a favor — you'll owe {bank.DisplayName} one quiet delivery")"
+                                @onclick="() => BorrowFavorFromBank()">📡 favor wire · @BankLoanPrincipal.ToString("N0", CultureInfo.InvariantCulture) cr</button>
+                    </div>
+                }
+            </div>
+            @if (bank.Notice is { } notice)
+            {
+                <div class="deck-bank-notice small">@notice</div>
+            }
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public ContactLedger _contacts { get; set; } = default!;
+    [Parameter] public int _credits { get; set; }
+    [Parameter] public HeatState _heat { get; set; } = default!;
+    [Parameter] public long[] BankAmounts { get; set; } = default!;
+    [Parameter] public Action<long> BankDeposit { get; set; } = default!;
+    [Parameter] public long BankLoanPrincipal { get; set; }
+    [Parameter] public Action<long> BankRepay { get; set; } = default!;
+    [Parameter] public Action<long> BankWithdraw { get; set; } = default!;
+    [Parameter] public Action BorrowFavorFromBank { get; set; } = default!;
+    [Parameter] public Action CloseBank { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public BankSession bank { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

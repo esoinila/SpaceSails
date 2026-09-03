@@ -1,0 +1,220 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using AwayWindow = SpaceSails.Client.Pages.Map.AwayWindow
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using RouteWindowRow = SpaceSails.Client.Pages.Map.RouteWindowRow
+@using ShuttleFarStop = SpaceSails.Client.Pages.Map.ShuttleFarStop
+@using ShuttleStop = SpaceSails.Client.Pages.Map.ShuttleStop
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE SHUTTLE BAY CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
+       bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
+       the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says
+       so honestly; nothing in range keeps the door shut. Same overlay family as the deck-offer-card. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #997 wave 7 · THE LAST ROOT IN #735's CAP LIST TAKES THE SHELL, AND THE FOOT STAYS A ROW.
+           #1007 named this one for wave 7: the only card in the capped-and-scrolling block still written
+           without `::deep`, and the only one whose way out is a lone button inside a foot the page centres
+           (`.deck-shuttle-actions`). A Bare shell's dismiss is the card's LAST DIRECT CHILD, which would
+           have lifted "Close hatch" out of that foot and left it against the card's left margin — the exact
+           shape that kept wave 6's logbook off the shell. So the shell learned the other half of #1007's
+           own condition instead: WaysClass hands the page's foot the dismiss it draws. Same div, same
+           class, same centring, same button — the shell wires it now, and its audit knows the ✕ has a verb.
+
+           THE OTHER `.deck-shuttle-card` — the load-out (#313/#488) — is NOT migrated, and the reason is
+           pinned by a guard rather than left in this sentence: see
+           TheShellOwnsTheDeathRowsAndTheShuttleHatchTests. *@
+        <OverlayShell class="deck-shuttle-card" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                      WaysClass="deck-shuttle-actions"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Close hatch"
+                      OnClose="() => Dismiss(CloseShuttleBayDoor)">
+            <div class="deck-shuttle-title">🛸 Board the shuttle — where to?</div>
+            @if (shuttleStops.Count == 0)
+            {
+                @* #368 (owner, 2026-07-19 playtest at The Red Eye's empty board): a fresh berth with nothing
+                   in reach must explain itself in the house voice — apologetic and honest, then the nearest
+                   ground below with a plain comparison to what the shuttle can actually cross. *@
+                <div class="deck-shuttle-empty">
+                    Sorry, captain — nothing within shuttle reach from this berth. The moons drift; watch the ranges below.
+                </div>
+            }
+            else
+            {
+                <div class="deck-shuttle-rows">
+                    @foreach (ShuttleStop stop in shuttleStops)
+                    {
+                        ShuttleStop local = stop;
+                        <div class="deck-shuttle-row">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">@(local.HasBerth ? "⚓" : local.IsLandable ? "🌑" : "•") @local.Body.Name</span>
+                                <span class="deck-shuttle-meta">
+                                    @FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)@(local.HasCache ? " · a chest waits here 🗺" : "")
+                                </span>
+                                @* #955 NAV-2: a row in reach is not a row that STAYS in reach. The window it
+                                   is open for — and, on an armed plan, the RETURN BY it binds you to, because
+                                   the ship flies on whether or not you are back aboard. *@
+                                <span class="deck-shuttle-meta deck-shuttle-window">
+                                    ⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
+                                        ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
+                                        : "")
+                                </span>
+                            </div>
+                            <div class="deck-shuttle-row-actions">
+                                @if (local.HasBerth)
+                                {
+                                    <button type="button" class="btn btn-sm btn-warning"
+                                            title="Take the shuttle to @local.Body.Name — the clock advances by the crossing, then you step off ashore"
+                                            @onclick="() => TakeShuttleTo(local)">Take the shuttle →</button>
+                                }
+                                @* #313: a landable surface — board it (destination, not intent). The tube grows in
+                                   place; what you do on the ground is decided on the ground. *@
+                                @if (local.IsLandable)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-warning"
+                                            title="Board the shuttle for @local.Body.Name — the down-tube grows on the map and you walk down. Bring cargo if you like; decide on the ground."
+                                            @onclick="() => OpenBoardingPanel(local)">🛸 Board for @local.Body.Name</button>
+                                }
+                                @if (!local.HasBerth && !local.IsLandable)
+                                {
+                                    <span class="deck-shuttle-noberth"
+                                          title="In shuttle range, but there's nowhere to step off yet">no berth ashore yet</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            @* #368 the honest tail: the nearest LANDABLE ground the shuttle can't reach yet — informational,
+               never boardable (no buttons, visibly dimmed). Each row compares its current separation to the
+               shuttle's reach and says whether the gap is closing or opening right now. When the board above
+               is empty this IS the answer ("the nearest ones are:"); when it isn't, it's context underneath. *@
+            @if (_shuttleBayFarStops.Count > 0)
+            {
+                <div class="deck-shuttle-farhead">
+                    @(shuttleStops.Count == 0 ? "The nearest ones are:" : "Just beyond reach:")
+                </div>
+                <div class="deck-shuttle-rows deck-shuttle-far">
+                    @foreach (ShuttleFarStop far in _shuttleBayFarStops)
+                    {
+                        ShuttleFarStop f = far;
+                        <div class="deck-shuttle-row deck-shuttle-row-far"
+                             title="In range of no shuttle from here — beyond the craft's @ShuttleReachText(f.RangeMeters) reach. Listed so you can watch the gap.">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">🛬 @f.Body.Name@(string.IsNullOrEmpty(f.ParentName) ? "" : $" ({f.ParentName})")</span>
+                                <span class="deck-shuttle-meta">
+                                    @ShuttleSeparationText(f.DistanceMeters) · beyond shuttle reach (@ShuttleReachText(f.RangeMeters)) · @ShuttleTrendWord(f.Trend)
+                                </span>
+                                @* #955 NAV-2 · THE OWNER'S CORNER CASE, SAID OUT LOUD. Docked at a Jupiter or
+                                   Saturn haven the moons swing in and out of shuttle reach every synodic
+                                   period, so "beyond reach" is almost never permanent — it is a wait with a
+                                   length. Where the geometry brings the ground back inside the horizon, this
+                                   row says WHEN instead of leaving the captain to guess. *@
+                                @if (AwayReopenSeconds(f.Body.Id) is { } reopensIn)
+                                {
+                                    <span class="deck-shuttle-meta deck-shuttle-window">
+                                        ⏳ next window in @RouteShuttleWindow.In(reopensIn)
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (shuttleStops.Count == 0)
+            {
+                <div class="deck-shuttle-empty">
+                    No landable ground near enough to call either — the hatch stays shut for now.
+                </div>
+            }
+
+            @* #955 NAV-2 · GO BY SHUTTLE, THE SHIP FLIES ON. Owner (2026-08-23): "with a pre-plotted, armed
+               route you can LEAVE the ship by shuttle mid-voyage (meteorites, small sites) with a return-window
+               clock … without a planned route you risk leaving the ship adrift." So this section exists ONLY
+               while a plan is armed — the ship is then promised to fly herself (#969) and a RETURN BY is a
+               promise the game can keep. Each row is one window the plotted path opens on ground ahead, read
+               off the SAME samples the ARRIVE step reads; two rows for one moon are the owner's separate
+               INGRESS and EGRESS windows. Informational: the boarding buttons above are still the only way
+               aboard, and they light when a window is actually open. *@
+            @{ var routeWindows = ShuttleRouteWindowRows(); }
+            @if (routeWindows.Count > 0)
+            {
+                <div class="deck-shuttle-farhead">On the plotted route — go by shuttle, the ship flies on:</div>
+                <div class="deck-shuttle-rows deck-shuttle-far">
+                    @foreach (var win in routeWindows)
+                    {
+                        var r = win;
+                        <div class="deck-shuttle-row deck-shuttle-row-far"
+                             title="The plan carries her inside a shuttle hop of @r.Body.Name for a while. She will not stop and she will not wait: be off the ground by the RETURN BY or she goes on without you.">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">🛸 @r.Body.Name — @r.Role window</span>
+                                <span class="deck-shuttle-meta">@RouteWindowRowText(r)</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public List<ShuttleFarStop> _shuttleBayFarStops { get; set; } = default!;
+    [Parameter] public Func<string, double?> AwayReopenSeconds { get; set; } = default!;
+    [Parameter] public Func<AwayWindow, string> AwayWindowWord { get; set; } = default!;
+    [Parameter] public Action<NpcState> Board { get; set; } = default!;
+    [Parameter] public Action CloseShuttleBayDoor { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
+    [Parameter] public Action<ShuttleStop> OpenBoardingPanel { get; set; } = default!;
+    [Parameter] public Func<string, double?> RouteReturnBySimTime { get; set; } = default!;
+    [Parameter] public Func<RouteWindowRow, string> RouteWindowRowText { get; set; } = default!;
+    [Parameter] public Func<double, string> ShuttleReachText { get; set; } = default!;
+    [Parameter] public Func<List<RouteWindowRow>> ShuttleRouteWindowRows { get; set; } = default!;
+    [Parameter] public Func<double, string> ShuttleSeparationText { get; set; } = default!;
+    [Parameter] public Func<ShuttleExcursion.RangeTrend, string> ShuttleTrendWord { get; set; } = default!;
+    [Parameter] public Action<ShuttleStop> TakeShuttleTo { get; set; } = default!;
+    [Parameter] public Func<string, AwayWindow> WindowOn { get; set; } = default!;
+    [Parameter] public List<ShuttleStop> shuttleStops { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

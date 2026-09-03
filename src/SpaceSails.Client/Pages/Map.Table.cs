@@ -355,7 +355,7 @@ public partial class Map
     }
 
     /// <summary>One conversation, with everything the panel needs to draw itself.</summary>
-    private sealed class TableTalk
+    public sealed class TableTalk
     {
         /// <summary>"watch:floor:tableIndex" — what every watch-scoped fact about this table is keyed on.</summary>
         public required string Key { get; init; }

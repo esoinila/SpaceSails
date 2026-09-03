@@ -42,7 +42,7 @@ public sealed class TheJobCardSaysWhatItTakesTests
     }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     private static string Flat(string s) => Regex.Replace(s, @"\s+", " ");
 

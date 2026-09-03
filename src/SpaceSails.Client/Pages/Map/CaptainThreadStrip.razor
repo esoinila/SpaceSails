@@ -1,0 +1,67 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE CAPTAIN THREAD STRIP, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* THE CAPTAIN CHIP (owner 2026-07-19: "the current captain profile pic could also be at some corner of
+       the screen while playing, so you can immediately check who you are"). A small identity-glance disc —
+       the active captain's portrait (art/captain-N.jpg), a seeded-colour monogram if it's missing — quietly
+       in the bottom-left corner while ABOARD. The hover title carries the captain's name (owner: "the hint
+       text could show that on hover"). Kept below the deck/dock cards in the z-band so it never covers a
+       control (it yields to any card that opens over the corner); hidden on a surface excursion, where the
+       SANITY gauge owns the left column (#324). *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        (string CaptainName, int AvatarIndex) chipCap = SpaceSails.Core.Captains.For(capThread);
+        <div class="captain-chip" title="@chipCap.CaptainName — the captain at your helm"
+             style="--mono-color:@CaptainMonoColor(capThread.Id)">
+            <span class="captain-mono">@CaptainInitial(chipCap.CaptainName)</span>
+            <img class="captain-portrait" src="art/captain-@(chipCap.AvatarIndex).jpg" alt="" aria-hidden="true"
+                 onerror="this.style.display='none'" />
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Func<string, string> CaptainInitial { get; set; } = default!;
+    [Parameter] public Func<string, string> CaptainMonoColor { get; set; } = default!;
+    [Parameter] public GameThreadInfo capThread { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

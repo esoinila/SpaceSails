@@ -38,7 +38,7 @@ public sealed class TheThreadsPageIsInTheSatchelTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The satchel block of Map.razor, cut the way #690's guards cut it — every assertion is about
     /// THIS dialog's subtree and not the file at large.</summary>

@@ -1,0 +1,101 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using PickCandidate = SpaceSails.Client.Pages.Map.PickCandidate
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PICK MENU, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* The chooser (owner: "if many objects under click we let the user choose what they
+       meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #253: header + one row per candidate, flipped away from the near edge. *@
+        var pickAt = ClampMenu(_pickMenuX, _pickMenuY, pickList.Count);
+        @* #997 wave 10 · THE MENU FAMILY'S FIRST CARD, and #1010's pre-question answered before anybody
+           assumed it. A click menu IS a card: a head with a name and a way out, over a body. Its rows are
+           not ways out — they are the actions the click MEANT — so all four take the shell's plainest and
+           oldest shape, Card · Close, and the family wanted no new shell mode at all.
+
+           AND IT IS A Close AND NOT A ByDecision, THOUGH THE BEHAVIOUR WOULD ALLOW ONE — a ruling rather
+           than an oversight, so it is written where the decision was made. Pressed, EVERY row of every menu
+           in this family does end its menu (measured, not assumed: 🎯 Set destination, 🛰 arm, 🚀 long haul,
+           ❄ the cycler, 🪂 aerobrake, 🔭 scan and this chooser's own rows all clear their gate on the way
+           out), so the critical-decision exception's own behaviour test would pass here. It is still the
+           wrong shape. `ByDecision` says no ✕ is NEEDED because every answer is itself a close, and the
+           shell then draws none — which would leave a captain who opened a menu by accident with no way to
+           shut it except to set a destination, arm an insertion or spend a telescope pass. A menu is not a
+           question; it is a list of things you MAY do, and "none of them" has to stay sayable.
+           Pinned by TheClickMenusTakeTheShellAndTheContractTakesItsFootTests. *@
+        <OverlayShell class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+                      style="@MenuAnchorStyle(pickAt)"
+                      Dismiss="OverlayDismiss.Close" OnClose="ClosePickMenu"
+                      HeadClass="d-flex justify-content-between align-items-center mb-1"
+                      Title="Which one?" TitleClass="text-secondary me-2"
+                      DismissClass="btn-close btn-close-white btn-sm"
+                      DismissLabel="Close" DismissTitle="Close this chooser">
+            <div class="d-grid gap-1">
+                @foreach (PickCandidate pick in pickList)
+                {
+                    PickCandidate local = pick;
+                    <button type="button" class="btn btn-sm btn-outline-info text-start py-0" title="@PickHint(local)"
+                            @onclick="() => OpenPickCandidate(local)">@local.Icon @local.Label</button>
+                }
+            </div>
+            @* #405 (owner: "some UI hint about adding more layers when wanted… maybe to the selection
+               pop-up"): a crowded knot points straight at the filter — closes the chooser, opens Layers. *@
+            <button type="button" class="btn btn-link btn-sm p-0 mt-1 map-pick-filter-hint"
+                    title="Open the 🗺 Layers panel to filter what the map draws on this desk"
+                    @onclick="OpenLayersFromPick">🗺 crowded? filter the map</button>
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Func<double, double, int, (double X, double Y)> ClampMenu { get; set; } = default!;
+    [Parameter] public Action ClosePickMenu { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<(double X, double Y), string> MenuAnchorStyle { get; set; } = default!;
+    [Parameter] public Action OpenLayersFromPick { get; set; } = default!;
+    [Parameter] public Action<PickCandidate> OpenPickCandidate { get; set; } = default!;
+    [Parameter] public Func<PickCandidate, string> PickHint { get; set; } = default!;
+    [Parameter] public List<PickCandidate> pickList { get; set; } = default!;
+
+    [Parameter] public double _pickMenuX { get; set; }
+    [Parameter] public double _pickMenuY { get; set; }
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

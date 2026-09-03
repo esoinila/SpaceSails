@@ -380,7 +380,7 @@ public sealed partial class Map
 
     /// <summary>The card a surviving captain reads once. Three lines: what happened, what is still his, and who
     /// came for him.</summary>
-    private sealed record ShipEpitaph(string Went, string Survives, string Rescue);
+    public sealed record ShipEpitaph(string Went, string Survives, string Rescue);
 
     private ShipEpitaph? _shipEpitaph;
 

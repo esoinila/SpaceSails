@@ -55,7 +55,9 @@ namespace SpaceSails.Core.Tests;
 /// is the one-line deletion described above, in their own PR. #870's lanes 1–5 took all ten of the originally
 /// listed files under the line on 2026-08-16, leaving one row — <c>Map.Sim.World.cs</c>, one 1,656-line method
 /// that a pure move may not split — and lane 7a took that one too, behind a fingerprint of the world every boot
-/// URL builds. <b>The list is EMPTY.</b> It is meant to stay that way: from here, law 1 is the whole gate, and
+/// URL builds. <b>The list was EMPTY</b> until #251 item 1 taught the sweep to see <c>*.razor</c> and
+/// <c>*.razor.css</c> too, at which point exactly one already-written file was over the line and could not be
+/// split in the same lane: <c>Map.razor.css</c>, which is #251 item 3. It is meant to empty again, and
 /// the first row anybody writes will be a new debt rather than an inherited one.</para>
 ///
 /// <para><b>Proven able to fail three ways</b> before it was trusted — grow a listed file past its row, push
@@ -91,6 +93,14 @@ public sealed class NoSourceFileIsTooLongTests
             // Map.Patrol.cs's row is GONE too (lane 5b): the file is 624 lines now, and the largest of the
             // six partials it became is 430 — the whole family is under the line, with no new row.
 
+            // #251 item 1 — THE SWEEP LEARNED TO SEE RAZOR AND ITS STYLESHEETS, and exactly one file was
+            // over the line the moment it could be seen. Map.razor itself is NOT on this list: the same PR
+            // took it from 8,830 lines to under the line by moving seventy-six surfaces into Pages/Map/.
+            // Its stylesheet is item 3 of the same issue and is deliberately untouched here — a SCOPED
+            // stylesheet cannot be split by moving rules between files without proving, rule by rule, that
+            // neither specificity nor bundle order moved with them, and that is a lane of its own.
+            ["src/SpaceSails.Client/Pages/Map.razor.css"] = 6613,
+
             // The inherited debt that was in no lane at all is gone too, and it went the same way.
             // PatrolBeat.cs's row is GONE (lane 5d): the file is 224 lines now, and the largest of the eight
             // partials it became is 460 — the whole family is under the line with no exception of its own.
@@ -120,9 +130,18 @@ public sealed class NoSourceFileIsTooLongTests
     }
 
     /// <summary>
-    /// Every hand-written C# file we ship, with its length. <c>obj/</c> and <c>bin/</c> are build output —
-    /// generated code is not a thing a reader reads, and holding a generated file to a reader's law would
-    /// only teach people to turn the gate off.
+    /// #251 item 1 · EVERY HAND-WRITTEN FILE WE SHIP — all three kinds of it. C# was all this gate could
+    /// see on the day it landed, and the 2026-09-03 audit of #251 found out what that cost: Map.razor at
+    /// 8,771 lines and Map.razor.css at 6,613 — the two files that issue names FIRST — were invisible to the
+    /// one law in this repo that exists to stop a file getting that long, purely because of their extension.
+    /// A gate that can only see a third of what a person writes is a gate that quietly tells people where to
+    /// put the next thousand lines.
+    ///
+    /// <para><c>obj/</c> and <c>bin/</c> are build output — generated code is not a thing a reader reads,
+    /// and holding a generated file to a reader's law would only teach people to turn the gate off. The
+    /// stylesheets are swept as <c>*.razor.css</c> rather than as CSS in general: a component's own sheet is
+    /// a component's own subject, where a sheet under <c>wwwroot</c> is a different artefact with a
+    /// different set of reasons to be long.</para>
     /// </summary>
     private static IEnumerable<(string Path, int Lines)> EverySourceFile()
     {
@@ -131,6 +150,9 @@ public sealed class NoSourceFileIsTooLongTests
 
         foreach (string full in Directory
             .EnumerateFiles(src, "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(src, "*.razor", SearchOption.AllDirectories))
+            .Concat(Directory.EnumerateFiles(src, "*.razor.css", SearchOption.AllDirectories))
+            .Distinct(StringComparer.Ordinal)
             .OrderBy(p => p, StringComparer.Ordinal))
         {
             string rel = Path.GetRelativePath(root, full).Replace('\\', '/');
@@ -260,6 +282,14 @@ public sealed class NoSourceFileIsTooLongTests
         Assert.True(all.Count > 200, $"only {all.Count} source file(s) found under src/ — the sweep is blind.");
         Assert.Contains(all, f => f.Path == "src/SpaceSails.Core/UndergroundComplex.cs");
         Assert.Contains(all, f => f.Path == "src/SpaceSails.Client/Pages/Map.Surface.cs");
+
+        // #251 item 1 — and the two kinds the sweep could not see before. Named files, not counts: a glob
+        // that silently stopped matching would leave the razor half of this gate asserting nothing at all.
+        Assert.Contains(all, f => f.Path == "src/SpaceSails.Client/Pages/Map.razor");
+        Assert.Contains(all, f => f.Path == "src/SpaceSails.Client/Pages/Map.razor.css");
+        Assert.Contains(all, f => f.Path == "src/SpaceSails.Client/Pages/Map/NavHud.razor");
+        Assert.True(all.Count(f => f.Path.EndsWith(".razor", StringComparison.Ordinal)) > 80,
+            "the razor half of the sweep found almost nothing — it is not looking where the surfaces are.");
 
         // No build output crept in.
         Assert.DoesNotContain(all, f => f.Path.Contains("/obj/", StringComparison.Ordinal));

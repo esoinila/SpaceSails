@@ -110,7 +110,7 @@ public partial class Map
     // ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>What the open bank sheet is about to do.</summary>
-    private enum BankPromptKind
+    public enum BankPromptKind
     {
         /// <summary>Bank the LIVE moment into <see cref="_bankSlotId"/>.</summary>
         Bank,

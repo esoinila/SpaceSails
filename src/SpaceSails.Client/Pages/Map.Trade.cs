@@ -26,7 +26,7 @@ public partial class Map
     /// hold, broken down by class, with its fence value via <see cref="CargoMarket"/> — a
     /// read-model over <see cref="_cargoByClass"/>, which Board() keeps in step with the existing
     /// aggregate _cargoUnits/_cargoValue totals.</summary>
-    private readonly record struct CargoManifestEntry(string CargoClass, int Units, int Value);
+    public readonly record struct CargoManifestEntry(string CargoClass, int Units, int Value);
 
     private IReadOnlyList<CargoManifestEntry> CargoManifest()
     {

@@ -1,0 +1,240 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using ShuttleStop = SpaceSails.Client.Pages.Map.ShuttleStop
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE BOARDING CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #313: the boarding panel — cargo, not a confession. An OPTIONAL 'load a chest' step (coin dial +
+       the whole small hold). Landing empty-handed is a complete visit; the intentions live on the ground. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #488: a DERELICT is not a world. This card was written for the regolith and said so in every
+           line — "bury it anywhere on the regolith", three seeded landing sites with names like The Quiet
+           Basin ("a low bowl of settled dust"), and a beach-comber kit with a shovel and a pickaxe — all
+           offered for crossing to a dead ship with a steel deck. The away team is not landing on her; they
+           are going ABOARD, through one airlock, and what they bring is a gun and a bot. *@
+        <div class="deck-shuttle-card">
+            <div class="deck-shuttle-title">
+                @(BoardingAWreck ? "🛸 Take the shuttle across → " : "🛸 Board the shuttle → ")@boardStop.Body.Name
+            </div>
+            <div class="bury-chooser-body">
+                <div class="bury-note">
+                    @if (BoardingAWreck)
+                    {
+                        <text>
+                            She has one airlock and no atmosphere worth the name. Take the bots — a sentry
+                            holds a corridor while you work, and on a hull with something still aboard the
+                            walk back out is the part that goes wrong. There is nothing to bury out here and
+                            nothing to dig: what she is worth is already in her holds, and what she is is
+                            written on her decks.
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                            Loading cargo is optional — you are not declaring a plan. Load a chest to bury it
+                            anywhere on the regolith, or go empty and probe the ground for shallow treasure (a
+                            fishing expedition). Walk down, look around, buy a souvenir. Your call, on the ground.
+                        </text>
+                    }
+                </div>
+                @* #320: WHERE to set down. A body is a world, not a level — pick one of its seeded landing
+                   sites and the choice is a mood: each names its character in the house voice, and the ground
+                   you get differs by site. Only shown when the body offers more than one (a gig site is a
+                   single authored ground). *@
+                @* A wreck has ONE airlock, so she never offers a choice of ground. (When a big-hull class
+                   lands — a liner, a station — this is exactly where multiple ENTRY POINTS belong, because
+                   her sections are severed and the shuttle is the only way between them. Not this hull:
+                   she is one spine and eight rooms.) *@
+                @if (_boardSites.Count > 1 && !BoardingAWreck)
+                {
+                    <div class="board-sites">
+                        <div class="board-sites-head">🛬 Set down at — choosing a site is choosing a mood:</div>
+                        @foreach (LandingSite site in _boardSites)
+                        {
+                            LandingSite s = site;
+                            <button type="button"
+                                    class="board-site-row @(s.Index == _boardSiteIndex ? "board-site-sel" : "")"
+                                    title="Set down at @s.Name — a different ground on @boardStop.Body.Name"
+                                    @onclick="() => SelectBoardSite(s.Index)">
+                                <span class="board-site-name">@(s.Index == _boardSiteIndex ? "◉" : "○") @s.Name</span>
+                                <span class="board-site-flavor">@s.Flavor</span>
+                            </button>
+                        }
+                    </div>
+                }
+                @* You do not bury a chest on a wreck, and you do not probe her deck plating for shallow
+                   treasure. The coin dial and the hold row are regolith gear; aboard, they are noise. *@
+                @if (!BoardingAWreck)
+                {
+                <div class="bury-row">
+                    <span>Coin in the chest (optional)</span>
+                    <span class="bury-coin">@_boardCoin.ToString("N0", CultureInfo.InvariantCulture) cr</span>
+                </div>
+                <div class="bury-steppers">
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(-500)">−500</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(-100)">−100</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(100)">+100</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(500)">+500</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="() => SetBoardCoin(_credits)">All @_credits.ToString("N0", CultureInfo.InvariantCulture)</button>
+                </div>
+                <div class="bury-row bury-cargo">
+                    <span>Hold loaded with it</span>
+                    <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
+                </div>
+                }
+                @* #314/#324: load the ship's sentry bots as surface escorts — they hold the line against
+                   the Old Ones until their 99-round magazines run dry. A margin you buy, not safety. The
+                   row names the troopers in-voice (#212 affordances-never-hide) so the captain KNOWS the
+                   bots are aboard and offered — the owner's "where are my bots" gap. *@
+                <div class="bury-row">
+                    <span>🤖 @BotMusterLine</span>
+                    <span class="bury-coin">@_boardBots of @AvailableBots down</span>
+                </div>
+                <div class="bury-steppers">
+                    <button type="button" class="btn btn-sm btn-outline-light" disabled="@(_boardBots <= 0)" @onclick="() => AdjustBoardBots(-1)">−1 bot</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" disabled="@(_boardBots >= AvailableBots)" @onclick="() => AdjustBoardBots(1)">+1 bot</button>
+                    @if (_boardBots > 0)
+                    {
+                        <span class="bury-cargo">@LoadedBotsSummary() — press T on the ground to deploy</span>
+                    }
+                    else if (AvailableBots == 0)
+                    {
+                        <span class="bury-cargo">none aboard — rearm at a haven</span>
+                    }
+                </div>
+                @* #348: name the beach-comber kit that ALWAYS rides down (owner: "mention that shovel and
+                   metal detectors are here by default. Let's have a pick az also"). Copy only — the shovel
+                   and detector already drive the dig/probe; the pickaxe is named here as standard gear.
+                   PICKAXE MECHANIC HOOK: if the pick later earns a mechanic (a bedrock re-roll, or digging
+                   THROUGH the beach-comber D100's "too hard" result), wire it in SurfaceGroundInteract /
+                   BeachComber — do NOT build it here, this line just puts the tool in the captain's hands.
+                   GEN-AI GEAR ART (#348, Grok-generated art/gear-beachcomber-kit.jpg): the kit
+                   illustration rides beside this line as a small capped thumbnail — object-fit cover, a
+                   modest max-height so the dialog stays compact and the Board button never leaves screen. *@
+                @if (!BoardingAWreck)
+                {
+                    <div class="bury-row bury-gear">
+                        <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />
+                        <span>🧰 Beach-comber kit — standard issue</span>
+                        <span class="bury-cargo">a shovel, a metal detector & a pickaxe, aboard every trip</span>
+                    </div>
+                }
+                @* #348: the flight time lives in the BODY now, not the button (owner: "The button looks
+                   like the chest contains 5 hours of time"). The crossing costs the same with or without
+                   cargo, and the destination list already shows this as ETA — so we say it plainly, once,
+                   tied to the flight and nothing else. *@
+                <div class="bury-row bury-eta">
+                    <span>🛰 Flight down</span>
+                    <span class="bury-cargo">ETA @FormatDuration(boardStop.TravelSeconds) — same with or without a chest</span>
+                </div>
+            </div>
+            @* #327 the ship calls home: the hold quote before you commit to the walk down. In-voice, from
+               the live tank — a short clock is the captain's informed choice, never a silent maroon. *@
+            <div class="bury-row @(BoardingHoldSeverity() >= 2 ? "text-danger" : "text-info")">
+                <span>@BoardingHoldQuote()</span>
+            </div>
+            @* #348: ONE Board button (owner: "We should just have one board button"). You board with
+               whatever the dialog shows above — a loaded chest, or an empty sling. An empty sling raises
+               the "are you certain?" prompt below instead of a second button. *@
+            @if (_boardEmptyConfirm)
+            {
+                @* The empty-sling confirm — NOT a scold. An empty trip is a legitimate fishing
+                   expedition: walk the regolith and probe for shallow treasure the beach-comber turns up. *@
+                <div class="bury-row bury-empty-confirm text-info">
+                    <span>🪛 Board empty-handed? No coin, no cargo in the sling — that's a fishing expedition. Walk the regolith and probe the beach-comber's D100 for shallow treasure. Certain?</span>
+                </div>
+                <div class="deck-shuttle-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Board with an empty sling — go probe @boardStop.Body.Name for shallow treasure"
+                            @onclick="() => ConfirmBoarding(boardStop)">🛸 Yes — go fishing</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Back to the load-out — put something in the chest first"
+                            @onclick="() => _boardEmptyConfirm = false">Load something first</button>
+                </div>
+            }
+            else
+            {
+                <div class="deck-shuttle-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Board the shuttle for @boardStop.Body.Name with whatever's loaded above — decide what to do on the ground"
+                            @onclick="() => TryBoard(boardStop)">🛸 Board</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBoarding">Never mind</button>
+                </div>
+            }
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public int _boardBots { get; set; }
+    [Parameter] public int _boardCoin { get; set; }
+    /// <summary>the page's `bool _boardEmptyConfirm` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_boardEmptyConfirm` and the assignment still lands on the page.</summary>
+    [Parameter] public bool _boardEmptyConfirmValue { get; set; }
+    /// <summary>The page's `_boardEmptyConfirm = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<bool> _boardEmptyConfirmSet { get; set; } = default!;
+    private bool _boardEmptyConfirm { get => _boardEmptyConfirmValue; set { _boardEmptyConfirmValue = value; _boardEmptyConfirmSet(value); } }
+    [Parameter] public int _boardSiteIndex { get; set; }
+    [Parameter] public IReadOnlyList<LandingSite> _boardSites { get; set; } = default!;
+    [Parameter] public int _cargoUnits { get; set; }
+    [Parameter] public int _credits { get; set; }
+    [Parameter] public Action<int> AdjustBoardBots { get; set; } = default!;
+    [Parameter] public Action<int> AdjustBoardCoin { get; set; } = default!;
+    [Parameter] public int AvailableBots { get; set; }
+    [Parameter] public Action<NpcState> Board { get; set; } = default!;
+    [Parameter] public bool BoardingAWreck { get; set; }
+    [Parameter] public Func<string> BoardingHoldQuote { get; set; } = default!;
+    [Parameter] public Func<int> BoardingHoldSeverity { get; set; } = default!;
+    [Parameter] public string BotMusterLine { get; set; } = default!;
+    [Parameter] public Action CancelBoarding { get; set; } = default!;
+    [Parameter] public Func<ShuttleStop, Task> ConfirmBoarding { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
+    [Parameter] public Func<int> HotHoldUnits { get; set; } = default!;
+    [Parameter] public Func<string> LoadedBotsSummary { get; set; } = default!;
+    [Parameter] public Action<int> SelectBoardSite { get; set; } = default!;
+    [Parameter] public Action<int> SetBoardCoin { get; set; } = default!;
+    [Parameter] public Action SurfaceGroundInteract { get; set; } = default!;
+    [Parameter] public Func<ShuttleStop, Task> TryBoard { get; set; } = default!;
+    [Parameter] public ShuttleStop boardStop { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -1,0 +1,451 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using PumpRun = SpaceSails.Client.Pages.Map.PumpRun
+@using SurfaceExcursion = SpaceSails.Client.Pages.Map.SurfaceExcursion
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE VENT BOARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #488 · THE VALVE BOARD — a damage-control mimic, the Battlestar Galactica shape. The ship drawn as
+       her own compartments, each one a switch: shut the door, read for life, blow the room. It lives aft in
+       ENGINEERING because the bridge panel is dead, so you walk toward the thing to reach the tool that
+       kills it. The sensor cannot tell a survivor from the infestation — that is the whole decision. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseVentPanel)">
+            <OverlayShell class="vent-board" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Step away"
+                          OnClose="() => Dismiss(CloseVentPanel)">
+                <div class="view-object-title">⚙ ATMOSPHERE CONTROL — @ventWreck.ShipName.ToUpperInvariant()</div>
+                <div class="vent-sub">
+                    Mechanical valves, local control. Shut a door before you blow the room behind it.
+                    You are in <strong>@(CaptainCompartment() ?? "THE SPINE")</strong>.
+                </div>
+
+                @* WHAT IS HAPPENING TO YOU WHILE YOU READ THIS. Owner, after being ringed at the board:
+                   "I am not sure if I got any damage from the reevers … I was earlier surrounded by them
+                   when I was looking at panels :-D" — and he could not have known, because the condition
+                   pips are drawn on the CANVAS and this board's backdrop covers the canvas. The sim keeps
+                   running while the panel is open, so the one moment the captain is standing still with
+                   their hands full is the one moment the game stopped telling them they were being hit.
+                   The board carries its own set. *@
+                @if (_surface is { } ventCond)
+                {
+                    int pipsLeft = Math.Clamp(CaptainCondition.MaxHits - ventCond.HitsTaken, 0, CaptainCondition.MaxHits);
+                    <div class="vent-condition @(pipsLeft <= 1 ? "critical" : "")">
+                        <span class="vent-condition-label">CONDITION</span>
+                        @for (int i = 0; i < CaptainCondition.MaxHits; i++)
+                        {
+                            <span class="@(i < pipsLeft ? "cond-pip" : "cond-pip spent")"></span>
+                        }
+                        <span class="vent-condition-word">@CaptainCondition.Readout(ventCond.HitsTaken)</span>
+                    </div>
+                }
+
+                @* THE SHIP HERSELF, drawn from WreckLayout's own geometry — bow taper, transom, spine and
+                   every compartment in its real place and proportion. Owner: "the vent panel should have a
+                   miniature map of the ship as UI with buttons clearly showing which part of the ship
+                   (visually) they correspond to … so if you don't remember the name of the room you still
+                   know to vent the right place." You point at the PLACE; the name is written in it.
+                   Coordinates are deck units with Y negated (SVG y runs down, decks run up), so a
+                   compartment on this map is where it is on the deck by construction. *@
+                @* Every number here goes through Du(): Blazor renders a float attribute in the CURRENT
+                   culture, and on a Finnish browser "20.5" becomes "20,5" — which an SVG coordinate reads as
+                   two numbers. The map would come apart for the owner and nobody else. *@
+                <svg class="vent-map" viewBox="@VentViewBox" preserveAspectRatio="xMidYMid meet"
+                     role="group" aria-label="ship compartments">
+                    <polygon class="vent-hull" points="@VentHullOutline" />
+                    @* THE CORRIDOR IS A PART OF THE SHIP YOU TOUCH. Owner, looking for it: "why can I not
+                       pump the spine? … oh it has its own button instead of just selecting it from map?"
+                       Exactly — and that was the whole complaint. Every compartment on this board is
+                       chosen by putting a finger on it, and the corridor alone had a switch bolted to the
+                       side of the panel, which is why it read as unavailable rather than unselected. It is
+                       a volume on the mimic; it answers to the mimic. *@
+                    @{
+                        string spineCls = "vent-area spine"
+                            + (_ventSelected == HullVenting.SpineName ? " picked" : "")
+                            + (_spinePressurised ? "" : " vented")
+                            + (CaptainCompartment() is null ? " here" : "");
+                    }
+                    <g class="@spineCls" @onclick="() => SelectVentSpace(HullVenting.SpineName)">
+                        <rect class="vent-spine-band"
+                              x="@Du(WreckLayout.AftX)" y="@Du(-WreckLayout.SpineHalfHeight)"
+                              width="@Du(WreckLayout.BowX - 6 - WreckLayout.AftX)"
+                              height="@Du(WreckLayout.SpineHalfHeight * 2)" rx="0.4" />
+                    </g>
+
+                    @foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
+                    {
+                        HullVenting.Space space = SpaceNow(name);
+                        string cls = "vent-area"
+                            + (space.Vented ? " vented" : "")
+                            + (space.DoorShut ? " sealed" : "")
+                            + (space.CaptainInside ? " here" : "")
+                            + (_ventSelected == name ? " picked" : "");
+                        @* A TOP compartment sits at deck y −9…−3; SVG y runs down, so it draws at +3…+9.
+                           The row you see above the spine on the deck is the row above it here. *@
+                        float y = top ? WreckLayout.SpineHalfHeight : -WreckLayout.BottomY;
+                        float cx = (x0 + x1) / 2f;
+                        float cy = top ? 6.2f : -5.8f;
+
+                        @* Razor reserves <text> as a control-flow tag, so the SVG labels are emitted as
+                           markup. Everything else stays real elements. *@
+                        <g class="@cls" @onclick="() => SelectVentSpace(name)">
+                            <rect x="@Du(x0)" y="@Du(y)" width="@Du(x1 - x0)"
+                                  height="@Du(WreckLayout.BottomY - WreckLayout.SpineHalfHeight)" rx="0.4" />
+                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0),
+                                                             WreckLayout.BottomY - WreckLayout.SpineHalfHeight))
+                            @* The door onto the spine, at the doorway the captain actually walks through:
+                               solid when sealed, broken when open. *@
+                            <line class="vent-door"
+                                  x1="@Du(VentDoorX(x0, x1) - WreckLayout.DoorHalfWidth)"
+                                  x2="@Du(VentDoorX(x0, x1) + WreckLayout.DoorHalfWidth)"
+                                  y1="@Du(top ? WreckLayout.SpineHalfHeight : -WreckLayout.SpineHalfHeight)"
+                                  y2="@Du(top ? WreckLayout.SpineHalfHeight : -WreckLayout.SpineHalfHeight)" />
+                        </g>
+                    }
+
+                    <text class="vent-spine-label" x="-4" y="0.7" text-anchor="middle">THE SPINE</text>
+                    @* And her clock, in the same place a compartment carries one. Owner: "the spine should
+                       also show the vacuum time etc." *@
+                    <text class="@SpineTag().Class" x="-4" y="2.5" text-anchor="middle">@SpineTag().Text</text>
+                </svg>
+
+                @* The corridor is a volume too. Owner: "I would like to pump the spine also" — and it is
+                   the end of his own play: dog every hatch, empty every room, then take the spine. Unlike
+                   cracking a valve, this puts the corridor's air in the TANKS.
+
+                   Its switches live in the SAME sub-panel the rooms use, under the same heading, because
+                   it is the same kind of thing. There is no valve here: you cannot blow a corridor to
+                   space from inside it, and there is no door onto itself to dog. What it has is a pump. *@
+                @if (_ventSelected == HullVenting.SpineName)
+                {
+                    <div class="vent-actions">
+                        <div class="vent-picked">@HullVenting.SpineName</div>
+                        @* The corridor's own reading, spelled out the way a compartment's is. It counts UP
+                           and never says how long is enough — the same rule the rooms live under. *@
+                        <div class="vent-readout">
+                            @if (!_spinePressurised && _spineVacuumSeconds < YearsOfVacuumSeconds)
+                            {
+                                @($"🌡 Open to space for {HullVenting.SoakLabel(_spineVacuumSeconds)}. Anything walking it is on borrowed time — and so are you.")
+                            }
+                            else if (!_spinePressurised)
+                            {
+                                @("🌡 Hard vacuum, and it has been for decades. Nothing that was walking her is walking her now.")
+                            }
+                            else
+                            {
+                                @($"🌡 Pressurised — her own stale air, {_refillCharges} charge{(_refillCharges == 1 ? "" : "s")} in the shuttle's tanks.")
+                            }
+                        </div>
+                        @* THE REFLEX. Owner: "lock all doors would be nice also :-D … for that heat of the
+                           moment feel … a kind of rescue thing to do to contain any leaks … and oxygen from
+                           going to feed the fire." First in the row because that is the order you reach for
+                           them in when something has already gone wrong. *@
+                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                title="Dog every hatch that will still move. Contains a leak, starves a fire, and shortens the corridor."
+                                @onclick="SealTheShip">
+                            🔒 Seal the ship
+                        </button>
+                        @* And the way back out. Owner: "I want to unlock all the doors after the ship is in
+                           vacuum" — because the pump SEALS her to work, so the reward for emptying her is a
+                           maze of eight dogged hatches. At uniform vacuum nothing is holding any of them. *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                title="Undog every hatch the pressure is not holding. At uniform vacuum that is all of them — and it is what lets the flood reach every room."
+                                @onclick="UnsealTheShip">
+                            🔓 Open every hatch
+                        </button>
+                        @* THE FLOOD. Owner: "we should be able to refill the whole ship since it is in
+                           vacuum without closing doors?" — one volume, one pressure, one valve, backwards.
+                           Only ever affordable out of air the PUMP banked. *@
+                        @if (!_spinePressurised)
+                        {
+                            <button type="button" class="btn btn-outline-success btn-sm"
+                                    disabled="@(_refillCharges < FloodCost())"
+                                    title="@(_refillCharges < FloodCost()
+                                             ? HullVenting.WholeShipRefillRefusal(FloodCost(), _refillCharges)
+                                             : "Open the reserve wide. The corridor and everything standing open to it come back together — dogged hatches stay dead.")"
+                                    @onclick="FloodTheShip">
+                                🌬 Flood the ship (@FloodCost())
+                            </button>
+                        }
+                        @if (PumpOn(HullVenting.SpineName) is { } spinePump)
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    @onclick="() => StopPump(HullVenting.SpineName)">
+                                🛢 Stop the corridor pump — @HullVenting.SoakLabel(spinePump.SecondsLeft)
+                            </button>
+                        }
+                        else if (!_spinePressurised)
+                        {
+                            <div class="vent-refusal">Hard vacuum, from the transom to the lock.</div>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(!SpinePumpable)"
+                                    title="@(SpinePumpable
+                                             ? "Put the corridor itself on the pumps. Slower than a room, and worth more."
+                                             : HullVenting.SpineNotSealedLine)"
+                                    @onclick="StartSpinePump">
+                                🛢 Pump the corridor
+                            </button>
+                            @* THE WHOLE SHIP, AS ONE ORDER. Owner: "there could be a pump the whole ship
+                               button though :-D" — and it is more than the other two pressed in turn,
+                               because the corridor cannot go on the pumps until every hatch is dogged.
+                               This dogs them, starts them, and holds the order for the spine. *@
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(PumpableRooms().Count == 0 && !SpinePumpable)"
+                                    title="The whole sequence in one press: dog every hatch that will move, put every compartment on its own pump, and take the corridor as soon as it can. Sealing first is faster — eight small pumps run at once."
+                                    @onclick="OrderWholeShipPumped">
+                                🔒🛢 Seal her, then pump everything
+                            </button>
+                            @if (_shipPumpOrder)
+                            {
+                                <div class="vent-readout">
+                                    ⏳ The corridor is on the order — she goes on the pumps as the last hatch seals.
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                else if (_ventSelected is { } picked)
+                {
+                    var sel = SpaceNow(picked);
+                    var readiness = HullVenting.Readiness(sel);
+                    <div class="vent-actions">
+                        <div class="vent-picked">@picked</div>
+                        @* A door moves unless the PRESSURE is holding it. It used to refuse on any vented
+                           compartment, which made a blown room impossible to refill — refilling needs the
+                           hatch dogged, and the hatch could never be dogged again. *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                disabled="@HullVenting.DoorHeldByPressure(sel, _spinePressurised)"
+                                title="@(HullVenting.DoorHeldByPressure(sel, _spinePressurised)
+                                         ? HullVenting.PressureLockLine(picked, sel.Vented) : "")"
+                                @onclick="() => ToggleVentDoor(picked)">
+                            @(sel.DoorShut ? "🔓 Open the door" : "🔒 Shut the door")
+                        </button>
+                        @* Not a radar ping — the compartment's OWN instruments, read back. That framing fits
+                           a forty-year-dead ship far better than a live scan, and it makes the result feel
+                           like evidence rather than a sensor toy. The detail lives in the hover; the button
+                           just names the act. *@
+                        @* Readable on a VENTED room too, and that is the point: the vacuum takes time, so
+                           "is it finished yet" is the question the instrument exists to half-answer. It was
+                           disabled here from back when the handle killed instantly. One reading per STATE —
+                           opening a compartment to space is a real change and earns a fresh look, which is
+                           not the same as re-rolling until it says something comfortable. *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                title="@HullVenting.OperatingLogHint"
+                                @onclick="() => ReadLifeSigns(picked)">
+                            📟 Operating log
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(readiness != HullVenting.VentReadiness.Ready)"
+                                title="@(readiness == HullVenting.VentReadiness.Ready ? "Blow it to space" : HullVenting.RefusalLine(readiness, picked))"
+                                @onclick="() => VentCompartment(picked)">
+                            💨 BLOW @picked
+                        </button>
+                        @* THE THRIFTY ROAD. Blowing a room throws its air away and you buy it back a breath
+                           at a time; pumping it down puts that air in the tanks. The mechanical stage banks
+                           the charge early, and the long tail after it only buys you a killing pressure. *@
+                        @if (PumpOn(picked) is { } running)
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm" @onclick="() => StopPump(picked)">
+                                @(running.RoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
+                            </button>
+                        }
+                        else
+                        {
+                            @* THE BUTTON NAMES WHAT IT WILL EMPTY. Owner, after the volume rewrite: "the
+                               button names might not be so descriptive to our latest vacuum tech :-D" — and
+                               they were not. "Pump down" was written when a pump emptied one room; it now
+                               empties an atmosphere, and the label is the last place still saying otherwise.
+                               So it counts the spaces it is plumbed into, and hovering lists them. *@
+                            var pumpVolume = AtmosphereAt(picked);
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(readiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(pumpVolume.Count > 1
+                                             ? $"One atmosphere, {pumpVolume.Count} spaces: {string.Join(", ", pumpVolume)}. They are standing open to each other, so they empty together."
+                                             : "Slower than the handle, and it keeps the air: the mechanical stage banks a charge, the long tail brings it down to a pressure that kills. Several pumps can run at once.")"
+                                    @onclick="() => StartPumpDown(picked)">
+                                @(pumpVolume.Count > 1 ? $"🛢 Pump this volume ({pumpVolume.Count} spaces)" : "🛢 Pump down")
+                            </button>
+                        }
+                        @* MULTI-SELECT, because the owner immediately found the play the moment one pump
+                           stopped blocking another: "run to the control room and lock all doors and pump
+                           them down :-D". That is the board being used as a board, so it gets one press. *@
+                        @if (PumpableRooms().Count > 1)
+                        {
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    title="Put every compartment that still holds air on a pump. Anything standing open to anything else empties as one volume."
+                                    @onclick="PumpEverySealedRoom">
+                                🛢🛢 Pump every compartment (@PumpableRooms().Count)
+                            </button>
+                        }
+
+                        @* The other half of the board. Air comes back; nothing that went out with it does. *@
+                        @{
+                            var refill = HullVenting.RefillState(sel, _refillCharges);
+                        }
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                disabled="@(refill != HullVenting.RefillReadiness.Ready)"
+                                title="@(refill == HullVenting.RefillReadiness.Ready
+                                         ? "Spend one of the shuttle's breaths on this compartment. Whatever went out with the air stays out."
+                                         : HullVenting.RefillRefusalLine(refill, picked))"
+                                @onclick="() => RefillCompartment(picked)">
+                            🫁 Refill (@_refillCharges)
+                        </button>
+                        @if (sel is { HoldsSurvivor: true, Vented: false } && CaptainCompartment() == picked)
+                        {
+                            <button type="button" class="btn btn-success btn-sm" @onclick="() => RescueSurvivor(picked)">
+                                🧑‍🚀 Get them out
+                            </button>
+                        }
+                        @* Only nag while the handle is still worth pulling. After a successful vent the
+                           room reads "already open to space", which under the line that just told you the
+                           nest went out with the air is noise pretending to be a warning. *@
+                        @if (readiness != HullVenting.VentReadiness.Ready && string.IsNullOrEmpty(_ventMessage))
+                        {
+                            <div class="vent-refusal">@HullVenting.RefusalLine(readiness, picked)</div>
+                        }
+                    </div>
+                }
+
+                @* A board that opens with nothing but "Step away" reads as broken (owner: "the vent panel
+                   only shows step away button in start … after I select a space from it the other buttons
+                   appear"). The switches belong to a ROOM, so until one is picked the panel says so. *@
+                @if (_ventSelected is null)
+                {
+                    <div class="vent-pick-hint">▲ Pick a compartment on the map — the switches belong to a room.</div>
+                }
+
+                @* THE LOG, IN ONE PLACE. The instrument reading used to render ABOVE the switches and the
+                   outcome BELOW them, so the panel's two log lines sat on opposite sides of the button row
+                   and one of them read as hidden behind the keys (owner: "there is only one line of log
+                   visible … now one line is behind keys when there should be two lines"). A board's log is
+                   one thing: what the instrument said, and what the handle did, in the order they happened. *@
+                @{
+                    bool hasRead = _ventSelected is { } lr && _ventReads.ContainsKey(lr);
+                    bool hasMsg = !string.IsNullOrEmpty(_ventMessage);
+                }
+                @* Only drawn when it has something to say — an empty bordered strip is furniture. *@
+                @if (hasRead || hasMsg)
+                {
+                    <div class="vent-log">
+                        @if (_ventSelected is { } logRoom && _ventReads.TryGetValue(logRoom, out var logRead))
+                        {
+                            <div class="vent-readout @(logRead.Sign == HullVenting.LifeSign.SomethingAlive ? "alive" : "")">
+                                📟 @logRoom — d20 @logRead.Roll.Face · @HullVenting.ReadLine(logRead.Sign)
+                            </div>
+                        }
+                        @if (_ventMessage is { Length: > 0 } ventMsg)
+                        {
+                            <div class="vent-message">@ventMsg</div>
+                        }
+                        @* THE LOG SHE IS STILL KEEPING. Owner: "the operation log should get our new
+                           operational entries logged into it." The captain reads this ship's log to work
+                           out what her crew did, then does forty minutes of stranger things to her that
+                           nothing recorded. Newest at the top, because the newest is what you came to
+                           read — and because the panel could only ever show ONE line, so anything that
+                           happened while you were looking elsewhere used to be gone before you saw it. *@
+                        @if (_ventLog.Count > 0)
+                        {
+                            <div class="vent-history">
+                                <div class="vent-history-head">OPERATING LOG — THIS BOARDING</div>
+                                @for (int i = _ventLog.Count - 1; i >= 0; i--)
+                                {
+                                    <div class="vent-history-line">@_ventLog[i]</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public int _refillCharges { get; set; }
+    [Parameter] public bool _shipPumpOrder { get; set; }
+    [Parameter] public bool _spinePressurised { get; set; }
+    [Parameter] public double _spineVacuumSeconds { get; set; }
+    [Parameter] public SurfaceExcursion? _surface { get; set; }
+    [Parameter] public List<string> _ventLog { get; set; } = default!;
+    [Parameter] public string? _ventMessage { get; set; }
+    [Parameter] public Dictionary<string, (DiceRoll Roll, HullVenting.LifeSign Sign)> _ventReads { get; set; } = default!;
+    [Parameter] public string? _ventSelected { get; set; }
+    [Parameter] public Func<string, IReadOnlyList<string>> AtmosphereAt { get; set; } = default!;
+    [Parameter] public Func<string?> CaptainCompartment { get; set; } = default!;
+    [Parameter] public Action CloseVentPanel { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<double, string> Du { get; set; } = default!;
+    [Parameter] public Func<int> FloodCost { get; set; } = default!;
+    [Parameter] public Action FloodTheShip { get; set; } = default!;
+    [Parameter] public Action OrderWholeShipPumped { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<string>> PumpableRooms { get; set; } = default!;
+    [Parameter] public Action PumpEverySealedRoom { get; set; } = default!;
+    [Parameter] public Func<string, PumpRun?> PumpOn { get; set; } = default!;
+    [Parameter] public Action<string> ReadLifeSigns { get; set; } = default!;
+    [Parameter] public Action<string> RefillCompartment { get; set; } = default!;
+    [Parameter] public Action<string> RescueSurvivor { get; set; } = default!;
+    [Parameter] public Action SealTheShip { get; set; } = default!;
+    [Parameter] public Action<string> SelectVentSpace { get; set; } = default!;
+    [Parameter] public Func<string, HullVenting.Space> SpaceNow { get; set; } = default!;
+    [Parameter] public bool SpinePumpable { get; set; }
+    [Parameter] public Func<(string Text, string Class)> SpineTag { get; set; } = default!;
+    [Parameter] public Action<string> StartPumpDown { get; set; } = default!;
+    [Parameter] public Action StartSpinePump { get; set; } = default!;
+    [Parameter] public Action<string> StopPump { get; set; } = default!;
+    [Parameter] public Action<string> ToggleVentDoor { get; set; } = default!;
+    [Parameter] public Action UnsealTheShip { get; set; } = default!;
+    [Parameter] public Func<string, float, float, float, (string Text, string Class), float, string> OnVentAreaLabelSvg { get; set; } = default!;
+    private string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth,
+        (string Text, string Class) tag, float roomHeight = 0f)
+        => OnVentAreaLabelSvg(label, cx, cy, roomWidth, tag, roomHeight);
+    [Parameter] public Func<string, HullVenting.Space, float, (string Text, string Class)> VentAreaTag { get; set; } = default!;
+    [Parameter] public Action<string> VentCompartment { get; set; } = default!;
+    [Parameter] public Func<float, float, float> VentDoorX { get; set; } = default!;
+    [Parameter] public string VentHullOutline { get; set; } = default!;
+    [Parameter] public string VentViewBox { get; set; } = default!;
+    [Parameter] public double YearsOfVacuumSeconds { get; set; }
+    [Parameter] public Derelict.Wreck ventWreck { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

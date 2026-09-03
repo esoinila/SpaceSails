@@ -1,0 +1,140 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using BankPromptKind = SpaceSails.Client.Pages.Map.BankPromptKind
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE BANK PROMPT, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #948 · THE PAGE, BEFORE THE BANK. Owner: "I would like to save this point with a comment field and a
+       captain's name of my whim. I want this moment, not that I die and that situation overwrites this."
+
+       Banking was one silent click into a berth that then read like every other berth. It now stops for the
+       two lines that make a save findable a month later — a TITLE, offered pre-filled as
+       "<captain> — <place> — day N" so accepting the default costs one keystroke, and a NOTE about what you
+       were doing. The one sheet serves three gestures because all three write the same page: bank into a
+       berth, export a file (the file carries the page with it), and rewrite the page of a bank already on
+       the shelf. The second half of the owner's sentence needs no code: a banked berth was never touched by
+       the autosave (#310's law, pinned by a Core guard in this lane) — the sheet says so out loud. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="start-picker-backdrop">
+            @* #997 wave 6 · THE TWO SHEETS OF THIS FAMILY THAT REALLY ARE DECISIONS — this one and the
+               import consent below. They are the only two of the four `.start-picker` surfaces that any of
+               the shell's three shapes fits; the front door and the logbook are named as stragglers at their
+               own root above, with the reason.
+
+               `ByDecision` is the critical-decision exception: no ✕, because every answer the surface offers
+               is itself a close. That is true here, and it is proved by PRESSING rather than taken from this
+               comment (TheShellOwnsTheStartPickerFamilyTests) — CommitBankPrompt runs CancelBankPrompt before
+               it writes anything, and CancelBankPrompt clears _bankPrompt and nothing else, so both roads end
+               the sheet. The title and the note are FIELDS, not answers, and a field is not a way out.
+
+               The two answers stay the page's own markup inside `.save-surface-foot-center` rather than going
+               through the shell's `Choices`, for #1001's reason: they wear different colours (btn-success on
+               the commit, btn-outline-light on the cancel) and the commit changes its face with the kind of
+               sheet this is, while `ChoiceClass` is one class list for all of them. Routing them would
+               repaint two buttons, and this migration does not move a pixel.
+
+               `Bare` because the sheet has no head row to give up — `.start-picker-title` is the page's own
+               centred div with the page's own rule — and because `Hosted`'s `display: contents` would put a
+               wrapper between this root and `.save-surface-foot`.
+
+               No `StopClicks`: this backdrop carries no @@onclick, so there is nothing behind the sheet for a
+               click on it to fall through to. *@
+            <OverlayShell class="start-picker save-surface bank-sheet"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
+                <div class="start-picker-title">@BankPromptHeading</div>
+                <div class="start-picker-sub">
+                    @(bankKind == BankPromptKind.Edit
+                        ? "Rewrite this berth's page. The saved voyage inside it is not touched, and it does not move in the list."
+                        : "Give this moment a name you will recognise, and a note about what you were doing. Both travel with the save.")
+                </div>
+                <label class="bank-field">
+                    <span class="bank-field-label">Title</span>
+                    <input class="bank-input" maxlength="@SaveSlotLabels.MaxTitleLength" autofocus
+                           placeholder="A title of your whim"
+                           value="@_bankTitle" @oninput="e => _bankTitle = e.Value?.ToString() ?? string.Empty" />
+                </label>
+                <label class="bank-field">
+                    <span class="bank-field-label">Note — what were you doing?</span>
+                    <textarea class="bank-input bank-note" rows="4" maxlength="@SaveSlotLabels.MaxNoteLength"
+                              placeholder="Heading for the ice with a full hold and one collector three days behind."
+                              value="@_bankNote" @oninput="e => _bankNote = e.Value?.ToString() ?? string.Empty"></textarea>
+                </label>
+                @if (bankKind != BankPromptKind.Export && _bankSlotId != SaveSlotBook.AutoSlotId)
+                {
+                    <div class="bank-safety">🔒 A banked berth is never overwritten by the autosave. This moment stays exactly as you leave it — dying does not write over it.</div>
+                }
+                <div class="save-surface-foot save-surface-foot-center">
+                    <button type="button" class="btn btn-sm btn-success"
+                            title="@(bankKind == BankPromptKind.Edit ? "Write this page onto the berth" : bankKind == BankPromptKind.Export ? "Download this moment as a file carrying this page" : "Bank this moment into the berth with this page on it")"
+                            @onclick="CommitBankPrompt">@(bankKind switch { BankPromptKind.Edit => "✎ Write the page", BankPromptKind.Export => "⬇ Export it", _ => "⤓ Bank it" })</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Change nothing — go back to the logbook"
+                            @onclick="CancelBankPrompt">Cancel</button>
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    /// <summary>the page's `string _bankNote` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_bankNote` and the assignment still lands on the page.</summary>
+    [Parameter] public string _bankNoteValue { get; set; } = default!;
+    /// <summary>The page's `_bankNote = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string> _bankNoteSet { get; set; } = default!;
+    private string _bankNote { get => _bankNoteValue; set { _bankNoteValue = value; _bankNoteSet(value); } }
+    [Parameter] public BankPromptKind? _bankPrompt { get; set; }
+    [Parameter] public string _bankSlotId { get; set; } = default!;
+    /// <summary>the page's `string _bankTitle` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_bankTitle` and the assignment still lands on the page.</summary>
+    [Parameter] public string _bankTitleValue { get; set; } = default!;
+    /// <summary>The page's `_bankTitle = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string> _bankTitleSet { get; set; } = default!;
+    private string _bankTitle { get => _bankTitleValue; set { _bankTitleValue = value; _bankTitleSet(value); } }
+    [Parameter] public string BankPromptHeading { get; set; } = default!;
+    [Parameter] public Action CancelBankPrompt { get; set; } = default!;
+    [Parameter] public Action CommitBankPrompt { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public BankPromptKind bankKind { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

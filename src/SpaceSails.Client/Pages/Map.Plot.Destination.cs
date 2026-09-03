@@ -127,7 +127,7 @@ public partial class Map
     }
 
     // M25: everything the navigation-target panel says about the destination's closest pass.
-    private readonly record struct DestPassInfo(double CaptureRange, bool InRange, double RelSpeed, int EstPulses);
+    public readonly record struct DestPassInfo(double CaptureRange, bool InRange, double RelSpeed, int EstPulses);
 
     private DestPassInfo? DestinationPassInfo(ClosestApproach.Pass cp)
     {

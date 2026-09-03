@@ -339,7 +339,7 @@ public sealed class TheScopeGoesWhereTheCaptainPointsItTests
     /// rewiring the button to anything else fails here rather than passing on a method a test picked.</summary>
     private static void PressSharpenFixOnTheDossier(Pages.Map map)
     {
-        string razor = File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        string razor = MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
         // The button's own LABEL, closing tag and all — not the bare words, which the card's status lines
         // and comments are free to repeat and which would otherwise walk this search onto a neighbour's
         // @onclick (they did, the day the card learned to say the scope was already ordered onto her).

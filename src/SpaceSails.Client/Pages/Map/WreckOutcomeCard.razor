@@ -1,0 +1,122 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE SALVAGE OUTCOME CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #488 · what the decision actually bought. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(DismissWreckOutcome)">
+            @* ══ #997 wave 5 · THE BEAT CARDS. One comment for all thirteen, on the first of them.
+               ══════════════════════════════════════════════════════════════════════════════════════════
+               These are the surfaces that STOP THE GAME TO TELL YOU SOMETHING: the celebration family
+               (a payday, a map, a brief, a reveal, a storyboard), the convergence band (the two mysteries,
+               and the four things a captain is told once and never again) and the rescue band. Every one of
+               them was the same three things typed again: a scrim that closes it, a stopPropagation to keep
+               a click on the card off that scrim, and one worded verb at the foot. Waves 1-4 did this for
+               the .view-object family and its borrowers; this is the rest.
+
+               THE THREE PARAMETERS, and they mean the same here as they did there:
+
+                 · Frame="OverlayFrame.Bare" — the way out stays a DIRECT child of the card. That is the
+                   relation #735's pinned foot is written against on every one of these roots
+                   (`.convergence-card > .convergence-close`, `.expedition-brief-card > button:last-child`,
+                   `.rescue-card > .rescue-options`), and Hosted's `display: contents` would put a div
+                   between them while the markup went on looking right.
+                 · StopClicks="true" — the stopPropagation that was typed on the div, thirteen times.
+                 · Dismiss="OverlayDismiss.Close" wired to the page's OWN verb — the same method the
+                   backdrop behind it already calls, so there is still exactly one road out of each card.
+
+               AND NOT ONE WORD MOVED. Every face below is the exact string its own button carried.
+               `Bare` draws the dismiss as the card's last DIRECT child, which is where twelve of the
+               thirteen already had it; on the first-ground family (the lesson, the map-just-grew, the tube
+               and the air) the button was typed ABOVE its footnote and put back under it by `order: 1`, so
+               being last in the DOM now is the same pixel — and it is the reading order the #735 block
+               already claims that card has. The one card of the fourteen that could not take a shell is
+               named in TheShellOwnsTheBeatCardsTests.TheNamedStragglers, with its reason. ═════════════ *@
+            <OverlayShell class="treasure-map-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Back to the shuttle"
+                          OnClose="() => Dismiss(DismissWreckOutcome)">
+                <div class="view-object-title">
+                    @(salvageOutcome.ContactEarned ? "📋 FILED" : salvageOutcome.CargoIsHot ? "🏴 STRIPPED" : "📋 FILED")
+                </div>
+                <div class="tm-caption">@salvageOutcome.Line</div>
+                <div class="tm-contents">💰 @salvageOutcome.CreditsNow.ToString("N0") cr</div>
+                @* #938 D4 · THE MONEY WAS TAKEN FOR A REASON NOBODY COULD READ. #553 has shaved
+                   ComplianceSurcharge.Rate off every filed report since it landed — off the finder's fee AND
+                   off the correct-cause bonus — while its five explanatory members had zero consumers
+                   anywhere in src. The captain saw a smaller number and was given no clause, which is the
+                   one shape this design must not have: "referenced but not described" still needs the
+                   reference. It is on the receipt now, where a line item belongs, in the words Core already
+                   wrote — the line item cites the clause, the caption is the only summary the game ever
+                   offers, and the tooltip is what the office says when a captain asks, seeded off this hull
+                   so the same wreck always gives the same non-answer. Nothing here describes the incident.
+                   Nothing ever will. *@
+                @if (salvageOutcome.SurchargeCr > 0)
+                {
+                    <div class="tm-bearing" title="@TheClauseNonAnswer">@ComplianceSurcharge.LineItem(salvageOutcome.SurchargeCr)</div>
+                    <div class="tm-caption">@ComplianceSurcharge.WhatItIsLine</div>
+                }
+                @if (salvageOutcome.CargoIsHot)
+                {
+                    <div class="tm-bearing">🔥 It is in the hold, and it is hot. A collector will know it on sight.</div>
+                }
+                @* #652 · The half that outlives the payout, WITH A NAME ON IT. This line used to read
+                   "Somebody now owes you a straight answer" and there was no somebody: nothing recorded who,
+                   nothing persisted, nothing took your call. The assessor is on the ContactLedger now (and
+                   therefore in the vault), and the card says whose name is under the finding. *@
+                @if (salvageOutcome.ContactEarned && _wreckContact is { Length: > 0 } signedBy)
+                {
+                    <div class="tm-bearing">@Derelict.ContactLine(signedBy)</div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public string? _wreckContact { get; set; }
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Action DismissWreckOutcome { get; set; } = default!;
+    [Parameter] public string TheClauseNonAnswer { get; set; } = default!;
+    [Parameter] public Derelict.SalvageOutcome salvageOutcome { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -1,0 +1,116 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE VIEW-OBJECT CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Put it back down and step away"
+                          OnClose="() => Dismiss(CloseViewObject)">
+                <div class="view-object-title">@vo.Label</div>
+                @* A card with no wired art at all (the lifeboat muster) shows caption-only; a card whose
+                   art is wired but not yet painted (the text-only dedication plaques) renders the img and
+                   lets onerror hide it — the same fallback idiom the captain portraits use (art/captain-N.jpg
+                   → hidden if absent), so both degrade cleanly to just the caption. *@
+                @if (vo.ImageUrl is { Length: > 0 } voImg)
+                {
+                    <img class="view-object-img" src="@voImg" alt="@vo.Label" onerror="this.style.display='none'" />
+                }
+                @if (vo.Caption is { Length: > 0 } cap)
+                {
+                    <div class="view-object-caption">@cap</div>
+                }
+                @* #763 · THE PRESS, ON THE KIT'S OWN SCREEN. Detection was passive and cost nothing; this
+                   is the button, and the owner's whole ruling is that it may never be automatic — "There
+                   was a button. I pushed it." One control per carrier the kit heard, recomputed from where
+                   the captain is standing rather than stored, and never disabled: a press that is going to
+                   be refused still has to be pressable, because the refusal is the thing worth learning. *@
+                @if (TheKitsCardIsUp)
+                {
+                    @foreach (SpaceSails.Core.SdrScanner.Hit hit in TheKitSweeps())
+                    {
+                        <div class="satchel-row">
+                            <span class="satchel-item-name">@SpaceSails.Core.SdrScanner.HitLine(hit)</span>
+                            <button type="button" class="satchel-load"
+                                    title="@SpaceSails.Core.SdrScanner.PressBlurb"
+                                    @onclick="() => PressTheHit(hit)">@SpaceSails.Core.SdrScanner.PressLabel</button>
+                        </div>
+                    }
+                }
+                @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
+                   (#736) on the other full-screen card, because the surface raises this one. The
+                   dossier is the case it was grown for: the assembly said two to four sentences and fired
+                   every one of them as a pulse UNDER this backdrop, so the captain closed a card onto
+                   nothing. A region, not a slot: they all fit, and nothing has to be picked. *@
+                @if (vo.Outcome is { Length: > 0 } voOutcome)
+                {
+                    <div class="reveal-outcome">@voOutcome</div>
+                }
+                @* #615 · KEEP OR LEAVE. Owner: "should we have like keep / leave option when we find stuff?"
+                   The kit's own press rows one region up, with two answers instead of one — the find/console
+                   card the ground already raises over a pallet and a shelf, not an overlay of its own. Both
+                   controls are a way OUT of the card, and so is the ✕ beside them: closing IS Leave, which is
+                   what lets the general closing law hold here without a special case. Two words, no prose;
+                   the room's own line is what the captain is deciding about and it is already on the card. *@
+                @if (TheFindIsWaitingOnAnAnswer)
+                {
+                    <div class="satchel-row">
+                        <button type="button" class="satchel-load"
+                                @onclick="KeepTheFind">@SpaceSails.Core.KeepOrLeave.KeepLabel</button>
+                        <button type="button" class="satchel-load"
+                                @onclick="LeaveTheFind">@SpaceSails.Core.KeepOrLeave.LeaveLabel</button>
+                    </div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Action CloseViewObject { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Action KeepTheFind { get; set; } = default!;
+    [Parameter] public Action LeaveTheFind { get; set; } = default!;
+    [Parameter] public Action<SdrScanner.Hit> PressTheHit { get; set; } = default!;
+    [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
+    [Parameter] public bool TheKitsCardIsUp { get; set; }
+    [Parameter] public Func<IReadOnlyList<SdrScanner.Hit>> TheKitSweeps { get; set; } = default!;
+    [Parameter] public DeckPlan.ConsoleSpot vo { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

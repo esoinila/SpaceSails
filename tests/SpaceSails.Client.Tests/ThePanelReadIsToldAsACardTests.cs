@@ -35,7 +35,7 @@ public sealed class ThePanelReadIsToldAsACardTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static string Between(string text, string from, string to)
     {
@@ -154,7 +154,9 @@ public sealed class ThePanelReadIsToldAsACardTests
     public void TheCardsOwnTextIsRenderedInsideTheCardsSubtree()
     {
         string razor = Pages("Map.razor");
-        string block = Between(razor, "@if (_viewObject is { } vo)", "THE CAPTAIN'S SELFIE");
+        // #251 item 1: the selfie card's comment went with the selfie card, so this slice ends on the
+        // next surface's guard instead of on a sentence about it.
+        string block = Between(razor, "@if (_viewObject is { } vo)", "@if (_selfieShot is { } shot)");
 
         int backdrop = block.IndexOf("class=\"view-object-backdrop\"", StringComparison.Ordinal);
         int modal = block.IndexOf("class=\"view-object\"", StringComparison.Ordinal);

@@ -572,7 +572,7 @@ public partial class Map
     // ---- The unified picker (owner: "hard to click things that are close by"; Gemini
     // consult: forgiving radius, chooser when several objects stack, lanes always last) ----
 
-    private readonly record struct PickCandidate(char Kind, string Id, string Label, string Icon);
+    public readonly record struct PickCandidate(char Kind, string Id, string Label, string Icon);
 
     private List<PickCandidate>? _pickMenu;
     private double _pickMenuX, _pickMenuY;

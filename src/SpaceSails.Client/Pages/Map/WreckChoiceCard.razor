@@ -1,0 +1,126 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE SALVAGE CHOICE CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #488 · THE TWO ROADS. Standing at a derelict's cargo, having read her: file the accident report for a
+       finder's fee and a contact, or strip her and say nothing for everything today. The cause you put your
+       name to is picked from what your evidence actually supports — a wreck that lies will offer you a
+       plausible wrong answer until you have corroborated it. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseWreckChoice)">
+            <OverlayShell class="treasure-map-card wreck-choice" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Not yet"
+                          DismissTitle="Decide later"
+                          OnClose="() => Dismiss(CloseWreckChoice)">
+                <div class="view-object-title">📋 THE @salvageWreck.ShipName.ToUpperInvariant()</div>
+                @* Her portrait, if the away team has actually looked at what killed her. Before that the
+                   card stays text-only — you do not get the picture for free. *@
+                @if (_wreckExamined.Contains("cause") && Derelict.ArtFile(salvageWreck.Cause) is { Length: > 0 } wreckArt)
+                {
+                    <div class="tm-art" style="background-image: url('@wreckArt');"></div>
+                }
+                @* The footing comes from Core. It was typed here, and it said "and nobody has been aboard
+                   since" on EVERY hull — including ?wreck=piracy, whose evidence two stations away is an
+                   airlock cycled from OUTSIDE and a near hold stripped to bare frames, and ?wreck=infested,
+                   where something has been aboard the whole time. What is true of every wreck is not that
+                   nobody has been aboard; it is that nobody came back for her. *@
+                <div class="tm-caption">@Derelict.CardFooting(salvageWreck)</div>
+
+                @if (CanFileWreckReport)
+                {
+                    <div class="wreck-finding">
+                        <div class="wreck-finding-head">YOUR FINDING — what do you put your name to?</div>
+                        @foreach (Derelict.WreckCause option in WreckCandidateCauses())
+                        {
+                            <button type="button"
+                                    class="@(_wreckReported == option ? "btn btn-warning btn-sm wreck-cause picked" : "btn btn-outline-light btn-sm wreck-cause")"
+                                    @onclick="() => _wreckReported = option">
+                                @Derelict.CauseHeadline(option)
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="wreck-finding">
+                        <div class="wreck-finding-head">
+                            You have not looked at enough of her to file anything. Read her decks first —
+                            the damage, the log, the manifest.
+                        </div>
+                    </div>
+                }
+
+                <div class="busted-options">
+                    <button type="button" class="btn btn-light btn-sm"
+                            disabled="@(!CanFileWreckReport || _wreckReported is null)"
+                            title="File the accident report"
+                            @onclick="() => ResolveWreck(Derelict.SalvageChoice.FileTheReport)">
+                        @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.FileTheReport)
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" title="Strip her and say nothing"
+                            @onclick="() => ResolveWreck(Derelict.SalvageChoice.StripAndSayNothing)">
+                        @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.StripAndSayNothing)
+                    </button>
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public HashSet<string> _wreckExamined { get; set; } = default!;
+    /// <summary>the page's `Derelict.WreckCause? _wreckReported` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_wreckReported` and the assignment still lands on the page.</summary>
+    [Parameter] public Derelict.WreckCause? _wreckReportedValue { get; set; }
+    /// <summary>The page's `_wreckReported = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<Derelict.WreckCause?> _wreckReportedSet { get; set; } = default!;
+    private Derelict.WreckCause? _wreckReported { get => _wreckReportedValue; set { _wreckReportedValue = value; _wreckReportedSet(value); } }
+    [Parameter] public bool CanFileWreckReport { get; set; }
+    [Parameter] public Action CloseWreckChoice { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Action<Derelict.SalvageChoice> ResolveWreck { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Derelict.WreckCause>> WreckCandidateCauses { get; set; } = default!;
+    [Parameter] public Derelict.Wreck salvageWreck { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

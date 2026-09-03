@@ -29,7 +29,7 @@ public class TheDeathCardReadsTheNarrationSeamTests
             string candidate = Path.Combine(dir, rel.Replace('/', Path.DirectorySeparatorChar));
             if (File.Exists(candidate))
             {
-                return File.ReadAllText(candidate);
+                return SpaceSails.Client.Tests.MapMarkup.Read(candidate);
             }
             dir = Path.GetDirectoryName(dir);
         }

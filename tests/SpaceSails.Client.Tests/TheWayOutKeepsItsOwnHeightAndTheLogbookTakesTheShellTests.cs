@@ -302,7 +302,7 @@ public sealed class TheWayOutKeepsItsOwnHeightAndTheLogbookTakesTheShellTests
     public void TheTwoCappedScrollCandidatesAreNamedStragglersAndTheirReasonIsPinned()
     {
         string css = WithoutComments(File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
-        string razor = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string razor = MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor"));
 
         // The readouts: the page's own rule owns the shrink, the floor and the scroll — one block, one
         // scroller, no head. If the panel is ever going to help here, this rule is what has to change first.

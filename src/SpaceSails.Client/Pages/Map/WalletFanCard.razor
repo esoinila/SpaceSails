@@ -1,0 +1,98 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SurfaceExcursion = SpaceSails.Client.Pages.Map.SurfaceExcursion
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE WALLET FAN, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #836 · THE FLETCH WALLET, FANNED WHILE HE CROSSES THE FLOOR. Owner: "I think I should be able to pick
+       the badge I show the guard... like Fletch ... suppose we have 4 different ID's ... one of them real".
+
+       It opens on the HAIL and it is gone by the time his hand is out — the 2026-08-08 ruling stands, the
+       read is still automatic and still told on a card, and the only thing that moved is when the captain
+       decided. One row per paper, and every row is the captain's own knowledge and nothing else: the glyph,
+       the NAME ON IT, what it CLAIMS (its printed face, verbatim from the file that prints it) and what the
+       book itself filed about that paper at this site. No percentages, no ticks, no oracle — the man has not
+       read it yet, and neither has this dialog. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseTheWalletFan)">
+            <OverlayShell class="treasure-map-card wallet-fan" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="@SpaceSails.Core.WalletChoice.KeepItLine"
+                          OnClose="() => Dismiss(CloseTheWalletFan)">
+                <div class="view-object-title">@SpaceSails.Core.WalletChoice.ChooserLabel</div>
+                <div class="tm-caption">@SpaceSails.Core.WalletChoice.ChooserHint</div>
+
+                <div class="wallet-fan-rows">
+                    @foreach (SpaceSails.Core.Satchel.Item paper in fanPapers)
+                    {
+                        bool inHand = ThePaperInYourHandIs(paper);
+                        <button type="button"
+                                class="@(inHand ? "wallet-paper picked" : "wallet-paper")"
+                                @onclick="() => ChooseThePaper(paper)">
+                            <span class="wallet-paper-face">
+                                <span class="wallet-paper-glyph">@SpaceSails.Core.WalletChoice.GlyphOf(paper)</span>
+                                <span class="wallet-paper-name">@SpaceSails.Core.WalletChoice.NameOn(paper, NameOnYourOwnPapers)</span>
+                                @if (inHand)
+                                {
+                                    <span class="wallet-paper-held">@SpaceSails.Core.WalletChoice.InYourHandLine</span>
+                                }
+                            </span>
+                            <span class="wallet-paper-claims">@SpaceSails.Core.WalletChoice.Claims(paper)</span>
+                            <span class="wallet-paper-book">@TheBookOn(paper, fanEx.Stop.Body.Id)</span>
+                        </button>
+                    }
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Action<Satchel.Item> ChooseThePaper { get; set; } = default!;
+    [Parameter] public Action CloseTheWalletFan { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public string NameOnYourOwnPapers { get; set; } = default!;
+    [Parameter] public Func<Satchel.Item, string, string> TheBookOn { get; set; } = default!;
+    [Parameter] public Func<Satchel.Item, bool> ThePaperInYourHandIs { get; set; } = default!;
+    [Parameter] public SurfaceExcursion fanEx { get; set; } = default!;
+    [Parameter] public IReadOnlyList<Satchel.Item> fanPapers { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -1,0 +1,93 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE STAND-UP CONFIRMATION, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #784 · THE STAND-UP CONFIRM. Owner, live: "before moving I have to stand up... so if I try to move
+       when sitting down it should ask with a pop-up whether I want to stand up again."
+
+       Drawn AFTER the table so it lands on top of it — it is a question about that panel and it has to be
+       the thing the eye and the cancel key both reach first. Plain words and nothing else (#782/#783): the
+       question, what it costs when it costs something, and the two answers. Esc is the second road to "stay
+       where you are", and Enter to "stand up" (see TryConfirmTopOverlay's flagged exception). *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(KeepYourSeat)">
+            @* #997 wave 9 · A DECISION, AND THE SHELL HAS A WORD FOR THAT. Wave 5 walked past this card and
+               left it to the lore lane; #1004 landed and the lane is closed, and what is left is the plainest
+               ByDecision in the client — a question and its two answers, both of which really are a way out
+               (StandUpFromTable and KeepYourSeat each clear Seating.StandUpAsk, which is the whole of the
+               gate above). No ✕: this card has never carried one, and the critical-decision exception is
+               exactly the shape it already is. Proved by PRESSING both, in this wave's own guard, rather than
+               believed from this comment.
+
+               THE TWO ANSWERS STAY THE PAGE'S OWN MARKUP, for #1001's reason as the bank sheet restated it in
+               wave 6: they wear different colours (btn-warning on the stand, btn-outline-light on the stay)
+               and `ChoiceClass` is one class list for all of them, so routing them through `Choices` would
+               repaint two buttons and lift them out of `.deck-offer-actions` into the shell's own column.
+               This migration does not move a pixel.
+
+               `Bare`, because the card has no head row to give up. `StopClicks` is the stopPropagation that
+               was typed on the div — the backdrop behind it closes on a click and this card must not. *@
+            <OverlayShell class="deck-offer-card stand-up-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
+                <div class="deck-offer-giver">@SpaceSails.Core.SeatedPosture.StandUpAsk</div>
+                @if (StandingUpCostsARest)
+                {
+                    <div class="table-outcome">@SpaceSails.Core.SeatedPosture.StandUpCostsTheRest</div>
+                }
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            @onclick="() => Dismiss(StandUpFromTable)">@SpaceSails.Core.SeatedPosture.StandUpYes</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            @onclick="() => Dismiss(KeepYourSeat)">@SpaceSails.Core.SeatedPosture.StandUpNo</button>
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Action KeepYourSeat { get; set; } = default!;
+    [Parameter] public bool StandingUpCostsARest { get; set; }
+    [Parameter] public Action StandUpFromTable { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

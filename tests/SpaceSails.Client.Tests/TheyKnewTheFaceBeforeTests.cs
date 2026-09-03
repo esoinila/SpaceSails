@@ -41,7 +41,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
     /// <summary>One method body, from its signature to the next member at the same indent — the same cut the
     /// sibling client guards make, so a body read here is a body read there.</summary>

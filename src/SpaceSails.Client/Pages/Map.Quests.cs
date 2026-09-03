@@ -127,7 +127,7 @@ public partial class Map
     // lists them, one card each, and starting one (re)seeds its scenario. Order here IS play order:
     // finishing a track flows _tutorialStep into the next (rob in "the gun" → arrive in "use a haven"
     // already carrying heat), while the picker can jump to any.
-    private sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
+    public sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
 
     private static readonly TutorialTrack[] TutorialTracks =
     [
@@ -161,17 +161,17 @@ public partial class Map
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
     // #973 L5b · WalkIn is the woman's favour: a FIND with two berths in it and no coin at either end.
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn }
+    public enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
     // hatch, key in the Pin the Fixer gave you, then hand the package back to the Fixer at this station.
-    private enum QuestState { Active, PickedUp, Complete, TurnedIn }
+    public enum QuestState { Active, PickedUp, Complete, TurnedIn }
     // A hunt stores the prey's ship id in TargetShipId; a cargo run / fetch stores the delivery haven's
     // body id in DestBodyId (TargetCallsign holds the human name in all cases). A fetch also stores the
     // pickup derelict's body id in SourceBodyId. A crack stores the target hatch's id (e.g. "V-06") in
     // TargetShipId and its access code in Pin.
-    private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
+    public sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
         string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null,
         string? SourceBodyId = null, string? Pin = null, HeldMemory.Theory? Theory = null)
     {

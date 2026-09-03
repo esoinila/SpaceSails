@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -214,7 +214,7 @@ public class TheDeathCardOffersTheShelfTests
     // ─── the shipping sources, read as they ship ───
 
     private static string Razor(string relative)
-        => File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", relative));
+        => MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", relative));
 
     private static MethodInfo Method(string name)
         => typeof(Map).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
@@ -261,7 +261,10 @@ public class TheDeathCardOffersTheShelfTests
         RegexOptions.Multiline);
 
     private static string BustedSwitch(string razor)
-        => Between(razor, "@if (_busted is { } bust", "@* #422 — THE CONVERGENCE.");
+        // #251 item 1: the end anchor was the CONVERGENCE comment, and that paragraph has gone to live
+        // with the surface it describes (Pages/Map/ConvergenceRevealCard.razor). Anchoring a slice on
+        // prose was always the weaker choice; the guard that opens the next surface is the real edge.
+        => Between(razor, "@if (_busted is { } bust", "@if (_convergenceRevealOpen)");
 
     /// <summary>One `case BustedEncounter.Stage.X:` arm, up to its `break;`.</summary>
     private static string StagePanel(string busted, string stage)

@@ -53,7 +53,7 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
     {
         string path = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file);
         Assert.True(File.Exists(path), $"the sweep names a file that is not there: {path}");
-        return File.ReadAllText(path);
+        return MapMarkup.Read(path);
     }
 
     // ---- 1. the numbers on screen are the charged ones ---------------------------------------------

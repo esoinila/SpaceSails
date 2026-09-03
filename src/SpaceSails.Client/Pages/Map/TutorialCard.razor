@@ -1,0 +1,92 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using TutorialTrack = SpaceSails.Client.Pages.Map.TutorialTrack
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE TUTORIAL CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        int activeTrack = ActiveTutorialIndex();
+        @* The checklist for the active lesson — the picker itself lives in the Captain's Tutorials tab
+           now (starting a lesson IS a captain's order), so this card is a pure progress tracker that
+           rides the map where the hunt actually plays out.
+
+           #997 wave 11 · Card · Close, and the plainest migration left in the client: a head with a name
+           on the left and a ✕ on the right IS the shell's oldest shape. TWO ELEMENTS BECAME ONE — the
+           anchor `.map-tutorial` and the `.card` it wrapped are the same box (the card filled the
+           anchor's 22 rem and nothing sat between them), which is the shape #963's scope already wears
+           one card along: `class="map-scope card bg-dark …"`. `::deep .map-tutorial` is what keeps the
+           anchor's `position: absolute` reaching a root the SHELL draws now.
+
+           The ✕ is wired to ToggleTutorial and NOT to Dismiss(ToggleTutorial): the toolbar switch above
+           toggles the same field, so the two controls stay one verb, and this migration moves nothing. *@
+        <OverlayShell class="map-tutorial card bg-dark bg-opacity-75 text-light"
+                      Dismiss="OverlayDismiss.Close" OnClose="ToggleTutorial"
+                      Title="@(activeTrack >= 0 ? TutorialTracks[activeTrack].Title : "Ship's articles")"
+                      TitleClass="fw-bold small"
+                      HeadClass="card-header py-1 d-flex justify-content-between align-items-center"
+                      BodyClass="card-body p-2 small"
+                      DismissClass="btn-close btn-close-white"
+                      DismissLabel="Close" DismissTitle="Close the lesson checklist">
+            @if (activeTrack >= 0)
+            {
+                for (int i = TutorialTracks[activeTrack].Start; i < TutorialTracks[activeTrack].Start + TutorialTracks[activeTrack].Length; i++)
+                {
+                    bool done = _tutorialStep > i;
+                    bool current = _tutorialStep == i;
+                    <div class="@(done ? "text-secondary" : current ? "fw-bold text-info" : "")">
+                        @(done ? "✓" : "•") @TutorialSteps[i]
+                    </div>
+                }
+                <div class="text-secondary fst-italic mt-1">Pick another lesson at the Captain's desk (0) → Tutorials.</div>
+            }
+            else
+            {
+                <div class="text-warning">You're a pirate now — the whole system's yours to work.</div>
+                <div class="text-secondary fst-italic mt-1">Replay any lesson at the Captain's desk (0) → Tutorials.</div>
+            }
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public int _tutorialStep { get; set; }
+    [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Action ToggleTutorial { get; set; } = default!;
+    [Parameter] public string[] TutorialSteps { get; set; } = default!;
+    [Parameter] public TutorialTrack[] TutorialTracks { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

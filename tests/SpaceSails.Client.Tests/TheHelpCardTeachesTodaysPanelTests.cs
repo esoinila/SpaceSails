@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -368,7 +368,7 @@ public sealed class TheHelpCardTeachesTodaysPanelTests
         Regex.Replace(razor, @"@\*.*?\*@", " ", RegexOptions.Singleline);
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     private static string RepoRoot()
     {

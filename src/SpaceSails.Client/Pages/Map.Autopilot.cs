@@ -1032,7 +1032,7 @@ public partial class Map
     }
 
     // ---- M20: the bus stop in space ----
-    private readonly record struct OrbitAssistInfo(
+    public readonly record struct OrbitAssistInfo(
         CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
         bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination,
         double CaptureRange, bool InCaptureRange, bool Armed, int ApproachCost,

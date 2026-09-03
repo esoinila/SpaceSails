@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -55,6 +55,26 @@
        wiring proves nothing; this lets the audit ask the shipping one. -->
   <ItemGroup>
     <InternalsVisibleTo Include="SpaceSails.Client.Tests" />
+  </ItemGroup>
+
+  <!-- #251 item 1 · ONE CSS SCOPE FOR THE PAGE AND EVERY SURFACE CUT OUT OF IT.
+
+       Map.razor's markup is being taken apart into Pages/Map/<Surface>.razor components. Blazor's CSS
+       isolation would give each of those its own scope identifier, and `Map.razor.css`'s 1,700-odd rules
+       compile to `.selector[b-<map's scope>]` — so the instant a block moved out of the page, every rule
+       that styled it would stop matching, silently, with no build error and no test to catch it. (Only the
+       168 `::deep` rules would survive, because those compile to `[b-<map>] .selector` and the moved markup
+       is still a DOM descendant of `.map-page`.)
+
+       The fix is one line of build, not a thousand lines of moved CSS: the surfaces are given Map.razor.css's
+       OWN scope, so `b-4dqsdx4p75` is stamped on exactly the elements it was stamped on before the cut and
+       the shipped stylesheet does not change by a byte. The literal is what the SDK's ComputeCssScope task
+       already derives for `Pages/Map.razor.css` from the assembly name plus that path — pinning it here does
+       not change today's value, it just stops it being a secret. #251 item 3 splits the stylesheet itself
+       along these same seams, and each surface's `.razor.css` is the file its rules will land in. -->
+  <ItemGroup>
+    <None Update="Pages\Map.razor.css" CssScope="b-4dqsdx4p75" />
+    <None Update="Pages\Map\*.razor.css" CssScope="b-4dqsdx4p75" />
   </ItemGroup>
 
   <ItemGroup>

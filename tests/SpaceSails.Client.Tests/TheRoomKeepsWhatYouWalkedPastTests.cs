@@ -316,7 +316,7 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
     [Fact]
     public void TheCardRendersBothVerbsAndNothingElse()
     {
-        string razor = File.ReadAllText(
+        string razor = MapMarkup.Read(
             Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
         // THE GATE ITSELF, and not merely the two controls behind it. The first version of this guard read

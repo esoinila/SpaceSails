@@ -37,7 +37,7 @@ public sealed class TheSurfaceButtonSaysDeadAirTests
 
     private static string PanelBlock()
     {
-        string razor = File.ReadAllText(
+        string razor = MapMarkup.Read(
             Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
         int start = razor.IndexOf("@if (_showLiftPanel", StringComparison.Ordinal);
         Assert.True(start >= 0, "Map.razor no longer has the lift panel block this guard knows how to find.");

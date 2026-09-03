@@ -38,7 +38,7 @@ public sealed class TheTryOutcomeIsReadableTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The satchel block of Map.razor — from the modal's opening guard to the view-object block
     /// that follows it. Cut so the assertion is about THIS dialog's subtree, not the file at large.</summary>

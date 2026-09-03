@@ -40,7 +40,7 @@ public sealed class ThePlannerNamesItsFrameTests
     }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>The source with its comments taken out — a guard about what the panel DOES must never be
     /// answered by prose SAYING it does.</summary>

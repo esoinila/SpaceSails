@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -430,7 +430,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
     [Fact]
     public void TheBrakesFireAnswerEndsTheAskAndTheAskIsTheOnlyGateOnTheCard()
     {
-        string razor = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string razor = MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor"));
         int card = razor.IndexOf("arrival-brake-card", StringComparison.Ordinal);
         Assert.True(card >= 0, "Map.razor no longer draws an .arrival-brake-card this guard can find.");
 

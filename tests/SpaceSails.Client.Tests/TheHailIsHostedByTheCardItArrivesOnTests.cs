@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Tests;
@@ -64,7 +64,7 @@ public sealed class TheHailIsHostedByTheCardItArrivesOnTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>One member's body, from the <c>private</c> that opens it to the next one at the same indent —
     /// the cut <see cref="TheHallCardsAreRaisedOnceTests"/> makes, so a body read here is a body read

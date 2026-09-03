@@ -1,0 +1,339 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE BAR MENU, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #247 — the barkeep's counter menu. Owner ashore: "How do I get a drink at the Rusty bar here?"
+       Walk up to the bar, press E: buy the house special (routes through the Galley's rum-tot law, so
+       overdoing it tilts the deck ashore too), stand a round for the room (warms the regulars), or ask
+       for a rumor. Same overlay family as the deck-offer-card. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="deck-offer-card">
+            @* #756 · ONE CARD, TWO KINDS OF COUNTER. Owner: "we could copy a lot of those from say the Tilt
+               bar at Uranus" — so the B1 cantina's counter is this card with a different venue behind it,
+               not a second card. Everything that needs a PERSON (the keep's own pour, a round for the room,
+               asking what they've heard) is gated on keep.SelfService, because 150 m down there is nobody
+               back there to ask: the counter does its own serving, which is worse. *@
+            @* #756 · …AND ONE CARD, TWO POSTURES. Standing at the counter it is the counter's card; up on a
+               stool it is the stool's, and the plate says which seat. Not a second card and not a second
+               menu — see Map.Stool.cs for why the one-E-per-fixture rule points here. *@
+            <div class="deck-offer-giver">
+                @* #870 lane 6a · The pick between the neighbour's plate and this stool's own number moved
+                   into the seat family as SeatedStoolPlate — same two Core sentences, same condition, one
+                   fewer reader of Map.Stool.cs's private state. *@
+                @if (SeatedStoolPlate is { } seatedPlate)
+                {
+                    @seatedPlate
+                }
+                else
+                {
+                    @($"{(keep.SelfService ? "🍸" : "🍺")} {keep.Name} · {keep.BarName}")
+                }
+            </div>
+            @* #756/#759 · WHAT YOU ARE LOOKING AT CHANGES WITH THE POSTURE, because the view does. Owner:
+               "I do not see the park through the bar windows?" Standing, you are looking AT the bar desk;
+               up on a stool you are above the bottles with the window wall in front of you, and what is
+               behind the glass is the green. Core owns both pictures and the caption; this picks by whether
+               you sat down. Same onerror-hide law as every other art slot — no file, no frame. *@
+            @if (CaptainIsOnAStool)
+            {
+                <img class="bar-desk-art" src="@SpaceSails.Core.Interior.TheStools.SeatedArtUrl" alt=""
+                     aria-hidden="true" onerror="this.style.display='none'" />
+                <div class="bar-view-caption">@SpaceSails.Core.Interior.TheStools.SeatedArtCaption</div>
+            }
+            else if (keep.DeskArtUrl is { } deskArt)
+            {
+                <img class="bar-desk-art" src="@deskArt" alt="" aria-hidden="true"
+                     onerror="this.style.display='none'" />
+            }
+            <div class="deck-offer-blurb">
+                House special: <strong>@keep.DrinkName</strong> — @keep.DrinkFlavor
+            </div>
+            @* #410 — the empty chair gets a sentence. The rota decides which regulars drink at THIS port on
+               THIS watch and sends the rest out or into the back; until now an away one simply had no
+               console, so the room never said where they'd gone. The barkeep is the one person who'd know.
+               Read off the same frozen watch the deck was welded at, so the line and the chairs agree. *@
+            @if (WhoIsInTonight() is { } roomTonight)
+            {
+                <div class="deck-offer-blurb small text-secondary">“@roomTonight”</div>
+            }
+            @if (_barNotice is { } note)
+            {
+                <div class="deck-bank-notice small">@note</div>
+            }
+            @* #781 · THE TELL, ON THE SECOND LINE. Owner: "There should be a bar keep there (really like
+               hidden security guard)" — and the whole of him is here, in one sentence a watch, under the one
+               he greeted you with. It is never a speech and never in quotes: nobody in this room remarks on
+               it, and the game does not either. Core owns the three sentences and which one this shift wears
+               (off the FROZEN watch, never a clock); this draws it only where somebody is behind the counter,
+               which on a dead watch is nobody at all. *@
+            @if (TheKeepsTell() is { } tell)
+            {
+                <div class="deck-offer-blurb small text-secondary">@tell</div>
+            }
+            <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
+            @* #306/#308/#347 The drink as a two-edged trust maneuver, OFFER-FIRST (owner 2026-07-18: "The
+               person may refuse the drink here. That possibility should be determined first"). Extending the
+               offer is the CAPTAIN's own idea, so it opens an OFFER MOMENT (offer it / cancel) — a cancel is
+               free (reconsidering your own idea is not a betrayal). Confirming is where the CONTACT decides
+               accept/refuse; only an accepted glass is bought and poured. After a round for the room, every
+               present regular is satisfied for this visit and shows a toast state; a personal offer is still
+               available, never demanded. *@
+            @foreach ((string giver, string display) in PresentBarContacts())
+            {
+                @* #355 — the SAME block the patron's table card renders; one state machine, two doorways. *@
+                @ContactDrinkOffer(giver, display, keep)
+            }
+            @* Overheard here (#119 receipt idiom): the tips/rumors you've heard at this counter, kept where
+               a round-loosened tongue's words can be re-read — they may not hide and may not auto-vanish. *@
+            @* #973 · …AND THE VOID'S WEATHER BLOWS THROUGH IT. Owner 2026-08-25: the walking insurance men
+               are "the thing people talk about in the bars that unites them, a bit like talking about the
+               weather on planet side." So one of Fable's eight lines can be in this strip — and the strip
+               STAYS three lines: it takes a slot from whatever this counter said longest ago rather than
+               growing a fourth row. After a round for the room has made it everybody's topic the block is
+               the topic and the room's answer to it. Core owns the words, the law and the composition
+               (InsuranceWeather); Map.Weather.cs owns the visit. *@
+            @{
+                IReadOnlyList<string> overheard = TheOverheardBlock();
+            }
+            @if (overheard.Count > 0)
+            {
+                <div class="bar-overheard small">
+                    <div class="bar-overheard-head">Overheard here</div>
+                    @foreach (string o in overheard)
+                    {
+                        <div class="bar-overheard-line">@o</div>
+                    }
+                </div>
+            }
+            @* #4 SundayMorningWind — the talking drinks menu: more than one type (Space Gin, Space Beer,
+               Rocket Fuel + the house special), each with its colourful Leisure-Suit-Larry-style flavour.
+               This is where the Larry colour lives. Buy any of them for yourself; all at the going rate.
+
+               #780 · AND IT IS IN THE CARD'S BODY, ABOVE THE PINNED FOOT. Owner, live at the B1 counter:
+               "How do I buy the drink here?... There is no button to pay there?" and "menu is not readable —
+               text and background are both dark." Both sentences are ONE fault, and it was never a colour:
+               the menu used to be the LAST child of this card, AFTER .deck-offer-actions — which #735 pins
+               with `position: sticky; z-index: 3` and a 12rem box-shadow SCRIM whose whole job is to darken
+               whatever slides under the foot. A static sibling that follows a positioned one paints beneath
+               it, so the six priced items sat under 92%-opaque black: still in the DOM, still hit-testable,
+               and read by a captain as a greyed-out panel behind glass. #680's law one turn further on —
+               IN THE DOM IS NOT ON THE SCREEN, and neither is UNDER THE SCRIM.
+
+               So the menu is prose, and prose goes in the body: it scrolls with the card (#754's cap and
+               overscroll), and the foot pins BELOW it where the scrim falls on nothing. Every bar in the
+               game renders through this block, so the Tilt's card is fixed by the same move. *@
+            @if (_showBarMenu)
+            {
+                <div class="bar-menu">
+                    @* #756 · The header stops promising one flat rate, because a card with a 2 cr coffee
+                       and a 12 cr double on it cannot have one. Each row prices itself off Core
+                       (Drink.PriceAt), so the label, the enabled-ness and the debit are one number. *@
+                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : $"🍸 THE MENU — {keep.DrinkPrice} cr a glass")</div>
+                    @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
+                    {
+                        Core.Drink d = drink;
+                        int cost = d.PriceAt(keep.DrinkPrice);
+                        bool isFood = d.Category == Core.DrinkCategory.Food;
+                        <div class="bar-menu-item">
+                            @* #780 · THE SPECIALS, SEEN. Owner asked for the card's items to be pictured, and
+                               the art landed before the wiring. Optional per item (Drink.ArtUrl), so COMPANY
+                               COFFEE and every haven bar's text-only card render exactly as they always did —
+                               and the frame onerror-hides like every other art slot in the game, because a
+                               missing file must cost a picture and never a row.
+
+                               #782 · The thumbnail stands BESIDE the words at a fixed small size and never in
+                               place of them: the name, the price and the line are the row. *@
+                            @if (d.ArtUrl is { } dishArt)
+                            {
+                                <img class="bar-menu-art" src="@dishArt" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            }
+                            <div class="bar-menu-words">
+                                <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy" disabled="@(_credits < cost)"
+                                        title="@($"Order the {d.Name} — {cost} cr")" @onclick="@(() => BuyDrink(d))">@(isFood ? "🍽" : "🥃") @d.Name · @cost cr</button>
+                                <span class="bar-menu-flavor">@d.Flavor</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            <div class="deck-offer-actions">
+                @if (!keep.SelfService)
+                {
+                    <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
+                            title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>
+                }
+                <button type="button" class="btn btn-sm btn-outline-light" title="See the full drinks menu" @onclick="ToggleBarMenu">📜 @(_showBarMenu ? "Hide the menu" : "See the menu")</button>
+                @if (!keep.SelfService)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
+                            title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
+                    @* #781 · The tooltip names WHOEVER is behind this counter, off Core's own field, rather
+                       than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
+                       keep`, which is the only thing the game is ever allowed to call him. *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@($"Ask {keep.Name} what they've heard lately")" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                }
+                @* ── #770 · BOOK A ROOM AT THE COUNTER ─────────────────────────────────────────────────
+                   Owner's idea: the block rents its park-view suites by the watch, and the plate on their
+                   doors has said BOOK AT THE COUNTER since #816 with nowhere to do it. TWO PRICES, because
+                   the ring has two sizes of them (#775's amenity gradient at the till) — and both buttons
+                   are drawn whatever this floor happens to have on it (#212: an affordance never hides),
+                   with every refusal said out loud in the notice slot above (#603).
+
+                   The verb is the counter's, so it lives here rather than at a door: it is the same one
+                   press that already buys a glass, a round and a receiver at this desk. *@
+                @if (TheCounterRentsRooms)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@BookingHint" @onclick="() => BookARoom(false)">@SpaceSails.Core.Interior.RoomBooking.BookLabel(false)</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@BookingHint" @onclick="() => BookARoom(true)">@SpaceSails.Core.Interior.RoomBooking.BookLabel(true)</button>
+                }
+                @* #763 · THE BACK COUNTER. Drawn only where the venue admits to having one
+                   (Barkeep.BackCounter) — carrying a receiver is legal everywhere and selling one over the
+                   bar is a thing about the ROOM. Never disabled: an empty purse is answered in the keep's
+                   own words rather than by a control that will not press (#212/#603). *@
+                @if (TheBackCounterIsOpen)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@Core.SdrScanner.CardStory" @onclick="BuyTheKit">@Core.SdrScanner.BuyLabel</button>
+                    @* #537 · The other half of the owner's combi, over the same counter — the kit that finds
+                       a false plate and the rig that opens one. Same never-disabled rule. *@
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            title="@Core.HullCutter.CardStory" @onclick="BuyTheCutter">@Core.HullCutter.BuyLabel</button>
+                }
+                @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
+                   (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@
+                @if (KaamosBarSeamAvailable())
+                {
+                    @* The label names the STEP, and prices the one step that takes coin — the bought
+                       coordinate used to be spent behind a button that said only "Ask about KAAMOS". *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@KaamosBarSeamTitle()" @onclick="AskAboutKaamos">@KaamosBarSeamLabel()</button>
+                }
+                @* #422: the NEBULA seam — only shows when this bar can advance arc 2 this watch (a rare Nebula
+                   adjuster is drinking here, or the small print's ready to resolve into the contract). *@
+                @if (NebulaBarSeamAvailable())
+                {
+                    @* The label names the STEP: you ask about NEBULA of the adjuster, but nobody is asked
+                       anything when your own gathered small print answers itself on your own table. *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@NebulaBarSeamTitle()" @onclick="AskAboutNebula">@NebulaBarSeamLabel()</button>
+                }
+                @* ── #756 · THE HIGH CHAIRS ────────────────────────────────────────────────────────────
+                   Owner, live: "Also there should be high chairs so sitting at the bar desk is also
+                   possible." ONE E AT THE FIXTURE, and the seat verb lives on the card that press opens —
+                   #757's rule kept rather than worked around (a row of eight consoles bolted along five
+                   deck-units would have put nine press-targets inside one arm's length of each other).
+
+                   The verb is drawn whether or not there is a free seat (#212: an affordance never hides);
+                   a full row refuses OUT LOUD in the notice slot above. *@
+                @if (CounterHasStools())
+                {
+                    @if (!CaptainIsOnAStool)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="Get up on one of the tall seats at the counter"
+                                @onclick="TakeAStool">🪑 Take a stool</button>
+                    }
+                    else
+                    {
+                        @* #749 · ONLY WHAT HAS BEEN SAID. A reply to a sentence nobody has spoken is not a
+                           control that is disabled, it is a control that is not there — Core's own call, so
+                           the stool and the table cannot end up with two ideas of when an answer exists. *@
+                        @foreach (SpaceSails.Core.Encounter.Move stoolMove in StoolMovesOnTheTable())
+                        {
+                            SpaceSails.Core.Encounter.Move sm = stoolMove;
+                            bool canPress = StoolMoveOnOffer(sm);
+                            <button type="button"
+                                    class="btn btn-sm @(canPress ? "btn-outline-light" : "btn-outline-secondary")"
+                                    disabled="@(!canPress)"
+                                    title="@(canPress ? sm.Label : StoolMoveRefusal(sm))"
+                                    @onclick="() => StoolMoveClicked(sm.Id)">@sm.Label</button>
+                        }
+                    }
+                }
+                <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="() => Dismiss(CloseBarkeep)">Done</button>
+            </div>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public string? _barNotice { get; set; }
+    [Parameter] public int _credits { get; set; }
+    [Parameter] public bool _showBarMenu { get; set; }
+    [Parameter] public Action AskAboutKaamos { get; set; } = default!;
+    [Parameter] public Action AskAboutNebula { get; set; } = default!;
+    [Parameter] public Action AskBarkeepForRumor { get; set; } = default!;
+    [Parameter] public Action<bool> BookARoom { get; set; } = default!;
+    [Parameter] public string BookingHint { get; set; } = default!;
+    [Parameter] public Action<Core.Drink> BuyDrink { get; set; } = default!;
+    [Parameter] public Action BuyHouseSpecial { get; set; } = default!;
+    [Parameter] public Action BuyRoundForRoom { get; set; } = default!;
+    [Parameter] public Action BuyTheCutter { get; set; } = default!;
+    [Parameter] public Action BuyTheKit { get; set; } = default!;
+    [Parameter] public bool CaptainIsOnAStool { get; set; }
+    [Parameter] public Action CloseBarkeep { get; set; } = default!;
+    [Parameter] public Func<string, string, Core.Interior.Barkeep, RenderFragment> ContactDrinkOffer { get; set; } = default!;
+    [Parameter] public Func<bool> CounterHasStools { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<bool> KaamosBarSeamAvailable { get; set; } = default!;
+    [Parameter] public Func<string> KaamosBarSeamLabel { get; set; } = default!;
+    [Parameter] public Func<string> KaamosBarSeamTitle { get; set; } = default!;
+    [Parameter] public Func<bool> NebulaBarSeamAvailable { get; set; } = default!;
+    [Parameter] public Func<string> NebulaBarSeamLabel { get; set; } = default!;
+    [Parameter] public Func<string> NebulaBarSeamTitle { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<(string Giver, string Display)>> PresentBarContacts { get; set; } = default!;
+    [Parameter] public string? SeatedStoolPlate { get; set; }
+    [Parameter] public Func<string, Task> StoolMoveClicked { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, bool> StoolMoveOnOffer { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, string> StoolMoveRefusal { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Encounter.Move>> StoolMovesOnTheTable { get; set; } = default!;
+    [Parameter] public Action TakeAStool { get; set; } = default!;
+    [Parameter] public bool TheBackCounterIsOpen { get; set; }
+    [Parameter] public bool TheCounterRentsRooms { get; set; }
+    [Parameter] public Func<string?> TheKeepsTell { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<string>> TheOverheardBlock { get; set; } = default!;
+    [Parameter] public Action ToggleBarMenu { get; set; } = default!;
+    [Parameter] public Func<string?> WhoIsInTonight { get; set; } = default!;
+    [Parameter] public Core.Interior.Barkeep keep { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

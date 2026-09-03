@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using SpaceSails.Core;
 
@@ -40,7 +40,7 @@ public sealed class AGreyPageIsAThingYouCanSitDownWithTests
     }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
     /// <summary>The Captain desk's "Tips, intel &amp; rumors" block, cut out of the ledger view. Cutting it is
     /// the point: a mark rendered somewhere else in this 880-line component is a mark on a different section.</summary>

@@ -1,0 +1,149 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE GALLEY CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #1021 · THE GALLEY, AS A CARD.
+
+       Owner, of the full-screen Galley desk, verbatim: "We want to keep the news feed... refactor it so it
+       can be elsewhere also, but this UI MUST GO!... This was our first version, it has no gen AI or
+       visibility to the bar surroundings. So keep the features but I want it done in pop-up style like the
+       work the case is."
+
+       "LIKE THE WORK THE CASE IS" IS A SPECIFICATION, and it is the card twenty lines above this one: a
+       click-to-close backdrop, StopClicks so the card does not shut under the captain's own hand, an
+       OverlayFrame.Bare shell whose way out is its last direct child, and the room STILL THERE behind it.
+       That last clause is the owner's second complaint answered without drawing anything: opened at the
+       deck's CANTINA console the card hangs over the cantina's own art, which is the "visibility to the bar
+       surroundings" the blacked-out desk never had. No new picture; the room was always there, the desk was
+       just standing in front of it.
+
+       THE FEATURES, VERBATIM AND IN ORDER. Nothing on this card is new prose — the rum locker's heading,
+       its tot count, its two-state steady-legs line, "Pour a tot" and its tooltip, and the wire's own words
+       are all lifted from Stations/Galley.razor, which this replaces. The pour is the SAME PourRumFromGalley
+       the desk called, which is the same PourRum the deck's own locker calls: one rum ledger, and now three
+       doors onto it that cannot disagree about the tot count.
+
+       THE LOCKER LEADS AND THE WIRE SCROLLS UNDER IT. On a desk the two sat side by side because there was
+       a screen's width to fill; on a card there is not, so the order is the one a captain wants — the thing
+       you PRESS is above the thing you READ, and the wire's list is the only part that gives (its
+       CappedScrollPanel lives inside NewsWirePanel). The card's own cap is 92vh, the satchel's, so the page
+       itself never scrolls. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseGalleyCard)">
+            @* `text-light` is the desk's own, carried over: Stations/Galley.razor's root was
+               `class="galley-desk text-light"`, and the tot count and the locker heading are drawn with no
+               colour of their own. Dropped, they inherit the page's body grey and the card reads a shade
+               dimmer than the screen it replaces — measured in a browser, not reasoned about. *@
+            <OverlayShell class="galley-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Shut the galley card — Esc and 6 do the same"
+                          OnClose="() => Dismiss(CloseGalleyCard)">
+                <div class="view-object-title">🍹 THE GALLEY</div>
+
+                @* #1022 · THE MAN BEHIND THE COUNTER LEADS THE CARD.
+
+                   Owner, live: "The dialog, one imagines, is a set of phrases to keep the customer talking
+                   :-D ... but there is something heart warming in those scenes at the same time."
+
+                   The picture is the gen-AI art the owner said the first version lacked, and B-7V's plate
+                   and his current line sit under it, above the locker. Order matters and it is the same
+                   argument #1021 made about the locker and the wire: the thing that TALKS to you is the top
+                   of the card, the thing you PRESS is under it, and the thing you READ is what gives.
+
+                   Every word here is Core's (SpaceSails.Core.TheTender) — this markup chooses nothing, it
+                   only draws whichever line the sitting handed back. The rare register is drawn APART from
+                   his own voice: an announcement gets its own row, indented and italic, with the line
+                   underneath it in his ordinary voice. They arrive as one TheTender.Line, so there is no
+                   way to render the first without the second. *@
+                <div class="tender-head">
+                    <img class="tender-art" src="art/b7v-the-tender.jpg" alt="" aria-hidden="true"
+                         onerror="this.style.display='none'" />
+                    <div class="tender-plate">@SpaceSails.Core.TheTender.Plate</div>
+                    @if (_tenderLine is { } tender)
+                    {
+                        @if (tender.Announcement is { } announcement)
+                        {
+                            <div class="tender-announcement">@announcement</div>
+                        }
+                        <div class="tender-line">@tender.Text</div>
+                    }
+                </div>
+
+                <div class="galley-card-rum">
+                    <div class="fw-bold mb-2">The rum locker 🍹</div>
+                    <div class="mb-1">Tots poured: @_rumTots</div>
+                    <div class="mb-2 @(RumWobbleActive ? "text-warning fw-bold" : "text-secondary")">
+                        @(RumWobbleActive ? "Deck's tilty — steady on. 🍹" : "Steady legs, for now.")
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2" title="Pour a tot of rum from the locker — steadies the crew's legs when the deck goes tilty" @onclick="PourRumFromGalley">
+                        Pour a tot
+                    </button>
+                    @if (_lastRumLine is not null)
+                    {
+                        <div class="fst-italic text-info small">@_lastRumLine</div>
+                    }
+                </div>
+
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays)"
+                    ItemCount="GalleyFeedItemCount" />
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public string? _lastRumLine { get; set; }
+    [Parameter] public int _rumTots { get; set; }
+    [Parameter] public TheTender.Line? _tenderLine { get; set; }
+    [Parameter] public Action CloseGalleyCard { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public int GalleyFeedAmbientDays { get; set; }
+    [Parameter] public int GalleyFeedItemCount { get; set; }
+    [Parameter] public Func<int, IReadOnlyList<NewsWire.NewsItem>> NewsFeed { get; set; } = default!;
+    [Parameter] public Action PourRumFromGalley { get; set; } = default!;
+    [Parameter] public bool RumWobbleActive { get; set; }
+    [Parameter] public double SimTime { get; set; }
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

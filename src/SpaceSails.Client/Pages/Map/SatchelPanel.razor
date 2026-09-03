@@ -1,0 +1,1075 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using NotesView = SpaceSails.Client.Pages.Map.NotesView
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SatchelPage = SpaceSails.Client.Pages.Map.SatchelPage
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE SATCHEL, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
+       instrument it is a list of things to TRY, and every answer is definite.
+
+       #1027 · `satchel-backdrop` IS THE LAYER, AND IT IS NOT COSMETIC. The pocket used to be one more
+       `.view-object-backdrop` among forty, which meant it shared a z-index with every card the world raises
+       and lost the tie to whichever of them was typed lower in this file. This block is at ~2480 and the
+       arrival card's is at ~3550, so a captain pressing I under 🛗 THE SHAFT opened the satchel BEHIND the
+       picture and saw a dead key. The modifier lifts it one step (OverlayBands.SatchelBackdrop, 1330) —
+       above the cards, below the distress lifeline and below every modal. The Esc chain in
+       Map.Sim.Cancel.cs peels it in the same order. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop satchel-backdrop" @onclick="() => Dismiss(CloseSatchel)">
+            @* One Close for both pages: the satchel shuts the same way whichever half of it you are
+               reading, and I still toggles it (#688) regardless of the page. *@
+            <OverlayShell class="satchel" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          OnClose="() => Dismiss(CloseSatchel)">
+                <div class="view-object-title">
+                    @(_satchelPage switch
+                    {
+                        SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
+                        // #741 v1 · Not the tab's own word twice over: a page title is the QUESTION the page
+                        // answers, the way the compass's is ("why you are down here").
+                        SatchelPage.Threads => "🧵 WHAT YOU WROTE DOWN TWICE",
+                        SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
+                        // #828 · The bucket is NAMED, and it is the one the boots are at — never "a bin".
+                        // Away from one the title falls back to the verb, because a page whose fixture has
+                        // walked off is a page about the verb and nothing else.
+                        SatchelPage.Bin => BinWithinReach() is { } titleBin
+                            ? SpaceSails.Core.RipAndBin.PickerTitle(titleBin.Tier)
+                            : SpaceSails.Core.RipAndBin.Label,
+                        // #727 · Not "your missions" — WHY YOU ARE DOWN HERE, which is the question the page
+                        // answers and the one a captain three floors into a basement is actually asking.
+                        SatchelPage.Missions => "🗺 WHY YOU ARE DOWN HERE",
+                        _ => "🎒 WHAT YOU ARE CARRYING",
+                    })
+                </div>
+
+                @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
+                   notes / clues section in our inventory ui?" — and on the register: "it's like our detective
+                   notepad :-D". The field book used to render only at a ship-brain desk, so the captain
+                   standing at a sealed door could not consult their own notes; #688's leave verb made that
+                   acute by filing a paper's gist to exactly that unreachable place. No second store here —
+                   the NOTES page reads _fieldNotes, the one book. *@
+                <div class="satchel-tabs">
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Carried ? "on" : "")"
+                            title="What is in the satchel"
+                            @onclick="() => _satchelPage = SatchelPage.Carried">
+                        🎒 CARRIED@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
+                    </button>
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Notes ? "on" : "")"
+                            title="What the ground has told you"
+                            @onclick="() => _satchelPage = SatchelPage.Notes">
+                        📓 NOTES
+                    </button>
+                    @* #741 v1 · THREADS, beside the book and reading the same one. Owner's issue: "a third
+                       tab — THREADS — grouping existing entries by the entities they already name… the
+                       THREAD is just the stack of what you wrote about one name, and the captain draws the
+                       line." ALWAYS drawn, like the compass: an empty page here is an answer, and a tab
+                       that appeared only once a case was forming would be missing exactly while a captain
+                       wondered whether the game did this at all. The count is the book's, not a badge. *@
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Threads ? "on" : "")"
+                            title="@SpaceSails.Core.CaseSubjects.TabHint"
+                            @onclick="() => TheSatchelTurnsTo(SatchelPage.Threads)">
+                        @SpaceSails.Core.CaseSubjects.TabLabel@(TheBookThreads() is { Count: > 0 } stacks
+                            ? $" ({stacks.Count})" : "")
+                    </button>
+                    @* #727 · THE THIRD POCKET. What you learned (📓) and what you owe (🗺) are two different
+                       questions, and the book keeps its opinionless voice by not being asked the second one.
+                       Unlike SPREAD and THE BIN this tab is ALWAYS drawn: a compass that vanished when there
+                       was nothing on it would answer "why am I down here" with silence, and the whole point
+                       of the page is that the answer is never nothing — it is "nothing owed on foot", said
+                       out loud, on the page. *@
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Missions ? "on" : "")"
+                            title="What you took on, and what of it you can do standing here"
+                            @onclick="() => _satchelPage = SatchelPage.Missions">
+                        🗺 MISSIONS@(CompassOnFoot() is { Count: > 0 } owed ? $" ({owed.Count})" : "")
+                    </button>
+                    @* #784 · THE SPREAD, and the tab exists only when there is a table under it. Owner's law:
+                       "writing things down requires sitting down to be properly done" — and the tab follows
+                       the posture rather than standing there greyed out, because on your feet this is not a
+                       page you are being refused, it is a page that does not apply. The refusal a captain
+                       DOES need to meet (the bar desk) is inside the page, on the seat that has one. *@
+                    @if (CaptainIsSeatedAnywhere)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
+                                title="@SpreadDoorHint"
+                                @onclick="() => _satchelPage = SatchelPage.Spread">
+                            🗂 SPREAD
+                        </button>
+                    }
+                    @* #828 · THE BIN, and the tab follows the FIXTURE the way the spread tab follows the
+                       posture: standing at a bucket it is a page, three du away it is not a page you are
+                       being refused. It exists so the captain who opened the pocket by reflex ([I]) can
+                       still find the bin they are standing at, and so the one who came in through [E] can
+                       get back to their pockets and their book without walking away first. *@
+                    @if (BinWithinReach() is { } binTab)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Bin ? "on" : "")"
+                                title="@SpaceSails.Core.RipAndBin.Hint(binTab.Tier)"
+                                @onclick="() => _satchelPage = SatchelPage.Bin">
+                            @SpaceSails.Core.RipAndBin.Glyph THE BIN
+                        </button>
+                    }
+                </div>
+
+                @* #784 · THE SPREAD. Owner: "we can't do that without a place to lay the docs we make notes
+                   from" — so this page IS the table surface, and every row on it is a paper lying on it.
+
+                   The press starts the DIGGING BAR (Map.Seated.cs → BeginProcessing, Processing.Work.Write):
+                   the one channel this surface has, the one progress rectangle it draws, over the captain's
+                   own mark on a deck that is still running. Owner's register, kept quiet in the prose:
+                   "we are digging for info and understanding."
+
+                   No control is hidden and none is disabled (#212/#603). The bar desk's refusal is a
+                   SENTENCE you get by pressing, because that is how the gumshoe rule gets learned. *@
+                @if (_satchelPage == SatchelPage.Spread)
+                {
+                    <div class="satchel-sub">@(CaseHasBegun ? SpaceSails.Core.SeatedSpread.SpreadAgainBlurb : SpaceSails.Core.SeatedSpread.SpreadBlurb)</div>
+
+                    @if (_satchelOutcome is { Length: > 0 } spreadSaid)
+                    {
+                        <div class="satchel-outcome">@spreadSaid</div>
+                    }
+                    else if (SpreadRefusal is { Length: > 0 } spreadNo)
+                    {
+                        <div class="satchel-outcome">@spreadNo</div>
+                    }
+
+                    @if (ProcessingUnderway() is { } spreadBusy)
+                    {
+                        <div class="satchel-outcome">@spreadBusy</div>
+                    }
+
+                    @* ── #973 L3 · THE RECONCILE. The other verb a table full of paper is for: lay two
+                       things side by side and see whether they are talking about the same world. Every
+                       word of the three verdicts is Fable's (SpreadReconcile); this markup lays a row and
+                       prints what the table said.
+
+                       The laid pair is drawn ABOVE the papers, because it is what the captain is looking
+                       at — and the second question sits under the verdict rather than beside it, since it
+                       is a count and not a conclusion. Nothing here is disabled (#212/#603): a paper
+                       already on the table says so on its own row. *@
+                    @if (LayablePapers() is { Count: > 0 } papers)
+                    {
+                        <div class="spread-lay">
+                            <div class="satchel-sub">
+                                @SpaceSails.Core.SeatedSpread.LayThemTogetherBlurb
+                            </div>
+
+                            @if (_laid.Count > 0)
+                            {
+                                <div class="spread-laid">
+                                    @foreach (SpaceSails.Core.SpreadReconcile.Paper on in _laid)
+                                    {
+                                        <span class="spread-laid-item">@on.Label</span>
+                                    }
+                                    <button type="button" class="satchel-filter"
+                                            title="Take everything off the table"
+                                            @onclick="ClearTheSpread">✕</button>
+                                </div>
+                            }
+
+                            @if (_reconciled is { } said)
+                            {
+                                <div class="satchel-outcome spread-verdict">@said.Line</div>
+                                <div class="spread-second-question">@said.SecondQuestion</div>
+                            }
+
+                            <div class="satchel-items">
+                                @foreach (SpaceSails.Core.SpreadReconcile.Paper paper in papers)
+                                {
+                                    SpaceSails.Core.SpreadReconcile.Paper lay = paper;
+                                    <div class="satchel-row">
+                                        <button type="button" class="satchel-item spread-item"
+                                                title="@SpaceSails.Core.SeatedSpread.LayItHint"
+                                                @onclick="() => LayItOnTheSpread(lay)">
+                                            <span class="satchel-item-name">@paper.Label</span>
+                                            <span class="satchel-item-try">
+                                                @(IsLaid(paper.Id)
+                                                    ? SpaceSails.Core.SeatedSpread.AlreadyLaidWord
+                                                    : SpaceSails.Core.SeatedSpread.LayItWord)
+                                            </span>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (SpreadableFinds() is { Count: > 0 } spreadable)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in spreadable)
+                            {
+                                SpaceSails.Core.Satchel.Item dig = lying;
+                                <div class="satchel-row">
+                                    @* Through SpreadDigClicked and not WriteItUp directly: a successful
+                                       press CLOSES this dialog (#696 shuts the pocket so the deck comes
+                                       back), and a click that closes a dialog leaves focus on a button that
+                                       no longer exists — the map then takes no keys at all. Found by
+                                       playing it. *@
+                                    <button type="button" class="satchel-item spread-item"
+                                            title="@WriteUpHint(dig)"
+                                            @onclick="() => SpreadDigClicked(dig)">
+                                        <span class="satchel-item-name">@SatchelLabel(dig)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadRowVerb(dig)
+                                        </span>
+                                    </button>
+                                    @* #798 · …AND THE OTHER END OF THE EVENING. Owner: "those trash cans
+                                       are needed so we get rid of the processed materials without
+                                       connecting them to us too clearly, like leaving them to the table."
+                                       The loop is sit, dig, book, BIN — and the bin has to be on the page
+                                       the digging happened on, or the last rung is somewhere else.
+
+                                       Never disabled: with no bin within reach it says so, on this page,
+                                       and names what would fix it. *@
+                                    @if (RipIsOffered(dig))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(dig)"
+                                                @onclick="() => RipItUp(dig)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SeatedSpread.NothingToWorkLine</div>
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Notes)
+                {
+                    @* #741 · THE NOTEBOOK. Owner, from the chair: "the notes become EXPANDING TEXT nodes —
+                       title-first, collapsed by default… the opened node houses its text as bullets… the
+                       note is structured for CONNECTING, not for prose-reading."
+
+                       And the instrument, in his own words: "I guess it could be a red pen only used to
+                       connect the things", with the gesture "select one, select the other — connected".
+
+                       Every arrangement decision on this page — which rows sit together, which pair carries
+                       a red edge, what a title says, whether the pen may come out — is CaseThreads', asked
+                       once per draw. This markup renders rows and decides nothing. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Here ? "on" : "")"
+                                title="Only what this body and this site have told you"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Here)">📍 this ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Everywhere ? "on" : "")"
+                                title="The whole book, ground by ground"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Everywhere)">🥾 every ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.TheCase ? "on" : "")"
+                                title="The whole book in the order the red lines put it"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.TheCase)">🧵 the case</button>
+                    </div>
+
+                    @* #741 · THE PEN. One control, drawn everywhere and disabled nowhere (#212/#603): on
+                       your feet or at a bar top it answers with the sentence that says what would fix it,
+                       which is how the gumshoe rule gets learned. Picking it up is not a menu — it changes
+                       what pressing a title MEANS, which is the whole of the fiction. *@
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } penSaid)
+                    {
+                        <div class="satchel-outcome">@penSaid</div>
+                    }
+
+                    @* ── #973 L3 · THE SHEETS. The other kind of evidence the book holds: not what the
+                       ground told you, but what somebody REMEMBERS. Drawn above the notes and on every
+                       reading of them, because a held memory has no ground — the photograph was taken on a
+                       boat deck that is not in this system any more, and the day you signed happened
+                       somewhere nobody wrote down.
+
+                       Each row is the text, then the one line that says whose it is, which theory it
+                       serves, who put it in your hand and the day (HeldMemory.Sheet.BookLine). The book
+                       keeps no opinion about any of it — the SPREAD is where two of them get to argue. *@
+                    @if (TheSheets() is { Count: > 0 } sheets)
+                    {
+                        <div class="satchel-sheets">
+                            @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in sheets)
+                            {
+                                <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                    <div class="held-sheet-title">
+                                        @SpaceSails.Core.HeldMemory.RowTitle(sheet)
+                                    </div>
+                                    <div class="held-sheet-text">@sheet.Text</div>
+                                    <div class="held-sheet-byline">@sheet.BookLine</div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (_notesView == NotesView.Everywhere)
+                    {
+                        <div class="satchel-sub">
+                            Every ground you have turned over, the ones you stood on most recently first.
+                        </div>
+
+                        @if (SpaceSails.Core.FieldNotes.PerPlace(_fieldNotes) is { Count: > 0 } book)
+                        {
+                            <div class="satchel-notes">
+                                @foreach (SpaceSails.Core.FieldFinding found in book)
+                                {
+                                    <div class="satchel-place">🥾 @found.Place</div>
+                                    <NotebookNodes Rows="@NotebookPage(found.Lines)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                    }
+                    else if (_notesView == NotesView.TheCase)
+                    {
+                        @* The one reading where a line drawn between two GROUNDS can put its two entries
+                           side by side. The place stops being a heading and becomes a tag on the node — the
+                           order belongs to the case here, and a ground is a fact about an entry like any
+                           other. *@
+                        <div class="satchel-sub">
+                            The whole book in the order your own lines put it. The book does not know what
+                            any of them means.
+                        </div>
+
+                        @if (TheWholeCase() is { Count: > 1 } whole)
+                        {
+                            <div class="satchel-notes">
+                                <NotebookNodes Rows="@NotebookPage(whole)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                @SpaceSails.Core.CaseThreads.NothingToConnectLine
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">
+                            @* "somewhere" is Core's own word for a ground it cannot name (PlaceLabel), and the
+                               satchel only opens on an excursion anyway — a fallback, not a second format. *@
+                            @(PlaceUnderfoot() ?? "Somewhere") — what was found here, latest first.
+                            The book keeps it. It keeps no opinion about it.
+                        </div>
+
+                        @if (NotesFromThisGround() is { Count: > 0 } here)
+                        {
+                            <div class="satchel-notes">
+                                <NotebookNodes Rows="@NotebookPage(here)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                Nothing filed for this ground. Either you have not searched it, or it had
+                                nothing to say — the book does not know which, and neither do you.
+                            </div>
+                        }
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Threads)
+                {
+                    @* ── #741 v1 · THE THREADS ────────────────────────────────────────────────────────────
+                       Owner's issue: "nothing collects every note that mentions The Tilt's harbourmaster, or
+                       OFFICE OF WORKS… the player who wants the big picture re-reads the whole book and does
+                       the string-and-corkboard in their head — which is fine for three entries and hopeless
+                       at thirty."
+
+                       So: one heading per name the book has written down MORE THAN ONCE, and under it every
+                       entry that wrote it, oldest first. The rows are the notebook's own nodes — the same
+                       titles, the same bullets, the same red-line marks — because a second way of drawing an
+                       entry would be a second reading of one book.
+
+                       IT CONCLUDES NOTHING. No arrow, no ranking, no "these are related". The stack is the
+                       juxtaposition and the juxtaposition is the whole argument; the captain draws the line,
+                       with the same pen, and the book keeps no opinion about what it means. *@
+                    <div class="satchel-sub">@SpaceSails.Core.CaseSubjects.Blurb</div>
+
+                    @* ── #973 L3 · MONEY &amp; LOVE (owner ruling §12). The detective's two theories, as a
+                       filter over the sheets that stack on this page. It never hides a NOTE: the field
+                       book's own threads have no tag to be filtered by, and a filter that silently emptied
+                       half the page would be the tab lying about what the book holds. Always lands on the
+                       whole book, because a filter that survived the lid is a captain opening their own
+                       book onto half of it and not being told why. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_bookTag is null ? "on" : "")"
+                                title="Every sheet in the book"
+                                @onclick="() => TheThreadsFilterTurnsTo(null)">🎞 every sheet</button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Money ? "on" : "")"
+                                title="Only the sheets that follow the money"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Money)">
+                            💰 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Money)
+                        </button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Love ? "on" : "")"
+                                title="Only the sheets that follow the heart"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Love)">
+                            🖤 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Love)
+                        </button>
+                    </div>
+
+                    @* The sheets, stacked by the names they write down — the photograph's four faces are
+                       four threads on the day it is handed over. Drawn above the field book's own stacks
+                       and in the same shape, because they are the same page answering the same question
+                       about two different kinds of paper. *@
+                    @if (SheetStacks() is { Count: > 0 } sheetStacks)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.HeldMemory.Stack stack in sheetStacks)
+                            {
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Sheets.Count)
+                                    </span>
+                                </div>
+                                @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in stack.Sheets)
+                                {
+                                    <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                        <div class="held-sheet-text">@sheet.Text</div>
+                                        <div class="held-sheet-byline">@sheet.BookLine</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } stackSaid)
+                    {
+                        <div class="satchel-outcome">@stackSaid</div>
+                    }
+
+                    @if (TheBookThreads() is { Count: > 0 } threads)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.CaseSubjects.SubjectThread stack in threads)
+                            {
+                                SpaceSails.Core.CaseSubjects.SubjectThread run = stack;
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Entries.Count)
+                                    </span>
+                                    @* The pen, offered where the stack is. Never disabled and never hidden
+                                       (#212/#603): pressed on your feet or at a bar top it answers with the
+                                       sentence that says what would fix it, exactly as the pen itself does. *@
+                                    <button type="button" class="satchel-filter thread-pen"
+                                            title="@SpaceSails.Core.CaseSubjects.ConnectTheStackHint"
+                                            @onclick="() => RunThePenDownTheStack(run)">
+                                        @SpaceSails.Core.CaseSubjects.ConnectTheStackLabel
+                                    </button>
+                                </div>
+                                <NotebookNodes Rows="@NotebookPage(stack.Entries)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.CaseSubjects.NothingTwiceLine</div>
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Bin)
+                {
+                    @* #828 · THE BIN — the sleeve held open over the bucket the captain is standing at.
+                       Owner: "I think the trash could be an e-use ... where we select from inventory the
+                       processed items we rip and deposit into trash."
+
+                       Nothing on this page is a second shredder. The rows are the sleeve's own papers, the
+                       order is Core's (worked sheets lead), the words on them are Core's, and the press is
+                       RipItUp — the SAME act the spread row fires, which is why the filed fact reads the
+                       same whichever grip the captain took. No control is disabled (#212/#603): a sheet
+                       nothing has been dug out of yet carries a flag and a warning in its hint, and then
+                       does exactly what it is asked, because it is the captain's paper. *@
+
+                    @* The bet is spoken at the bin and nowhere else (RipAndBin.TierBet) — and when the
+                       captain has walked off mid-picker the page says THAT instead, rather than going on
+                       describing a bucket that is now down the corridor. *@
+                    @if (BinWithinReach() is { } overIt)
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.TierBet(overIt.Tier)</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.NoBinLine</div>
+                    }
+
+                    @if (_satchelOutcome is { Length: > 0 } binSaid)
+                    {
+                        <div class="satchel-outcome">@binSaid</div>
+                    }
+
+                    @if (BinnableFinds() is { Count: > 0 } feed)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in feed)
+                            {
+                                SpaceSails.Core.Satchel.Item paper = lying;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@BinRowHint(paper)"
+                                            @onclick="() => RipItUp(paper)">
+                                        <span class="satchel-item-name">@SatchelLabel(paper)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.RipAndBin.Glyph @BinRowFlag(paper)
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.RipAndBin.NothingToBinLine</div>
+                    }
+                }
+                else if (_satchelPage == SatchelPage.Missions)
+                {
+                    @* ── #727 · THE CARRIED COMPASS ──────────────────────────────────────────────────────
+                       Owner, 2026-08-06: "Right now the tasks and missions have been ship-UI specific, so a
+                       mission that works outside the ship UI is something new… we should filter out /
+                       minimize ship-specific stuff to appropriate ('cannot do in this UI level, but high
+                       level: go to Moon X') type info in the carried mission UI."
+
+                       ONE MODEL, TWO PROJECTIONS. Every row here is the SAME contract the captain's own
+                       desk draws, read through the same CurrentStepOf and folded by Core
+                       (MissionProjection.OnFoot). The foot-level step is the desk's own words, byte for
+                       byte; everything else is one collapsed sentence naming where the ship must go.
+
+                       AND NO BUTTON IT CANNOT HONOUR. The carried view is READ-ONLY in v1 (the issue's own
+                       fence: signing on happens where people are), so this page renders no control at all
+                       — not a greyed one, not a hidden one. A dead affordance in a satchel would be the
+                       lift-that-only-went-down bug wearing a UI. The steps you CAN act on you act on by
+                       walking to the thing and pressing [E], exactly as you always did; this page only
+                       tells you which of them are here and which are a voyage. *@
+                    <div class="satchel-sub">@SpaceSails.Core.MissionProjection.CompassBlurb</div>
+
+                    @if (_satchelOutcome is { Length: > 0 } missionSaid)
+                    {
+                        <div class="satchel-outcome">@missionSaid</div>
+                    }
+
+                    @if (CompassOnFoot() is { Count: > 0 } compass)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.CompassLine job in compass)
+                            {
+                                <div class="satchel-note mission-line">
+                                    <div class="mission-title">@job.Title</div>
+                                    <div class="mission-why">@job.Why</div>
+                                    @* The one place the fold shows: a step you can act on where you stand
+                                       reads in the desk's own hand, a step you cannot reads as DIRECTION.
+                                       The class is the only difference the markup makes — the words are
+                                       Core's either way. *@
+                                    <div class="mission-step @(job.Actionable ? "here" : "away")">@job.Step</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.MissionProjection.NothingOwedOnFoot</div>
+                    }
+                }
+                else
+                {
+                <div class="satchel-sub">
+                    @if (_satchelTarget is { } at)
+                    {
+                        @* #688 · At a door the list has gone quiet except for the keys, and a row of inert
+                           controls that never says why is #603's founding sin one layer up. So the door says
+                           what it reads. It names no card and hints at no wallet — it says what a lock is. *@
+                        <text>
+                            Offering it to <strong>@at.Label</strong>.
+                            @if (SpaceSails.Core.SatchelTry.IsDoor(at.Target))
+                            {
+                                <text>It reads authorities and nothing else — a countersigned card, or nothing at all.</text>
+                            }
+                            else
+                            {
+                                <text>Pick something.</text>
+                            }
+                        </text>
+                    }
+                    else
+                    {
+                        @* #688 · The subtitle names what it counts. One figure for three compartments was a
+                           sentence that could not be true — a sleeve stuffed with manifests says nothing
+                           about the pockets, and neither of them says anything about the wallet, which never
+                           fills at all. Core does the arithmetic so the dialog and the pocket cannot
+                           disagree about the same satchel. *@
+                        <text>
+                            Everything found out here, and it stays yours between visits.
+                            @SpaceSails.Core.Satchel.SpaceLine(_satchel)
+                        </text>
+                    }
+                </div>
+
+                @* #680 · A failed try answers HERE, inside the modal's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_satchelOutcome is { } said)
+                {
+                    <div class="satchel-outcome">@said</div>
+                }
+
+                @* #696 · AND A RUNNING HOLD SAYS SO, HERE. The darkroom shuts the satchel on the way in so
+                   the captain can watch the fan, but nothing stops them opening it again with I while the
+                   twenty seconds run — and a pocket that says nothing about the document currently under
+                   their own hands is the dialog lying about itself. Same law as the line above: whatever
+                   surface is up is the surface that has to speak (#680/#686). *@
+                @if (ProcessingUnderway() is { } busy)
+                {
+                    <div class="satchel-outcome">@busy</div>
+                }
+
+                @* ── #837 · THE LOAD CHOOSER ────────────────────────────────────────────────────────────
+                   Owner, satchel open on '12 loose rounds': "I would expect like load it into one or both
+                   guns" / "and like how many each .. by default I guess it would be all into one in most
+                   cases, but we should give flexibility here."
+
+                   One row per gun the captain's hands can reach — the sling first, because a gun on your own
+                   back is the least demanding version of this verb, then whatever is set down within arm's
+                   length. Every figure on it is Core's: the counts are SentryBot.MagazineCell, which is the
+                   same function the MAGAZINES readout is built out of, and the arrow shows what that line
+                   will read AFTER the press, before the press (#696 — the price known beforehand).
+
+                   The page decides nothing. It has no arithmetic, no mutation and no words of its own. *@
+                @if (TheLoadChooser() is { } loading)
+                {
+                    <div class="satchel-sub">@SpaceSails.Core.SentryHandLoad.ChooserBlurb(loading.Pocket, loading.KindName)</div>
+
+                    @if (loading.Picks.Count == 0)
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SentryHandLoad.NothingInReachLine</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.SentryHandLoad.Pick offering in loading.Picks)
+                            {
+                                SpaceSails.Core.SentryHandLoad.Pick gun = offering;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@gun.Note"
+                                            @onclick="() => LoadIntoIt(gun)">
+                                        <span class="satchel-item-name">
+                                            🔫 @gun.Unit @gun.Now @(gun.Worked ? "→ " + gun.After : "") <span class="satchel-where">@gun.Where</span>
+                                        </span>
+                                        <span class="satchel-item-try">@SpaceSails.Core.SentryHandLoad.LoadLabel</span>
+                                    </button>
+                                    @* THE COUNT STEPPER, and it is only drawn where there is a choice to
+                                       make: a row whose ceiling is nought has a refusal to say and no
+                                       interesting difference between one nothing and another. *@
+                                    @if (gun.Ceiling > 0)
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.FewerHint"
+                                                @onclick="() => NudgeShare(gun, -1)">−</button>
+                                        <span class="satchel-share">@gun.Share of @gun.Pocket</span>
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.MoreHint"
+                                                @onclick="() => NudgeShare(gun, 1)">+</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <button type="button" class="satchel-back"
+                            @onclick="CloseTheLoadChooser">@SpaceSails.Core.SentryHandLoad.BackLabel</button>
+                }
+                else if (_satchel.Count == 0)
+                {
+                    <div class="satchel-empty">
+                        Empty. Rooms down here are worth searching — most are stripped, and the ones that
+                        are not are the reason anybody comes.
+                    </div>
+                }
+                else
+                {
+                    <div class="satchel-items">
+                        @* #614 · A row can now do two different things, so it is two controls rather than
+                           one button wearing two hats. LOOK is always available and never spends anything
+                           (#603's law: looking is free and repeatable); TRY is the deliberate second press
+                           that costs you the decision. Putting them on one button would mean a captain who
+                           wanted to admire the collar had to risk offering it to a door. *@
+                        @{
+                            IReadOnlyList<SpaceSails.Core.Satchel.Item> wallet = Wallet();
+
+                            RenderFragment<SpaceSails.Core.Satchel.Item> Row = item =>
+                                @<div class="satchel-row">
+                                    @{
+                                        bool canOffer = TargetFor(item) is not null;
+                                        bool canLook = LookAtItem(item) is not null;
+                                    }
+                                    <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
+                                            disabled="@(!canOffer)"
+                                            @onclick="() => TryItem(item)">
+                                        <span class="satchel-item-name">@SatchelLabel(item)</span>
+                                        @if (canOffer)
+                                        {
+                                            <span class="satchel-item-try">
+                                                @(_satchelTarget is null ? "read it →" : "try it →")
+                                            </span>
+                                        }
+                                    </button>
+                                    @if (canLook)
+                                    {
+                                        <button type="button" class="satchel-look"
+                                                title="Look at it properly"
+                                                @onclick="() => OpenItemCard(item)">🔍</button>
+                                    }
+                                    @* #688 · LEAVE IT. Owner: "no way to drop stuff." Its own small control,
+                                       never a mode — for #614's reason one size down, a captain making room
+                                       must not be one mis-click away from offering a relic to a bulkhead. It
+                                       stays available at a door, because a door is exactly where you discover
+                                       your pockets are full.
+
+                                       #696 · And for a DOCUMENT the hint names the seconds, because the
+                                       decision the darkroom exists for — here, or somewhere with air in it —
+                                       cannot be taken by a captain who finds out the price after pressing.
+                                       It reads ProcessingSeconds, which is the Core constant (and the QA
+                                       cheat), so the hint and the clock are one number. *@
+                                    <button type="button" class="satchel-leave"
+                                            title="@LeaveHintFor(item)"
+                                            @onclick="() => LeaveItem(item)">🫳</button>
+                                    @* #784 · WRITE IT UP PROPERLY — the field book's other register, and
+                                       posture is the gate. Owner's law: "writing things down requires
+                                       sitting down to be properly done." Standing, this refuses OUT LOUD
+                                       and the leave control beside it still files the moving-knee scrawl
+                                       exactly as it always has; seated at a table the book takes the entry
+                                       AND the sheet stays in your pocket.
+
+                                       Drawn on your FEET as well as in a chair, and live either way — the
+                                       refusal is how the law is learned, and #603 says a refusal is said
+                                       rather than hidden behind a control that is not there. It goes only
+                                       when there is genuinely nothing left to write. *@
+                                    @if (CanWriteUp(item))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@WriteUpHint(item)"
+                                                @onclick="() => WriteItUp(item)">@SpaceSails.Core.SeatedPosture.WriteGlyph</button>
+                                    }
+                                    @* #798 · RIP IT AND BIN IT — the third answer, beside take and leave.
+                                       Owner: "I would not like to leave them at table in canteen… we need
+                                       option to destroy them by ripping and binning etc?"
+
+                                       Drawn only on EVIDENCE, because on a handful of rounds this is not a
+                                       refusal, it is a verb that does not apply — the same rule the spread
+                                       tab follows about posture. Live wherever it IS drawn and never
+                                       disabled (#212/#603): with no bin in reach it answers with the
+                                       sentence that says what would fix it. *@
+                                    @if (RipIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(item)"
+                                                @onclick="() => RipItUp(item)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
+                                    @* #837 · LOAD IT FROM THE ROW — the hand-load's second grip. Owner, with
+                                       the satchel open on twelve loose rounds: "I would expect like load it
+                                       into one or both guns."
+
+                                       Drawn only on ROUNDS, for the shredder's reason one control over: on a
+                                       keycard this is not a refusal, it is a verb that does not apply. Live
+                                       wherever it IS drawn and never disabled — with nothing within arm's
+                                       reach it opens onto the sentence that says what would fix it, which is
+                                       how the reach rule is learned. *@
+                                    @if (LoadIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-load"
+                                                title="@LoadHint(item)"
+                                                @onclick="() => OpenTheLoadChooser(item)">@SpaceSails.Core.SentryHandLoad.LoadLabel</button>
+                                    }
+                                    @* #763 · SCAN — read what the kit has been hearing since you walked in.
+                                       Drawn only on the kit, for the shredder's and the loader's reason: on
+                                       a keycard this is not a refusal, it is a verb that does not apply.
+                                       Live wherever it IS drawn and never disabled — with nothing in reach
+                                       it opens onto the sentence that says so, which is the only way
+                                       "proximity is the only skill" can be learned. *@
+                                    @if (ScanIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-load"
+                                                title="@ScanHint(item)"
+                                                @onclick="() => ScanWithTheKit(item)">@SpaceSails.Core.SdrScanner.ScanLabel</button>
+                                    }
+                                 </div>;
+                        }
+
+                        @* #697 · THE WALLET IS ONE THING. Owner: "Let's also add option to try all ID cards
+                           ... by grouping them into a folder in the inventory." Four authorities used to be
+                           four rows and four presses; they are one row and one press now, and the cards are
+                           one tap under it — untouched, because the faces are the best objects in the game
+                           (#528/#695) and the deliberate single try is the captain's to make.
+
+                           A folder of one is bureaucracy about bureaucracy, so one card is a card. *@
+                        @if (wallet.Count == 1)
+                        {
+                            @Row(wallet[0])
+                        }
+                        else if (wallet.Count > 1)
+                        {
+                            <div class="satchel-row">
+                                <button type="button" class="satchel-item satchel-folder"
+                                        title="@(_walletOpen ? "Fold it shut" : "Go through the cards")"
+                                        @onclick="() => _walletOpen = !_walletOpen">
+                                    <span class="satchel-item-name">
+                                        @(_walletOpen ? "▾" : "▸") 🎫 THE WALLET (@wallet.Count)
+                                    </span>
+                                </button>
+                                @* Two controls, never one — #614's ruling one size up: opening the folder
+                                   must not be a mis-click away from offering everything in it to a door. *@
+                                @if (WalletTarget() is not null)
+                                {
+                                    <button type="button" class="satchel-fan"
+                                            title="Hold every card up to it, one after another"
+                                            @onclick="TryTheWholeWallet">try them all →</button>
+                                }
+                            </div>
+
+                            @* ── #760 · WHOSE STANDING IS WHOSE ──────────────────────────────────────
+                               Owner: "if the flat list grows past feel, group accesses into an expandable
+                               tree/folder view in the satchel: company/estate as the folder, per-site
+                               grants beneath."
+
+                               NOT A TREE YET. The pocket has not filled — a tree over four cards is a
+                               filing cabinet built for a wallet — so this is the smallest true version of
+                               the same idea: inside the fold the cards sit under the name of whoever gave
+                               them to you, WHEN THERE ARE TWO OR MORE NAMES. One outfit gets no heading,
+                               because a heading over a list that is entirely one thing is a label that
+                               cannot be read for information (#697's folder-of-one, one size up).
+
+                               The grouping is Core's (SiteOperator.Accesses) and so is the decision not to
+                               group: this page has no arithmetic about companies and cannot drift from the
+                               predicate the gates are using. *@
+                            @if (_walletOpen)
+                            {
+                                <div class="satchel-wallet-cards">
+                                    @if (SpaceSails.Core.SiteOperator.Accesses(wallet) is { Count: > 0 } outfits)
+                                    {
+                                        @foreach (SpaceSails.Core.SiteOperator.Folder outfit in outfits)
+                                        {
+                                            <div class="satchel-place">@outfit.Heading</div>
+                                            @foreach (SpaceSails.Core.Satchel.Item card in outfit.Cards)
+                                            {
+                                                @Row(card)
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                        {
+                                            @Row(card)
+                                        }
+                                    }
+                                </div>
+                            }
+                        }
+
+                        @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
+                        {
+                            @if (item.Kind != SpaceSails.Core.Satchel.Kind.Authority)
+                            {
+                                @Row(item)
+                            }
+                        }
+                    </div>
+                }
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public HeldMemory.Theory? _bookTag { get; set; }
+    [Parameter] public List<Core.FieldNote> _fieldNotes { get; set; } = default!;
+    [Parameter] public List<SpreadReconcile.Paper> _laid { get; set; } = default!;
+    [Parameter] public NotesView _notesView { get; set; } = default!;
+    [Parameter] public bool _penInHand { get; set; }
+    [Parameter] public SpreadReconcile.Result? _reconciled { get; set; }
+    [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
+    [Parameter] public string? _satchelOutcome { get; set; }
+    /// <summary>the page's `SatchelPage _satchelPage` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_satchelPage` and the assignment still lands on the page.</summary>
+    [Parameter] public SatchelPage _satchelPageValue { get; set; } = default!;
+    /// <summary>The page's `_satchelPage = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<SatchelPage> _satchelPageSet { get; set; } = default!;
+    private SatchelPage _satchelPage { get => _satchelPageValue; set { _satchelPageValue = value; _satchelPageSet(value); } }
+    [Parameter] public (SatchelTry.Target Target, string? Context, string Label)? _satchelTarget { get; set; }
+    /// <summary>the page's `bool _walletOpen` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_walletOpen` and the assignment still lands on the page.</summary>
+    [Parameter] public bool _walletOpenValue { get; set; }
+    /// <summary>The page's `_walletOpen = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<bool> _walletOpenSet { get; set; } = default!;
+    private bool _walletOpen { get => _walletOpenValue; set { _walletOpenValue = value; _walletOpenSet(value); } }
+    [Parameter] public Action<Core.Processing.Work, Core.Satchel.Item, string, (SatchelTry.Target Target, string? Context, string Label)?> BeginProcessing { get; set; } = default!;
+    [Parameter] public Func<List<Core.Satchel.Item>> BinnableFinds { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> BinRowFlag { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> BinRowHint { get; set; } = default!;
+    [Parameter] public Func<RipAndBin.Bin?> BinWithinReach { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> CanWriteUp { get; set; } = default!;
+    [Parameter] public bool CaptainIsSeatedAnywhere { get; set; }
+    [Parameter] public bool CaseHasBegun { get; set; }
+    [Parameter] public Action ClearTheSpread { get; set; } = default!;
+    [Parameter] public Action CloseSatchel { get; set; } = default!;
+    [Parameter] public Action CloseTheLoadChooser { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<CompassLine>> CompassOnFoot { get; set; } = default!;
+    [Parameter] public Func<Quest, (MissionStep Step, string StatusKind)> CurrentStepOf { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public Func<string, bool> IsLaid { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpreadReconcile.Paper>> LayablePapers { get; set; } = default!;
+    [Parameter] public Action<SpreadReconcile.Paper> LayItOnTheSpread { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> LeaveHintFor { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> LeaveItem { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> LoadHint { get; set; } = default!;
+    [Parameter] public Action<SentryHandLoad.Pick> LoadIntoIt { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> LoadIsOffered { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, CarriedObject.Reveal?> LookAtItem { get; set; } = default!;
+    [Parameter] public Func<string, bool> NodeIsHeld { get; set; } = default!;
+    [Parameter] public Func<string, bool> NodeIsOpen { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Core.FieldNote>, IReadOnlyList<Core.CaseThreads.Row>> NotebookPage { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Core.FieldNote>> NotesFromThisGround { get; set; } = default!;
+    [Parameter] public Action<string> NoteTitlePressed { get; set; } = default!;
+    [Parameter] public Action<SentryHandLoad.Pick, int> NudgeShare { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> OpenItemCard { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> OpenTheLoadChooser { get; set; } = default!;
+    [Parameter] public Func<string> PlaceUnderfoot { get; set; } = default!;
+    [Parameter] public double ProcessingSeconds { get; set; }
+    [Parameter] public Func<string?> ProcessingUnderway { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> RipHint { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> RipIsOffered { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> RipItUp { get; set; } = default!;
+    [Parameter] public Action<Core.CaseSubjects.SubjectThread> RunThePenDownTheStack { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> ScanHint { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> ScanIsOffered { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> ScanWithTheKit { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<HeldMemory.Stack>> SheetStacks { get; set; } = default!;
+    [Parameter] public Func<List<Core.Satchel.Item>> SpreadableFinds { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, Task> SpreadDigClicked { get; set; } = default!;
+    [Parameter] public string SpreadDoorHint { get; set; } = default!;
+    [Parameter] public string? SpreadRefusal { get; set; }
+    [Parameter] public Func<Core.Satchel.Item, string> SpreadRowVerb { get; set; } = default!;
+    [Parameter] public Action TakeUpTheRedPen { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, (SatchelTry.Target Target, string? Context, string Label)?> TargetFor { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Core.CaseSubjects.SubjectThread>> TheBookThreads { get; set; } = default!;
+    [Parameter] public Func<(Core.Satchel.Item Rounds, int Pocket, string KindName, List<SentryHandLoad.Pick> Picks)?> TheLoadChooser { get; set; } = default!;
+    [Parameter] public Action<NotesView> TheNotebookTurnsTo { get; set; } = default!;
+    [Parameter] public Action<SatchelPage> TheSatchelTurnsTo { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<HeldMemory.Sheet>> TheSheets { get; set; } = default!;
+    [Parameter] public Action<HeldMemory.Theory?> TheThreadsFilterTurnsTo { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Core.FieldNote>> TheWholeCase { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> TryItem { get; set; } = default!;
+    [Parameter] public Action TryTheWholeWallet { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Core.Satchel.Item>> Wallet { get; set; } = default!;
+    [Parameter] public Func<(SatchelTry.Target Target, string? Context, string Label)?> WalletTarget { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> WriteItUp { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> WriteUpHint { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

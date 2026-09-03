@@ -1,0 +1,756 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using CargoManifestEntry = SpaceSails.Client.Pages.Map.CargoManifestEntry
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using ScopeIntel = SpaceSails.Client.Pages.Map.ScopeIntel
+@using ShipBot = SpaceSails.Client.Pages.Map.ShipBot
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE WAR ROOM, TRADE, COMMS AND CAPTAIN DESKS, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #1021 · ShipDesk.Galley came off this list with the branch below it. The enum member stays (removing
+       it would renumber Deck and Captain under every keyed and persisted thing that reads them) — what has
+       gone is its ability to be `_activeDesk` at all. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* The war room dims instead of blanking (long-shots PR): the live map behind it IS the
+           orrery view for cross-system firing solutions — DrawFirePlan draws the transfer.
+           And it's PASSTHROUGH (owner: "the war room map seems dead to mouse clicks") — the
+           gunner pans, zooms and clicks contacts on the sky, same as the sensors chief. *@
+        <div class="desk-layer @(_activeDesk == ShipDesk.WarRoom ? "desk-layer-dimmed desk-layer-passthrough" : "")">
+            <div class="desk-content">
+                @if (_activeDesk == ShipDesk.WarRoom)
+                {
+                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
+                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" MaxMuzzleSpeedMps="MaxMuzzleSpeed" InterestDistanceMeters="InterestDistanceNow()" FireKind="_fireKind" FireSolution="_fireSolution" FireBlockedBy="@_fireBlockedBy" RoundsInFlight="LiveRounds()" PlannedImpactInSeconds="PlannedImpactEta()" StraightWindowText="@StraightWindowText()" WeaponsAuthorized="WeaponsAuthorized" FireAtWill="_fireAtWill" SlugAmmo="_slugAmmo" MissileAmmo="_missileAmmo" Docked="_docked" CanWarnInterest="CanWarnInterest()" OnBuyAmmo="BuyAmmo" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
+                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows" OnAutoAim="AutoAim" OnArmFire="ArmFire"
+                        OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
+                }
+                else if (_activeDesk == ShipDesk.Trade)
+                {
+                    @* Trading floor, master–detail edition (owner: "like File Explorer"): the
+                       places-of-business TREE + detail pane owns two thirds of the desk, the
+                       cargo manifest keeps its column. The dock market is no longer a loose
+                       floating panel — it renders as the dockyard node's detail inside the tree
+                       (passed down as a fragment so all its bindings stay right here). *@
+                    <div class="desk-trade-grid">
+                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" Credits="_credits" HoldSpaceUnits="CargoCapacity - _cargoUnits" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" DockedBodyId="@(_docked ? _dockBodyId : null)" DockedBodyName="@(_docked && _dockBodyId is { } dbn ? BodyName(dbn) : null)" BodyNameLookup="BodyName" OnStartTrade="StartLocalTrade" OnStartBuy="StartLocalBuy" OnClose="() => SwitchDesk(ShipDesk.Nav)">
+                            <DockMarket>
+                                <div class="d-flex gap-2 mb-2">
+                                    <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" title="Sell the whole hold at this dock's prices" @onclick="SellCargo">
+                                        Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
+                                    </button>
+                                </div>
+                                @* ⛽ fuel is bought in the always-visible fuel gauge (side panel), so it
+                                   answers "how do I fill her up?" (#157) whether or not you're docked. *@
+                                <div class="fw-bold mb-1">Upgrades</div>
+                                <table class="table table-sm table-dark mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" title="Buy the reaction-mass upgrade — a bigger fuel cap" @onclick='() => BuyUpgrade("mass")'>
+                                                    @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" title="Buy the sensor upgrade — a longer detection range" @onclick='() => BuyUpgrade("sensor")'>
+                                                    @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" title="Buy the cargo-hold upgrade — more units of space" @onclick='() => BuyUpgrade("hold")'>
+                                                    @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" title="Buy the telescope upgrade — track more ships at once" @onclick='() => BuyUpgrade("telescope")'>
+                                                    @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        @* PR-BUSTED: the one shipped dice helper — a named +2 on any last stand (the
+                                           purchasable-modifier seam; the shop of helpers is a follow-up). *@
+                                        <tr>
+                                            <td>Boarding-nets jammer<br /><span class="text-secondary">@(_hasNetJammer ? "fitted — +2 on resist" : "+2 on any last stand")</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-info" disabled="@(_hasNetJammer || _credits < NetJammerPriceCr)" title="A named +2 modifier on resist/Bolivia initiative — proves the dice-helper seam" @onclick="BuyNetJammer">
+                                                    @(_hasNetJammer ? "OWNED" : $"{NetJammerPriceCr:N0} cr")
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </DockMarket>
+                        </SpaceSails.Client.Pages.Stations.LocalSpace>
+                        <div class="desk-side-panel">
+                            @* ⛽ FILL HER UP (#157) — the desk's answer to "how do I refuel her?", always
+                               shown: a car-gauge fuel meter banded green / amber (<18%) / red (floor),
+                               a fat FILL HER UP button + a +10 p top-up when the ship is alongside a pump
+                               (FuelReachability.AlongsidePump — the same truth the fuel alarm reads), and an
+                               honest "nearest pump N p away" line when it isn't. *@
+                            @{
+                                int _fuelCap = ReactionMassCapacity;
+                                int _fuelPulses = _reactionMassPulses;
+                                double _fuelFrac = _fuelCap > 0 ? Math.Clamp((double)_fuelPulses / _fuelCap, 0, 1) : 0;
+                                AlertSeverity? _fuelBand = FuelAlertRule.Evaluate(_fuelPulses, _fuelCap);
+                                string _fuelBandClass = _fuelBand switch
+                                {
+                                    AlertSeverity.Red => "fuel-red",
+                                    AlertSeverity.Amber => "fuel-amber",
+                                    _ => "fuel-green",
+                                };
+                                CelestialBody? _fuelPump = _ephemeris is not null ? FuelReachability.AlongsidePump(_ephemeris, _ship) : null;
+                            }
+                            <div class="fuel-desk card bg-dark bg-opacity-50 text-light mb-2">
+                                <div class="card-body p-2">
+                                    <div class="fuel-desk-title fw-bold">⛽ FUEL</div>
+                                    <div class="fuel-gauge @_fuelBandClass" title="Reaction mass: @_fuelPulses of @_fuelCap pulses">
+                                        <div class="fuel-gauge-fill" style="width:@(((int)(_fuelFrac * 100)))%"></div>
+                                        <div class="fuel-gauge-readout">@_fuelPulses<span class="fuel-gauge-cap"> / @_fuelCap p</span></div>
+                                    </div>
+                                    @if (_fuelPump is { } _pump)
+                                    {
+                                        @* #1068 · the same quote the till charges, market move and all — a desk that
+                                           priced a fill differently from the till would be the named bug class exactly. *@
+                                        int _fuelPrice = FuelMarket.PricePerPulse(
+                                            _ephemeris!.Position(_pump.Id, SimTime).Length,
+                                            QuietHands.PulsePriceMoveAt(_ephemeris!, _pump.Id));
+                                        int _fuelRoom = _fuelCap - _fuelPulses;
+                                        FuelMarket.Quote _fill = FuelMarket.QuoteFill(_fuelPulses, _fuelCap, _fuelPrice, _credits, int.MaxValue);
+                                        FuelMarket.Quote _topUp = FuelMarket.QuoteFill(_fuelPulses, _fuelCap, _fuelPrice, _credits, 10);
+                                        <div class="fuel-alongside small mt-1">Alongside @BodyName(_pump.Id) · @_fuelPrice cr/p</div>
+                                        <div class="d-flex gap-2 mt-2">
+                                            <button type="button" class="btn btn-warning fw-bold fuel-fill-btn flex-grow-1"
+                                                    title="@($"Top the tank right off — buys {_fill.Pulses} p for {_fill.Cost:N0} cr")"
+                                                    disabled="@(_fuelRoom <= 0 || _fill.Pulses <= 0)" @onclick="() => BuyFuel(int.MaxValue)">
+                                                ⛽ FILL HER UP@(_fuelRoom > 0 && _fill.Pulses > 0 ? $" · {_fill.Cost:N0} cr" : "")
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning fuel-topup-btn"
+                                                    title="@($"Take on {_topUp.Pulses} p for {_topUp.Cost:N0} cr")"
+                                                    disabled="@(_fuelRoom <= 0 || _topUp.Pulses <= 0)" @onclick="() => BuyFuel(10)">
+                                                +10 p
+                                            </button>
+                                        </div>
+                                        @if (_fuelRoom <= 0)
+                                        {
+                                            <div class="fuel-note small text-secondary mt-1">Tank's full.</div>
+                                        }
+                                        else if (_fill.Pulses <= 0)
+                                        {
+                                            <div class="fuel-note small text-danger mt-1">Not enough credits for even one pulse (@_fuelPrice cr/p).</div>
+                                            @* PR-WIRE: broke at the pump — the dream's anonymized favor wire. A trusted
+                                               dark-web-native contact wires gas money; you owe them one quiet delivery. *@
+                                            @if (BestWireLenderId() is { } lender)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-warning mt-2 w-100"
+                                                        title="@($"Call in a favor — {ContactSheets.For(lender).DisplayName} wires you {PumpLoanPrincipal(_fuelRoom, _fuelPrice):N0} cr for fuel. You'll owe one quiet delivery.")"
+                                                        @onclick="CallInFavorAtPump">
+                                                    📡 Call in a favor — @ContactSheets.For(lender).DisplayName wires @PumpLoanPrincipal(_fuelRoom, _fuelPrice).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            }
+                                        }
+                                        else if (_fill.Pulses < _fuelRoom)
+                                        {
+                                            <div class="fuel-note small text-warning mt-1">Credits cover @_fill.Pulses of the @_fuelRoom p of room.</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="fuel-directions small mt-1">@FuelDirectionsLine()</div>
+                                    }
+                                </div>
+                            </div>
+                            @* #314 — the sentry rearm line, sitting with the berth's services. Tops the
+                               ship's bot magazines back to 99 at one honest price; a receipt prints. *@
+                            @if (_dockedHavenId is not null)
+                            {
+                                <div class="fuel-desk card bg-dark bg-opacity-50 text-light mb-2">
+                                    <div class="card-body p-2">
+                                        <div class="fuel-desk-title fw-bold">🤖 SENTRY ARMORY</div>
+                                        @if (_shipBots.Count == 0)
+                                        {
+                                            <div class="small text-secondary mt-1">No bots aboard — they're deployed on a surface, or written off.</div>
+                                        }
+                                        else
+                                        {
+                                            int _sentryMissing = SentryRoundsMissing();
+                                            int _sentryCost = SentryRestockCost();
+                                            <div class="small mt-1">
+                                                @foreach (var _b in _shipBots)
+                                                {
+                                                    <span class="me-2">@_b.Unit <span class="fw-bold" style="color:#ff5a46">@SentryBot.Readout(_b.Rounds)</span></span>
+                                                }
+                                            </div>
+                                            @* #562: the affordability gate below reads the CONSTANT, not a
+                                               literal. A hard-coded 2 there silently shadowed
+                                               RestockPricePerRound and went wrong the moment the
+                                               ammo was re-priced — which is now.
+
+                                               This note sits ABOVE the tag, not between its attributes,
+                                               because Razor does NOT treat a comment inside a START TAG as
+                                               a comment: it compiles the whole run into an ATTRIBUTE NAME,
+                                               and the browser answers
+                                               "InvalidCharacterError: Failed to execute 'setAttribute'" —
+                                               which kills the render, so the Trade desk showed
+                                               "An unhandled error has occurred. Reload." and nothing else.
+                                               A note goes above a tag or after its closing bracket; never
+                                               inside it. TheRazorCommentIsNotAnAttributeTests is that law. *@
+                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2 sentry-rearm-btn"
+                                                    disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
+                                                    title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
+                                                    @onclick="RestockSentries">
+                                                @(_sentryMissing <= 0 ? "Magazines full" : $"🔫 Rearm sentries — {_sentryMissing} rounds · {_sentryCost:N0} cr")
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            <div class="trade-manifest-panel card bg-dark bg-opacity-50 text-light">
+                            <div class="card-header py-1"><span class="fw-bold small">Cargo manifest</span></div>
+                            <div class="card-body p-2 small">
+                                @if (_localTradeTargetId is not null)
+                                {
+                                    <div class="trade-manifest-transfer mb-2">
+                                        <div class="text-info trade-manifest-transfer-label">@(_localTradeMessage ?? "Drones ferrying…")</div>
+                                        <div class="progress trade-manifest-progress">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width:@(((int)(_localTradeProgress * 100)))%"></div>
+                                        </div>
+                                        <div class="text-info trade-manifest-transfer-pct">@((int)(_localTradeProgress * 100))%</div>
+                                    </div>
+                                }
+                                @{ IReadOnlyList<CargoManifestEntry> manifest = CargoManifest(); }
+                                @if (manifest.Count == 0)
+                                {
+                                    <div class="text-secondary">Hold empty.</div>
+                                }
+                                else
+                                {
+                                    <table class="table table-sm table-dark mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Class</th>
+                                                <th class="text-end">Units</th>
+                                                <th class="text-end">Est. value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (CargoManifestEntry entry in manifest)
+                                            {
+                                                <tr>
+                                                    <td>@entry.CargoClass</td>
+                                                    <td class="text-end">@entry.Units</td>
+                                                    <td class="text-end">@entry.Value.ToString("N0", CultureInfo.InvariantCulture) cr</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="fw-bold">
+                                                <td>Total</td>
+                                                <td class="text-end">@_cargoUnits/@CargoCapacity</td>
+                                                <td class="text-end">@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                }
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (_activeDesk == ShipDesk.Comms)
+                {
+                    @* Comms room, master–detail edition (ui-guidelines.md; validated by the Gemini
+                       playtest consult): ticker on top, then the CONTACTS TREE on the left — lean
+                       rows, one status badge each, grouped Scheduled / En route / fixtures, plus
+                       "Off the books" and the dark web market as first-class nodes — and ONLY the
+                       selected node's detail on the right. The three loose consoles are gone:
+                       tight-beam and laser ranging were always per-contact actions, so they live
+                       in the contact's detail now; the market is the dark-web node's detail. *@
+                    <div class="desk-comms-room">
+                        @* #1021 · THE TICKER IS THE WIRE COMPONENT'S SECOND CONSUMER, and it is the half of
+                           this issue that proves the refactor rather than claiming it. Owner: "keep the news
+                           feed... refactor it so it can be elsewhere also." A component with one caller is a
+                           file move; this strip is the elsewhere. Its markup and its `.comms-ticker*` rules
+                           moved into NewsWirePanel word for word (the rules had to MOVE rather than be
+                           reached with ::deep — Blazor scopes a stylesheet to the component that rendered
+                           the element, and the strip is drawn there now), so the comms room is unchanged on
+                           the glass and the two readings of one feed live in one file. *@
+                        <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                            Shape="SpaceSails.Client.Pages.Stations.NewsWirePanel.WireShape.Ticker"
+                            SimTime="SimTime" Feed="NewsFeed(CommsTickerAmbientDays)"
+                            ItemCount="CommsTickerItemCount" />
+                        <div class="desk-comms-grid">
+                            <div class="desk-side-panel comms-traffic-panel card bg-dark bg-opacity-50 text-light">
+                                <div class="card-header py-1"><span class="fw-bold small">Contacts &amp; intel</span></div>
+                                <div class="card-body p-2 small desk-traffic-scroll">
+                                    @foreach ((string groupLabel, List<NpcState> members) in CommsGroups())
+                                    {
+                                        <div class="comms-tree-group text-secondary fw-bold">@groupLabel</div>
+                                        @foreach (NpcState npc in members)
+                                        {
+                                            NpcState row = npc;
+                                            <div class="comms-node @(row.Ship.Id == _commsSelectedId ? "comms-node-selected" : "")"
+                                                 role="button" tabindex="0" title="Open her file in the comms panel" @onclick="() => SelectCommsShip(row.Ship.Id)">
+                                                <span class="flex-grow-1">@row.Ship.Callsign</span>
+                                                @if (!row.Ship.PublishesTimetable)
+                                                {
+                                                    <span class="badge bg-dark border border-secondary" title="Bought intel — off the books">🕸</span>
+                                                }
+                                                @{ (string rowBadge, string rowBadgeCss) = CommsStatusBadge(row); }
+                                                <span class="badge @rowBadgeCss">@rowBadge</span>
+                                            </div>
+                                        }
+                                    }
+                                    <div class="comms-tree-group text-secondary fw-bold">Intel</div>
+                                    @foreach (ScopeIntel intel in _scopeIntel)
+                                    {
+                                        ScopeIntel si = intel;
+                                        string siNodeId = $"scopeintel:{si.Id}";
+                                        <div class="comms-node @(_commsSelectedId == siNodeId ? "comms-node-selected" : "")"
+                                             role="button" tabindex="0" title="Open this tip in the comms panel" @onclick="() => _commsSelectedId = siNodeId">
+                                            <span class="flex-grow-1">@si.Headline</span>
+                                            <span class="badge bg-info text-dark">tip</span>
+                                        </div>
+                                    }
+                                    <div class="comms-node @(_commsSelectedId == "offbooks" ? "comms-node-selected" : "")"
+                                         role="button" tabindex="0" title="Open the off-the-books ships in the comms panel" @onclick='() => _commsSelectedId = "offbooks"'>
+                                        <span class="flex-grow-1">🕵 Off the books</span>
+                                        <span class="badge bg-secondary">@OffBooksCount unknown</span>
+                                    </div>
+                                    <div class="comms-node @(_commsSelectedId == "darkweb" ? "comms-node-selected" : "")"
+                                         role="button" tabindex="0" title="Open the dark-web market in the comms panel" @onclick='() => _commsSelectedId = "darkweb"'>
+                                        <span class="flex-grow-1">🕸 Dark web market</span>
+                                        <span class="badge @(DarkWebCanTrade() ? "bg-success" : "bg-secondary")">@(DarkWebCanTrade() ? "open" : "offline")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (_commsSelectedId == "darkweb")
+                            {
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                            }
+                            else
+                            {
+                                <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
+                                    @if (_commsSelectedId is { } scSel && scSel.StartsWith("scopeintel:", StringComparison.Ordinal) && ScopeIntelById(scSel) is { } tip)
+                                    {
+                                        <div class="card-header py-1"><span class="fw-bold small">@tip.Headline</span></div>
+                                        <div class="card-body p-2 small">
+                                            <div class="comms-breadcrumbs text-secondary mb-1">Intel › orbit fix</div>
+                                            @foreach (string line in tip.Lines)
+                                            {
+                                                <div class="mb-1">@line</div>
+                                            }
+                                            <div class="d-grid gap-1 mt-2">
+                                                <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start"
+                                                        title="Slew the scope to where this tip predicts and scan" @onclick="() => PointScopeWhereIntelSays(tip)">
+                                                    🔭 Point the scope where this says
+                                                </button>
+                                            </div>
+                                            <div class="text-secondary mt-2">The scope slews to the predicted spot and runs a prioritized area scan. Warp time at the <span class="text-light">Sensors desk</span> until the pass lands — when it sweeps over her, she's charted.</div>
+                                        </div>
+                                    }
+                                    else if (_commsSelectedId == "offbooks")
+                                    {
+                                        <div class="card-header py-1"><span class="fw-bold small">🕵 Off the books</span></div>
+                                        <div class="card-body p-2 small">
+                                            <div class="comms-breadcrumbs text-secondary mb-1">Intel › Off the books</div>
+                                            <div><span class="fw-bold">@OffBooksCount ship@(OffBooksCount == 1 ? "" : "s")</span> are flying with no published timetable — the board can't list what nobody filed.</div>
+                                            <div class="text-secondary mt-2">Two ways to find them:</div>
+                                            <div class="text-secondary">🔭 sweep the sky with the telescope at the <span class="text-light">Sensors desk</span> — lane watches and area scans catch dark hulls;</div>
+                                            <div class="text-secondary">🕸 buy their route intel at the <span class="text-light">dark web market</span> (open at a haven, or a station past Mars) — bought ships join the contacts tree with a 🕸 badge until the tip goes stale.</div>
+                                        </div>
+                                    }
+                                    else if (_commsSelectedId is { } commsSelId && FindNpc(commsSelId) is { } commsShip)
+                                    {
+                                        bool commsTracked = _trackingPost is not null && _trackingPost.TryGetTrack(commsShip.Ship.Id, out _);
+                                        <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold small">@commsShip.Ship.Callsign</span>
+                                            @{ (string detailBadge, string detailBadgeCss) = CommsStatusBadge(commsShip); }
+                                            <span class="badge @detailBadgeCss">@detailBadge</span>
+                                        </div>
+                                        <div class="card-body p-2 small">
+                                            <div class="comms-breadcrumbs text-secondary mb-1">Departures board › @commsShip.Ship.Callsign</div>
+                                            <div>@commsShip.Ship.CargoClass (@commsShip.Ship.CargoUnits u) · @RouteLabel(commsShip.Ship)</div>
+                                            <div>@DepartureLabel(commsShip.Ship)</div>
+                                            <div class="text-secondary">last seen: @(commsShip.LastObservation is { } lastObs ? FormatSimTime(lastObs.SimTime) : "never — not yet inside sensor reach")</div>
+                                            @{ ShipHistory commsHist = ShipHistories.For(commsShip.Ship.Id); }
+                                            @* The Victoria-I history block (owner ruling, 2026-07-19): every hull carries a
+                                               past — where she was laid down, the proud names she outlived, how many owners
+                                               deep she runs, and the wear that proves the glory. *@
+                                            <div class="border-top border-secondary mt-2 pt-1">
+                                                <div class="fw-bold">📜 Service history</div>
+                                                <div class="text-secondary">@commsHist.LaidDown</div>
+                                                @if (commsHist.HasFormerNames)
+                                                {
+                                                    <div>@commsHist.FormerNamesLine</div>
+                                                }
+                                                @if (commsHist.CurrentNameLine(commsShip.Ship.Callsign, flyingFalseColors: false) is { } commsNameLine)
+                                                {
+                                                    <div class="text-secondary">@commsNameLine</div>
+                                                }
+                                                <div class="text-secondary fst-italic">@commsHist.Condition</div>
+                                            </div>
+                                            @if (!commsShip.Ship.PublishesTimetable)
+                                            {
+                                                <div class="text-secondary">🕸 bought intel — goes stale in @IntelStaleInDays(commsShip.Ship.Id).ToString("F0") d</div>
+                                            }
+                                            <div class="d-grid gap-1 mt-2 comms-actions">
+                                                @if (commsTracked)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
+                                                            title="Hail her on tight-beam and ask her intentions" @onclick="() => CommsHail(commsShip)">
+                                                        📻 Hail via tight-beam — ask her intentions
+                                                    </button>
+                                                    @if (_commsHailAnswer is not null)
+                                                    {
+                                                        <div class="text-info">@_commsHailAnswer</div>
+                                                    }
+                                                    <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1 text-start"
+                                                            title="Laser-range her for an exact fix — but she learns where we are" @onclick="() => CommsLaserRange(commsShip)">
+                                                        ⚡ Laser range — exact fix, but she learns where we are
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1 text-start"
+                                                            disabled="@(!CommsCanFence(commsShip))"
+                                                            title="@(DarkWebCanTrade() ? "Sell this telescope track to the dark-web market for coin" : DarkWebDisabledReason())"
+                                                            @onclick="() => CommsSellTrack(commsShip)">
+                                                        🕸 Fence this track@(CommsFencePrice(commsShip) is { } fencePrice ? $" — +{fencePrice:N0} cr" : " — needs ≥50% quality at a haven")
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-secondary">Not on your telescope ledger — track her at the <span class="text-light">Sensors desk</span> to hail, laser-range, or fence the track.</div>
+                                                }
+                                                @if (SelectedTrackedTarget() is { } pinTarget && pinTarget.Ship.Id == commsShip.Ship.Id)
+                                                {
+                                                    <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light") py-0 px-1 text-start" title="Pin her so the scope holds her brake point" @onclick="TogglePin">
+                                                        📌 Pin: brakes at @BodyName(pinTarget.Ship.DestinationId)
+                                                    </button>
+                                                }
+                                            </div>
+                                            @if (_commsActionMessage is not null)
+                                            {
+                                                <div class="text-warning mt-1">@_commsActionMessage</div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="card-body p-2 small text-secondary">
+                                            Select a contact in the tree — its dossier and comms actions (hail, laser ranging, fencing the track) show here.
+                                            Ships missing from the board are found at the <span class="text-light">Sensors desk</span> or bought at the <span class="text-light">dark web market</span>.
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                @* #1021 · THE GALLEY BRANCH USED TO BE HERE, and it is gone. Owner: "this UI MUST GO!" The
+                   news wire and the rum locker are a pop-up card now (search `.galley-card` in this file);
+                   `SwitchDesk(ShipDesk.Galley)` raises it and never writes `_activeDesk`, so this band has
+                   nothing left to draw for that value and the gate above no longer lists it.
+                   TheGalleyIsACardNotADeskTests asks the band the question directly. *@
+                else if (_activeDesk == ShipDesk.Captain)
+                {
+                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
+                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
+                                                              ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
+                                                              OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
+                                                              WeaponsTight="_weaponsTight"
+                                                              DamageControlAuthorized="_dcStandingOrder"
+                                                              OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
+                                                              DamageControlNextActCleared="_dcNextActionCleared"
+                                                              OnAuthorizeNextDamageControlAct="AuthorizeNextDamageControlAct"
+                                                              ArmedCompartment="@_shipAuthorized"
+                                                              BridgeRepeaterAlive="ShipBridgeAlive"
+                                                              Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
+                                                              OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
+                                                              OnPointScope="PointScopeForActiveFetch"
+                                                              Tips="LedgerTipsAsRemembered()" OnScopeTip="PointScopeFromLedger"
+                                                              OnReadGreyPage="ReadTheGreyPage"
+                                                              GreyPageMark="@FilingLine.Mark" GreyPageLabel="@FilingLine.Label"
+                                                              Crossings="CrossingRows()" CrossingsHeading="@CaptainCrossings.Heading"
+                                                              Accounts="LedgerAccounts()"
+                                                              OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
+                                                              Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
+                                                              HoardSummary="@_caches.HoardLine()"
+                                                              OnReopenStartPicker="ReopenStartPicker"
+                                                              OnOpenSaves="OpenSaveDrawer"
+                                                              CaptainName="@ActiveCaptainName"
+                                                              RenamingCaptain="@(_renamingThreadId is { Length: > 0 } rid && rid == _activeThreadId)"
+                                                              RenameDraft="@_renameDraft"
+                                                              OnBeginRename="() => BeginRenameCaptain(_activeThreadId ?? string.Empty)"
+                                                              OnRenameDraft="v => _renameDraft = v"
+                                                              OnRenameKeyDown="RenameKeyDown"
+                                                              OnCommitRename="CommitRenameCaptain"
+                                                              OnCancelRename="CancelRenameCaptain"
+                                                              Voyage="CrewVoyage()"
+                                                              WorkingStopsSinceShoreLeave="_workingStopsSinceShoreLeave"
+                                                              LastError="CaptainCrashNote()" ErrorCopied="_crashNoteCopied"
+                                                              OnCopyError="CopyCrashNote" OnDismissError="DismissCrashNote"
+                                                              InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
+                }
+            </div>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
+    [Parameter] public string? _activeThreadId { get; set; }
+    [Parameter] public CacheLedger _caches { get; set; } = default!;
+    /// <summary>the page's `SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTab` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_captainTab` and the assignment still lands on the page.</summary>
+    [Parameter] public SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTabValue { get; set; } = default!;
+    /// <summary>The page's `_captainTab = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<SpaceSails.Client.Pages.Stations.Captain.CaptainView> _captainTabSet { get; set; } = default!;
+    private SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTab { get => _captainTabValue; set { _captainTabValue = value; _captainTabSet(value); } }
+    [Parameter] public int _cargoUnits { get; set; }
+    [Parameter] public int _cargoValue { get; set; }
+    [Parameter] public string? _commsActionMessage { get; set; }
+    [Parameter] public string? _commsHailAnswer { get; set; }
+    /// <summary>the page's `string? _commsSelectedId` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_commsSelectedId` and the assignment still lands on the page.</summary>
+    [Parameter] public string? _commsSelectedIdValue { get; set; }
+    /// <summary>The page's `_commsSelectedId = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string?> _commsSelectedIdSet { get; set; } = default!;
+    private string? _commsSelectedId { get => _commsSelectedIdValue; set { _commsSelectedIdValue = value; _commsSelectedIdSet(value); } }
+    [Parameter] public bool _crashNoteCopied { get; set; }
+    /// <summary>the page's `int _credits` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_credits` and the assignment still lands on the page.</summary>
+    [Parameter] public int _creditsValue { get; set; }
+    /// <summary>The page's `_credits = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<int> _creditsSet { get; set; } = default!;
+    private int _credits { get => _creditsValue; set { _creditsValue = value; _creditsSet(value); } }
+    [Parameter] public bool _dcNextActionCleared { get; set; }
+    [Parameter] public bool _dcStandingOrder { get; set; }
+    [Parameter] public string? _dockBodyId { get; set; }
+    [Parameter] public bool _docked { get; set; }
+    [Parameter] public string? _dockedHavenId { get; set; }
+    [Parameter] public ICelestialEphemeris? _ephemeris { get; set; }
+    [Parameter] public double _fireAimOffsetSeconds { get; set; }
+    [Parameter] public double _fireAtSimTime { get; set; }
+    [Parameter] public bool _fireAtWill { get; set; }
+    [Parameter] public string? _fireBlockedBy { get; set; }
+    [Parameter] public double _fireDispersionMeters { get; set; }
+    [Parameter] public OrdnanceKind _fireKind { get; set; } = default!;
+    [Parameter] public FireControl.Solution? _fireSolution { get; set; }
+    [Parameter] public string? _fireTip { get; set; }
+    [Parameter] public bool _hasNetJammer { get; set; }
+    [Parameter] public HeatState _heat { get; set; } = default!;
+    [Parameter] public int _holdLevel { get; set; }
+    [Parameter] public IntelLedger _intelLedger { get; set; } = default!;
+    [Parameter] public InterceptEstimate.Result? _intercept { get; set; }
+    [Parameter] public string? _interestTargetId { get; set; }
+    /// <summary>the page's `SpaceSails.Client.Pages.Stations.LocalSpace? _localSpace` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_localSpace` and the assignment still lands on the page.</summary>
+    [Parameter] public SpaceSails.Client.Pages.Stations.LocalSpace? _localSpaceValue { get; set; }
+    /// <summary>The page's `_localSpace = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<SpaceSails.Client.Pages.Stations.LocalSpace?> _localSpaceSet { get; set; } = default!;
+    private SpaceSails.Client.Pages.Stations.LocalSpace? _localSpace { get => _localSpaceValue; set { _localSpaceValue = value; _localSpaceSet(value); } }
+    [Parameter] public string? _localTradeMessage { get; set; }
+    [Parameter] public double _localTradeProgress { get; set; }
+    [Parameter] public string? _localTradeTargetId { get; set; }
+    [Parameter] public int _massLevel { get; set; }
+    [Parameter] public int _missileAmmo { get; set; }
+    [Parameter] public ShipMission _mission { get; set; } = default!;
+    [Parameter] public MissionOptions _missionOptions { get; set; } = default!;
+    [Parameter] public bool _openCaptainToTutorials { get; set; }
+    [Parameter] public string? _orbitedBodyId { get; set; }
+    [Parameter] public bool _pinned { get; set; }
+    [Parameter] public int _reactionMassPulses { get; set; }
+    /// <summary>the page's `string _renameDraft` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_renameDraft` and the assignment still lands on the page.</summary>
+    [Parameter] public string _renameDraftValue { get; set; } = default!;
+    /// <summary>The page's `_renameDraft = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string> _renameDraftSet { get; set; } = default!;
+    private string _renameDraft { get => _renameDraftValue; set { _renameDraftValue = value; _renameDraftSet(value); } }
+    [Parameter] public string? _renamingThreadId { get; set; }
+    [Parameter] public int _revealedIterations { get; set; }
+    [Parameter] public List<ScopeIntel> _scopeIntel { get; set; } = default!;
+    [Parameter] public int _sensorLevel { get; set; }
+    [Parameter] public ShipState _ship { get; set; } = default!;
+    [Parameter] public string? _shipAuthorized { get; set; }
+    [Parameter] public List<ShipBot> _shipBots { get; set; } = default!;
+    [Parameter] public bool _shotAuthorized { get; set; }
+    [Parameter] public int _slugAmmo { get; set; }
+    [Parameter] public int _telescopeLevel { get; set; }
+    [Parameter] public SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost { get; set; }
+    [Parameter] public bool _weaponsTight { get; set; }
+    [Parameter] public int _workingStopsSinceShoreLeave { get; set; }
+    [Parameter] public string ActiveCaptainName { get; set; } = default!;
+    [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData>> AllStationChips { get; set; } = default!;
+    [Parameter] public Action ArmFire { get; set; } = default!;
+    [Parameter] public Action AuthorizeNextDamageControlAct { get; set; } = default!;
+    [Parameter] public Action AuthorizeShot { get; set; } = default!;
+    [Parameter] public Action AutoAim { get; set; } = default!;
+    [Parameter] public Action<string> BeginRenameCaptain { get; set; } = default!;
+    [Parameter] public Func<string?> BestWireLenderId { get; set; } = default!;
+    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    [Parameter] public Action<string> BribeShip { get; set; } = default!;
+    [Parameter] public Action<OrdnanceKind> BuyAmmo { get; set; } = default!;
+    [Parameter] public Action<int> BuyFuel { get; set; } = default!;
+    [Parameter] public Action BuyNetJammer { get; set; } = default!;
+    [Parameter] public Action<string> BuyUpgrade { get; set; } = default!;
+    [Parameter] public Action CallInFavorAtPump { get; set; } = default!;
+    [Parameter] public Action CancelFiringSolution { get; set; } = default!;
+    [Parameter] public Action CancelRenameCaptain { get; set; } = default!;
+    [Parameter] public Func<bool> CanWarnInterest { get; set; } = default!;
+    [Parameter] public Func<CrashNote?> CaptainCrashNote { get; set; } = default!;
+    [Parameter] public int CargoCapacity { get; set; }
+    [Parameter] public Func<IReadOnlyList<CargoManifestEntry>> CargoManifest { get; set; } = default!;
+    [Parameter] public Action CommitRenameCaptain { get; set; } = default!;
+    [Parameter] public Func<NpcState, bool> CommsCanFence { get; set; } = default!;
+    [Parameter] public Func<NpcState, int?> CommsFencePrice { get; set; } = default!;
+    [Parameter] public Func<List<(string Label, List<NpcState> Members)>> CommsGroups { get; set; } = default!;
+    [Parameter] public Action<NpcState> CommsHail { get; set; } = default!;
+    [Parameter] public Action<NpcState> CommsLaserRange { get; set; } = default!;
+    [Parameter] public Action<NpcState> CommsSellTrack { get; set; } = default!;
+    [Parameter] public Func<NpcState, (string Label, string Css)> CommsStatusBadge { get; set; } = default!;
+    [Parameter] public int CommsTickerAmbientDays { get; set; }
+    [Parameter] public int CommsTickerItemCount { get; set; }
+    [Parameter] public Action ComputeFiringSolution { get; set; } = default!;
+    [Parameter] public Action CopyCrashNote { get; set; } = default!;
+    [Parameter] public Func<CrewTemp.Voyage> CrewVoyage { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<string>> CrossingRows { get; set; } = default!;
+    [Parameter] public Func<bool> DarkWebCanTrade { get; set; } = default!;
+    [Parameter] public Func<string> DarkWebDisabledReason { get; set; } = default!;
+    [Parameter] public Func<double> DarkWebDistanceFromEarth { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip>> DarkWebMarketShips { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo>> DarkWebTrackedShips { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact>> DarkWebWireContacts { get; set; } = default!;
+    [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
+    [Parameter] public Action DismissCrashNote { get; set; } = default!;
+    [Parameter] public Func<string?> DockedBodyName { get; set; } = default!;
+    [Parameter] public Action DrawFirePlan { get; set; } = default!;
+    [Parameter] public Func<string, NpcState?> FindNpc { get; set; } = default!;
+    [Parameter] public bool FireLocked { get; set; }
+    [Parameter] public Func<FireControl.Solution, string> FireTip { get; set; } = default!;
+    [Parameter] public Action<string> FireWarningShot { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public Func<string> FuelDirectionsLine { get; set; } = default!;
+    [Parameter] public Func<string, double> IntelStaleInDays { get; set; } = default!;
+    [Parameter] public Func<double?> InterestDistanceNow { get; set; } = default!;
+    [Parameter] public Func<string?> InterestTargetName { get; set; } = default!;
+    [Parameter] public Func<bool> IsHiddenAtHaven { get; set; } = default!;
+    [Parameter] public Func<Stations.Captain.AccountRow[]> LedgerAccounts { get; set; } = default!;
+    [Parameter] public Func<Stations.Captain.CacheMapItem[]> LedgerMaps { get; set; } = default!;
+    [Parameter] public Func<Stations.Captain.LedgerTip[]> LedgerTipsAsRemembered { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Stations.WarRoom.LiveRound>> LiveRounds { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<CommerceRule.LocalContact>> LocalContacts { get; set; } = default!;
+    [Parameter] public string? LocalSpaceBodyId { get; set; }
+    [Parameter] public double MaxFireAimOffsetSeconds { get; set; }
+    [Parameter] public double MaxMuzzleSpeed { get; set; }
+    [Parameter] public int MissilePulseCost { get; set; }
+    [Parameter] public int NetJammerPriceCr { get; set; }
+    [Parameter] public Func<int, NewsWire.NewsScope, string?, IReadOnlyList<NewsWire.NewsItem>> OnNewsFeed { get; set; } = default!;
+    private IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount,
+        NewsWire.NewsScope scope = NewsWire.NewsScope.SystemWire, string? salt = null)
+        => OnNewsFeed(ambientCount, scope, salt);
+    [Parameter] public int OffBooksCount { get; set; }
+    [Parameter] public Action<string, bool> OnOpenBank { get; set; } = default!;
+    private void OpenBank(string contactId, bool viaWire) => OnOpenBank(contactId, viaWire);
+    [Parameter] public Action OpenDarkWebFromLedger { get; set; } = default!;
+    [Parameter] public Action<string> OpenDossierFromLedger { get; set; } = default!;
+    [Parameter] public Action OpenSaveDrawer { get; set; } = default!;
+    [Parameter] public Func<double?> PlannedImpactEta { get; set; } = default!;
+    [Parameter] public Action PointScopeForActiveFetch { get; set; } = default!;
+    [Parameter] public Action<string> PointScopeFromLedger { get; set; } = default!;
+    [Parameter] public Action<ScopeIntel> PointScopeWhereIntelSays { get; set; } = default!;
+    [Parameter] public Func<int, int, long> PumpLoanPrincipal { get; set; } = default!;
+    [Parameter] public Action<NewsWire.NewsEventKind, string, string?> OnPushNewsEvent { get; set; } = default!;
+    private void PushNewsEvent(NewsWire.NewsEventKind kind, string subject, string? detail = null)
+        => OnPushNewsEvent(kind, subject, detail);
+    [Parameter] public Func<Stations.Captain.QuestItem[]> QuestCards { get; set; } = default!;
+    [Parameter] public int ReactionMassCapacity { get; set; }
+    [Parameter] public Action<string> ReadTheGreyPage { get; set; } = default!;
+    [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
+    [Parameter] public Action ReopenStartPicker { get; set; } = default!;
+    [Parameter] public Action RestockSentries { get; set; } = default!;
+    [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;
+    [Parameter] public Action ScanFiringWindows { get; set; } = default!;
+    [Parameter] public Func<string, ScopeIntel?> ScopeIntelById { get; set; } = default!;
+    [Parameter] public Action<string> SelectCommsShip { get; set; } = default!;
+    [Parameter] public Func<NpcState?> SelectedTrackedTarget { get; set; } = default!;
+    [Parameter] public Action SellCargo { get; set; } = default!;
+    [Parameter] public Func<int> SentryRestockCost { get; set; } = default!;
+    [Parameter] public Func<int> SentryRoundsMissing { get; set; } = default!;
+    [Parameter] public Action<double> SetFireAimOffset { get; set; } = default!;
+    [Parameter] public Action<OrdnanceKind> SetFireKind { get; set; } = default!;
+    [Parameter] public Action<string> SetInterestTarget { get; set; } = default!;
+    [Parameter] public Action<ShipMission> SetMission { get; set; } = default!;
+    [Parameter] public bool ShipBridgeAlive { get; set; }
+    [Parameter] public double SimTime { get; set; }
+    [Parameter] public int SlugPulseCost { get; set; }
+    [Parameter] public Action<string> StartLocalBuy { get; set; } = default!;
+    [Parameter] public Action<string> StartLocalTrade { get; set; } = default!;
+    [Parameter] public Action<int> StartTutorial { get; set; } = default!;
+    [Parameter] public Func<string?> StraightWindowText { get; set; } = default!;
+    [Parameter] public Action<ShipDesk> SwitchDesk { get; set; } = default!;
+    [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
+    [Parameter] public Action ToggleDamageControlAuthority { get; set; } = default!;
+    [Parameter] public Action ToggleFireAtWill { get; set; } = default!;
+    [Parameter] public Action TogglePin { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Stations.Captain.TutorialItem>> TutorialCards { get; set; } = default!;
+    [Parameter] public Func<int, int> UpgradePrice { get; set; } = default!;
+    [Parameter] public Action<string> ViewMapFromLedger { get; set; } = default!;
+    [Parameter] public int Warp { get; set; }
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.Contact>> WarRoomContacts { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.HunterContact>> WarRoomHunters { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.SensorTrack>> WarRoomSensorTracks { get; set; } = default!;
+    [Parameter] public bool WeaponsAuthorized { get; set; }
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

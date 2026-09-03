@@ -1,0 +1,207 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using PumpRun = SpaceSails.Client.Pages.Map.PumpRun
+@using Sweeper = SpaceSails.Client.Pages.Map.Sweeper
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE WALKED-DECK BANNER STRIP, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="wreck-clocks">
+            @* #538 · THE SWEEP, ABOVE EVERYTHING. Three professionals working the hull outrank a countdown for
+               the captain's attention, because the countdown is a number and this is a question — where are they
+               now, and do they know. It reads the WORST state anybody aboard is in, so a challenge cannot be
+               hidden behind two colleagues still ticking boxes. *@
+            @if (SweepersAboard)
+            {
+                <div class="wc-line overload @(AnySweeperOnTheCaptain ? "no-recall" : "")">
+                    <span class="wc-tag">🕶 @WorstSweeperState.ToString().ToUpperInvariant()</span>
+                    <span class="wc-room">
+                        @(WorstSweeperState switch
+                        {
+                            InspectionTeam.Awareness.Challenging => "stand still",
+                            InspectionTeam.Awareness.Hunting => "they know you are aboard",
+                            InspectionTeam.Awareness.Investigating => "somebody heard that",
+                            _ => "not looking for you yet",
+                        })
+                    </span>
+                    <span class="wc-time">@_sweepers.Count</span>
+                </div>
+            }
+
+            @* THE OVERLOAD, LOUDEST AND FIRST. Owner, having armed it: "it should have a timer visible in
+               UI" — and he is right that this was absurd: the entire scene is walking AWAY from the panel,
+               and the clock was only readable by going back to it. Past the recall point it stops being a
+               countdown and starts being a fact. *@
+            @if ((OnWreck ? _scuttleSecondsLeft : _shipChargesSeconds) is { } burn)
+            {
+                <div class="wc-line overload @(Scuttle.CanAbort(burn) ? "" : "no-recall")">
+                    <span class="wc-tag">☢ @(Scuttle.CanAbort(burn) ? "OVERLOAD" : "NO RECALL")</span>
+                    <span class="wc-room">@(OnWreck ? "get off her" : "her own keel")</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
+                </div>
+            }
+
+            @* #409+ · THE MOUNTAIN COUNTING. Above the rest of the strip because it is the only clock here that
+               ends with every door in the place keyed, including the one behind you. *@
+            @if (LabAlarmSecondsLeft is { } alarm)
+            {
+                <div class="wc-line overload @(alarm <= 20 ? "no-recall" : "")">
+                    <span class="wc-tag">🔔 ALARM</span>
+                    <span class="wc-room">@(_hasVantarCard ? "you hold the card" : "the card is deeper in")</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(alarm)</span>
+                </div>
+            }
+
+            @* #537 · THE KNOCK, and the band it is being spent on. A sounding is seconds you are committed to,
+               exactly like a pump run, so it goes in the same column — and the band sits under it because a
+               captain who walked away from the manifest should not have to walk back for four numbers. *@
+            @if (SoundingSecondsLeft is { } knock)
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">@(_soundQuietly ? "✊ KNOCKING" : "📡 SOUNDING")</span>
+                    <span class="wc-room">stand still</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(knock)</span>
+                </div>
+            }
+            @if (SearchBandLine is { } band)
+            {
+                <div class="wc-line">
+                    <span class="wc-tag">📐 UNACCOUNTED</span>
+                    <span class="wc-room">@band</span>
+                    <span class="wc-time">K</span>
+                </div>
+            }
+
+            @* #537 slice 3 · THE CUT, and then the scar cooling. The second is the one that matters: a warm
+               cut is what a lamp on the plate reads, so a captain hiding behind one has to be able to SEE how
+               long it has left, or the rule is a trap rather than a decision. It is drawn as an overload
+               because that is exactly what it is — a clock counting down to being safe, that you cannot do
+               anything about once it has started. *@
+            @if (CutSecondsLeft is { } cut)
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">🔥 CUTTING</span>
+                    <span class="wc-room">stand still · @CutsLeftInTheCell in the cell</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(cut)</span>
+                </div>
+            }
+            @if (WarmCutSecondsLeft is { } warm)
+            {
+                <div class="wc-line overload no-recall">
+                    <span class="wc-tag">🔥 WARM CUT</span>
+                    <span class="wc-room">@Core.HullStowage.WarmCutWatchLine</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(warm)</span>
+                </div>
+            }
+
+            @* THE BOAT, SECOND. Owner: "A timer on the map about the cool down and warm up" — and the map is
+               exactly where it belongs, because a captain watching this clock is nowhere near a console. It sits
+               under the overload on purpose: those are the two numbers whose race is the whole scene. *@
+            @if (BoatClockWorthShowing)
+            {
+                <div class="wc-line @(BoatState == SilentRunning.BoatState.WarmingUp ? "overload" : "")">
+                    <span class="wc-tag">@SilentRunning.ClockTag(BoatState)</span>
+                    <span class="wc-room">@SilentRunning.ClockNote(BoatState)</span>
+                    <span class="wc-time">
+                        @(BoatState == SilentRunning.BoatState.Cold
+                            ? "—"
+                            : HullVenting.SoakLabel(BoatSecondsLeft))
+                    </span>
+                </div>
+            }
+
+            @* Every pump gets a line, because several can run at once now. *@
+            @foreach (var run in (OnWreck ? _pumps : _shipPumps).Values.OrderBy(p => p.SecondsLeft))
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">🛢 @(run.RoughBanked ? "TAIL" : "PUMPING")</span>
+                    <span class="wc-room">@(run.Volume.Count > 1 ? $"{run.Volume.Count} SPACES" : run.Volume[0])</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(run.SecondsLeft)</span>
+                </div>
+            }
+            @if (OnWreck)
+            {
+                @foreach ((string room, double secs) in RoomsSoaking)
+                {
+                    <div class="wc-line">
+                        <span class="wc-tag">💨 VACUUM</span>
+                        <span class="wc-room">@room</span>
+                        <span class="wc-time">@HullVenting.SoakLabel(secs)</span>
+                    </div>
+                }
+            }
+
+            @* #538 · WEAPONS TIGHT, FOR AS LONG AS IT STANDS. Owner: "the remote to sentries should be in the
+               mobile hud not at captains desk." The order is given on foot and its whole danger is forgetting
+               it — so it is not a checkbox somewhere else, it is a line you cannot walk past. Last in the strip
+               because it is a standing order rather than a countdown. *@
+            @if (_weaponsTight)
+            {
+                <div class="wc-line overload no-recall">
+                    <span class="wc-tag">🤖 TIGHT</span>
+                    <span class="wc-room">nothing of yours fires</span>
+                    <span class="wc-time">H</span>
+                </div>
+            }
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
+    //
+    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
+    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
+    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
+    // refactor: it is what let the markup above move out of Map.razor without a single character of it
+    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
+    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public bool _hasVantarCard { get; set; }
+    [Parameter] public Dictionary<string, PumpRun> _pumps { get; set; } = default!;
+    [Parameter] public double? _scuttleSecondsLeft { get; set; }
+    [Parameter] public double? _shipChargesSeconds { get; set; }
+    [Parameter] public Dictionary<string, PumpRun> _shipPumps { get; set; } = default!;
+    [Parameter] public bool _soundQuietly { get; set; }
+    [Parameter] public List<Sweeper> _sweepers { get; set; } = default!;
+    [Parameter] public bool _weaponsTight { get; set; }
+    [Parameter] public bool AnySweeperOnTheCaptain { get; set; }
+    [Parameter] public bool BoatClockWorthShowing { get; set; }
+    [Parameter] public double BoatSecondsLeft { get; set; }
+    [Parameter] public SilentRunning.BoatState BoatState { get; set; } = default!;
+    [Parameter] public double? CutSecondsLeft { get; set; }
+    [Parameter] public int CutsLeftInTheCell { get; set; }
+    [Parameter] public double? LabAlarmSecondsLeft { get; set; }
+    [Parameter] public bool OnWreck { get; set; }
+    [Parameter] public IEnumerable<(string Room, double Seconds)> RoomsSoaking { get; set; } = default!;
+    [Parameter] public string? SearchBandLine { get; set; }
+    [Parameter] public double? SoundingSecondsLeft { get; set; }
+    [Parameter] public bool SweepersAboard { get; set; }
+    [Parameter] public double? WarmCutSecondsLeft { get; set; }
+    [Parameter] public InspectionTeam.Awareness WorstSweeperState { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

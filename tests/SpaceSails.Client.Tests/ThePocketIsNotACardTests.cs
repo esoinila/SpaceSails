@@ -55,7 +55,7 @@ public sealed class ThePocketIsNotACardTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>One method's body, cut at the next member declaration — the idiom every source guard on this
     /// ground already uses, so a body read here is a body read there.</summary>

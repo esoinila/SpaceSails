@@ -806,7 +806,7 @@ public partial class Map
     }
 
     /// <summary>#603 · The door the captain is standing at, while its pop-up is up.</summary>
-    private sealed record LockedDoorLook(string Sign, string Line, SatchelTry.Target Target);
+    public sealed record LockedDoorLook(string Sign, string Line, SatchelTry.Target Target);
 
     private LockedDoorLook? _lockedDoor;
 

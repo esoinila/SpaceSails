@@ -126,7 +126,7 @@ public sealed class TheElevenMomentsGetCadenceAndDeferralTests
     /// the component's own type rather than out of a flag this bench invented.</summary>
     private static void TheOldOnesAreOnHer(Pages.Map map)
     {
-        Type reever = typeof(Pages.Map).GetNestedType("Reever", BindingFlags.NonPublic)
+        Type reever = typeof(Pages.Map).GetNestedType("Reever", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException(
                 "Map has no nested `Reever` — the danger this bench arranges has moved, and every deferral "
                 + "claim below would be made on a calm deck.");

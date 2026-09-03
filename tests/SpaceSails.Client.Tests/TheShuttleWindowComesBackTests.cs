@@ -342,12 +342,12 @@ public sealed class TheShuttleWindowComesBackTests
     private static object AnExcursionOn(Pages.Map map, string bodyId)
     {
         ICelestialEphemeris eph = Get<ICelestialEphemeris>(map, "_ephemeris");
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", BindingFlags.NonPublic)
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map.ShuttleStop is gone — this bench has drifted.");
         object stop = Activator.CreateInstance(
             stopType, Body(eph, bodyId), 0.0, 0.0, false, true, false)!;
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", BindingFlags.NonPublic)
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map.SurfaceExcursion is gone — this bench has drifted.");
         object excursion = Activator.CreateInstance(exType, nonPublic: true)!;
         SetProp(excursion, "Stop", stop);
