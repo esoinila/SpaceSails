@@ -25,6 +25,7 @@ namespace SpaceSails.Core.Tests;
 /// other guard's world, whatever order xUnit runs them in. Restoring in a <c>finally</c> is belt as well as
 /// braces.</para>
 /// </summary>
+[Collection(StopRegisterCollection.Name)]
 public sealed class TheMoneyTrailTests
 {
     /// <summary>How many generated rocks the sweeps walk to find grounds with halls. The band is about one

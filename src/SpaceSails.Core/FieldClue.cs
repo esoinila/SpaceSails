@@ -117,6 +117,21 @@ public static class FieldClue
             return HardcaseRep.ScheduleBody;
         }
 
+        // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
+        // same door. A paper out of one of the underground's five designated rooms is a paper somebody
+        // composed a sentence for, and until this branch a captain who carried the rail's invoice out and
+        // opened it in the sleeve was shown a torn shipping manifest.
+        //
+        // Body ALONE again, and see PaperHeads.DocumentOf for why: the seeded tail below is a generic paper
+        // saying how well it pins a place, and these five pin nothing — they are the paperwork of one job on
+        // the ground the captain is already standing on. THE CERTAINTY IS NOT BRANCHED. It still rolls off
+        // the id exactly as it always did, so the tracker's spread, the row's short word and Line() are all
+        // untouched: what changed is what the sheet SAYS, not what it is worth.
+        if (UndergroundComplex.AuthoredPaperOf(paperId) is { } written)
+        {
+            return PaperHeads.DocumentOf(written);
+        }
+
         string[] papers =
         [
             "A duplicate movement order, carbon third copy, the top two long gone. Somebody has ticked a " +
@@ -184,6 +199,14 @@ public static class FieldClue
         if (HardcaseRep.IsTheSchedule(paperId))
         {
             return HardcaseRep.ScheduleLabel;
+        }
+
+        // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document
+        // above, and the same one roll behind it: the row still ends with the seeded short word, so a
+        // pocketful of papers is still comparable on the one thing worth comparing them on.
+        if (UndergroundComplex.AuthoredPaperOf(paperId) is { } written)
+        {
+            return PaperHeads.TitleOf(written);
         }
 
         string[] titles =
