@@ -502,6 +502,24 @@ public sealed partial class Map
         if (WalkIn.IsASetup(_activeThreadId ?? "", who))
         {
             BankTheCrossing(IllegalHeat.Charge(_dockedHavenId ?? "", IllegalHeat.Crossing.RefusedCardAtAGate));
+
+            // #761 · …AND HE IS TOLD, on the surface he is looking at. Owner's law: a plot-significant
+            // moment reaches the player where their eye is, not only in a book they may never open. This is
+            // the fifth of the game's five crossings and it was the only one that reached no surface at all
+            // — the Hive's gate raises a card over the lift panel, the scanner's press says it where the
+            // captain is looking, the agent's remote writes it onto his own panel, and this one, where a
+            // debt is taken on because somebody set him up, went into the autopilot log and nowhere else.
+            // The badge that carries this fact elsewhere (`TheyRememberYouHere`, Map.razor) is drawn only
+            // while an excursion is underfoot, and a walk-in's second berth is a BAR: there is no ground
+            // for it to appear on, so the badge could never have been the answer here.
+            //
+            // The sentence is IllegalHeat's own, unchanged and un-recomposed — the same words that badge
+            // shows on a moon, so two readings of one fact cannot drift apart. It goes through #736's seam,
+            // which puts it on whatever pop-up is in front of him and falls through to the HUD when nothing
+            // is; and at Telling.Floor, because the completion line one statement above is Status and lands
+            // in the same breath. Said at Status this would be #689 on a two-line scene: the significant
+            // half losing the one slot to the routine half, by write order.
+            SayItWhereTheyAreLooking(IllegalHeat.TheyRememberYouHere, Telling.Floor);
             LogAutopilotEvent($"🌡 {IllegalHeat.TheyRememberYouHere}");
         }
 
