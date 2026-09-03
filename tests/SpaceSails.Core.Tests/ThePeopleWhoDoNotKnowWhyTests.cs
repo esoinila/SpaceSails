@@ -118,8 +118,10 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
     /// NOTHING MOVES ON A GROUND NOBODY HAS BEEN PAST THE SEAM OF — and the register is handed BACK BY
     /// REFERENCE, which is what lets the caller ask for a save only when something happened.
     ///
-    /// <para><b>RED against:</b> <c>Note</c> filing on an empty clock register —
-    /// <i>"a harbour moved paperwork about a ground nobody has ever opened"</i>.</para>
+    /// <para><b>RED against:</b> <see cref="QuietHands.Note"/> returning <c>[.. had]</c> instead of
+    /// <c>had</c> on the empty-register path — <i>"a voyage where nobody has opened anything asked for a
+    /// save on every descent"</i>. The by-reference return IS this law as the caller meets it: the client
+    /// only writes a vault when the register it got back is not the one it handed in.</para>
     /// </summary>
     [Fact]
     public void NothingMovesOnAGroundNobodyHasOpened()
@@ -220,10 +222,12 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
     /// is back to the ordinary berth for ever. The last is what "never twice in a row" means, and it is the
     /// only direction this feature was ever farmable in.</para>
     ///
-    /// <para><b>RED against:</b> <see cref="DockRoster.BerthGiven"/> ignoring its window —
-    /// <i>"the reassigned berth was the berth he already had"</i> — and separately against
-    /// <see cref="QuietHands.GiveTheBerth"/> returning the register unchanged,
-    /// <i>"the port owed him a different berth again on the next clamp, and the one after"</i>.</para>
+    /// <para><b>RED against:</b> three reverts, watched fail one at a time —
+    /// <see cref="DockRoster.BerthGiven"/> ignoring its window (<i>"the reassigned berth was the berth he
+    /// already had"</i>); <see cref="QuietHands.GiveTheBerth"/> returning the register unchanged
+    /// (<i>"the clamp did not spend the reassignment"</i>); and <c>OwedGroundAt</c> not reading
+    /// <c>BerthGiven</c> at all (<i>"the port owed him a different berth again on the next clamp, and the
+    /// one after"</i>).</para>
     /// </summary>
     [Fact]
     public void TheReassignedBerthDiffersFromTheOrdinaryOneExactlyOnce()
@@ -354,8 +358,8 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
     ///
     /// <para><b>RED against:</b> dropping the <c>Math.Clamp</c> in
     /// <see cref="QuietHands.PulsePriceMoveAt"/> — <i>"the pump at the Red Eye had moved three credits"</i>
-    /// — and, for the vacuity twin, against <see cref="QuietHands.PulsePriceMoveAt"/> returning the band for
-    /// every pump, <i>"every pump in the system had repriced"</i>.</para>
+    /// — and, for the twin, dropping its served-port filter so every pump takes every ground's move,
+    /// <i>"the price at Selene Gate moved because somebody opened a hall at Jupiter"</i>.</para>
     /// </summary>
     [Fact]
     public void TheRepricingStaysInsideTheMarketsOwnBand()
@@ -367,29 +371,85 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
         Assert.True(band > 0, "the market publishes no spread at all — nothing could move inside it.");
         Assert.Equal(FuelMarket.OuterPricePerPulse - FuelMarket.InnerPricePerPulse, band);
 
-        var ports = new HashSet<string>(served.Select(s => s.Port), StringComparer.Ordinal);
-        IReadOnlyList<QuietHands.Hand> everything =
-            [.. served.Select((s, i) => new QuietHands.Hand(s.Ground, i, BerthGiven: false))];
+        // THE WORLD HAS TO BE ABLE TO TELL PASS FROM FAIL. A clamp is only guarded by a register that would
+        // BREACH the band without it, so the sweep needs a port serving more than one ground AND a window
+        // for each of those grounds that moves the price the SAME way. Both are searched, never typed: the
+        // grouping is the scenario's own (Jupiter's moons all fuel at the Red Eye), and the windows are
+        // found by asking the rule itself. A register whose directions happened to cancel would pass an
+        // unclamped sum perfectly — which is exactly what the first draft of this guard did.
+        (string Port, List<string> Grounds) crowded = served
+            .GroupBy(g => g.Port, StringComparer.Ordinal)
+            .Select(g => (Port: g.Key, Grounds: g.Select(x => x.Ground).ToList()))
+            .OrderByDescending(g => g.Grounds.Count)
+            .ThenBy(g => g.Port, StringComparer.Ordinal)
+            .First();
 
-        WithHands(everything, () =>
+        Assert.True(crowded.Grounds.Count >= 2,
+            $"no shipped port serves two grounds ({crowded.Port} serves {crowded.Grounds.Count}) — "
+            + "nothing here could ever breach the band, so nothing here is guarded.");
+
+        var sameWay = new List<QuietHands.Hand>();
+        foreach (string ground in crowded.Grounds)
+        {
+            long? found = null;
+            for (long window = 0; window < 64 && found is null; window++)
+            {
+                long w = window;
+                WithHands([new QuietHands.Hand(ground, w, BerthGiven: false)], () =>
+                {
+                    if (QuietHands.PulsePriceMoveAt(sky, crowded.Port) == band)
+                    {
+                        found = w;
+                    }
+                });
+            }
+            Assert.NotNull(found);
+            sameWay.Add(new QuietHands.Hand(ground, found!.Value, BerthGiven: false));
+        }
+
+        // …and the other direction exists too, or "one direction" would be a coin with one face.
+        bool everDown = false;
+        for (long window = 0; window < 64 && !everDown; window++)
+        {
+            WithHands([new QuietHands.Hand(crowded.Grounds[0], window, BerthGiven: false)], () =>
+                everDown |= QuietHands.PulsePriceMoveAt(sky, crowded.Port) == -band);
+        }
+        Assert.True(everDown, $"{crowded.Grounds[0]} never moved its port's price DOWN in 64 windows.");
+
+        var ports = new HashSet<string>(served.Select(s => s.Port), StringComparer.Ordinal);
+        WithHands(sameWay, () =>
+        {
+            // THE CLAMP: three grounds all pushing the same way is still one credit a pulse.
+            Assert.Equal(band, QuietHands.PulsePriceMoveAt(sky, crowded.Port));
+
+            foreach (CelestialBody body in sky.Bodies)
+            {
+                int move = QuietHands.PulsePriceMoveAt(sky, body.Id);
+                Assert.InRange(move, -band, band);
+                if (!string.Equals(body.Id, crowded.Port, StringComparison.Ordinal))
+                {
+                    Assert.Equal(0, move);   // no pump but the served ground's own has moved at all
+                }
+            }
+        });
+
+        // …and the whole world's grounds at once still moves no pump past the band.
+        WithHands([.. served.Select((g, i) => new QuietHands.Hand(g.Ground, i, BerthGiven: false))], () =>
         {
             int moved = 0;
             foreach (CelestialBody body in sky.Bodies)
             {
                 int move = QuietHands.PulsePriceMoveAt(sky, body.Id);
                 Assert.InRange(move, -band, band);
-
                 if (!ports.Contains(body.Id))
                 {
-                    Assert.Equal(0, move);   // no pump but the served ones' own moved at all
+                    Assert.Equal(0, move);
                 }
                 else if (move != 0)
                 {
-                    Assert.Equal(band, Math.Abs(move));
                     moved++;
                 }
             }
-
             Assert.True(moved >= 2, $"only {moved} port(s) repriced — this sweep proves little.");
         });
 
@@ -411,9 +471,9 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
     /// the guard is the seam: the quote the trade desk prints is the belt price with the move on it, and it
     /// can never go free however far down the market went.</para>
     ///
-    /// <para><b>RED against:</b> seeding <see cref="QuietHands.PulsePriceMoveAt"/> on sim time rather than
-    /// on the filed window — <i>"the pump was a credit dearer in the morning and a credit cheaper by
-    /// lunch"</i> — and against dropping the <c>Math.Max</c> floor in
+    /// <para><b>RED against:</b> taking the direction off an unseeded <c>Random</c> rather than off the
+    /// filed window — <i>"the pump was a credit dearer when he asked and a credit cheaper when he
+    /// paid"</i> — and against dropping the <c>Math.Max</c> floor in
     /// <see cref="FuelMarket.PricePerPulse(double, int)"/>, <i>"the pump was giving reaction mass away"</i>.
     /// </para>
     /// </summary>
@@ -457,9 +517,9 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
     /// closed the tab would be the one farmable shape this whole channel is written to avoid, and nothing on
     /// screen would ever say so.</para>
     ///
-    /// <para><b>RED against:</b> dropping <c>HallsHandled</c> from the saved progress section —
-    /// <i>"the reload owed him a different berth again"</i> — and against writing the row without its
-    /// <c>BerthGiven</c>, which is the same failure said quietly.</para>
+    /// <para><b>RED against:</b> <c>[JsonIgnore]</c> on <see cref="ProgressSection.HallsHandled"/>, so the
+    /// register never reaches the file — <i>"the reload owed him a different berth again, and the pump was
+    /// back to its old price"</i>.</para>
     /// </summary>
     [Fact]
     public void BothDeliveriesSurviveAVaultRoundTrip()
