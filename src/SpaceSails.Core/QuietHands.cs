@@ -211,14 +211,19 @@ public static class QuietHands
     /// <para><b>No sim time anywhere in it.</b> The neighbourhood is structural and the tonnage is a
     /// timetable, so the answer is the same on the outbound leg and the return — which it must be, or the
     /// berth reassigned in one window would be owed at a different port in the next. Ties fall to the
-    /// smaller id, ordinally, so a two-haven system answers the same on every machine.</para></summary>
-    public static string? PortFor(ICelestialEphemeris ephemeris, string groundId)
+    /// smaller id, ordinally, so a two-haven system answers the same on every machine.</para>
+    ///
+    /// <para><b>The berth itself comes back, not its id.</b> Which port serves a moon is the one thing
+    /// either of this channel's types could have been tempted to publish as a string, and the no-prose law
+    /// is worth more without a carve-out in it than with one — see <c>ThePeopleWhoDoNotKnowWhyTests</c>'s
+    /// sweep. Every caller wanted the body anyway.</para></summary>
+    public static CelestialBody? PortFor(ICelestialEphemeris ephemeris, string groundId)
     {
         ArgumentNullException.ThrowIfNull(ephemeris);
         ArgumentNullException.ThrowIfNull(groundId);
 
         IReadOnlySet<string> neighbourhood = ArrivalTube.Neighbourhood(ephemeris, groundId);
-        string? best = null;
+        CelestialBody? best = null;
         double bestTonnage = double.NegativeInfinity;
 
         foreach (CelestialBody body in ephemeris.Bodies)
@@ -230,9 +235,9 @@ public static class QuietHands
 
             double tonnage = ArrivalTube.ScheduledTonnage(ephemeris, body.Id);
             if (best is null || tonnage > bestTonnage
-                || (tonnage == bestTonnage && string.CompareOrdinal(body.Id, best) < 0))
+                || (tonnage == bestTonnage && string.CompareOrdinal(body.Id, best.Id) < 0))
             {
-                best = body.Id;
+                best = body;
                 bestTonnage = tonnage;
             }
         }
@@ -307,7 +312,7 @@ public static class QuietHands
         Hand? owed = null;
         foreach (Hand h in hands)
         {
-            if (h.BerthGiven || !string.Equals(PortFor(ephemeris, h.BodyId), havenId, StringComparison.Ordinal))
+            if (h.BerthGiven || !ServedBy(ephemeris, h.BodyId, havenId))
             {
                 continue;
             }
@@ -362,13 +367,18 @@ public static class QuietHands
         int move = 0;
         foreach (Hand h in hands)
         {
-            if (string.Equals(PortFor(ephemeris, h.BodyId), pumpBodyId, StringComparison.Ordinal))
+            if (ServedBy(ephemeris, h.BodyId, pumpBodyId))
             {
                 move += Direction(h) * band;
             }
         }
         return Math.Clamp(move, -band, band);
     }
+
+    /// <summary>Is this berth the one that serves that ground? One question, asked by both deliveries, so
+    /// neither of them owns a second opinion about it.</summary>
+    private static bool ServedBy(ICelestialEphemeris ephemeris, string groundId, string havenId) =>
+        PortFor(ephemeris, groundId) is { } port && string.Equals(port.Id, havenId, StringComparison.Ordinal);
 
     /// <summary>Which way this ground's port moved: up or down, once, for good.</summary>
     private static int Direction(Hand hand) =>
