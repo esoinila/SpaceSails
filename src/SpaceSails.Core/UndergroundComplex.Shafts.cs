@@ -305,9 +305,22 @@ public static partial class UndergroundComplex
     /// are the floors whose refuge still has air, and a captain who has learnt the livery has learnt that
     /// without being told. Asked of <see cref="RefugeOnThePlan"/>, never counted off a built floor: a panel
     /// that generated twenty floors to draw twenty buttons is a panel nobody presses twice.</param>
+    /// <param name="HasPad">#602 · Whether this refusing row has a KEYPAD bolted beside it, and therefore
+    /// whether <see cref="LiftCode.Sticker"/> is on the panel for the captain to read before the first press.
+    ///
+    /// <para>True on exactly one row of one panel per building — the gate into <see cref="LiftCode.PadBand"/>,
+    /// refusing for want of the paper — and false on every other button in the game. Core decides it, like
+    /// every other thing about a row (#600's rule: Core decides, the razor draws), because whether a lock has
+    /// a pad on it is a fact about the BUILDING and a client deciding it would be a second answer to the one
+    /// question <see cref="LiftCode.PadBand"/> owns.</para>
+    ///
+    /// <para>Never on an ID CHECK row (#715), and that is a ruling rather than an oversight: that gate has
+    /// already read the paper and is asking for a FACE the outfit remembers. A code there would be a second
+    /// road past a heat gate, which is a question nobody has ruled on. Never on a SECTOR door or a stop
+    /// order's seal either — see <see cref="Signs.HasNoReader"/>, which carries that argument.</para></param>
     public readonly record struct LiftStop(
         int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null,
-        bool OpenedByChit = false, bool HasRefuge = false);
+        bool OpenedByChit = false, bool HasRefuge = false, bool HasPad = false);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -337,10 +350,22 @@ public static partial class UndergroundComplex
     /// </param>
     /// <param name="heatAtThisOperator">#715 · What the outfit running this site remembers about this captain
     /// (<see cref="IllegalHeat.HeatAtSite"/>). Zero is the default and the old panel exactly.</param>
+    /// <param name="padOpened">#602 · Which bands the KEYPAD has been talked into on this excursion — and it
+    /// is the excursion's own set, never the vault's.
+    ///
+    /// <para>A right code opens the gate for the trip you are on and no longer. That is the line between the
+    /// two papers, and it is the whole reason a pad does not demote the card: a countersignature is in your
+    /// wallet and is still there the next time you land, and a code you read off somebody's desk buys you
+    /// this afternoon. Owner's ruling made the pad findable-only; this is what stops it becoming the durable
+    /// way in.</para>
+    ///
+    /// <para>Null is a captain who has typed nothing, which is every older caller and the panel exactly as it
+    /// was.</para></param>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, IReadOnlyCollection<string> heldCardIds,
-        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0) =>
-        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator);
+        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0,
+        IReadOnlyCollection<int>? padOpened = null) =>
+        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator, padOpened);
 
     /// <summary>
     /// #801 · The same panel, asked of a CAR rather than of a building.
@@ -360,7 +385,8 @@ public static partial class UndergroundComplex
     /// </summary>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, ShaftKind car, IReadOnlyCollection<string> heldCardIds,
-        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0)
+        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0,
+        IReadOnlyCollection<int>? padOpened = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
@@ -485,7 +511,28 @@ public static partial class UndergroundComplex
         // refused while the story card said the gate opened would be the sim and the sentence describing two
         // different buildings.
         bool wantsAFace = papered && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator);
-        bool opens = papered && !wantsAFace;
+
+        // ── #602 · AND THE PAD, WHICH IS THE THIRD WAY THROUGH THIS ROW ─────────────────────────────────
+        //
+        // Owner's ruling, 2026-08-02, overruling #590's call 3 deliberately: a keypad, a vicious sticker
+        // beside it, three tries, and a ninety-second decay window. The argument is at LiftCode's head and at
+        // call 3 in UndergroundComplex.AuthorityCard.cs; what is arithmetic — and therefore here — is WHICH
+        // ROW carries one, and what a code that worked has bought.
+        //
+        // ONE ROW, AND ONLY WHERE THE PAPER IS MISSING. The pad hangs off the SEALED refusal — the gate that
+        // wants an authority nobody has issued in years — and never off the ID CHECK (#715), which has
+        // already read the paper and is asking for a face. A code there would be a second road past a heat
+        // gate, which is a ruling nobody has made. It is also only ever the gate into LiftCode.PadBand, which
+        // is the fiction rather than a scope cut: a pad exists where staff have to move, and stops existing
+        // the moment you are past them.
+        //
+        // AND IT CANNOT REACH EITHER SILENCE, for the chit's own reason: the undeclared band has already
+        // returned empty-handed above. A pad on a row the panel refuses to draw would be the directory
+        // confessing a shaft by bolting a keypad to it.
+        bool padHere = !papered && next == LiftCode.PadBand;
+        bool padOpen = padHere && padOpened is not null && padOpened.Contains(next);
+
+        bool opens = (papered && !wantsAFace) || padOpen;
 
         stops.Add(new(
             BandTop(next),
@@ -518,7 +565,11 @@ public static partial class UndergroundComplex
                 : carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
                 : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
             OpenedByChit: chitOpens && !wantsAFace,
-            HasRefuge: RefugeOnThePlan(bodyId, BandTop(next))));
+            HasRefuge: RefugeOnThePlan(bodyId, BandTop(next)),
+            // #602 · …and the pad comes off the row the moment the code has worked. A keypad still bolted to
+            // an open gate is an affordance with nothing behind it (#212), and a captain who typed the right
+            // number should not be able to spend a wrong one on a lock that is already open.
+            HasPad: padHere && !padOpen));
         return stops;
     }
 
