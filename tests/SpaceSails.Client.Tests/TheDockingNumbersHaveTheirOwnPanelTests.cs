@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using SpaceSails.Core;
 
@@ -38,7 +38,7 @@ public sealed class TheDockingNumbersHaveTheirOwnPanelTests
     {
         string path = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file);
         Assert.True(File.Exists(path), $"{file} is not where this guard reads it ({path}).");
-        string src = File.ReadAllText(path);
+        string src = MapMarkup.Read(path);
         Assert.True(src.Length > 400, $"{file} is suspiciously empty — this guard would be reading nothing.");
         return src;
     }

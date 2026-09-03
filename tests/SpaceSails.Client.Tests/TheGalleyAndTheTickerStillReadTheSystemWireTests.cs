@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace SpaceSails.Client.Tests;
 
@@ -36,7 +36,7 @@ public sealed class TheGalleyAndTheTickerStillReadTheSystemWireTests
     }
 
     private static string Source(string relative) =>
-        File.ReadAllText(Path.Combine(ClientDir(), "Pages", relative));
+        MapMarkup.Read(Path.Combine(ClientDir(), "Pages", relative));
 
     /// <summary>Half one: the parameter's default is the anonymous system-wide wire, so a caller that
     /// passes nothing gets exactly the pre-#1052 feed.</summary>

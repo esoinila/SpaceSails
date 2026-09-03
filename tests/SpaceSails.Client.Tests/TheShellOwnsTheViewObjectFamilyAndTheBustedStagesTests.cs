@@ -566,7 +566,7 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
         string razor = Path.Combine(ClientSource(), folder, page);
         string sheet = Path.Combine(ClientSource(), folder, css);
 
-        IReadOnlyList<Shell> shells = ClassesTheShellDraws(File.ReadAllText(razor));
+        IReadOnlyList<Shell> shells = ClassesTheShellDraws(MapMarkup.Read(razor));
         Assert.True(shells.Count > 0,
             $"no <OverlayShell> in {page} names a class at all. Either the page has stopped using the "
             + "shell or this guard has stopped being able to read it — both are worth knowing.");

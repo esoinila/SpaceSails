@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -55,7 +55,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     [Fact]
     public void EveryClickMenuIsDrawnThroughTheShellAndNoneIsHandRolled()
     {
-        string map = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string map = MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor"));
         string[] lines = map.Split('\n');
 
         var handRolled = new List<string>();
@@ -628,7 +628,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     private static string TheContractAsTyped()
     {
         string map = Regex.Replace(
-            File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor")),
+            MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor")),
             @"@\*.*?\*@", " ", RegexOptions.Singleline);
 
         int verb = map.IndexOf("OnClose=\"AcceptOffer\"", StringComparison.Ordinal);

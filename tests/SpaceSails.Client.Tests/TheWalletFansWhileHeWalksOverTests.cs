@@ -39,7 +39,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>#870 lane 6′c · RE-PATHED, never re-asserted. The challenge's verbs moved onto the
     /// round's own partials under <c>Pages/Patrol/</c>; every claim below is the claim it always was,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -210,7 +210,7 @@ public sealed class OnlyOneScrimAtATimeTests
     /// </summary>
     private static HashSet<string> TheGatesTheMarkupDrawsAScrimBehind()
     {
-        string[] lines = File.ReadAllLines(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string[] lines = MapMarkup.ReadLines(Path.Combine(ClientSource(), "Pages", "Map.razor"));
         var live = new bool[lines.Length];
         bool insideComment = false;
         for (int i = 0; i < lines.Length; i++)

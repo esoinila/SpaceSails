@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,7 +38,7 @@ public sealed class TheHeatIsBankedOnceTests
     }
 
     private static string Read(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), .. parts]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), .. parts]));
 
     private static int Count(string haystack, string needle)
     {

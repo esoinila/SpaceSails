@@ -735,17 +735,8 @@
        this. You know there was something. You know it is not out here any more. That is all you get. *@
     @if (_scuttleEpitaph is { } epitaph)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttleEpitaph)">
-            <OverlayShell class="vent-board scuttle-epitaph" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="@(_scuttleHeardIt ? "Sit with that" : "Log it")"
-                          OnClose="() => Dismiss(CloseScuttleEpitaph)">
-                <div class="view-object-title">☢ SHE IS GONE</div>
-                <img class="scuttle-art" src="art/scuttle-she-goes.jpg" alt=""
-                     onerror="this.style.display='none'" />
-                <div class="scuttle-epitaph-text @(_scuttleHeardIt ? "heard" : "")">@epitaph</div>
-            </OverlayShell>
-        </div>
+        <ScuttleEpitaphCard epitaph="@epitaph" _scuttleHeardIt="_scuttleHeardIt"
+                            Dismiss="Dismiss" CloseScuttleEpitaph="CloseScuttleEpitaph" />
     }
 
     @* #488 · THE OPERATING LOG, AS A CARD. Owner: "maybe the log should open in top most popup and the

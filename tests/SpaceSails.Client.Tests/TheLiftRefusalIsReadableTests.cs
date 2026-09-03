@@ -32,7 +32,7 @@ public sealed class TheLiftRefusalIsReadableTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     [Fact]
     public void TheRefusalIsSaidInsideThePanelItself()

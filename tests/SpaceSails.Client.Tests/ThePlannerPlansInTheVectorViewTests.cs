@@ -41,7 +41,7 @@ public sealed class ThePlannerPlansInTheVectorViewTests
     }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>The source with its comments taken out. A guard that says "the planner never calls
     /// NudgeHeading" must not be satisfied — or defeated — by a comment SAYING so: the prose that records

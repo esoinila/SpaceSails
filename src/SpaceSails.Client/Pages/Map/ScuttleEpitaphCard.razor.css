@@ -1,0 +1,3 @@
+/* #251 item 1 · scope carrier. This component shares Map.razor.css's css scope (pinned in
+   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved here.
+   The rules themselves move under #251 item 3. */

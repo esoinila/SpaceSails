@@ -51,7 +51,7 @@ public sealed class TheNavHelpPageTeachesTheWholeLoopTests
     }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     private static string HelpPage() => Source("Pages", "HelpNav.razor");
 

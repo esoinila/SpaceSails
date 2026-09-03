@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -214,7 +214,7 @@ public class TheDeathCardOffersTheShelfTests
     // ─── the shipping sources, read as they ship ───
 
     private static string Razor(string relative)
-        => File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", relative));
+        => MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", relative));
 
     private static MethodInfo Method(string name)
         => typeof(Map).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)

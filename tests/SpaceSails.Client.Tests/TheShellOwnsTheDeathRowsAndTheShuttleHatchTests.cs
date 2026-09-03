@@ -552,7 +552,7 @@ public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
     };
 
     private static string Razor(string relative)
-        => File.ReadAllText(Path.Combine(ClientSource(), "Pages", relative));
+        => MapMarkup.Read(Path.Combine(ClientSource(), "Pages", relative));
 
     private static IEnumerable<string> RazorFiles() =>
         Directory.EnumerateFiles(ClientSource(), "*.razor", SearchOption.AllDirectories);

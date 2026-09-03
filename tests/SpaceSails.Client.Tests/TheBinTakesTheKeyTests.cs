@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -433,7 +433,7 @@ public sealed class TheBinTakesTheKeyTests
             .Select(File.ReadAllText));
 
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 

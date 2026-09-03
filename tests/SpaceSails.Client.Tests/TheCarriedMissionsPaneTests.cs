@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -59,7 +59,7 @@ public sealed class TheCarriedMissionsPaneTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The shipping scenario, off the canonical copy at the repo root — the same JSON the client
     /// fetches. Cached: the ephemeris is read-only here and every case wants the same sky.</summary>

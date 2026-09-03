@@ -384,7 +384,7 @@ public sealed class ThePlayerIsToldTests
         Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
 
     private static string ReadPage(string relative) =>
-        File.ReadAllText(Path.Combine(PagesDir(), relative.Replace('/', Path.DirectorySeparatorChar)));
+        MapMarkup.Read(Path.Combine(PagesDir(), relative.Replace('/', Path.DirectorySeparatorChar)));
 
     /// <summary>
     /// COMMENTS ARE NOT CODE. Every question below is asked of what the method DOES, and a prose paragraph

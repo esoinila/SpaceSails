@@ -47,7 +47,7 @@ public sealed class TheKitIsWorkedFromThePocketTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>A subtree of a file, with BOTH markers asserted — a cut that silently missed would make
     /// every claim about it vacuous.</summary>

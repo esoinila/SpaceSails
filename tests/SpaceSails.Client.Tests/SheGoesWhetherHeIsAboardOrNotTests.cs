@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -488,7 +488,7 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 
     private static string TheCastawayMarkup() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     private static string RepoRoot()
     {

@@ -523,7 +523,7 @@ public sealed class LoadItFromTheRowTests
     }
 
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 

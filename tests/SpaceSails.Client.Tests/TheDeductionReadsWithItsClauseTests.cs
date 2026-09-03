@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -154,7 +154,7 @@ public class TheDeductionReadsWithItsClauseTests
     /// not silently move this bench onto a different card.</summary>
     private static string TheWreckOutcomeCard()
     {
-        string[] lines = File.ReadAllLines(Path.Combine(ClientRoot, "Pages", "Map.razor"));
+        string[] lines = MapMarkup.ReadLines(Path.Combine(ClientRoot, "Pages", "Map.razor"));
 
         int open = Array.FindIndex(lines, l => l.Contains("@if (_wreckOutcome is { } salvageOutcome)", StringComparison.Ordinal));
         Assert.True(open >= 0, "no `@if (_wreckOutcome is { } salvageOutcome)` in Map.razor — this bench has drifted");

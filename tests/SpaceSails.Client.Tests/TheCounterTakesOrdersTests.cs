@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -49,7 +49,7 @@ public sealed class TheCounterTakesOrdersTests
             string candidate = Path.Combine(d.FullName, "src", "SpaceSails.Client", "Pages", file);
             if (File.Exists(candidate))
             {
-                return File.ReadAllText(candidate);
+                return MapMarkup.Read(candidate);
             }
         }
         throw new FileNotFoundException($"could not find src/SpaceSails.Client/Pages/{file} from {here}");

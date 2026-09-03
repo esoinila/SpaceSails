@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -63,7 +63,7 @@ public sealed class TheCrewSheetCountsTheStopsAshoreTests
             string candidate = Path.Combine(at.FullName, "src", "SpaceSails.Client");
             if (Directory.Exists(candidate))
             {
-                return File.ReadAllText(Path.Combine([candidate, .. parts]));
+                return MapMarkup.Read(Path.Combine([candidate, .. parts]));
             }
             at = at.Parent;
         }

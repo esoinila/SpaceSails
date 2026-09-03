@@ -431,7 +431,7 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
     /// LF on the CI runner, so a guard that matches across a blank line passed on one machine and failed on
     /// the other — a bench that cannot tell pass from fail rather than a finding.</summary>
     private static string Client(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]))
+        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]))
             .Replace("\r\n", "\n");
 
     private static string Razor(string file) => Client("Pages", file);
