@@ -1029,7 +1029,9 @@ public sealed partial class DeckView
         }
 
         DeckPlan.ConsoleSpot? answering = plan.NearestConsoleSpot(state.AvatarX, state.AvatarY);
-        bool near0(DeckPlan.ConsoleSpot spot) => answering == spot;
+        // Which console the key would actually reach, asked as a name rather than as a comparison, because
+        // two passes below ask it: the cull (which may never drop the one you are standing at) and the ink.
+        bool IsTheOneAnswering(DeckPlan.ConsoleSpot spot) => answering == spot;
 
         foreach (DeckPlan.ConsoleSpot console in plan.Consoles)
         {
@@ -1053,7 +1055,7 @@ public sealed partial class DeckView
             //
             // What this drops is the several dozen plates a nine-tile chunk now carries, standing in ruins
             // several hundred deck units off the side of the screen.
-            if (!near0(console) && !console.IsRun
+            if (!IsTheOneAnswering(console) && !console.IsRun
                 && OffTheGlass(sx, sy, sx, sy, 24f + (console.Label.Length * 3.5f)))
             {
                 continue;
@@ -1062,7 +1064,7 @@ public sealed partial class DeckView
             // Lit only when [E] would actually reach THIS console. The radius check is still the gate —
             // NearestConsoleSpot applies it — so nothing lights up across the ship; what changed is that a
             // second console in range no longer claims a key it will not get.
-            bool near = near0(console);
+            bool near = IsTheOneAnswering(console);
             RgbaColor c = near ? ConsoleNear : ConsoleGlow;
 
             // ── #791 · A FIXTURE THAT IS A RUN IS DRAWN AS ONE ────────────────────────────────────────
