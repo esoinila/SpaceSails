@@ -130,8 +130,13 @@ public static class EncounterRule
     /// <summary>...at under this relative speed — a hunter roaring past at speed doesn't count.</summary>
     public const double CatchRelativeSpeedMetersPerSecond = 3000;
 
-    /// <summary>Adrift-style consequence (M6's flow, reused): lose the hold, pay the toll.</summary>
-    public const int CatchFineCredits = 500;
+    // #380 item 4 · CatchFineCredits (500) USED TO LIVE HERE. It was the pre-BUSTED consequence — lose
+    // the hold, pay a flat toll — and PR-BUSTED replaced the whole of it with <see cref="BustedRule"/>'s
+    // submit / bribe / resist ladder without deleting the number. Nothing has read it since. It is removed
+    // rather than left, because both guides went on quoting it for six weeks after the flow it described
+    // stopped existing: a constant with no consumer is a claim with no owner, and the documentation was
+    // reading it as if it were still the law. What the catch actually costs is BustedRule.CoinFraction,
+    // BustedRule.BribeDemand and BustedRule.ResistCheck, and those are the only numbers a guide may quote.
 
     /// <summary>Stay hidden at a haven this long and a hunter loses the scent.</summary>
     public const double BreakOffHiddenDays = 2;

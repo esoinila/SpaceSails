@@ -798,6 +798,27 @@ public static class HavenInterior
         walls.Add(new(4, deskY, 9, deskY, false, false));  // counter, starboard of the gate (gate gap x 1..4)
         labels.Add((HallCenterX, HallBottomY + 7.5f, $"{spec.Authority} IMMIGRATION"));
         labels.Add((HallCenterX, HallBottomY + 2.5f, spec.Quip));
+        // #380 item 10 — THE ONE MYSTIFIER THIS LANE COULD NOT CLOSE. The audit's complaint: a counter, a
+        // gate, a signed authority and an officer standing at it set an expectation of being CHECKED, and
+        // the captain walks through carrying whatever he likes, every time, for ever. Two of the three
+        // pieces have arrived since the audit was written and the third is a sentence:
+        //   · the RULE exists — ArrivalTube.WalkLine says, on the arrival plate, exactly how far you carry
+        //     something you should not be carrying before anybody can ask about it, per tier;
+        //   · the MECHANIC exists — InspectionTeam / HullStowage (#537, #538) is a real sweep with real
+        //     eyes, but it happens aboard somebody else's hull, never at a port's own gate;
+        //   · the OFFICER is mute. buffer[3] in FillComplexDroids is a facing droid with no console, so
+        //     this gate is scenery promising a check the port never performs.
+        //
+        // FABLE: line needed — one card, on a 🛃 CUSTOMS ViewObject console at the officer's own square
+        // (6.5, HallBottomY + 7 — over an interact radius from the plaque, the poster, the lifeboat and
+        // the three ad plates, which is the clearance rule this hall is placed by), in the house voice,
+        // saying WHY this gate waves this captain through: the checking is the walk, not the counter — a
+        // great port's queue is where anybody who wanted to look already looked, and the officer at the
+        // end of it is stamping an answer somebody else arrived at. Ideally a pair keyed on
+        // ArrivalTube.TierFor, so a working berth's gate reads as a formality nobody funds rather than one
+        // nobody enforces. NOT invented here: it is the port's first sentence to a new captain and it has
+        // to agree with the tube plate he read ninety seconds earlier.
+        //
         // A big lobby welcome poster so you know at a glance which port you're standing in.
         labels.Add((HallCenterX, HallCenterY + 8, $"★  WELCOME TO {spec.Name}  ★"));
         labels.Add((HallCenterX, HallCenterY + 3, $"⚓ {spec.Authority} ORBIT"));

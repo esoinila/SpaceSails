@@ -314,13 +314,48 @@ with zero heat generated (priced under what an honest robbery would pay) — an
 inside job, nobody calls the cavalry.
 - Actually robbing a ship (not just warning it) raises **heat**, a 0–3 flame
 gauge that decays one level per 20 days — four times faster while you're
-hidden in orbit at a haven. High enough heat and a **hunter** spawns: hired
-muscle that fits out for 5 days, then hunts you down at a slow, relentless
-thrust. Get caught (within 3×10⁸ m, under 3,000 m/s relative) and it seizes
-your hold plus a 500 cr fine; stay hidden at a haven for 2 days straight and
-it gives up the chase.
+hidden in orbit at a haven. Every heat-raising job also dispatches one
+**hunter**: hired muscle that fits out for 5 days at the nearest policed
+planet before it can fly, then comes at you on a slow, relentless, thrust-only
+pursuit. You are told at the moment you buy it (a pulse naming the collector
+and the port it is fitting out at) and the news wire carries the dispatch, so
+the muscle that turns up days later is never unexplained. Stay hidden at a
+haven for 2 days straight and it loses the scent.
 - Havens are the release valve for the whole loop: cool your heat, trade cargo
 and (if it's also a far trading post) intel, and repair — no questions asked.
+
+### Getting caught
+
+A hunter **catches** you inside 3×10⁸ m at under 3,000 m/s relative speed.
+What follows is a boarding, not a fine: the BUSTED card opens with the whole
+seizure itemised, every roll shown, and three ways out.
+
+- **Submit.** They take *every* hot-flagged unit in the hold — cargo stolen
+  while you were heated, marked `🔥` on the manifest — plus a heat-scaled share
+  of the purse you are carrying: **20%** at heat 1, **35%** at heat 2, **50%**
+  at heat 3. Two mercies are hard law: they never take your last ~100 cr (the
+  berth fee, so a bust can't strand you), and they never take fuel. If the
+  visible haul is thin because you squirrelled the money away, they roll for
+  1–3 units of *clean* cargo instead — the law never leaves empty-handed.
+  Submitting clears heat to **0**.
+- **Bribe.** A dice-rolled fee (150–400 cr at heat 1, 400–800 at heat 2,
+  800–1,500 at heat 3). The cargo stays, the collector logs a clean sweep and
+  sheers off, and heat is **unchanged** — you bought this patrol, not the law.
+- **Resist.** At heat 1–2 it is one opposed roll: win and the hunter breaks off
+  and heat climbs a notch; lose and you pay submit terms with a 15% harsher cut
+  of the purse. At heat 3 there is no roll to make — it is the **Bolivia**, a
+  three-beat last stand that ends either in breaking clear at heat 2, or in the
+  freeze-frame.
+
+**The freeze-frame is not game over**, and neither is dying on the ground.
+Brain-backup resurrection wakes you at a clinic in a starter-grade rustbucket
+with 200 cr, a full tank, starter ammunition and every upgrade reset to base.
+Nothing buried or banked was ever aboard the hull you lost, so a squirrelled
+hoard outlives the catch — see §16 for the same law read from the ground, where
+it is the Old Ones rather than collectors that end you, and where the **NERVE**
+gauge is the meter that decides it. The premise behind the rebirth is advertised
+where you dock: the **PIRATE INSURANCE** posters in every station concourse and
+bar are Nebula Mutual selling you the policy that eases the clinic bill.
 
 
 
@@ -383,7 +418,13 @@ in a suit, and the ground keeps what you leave in it.
   different layout.
 - **Dig with `E`.** Carrying a chest, `E` buries it *where you stand* and an ✗ marks the spot.
   Empty-handed, `E` probes the square for what somebody else buried. A buried hoard lives off
-  the ship, so no confiscation can ever touch it.
+  the ship, so no confiscation can ever touch it — but **rivals can**, and you are told the
+  odds when you put it down, not when you come back and find the hole empty. Every cache
+  carries a per-day discovery chance and one of three words for it: **Exposed** (dropped in
+  the open, up near the pad), **Considered** (buried with the shovel, off the paths) or
+  **Guarded** (a deep carry, or ground the Old Ones haunt — they make the best watchdogs in
+  the system). Roughly 1–6% a day, and the same distance that makes the walk dangerous is what
+  makes the cache safe.
 - **`T` sets a sentry.** A deployed bot fires until its magazine reads `00`. Bots buy time,
   never safety. Retrieve them before you lift off or they are written off.
 - **The landing pad is fused rockcrete.** Nothing buries there — carry it out onto the

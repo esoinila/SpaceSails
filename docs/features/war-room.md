@@ -77,10 +77,15 @@ negative means you're pulling away). Whenever a hunter closes to within **2× we
 (4×10⁸ m) the tactical circle draws a pulsing **threat line** from your ship straight to it — an
 unambiguous "it's in charging distance" cue. Its catch-radius ring appears once it's that close, too.
 
-A hunter **catches** you inside **3×10⁸ m** at under **3,000 m/s** relative speed: the consequence
-is your whole cargo hold seized plus a **500 cr** fine (the same shape as the ordinary Adrift
-flow). Staying hidden in continuous haven orbit for **2 days** makes a hunter **break off** and
-lose the scent.
+A hunter **catches** you inside **3×10⁸ m** at under **3,000 m/s** relative speed. The flat toll
+this document used to describe — the whole hold seized plus a fixed levy — is gone: PR-BUSTED (`BustedRule`)
+replaced it with a boarding that shows its dice and offers three answers — **submit** (every
+hot-flagged unit plus 20/35/50% of the carried purse by heat, never the last ~100 cr and never
+fuel, heat cleared to 0), **bribe** (150–400 / 400–800 / 800–1,500 cr by heat; cargo kept, heat
+unchanged), or **resist** (an opposed roll at heat 1–2; the full `BoliviaEncounter` at heat 3,
+which ends in a break-clear at heat 2 or in the freeze-frame and brain-backup resurrection).
+Staying hidden in continuous haven orbit for **2 days** makes a hunter **break off** and lose the
+scent.
 
 ## Hiding at havens
 
