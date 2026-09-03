@@ -814,37 +814,14 @@ public static class MoonSurface
         //
         // Same shape as the field-envelope drift earlier today: two places that had to agree, only one of
         // them updated. The fix here is that there is now ONE loop, and the beacons read the same list.
-        foreach (SurfaceStructure.Spec shelter in SurfaceShelter.SpecsFor(bodyId, siteSalt, field))
+        // #563 slice 3 · ASKED OF THE TILE, so the ground under the tube and the ground nine hundred du out
+        // are furnished by one question rather than two. SurfaceTiles.Shelters hands the home tile the site's
+        // own salt and the default field — the exact pair this line used to pass by hand — so every drum at
+        // the tube keeps its place, its angle and its seeded story.
+        foreach (SurfaceStructure.Spec shelter in
+                 SurfaceTiles.Shelters(bodyId, siteSalt, SurfaceTiles.Home))
         {
-            SurfaceStructure.Built built = SurfaceStructure.Build(shelter);
-            foreach (SurfaceLayout.Wall w in built.Walls)
-            {
-                walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false, IsStone: true));
-            }
-            foreach (SurfaceStructure.Doorway d in built.Doorways)
-            {
-                // #592 · A shelter's door is ALWAYS imported, and that is not a hint — it is the truth about
-                // the building. Nobody swages a pressure door out of regolith; somebody flew this out here
-                // for strangers to find. It also means the one door on the field that will definitely save
-                // your life is the one that reads differently from every wall around it.
-                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: true));
-                // #585 · ITS OWN KIND, NOT THE SHIP'S HATCH. Owner, mid-excursion: "how did I just go to ship
-                // from a shelter ... what happened" / "I was at surface shelter and now at ship shuttle bay
-                // ... how". Because this console was laid as SurfaceAirlock — the SAME kind as the down
-                // tube's "BOARD THE SHUTTLE" — so [E] on a shelter door ran the boarding path and flew him
-                // home from the middle of the field, excursion and all.
-                //
-                // A console kind is a VERB, and two different doors were sharing one. Reusing it read as
-                // tidy ("they are both doors") and was the same two-things-one-name mistake as every other
-                // expensive bug on this ground.
-                consoles.Add(new(DeckPlan.ConsoleKind.ShelterDoor,
-                    (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
-            }
-            consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,
-                (float)shelter.CentreX, (float)shelter.CentreY, SurfaceShelter.TankLabel));
-            consoles.Add(new(DeckPlan.ConsoleKind.ShelterLocker,
-                (float)shelter.CentreX, (float)(shelter.CentreY - 5.5), SurfaceShelter.LockerLabel));
-            labels.Add(((float)shelter.CentreX, (float)(shelter.CentreY - 7), "⛺ SHELTER"));
+            FurnishShelter(shelter, walls, doors, consoles, labels);
         }
 
         foreach (SurfaceTiles.Drawer drawer in salvageSpots)
@@ -857,6 +834,55 @@ public static class MoonSurface
         return new Layout(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,
             doors.ToArray(), scenery, structures.ToArray());
+    }
+
+    /// <summary>
+    /// #573/#563 slice 3 · ONE SHELTER, PUT ON A PLAN — its shell, its imported door, its two services and
+    /// its label.
+    ///
+    /// <para><b>One body, two grounds.</b> The home tile's build (above) and the lattice's tile compose
+    /// (<c>Map.TileRegion</c>) both lay shelters now, and a rule expressed twice is this project's fourth
+    /// named bug class — the version that ships is the one where only one of the two got edited. #573's own
+    /// scar is exactly that shape: the beacons were switched to every shelter and the builder was left laying
+    /// the first, so rings pointed at buildings that had never been built.</para>
+    ///
+    /// <para>Every line below is the line that was inline here, in the order it was in, so the ground at the
+    /// tube is byte for byte what it was.</para>
+    /// </summary>
+    public static void FurnishShelter(
+        in SurfaceStructure.Spec shelter,
+        List<DeckPlan.Wall> walls, List<DeckPlan.Door> doors,
+        List<DeckPlan.ConsoleSpot> consoles, List<(float X, float Y, string Text)> labels)
+    {
+        SurfaceStructure.Built built = SurfaceStructure.Build(shelter);
+        foreach (SurfaceLayout.Wall w in built.Walls)
+        {
+            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false, IsStone: true));
+        }
+        foreach (SurfaceStructure.Doorway d in built.Doorways)
+        {
+            // #592 · A shelter's door is ALWAYS imported, and that is not a hint — it is the truth about
+            // the building. Nobody swages a pressure door out of regolith; somebody flew this out here
+            // for strangers to find. It also means the one door on the field that will definitely save
+            // your life is the one that reads differently from every wall around it.
+            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: true));
+            // #585 · ITS OWN KIND, NOT THE SHIP'S HATCH. Owner, mid-excursion: "how did I just go to ship
+            // from a shelter ... what happened" / "I was at surface shelter and now at ship shuttle bay
+            // ... how". Because this console was laid as SurfaceAirlock — the SAME kind as the down
+            // tube's "BOARD THE SHUTTLE" — so [E] on a shelter door ran the boarding path and flew him
+            // home from the middle of the field, excursion and all.
+            //
+            // A console kind is a VERB, and two different doors were sharing one. Reusing it read as
+            // tidy ("they are both doors") and was the same two-things-one-name mistake as every other
+            // expensive bug on this ground.
+            consoles.Add(new(DeckPlan.ConsoleKind.ShelterDoor,
+                (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
+        }
+        consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,
+            (float)shelter.CentreX, (float)shelter.CentreY, SurfaceShelter.TankLabel));
+        consoles.Add(new(DeckPlan.ConsoleKind.ShelterLocker,
+            (float)shelter.CentreX, (float)(shelter.CentreY - 5.5), SurfaceShelter.LockerLabel));
+        labels.Add(((float)shelter.CentreX, (float)(shelter.CentreY - 7), "⛺ SHELTER"));
     }
 
     /// <summary>#649 · Lay a swept apron ring around the deep anchor, or lay nothing at all. One function so

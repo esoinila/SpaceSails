@@ -46,9 +46,9 @@ public partial class Map
         //
         // The order inside SourceOf is this method's own order and must stay so: floor, then refuge, then
         // shelter, then ship.
-        int inside = ShelterUnderfoot(ex);
+        ShelterSpot inside = ShelterUnderfoot(ex);
         SuitAir.Supply supply = AirSupplyOf(ex);
-        AnnounceAirSupply(supply, roomSpeaksForItself: inside >= 0 || RefugeUnderfoot(ex) >= 0);
+        AnnounceAirSupply(supply, roomSpeaksForItself: inside.Found || RefugeUnderfoot(ex) >= 0);
 
         if (ex.Floor < 0)
         {
@@ -149,7 +149,7 @@ public partial class Map
             // deeper, and it is the only thing stopping the facility from being somewhere to live.
         }
 
-        if (inside >= 0)
+        if (inside.Found)
         {
             if (!ex.ShelterBreathNoted)
             {
@@ -171,16 +171,22 @@ public partial class Map
             // nasty failure he walked into: stranded beside an empty rack with nothing to do but die. A
             // cracker that always produces cannot strand anybody, and standing in a shed while the Old Ones
             // keep walking prices the top-up far better than an empty state ever did.
-            ex.ShelterReservoir[inside] = DrawFromRack(ex, ShelterReservoirNow(ex, inside),
+            //
+            // #563 slice 3 · Keyed on the RACK, which is a tile and an index rather than an index. A bare
+            // index was one site's list; a captain who crossed a tile boundary re-pointed every one of these
+            // at a rack somewhere else, and the one they were standing in front of would have reported the
+            // charge of the fourth shelter beside the tube.
+            string rack = ShelterRackKey(inside);
+            ex.ShelterReservoir[rack] = DrawFromRack(ex, ShelterReservoirNow(ex, inside),
                 dtRealSeconds, out double pumped);
             if (pumped > 0)
             {
-                if (ex.ShelterPumpNoted.Add(inside))
+                if (ex.ShelterPumpNoted.Add(rack))
                 {
                     ShowPulseMessage(SurfaceShelter.PumpingLine);
                 }
             }
-            else if (ex.ShelterPumpNoted.Contains(inside) && ex.ShelterPumpNoted.Add(-inside - 1))
+            else if (ex.ShelterPumpNoted.Contains(rack) && ex.ShelterPumpNoted.Add($"{rack}:done"))
             {
                 ShowPulseMessage(SurfaceShelter.PumpDoneLine);
             }
@@ -513,32 +519,6 @@ public partial class Map
         _airCardOpen = false;
     }
 
-    /// <summary>Every shelter on this site, in the stable order everything else indexes by.</summary>
-    /// <summary>#585 · Every shelter on this site — computed ONCE per excursion and remembered.
-    ///
-    /// <para>Owner, after the rebuild: <i>"I think it felt a little sluggish at some points."</i> This was
-    /// the cost I had just added. <c>SurfaceShelter.SpecsFor</c> is pure but not free — it re-runs the
-    /// seeded placement, up to nine shelters over thirty hashed candidate spots each, with a separation
-    /// check against everything placed so far. That was fine when it was called twice a frame to draw
-    /// beacons. It stopped being fine the moment the threshold rule (#585) called it once PER OLD ONE PER
-    /// FRAME: twenty-four hunters × ~270 hash-and-lerp attempts, sixty times a second, to answer a question
-    /// whose answer cannot change for the whole excursion.</para>
-    ///
-    /// <para>Determinism is what makes the cache safe: same body, same salt, same field ⇒ same list, every
-    /// time. Cleared with the excursion, so a new site recomputes.</para></summary>
-    private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex)
-    {
-        if (ex.ShelterSpecs is { } cached)
-        {
-            return cached;
-        }
-        IReadOnlyList<SurfaceStructure.Spec> specs = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
-            ? []
-            : SurfaceShelter.SpecsFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
-        ex.ShelterSpecs = specs;
-        return specs;
-    }
-
     /// <summary>#585 · Walk a body out of solid mass it has ended up inside — a wall that was built around
     /// it rather than one it walked into. Tries short steps outward on a ring of bearings and takes the first
     /// that is open ground; gives up rather than loop, because a contact stuck in stone is a curiosity and a
@@ -564,58 +544,6 @@ public partial class Map
             }
         }
         return (x, y);
-    }
-
-    /// <summary>#585 · Push a body back out of any shelter it has ended up inside. The door reads a suit;
-    /// nothing else on this ground gets to be in there. Cheap: a site carries a handful of shelters and the
-    /// common case is a single Contains() that says no.</summary>
-    private (double X, double Y) HoldOutsideShelters(double x, double y)
-    {
-        if (_surface is not { } ex)
-        {
-            return (x, y);
-        }
-        foreach (SurfaceStructure.Spec spec in SheltersOn(ex))
-        {
-            (x, y) = SurfaceShelter.HoldAtTheThreshold(spec, x, y);
-        }
-        return (x, y);
-    }
-
-    /// <summary>Which shelter the captain is standing inside, or -1.</summary>
-    private int ShelterUnderfoot(SurfaceExcursion ex)
-    {
-        IReadOnlyList<SurfaceStructure.Spec> all = SheltersOn(ex);
-        for (int i = 0; i < all.Count; i++)
-        {
-            if (SurfaceShelter.Contains(all[i], _avatarX, _avatarY))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private bool StandingInTheShelter(SurfaceExcursion ex) => ShelterUnderfoot(ex) >= 0;
-
-    /// <summary>A rack's reservoir right now, in suit-seconds. A rack nobody in this run has touched is full
-    /// — unless somebody ELSE drew on it, which is the whole "finding one not full means somebody was here"
-    /// story, told by state rather than by a card.</summary>
-    private double ShelterReservoirNow(SurfaceExcursion ex, int index)
-    {
-        if (index < 0)
-        {
-            return 0;
-        }
-        if (ex.ShelterReservoir.TryGetValue(index, out double held))
-        {
-            return held;
-        }
-        double start = SurfaceShelter.SomebodyWasHere(ex.Stop.Body.Id, ex.Site.LayoutSalt, index)
-            ? SurfaceShelter.ReservoirSeconds * 0.42
-            : SurfaceShelter.ReservoirSeconds;
-        ex.ShelterReservoir[index] = start;
-        return start;
     }
 
     // ── #608 · ONE RACK LAW, TWO BUILDINGS ──────────────────────────────────────────────────────────────

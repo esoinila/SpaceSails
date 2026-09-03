@@ -60,6 +60,24 @@ public static class KeepOrLeave
     /// <summary>…and its other half. See <see cref="KeepLabel"/>.</summary>
     public const string LeaveLabel = "Leave";
 
+    /// <summary>#615 · WHAT THE CAPTAIN IS TOLD WHEN THEY LOOK AT A FIND AND WALK AWAY FROM IT. Authored by
+    /// Fable on the issue's closing pass (2026-09-03) and shipped verbatim.
+    ///
+    /// <para>Two flat clauses, because LEAVE has no consequence to report: nothing moved, nothing was spent,
+    /// nothing was destroyed. The first says what the world did (it kept the thing); the second is the
+    /// promise the whole verb rests on — #678's law and #573's register, said in the register a captain
+    /// actually reads. <b>The room is not struck off</b>, so its console is still standing there and
+    /// searching it again offers the same two verbs, a month and a lift-off later.</para>
+    ///
+    /// <para>It says <i>the room</i> and not <i>where you left it</i> on purpose: <see cref="LeftBehind"/>'s
+    /// wording is about a thing that was in a hand and put down, and this one never left the shelf. That
+    /// distinction is the class docblock's third paragraph, and it is the sentence's job to keep it.</para>
+    ///
+    /// <para>Said on the PULSE and filed nowhere. Everywhere else the pulse line and the casebook line are
+    /// the same sentence, because what happened is what is worth remembering — and here nothing happened. A
+    /// casebook that recorded every paper a captain declined would be a book of things they did not do.</para></summary>
+    public const string LeftWhereItLies = "Left where it lies. The room will still have it.";
+
     /// <summary>#615 · Is THIS find a decision?
     ///
     /// <para>Asked of what the room would hand over <b>ignoring capacity</b>

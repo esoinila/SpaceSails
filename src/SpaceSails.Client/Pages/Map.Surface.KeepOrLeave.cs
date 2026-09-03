@@ -177,16 +177,21 @@ public partial class Map
     /// deliberately. Writing a declined find into it would have bought a marker at the price of a lie and a
     /// duplicate: the room would still hold the find as well.</para>
     ///
-    /// <para>FABLE: line needed — what the captain is told at the moment they look at a find and decide to
-    /// walk away from it. Nothing in the store's prose covers a thing that was never picked up, and inventing
-    /// one here is exactly what this lane is not allowed to do. Until it exists the card simply closes and
-    /// the room console is still standing there, which is the building's own signage saying the true thing.</para>
+    /// <para><b>And it says so.</b> <see cref="KeepOrLeave.LeftWhereItLies"/> — authored on #615's closing
+    /// pass and shipped verbatim — on the pulse, which is the channel KEEP's own outcome uses. A verb that
+    /// answered with silence would be the only one on this ground that does, and a captain who pressed a
+    /// button and got nothing back has no way to tell a declined find from a swallowed keypress.</para>
+    ///
+    /// <para>Pulse only, never <c>ShowAndFile</c>: the casebook records what the captain now KNOWS, and
+    /// declining a paper is the one outcome in the building that adds nothing to that. It is said AFTER the
+    /// card comes down because the pulse keeps one slot and the last write wins.</para>
     /// </summary>
     private void LeaveTheFind()
     {
         // …through the same one door the ✕ uses, for #768's reason and for this feature's: closing IS
         // leaving, so the button and the corner cannot mean two different things.
         CloseViewObject();
+        ShowPulseMessage(KeepOrLeave.LeftWhereItLies);
         StateHasChanged();
     }
 

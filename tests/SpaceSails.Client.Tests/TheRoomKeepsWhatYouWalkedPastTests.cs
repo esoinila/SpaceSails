@@ -278,6 +278,38 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
         }
     }
 
+    /// <summary>
+    /// <b>…BUT IT SAYS SO, ONCE, AND ONLY ON THE PULSE.</b> #615 shipped this verb with a
+    /// <c>// FABLE: line needed</c> and no sentence at all, which made LEAVE the one control on this ground
+    /// that answers a press with silence — indistinguishable, from the captain's side, from a swallowed
+    /// keypress.
+    ///
+    /// <para>Three separable things, and each is a different way to get it wrong. It says the AUTHORED line
+    /// and never a literal of its own. It says it EXACTLY ONCE, so a decline is one sentence rather than a
+    /// pair racing for the pulse's one slot. And it says it on the pulse and files NOTHING: the casebook
+    /// holds what the captain now knows, and a book of the papers they declined is a book of things that did
+    /// not happen. The say is ordered after the close, because the last write to the one slot wins and a
+    /// card coming down is entitled to write there.</para>
+    /// </summary>
+    [Fact]
+    public void LeavingSaysTheAuthoredLineOnceAndFilesNothing()
+    {
+        string leave = MethodBody(Pages("Map.Surface.KeepOrLeave.cs"), "private void LeaveTheFind()");
+
+        Assert.Equal(1, Occurrences(leave, "ShowPulseMessage(KeepOrLeave.LeftWhereItLies)"));
+        Assert.Equal(1, Occurrences(leave, "ShowPulseMessage("));
+
+        foreach (string filed in new[] { "ShowAndFile", "FileNote", "\"" })
+        {
+            Assert.DoesNotContain(filed, leave, StringComparison.Ordinal);
+        }
+
+        int closes = leave.IndexOf("CloseViewObject()", StringComparison.Ordinal);
+        int says = leave.IndexOf("ShowPulseMessage(", StringComparison.Ordinal);
+        Assert.True(closes >= 0 && says > closes,
+            "the line is said after the card comes down — the pulse keeps one slot and the last write wins");
+    }
+
     /// <summary>The card carries both verbs, wired to the two methods, and it carries no third word of its
     /// own. Read off the razor, because a control that exists in C# and not in the markup is a decision the
     /// captain is never offered.</summary>

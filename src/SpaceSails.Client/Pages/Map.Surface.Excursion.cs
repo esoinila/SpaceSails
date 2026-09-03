@@ -199,13 +199,16 @@ public partial class Map
         public bool HardBreathingNoted { get; set; }
 
         // #573 · The deep shelter's charging rack: one charge per excursion, then it is dry.
-        // #573 · Per-shelter state, keyed by index into SurfaceShelter.SpecsFor - a site carries several
-        // now. The rack records WHEN it was drawn so it can climb back on its own; the locker is simply
-        // spent, because nobody is out here restocking ammunition.
+        // #573 · Per-shelter state. #563 slice 3 · KEYED ON THE RACK'S ADDRESS (Map.ShelterRackKey — the
+        // tile and the index on it), never on a bare index into one site's list. That bare index is exactly
+        // what kept the shelters home-tile-only through slice 2: the moment the shelter list spans a moving
+        // chunk, an index re-points on every tile crossing, and a captain would find the rack in front of
+        // them reporting the charge of a drum four hundred du away. The huts got this keying in slice 2 and
+        // the racks get it here.
         // #573 · Each rack's reservoir, in suit-seconds. Absent = never visited, so it is full (or partly
         // drawn by somebody else — see SurfaceShelter.SomebodyWasHere). Always producing, never "spent".
-        public Dictionary<int, double> ShelterReservoir { get; } = [];
-        public HashSet<int> ShelterPumpNoted { get; } = [];
+        public Dictionary<string, double> ShelterReservoir { get; } = [];
+        public HashSet<string> ShelterPumpNoted { get; } = [];
 
         // #608 · The same three pieces of state for the underground refuges, kept SEPARATE rather than
         // sharing the shelter dictionaries. The two are indexed differently — a shelter is an index into a
@@ -551,10 +554,14 @@ public partial class Map
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
 
-        // #585 · This site's shelters, worked out once. See SheltersOn for why this is a field and not a
-        // call: the threshold rule asks the question once per hunter per frame, and the answer is fixed for
-        // the whole excursion.
-        public IReadOnlyList<SurfaceStructure.Spec>? ShelterSpecs { get; set; }
+        // #585 · This ground's shelters, worked out once per TILE and remembered. See SheltersOnTile for
+        // why this is a field and not a call: the threshold rule asks the question once per hunter per
+        // frame, and a tile's answer is fixed for the whole excursion.
+        //
+        // #563 slice 3 · Per tile, because the shelters are per tile now — the same cache shape Huts above
+        // already uses, and for the same reason: a cache of a pure function, keyed the way the function is
+        // asked, which is the only kind of cache that cannot go stale.
+        public Dictionary<SurfaceTiles.Address, IReadOnlyList<SurfaceStructure.Spec>> ShelterSpecs { get; } = [];
 
         // ── #583 · THE REPO BOAT. Whether one is coming, when, and what is painted on it — all decided
         //    ONCE, from the heat this captain earned, at the moment the shuttle sets down. ──

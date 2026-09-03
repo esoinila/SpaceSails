@@ -31,7 +31,7 @@ public partial class Map
         // #585: a pressurised floor of the Hive steadies you for the same reason a shelter does - it is warm,
         // it is lit, and nothing outside can work its doors. A DEAD floor does not, which is most of them.
         bool inShelter = onExcursion && _surface is { } shelterEx
-            && (ShelterUnderfoot(shelterEx) >= 0
+            && (ShelterUnderfoot(shelterEx).Found
                 || (shelterEx.Floor < 0 && UndergroundComplex.HoldsPressure(shelterEx.Stop.Body.Id, shelterEx.Floor)));
         // #637 · AND A DERELICT IS EXPOSED GROUND TOO. This asked the moon's question — "are you above the
         // regolith's top rim at y = −20" — and a wreck's whole deck runs −9..+9, so aboard a hull it was
