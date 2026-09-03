@@ -78,9 +78,20 @@ public sealed class TheSealOnTheRefugeTests
                 $"{body} B{-level} ({state}): {plates.Count} refuge plate(s) drawn, expected one.");
 
             bool holds = state != UndergroundComplex.RefugeState.Failed;
-            Assert.Equal(
-                holds ? UndergroundComplex.RefugeGlyph : UndergroundComplex.RefugeFailedGlyph,
-                plates[0].Text);
+
+            // #938 · THREE STATES, THREE PLATES — and it used to be two. This assertion was written as
+            // `holds ? RefugeGlyph : RefugeFailedGlyph`, so an EMPTY refuge — thirty-nine per cent of them —
+            // wore REFUGE · AIR over a rack whose fill line reads empty and whose valve tag is dated years
+            // ago. The bench agreed with the bug because it asked the same two-way question the code did.
+            // The expected plates are LITERAL here for that reason: an oracle that reads RefugeGlyphFor is
+            // an oracle that cannot disagree with it.
+            string expected = state switch
+            {
+                UndergroundComplex.RefugeState.Holding => "🫁 REFUGE · AIR",
+                UndergroundComplex.RefugeState.Empty => "🫁 REFUGE · DRY",
+                _ => "🫁 PRESSURE REFUGE",
+            };
+            Assert.Equal(expected, plates[0].Text);
 
             // Tone is what the sign MEANS: 1 = you can breathe here, 2 = you cannot and your tank is
             // running. It is the same ink the plate by the lift is already using about the floor.
@@ -92,6 +103,64 @@ public sealed class TheSealOnTheRefugeTests
             Assert.Equal(
                 holds ? UndergroundComplex.RefugeTankLabel : UndergroundComplex.RefugeFailedGlyph,
                 rack.Label);
+        }
+    }
+
+    /// <summary>
+    /// #938 · THE DRY PLATE, AND WHAT IT MAY NOT SAY. #608 shipped with one <c>// FABLE: line needed</c>
+    /// marker on this family and a two-way <c>RefugeGlyphFor</c>, so the state between holding and failed —
+    /// a room that holds and has nothing in it — was signed as though the rack were full. The plate is
+    /// Fable's, authored on #608 (2026-09-03), in the stencil the other two already speak.
+    ///
+    /// <para>The half that can tell pass from fail is what it must NOT be: it may not carry AIR, which is
+    /// the exact word the empty rack cannot honour and the reason this bug existed; it may not be either of
+    /// the other two plates, because a state that shares a plate is a state the captain cannot read at
+    /// range; and it may not name the reserved word (worldbuilding-notes §8). The marker itself has to be
+    /// gone from the source, or the next reconciliation finds it again and files the same defect.</para>
+    /// </summary>
+    [Fact]
+    public void TheDryPlateIsTheAuthoredStencilAndPromisesNoAir()
+    {
+        Assert.Equal("🫁 REFUGE · DRY", UndergroundComplex.RefugeDryGlyph);
+        Assert.Equal(UndergroundComplex.RefugeDryGlyph,
+                     UndergroundComplex.RefugeGlyphFor(UndergroundComplex.RefugeState.Empty));
+
+        // Every state wears its own plate — the two-way test could only ever say which one it was NOT.
+        var plates = Enum.GetValues<UndergroundComplex.RefugeState>()
+                         .Select(UndergroundComplex.RefugeGlyphFor)
+                         .ToList();
+        Assert.Equal(plates.Count, plates.Distinct(StringComparer.Ordinal).Count());
+
+        // It keeps the scope of the claim (#612) and drops the claim itself.
+        Assert.StartsWith("🫁 REFUGE ·", UndergroundComplex.RefugeDryGlyph, StringComparison.Ordinal);
+        foreach (string forbidden in new[] { "AIR", "monolith" })
+        {
+            Assert.DoesNotContain(forbidden, UndergroundComplex.RefugeDryGlyph, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // …and the marker that asked for it is off the source, so the backlog stops re-finding it.
+        string air = System.IO.File.ReadAllText(System.IO.Path.Combine(
+            CoreRoot, "UndergroundComplex.Air.cs"));
+        Assert.Contains("RefugeDryGlyph", air, StringComparison.Ordinal);
+        Assert.DoesNotContain("FABLE: line needed", air, StringComparison.Ordinal);
+    }
+
+    /// <summary>Where <c>UndergroundComplex.Air.cs</c> lives, from the test binary.</summary>
+    private static string CoreRoot
+    {
+        get
+        {
+            string? dir = AppContext.BaseDirectory;
+            while (dir is not null)
+            {
+                string core = System.IO.Path.Combine(dir, "src", "SpaceSails.Core");
+                if (System.IO.Directory.Exists(core))
+                {
+                    return core;
+                }
+                dir = System.IO.Path.GetDirectoryName(dir);
+            }
+            throw new System.IO.DirectoryNotFoundException("Could not find src/SpaceSails.Core above the test assembly.");
         }
     }
 

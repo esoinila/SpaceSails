@@ -343,13 +343,33 @@ public static partial class UndergroundComplex
     ///
     /// <para>Owner (#604): <i>"A refuge whose seal has failed must still paint, and must read as failed."</i>
     /// So the map does not quietly drop it, and it does not go on promising air either.</para></summary>
-    // FABLE: line needed — a failed refuge's map glyph, if the bare plate is too quiet to read as failed.
     public const string RefugeFailedGlyph = "🫁 PRESSURE REFUGE";
 
+    /// <summary>#938 · THE PLATE ON A ROOM THAT HOLDS AND HAS NOTHING IN IT. Authored for the one
+    /// line-needed marker #608 shipped with (2026-09-03), in the stencil grammar the other two speak.
+    ///
+    /// <para>The bug it closes: <see cref="RefugeGlyphFor"/> read the plate off a two-way test, so
+    /// <see cref="RefugeState.Empty"/> — thirty-nine per cent of them — wore <see cref="RefugeGlyph"/> and
+    /// went on saying AIR at range. That is the #612 fault at the worst possible door: the one word a
+    /// captain crosses a dead floor for, printed over a rack whose fill line is empty and whose valve tag is
+    /// dated years ago. The room is not a lie — it holds, and shelter is worth the walk — but AIR is.</para>
+    ///
+    /// <para>DRY is the whole correction, and it is one word because the plate is read at a run. It keeps
+    /// <c>REFUGE ·</c> so the scope of the claim stays part of the claim; it does not become a warning,
+    /// because the room still works; and it is a word about the RACK, which is the only thing the decades
+    /// took. A captain who has read AIR on one floor and DRY on this one knows the difference before the
+    /// walk, which is the same service the failed plate does by dropping the word altogether.</para></summary>
+    public const string RefugeDryGlyph = "🫁 REFUGE · DRY";
+
     /// <summary>Which plate a refuge in this state wears. One place, so the deck plan and the tracker cannot
-    /// come to disagree about what the room claims.</summary>
-    public static string RefugeGlyphFor(RefugeState state) =>
-        state == RefugeState.Failed ? RefugeFailedGlyph : RefugeGlyph;
+    /// come to disagree about what the room claims — and now three plates for three states, because a
+    /// two-way test could only ever tell the captain which of them the room was NOT.</summary>
+    public static string RefugeGlyphFor(RefugeState state) => state switch
+    {
+        RefugeState.Failed => RefugeFailedGlyph,
+        RefugeState.Empty => RefugeDryGlyph,
+        _ => RefugeGlyph,
+    };
 
     /// <summary>#608 · What the lift panel prints on a floor whose plan carries a refuge. It says a refuge is
     /// THERE and never what state it is in — the plan is a drawing made when the building was new, and no
