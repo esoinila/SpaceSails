@@ -27,6 +27,39 @@ public enum PulseRank
     Climax = 2,
 }
 
+/// <summary>#761 · WHAT "PLOT-SIGNIFICANT" IS, in one place, so no call site ever decides it again.
+///
+/// <para><b>Owner ruling, 2026-08-08:</b> <i>"We should make sure we tell the user clearly when plot
+/// significant things happen."</i> The bug family that ruling names had been arriving one instance at a
+/// time — #689/#693 (the #592 climax losing the one slot to the routine air line), #736 (the outcome landing
+/// behind a modal backdrop), #740 (the sentence misattributing its number) — and each got a local guard. A
+/// law needs a definition, and the definition needs to be a thing code can be asked, not a paragraph.</para>
+///
+/// <para>So: <b>plot-significant means the top two ranks.</b> It changes what the captain knows, owes, is
+/// owed, or can do — a reveal, a debt, a standing gained or lost, a door that will now open, somebody who
+/// will now remember — and that is exactly the line <see cref="PulseRank.Beat"/> already draws against
+/// <see cref="PulseRank.Status"/>. No second enum, no second vocabulary: #693's ranks were already the right
+/// shape and were only ever missing a name for their top half.</para>
+///
+/// <para><b>This changes nothing that ships.</b> It writes down a comparison the game already makes — the
+/// slot's own law is <c>rank &lt; Rank</c>, and everything at or above <see cref="Floor"/> is what that law
+/// exists to protect. What it buys is a single place for <c>ThePlayerIsToldTests</c> to point at, instead of
+/// a magic <c>&gt;= PulseRank.Beat</c> copied into a guard — which on this ground is the stale mirror, and
+/// the stale mirror is how a law quietly stops being one.</para>
+///
+/// <para>The warning that belongs beside it is #693's own, unchanged: the ranks are about what a line IS,
+/// never about how loud it is. Marking a status line plot-significant so it wins the slot does not make the
+/// moment matter; it makes the rank stop meaning anything, and then the real climax loses to it.</para></summary>
+public static class Telling
+{
+    /// <summary>The lowest rank that counts as plot-significant. Everything from here up is a moment the
+    /// player must be told about on the surface they are looking at; everything below it is weather.</summary>
+    public const PulseRank Floor = PulseRank.Beat;
+
+    /// <summary>Is a line at this rank one the law is about?</summary>
+    public static bool IsPlotSignificant(this PulseRank rank) => rank >= Floor;
+}
+
 /// <summary>#693 · THE ONE SLOT, WITH A LAW.
 ///
 /// <para>The law, in one line: <b>a lower-ranked line may not displace a higher-ranked one that is still

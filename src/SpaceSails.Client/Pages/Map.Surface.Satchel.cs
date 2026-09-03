@@ -336,8 +336,17 @@ public partial class Map
     /// <para>The table below is that law, in one place, read TOP-DOWN in z-order: the pop-up nearest the
     /// captain's eye owns the answer, because that is the one their eye is on and the one whose subtree the
     /// backdrop cannot blur. Nothing in front of them at all, and the HUD's pulse is exactly right — a line
-    /// about the world, said on the world.</para></summary>
-    private void SayItWhereTheyAreLooking(string line)
+    /// about the world, said on the world.</para>
+    ///
+    /// <para>#761 · <paramref name="rank"/> is for the last row only, and it is the owner's law arriving at
+    /// the one exit that has a contest in it. Every pop-up row above returns into a surface that is already
+    /// the captain's whole screen — nothing races there — but the fall-through writes into the HUD's single
+    /// slot, where #693's ranks decide who is standing when the frame ends. A plot-significant sentence sent
+    /// down that road at <see cref="PulseRank.Status"/> can be displaced by the next instrument reading, and
+    /// then the moment was told to nobody. It defaults to Status because that is what nearly every line in
+    /// the game is; see <see cref="Telling"/> for what the top two ranks mean and the warning that goes with
+    /// them.</para></summary>
+    private void SayItWhereTheyAreLooking(string line, PulseRank rank = PulseRank.Status)
     {
         // #774 · The object card, and it is FIRST because it is on top: both full-screen cards are drawn
         // with the same backdrop class, and this one is written later in Map.razor, so when an event raises
@@ -417,7 +426,7 @@ public partial class Map
             _barNotice = line;          // the counter-example #736 was filed against — the keep answers on his card
             return;
         }
-        ShowPulseMessage(line);
+        ShowPulseMessage(line, rank);
     }
 
     /// <summary>#688 · What is at your feet, answered before what is in the walls. Returns true when the press
