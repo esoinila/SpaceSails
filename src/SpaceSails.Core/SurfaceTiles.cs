@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -182,6 +182,22 @@ public static class SurfaceTiles
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
         return $"{bodyId}~{siteSalt}~t{a.X}_{a.Y}";
+    }
+
+    /// <summary>#563 slice 2 · THE SALT A TILE'S CONTENTS ARE SEEDED FROM — what is IN the buildings, which
+    /// of their doors somebody paid to import, which papers are in which drawer.
+    ///
+    /// <para>The home tile answers with the site's own salt UNCHANGED, so every roll the ground under the
+    /// tube has ever made comes out the same. Every other tile answers with its own address key, so a ruin
+    /// out in the world holds its own things rather than a copy of the home tile's — the same law
+    /// <see cref="Ground"/> and <see cref="Terrain"/> already obey, stated ONCE so that the code which lays
+    /// a tile's contents and the code which later hands them over cannot ask the question two different
+    /// ways. That is this project's fourth named bug class, and it costs a whole console when it lands.</para></summary>
+    public static string ContentSalt(string bodyId, string siteSalt, Address a)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+        return a == Home ? siteSalt : Key(bodyId, siteSalt, a);
     }
 
     /// <summary>ONE TILE'S GROUND. Pure in <c>(bodyId, siteSalt, address)</c>: walls, doorways, buildings

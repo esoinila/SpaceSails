@@ -128,6 +128,12 @@ public sealed class Vault
     /// back to the seeded captain and a derived title, which is the honest truth about a save nobody named.</summary>
     public LogbookSection? Logbook { get; init; }
 
+    /// <summary>#563 slice 2 · WHAT THE CAPTAIN CHANGED ON THE GROUND — the huts forced, the lockers
+    /// lifted and the effects read, keyed on (body, site, tile). Its own independently optional section; a
+    /// file written before the treadmill's second slice simply lacks it and wakes with every hatch dogged
+    /// again, which is what every save has done until now and what this section exists to stop.</summary>
+    public GroundSection? Ground { get; init; }
+
     /// <summary>#638 · THE COUNTDOWN THE VOID IS RUNNING, if one is running at all.
     ///
     /// <para><b>Written only while the clock is live</b> — the client hands over <c>null</c> whenever nothing
@@ -683,6 +689,14 @@ public sealed record CaseThreadsSection
 /// <para>It is durable because the wallet's hint is: <i>worked here, twice</i> is worth nothing if it forgets
 /// between excursions, and the paper you handed a man last night is exactly what a gumshoe would remember
 /// about him.</para></summary>
+/// <summary>#563 slice 2 · The marks a captain has left on a landing site's ground — see
+/// <see cref="GroundMemory"/> for the key shape and for why this is a flat list of strings.</summary>
+public sealed record GroundSection
+{
+    /// <summary>The marks, in a stable order (<see cref="GroundMemory.Stored"/>).</summary>
+    public IReadOnlyList<string> Changed { get; init; } = [];
+}
+
 public sealed record PapersShownSection
 {
     /// <summary>The reads, oldest first. Capped by the writer (see <c>WalletChoice.BookKeeps</c>).</summary>

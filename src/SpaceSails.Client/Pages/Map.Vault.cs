@@ -486,6 +486,14 @@ public partial class Map
             PapersShown = YourPaperTrail.Count > 0
                 ? new PapersShownSection { Shown = [.. YourPaperTrail.Select(r => r.Stored)] }
                 : null,
+            // #563 slice 2 · WHAT THIS CAPTAIN CHANGED ON A MOON — the hatches forced, the lockers lifted,
+            // the effects read, keyed on (body, site, tile). Durable because a hut is a PLACE: walking away
+            // from one and finding it dogged again on the next trip is the world becoming wallpaper, which
+            // is the exact failure the treadmill decision names. Written only when there is something to
+            // write, so a voyage that never set foot on a moon leaves the section out of the file entirely.
+            Ground = _groundMemory.Count > 0
+                ? new GroundSection { Changed = _groundMemory.Stored }
+                : null,
             // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
             // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
             // the save carries the FACT and never the words.
@@ -1084,6 +1092,11 @@ public partial class Map
                 _caseThreads = [.. Core.CaseThreads.Draw(_caseThreads, line.A, line.B)];
             }
         }
+
+        // #563 slice 2 · The marks this captain left on the ground of every moon they walked. Restored
+        // wholesale rather than merged, because a load is a different life and not this one continuing; a
+        // pre-slice-2 file simply has none, and every hut on every moon is honestly dogged again.
+        _groundMemory = GroundMemory.Restore(vault.Ground?.Changed);
 
         // #836 · The captain's paper trail — which identity was handed to which man, on which floor. A row
         // this build cannot parse is dropped rather than thrown over, the same tolerance the satchel gets;

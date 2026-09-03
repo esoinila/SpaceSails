@@ -80,6 +80,7 @@ public static class VaultSerializer
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
     private const string SecLogbook = "logbook";        // #948 · the captain's name, the title, the note
+    private const string SecGround = "ground";          // #563 slice 2 · what a captain changed on a moon
     private const string SecVoid = "void";              // #638 · the adrift countdown, when one is running
 
     /// <summary>Serialize a vault to its on-disk JSON string (envelope + checksum). Only non-null
@@ -117,6 +118,7 @@ public static class VaultSerializer
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
+        AddSection(sections, SecGround, vault.Ground);
         AddSection(sections, SecLogbook, vault.Logbook);
         AddSection(sections, SecVoid, vault.Void);
 
@@ -267,6 +269,7 @@ public static class VaultSerializer
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),
+            Ground = Harvest<GroundSection>(sections, SecGround, warnings),
             Logbook = Harvest<LogbookSection>(sections, SecLogbook, warnings),
             Void = Harvest<VoidSection>(sections, SecVoid, warnings),
         };

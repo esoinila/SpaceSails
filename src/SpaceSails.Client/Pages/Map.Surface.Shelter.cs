@@ -204,27 +204,23 @@ public partial class Map
             return;
         }
 
-        // Identify WHICH ruin by its position — the console sits at the building's centre, which is the
-        // stable key SurfaceLayout hands out.
-        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
-        SurfaceLayout.Plan plan = SurfaceLayout.For(body, MoonSurface.ExpeditionField(), salt);
-        IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
-
-        int which = -1;
-        for (int i = 0; i < centres.Count; i++)
-        {
-            if (Math.Abs(centres[i].X - spot.X) < 0.5 && Math.Abs(centres[i].Y - spot.Y) < 0.5)
-            {
-                which = i;
-                break;
-            }
-        }
+        // Identify WHICH ruin, and — since #563 slice 2 — ON WHICH TILE. The console sits at the building's
+        // centre, which is the stable key SurfaceLayout hands out; the tile is what makes that key unique
+        // once the ground is a lattice and every tile has buildings of its own.
+        string body = ex.Stop.Body.Id;
+        (SurfaceTiles.Address tile, int which) = RuinUnderYourHand(ex, spot.X, spot.Y);
         if (which < 0)
         {
             return;
         }
 
-        string key = $"{which}";
+        // The tile's own contents salt, and it is used for EVERY question below rather than the site's — the
+        // find, the rounds, the credits, the papers, the person they assemble into, the lead. One salt per
+        // ruin, resolved once: asking some of them on the site and some on the tile is how a drawer comes to
+        // hold one thing and report another.
+        string salt = SurfaceTiles.ContentSalt(body, ex.Site.LayoutSalt, tile);
+
+        string key = $"{tile.X}_{tile.Y}:{which}";
         if (!ex.RuinsSearched.Add(key))
         {
             ShowPulseMessage("You have already been through this one.");
@@ -304,6 +300,53 @@ public partial class Map
 
         RebuildSurfaceDeck();
         RequestVaultSave();
+    }
+
+    /// <summary>#563 slice 2 · WHICH RUIN THE CAPTAIN'S HAND IS ON, and which tile it stands on.
+    ///
+    /// <para>This used to ask the HOME tile's plan and nothing else, which was right while the ground was one
+    /// field. With a lattice it meant a captain standing in a ruin two tiles out pressed [E] and either got
+    /// nothing (no home building at that spot) or — far worse — got the home tile's building of the same
+    /// index, so the drawer reported somebody else's papers. So the search runs over the ground actually
+    /// being carried, home tile included, and hands back the address as well as the index.</para>
+    ///
+    /// <para>The home tile is asked first and by name, because it is not in <c>Stream.Loaded</c> on a ground
+    /// that is not a lattice at all — a derelict's deck and an away-expedition site still have ruins on
+    /// them, and they still answer here.</para></summary>
+    private (SurfaceTiles.Address Tile, int Index) RuinUnderYourHand(
+        SurfaceExcursion ex, double x, double y)
+    {
+        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
+
+        foreach (SurfaceTiles.Address a in TilesUnderfoot(ex))
+        {
+            SurfaceLayout.Plan plan = a == SurfaceTiles.Home
+                ? SurfaceLayout.For(body, MoonSurface.ExpeditionField(), salt)
+                : SurfaceTiles.Ground(body, salt, a);
+            IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
+            for (int i = 0; i < centres.Count; i++)
+            {
+                if (Math.Abs(centres[i].X - x) < 0.5 && Math.Abs(centres[i].Y - y) < 0.5)
+                {
+                    return (a, i);
+                }
+            }
+        }
+        return (SurfaceTiles.Home, -1);
+    }
+
+    /// <summary>The home tile, then every other tile the excursion is carrying. One list, so anything that
+    /// has to find "the thing under the captain's hand" walks the same ground the renderer just drew.</summary>
+    private static IEnumerable<SurfaceTiles.Address> TilesUnderfoot(SurfaceExcursion ex)
+    {
+        yield return SurfaceTiles.Home;
+        foreach (SurfaceTiles.Address a in ex.Stream.Loaded)
+        {
+            if (a != SurfaceTiles.Home)
+            {
+                yield return a;
+            }
+        }
     }
 
     // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should also
