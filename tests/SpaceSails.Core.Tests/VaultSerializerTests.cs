@@ -115,6 +115,11 @@ public class VaultSerializerTests
             // What may never share a row is a stop and a BURIAL, and that is a law about the world rather
             // than about this format — TheStopOrderAtTheDigTests holds it.
             HallsStopped = ["phobos"],
+            // #1074 beat 2 — and which of THOSE closed workings have since been fenced, signed and put under
+            // study. The same id as the stopped one, deliberately and unavoidably: a zone stands on a closed
+            // working and nowhere else, so a file whose two lists did not overlap would round-trip a shape
+            // the world cannot produce.
+            HallsPreserved = ["phobos"],
         },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
@@ -183,6 +188,10 @@ public class VaultSerializerTests
         // would re-open a shaft an office had sealed, and would let the neighbours fill in a ground the
         // Authority had already taken.
         Assert.Equal(["phobos"], loaded.Progress.HallsStopped);
+        // #1074 beat 2 — and which of those have since passed into official care. Nothing ever takes a site
+        // back OUT of care, so a reload that dropped this list would be the one mechanical fact of the beat
+        // going missing: the study would end, which is the thing it does not do.
+        Assert.Equal(["phobos"], loaded.Progress.HallsPreserved);
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet
