@@ -621,9 +621,9 @@ public sealed class OneWallOneTruthTests
     /// every locked leaf on every deck that has one must lie ON a collision segment out of the SAME list
     /// the pen draws from. A locked door whose backing wall moved, or was never laid, fails here.</para>
     ///
-    /// <para>An ordinary (unlocked) door is the opposite case and is asserted too: the passage is walkable
-    /// by law, so it must NOT be backed by stone. Both directions, because a guard that only checked the
-    /// locked ones would pass a deck that had walled up every doorway in it.</para>
+    /// <para>The plan's own answer about the doorway (<see cref="DeckPlan.DoorwayIsWalledUp"/>) is asserted
+    /// against the walls themselves rather than trusted, so the derivation cannot quietly start answering a
+    /// different question than the one the pen is now asking it.</para>
     /// </summary>
     [Fact]
     public void ALockedDoorIsBackedByTheSameListThePenDrawsFrom()
@@ -647,24 +647,21 @@ public sealed class OneWallOneTruthTests
             {
                 double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
                 bool stone = plan.Walls.Any(w => !w.Unseen && OnTheSameLine(w, d));
+                _ = d.Locked ? locked++ : open++;
 
-                if (d.Locked)
+                if (d.Locked && !stone)
                 {
-                    locked++;
-                    if (!stone)
-                    {
-                        bad.Add($"  {scene}: a LOCKED door at ({mx:0.##}, {my:0.##}) with no wall behind "
-                                + "it — it reads as a barrier and is not one.");
-                    }
+                    bad.Add($"  {scene}: a LOCKED door at ({mx:0.##}, {my:0.##}) with no wall behind it — "
+                            + "it reads as a barrier and is not one.");
                 }
-                else
+
+                // …and the plan's own derived answer is the walls' answer, on every door in the game.
+                if (plan.DoorwayIsWalledUp(d) != stone)
                 {
-                    open++;
-                    if (stone)
-                    {
-                        bad.Add($"  {scene}: an ordinary door at ({mx:0.##}, {my:0.##}) is walled up — it "
-                                + "reads as a way through and is not one.");
-                    }
+                    bad.Add($"  {scene}: the door at ({mx:0.##}, {my:0.##}) is "
+                            + (stone ? "walled up" : "an open doorway")
+                            + $" and the plan says {(plan.DoorwayIsWalledUp(d) ? "walled up" : "open")} — "
+                            + "the derivation the pen reads has parted company with the list.");
                 }
             }
         }
@@ -672,6 +669,104 @@ public sealed class OneWallOneTruthTests
         Assert.True(locked > 0, "no scene carries a locked door — this guard is asserting nothing");
         Assert.True(open > 0, "no scene carries an ordinary door — this guard is asserting nothing");
         Fail(bad, "door(s) whose look and whose stone disagree");
+    }
+
+    /// <summary>
+    /// #442 · <b>A LEAF WITH A WALL ACROSS IT IS NEVER DRAWN SLIDING OPEN.</b>
+    ///
+    /// <para>The second direction of the owner's report, and the one the net found rather than the one it
+    /// was written for: three constructs in the game are a wall PLUS an unlocked door laid over it — the
+    /// ship's own shuttle hatch while she is docked ("the hatch itself — sealed here"), every dogged
+    /// compartment hatch (<c>ShipWith</c>: <i>"a dogged hatch is a WALL, and the walls are what everything
+    /// else asks"</i>), and a haven's sealed berth hatch. All three drew as ORDINARY automatic doors, which
+    /// means they retracted as the captain walked up — the player watched the opening open and then walked
+    /// into stone.</para>
+    ///
+    /// <para>The captain is stood <b>right at</b> each doorway, inside <c>DoorOpenRadius</c>, which is the
+    /// only place the bug exists: further off, every leaf is drawn shut anyway and the guard would pass on a
+    /// world that cannot tell pass from fail.</para>
+    ///
+    /// <para><b>What the pen is asked is the RETRACTED STUB, and the first cut of this guard asked the
+    /// wrong thing.</b> A retracted leaf is two short strokes reaching a quarter of the way in from each
+    /// jamb; a shut one is a single full-span stroke. Asking for the full span passed on the broken
+    /// renderer, because the WALL behind a sealed hatch is drawn at exactly the same two endpoints — the
+    /// guard was reading the stone and calling it the door. The stub belongs to nothing else on the deck,
+    /// so that is what is looked for, and taking the fix back out now puts 18 doorways on the report.</para>
+    /// </summary>
+    [Fact]
+    public void ASealedDoorwayIsDrawnShut_EvenWithTheCaptainStandingAtIt()
+    {
+        var bad = new List<string>();
+        int sealedLeaves = 0, ordinary = 0;
+
+        foreach (string scene in Scenes.Names())
+        {
+            DeckPlan plan;
+            try
+            {
+                plan = Scenes.Build(scene);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            foreach (DeckPlan.Door d in plan.Doors)
+            {
+                if (d.Locked)
+                {
+                    continue; // always drawn shut and cold; the guard above owns that one
+                }
+                double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
+                bool walled = plan.DoorwayIsWalledUp(d);
+
+                // Standing ON the leaf: as open as the interlock will ever let this one be.
+                (List<Stroke> strokes, DeckView.Placement place) = Frame(plan, mx, my);
+                bool retracted = Stub(strokes, place, d);
+
+                if (walled)
+                {
+                    sealedLeaves++;
+                    if (retracted)
+                    {
+                        bad.Add($"  {scene}: the doorway at ({mx:0.##}, {my:0.##}) has a wall across it and "
+                                + "the pen slid the leaf ASIDE — an opening you cannot walk through.");
+                    }
+                }
+                else if (d.Interlock == 0)
+                {
+                    // No partner to take turns with (#462), so standing in it is the whole of the rule and
+                    // this one MUST be open. The interlocked pairs are left out rather than guessed at: the
+                    // far end of a tube is drawn shut on purpose and is not this guard's business.
+                    ordinary++;
+                    if (!retracted)
+                    {
+                        bad.Add($"  {scene}: the ordinary doorway at ({mx:0.##}, {my:0.##}) is walkable and "
+                                + "the pen drew the leaf SHUT with the captain standing in it.");
+                    }
+                }
+            }
+        }
+
+        Assert.True(sealedLeaves > 0,
+            "not one sealed doorway in the whole scene list — this guard is being handed a world that "
+            + "cannot tell pass from fail");
+        Assert.True(ordinary > 0, "not one ordinary doorway — the retract path is untested");
+        Fail(bad, "doorway(s) the pen drew as the opposite of what the walls say");
+    }
+
+    /// <summary>Did the pen draw this door RETRACTED — the short stub reaching a quarter of the way in from
+    /// a jamb that <c>DeckView.DrawTheDoors</c> lays for an open leaf, and that nothing else on a deck
+    /// draws? Asked at both jambs, either of which is proof the leaf slid aside.</summary>
+    private static bool Stub(IEnumerable<Stroke> strokes, DeckView.Placement p, in DeckPlan.Door d)
+    {
+        (float ax, float ay) = On(p, d.X1, d.Y1);
+        (float bx, float by) = On(p, d.X2, d.Y2);
+        (float qax, float qay) = On(p, d.X1 + ((d.X2 - d.X1) * 0.25f), d.Y1 + ((d.Y2 - d.Y1) * 0.25f));
+        (float qbx, float qby) = On(p, d.X2 - ((d.X2 - d.X1) * 0.25f), d.Y2 - ((d.Y2 - d.Y1) * 0.25f));
+        return strokes.Any(s =>
+            (Near(s.X1, ax) && Near(s.Y1, ay) && Near(s.X2, qax) && Near(s.Y2, qay))
+            || (Near(s.X1, bx) && Near(s.Y1, by) && Near(s.X2, qbx) && Near(s.Y2, qby)));
     }
 
     /// <summary>Does this wall lie along this door — same line, covering its span? A locked door is drawn
