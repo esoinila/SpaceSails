@@ -54,7 +54,7 @@
         <div class="perf-hud" role="status">@perf.HudLine</div>
     }
 
-    <SaveLoadRack _activeThreadId="@_activeThreadId" _renameDraft="@_renameDraft"
+    <SaveLoadRack _activeThreadId="@_activeThreadId" _renameDraftValue="@_renameDraft" _renameDraftSet="@(v => _renameDraft = v)"
                   _renamingThreadId="@_renamingThreadId" _resumeAvailable="@_resumeAvailable"
                   _resumeHavenName="@_resumeHavenName" _resumeTampered="@_resumeTampered"
                   _showDevStartsValue="@_showDevStarts" _showDevStartsSet="@(v => _showDevStarts = v)" _showSaveDrawer="@_showSaveDrawer"
@@ -867,7 +867,7 @@
             _planNodes="@_planNodes" _plasma="@_plasma" _plotFrameBodyId="@_plotFrameBodyId"
             _plunderOpportunityTargetId="@_plunderOpportunityTargetId" _pulse="@_pulse"
             _reactionMassPulses="@_reactionMassPulses" _scenarioName="@_scenarioName"
-            _scrubOffsetSeconds="@_scrubOffsetSeconds" _selectedPlanNode="@_selectedPlanNode" _ship="@_ship"
+            _scrubOffsetSecondsValue="@_scrubOffsetSeconds" _scrubOffsetSecondsSet="@(v => _scrubOffsetSeconds = v)" _selectedPlanNode="@_selectedPlanNode" _ship="@_ship"
             _showTutorial="@_showTutorial" _skimAltKm="@_skimAltKm" _skimFailure="@_skimFailure"
             _skimmablePass="@_skimmablePass" _skimResult="@_skimResult" _skimSolving="@_skimSolving"
             _skipActive="@_skipActive" _skipNext="@_skipNext" _skipTargetEpoch="@_skipTargetEpoch"

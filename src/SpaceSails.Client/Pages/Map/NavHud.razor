@@ -1250,7 +1250,13 @@
     [Parameter] public PulseSlot _pulse { get; set; } = default!;
     [Parameter] public int _reactionMassPulses { get; set; }
     [Parameter] public string _scenarioName { get; set; } = default!;
-    [Parameter] public double _scrubOffsetSeconds { get; set; }
+    /// <summary>the page's `double _scrubOffsetSeconds` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_scrubOffsetSeconds` and the assignment still lands on the page.</summary>
+    [Parameter] public double _scrubOffsetSecondsValue { get; set; }
+    /// <summary>The page's `_scrubOffsetSeconds = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<double> _scrubOffsetSecondsSet { get; set; } = default!;
+    private double _scrubOffsetSeconds { get => _scrubOffsetSecondsValue; set { _scrubOffsetSecondsValue = value; _scrubOffsetSecondsSet(value); } }
     [Parameter] public PlanNode? _selectedPlanNode { get; set; }
     [Parameter] public ShipState _ship { get; set; } = default!;
     [Parameter] public bool _showTutorial { get; set; }

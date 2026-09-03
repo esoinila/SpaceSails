@@ -417,7 +417,13 @@
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
     [Parameter] public string? _activeThreadId { get; set; }
-    [Parameter] public string _renameDraft { get; set; } = default!;
+    /// <summary>the page's `string _renameDraft` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_renameDraft` and the assignment still lands on the page.</summary>
+    [Parameter] public string _renameDraftValue { get; set; } = default!;
+    /// <summary>The page's `_renameDraft = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string> _renameDraftSet { get; set; } = default!;
+    private string _renameDraft { get => _renameDraftValue; set { _renameDraftValue = value; _renameDraftSet(value); } }
     [Parameter] public string? _renamingThreadId { get; set; }
     [Parameter] public bool _resumeAvailable { get; set; }
     [Parameter] public string? _resumeHavenName { get; set; }
