@@ -48,18 +48,27 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
     /// served to a captain who is standing on a body that has one.</summary>
     public bool HasSecretSite { get; }
 
+    /// <summary>#1074 · Whether this ground is fenced, signed and under study
+    /// (<see cref="PreservationZone.On"/>). Part of the key for <see cref="HasSecretSite"/>'s exact reason,
+    /// one beat along: a preserved site grows a rail and a notice on the surface, and a cached deck built
+    /// before the office took the site into care would go on being served to a captain standing in a zone
+    /// the world says is there. The register is written on a descent, so this flips at most once in a
+    /// voyage and costs one honest rebuild when it does.</summary>
+    public bool Preserved { get; }
+
     private readonly Cache[] _caches;
     private readonly int _hash;
 
     private SurfaceDeckKey(
         string bodyId, string bodyDisplayName, string siteSalt, Cache[] caches, long monolithEpoch,
-        bool hasSecretSite)
+        bool hasSecretSite, bool preserved)
     {
         BodyId = bodyId;
         BodyDisplayName = bodyDisplayName;
         SiteSalt = siteSalt;
         MonolithEpoch = monolithEpoch;
         HasSecretSite = hasSecretSite;
+        Preserved = preserved;
         _caches = caches;
 
         var hc = new HashCode();
@@ -68,6 +77,7 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
         hc.Add(siteSalt, StringComparer.Ordinal);
         hc.Add(monolithEpoch);
         hc.Add(hasSecretSite);
+        hc.Add(preserved);
         hc.Add(caches.Length);
         foreach (Cache c in caches)
         {
@@ -82,7 +92,8 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
     public static SurfaceDeckKey For(
         string? bodyId, string? bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)>? ownCaches,
-        string? siteSalt = null, long monolithEpoch = 0, bool hasSecretSite = false)
+        string? siteSalt = null, long monolithEpoch = 0, bool hasSecretSite = false,
+        bool preserved = false)
     {
         bodyId ??= "";
         bodyDisplayName ??= "";
@@ -104,7 +115,7 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
         }
 
         return new SurfaceDeckKey(
-            bodyId, bodyDisplayName, siteSalt, caches, monolithEpoch, hasSecretSite);
+            bodyId, bodyDisplayName, siteSalt, caches, monolithEpoch, hasSecretSite, preserved);
     }
 
     public bool Equals(SurfaceDeckKey? other)
@@ -125,7 +136,8 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
             || !string.Equals(BodyDisplayName, other.BodyDisplayName, StringComparison.Ordinal)
             || !string.Equals(SiteSalt, other.SiteSalt, StringComparison.Ordinal)
             || MonolithEpoch != other.MonolithEpoch
-            || HasSecretSite != other.HasSecretSite)
+            || HasSecretSite != other.HasSecretSite
+            || Preserved != other.Preserved)
         {
             return false;
         }

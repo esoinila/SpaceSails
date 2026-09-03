@@ -467,6 +467,8 @@ public partial class Map
                 HallsHandled = QuietHandRows(),
                 // #1074 · …and which of them the Authority has closed the working of (Map.Stop.cs).
                 HallsStopped = StopRows(),
+                // #1074 beat 2 · …and which of THOSE it has since fenced and signed (Map.Preserve.cs).
+                HallsPreserved = PreserveRows(),
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -1044,8 +1046,10 @@ public partial class Map
 
         // #1068: and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
         RestoreQuietHands(vault.Progress);
-        // #1074: and which of them the Authority has closed the working of (Map.Stop.cs).
+        // #1074: and which of them the Authority has closed the working of (Map.Stop.cs), and which of THOSE
+        // it has since taken into care — that one restores and installs in one call (Map.Preserve.cs).
         RestoreStop(vault.Progress);
+        RestorePreserve(vault.Progress);
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
         // ground must come back to a shaft that already ends where the burial left it, to the same one

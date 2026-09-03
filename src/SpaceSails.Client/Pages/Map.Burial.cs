@@ -57,12 +57,23 @@ public partial class Map
         // burial. It parks the ROCK and the WINDOW, which is the same move ?found=1 makes with a body id —
         // and it does it by choosing a real window rather than by overriding the outcome, so what a tester
         // walks is still exactly the code path a captain walks.
-        if ((_buriedCheat || _stoppedCheat)
+        //
+        // #1074 beat 2 · …and HOW FAR back, because the office's paperwork hardens in stages: one whole
+        // window closes the working, two fence it. A cheat that always parked the burial's own threshold
+        // could never reach the second stage, so ?preserved=1 asks for a window deep enough that the order
+        // and the fence both land on this descent — which is exactly what a captain who stayed away two
+        // shifts comes home to.
+        if ((_buriedCheat || _stoppedCheat || _preservedCheat)
             && DisclosureClock.OpeningOf(_hallsOpened, UndergroundComplex.FoundBandCheatSiteId) is null)
         {
             _hallsOpened = DisclosureClock.Note(_hallsOpened, new DisclosureClock.Opening(
                 UndergroundComplex.FoundBandCheatSiteId,
-                CheatOpeningWindow(UndergroundComplex.FoundBandCheatSiteId, wantTheOffice: _stoppedCheat)));
+                CheatOpeningWindow(
+                    UndergroundComplex.FoundBandCheatSiteId,
+                    wantTheOffice: _stoppedCheat || _preservedCheat,
+                    windowsBack: _preservedCheat
+                        ? PreservationZone.WindowsBeforePreserving
+                        : Burial.WindowsBeforeFilling)));
         }
 
         IReadOnlyList<string> next = Burial.Fill(
@@ -107,6 +118,14 @@ public partial class Map
         // body — and the two are mutually exclusive by construction, so this may run beside Burial.Fill
         // rather than in place of it and neither has to know what the other decided. See Map.Stop.cs.
         TheOfficeClosesTheWorking();
+
+        // #1074 beat 2 · …and the SECOND STAGE of that same outcome, on the same breath and one shift
+        // further along: a working the office closed passes into official care — fenced, signed, and under
+        // a study nobody has scheduled. It runs after the closure and never before it, because a zone stands
+        // on a CLOSED working and reads the register the line above may have just written; a captain who
+        // stayed away two shifts should come home to both at once rather than to a fence with no order
+        // behind it. See Map.Preserve.cs; like the others, it does nothing at all on almost every voyage.
+        TheSitePassesIntoCare();
     }
 
     /// <summary>#1074 · Which window a dev cheat should say this ground was opened in, so that the outcome
@@ -118,13 +137,15 @@ public partial class Map
     /// thing that happens, and the last window is returned rather than throwing because a cheat that crashed
     /// a boot would be worse than a cheat that showed the other beat.</para>
     ///
-    /// <para>Every candidate is at least a whole window old, which is what both outcomes require — the walk
-    /// starts one PAST the threshold rather than at it, exactly as the pre-#1074 cheat's own arithmetic
-    /// did.</para></summary>
-    private long CheatOpeningWindow(string bodyId, bool wantTheOffice)
+    /// <para>Every candidate is at least <paramref name="windowsBack"/> whole windows old — the walk starts
+    /// one PAST the caller's threshold rather than at it, exactly as the pre-#1074 cheat's own arithmetic
+    /// did. #1074 beat 2 · the threshold is a PARAMETER because the office's paperwork hardens in stages and
+    /// the deeper stage needs a deeper window; the alternative was a second copy of this walk that differed
+    /// by one number, which is the mirrored constant this ground keeps paying for.</para></summary>
+    private long CheatOpeningWindow(string bodyId, bool wantTheOffice, long windowsBack)
     {
         long now = DisclosureClock.WindowAt(SimTime);
-        long window = now - Burial.WindowsBeforeFilling - 1;
+        long window = now - windowsBack - 1;
         for (int back = 0; back < 64; back++)
         {
             long candidate = window - back;

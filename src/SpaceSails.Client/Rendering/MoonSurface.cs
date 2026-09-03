@@ -339,13 +339,21 @@ public static class MoonSurface
         // way a shared surface deck could go quietly wrong. Invalidation is honest by construction: any
         // bury / lift / drop that changes the own-cache set changes the key (SurfaceDeckKey), so the ✗
         // marks are never stale.
+        //
+        // #1074 · …and whether the office has taken this site into care, which is asked HERE rather than
+        // passed in. It is a fact about the world register (PreservationZone) and not about the excursion,
+        // so there is exactly one place that can read it and no caller to keep in step — and it goes into
+        // the KEY in the same breath it is read, because a cached deck built before the fence went up is
+        // precisely the stale ground this memo has to be unable to serve.
+        bool preserved = PreservationZone.On(bodyId);
         SurfaceDeckKey key = SurfaceDeckKey.For(
-            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite);
+            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite, preserved);
         Layout layout;
         if (!_layoutCache.TryGetValue(key, out layout))
         {
             layout = BuildLayout(
-                bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch, hasSecretSite);
+                bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch, hasSecretSite,
+                preserved);
             // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
             // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
             // that never trips in normal play keeps the cache from creeping; on overflow we simply start
@@ -415,7 +423,7 @@ public static class MoonSurface
         string bodyId,
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
-        string siteSalt, string siteName, long monolithEpoch, bool hasSecretSite)
+        string siteSalt, string siteName, long monolithEpoch, bool hasSecretSite, bool preserved)
     {
         DeckPlan ship = DeckPlan.Ship;
 
@@ -681,6 +689,35 @@ public static class MoonSurface
             // once it is pressed — and until it is, this is a shack with an odd fitting in it.
             consoles.Add(new(DeckPlan.ConsoleKind.HiveHead,
                 (float)head.CarX, (float)head.CarY, "▤ SERVICE PANEL"));
+
+            // ── #1074 beat 2 · AND, ON A SITE THE OFFICE HAS TAKEN INTO CARE, A RAIL AND A SIGN.
+            //
+            // A working the Authority closed a shift ago is fenced, signed and under study a shift after
+            // that: a small closed ring of rail round the shed, one gap in it, and the notice posted at the
+            // gap. Two objects, and between them they are the entire beat — there is no card, no pulse, no
+            // marker and nothing on the wire (#761: the world tells it plainly or not at all).
+            //
+            // THE RAILS ARE DRAWN AS ORDINARY INNER LINES. Not hull, which is the rim fence #565 took off
+            // this ground for announcing a boundary that was not the real one; not stone, because a rail is
+            // not mass; not unseen, because being seen is its whole job. It is the same ink every fallen
+            // span and low ruin wall on every landing site already wears, which is what makes it read as a
+            // thing somebody put up rather than as a new piece of chrome.
+            //
+            // AND THE GAP FACES THE TUBE, which is a law and not a flourish — see PreservationZone. The car
+            // comes up in the middle of this ring, and a captain must never be fenced away from his own boat.
+            if (preserved)
+            {
+                PreservationZone.Fence fence = PreservationZone.FenceAround(head.Hut, field);
+                foreach (SurfaceLayout.Wall r in fence.Rails)
+                {
+                    walls.Add(new((float)r.X1, (float)r.Y1, (float)r.X2, (float)r.Y2, false, false));
+                }
+
+                // The notice, in the ground-label idiom this surface has posted every sign in since #313 —
+                // a line of text on the regolith, no new chrome (the crude-grid deck aesthetic). It stands a
+                // pace outside the gate on the approach, so it is read on the way in.
+                labels.Add(((float)fence.SignX, (float)fence.SignY, PreservationZone.Notice));
+            }
         }
 
         // #586 · THE SWEPT APRON. Owner: "it is supposed to be impressive... now it looks like a box in
