@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -23,6 +24,30 @@ public partial class Map
     /// <summary>#1068 · Hand Core the harbour's state — the ONE writer. Everything downstream (the slot the
     /// roster gives at the clamp, the credit the pump has moved) reads this and nothing else.</summary>
     private void InstallQuietHandsRegister() => QuietHands.Install(_hallsHandled);
+
+    /// <summary>#1068 · The register as the vault carries it — null while nothing has been filed, the
+    /// #1057/#1072/#1066/#677/#1063 law, because the checksum is taken over the payload and an eager empty
+    /// list would change the digest of every vault ever written.</summary>
+    private IReadOnlyList<QuietHandRecord>? QuietHandRows() =>
+        _hallsHandled.Count > 0
+            ? [.. _hallsHandled.Select(h => new QuietHandRecord(h.BodyId, h.Window, h.BerthGiven))]
+            : null;
+
+    /// <summary>#1068 · …and back the other way, on load, with Core told at once rather than at the next
+    /// descent: a save resumed straight onto a berth must tie up in the slot the clamp tied up in.
+    ///
+    /// <para>All three fields are restored rather than re-derived. The window is what the slot and the price
+    /// move are chosen against, and the spent flag is the only thing standing between "the berth moved once"
+    /// and "the berth moves every time you reload" — which is the farmable trigger this whole channel is
+    /// written to avoid.</para></summary>
+    private void RestoreQuietHands(ProgressSection? progress)
+    {
+        if (progress?.HallsHandled is { } handled)
+        {
+            _hallsHandled = [.. handled.Select(h => new QuietHands.Hand(h.BodyId, h.Window, h.BerthGiven))];
+        }
+        InstallQuietHandsRegister();
+    }
 
     /// <summary>
     /// #1068 · <b>THE EVENT.</b> Between two visits, the harbour that serves the grounds this captain opened

@@ -463,14 +463,8 @@ public partial class Map
                 HallsDeclined = _hallsDeclined.Count > 0
                     ? [.. _hallsDeclined.Select(d => new HallDeclineRecord(d.BodyId, d.Window))]
                     : null,
-                // #1068 · …and which of them the harbour has filed paperwork about, with the window and with
-                // whether the reassigned berth has been handed over. Same null-while-empty law, same reason;
-                // the window rides along because both deliveries are chosen against it, and the spent flag
-                // because a reassignment that came back on every reload would be the one farmable shape
-                // #672 forbids.
-                HallsHandled = _hallsHandled.Count > 0
-                    ? [.. _hallsHandled.Select(h => new QuietHandRecord(h.BodyId, h.Window, h.BerthGiven))]
-                    : null,
+                // #1068 · …and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
+                HallsHandled = QuietHandRows(),
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -1046,22 +1040,14 @@ public partial class Map
             _hallsDeclined = [.. declined.Select(d => new PoliteDecline.Decline(d.BodyId, d.Window))];
         }
 
-        // #1068: and which of them the harbour has filed paperwork about. Restored rather than re-derived
-        // for the same reason a third time — the window is what the slot and the price move are chosen
-        // against, and the spent flag is the only thing standing between "the berth moved once" and "the
-        // berth moves every time you reload", which is the farmable trigger this whole channel is written
-        // to avoid.
-        if (vault.Progress?.HallsHandled is { } handled)
-        {
-            _hallsHandled = [.. handled.Select(h => new QuietHands.Hand(h.BodyId, h.Window, h.BerthGiven))];
-        }
+        // #1068: and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
+        RestoreQuietHands(vault.Progress);
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
         // ground must come back to a shaft that already ends where the burial left it, and to the same one
         // door the world had already declined.
         InstallBurialRegister();
         InstallDeclineRegister();
-        InstallQuietHandsRegister();
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.
