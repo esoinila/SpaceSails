@@ -321,6 +321,8 @@ pursuit. You are told at the moment you buy it (a pulse naming the collector
 and the port it is fitting out at) and the news wire carries the dispatch, so
 the muscle that turns up days later is never unexplained. Stay hidden at a
 haven for 2 days straight and it loses the scent.
+- Havens are the release valve for the whole loop: cool your heat, trade cargo
+and (if it's also a far trading post) intel, and repair — no questions asked.
 
 ### Getting caught
 
@@ -350,14 +352,10 @@ Brain-backup resurrection wakes you at a clinic in a starter-grade rustbucket
 with 200 cr, a full tank, starter ammunition and every upgrade reset to base.
 Nothing buried or banked was ever aboard the hull you lost, so a squirrelled
 hoard outlives the catch — see §16 for the same law read from the ground, where
-it is the Old Ones rather than collectors that end you, and for the **NERVE**
-gauge that being caught spends a pip of. The premise behind the rebirth is
-advertised where you dock: the **PIRATE INSURANCE** posters in every station
-concourse and bar are Nebula Mutual selling you the policy that eases the
-clinic bill.
-
-- Havens are the release valve for the whole loop: cool your heat, trade cargo
-and (if it's also a far trading post) intel, and repair — no questions asked.
+it is the Old Ones rather than collectors that end you, and where the **NERVE**
+gauge is the meter that decides it. The premise behind the rebirth is advertised
+where you dock: the **PIRATE INSURANCE** posters in every station concourse and
+bar are Nebula Mutual selling you the policy that eases the clinic bill.
 
 
 
