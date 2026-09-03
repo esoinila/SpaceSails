@@ -136,17 +136,11 @@ public static partial class UndergroundComplex
             : MoneyTrail.SubjectsFor(siteName);
     }
 
-    // FABLE: line needed — a TITLE and a BODY for a cost-centre line item as it reads away from the room. A
-    // paper out of one of these rooms goes into the pocket as ordinary Satchel.Kind.Paper, and both seams
-    // that name a paper outside its own room rebuild a seeded generic document off the find id: the sleeve's
-    // row and #615's keep card are titled by FieldClue.Title, and the free glance opens FieldClue.Document.
-    // So the decision card reads "pay sheet, allowances" over the rail's own sentence, and a captain who
-    // opens the sheet again in the satchel is shown a torn manifest rather than the line he found.
-    //
-    // That gap is not new and is not this beat's to invent out of: #1063's maintenance ledger and beat 1's
-    // valve-book carry exactly the same one, so it is an arc-wide want rather than a lane's. Closing it
-    // needs two authored strings per paper that no canon pass has written, and #1061's dropped schedule is
-    // the shape the answer would take (ScheduleLabel + ScheduleBody, branched into Title and Document).
-    // The room's own line is authored and correct, and the pocket is honest that it is holding operational
-    // paper.
+    // #1074 · WHAT A LINE ITEM IS CALLED AWAY FROM ITS ROOM is answered now and is not answered here. The
+    // canon pass of 2026-09-03 wrote a title and a one-line body for each of these three and for the two
+    // clerical books beside them, and the five heads are listed together in PaperHeads because what joins
+    // them is the SEAM they are read through — FieldClue.Title and FieldClue.Document, the sleeve's row, the
+    // free glance and the line the book keeps about what was left behind — rather than the beat that dealt
+    // them. Which find id is which paper is this building's question and AuthoredPaperOf answers it off the
+    // three room designations already written above; nothing about a paper is composed in a second place.
 }
