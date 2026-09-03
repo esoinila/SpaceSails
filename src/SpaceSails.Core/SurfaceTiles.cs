@@ -225,7 +225,67 @@ public static class SurfaceTiles
         {
             return SurfaceLayout.For(bodyId, SurfaceLayout.DefaultField, siteSalt);
         }
-        return SurfaceLayout.SeededGround(Key(bodyId, siteSalt, a), GenerationField(bodyId, siteSalt, a));
+        return SurfaceLayout.SeededGround(
+            Key(bodyId, siteSalt, a), GenerationField(bodyId, siteSalt, a),
+            ShelterClaims(bodyId, siteSalt, a));
+    }
+
+    /// <summary>#563 slice 3 · THE GROUND A TILE'S SHELTERS HAVE ALREADY CLAIMED, so the generator does not
+    /// lay a ruin through a pressure drum.
+    ///
+    /// <para>The home tile has kept this ledger since #585 — <see cref="SurfaceLayout.StandingClaims"/>
+    /// claims the shelters FIRST and never yields them, because <i>"a hut that has to move is a cosmetic
+    /// loss, a shelter that has to move is a captain who dies looking for it"</i>. Out here the same ledger
+    /// is the shelters and nothing else: a tile in the world has no hidden lab, no landing approach and no
+    /// monolith to keep off (all three are facts about the home tile or about the body, #1058), so claiming
+    /// them here would reserve ground for objects that are not on it.</para></summary>
+    private static List<(double X, double Y, double R)> ShelterClaims(
+        string bodyId, string siteSalt, Address a)
+    {
+        var claims = new List<(double X, double Y, double R)>();
+        foreach (SurfaceStructure.Spec spec in Shelters(bodyId, siteSalt, a))
+        {
+            claims.Add((spec.CentreX, spec.CentreY, SurfaceStructure.KeepOutRadius(spec)));
+        }
+        return claims;
+    }
+
+    /// <summary>
+    /// #563 slice 3 · THE SHELTERS ON ONE TILE — the second place on a moon that refills a suit, seeded on
+    /// every tile the lattice has rather than only on the ground under the tube.
+    ///
+    /// <para>Slice 2 stopped short of this on purpose and said why: the rack state was keyed on an
+    /// <c>int</c> index into ONE site's shelter list, so a list that spanned a moving chunk would have
+    /// silently re-pointed every reservoir each time the captain crossed a tile boundary — <i>the same
+    /// failure the huts had, in the one system where getting it wrong empties a rack somebody walked to on
+    /// their last two hundred seconds of air.</i> The keying is addressed now
+    /// (<see cref="GroundMemory.HutKey"/>'s shape, on the excursion's own dictionaries), so the list can
+    /// span the lattice.</para>
+    ///
+    /// <para><b>The rarity is not converted, because it never needed converting.</b>
+    /// <see cref="SurfaceShelter.CountFor"/> has been per-AREA since #585 — roughly one per 9,000 du² — so
+    /// asking it of a tile's own envelope gives a tile exactly the density the field under the tube already
+    /// had. Walking out does not thin the air out or thicken it; the ground simply carries on.</para>
+    ///
+    /// <para><b>The home tile is byte for byte what it always was.</b> <see cref="ContentSalt"/> hands back
+    /// the site's own salt there and <see cref="GenerationField"/> hands back
+    /// <see cref="SurfaceLayout.DefaultField"/>, which is the exact pair the client's home build has always
+    /// passed — so every shelter at the tube keeps its place, its angle and its seeded "somebody was here"
+    /// roll. Guarded, because "by construction" is a claim and this ground is canon.</para>
+    ///
+    /// <para><b>A shelter never straddles a tile boundary</b>, and that is what lets everything that asks
+    /// "which shelter am I in?" ask one tile rather than nine. <see cref="SurfaceShelter.PlacesOn"/> keeps
+    /// its drums at least 24 du off every edge of the envelope it is given, and a drum's own keep-out radius
+    /// (<see cref="SurfaceStructure.KeepOutRadius"/>) is under 20 — so the whole building, at any angle,
+    /// lies inside its own tile. Guarded too; it is a property of two numbers that were chosen apart.</para>
+    /// </summary>
+    public static IReadOnlyList<SurfaceStructure.Spec> Shelters(string bodyId, string siteSalt, Address a)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+
+        return SurfaceShelter.SpecsFor(
+            bodyId, ContentSalt(bodyId, siteSalt, a), GenerationField(bodyId, siteSalt, a));
     }
 
     /// <summary>ONE TILE'S TERRAIN — #570's scenery layer, per tile instead of per field. Drawn, never

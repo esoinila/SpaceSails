@@ -184,6 +184,28 @@ public partial class Map
                     (float)drawer.X, (float)drawer.Y, SurfaceSalvage.LabelFor(drawer.Find)));
             }
 
+            // ── #563 slice 3 · AND THE SHELTERS, which slice 2 deliberately left at home ────────────────
+            //
+            // Not for scope: the rack state was keyed on a bare index into ONE site's list, and a list that
+            // spanned a moving chunk would have re-pointed every reservoir on a tile crossing — in the one
+            // system where getting it wrong empties a rack somebody walked to on their last two hundred
+            // seconds of air. That keying is addressed now (Map.Surface.Racks.cs), so the second place on a
+            // moon that refills a suit can be a fact about the GROUND rather than about the ground beside
+            // the ship.
+            //
+            // It is also what makes an unbounded world walkable rather than merely large. #562 priced
+            // distance in the walk back and #564 priced it in air; a lattice whose only air was at the tube
+            // would be a lattice a captain may look at and never enter. SurfaceShelter.CountFor has been per
+            // AREA since #585, so a tile out here carries exactly the density the field under the tube always
+            // had — the ground simply carries on, which is the whole of #563's decision.
+            //
+            // Furnished through MoonSurface's own body and never a second copy of it: #573's scar is
+            // precisely a builder and an instrument that disagreed about how many shelters there were.
+            foreach (SurfaceStructure.Spec shelter in SurfaceTiles.Shelters(body, salt, a))
+            {
+                MoonSurface.FurnishShelter(shelter, walls, doors, consoles, labels);
+            }
+
             if (SurfaceTiles.NorthRim(a) is { } rim)
             {
                 walls.Add(new((float)rim.X1, (float)rim.Y1, (float)rim.X2, (float)rim.Y2,

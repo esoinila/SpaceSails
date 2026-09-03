@@ -130,7 +130,7 @@ public partial class Map
 
             // A shelter is a pressure vessel, not a sanctuary — and the game says so out loud rather than
             // letting the player discover it by being taken inside one they thought was safe.
-            if (!ex.CollectorShelterNoted && ShelterUnderfoot(ex) >= 0
+            if (!ex.CollectorShelterNoted && ShelterUnderfoot(ex).Found
                 && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY) is false
                 && Distance(c.X, c.Y, _avatarX, _avatarY) < 24)
             {

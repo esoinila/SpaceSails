@@ -92,9 +92,43 @@ public partial class Map
         }
 
         Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
-        foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
+
+        // ── #573/#563 slice 3 · EVERY SHELTER THE FAN CAN HEAR, AND THEN THE NEAREST ONE IT CANNOT ──────
+        //
+        // The shelters are per tile now, so the ground the captain is carrying holds several times what one
+        // field did. Painting all of them would have handed the owner back the instrument #585 already
+        // complained about — "a beacon that cannot be told apart from its neighbours is decoration" — in its
+        // worst form: everything past the fan's reach clamps to the RIM (DeckView.Hud), so eighty rings
+        // become a fence of circles around the edge with the way home somewhere inside it.
+        //
+        // So the rule is the one the instrument already keeps for a mover: what it can HEAR, it places; what
+        // it cannot, it points at. Beyond the reach exactly ONE ring is drawn, the nearest roof — which is
+        // the honest answer to the only question a captain asks at that distance ("which way is air that is
+        // not the ship?") and is strictly more instrument than the old fence of nine.
+        //
+        // The way home is untouched by any of this. It is painted unconditionally, at every distance, on
+        // every frame — #563 slice 2 guarded exactly that, and a range gate that ever reached it would be
+        // the one lie this fan may not tell.
+        double reach = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+        double nearestBeyond = double.MaxValue;
+        (double X, double Y)? farthestWorthAsking = null;
+        foreach ((ShelterSpot _, SurfaceStructure.Spec shelter) in SheltersInReach(ex))
         {
-            Add(shelter.CentreX, shelter.CentreY, home: false);
+            double dx = shelter.CentreX - _avatarX, dy = shelter.CentreY - _avatarY;
+            double range = Math.Sqrt((dx * dx) + (dy * dy));
+            if (range <= reach)
+            {
+                Add(shelter.CentreX, shelter.CentreY, home: false);
+            }
+            else if (range < nearestBeyond)
+            {
+                nearestBeyond = range;
+                farthestWorthAsking = (shelter.CentreX, shelter.CentreY);
+            }
+        }
+        if (farthestWorthAsking is { } outThere)
+        {
+            Add(outThere.X, outThere.Y, home: false);
         }
 
         // #585/#584 · AND THE LIFT HEAD, once the door is known. Owner, standing in a ruin that happened to
@@ -361,8 +395,7 @@ public partial class Map
         {
             return;
         }
-        int whichLocker = ShelterUnderfoot(ex);
-        if (whichLocker < 0)
+        if (!ShelterUnderfoot(ex).Found)
         {
             return;
         }
@@ -420,8 +453,8 @@ public partial class Map
         // "the time it takes to pump air is good incentive to not take too much". So [E] reads the gauge
         // rather than working a lever. An affordance that did nothing would be worse than none (#212), so it
         // tells you what the machine is doing and lets you decide how long to stand there.
-        int which = ShelterUnderfoot(ex);
-        if (which < 0)
+        ShelterSpot which = ShelterUnderfoot(ex);
+        if (!which.Found)
         {
             ShowPulseMessage("🫁 The rack's fitting is inside. Step in out of the vacuum.");
             return;

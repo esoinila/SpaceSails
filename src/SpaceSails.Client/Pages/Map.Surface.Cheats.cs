@@ -411,7 +411,7 @@ public partial class Map
             return;
         }
 
-        foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
+        foreach ((ShelterSpot _, SurfaceStructure.Spec shelter) in SheltersInReach(ex))
         {
             foreach (SurfaceStructure.Doorway door in SurfaceStructure.Build(shelter).Doorways)
             {
