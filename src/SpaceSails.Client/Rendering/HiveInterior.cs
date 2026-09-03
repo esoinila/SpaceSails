@@ -531,6 +531,23 @@ public static class HiveInterior
                 {
                     consoles.Add(new(
                         DeckPlan.ConsoleKind.HiveRegular, (float)top.X, (float)top.Y, plate));
+
+                    // ── #1074 beat 4 · AND ONE MUG ON THE SHELF BEHIND ONE OF THEM ──────────────────────
+                    //
+                    // "A mug on the shelf behind one regular's seat… The mug is the whole testimony." It is a
+                    // LABEL and not a console: there is nothing to work, nothing to press and nothing to
+                    // take. A captain sees a glass on a shelf behind a woman eating, and if he asks her about
+                    // it she says the one sentence she has and the room offers nothing further.
+                    //
+                    // No new art — the canteen's own glass (CareerCost.MugGlyph) — and no geometry decided
+                    // here: Core says where the shelf is off the top's own ring and clamps it into the room
+                    // (CareerCost.MugAt), because a pen placing a prop against a wall it does not own is
+                    // §13.15's own warning and this one has a chair to miss.
+                    if (string.Equals(plate, CareerCost.MugPlate, StringComparison.Ordinal))
+                    {
+                        (double mugX, double mugY) = CareerCost.MugAt(top, a);
+                        labels.Add(((float)mugX, (float)mugY, CareerCost.MugGlyph));
+                    }
                 }
                 else if (CanteenRegulars.PeopleSitHere(bodyId, level, a))
                 {

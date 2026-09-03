@@ -150,19 +150,65 @@ public static class CanteenRegulars
         // entirely in the fact that a filing phrase is all there is, and he is the only man alive who was
         // standing in front of the thing.
         new(Burial.MasonPlate, Burial.MasonLine),
+
+        // ── #1074 beat 4 · …AND THE TWO WHO ARE ONLY HERE WHERE THE OFFICE HAS BEEN ──────────────────────
+        //
+        // CAREER-COST NPCs, on the mason's own law one rung further along the array: the ordinary deal stops
+        // THREE short of the end now rather than one, so a ground nobody has stopped seats the same ten
+        // people, dealt by the same dice against the same length, and the room does not move by one
+        // character. Their order here is the order they take chairs on a stopped ground (see Seating).
+        //
+        // They pass the register test as hard as he does, and neither is a quest-giver in a hat. One is a man
+        // who believes what he was told and is telling a stranger the truth as he has it; the other is a
+        // woman who has not moved a mug. Neither is mysterious, neither is hiding anything, and neither
+        // knows one thing the captain does not — which is the whole of it, because a working closed, a name
+        // went into a register, and this is the entire remainder.
+        new(CareerCost.ColleaguePlate, CareerCost.ColleagueLine),
+        new(CareerCost.MugPlate, CareerCost.MugLine),
     ];
 
     /// <summary>How many authored regulars exist. Public so a guard can pin the catalog's size without
     /// reaching into it.</summary>
     public static int CastSize => Cast.Length;
 
-    /// <summary>#1063 · Which of the cast is the mason — the last, and the one the ordinary deal stops short
-    /// of. Named rather than written as <c>Length - 1</c> in two places.</summary>
-    private static int Mason => Cast.Length - 1;
+    /// <summary>#1063/#1074 · How many of the cast the ORDINARY seeded rota may deal — everybody but the
+    /// mason and the two career-cost regulars, which is why a site nobody has opened or stopped seats exactly
+    /// the people it always seated. <b>This number must never change</b>: it is the length the dice are
+    /// rolled against, and moving it re-deals every canteen in every world. Public so a guard can pin it
+    /// without reaching into the array (the incidental "cast and catalogue are the same length" it replaces
+    /// stopped being true the day a regular arrived who pins no paper).</summary>
+    public static int OrdinaryCastSize => OrdinaryCast;
 
-    /// <summary>#1063 · …and how many of them the ordinary seeded rota may deal. Everybody but the mason,
-    /// which is why a site nobody has opened seats exactly the people it always seated.</summary>
-    private static int OrdinaryCast => Cast.Length - 1;
+    /// <summary>#1063 · Which of the cast is the mason — the first of the ones the ordinary deal stops short
+    /// of. Found by his plate rather than written as an index, for <c>CanteenBoard.RosterNotice</c>'s reason:
+    /// a beat pointed at a row that does not exist should throw at the first call rather than go quietly
+    /// missing on some worlds forever.</summary>
+    private static int Mason => IndexOfPlate(Burial.MasonPlate);
+
+    /// <summary>#1074 · …the colleague who was asked, and</summary>
+    private static int Colleague => IndexOfPlate(CareerCost.ColleaguePlate);
+
+    /// <summary>#1074 · …the one who keeps the mug. Same lookup, same reason.</summary>
+    private static int MugKeeper => IndexOfPlate(CareerCost.MugPlate);
+
+    /// <summary>#1063/#1074 · …and how many of them the ordinary seeded rota may deal. Everybody but the
+    /// mason and the two of #1074's, which is why a site nobody has opened seats exactly the people it always
+    /// seated.</summary>
+    private static int OrdinaryCast => Cast.Length - 3;
+
+    /// <summary>Which of the cast wears this plate. Throws rather than answering -1: every caller is a beat
+    /// that has just named somebody it must be able to seat.</summary>
+    private static int IndexOfPlate(string plate)
+    {
+        for (int i = 0; i < Cast.Length; i++)
+        {
+            if (string.Equals(Cast[i].Plate, plate, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+        throw new InvalidOperationException($"the canteen has nobody plated \"{plate}\"");
+    }
 
     /// <summary>Every authored plate and line, for the canon grep. Nothing in this list may explain the Old
     /// Ones, and the guard that checks it walks THIS, so a line added tomorrow is checked tomorrow.</summary>
@@ -731,6 +777,21 @@ public static class CanteenRegulars
         ulong seed = DiceRule.Seed($"hive:canteen:{bodyId}", watch);
         int here = DiceRule.Roll(seed, seats).Face;
 
+        // #1074 beat 4 · …AND A CLOSED WORKING PUTS ITS SHIFT IN HERE. On a ground the Authority has stopped,
+        // at least two of the tops are taken — the plainest reading of what an order does to a rota, and the
+        // room's own answer to it: the working is shut, the shift is still rostered, and the canteen is the
+        // room they are in. It is the SAME dice in the SAME order (the i = 1 draw a busier watch would have
+        // made anyway), raised and never re-rolled, and it is asked ONLY of a stopped ground — so no world
+        // anybody has not stopped seats one extra person, and none of them changes by one character.
+        //
+        // It is here rather than in the deal below because the beat needs BOTH of its people at once: the
+        // colleague to be asked and, behind the next chair, the mug. One of the two would be half a beat, and
+        // which half would depend on a die.
+        if (StopOrder.On(bodyId))
+        {
+            here = Math.Max(here, Math.Min(2, seats));
+        }
+
         var usedTables = new List<int>(here);
         var usedCast = new List<int>(here);
 
@@ -751,9 +812,27 @@ public static class CanteenRegulars
         // takes a slot rather than making a fifth: a room that grew a person while a captain was away is the
         // room saying that something happened, and the whole beat is that nothing did. One mason, one chair,
         // every watch, deterministically — and on every ground nobody has opened, this does nothing at all.
-        if (seating.Count > 0 && Burial.WorksAreOn(bodyId))
+        //
+        // #1074 beat 4 · …UNLESS THE OFFICE GOT HERE FIRST, in which case those chairs are the career-cost
+        // pair's and the mason is not in the room at all. The two beats are one trigger's two outcomes and a
+        // ground gets exactly one of them (StopOrder.TheOfficeGetsThisOne), so a stopped ground is never a
+        // buried one — and the man whose whole testimony is a resurfacing job has no job here: beat 1 already
+        // took his notice down off the board for that reason ("services isolated per order", so nobody is
+        // going to do it). One arm or the other, never both, and on an ordinary ground neither.
+        if (seating.Count > 0)
         {
-            seating[0] = (seating[0].Table, Mason);
+            if (StopOrder.On(bodyId))
+            {
+                seating[0] = (seating[0].Table, Colleague);
+                if (seating.Count > 1)
+                {
+                    seating[1] = (seating[1].Table, MugKeeper);
+                }
+            }
+            else if (Burial.WorksAreOn(bodyId))
+            {
+                seating[0] = (seating[0].Table, Mason);
+            }
         }
 
         return seating;

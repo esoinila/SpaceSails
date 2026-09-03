@@ -46,11 +46,28 @@ public sealed class TheBoardInTheBarTests
 
         // One notice each, and every one of the cast accounted for: a regular with no notice is a person the
         // board forgot, and two notices for one person is a board that repeats itself.
+        //
+        // #1074 beat 4 · …LESS THE TWO WHOSE PAPER IS NOT ON THIS CORK. The colleague's notice is the register
+        // row, which carries a NAME dealt off the ground and therefore cannot be a constant in the catalogue
+        // (CareerCost.RegisterRow, pinned by Pinned on a stopped ground and pinned nowhere else — the pairing
+        // law is asserted over it in TheCareerCostTests). And the one who keeps the mug files NOTHING, ever:
+        // "no explanation… the mug is the whole testimony." So the converse half of the law is stated over
+        // the cast this cork actually covers, and the forward half above is unchanged and still walks all of
+        // it.
         var pairings = CanteenBoard.AllPairings().ToList();
+        var onTheCork = cast
+            .Where(p => p != CareerCost.ColleaguePlate && p != CareerCost.MugPlate)
+            .ToList();
         Assert.Equal(pairings.Count, pairings.Distinct().Count());
-        Assert.Equal(CanteenRegulars.CastSize, CanteenBoard.CatalogSize);
-        Assert.Equal(cast.OrderBy(s => s, StringComparer.Ordinal),
+        Assert.Equal(onTheCork.Count, CanteenBoard.CatalogSize);
+        Assert.Equal(onTheCork.OrderBy(s => s, StringComparer.Ordinal),
                      pairings.OrderBy(s => s, StringComparer.Ordinal));
+
+        // …and the two deal-lengths that must never move, pinned by name rather than by an incidental
+        // equality between two arrays that no longer have to be the same length. These are the numbers the
+        // dice are rolled against, and either one moving re-deals every canteen and every board in the game.
+        Assert.Equal(10, CanteenRegulars.OrdinaryCastSize);
+        Assert.Equal(10, CanteenBoard.OrdinaryNoticeSize);
     }
 
     [Fact]
