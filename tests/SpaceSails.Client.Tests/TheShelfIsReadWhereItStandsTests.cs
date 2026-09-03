@@ -78,14 +78,25 @@ public sealed class TheShelfIsReadWhereItStandsTests
         string surface = Pages("Map.Surface.Hive.cs");
         int asks = surface.IndexOf("if (OddBooks.Search(", StringComparison.Ordinal);
         int pocket = surface.IndexOf("UndergroundComplex.WhatGoesInThePocket(", StringComparison.Ordinal);
-        int struck = surface.IndexOf("ex.HiveRoomsEmptied.Add(roomKey);", StringComparison.Ordinal);
+        int offer = surface.IndexOf("OfferKeepOrLeave(", StringComparison.Ordinal);
 
         Assert.True(asks > 0, "nothing in the surface wiring asks Core whether this room has a book in it.");
         Assert.True(asks < pocket,
             "the odd book is decided AFTER the pocket has been offered the room — a book that has already " +
             "been through WhatGoesInThePocket is loot.");
-        Assert.True(asks < struck,
-            "the odd book is decided after the room is struck off — the shelf could never be read twice.");
+
+        // #615 · …and before the KEEP/LEAVE offer, which is the other thing that can now happen to a room.
+        // A book that reached the decision card would be a shelf the captain is asked whether to pocket.
+        Assert.True(offer > 0, "the search verb no longer offers the decision at all (#615).");
+        Assert.True(asks < offer,
+            "the odd book is decided AFTER the find has been offered as a decision — a shelf is not a find.");
+
+        // THE STRIKE-OFF LEFT THIS METHOD when a find became a decision (#615): it is behind KEEP now, in
+        // TheFindGoesInThePocket. The law is unchanged and is stated where it can still be broken — the book
+        // branch must not strike a room off, and must leave before anything that could.
+        Assert.DoesNotContain("TheRoomHasBeenGoneThrough(", BookBranch(), StringComparison.Ordinal);
+        Assert.DoesNotContain("HiveRoomsEmptied.Add(", BookBranch(), StringComparison.Ordinal);
+        Assert.DoesNotContain("TheRoomHasBeenGoneThrough(", surface, StringComparison.Ordinal);
 
         // And the branch leaves the method rather than falling through into any of it.
         Assert.Contains("return;", BookBranch(), StringComparison.Ordinal);

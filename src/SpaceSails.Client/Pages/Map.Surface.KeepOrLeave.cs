@@ -154,8 +154,10 @@ public partial class Map
             return;
         }
 
-        _pendingFind = null;
-        _viewObject = null;
+        // #768 · The card comes down through the ONE door every road out of it uses, which also frees the
+        // sayings it was standing on — a hand-cleared _viewObject is that issue's shipped bug wearing a new
+        // hat, and its guard sweeps this file. `find` is already in hand, and closing clears the pending one.
+        CloseViewObject();
         TheFindGoesInThePocket(ex, find, pick);
     }
 
@@ -182,8 +184,9 @@ public partial class Map
     /// </summary>
     private void LeaveTheFind()
     {
-        _pendingFind = null;
-        _viewObject = null;
+        // …through the same one door the ✕ uses, for #768's reason and for this feature's: closing IS
+        // leaving, so the button and the corner cannot mean two different things.
+        CloseViewObject();
         StateHasChanged();
     }
 

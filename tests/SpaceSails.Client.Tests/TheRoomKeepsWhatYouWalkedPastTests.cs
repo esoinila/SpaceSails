@@ -244,12 +244,18 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
         Assert.Contains("OpenSatchel()", keep, StringComparison.Ordinal);
         Assert.Contains("PocketFullLine", keep, StringComparison.Ordinal);
 
-        // The refusal returns BEFORE the pending find is cleared, so pressing Keep again after making room
-        // finishes the same find. Both markers exist; the clearing has to come after the early return.
+        // The refusal RETURNS before the card comes down, so pressing Keep again after making room finishes
+        // the same find. Closing the card is what clears the pending one (#768's one door, and #615's own
+        // rule that closing is Leave), so the marker to order against is that close.
         int refusal = keep.IndexOf("OpenSatchel()", StringComparison.Ordinal);
-        int clears = keep.IndexOf("_pendingFind = null", StringComparison.Ordinal);
-        Assert.True(clears > refusal,
-            "a refused Keep throws the find away — the captain makes room and the room is already empty");
+        int closes = keep.IndexOf("CloseViewObject()", StringComparison.Ordinal);
+        Assert.True(closes > refusal,
+            "a refused Keep takes the card down — the captain makes room and the find is already gone");
+        Assert.Contains("return;", keep[refusal..closes], StringComparison.Ordinal);
+
+        // …and it never clears the field by hand, which would both dodge #768's release and make the
+        // ordering above meaningless.
+        Assert.DoesNotContain("_pendingFind = null", keep, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -331,9 +337,12 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
         Assert.Equal(1, Occurrences(strikeOff, "HiveRoomsEmptied.Add("));
         Assert.Contains("_roomsTurnedOver.Add(", strikeOff, StringComparison.Ordinal);
 
-        // …and the durable register is written in exactly that one place too. A second writer would be a
-        // room recorded as emptied that the deck is still drawing a console on.
-        Assert.Equal(1, Occurrences(surface, "_roomsTurnedOver.Add("));
+        // …and the durable register has exactly two writers, the same shape as the live set above: the
+        // strike-off, and the LOAD that fills it from the vault. A third would be a room recorded as
+        // emptied somewhere the deck is still drawing a console on.
+        Assert.Equal(2, Occurrences(surface, "_roomsTurnedOver.Add("));
+        Assert.Equal(1, Occurrences(
+            MethodBody(surface, "private void RestoreTheRoomsGoneThrough("), "_roomsTurnedOver.Add("));
     }
 
     private static int Occurrences(string text, string needle)
