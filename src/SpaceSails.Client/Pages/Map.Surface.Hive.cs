@@ -846,7 +846,10 @@ public partial class Map
         _lockedDoor = new LockedDoorLook(
             sign,
             UndergroundComplex.LockedLine(sign),
-            UndergroundComplex.IsSealedWay(sign)
+            // #1074 · …and it asks whether there is anything on this door to try a card AGAINST, which is one
+            // Core predicate and not two: a rib's sealed mouth and the stop order's seal both answer no, and
+            // the client must never be the place that decides what a sign is.
+            UndergroundComplex.HasNoReader(sign)
                 ? SatchelTry.Target.SealedWay
                 : SatchelTry.Target.RoomDoor);
     }

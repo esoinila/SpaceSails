@@ -445,10 +445,22 @@ public static partial class UndergroundComplex
         "been disturbed since it settled. Your tank starts counting again. From here down, depth costs air.";
 
     /// <summary>What a locked door says when the captain tries it. It never opens, and the game never pretends
-    /// it might — a door that teases is a puzzle, and this is meant to be a WALL with a world behind it.</summary>
-    public static string LockedLine(string sign) =>
-        $"🔒 {sign}. The lock is not a lock you can argue with — it is a decision somebody made, and it is " +
-        "still being enforced by a building whose owners stopped answering a long time ago.";
+    /// it might — a door that teases is a puzzle, and this is meant to be a WALL with a world behind it.
+    ///
+    /// <para>#1074 · <b>One door in the building answers with what is POSTED on it instead</b>, because one
+    /// door in the building has something posted on it: the order at the seal. The plate is the heading and
+    /// the sentence under it is the order, verbatim (<see cref="StopOrder.OrderLine"/>) — which is what a
+    /// stop order IS, a piece of paper somebody stuck to a door, and it is the whole of what the world ever
+    /// says about the closure. Nothing is composed here: the two strings are set side by side and no third
+    /// sentence explains either of them.</para></summary>
+    public static string LockedLine(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return StopOrder.IsPlate(sign)
+            ? $"🔒 {sign}. {StopOrder.OrderLine}"
+            : $"🔒 {sign}. The lock is not a lock you can argue with — it is a decision somebody made, and "
+                + "it is still being enforced by a building whose owners stopped answering a long time ago.";
+    }
 
     /// <summary>#600 · How far under the regolith the shed's floor a given level sits, in metres.
     ///

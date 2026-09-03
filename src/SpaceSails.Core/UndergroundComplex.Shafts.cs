@@ -411,6 +411,20 @@ public static partial class UndergroundComplex
             return stops;   // nothing under this shaft at all; the panel simply ends
         }
 
+        // #1074 · …AND THE ORDER CLOSES ONE OF THEM. On a ground whose deep working the Authority has closed,
+        // the gate into the band nobody listed is not offered — to anybody, carded or not, because an order
+        // is not a clearance question and the paper in the wallet was never addressed to it.
+        //
+        // IT ENDS IN SILENCE AND NOT IN A REFUSING ROW, and that is #592's existing rule rather than a new
+        // one: the building does not admit that band exists, so its panel may not name it even to say no. A
+        // row reading SEALED here would be the directory confessing the shaft in the sentence it refuses it
+        // in. The world says it the other way, on the floor the shaft is on, with a plate — see
+        // UndergroundComplex.Stop.cs.
+        if (StopSealsTheGateTo(bodyId, next))
+        {
+            return stops;
+        }
+
         // #411 · THE CAR ANSWERS. A branch office's card opens exactly one band, and the way down is a piece
         // of paper somebody left in a room. The head office asks the captain for nothing at all, on any
         // floor — not because it is careless, but because a hull that is on the board is expected and the

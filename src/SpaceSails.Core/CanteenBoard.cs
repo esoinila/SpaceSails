@@ -58,6 +58,16 @@ public static class CanteenBoard
     /// that reading it is not a chore with a tank running.</summary>
     public const int PinnedAtOnce = 4;
 
+    /// <summary>#1074 · THE ROSTER'S OWN HEADING, named because two things have to agree about it now: the
+    /// notice in the catalogue below, and the one place that has to be able to FIND that notice
+    /// (<see cref="RosterNotice"/>). Two copies of a heading is the mirrored constant this ground keeps a
+    /// table of, and the day somebody re-words the rota the pin would silently go up over a lost toolbag.
+    ///
+    /// <para><b>The rota is not new and its words are not touched.</b> It has been on this board since #709,
+    /// pinned by an agency temp whose name was changed at the door. What #1074 adds is a reason it is
+    /// CERTAINLY up on one kind of ground — see <see cref="Pinned"/>.</para></summary>
+    public const string RosterHead = "ROTA — WEEK 31 (CORRECTED)";
+
     /// <summary>One authored notice.</summary>
     /// <param name="Head">Its heading, as it reads across the room.</param>
     /// <param name="Body">What it says when a captain stands and reads it.</param>
@@ -87,7 +97,7 @@ public static class CanteenBoard
             "has been given to us either.",
             "◈ A CARRIER, WAITING ON A SIGNATURE"),
 
-        new("ROTA — WEEK 31 (CORRECTED)",
+        new(RosterHead,
             "Nights, slot four: disregard the first name and use the second. Agency staff are listed under " +
             "the name we were given, not the one you use.",
             "◈ AN AGENCY TEMP, FIRST WEEK"),
@@ -149,6 +159,26 @@ public static class CanteenBoard
     /// works notice, which is the whole reason a board that has never had works on it is byte-identical to
     /// the board it was before this shipped.</summary>
     private static int OrdinaryNotices => Catalog.Length - 1;
+
+    /// <summary>#1074 · Which entry is the ROSTER — found by its own heading rather than written down as an
+    /// index, for <see cref="RosterHead"/>'s reason and for <c>HeadOfficeLevelOf</c>'s: a beat pointed at a
+    /// row that does not exist should fail loudly at the first call rather than go quietly missing on some
+    /// worlds forever. Unlike the works notice it is an ORDINARY notice and stays in the ordinary pool: on
+    /// every board in the game it is dealt or not dealt exactly as it always was.</summary>
+    private static int RosterNotice
+    {
+        get
+        {
+            for (int i = 0; i < Catalog.Length; i++)
+            {
+                if (string.Equals(Catalog[i].Head, RosterHead, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            throw new InvalidOperationException("the board has no roster notice on it");
+        }
+    }
 
     /// <summary>Every authored heading and body, for the canon grep. The pairing is deliberately absent: it is
     /// never shown to anybody, and grepping it would only be grepping the cast's plates twice.</summary>
@@ -213,6 +243,25 @@ public static class CanteenBoard
         // slots rather than making a fifth: a board that grew a row would say, in its own shape, that
         // something new had happened here — and the whole beat is that nothing did. The three below it are
         // dealt by the same dice, against the same length, in the same order they always were.
+        // ── #1074 · THE ROSTERED CREW WHO NEVER DUG ──────────────────────────────────────────────────────
+        //
+        // The canon pass authored NO LINE for this beat, and that is the beat: "the roster on the intranet
+        // still lists the shift, and the working is closed; THE GAP IS THE SENTENCE." So nothing is written
+        // here and nothing new is pinned. What happens on a stopped ground is that the rota the board has
+        // carried since #709 is CERTAINLY up — a shift listed for a working nobody can get to any more, on
+        // the same cork as a lost toolbag and a withdrawn stew, in an ordinary week's ordinary handwriting.
+        //
+        // It takes one of the four slots and never a fifth (#1063's rule, for its reason: a board that grew a
+        // row would say in its own shape that something new had happened here), and it goes into `used` so
+        // the deal below cannot pin it twice. On every ground nobody has stopped — which is every ground in
+        // almost every world — the rota is dealt or not dealt exactly as it always was.
+        bool closed = StopOrder.On(bodyId);
+        if (closed)
+        {
+            up.Add(Catalog[RosterNotice]);
+            used.Add(RosterNotice);
+        }
+
         bool works = Burial.NoticeIsUp(bodyId);
         if (works)
         {

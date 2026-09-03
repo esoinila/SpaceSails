@@ -465,6 +465,11 @@ public partial class Map
                     : null,
                 // #1068 · …and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
                 HallsHandled = QuietHandRows(),
+                // #1074 · …and which of them the Authority has since closed the deep working of. Same
+                // null-while-empty law, same reason. No window rides along, because nothing about a closure
+                // is CHOSEN: the seal stands in the one pocket the building has to spare and the plate says
+                // one sentence, so there is nothing here for a number to keep stable.
+                HallsStopped = _hallsStopped.Count > 0 ? [.. _hallsStopped] : null,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -1042,12 +1047,21 @@ public partial class Map
 
         // #1068: and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
         RestoreQuietHands(vault.Progress);
+        // #1074: and which of them the Authority has since closed the deep working of. Restored for the
+        // burial's own reason and one harder: the closure and the fill are one trigger's two outcomes, so a
+        // load that remembered the fills and forgot the closures would let a ground an office had already
+        // closed be filled in by the neighbours on the very next descent.
+        if (vault.Progress?.HallsStopped is { } stopped)
+        {
+            _hallsStopped = [.. stopped];
+        }
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
-        // ground must come back to a shaft that already ends where the burial left it, and to the same one
-        // door the world had already declined.
+        // ground must come back to a shaft that already ends where the burial left it, to the same one
+        // door the world had already declined, and to the seal an office had already posted.
         InstallBurialRegister();
         InstallDeclineRegister();
+        InstallStopRegister();
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.

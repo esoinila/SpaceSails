@@ -521,6 +521,27 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<QuietHandRecord>? HallsHandled { get; init; }
+    /// <summary>#1074 — THE GROUNDS WHOSE DEEP WORKING THE AUTHORITY HAS CLOSED (<see cref="StopOrder"/>):
+    /// the sites where the shaft under the listed bottom is sealed and an order is posted at the seal.
+    ///
+    /// <para>A bare list of ids and no window, unlike <see cref="HallsDeclined"/> — nothing about a stop is
+    /// CHOSEN, so there is nothing for a number to keep stable. The seal stands in the one pocket the
+    /// building has to spare and the plate says one sentence.</para>
+    ///
+    /// <para>Persisted for <see cref="HallsBuried"/>'s reason: a closure that forgot across a reload would
+    /// re-open a shaft an office closed, and a captain's own field book would be the only thing in the world
+    /// that still said otherwise. It also has to ride the same file as
+    /// <see cref="HallsBuried"/> because the two are one trigger's two outcomes — a save that kept one and
+    /// dropped the other would let a stopped ground be buried on the next descent.</para>
+    ///
+    /// <para>Null until something has actually been closed — the #1057/#1072/#1066/#677/#1063/#1068 pattern,
+    /// and here for their exact reason: the checksum is taken over the payload, so an eager
+    /// <c>"hallsStopped": []</c> on every save would change the digest of every vault ever written and hang
+    /// the 📛 tampered marker on honest voyages. A pre-#1074 file simply lacks the field and loads with
+    /// nothing stopped.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? HallsStopped { get; init; }
 }
 
 /// <summary>#1068 — one row of <see cref="ProgressSection.HallsDeclined"/>: a ground, and the world-side
