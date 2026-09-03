@@ -439,105 +439,20 @@
        the autosave (#310's law, pinned by a Core guard in this lane) — the sheet says so out loud. *@
     @if (_bankPrompt is { } bankKind)
     {
-        <div class="start-picker-backdrop">
-            @* #997 wave 6 · THE TWO SHEETS OF THIS FAMILY THAT REALLY ARE DECISIONS — this one and the
-               import consent below. They are the only two of the four `.start-picker` surfaces that any of
-               the shell's three shapes fits; the front door and the logbook are named as stragglers at their
-               own root above, with the reason.
-
-               `ByDecision` is the critical-decision exception: no ✕, because every answer the surface offers
-               is itself a close. That is true here, and it is proved by PRESSING rather than taken from this
-               comment (TheShellOwnsTheStartPickerFamilyTests) — CommitBankPrompt runs CancelBankPrompt before
-               it writes anything, and CancelBankPrompt clears _bankPrompt and nothing else, so both roads end
-               the sheet. The title and the note are FIELDS, not answers, and a field is not a way out.
-
-               The two answers stay the page's own markup inside `.save-surface-foot-center` rather than going
-               through the shell's `Choices`, for #1001's reason: they wear different colours (btn-success on
-               the commit, btn-outline-light on the cancel) and the commit changes its face with the kind of
-               sheet this is, while `ChoiceClass` is one class list for all of them. Routing them would
-               repaint two buttons, and this migration does not move a pixel.
-
-               `Bare` because the sheet has no head row to give up — `.start-picker-title` is the page's own
-               centred div with the page's own rule — and because `Hosted`'s `display: contents` would put a
-               wrapper between this root and `.save-surface-foot`.
-
-               No `StopClicks`: this backdrop carries no @@onclick, so there is nothing behind the sheet for a
-               click on it to fall through to. *@
-            <OverlayShell class="start-picker save-surface bank-sheet"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
-                <div class="start-picker-title">@BankPromptHeading</div>
-                <div class="start-picker-sub">
-                    @(bankKind == BankPromptKind.Edit
-                        ? "Rewrite this berth's page. The saved voyage inside it is not touched, and it does not move in the list."
-                        : "Give this moment a name you will recognise, and a note about what you were doing. Both travel with the save.")
-                </div>
-                <label class="bank-field">
-                    <span class="bank-field-label">Title</span>
-                    <input class="bank-input" maxlength="@SaveSlotLabels.MaxTitleLength" autofocus
-                           placeholder="A title of your whim"
-                           value="@_bankTitle" @oninput="e => _bankTitle = e.Value?.ToString() ?? string.Empty" />
-                </label>
-                <label class="bank-field">
-                    <span class="bank-field-label">Note — what were you doing?</span>
-                    <textarea class="bank-input bank-note" rows="4" maxlength="@SaveSlotLabels.MaxNoteLength"
-                              placeholder="Heading for the ice with a full hold and one collector three days behind."
-                              value="@_bankNote" @oninput="e => _bankNote = e.Value?.ToString() ?? string.Empty"></textarea>
-                </label>
-                @if (bankKind != BankPromptKind.Export && _bankSlotId != SaveSlotBook.AutoSlotId)
-                {
-                    <div class="bank-safety">🔒 A banked berth is never overwritten by the autosave. This moment stays exactly as you leave it — dying does not write over it.</div>
-                }
-                <div class="save-surface-foot save-surface-foot-center">
-                    <button type="button" class="btn btn-sm btn-success"
-                            title="@(bankKind == BankPromptKind.Edit ? "Write this page onto the berth" : bankKind == BankPromptKind.Export ? "Download this moment as a file carrying this page" : "Bank this moment into the berth with this page on it")"
-                            @onclick="CommitBankPrompt">@(bankKind switch { BankPromptKind.Edit => "✎ Write the page", BankPromptKind.Export => "⬇ Export it", _ => "⤓ Bank it" })</button>
-                    <button type="button" class="btn btn-sm btn-outline-light"
-                            title="Change nothing — go back to the logbook"
-                            @onclick="CancelBankPrompt">Cancel</button>
-                </div>
-            </OverlayShell>
-        </div>
+        <BankPromptCard _bankNote="@_bankNote" _bankPrompt="@_bankPrompt" _bankSlotId="@_bankSlotId"
+                        _bankTitle="@_bankTitle" BankPromptHeading="@BankPromptHeading"
+                        CancelBankPrompt="@CancelBankPrompt" CommitBankPrompt="@CommitBankPrompt" Dismiss="@Dismiss"
+                        bankKind="@bankKind" />
     }
 
     @* #310 — the import consent: an import becomes the live game, so it asks once before replacing the
        running voyage, with a one-click "bank current first" escape. *@
     @if (_importConfirming)
     {
-        <div class="start-picker-backdrop">
-            @* #997 wave 6 · The second of the two, and the same three parameters for the same reasons (see
-               the bank sheet above). Its three answers all really do end it: ConfirmImportBankingFirst and
-               ConfirmImportReplace both run ApplyPendingImport, which clears _importConfirming on its way in,
-               and CancelImport clears it outright — pressed, one per run, in this wave's own guard. *@
-            <OverlayShell class="start-picker save-surface"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
-                <div class="start-picker-title">Board this saved voyage?</div>
-                @* #312: the label is read FROM THE FILE'S CONTENTS, never its name — a renamed file still
-                   says what it is before the captain commits to boarding it. *@
-                @if (_importPreview is { } p)
-                {
-                    <div class="import-preview">
-                        <span class="import-preview-where">@(p.WasDocked ? "⚓ " : "🛰 ")@p.Where@(p.Tampered ? " 📛 edited outside the game" : "")</span>
-                        <span class="import-preview-when">day @p.SimDay · read from the file's own contents</span>
-                    </div>
-                }
-                else
-                {
-                    <div class="import-preview import-preview-unknown">The file didn't parse as a save — boarding it may do nothing.</div>
-                }
-                <div class="start-picker-sub">This file will become the live game at once. Your current run isn't saved to a slot yet unless you bank it. (To shelve a file WITHOUT boarding, use “📥 file” on a berth instead.)</div>
-                <div class="save-surface-foot save-surface-foot-center">
-                    <button type="button" class="btn btn-sm btn-outline-success"
-                            title="Bank the current voyage to a free slot, THEN load the imported file"
-                            @onclick="ConfirmImportBankingFirst">💾 Bank current first, then import</button>
-                    <button type="button" class="btn btn-sm btn-warning"
-                            title="Load the imported file now — the current run is discarded unless already saved"
-                            @onclick="ConfirmImportReplace">⬆ Replace now</button>
-                    <button type="button" class="btn btn-sm btn-outline-light"
-                            title="Keep flying the current voyage — cancel the import"
-                            @onclick="CancelImport">Cancel</button>
-                </div>
-            </OverlayShell>
-        </div>
+        <ImportConfirmCard _importConfirming="@_importConfirming" _importPreview="@_importPreview"
+                           ApplyPendingImport="@ApplyPendingImport" Board="@Board" CancelImport="@CancelImport"
+                           ConfirmImportBankingFirst="@ConfirmImportBankingFirst"
+                           ConfirmImportReplace="@ConfirmImportReplace" Dismiss="@Dismiss" />
     }
 
     @* #255 — the diegetic long-haul jump overlay: the one loading bar allowed to be a FEATURE. While
@@ -669,64 +584,9 @@
        button out of the row and drop it on its own line. That is a control moving on the screen. *@
     @if (_showScuttlePanel && _wreck is { } scWreck)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttlePanel)">
-            <OverlayShell class="vent-board scuttle-panel" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Step away"
-                          OnClose="() => Dismiss(CloseScuttlePanel)">
-                <div class="view-object-title">☢ SCUTTLING PANEL — @scWreck.ShipName.ToUpperInvariant()</div>
-
-                <img class="scuttle-art" src="art/scuttle-panel.jpg" alt=""
-                     onerror="this.style.display='none'" />
-
-                <div class="vent-sub">
-                    @Scuttle.PriceLine(
-                        scWreck.AssessedValueCr,
-                        Derelict.Resolve(scWreck, Derelict.SalvageChoice.FileTheReport, scWreck.Cause).CreditsNow)
-                </div>
-
-                @if (_scuttleSecondsLeft is { } armedLeft)
-                {
-                    <div class="vent-message">
-                        ☢ RUNNING — @HullVenting.SoakLabel(armedLeft). The way out is the way you came in.
-                    </div>
-                    <div class="vent-actions">
-                        <button type="button" class="btn btn-outline-light btn-sm"
-                                disabled="@(!Scuttle.CanAbort(armedLeft))"
-                                title="@(Scuttle.CanAbort(armedLeft) ? "" : Scuttle.PastRecallLine)"
-                                @onclick="AbortTheOverload">
-                            🔑 Back the keys out
-                        </button>
-                        @if (!Scuttle.CanAbort(armedLeft))
-                        {
-                            <div class="vent-refusal">@Scuttle.PastRecallLine</div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="vent-actions">
-                        @foreach (Scuttle.Method m in ScuttleMethods())
-                        {
-                            <button type="button" class="btn btn-danger btn-sm"
-                                    title="@($"Takes {Scuttle.Speed(m)}. Nobody pays you to be sure.")"
-                                    @onclick="ArmTheOverload">
-                                ☢ Turn both keys — reactor overload
-                            </button>
-                        }
-                        @* The methods this hull cannot do, and WHY. A greyed control that does not say why
-                           is a bug wearing a tooltip's clothes. *@
-                        @foreach (Scuttle.Method m in System.Enum.GetValues<Scuttle.Method>())
-                        {
-                            @if (!ScuttleMethods().Contains(m))
-                            {
-                                <div class="vent-refusal">@Scuttle.Refusal(m, scWreck.Cause)</div>
-                            }
-                        }
-                    </div>
-                }
-            </OverlayShell>
-        </div>
+        <ScuttlePanel _scuttleSecondsLeft="@_scuttleSecondsLeft" AbortTheOverload="@AbortTheOverload"
+                      ArmTheOverload="@ArmTheOverload" CloseScuttlePanel="@CloseScuttlePanel" Dismiss="@Dismiss"
+                      ScuttleMethods="@ScuttleMethods" scWreck="@scWreck" />
     }
 
     @* #488 · WHAT YOU HEARD ON THE WAY OUT. Owner: "some kind of pop-up with gen AI about hearing clawing
@@ -745,27 +605,8 @@
        status bar. It takes the screen; the board waits underneath. *@
     @if (_ventReadCard is { } readRoom && _ventReads.TryGetValue(readRoom, out var readShown))
     {
-        bool alive = readShown.Sign == HullVenting.LifeSign.SomethingAlive;
-        <div class="view-object-backdrop vent-read-backdrop" @onclick="() => Dismiss(CloseVentReadCard)">
-            <OverlayShell class="@(alive ? "vent-board vent-read-card alive" : "vent-board vent-read-card")"
-                          StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="@(alive ? "Back to the board" : "Close the log")"
-                          OnClose="() => Dismiss(CloseVentReadCard)">
-                <div class="view-object-title">📟 @readRoom — OPERATING LOG</div>
-
-                <div class="vent-read-die">d20 @readShown.Roll.Face</div>
-                <div class="vent-read-line @(alive ? "alive" : "")">@HullVenting.ReadLine(readShown.Sign)</div>
-
-                @* The rule, restated where it costs the most: at the moment the captain most wants the
-                   instrument to have told them something it cannot tell them. *@
-                <div class="vent-read-foot">
-                    The compartment's own instruments, read back — thermal, movement, the last time a door
-                    cycled. It records that something in there is warm and moving. It has never been able to
-                    tell you WHAT.
-                </div>
-            </OverlayShell>
-        </div>
+        <VentReadCard CloseVentReadCard="@CloseVentReadCard" Dismiss="@Dismiss" readRoom="@readRoom"
+                      readShown="@readShown" />
     }
 
     @* #488 · THE DOOR THAT WILL NOT MOVE. Owner, after strolling into a compartment he had just blown:
@@ -1232,23 +1073,7 @@
        up, walked up to or switched on, and putting it down is already what its button did. *@
     @if (_archiveCard is { } vision)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseArchiveCard)">
-            <OverlayShell class="view-object archive-vision" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Get your eyes off it"
-                          DismissTitle="Get your eyes off it"
-                          OnClose="() => Dismiss(CloseArchiveCard)">
-                <div class="view-object-title">@vision.Title</div>
-                <img class="view-object-img" src="@vision.Art" alt="@vision.Title" onerror="this.style.display='none'" />
-                <div class="archive-band">@vision.BandLine</div>
-                <div class="view-object-caption">@vision.Lore</div>
-                @if (vision.Collar is { Length: > 0 } collar)
-                {
-                    <div class="archive-collar">@collar</div>
-                }
-                <div class="archive-dice">🎲 @vision.Dice</div>
-            </OverlayShell>
-        </div>
+        <ArchiveVisionCard CloseArchiveCard="@CloseArchiveCard" Dismiss="@Dismiss" vision="@vision" />
     }
 
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1627,31 +1452,7 @@
        ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
     @if (_storyCard is { } told)
     {
-        var toldCopy = StoryBeatCopy(told.Beat, told.Subject);
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryCard)">
-            <OverlayShell class="view-object" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="…go on"
-                          OnClose="() => Dismiss(CloseStoryCard)">
-                <div class="view-object-title">@toldCopy.Title</div>
-                @if (toldCopy.Art is { Length: > 0 })
-                {
-                    <img class="view-object-img" src="@toldCopy.Art" alt="@toldCopy.Title"
-                         onerror="this.style.display='none'" />
-                }
-                <div class="view-object-caption">@toldCopy.Caption</div>
-                @* #736 (arrived with #664, from the deleted Map.RevealCard.cs) · WHAT THE ACT ACTUALLY DID, on
-                   the card the act raised. Owner, at the Gilt-Eye: the 350 cr and the kept receipt — "the two
-                   facts the player acts on" — were pulsing to the HUD under this backdrop while the caption in
-                   front carried neither. The caption is the fiction; this row is the arithmetic, and the
-                   card's own subtree is the one layer the backdrop cannot blur (#680/#686's law, third
-                   organ). *@
-                @if (told.Outcome is { Length: > 0 } toldOutcome)
-                {
-                    <div class="reveal-outcome">@toldOutcome</div>
-                }
-            </OverlayShell>
-        </div>
+        <StoryCard CloseStoryCard="@CloseStoryCard" Dismiss="@Dismiss" StoryBeatCopy="@StoryBeatCopy" told="@told" />
     }
 
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1669,42 +1470,8 @@
        ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
     @if (_repCard is { } pitch)
     {
-        <div class="view-object-backdrop rep-backdrop">
-            @* #997 · AND HE GETS A WAY OUT THAT IS NOT AN ANSWER. #992's register has this card down as a
-               critical-DECISION modal — allowed no ✕ only because every answer it offers is itself a close
-               — and that row was never driven, so nothing ever pressed it. Read AnswerTheRep: THREE of his
-               six moves leave the card up. Buying refreshes the pitch to the tier you now hold, "I already
-               have a policy" sets his reply beside it, and "that is not my name" re-pitches under the
-               corrected name. Only "not today" and "good day" send him to the bar. So the claim was false,
-               and the honest fix is the one the ruling asks for first: a way out that is not a decision.
-
-               A BARE frame, because .view-object is a flex column whose foot is pinned by
-               `.view-object > .view-object-close` — the dismiss has to be a DIRECT child of the card, and
-               a shell that wrapped it would quietly unstick twenty other cards' buttons too. *@
-            <OverlayShell class="view-object rep-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Step away"
-                          DismissLabel="Step away from the rep"
-                          DismissTitle="Leave the pitch where it is — he keeps the file, and the bar keeps him"
-                          OnClose="() => Dismiss(CloseTheRepsCard)">
-                <div class="view-object-title">@SpaceSails.Core.NebulaRep.DisplayName</div>
-                <img class="view-object-img rep-portrait" src="@SpaceSails.Core.NebulaRep.PortraitArt"
-                     alt="@SpaceSails.Core.NebulaRep.RepName" onerror="this.style.display='none'" />
-                <div class="rep-desk">@SpaceSails.Core.NebulaRep.Desk</div>
-                <div class="view-object-caption rep-pitch">@pitch.Line</div>
-                @if (_repSaid is { Length: > 0 } saidBack)
-                {
-                    <div class="rep-said">@saidBack</div>
-                }
-                <div class="rep-offers">
-                    @foreach (var repOffer in pitch.Offers)
-                    {
-                        var repMove = repOffer.Move;
-                        <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheRep(repMove))">@repOffer.Label</button>
-                    }
-                </div>
-            </OverlayShell>
-        </div>
+        <RepCard _repSaid="@_repSaid" AnswerTheRep="@AnswerTheRep" CloseTheRepsCard="@CloseTheRepsCard"
+                 Dismiss="@Dismiss" pitch="@pitch" />
     }
 
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1724,26 +1491,8 @@
        ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
     @if (_hardcaseCard is { } koltOffers)
     {
-        <div class="view-object-backdrop rep-backdrop">
-            <OverlayShell class="view-object rep-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Step away"
-                          DismissLabel="Step away from the underwriter — the same as declining"
-                          DismissTitle="Walk on without signing. He has one thing left to say about that"
-                          OnClose="() => Dismiss(TellKoltNo)">
-                <div class="view-object-title">@SpaceSails.Core.HardcaseRep.DisplayName</div>
-                <div class="rep-desk">@SpaceSails.Core.HardcaseRep.Desk</div>
-                <div class="view-object-caption rep-pitch">@SpaceSails.Core.HardcaseRep.Opener</div>
-                <div class="view-object-caption rep-pitch">@SpaceSails.Core.HardcaseRep.Pitch</div>
-                <div class="rep-offers">
-                    @foreach (var koltOffer in koltOffers)
-                    {
-                        var koltMove = koltOffer.Move;
-                        <button type="button" class="rep-offer" @onclick="() => Dismiss(() => AnswerTheHardcase(koltMove))">@koltOffer.Label</button>
-                    }
-                </div>
-            </OverlayShell>
-        </div>
+        <HardcaseCard AnswerTheHardcase="@AnswerTheHardcase" Dismiss="@Dismiss" TellKoltNo="@TellKoltNo"
+                      koltOffers="@koltOffers" />
     }
 
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1762,46 +1511,7 @@
        ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
     @if (_walkInCard is { } sheAsks)
     {
-        <div class="view-object-backdrop rep-backdrop">
-            @* #997 wave 2 · THE SHELL, AND NOTHING SHE SAYS MOVES. This card shares its markup with the rep's
-               pitch a hundred lines above — same .view-object family, same .rep-card, same scrim — and after
-               #997 the rep was on the shell and she was the odd one out. She is on it now: the scrim is held
-               off by the shell's own StopClicks (the @@onclick:stopPropagation that used to be typed on this
-               div), and her way out is the shell's dismiss.
-
-               A BARE frame, for the rep's own reason: .view-object is a flex column whose foot is pinned by
-               `::deep .view-object > .view-object-close`, so the way out has to be a DIRECT child of the
-               card. #664's `Presentation.Hosted` — the sense in which this card is a HOST, the beat drawn on
-               it rather than raising a plate beside it — is untouched by that and is not the same axis:
-               OverlayFrame.Hosted is `display: contents`, which would dissolve this card's own box and
-               unstick its foot. What hosts the beat is the card; what the shell owns is the way out.
-
-               AND THE WAY OUT IS HER NO. She is standing at your table: a ✕ that only took the panel away
-               would leave a woman at your elbow with nothing left to answer and no way to answer it — the
-               inverse of the empty-chair card #973 already refuses. So the dismiss runs the same verb her
-               own "no" runs, which is #979's polite exit entire: her line is pulsed, the card goes, and she
-               leaves the table with the chair and the plate handed back. Her two answers, her portrait and
-               every word on this card are exactly as they were. *@
-            <OverlayShell class="view-object rep-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Let her go"
-                          DismissLabel="Let her go — the same as saying no"
-                          DismissTitle="Let her go without taking the job — she says her piece and walks back to the counter"
-                          OnClose="() => Dismiss(() => AnswerTheWalkIn(false))">
-                <div class="view-object-title">@SpaceSails.Core.WalkIn.Name(sheAsks)</div>
-                <img class="view-object-img rep-portrait"
-                     src="@SpaceSails.Core.WalkIn.PortraitArt(sheAsks)"
-                     alt="@SpaceSails.Core.WalkIn.Name(sheAsks)" onerror="this.style.display='none'" />
-                <div class="view-object-caption rep-pitch">@SpaceSails.Core.WalkIn.AtTheTable(sheAsks)</div>
-                <div class="rep-said">@SpaceSails.Core.WalkIn.TheStory(sheAsks)</div>
-                <div class="rep-offers">
-                    <button type="button" class="rep-offer"
-                            @onclick="() => Dismiss(() => AnswerTheWalkIn(true))">@SpaceSails.Core.WalkIn.Yes</button>
-                    <button type="button" class="rep-offer"
-                            @onclick="() => Dismiss(() => AnswerTheWalkIn(false))">@SpaceSails.Core.WalkIn.No</button>
-                </div>
-            </OverlayShell>
-        </div>
+        <WalkInCard AnswerTheWalkIn="@AnswerTheWalkIn" Dismiss="@Dismiss" sheAsks="@sheAsks" />
     }
 
     @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
@@ -1809,23 +1519,7 @@
        asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
     @if (_shipEpitaph is { } castaway)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipEpitaph)">
-            <OverlayShell class="view-object" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="…take the berth"
-                          OnClose="() => Dismiss(CloseShipEpitaph)">
-                <div class="view-object-title">☢ SHE IS GONE, AND YOU ARE NOT</div>
-                @* #528 · The one end state in the game that had no picture — and the painting for it has
-                   been sitting in wwwroot since #915. Same markup and the same onerror-hide as every other
-                   view-object card; the file is named in Core so the boat and the sentence about the boat
-                   cannot drift apart in two files. *@
-                <img class="view-object-img" src="@SpaceSails.Core.ShipScuttle.CastawayArt"
-                     alt="☢ SHE IS GONE, AND YOU ARE NOT" onerror="this.style.display='none'" />
-                <div class="view-object-caption">@castaway.Went</div>
-                <div class="view-object-caption">@castaway.Survives</div>
-                <div class="view-object-caption">@castaway.Rescue</div>
-            </OverlayShell>
-        </div>
+        <ShipEpitaphCard CloseShipEpitaph="@CloseShipEpitaph" Dismiss="@Dismiss" castaway="@castaway" />
     }
 
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1840,72 +1534,13 @@
        ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
     @if (_showShipScuttlePanel)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipScuttlePanel)">
-            <OverlayShell class="vent-board" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Step away"
-                          OnClose="() => Dismiss(CloseShipScuttlePanel)">
-                <div class="view-object-title">☢ SCUTTLING CHARGES — HER OWN KEEL</div>
-
-                @if (_shipChargesSeconds is { } shipBurn)
-                {
-                    <div class="vent-sub">
-                        @(Scuttle.CanAbort(shipBurn)
-                            ? "The note of her is up half a tone. The panel will still take the keys back."
-                            : "Past recall. Whatever happens now happens on its own schedule.")
-                    </div>
-                    <div class="vent-readout">
-                        ☢ OVERLOAD — @HullVenting.SoakLabel(shipBurn) · the way out is the way you came in
-                    </div>
-                    @if (Scuttle.CanAbort(shipBurn))
-                    {
-                        <button type="button" class="btn btn-outline-warning btn-sm" @onclick="BackTheKeysOut">
-                            ↩ Back the keys out
-                        </button>
-                    }
-                }
-                else
-                {
-                    <div class="vent-sub">@ShipScuttle.NeverDelegable</div>
-                    <div class="vent-readout">@ShipScuttle.PriceLine(_cargoUnits, (long)_cargoValue, _credits)</div>
-
-                    <div class="vent-actions">
-                        <button type="button"
-                                class="btn btn-sm @(_shipScuttleWordGiven ? "btn-success" : "btn-outline-danger")"
-                                title="@ShipScuttle.AskFor("this ship")"
-                                @onclick="GiveTheWordAgainstHer">
-                            @(_shipScuttleWordGiven ? "✅ THE CAPTAIN'S KEY IS TURNED — click to take it back" : "🔑 The captain's key")
-                        </button>
-
-                        @* THE SECOND OPINION. Not a rules explanation and not a dice roll the captain can
-                           re-roll: the crew answer from where they already stand with him. *@
-                        <button type="button"
-                                class="btn btn-sm @(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused ? "btn-outline-secondary" : "btn-outline-warning")"
-                                disabled="@(!_shipScuttleWordGiven)"
-                                title="Scuttling her takes two hands. Ask the crew for theirs."
-                                @onclick="AskTheCrewForTheSecondKey">
-                            🧑‍🔧 Ask the crew for the second key
-                        </button>
-
-                        <button type="button" class="btn btn-danger btn-sm"
-                                disabled="@(!_shipScuttleWordGiven
-                                            || _shipScuttleSecondKey is null
-                                            || _shipScuttleSecondKey == ShipScuttle.SecondKey.Refused)"
-                                title="@(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused
-                                         ? ShipScuttle.RefusedPointerLine
-                                         : "Both keys together. Ninety seconds, and a recall window for the first sixty.")"
-                                @onclick="TurnBothKeys">
-                            ☢ TURN BOTH KEYS
-                        </button>
-                    </div>
-                }
-
-                @if (_shipScuttleMessage is { Length: > 0 } shipScuttleMsg)
-                {
-                    <div class="vent-message">@shipScuttleMsg</div>
-                }
-            </OverlayShell>
-        </div>
+        <ShipScuttlePanel _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue" _credits="@_credits"
+                          _shipChargesSeconds="@_shipChargesSeconds" _shipScuttleMessage="@_shipScuttleMessage"
+                          _shipScuttleSecondKey="@_shipScuttleSecondKey"
+                          _shipScuttleWordGiven="@_shipScuttleWordGiven"
+                          AskTheCrewForTheSecondKey="@AskTheCrewForTheSecondKey" BackTheKeysOut="@BackTheKeysOut"
+                          CloseShipScuttlePanel="@CloseShipScuttlePanel" Dismiss="@Dismiss"
+                          GiveTheWordAgainstHer="@GiveTheWordAgainstHer" TurnBothKeys="@TurnBothKeys" />
     }
 
     @* #488 · WHAT YOU ARE LOOKING AT. The cause's own station is the one you stand in front of, so it shows
@@ -1913,17 +1548,7 @@
        is the EVIDENCE, never the conclusion; naming what it means is still the captain's job. *@
     @if (_wreckLook is { } look)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseWreckLook)">
-            <OverlayShell class="view-object" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Step back"
-                          DismissTitle="Step back"
-                          OnClose="() => Dismiss(CloseWreckLook)">
-                <div class="view-object-title">@look.Title</div>
-                <img class="view-object-img" src="@look.Art" alt="@look.Title" onerror="this.style.display='none'" />
-                <div class="view-object-caption">@look.Caption</div>
-            </OverlayShell>
-        </div>
+        <WreckLookCard CloseWreckLook="@CloseWreckLook" Dismiss="@Dismiss" look="@look" />
     }
 
     @* #664 · THE SECOND REVEAL CARD USED TO BE HERE, and it is gone. The fork answered #528 twice on the
@@ -1938,135 +1563,18 @@
        plausible wrong answer until you have corroborated it. *@
     @if (_showWreckChoice && _wreck is { } salvageWreck)
     {
-        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseWreckChoice)">
-            <OverlayShell class="treasure-map-card wreck-choice" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Not yet"
-                          DismissTitle="Decide later"
-                          OnClose="() => Dismiss(CloseWreckChoice)">
-                <div class="view-object-title">📋 THE @salvageWreck.ShipName.ToUpperInvariant()</div>
-                @* Her portrait, if the away team has actually looked at what killed her. Before that the
-                   card stays text-only — you do not get the picture for free. *@
-                @if (_wreckExamined.Contains("cause") && Derelict.ArtFile(salvageWreck.Cause) is { Length: > 0 } wreckArt)
-                {
-                    <div class="tm-art" style="background-image: url('@wreckArt');"></div>
-                }
-                @* The footing comes from Core. It was typed here, and it said "and nobody has been aboard
-                   since" on EVERY hull — including ?wreck=piracy, whose evidence two stations away is an
-                   airlock cycled from OUTSIDE and a near hold stripped to bare frames, and ?wreck=infested,
-                   where something has been aboard the whole time. What is true of every wreck is not that
-                   nobody has been aboard; it is that nobody came back for her. *@
-                <div class="tm-caption">@Derelict.CardFooting(salvageWreck)</div>
-
-                @if (CanFileWreckReport)
-                {
-                    <div class="wreck-finding">
-                        <div class="wreck-finding-head">YOUR FINDING — what do you put your name to?</div>
-                        @foreach (Derelict.WreckCause option in WreckCandidateCauses())
-                        {
-                            <button type="button"
-                                    class="@(_wreckReported == option ? "btn btn-warning btn-sm wreck-cause picked" : "btn btn-outline-light btn-sm wreck-cause")"
-                                    @onclick="() => _wreckReported = option">
-                                @Derelict.CauseHeadline(option)
-                            </button>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="wreck-finding">
-                        <div class="wreck-finding-head">
-                            You have not looked at enough of her to file anything. Read her decks first —
-                            the damage, the log, the manifest.
-                        </div>
-                    </div>
-                }
-
-                <div class="busted-options">
-                    <button type="button" class="btn btn-light btn-sm"
-                            disabled="@(!CanFileWreckReport || _wreckReported is null)"
-                            title="File the accident report"
-                            @onclick="() => ResolveWreck(Derelict.SalvageChoice.FileTheReport)">
-                        @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.FileTheReport)
-                    </button>
-                    <button type="button" class="btn btn-danger btn-sm" title="Strip her and say nothing"
-                            @onclick="() => ResolveWreck(Derelict.SalvageChoice.StripAndSayNothing)">
-                        @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.StripAndSayNothing)
-                    </button>
-                </div>
-            </OverlayShell>
-        </div>
+        <WreckChoiceCard _wreckExamined="@_wreckExamined" _wreckReported="@_wreckReported"
+                         CanFileWreckReport="@CanFileWreckReport" CloseWreckChoice="@CloseWreckChoice"
+                         Dismiss="@Dismiss" ResolveWreck="@ResolveWreck"
+                         WreckCandidateCauses="@WreckCandidateCauses" salvageWreck="@salvageWreck" />
     }
 
     @* #488 · what the decision actually bought. *@
     @if (_wreckOutcome is { } salvageOutcome)
     {
-        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(DismissWreckOutcome)">
-            @* ══ #997 wave 5 · THE BEAT CARDS. One comment for all thirteen, on the first of them.
-               ══════════════════════════════════════════════════════════════════════════════════════════
-               These are the surfaces that STOP THE GAME TO TELL YOU SOMETHING: the celebration family
-               (a payday, a map, a brief, a reveal, a storyboard), the convergence band (the two mysteries,
-               and the four things a captain is told once and never again) and the rescue band. Every one of
-               them was the same three things typed again: a scrim that closes it, a stopPropagation to keep
-               a click on the card off that scrim, and one worded verb at the foot. Waves 1-4 did this for
-               the .view-object family and its borrowers; this is the rest.
-
-               THE THREE PARAMETERS, and they mean the same here as they did there:
-
-                 · Frame="OverlayFrame.Bare" — the way out stays a DIRECT child of the card. That is the
-                   relation #735's pinned foot is written against on every one of these roots
-                   (`.convergence-card > .convergence-close`, `.expedition-brief-card > button:last-child`,
-                   `.rescue-card > .rescue-options`), and Hosted's `display: contents` would put a div
-                   between them while the markup went on looking right.
-                 · StopClicks="true" — the stopPropagation that was typed on the div, thirteen times.
-                 · Dismiss="OverlayDismiss.Close" wired to the page's OWN verb — the same method the
-                   backdrop behind it already calls, so there is still exactly one road out of each card.
-
-               AND NOT ONE WORD MOVED. Every face below is the exact string its own button carried.
-               `Bare` draws the dismiss as the card's last DIRECT child, which is where twelve of the
-               thirteen already had it; on the first-ground family (the lesson, the map-just-grew, the tube
-               and the air) the button was typed ABOVE its footnote and put back under it by `order: 1`, so
-               being last in the DOM now is the same pixel — and it is the reading order the #735 block
-               already claims that card has. The one card of the fourteen that could not take a shell is
-               named in TheShellOwnsTheBeatCardsTests.TheNamedStragglers, with its reason. ═════════════ *@
-            <OverlayShell class="treasure-map-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Back to the shuttle"
-                          OnClose="() => Dismiss(DismissWreckOutcome)">
-                <div class="view-object-title">
-                    @(salvageOutcome.ContactEarned ? "📋 FILED" : salvageOutcome.CargoIsHot ? "🏴 STRIPPED" : "📋 FILED")
-                </div>
-                <div class="tm-caption">@salvageOutcome.Line</div>
-                <div class="tm-contents">💰 @salvageOutcome.CreditsNow.ToString("N0") cr</div>
-                @* #938 D4 · THE MONEY WAS TAKEN FOR A REASON NOBODY COULD READ. #553 has shaved
-                   ComplianceSurcharge.Rate off every filed report since it landed — off the finder's fee AND
-                   off the correct-cause bonus — while its five explanatory members had zero consumers
-                   anywhere in src. The captain saw a smaller number and was given no clause, which is the
-                   one shape this design must not have: "referenced but not described" still needs the
-                   reference. It is on the receipt now, where a line item belongs, in the words Core already
-                   wrote — the line item cites the clause, the caption is the only summary the game ever
-                   offers, and the tooltip is what the office says when a captain asks, seeded off this hull
-                   so the same wreck always gives the same non-answer. Nothing here describes the incident.
-                   Nothing ever will. *@
-                @if (salvageOutcome.SurchargeCr > 0)
-                {
-                    <div class="tm-bearing" title="@TheClauseNonAnswer">@ComplianceSurcharge.LineItem(salvageOutcome.SurchargeCr)</div>
-                    <div class="tm-caption">@ComplianceSurcharge.WhatItIsLine</div>
-                }
-                @if (salvageOutcome.CargoIsHot)
-                {
-                    <div class="tm-bearing">🔥 It is in the hold, and it is hot. A collector will know it on sight.</div>
-                }
-                @* #652 · The half that outlives the payout, WITH A NAME ON IT. This line used to read
-                   "Somebody now owes you a straight answer" and there was no somebody: nothing recorded who,
-                   nothing persisted, nothing took your call. The assessor is on the ContactLedger now (and
-                   therefore in the vault), and the card says whose name is under the finding. *@
-                @if (salvageOutcome.ContactEarned && _wreckContact is { Length: > 0 } signedBy)
-                {
-                    <div class="tm-bearing">@Derelict.ContactLine(signedBy)</div>
-                }
-            </OverlayShell>
-        </div>
+        <WreckOutcomeCard _wreckContact="@_wreckContact" Dismiss="@Dismiss"
+                          DismissWreckOutcome="@DismissWreckOutcome" TheClauseNonAnswer="@TheClauseNonAnswer"
+                          salvageOutcome="@salvageOutcome" />
     }
 
     @* The ground's gift shop (#480 art pass): the 🛒 SOUVENIR KIOSK sold a tee and a magnet and showed
@@ -2074,17 +1582,7 @@
        Same card idiom as the view-object below, same onerror fallback. *@
     @if (_kioskCard is { } buy)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseKioskCard)">
-            <OverlayShell class="view-object" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Stow it"
-                          DismissTitle="Stow it in the sling"
-                          OnClose="() => Dismiss(CloseKioskCard)">
-                <div class="view-object-title">🧾 @buy.Item</div>
-                <img class="view-object-img" src="@buy.Art" alt="@buy.Item" onerror="this.style.display='none'" />
-                <div class="view-object-caption">@buy.Line</div>
-            </OverlayShell>
-        </div>
+        <KioskCard CloseKioskCard="@CloseKioskCard" Dismiss="@Dismiss" buy="@buy" />
     }
 
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
@@ -3619,67 +3117,11 @@
        itself never scrolls. *@
     @if (_galleyCardOpen)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseGalleyCard)">
-            @* `text-light` is the desk's own, carried over: Stations/Galley.razor's root was
-               `class="galley-desk text-light"`, and the tot count and the locker heading are drawn with no
-               colour of their own. Dropped, they inherit the page's body grey and the card reads a shade
-               dimmer than the screen it replaces — measured in a browser, not reasoned about. *@
-            <OverlayShell class="galley-card text-light" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Close"
-                          DismissTitle="Shut the galley card — Esc and 6 do the same"
-                          OnClose="() => Dismiss(CloseGalleyCard)">
-                <div class="view-object-title">🍹 THE GALLEY</div>
-
-                @* #1022 · THE MAN BEHIND THE COUNTER LEADS THE CARD.
-
-                   Owner, live: "The dialog, one imagines, is a set of phrases to keep the customer talking
-                   :-D ... but there is something heart warming in those scenes at the same time."
-
-                   The picture is the gen-AI art the owner said the first version lacked, and B-7V's plate
-                   and his current line sit under it, above the locker. Order matters and it is the same
-                   argument #1021 made about the locker and the wire: the thing that TALKS to you is the top
-                   of the card, the thing you PRESS is under it, and the thing you READ is what gives.
-
-                   Every word here is Core's (SpaceSails.Core.TheTender) — this markup chooses nothing, it
-                   only draws whichever line the sitting handed back. The rare register is drawn APART from
-                   his own voice: an announcement gets its own row, indented and italic, with the line
-                   underneath it in his ordinary voice. They arrive as one TheTender.Line, so there is no
-                   way to render the first without the second. *@
-                <div class="tender-head">
-                    <img class="tender-art" src="art/b7v-the-tender.jpg" alt="" aria-hidden="true"
-                         onerror="this.style.display='none'" />
-                    <div class="tender-plate">@SpaceSails.Core.TheTender.Plate</div>
-                    @if (_tenderLine is { } tender)
-                    {
-                        @if (tender.Announcement is { } announcement)
-                        {
-                            <div class="tender-announcement">@announcement</div>
-                        }
-                        <div class="tender-line">@tender.Text</div>
-                    }
-                </div>
-
-                <div class="galley-card-rum">
-                    <div class="fw-bold mb-2">The rum locker 🍹</div>
-                    <div class="mb-1">Tots poured: @_rumTots</div>
-                    <div class="mb-2 @(RumWobbleActive ? "text-warning fw-bold" : "text-secondary")">
-                        @(RumWobbleActive ? "Deck's tilty — steady on. 🍹" : "Steady legs, for now.")
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2" title="Pour a tot of rum from the locker — steadies the crew's legs when the deck goes tilty" @onclick="PourRumFromGalley">
-                        Pour a tot
-                    </button>
-                    @if (_lastRumLine is not null)
-                    {
-                        <div class="fst-italic text-info small">@_lastRumLine</div>
-                    }
-                </div>
-
-                <SpaceSails.Client.Pages.Stations.NewsWirePanel
-                    SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays)"
-                    ItemCount="GalleyFeedItemCount" />
-            </OverlayShell>
-        </div>
+        <GalleyCard _lastRumLine="@_lastRumLine" _rumTots="@_rumTots" _tenderLine="@_tenderLine"
+                    CloseGalleyCard="@CloseGalleyCard" Dismiss="@Dismiss"
+                    GalleyFeedAmbientDays="@GalleyFeedAmbientDays" GalleyFeedItemCount="@GalleyFeedItemCount"
+                    NewsFeed="@((int ambientCount) => NewsFeed(ambientCount))" PourRumFromGalley="@PourRumFromGalley" RumWobbleActive="@RumWobbleActive"
+                    SimTime="@SimTime" />
     }
 
     @* #949 · THE PLOTTING CARD — the help the owner asked for, where the question gets asked.
@@ -3699,22 +3141,7 @@
        off the same Core call the panel draws it with. *@
     @if (_navHelpOpen)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseNavHelp)">
-            <OverlayShell class="view-object nav-help-card text-light" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="✕ Back to the plot"
-                          DismissTitle="Shut the plotting card — Esc and ? do the same"
-                          OnClose="() => Dismiss(CloseNavHelp)">
-                <CappedScrollPanel class="nav-help-scroll" BodyClass="nav-help-body" BodyFloor="8rem">
-                    <Header>
-                        <div class="view-object-title">🗺 HOW A TRIP IS PLANNED</div>
-                    </Header>
-                    <ChildContent>
-                        <PlottingHelp />
-                    </ChildContent>
-                </CappedScrollPanel>
-            </OverlayShell>
-        </div>
+        <NavHelpCard CloseNavHelp="@CloseNavHelp" Dismiss="@Dismiss" />
     }
 
     @* #836 · THE FLETCH WALLET, FANNED WHILE HE CROSSES THE FLOOR. Owner: "I think I should be able to pick
@@ -3728,102 +3155,17 @@
        read it yet, and neither has this dialog. *@
     @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
     {
-        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseTheWalletFan)">
-            <OverlayShell class="treasure-map-card wallet-fan" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="@SpaceSails.Core.WalletChoice.KeepItLine"
-                          OnClose="() => Dismiss(CloseTheWalletFan)">
-                <div class="view-object-title">@SpaceSails.Core.WalletChoice.ChooserLabel</div>
-                <div class="tm-caption">@SpaceSails.Core.WalletChoice.ChooserHint</div>
-
-                <div class="wallet-fan-rows">
-                    @foreach (SpaceSails.Core.Satchel.Item paper in fanPapers)
-                    {
-                        bool inHand = ThePaperInYourHandIs(paper);
-                        <button type="button"
-                                class="@(inHand ? "wallet-paper picked" : "wallet-paper")"
-                                @onclick="() => ChooseThePaper(paper)">
-                            <span class="wallet-paper-face">
-                                <span class="wallet-paper-glyph">@SpaceSails.Core.WalletChoice.GlyphOf(paper)</span>
-                                <span class="wallet-paper-name">@SpaceSails.Core.WalletChoice.NameOn(paper, NameOnYourOwnPapers)</span>
-                                @if (inHand)
-                                {
-                                    <span class="wallet-paper-held">@SpaceSails.Core.WalletChoice.InYourHandLine</span>
-                                }
-                            </span>
-                            <span class="wallet-paper-claims">@SpaceSails.Core.WalletChoice.Claims(paper)</span>
-                            <span class="wallet-paper-book">@TheBookOn(paper, fanEx.Stop.Body.Id)</span>
-                        </button>
-                    }
-                </div>
-            </OverlayShell>
-        </div>
+        <WalletFanCard ChooseThePaper="@ChooseThePaper" CloseTheWalletFan="@CloseTheWalletFan" Dismiss="@Dismiss"
+                       NameOnYourOwnPapers="@NameOnYourOwnPapers" TheBookOn="@TheBookOn"
+                       ThePaperInYourHandIs="@ThePaperInYourHandIs" fanEx="@fanEx" fanPapers="@fanPapers" />
     }
 
     @if (_viewObject is { } vo)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">
-            <OverlayShell class="view-object" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Close"
-                          DismissTitle="Put it back down and step away"
-                          OnClose="() => Dismiss(CloseViewObject)">
-                <div class="view-object-title">@vo.Label</div>
-                @* A card with no wired art at all (the lifeboat muster) shows caption-only; a card whose
-                   art is wired but not yet painted (the text-only dedication plaques) renders the img and
-                   lets onerror hide it — the same fallback idiom the captain portraits use (art/captain-N.jpg
-                   → hidden if absent), so both degrade cleanly to just the caption. *@
-                @if (vo.ImageUrl is { Length: > 0 } voImg)
-                {
-                    <img class="view-object-img" src="@voImg" alt="@vo.Label" onerror="this.style.display='none'" />
-                }
-                @if (vo.Caption is { Length: > 0 } cap)
-                {
-                    <div class="view-object-caption">@cap</div>
-                }
-                @* #763 · THE PRESS, ON THE KIT'S OWN SCREEN. Detection was passive and cost nothing; this
-                   is the button, and the owner's whole ruling is that it may never be automatic — "There
-                   was a button. I pushed it." One control per carrier the kit heard, recomputed from where
-                   the captain is standing rather than stored, and never disabled: a press that is going to
-                   be refused still has to be pressable, because the refusal is the thing worth learning. *@
-                @if (TheKitsCardIsUp)
-                {
-                    @foreach (SpaceSails.Core.SdrScanner.Hit hit in TheKitSweeps())
-                    {
-                        <div class="satchel-row">
-                            <span class="satchel-item-name">@SpaceSails.Core.SdrScanner.HitLine(hit)</span>
-                            <button type="button" class="satchel-load"
-                                    title="@SpaceSails.Core.SdrScanner.PressBlurb"
-                                    @onclick="() => PressTheHit(hit)">@SpaceSails.Core.SdrScanner.PressLabel</button>
-                        </div>
-                    }
-                }
-                @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
-                   (#736) on the other full-screen card, because the surface raises this one. The
-                   dossier is the case it was grown for: the assembly said two to four sentences and fired
-                   every one of them as a pulse UNDER this backdrop, so the captain closed a card onto
-                   nothing. A region, not a slot: they all fit, and nothing has to be picked. *@
-                @if (vo.Outcome is { Length: > 0 } voOutcome)
-                {
-                    <div class="reveal-outcome">@voOutcome</div>
-                }
-                @* #615 · KEEP OR LEAVE. Owner: "should we have like keep / leave option when we find stuff?"
-                   The kit's own press rows one region up, with two answers instead of one — the find/console
-                   card the ground already raises over a pallet and a shelf, not an overlay of its own. Both
-                   controls are a way OUT of the card, and so is the ✕ beside them: closing IS Leave, which is
-                   what lets the general closing law hold here without a special case. Two words, no prose;
-                   the room's own line is what the captain is deciding about and it is already on the card. *@
-                @if (TheFindIsWaitingOnAnAnswer)
-                {
-                    <div class="satchel-row">
-                        <button type="button" class="satchel-load"
-                                @onclick="KeepTheFind">@SpaceSails.Core.KeepOrLeave.KeepLabel</button>
-                        <button type="button" class="satchel-load"
-                                @onclick="LeaveTheFind">@SpaceSails.Core.KeepOrLeave.LeaveLabel</button>
-                    </div>
-                }
-            </OverlayShell>
-        </div>
+        <ViewObjectCard CloseViewObject="@CloseViewObject" Dismiss="@Dismiss" KeepTheFind="@KeepTheFind"
+                        LeaveTheFind="@LeaveTheFind" PressTheHit="@PressTheHit"
+                        TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer" TheKitsCardIsUp="@TheKitsCardIsUp"
+                        TheKitSweeps="@TheKitSweeps" vo="@vo" />
     }
 
     @* THE CAPTAIN'S SELFIE (#400): the framed shot — the vista backdrop with the captain's #368 portrait
@@ -3832,88 +3174,23 @@
        again dismisses it. Both the img and the portrait fall back cleanly (onerror-hide) if unpainted. *@
     @if (_selfieShot is { } shot)
     {
-        <div class="view-object-backdrop selfie-backdrop" @onclick="CloseSelfieShot">
-            <OverlayShell class="view-object selfie-frame" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Close"
-                          DismissTitle="Put the camera away"
-                          OnClose="CloseSelfieShot">
-                <div class="view-object-title">@shot.Title</div>
-                <div class="selfie-stage">
-                    @if (shot.VistaArt is { Length: > 0 } vista)
-                    {
-                        <img class="selfie-vista" src="@vista" alt="" onerror="this.style.display='none'" />
-                    }
-                    <img class="selfie-portrait" src="art/captain-@(shot.AvatarIndex).jpg" alt="the captain, HERE"
-                         onerror="this.style.display='none'" />
-                </div>
-                @if (shot.Caption is { Length: > 0 } selfieCap)
-                {
-                    <div class="view-object-caption selfie-caption">@selfieCap</div>
-                }
-                <div class="selfie-foot">📸 Filed in the legend ledger · day @shot.SimDay</div>
-            </OverlayShell>
-        </div>
+        <SelfieShotCard CloseSelfieShot="@CloseSelfieShot" Dismiss="@Dismiss" shot="@shot" />
     }
 
     @* The peak-moment nudge (#400 §3): after a big beat, "grab a selfie for the record?" — one-time, small,
        non-blocking. Take it (captures the themed shot) or wave it off for the session. *@
     @if (_selfieOffer is { } selfieOffer)
     {
-        @* #997 wave 9 · The second of this wave's plain decisions, and the same three facts as the stand-up
-           card: two answers, both of them a way out (AcceptSelfieOffer and DeclineSelfieOffer each clear
-           _selfieOffer, which is the whole of the gate above), no ✕ it has ever had, and the answers stay the
-           page's own markup because they wear different colours. No `StopClicks`: this nudge sits over the
-           deck on its own anchor, with no backdrop behind it for a click to fall through to. *@
-        <OverlayShell class="selfie-offer" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
-            <span class="selfie-offer-text">📸 @selfieOffer.Label — grab a selfie for the record?</span>
-            <div class="selfie-offer-actions">
-                <button type="button" class="btn btn-sm btn-info" title="Strike a pose — it goes in the legend ledger" @onclick="AcceptSelfieOffer">Take the shot</button>
-                <button type="button" class="btn btn-sm btn-outline-light" title="Not this time" @onclick="DeclineSelfieOffer">Not now</button>
-            </div>
-        </OverlayShell>
+        <SelfieOfferCard _selfieOffer="@_selfieOffer" AcceptSelfieOffer="@AcceptSelfieOffer"
+                         DeclineSelfieOffer="@DeclineSelfieOffer" Dismiss="@Dismiss" selfieOffer="@selfieOffer" />
     }
 
     @* Hatch keypad: brought up by knocking on the specific locked hatch a crack job sent you to. Key in
        the code the Fixer quoted; right code pops the hatch (job → PickedUp), wrong code buzzes red. *@
     @if (_pinJob is { } pinJob)
     {
-        <div class="pin-backdrop" @onclick="CancelPin">
-            @* #997 wave 9 · THE KEYPAD'S Cancel IS THE SHELL'S DISMISS. The plainest Close left in the client:
-               one way out, last direct child of the pad, wired to the same CancelPin the backdrop behind it
-               already calls. Wave 4's three parameters and nothing else — `Bare` (the pad's own
-               `.pin-pad-hatch` IS its head and the shell must not put a second one above it),
-               `StopClicks="true"` (the stopPropagation that was typed on this div), and the Close.
-
-               NOT ONE WORD MOVED: "Cancel" and its title are the exact strings the hand-typed button carried.
-               And it keeps its own height — `.pin-pad-cancel` is not a `.btn`, so the shell's chrome rule
-               gives it `line-height: 1`, which is the same number its own `font: 600 .85rem/1 monospace` was
-               already setting. Measured in the browser and written up in the PR, not assumed. *@
-            <OverlayShell class="pin-pad" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close" OnClose="CancelPin"
-                          DismissClass="pin-pad-cancel" DismissFace="Cancel"
-                          DismissTitle="Back off — leave the hatch locked">
-                <div class="pin-pad-hatch">@(_pinHatch?.Label ?? "LOCKED HATCH")</div>
-                <div class="pin-pad-sub">ENTER ACCESS CODE</div>
-                <div class="pin-pad-display">@PinDisplay</div>
-                <div class="pin-pad-keys">
-                    @foreach (string d in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-                    {
-                        string digit = d;
-                        <button type="button" class="pin-pad-key" title="Key this digit into the access code" @onclick="() => PinPush(digit)">@digit</button>
-                    }
-                    <button type="button" class="pin-pad-key pin-pad-key-fn" title="Clear the code and start over" @onclick="PinClear">C</button>
-                    <button type="button" class="pin-pad-key" title="Key a zero into the access code" @onclick='() => PinPush("0")'>0</button>
-                    <button type="button" class="pin-pad-key pin-pad-key-go" title="Try this code on the hatch" @onclick="SubmitPin">↵</button>
-                </div>
-                @* #736 · The buzz, said on the pad. A wrong code leaves the pad up and blanks the four slots,
-                   and the sentence that explained why was pulsing to the HUD under this backdrop. *@
-                @if (_pinOutcome is { } pinSaid)
-                {
-                    <div class="panel-outcome">@pinSaid</div>
-                }
-            </OverlayShell>
-        </div>
+        <PinJobCard _pinHatch="@_pinHatch" _pinOutcome="@_pinOutcome" CancelPin="@CancelPin" Dismiss="@Dismiss"
+                    PinClear="@PinClear" PinDisplay="@PinDisplay" PinPush="@PinPush" SubmitPin="@SubmitPin" />
     }
 
     @* Deck pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
@@ -3928,67 +3205,10 @@
        canvas while ashore, with Take / Pass. Same overlay family as the deck-pulse-toast. *@
     @if (_deckMode && _pendingOffer is { } offer)
     {
-        @* #997 wave 10 · THE STRANGER'S CONTRACT, and #1010's blocker answered by #780's own ruling.
-           #1009 named this card a straggler for a reason that was right: its two answers ARE both closes,
-           but the card ALSO carries #355's drink flow, whose controls are not — so `ByDecision` would be
-           the claim "every answer this surface offers is itself a close" and that claim would be false.
-           It is a Close with two ways out instead: `Take the job` is the dismiss and `Pass` is wave 7's
-           second one beside it, in `.deck-offer-actions` — the row #735 pins sticky and #780 wraps.
-
-           …AND THE DRINK FLOW MOVED ABOVE THE FOOT, which is the layout question #1010 left open and the
-           ONE thing on this card that is not chrome. #780 answered it once already, at the counter: the
-           menu's six priced items were rendering UNDER `.deck-offer-actions`' sticky 12rem scrim and read
-           as a greyed-out panel behind glass, so the menu moved above the row. This card had the identical
-           latent bug — a known face's drink flow rendered after the same sticky row — and the answer is
-           the same answer. It is also what the shell's `WaysClass` requires (the row it draws is the last
-           thing in a Bare surface), so the migration and the fix are one edit. The patron's table one card
-           along has read this way since wave 9. *@
-        <OverlayShell class="deck-offer-card" Frame="OverlayFrame.Bare"
-                      Dismiss="OverlayDismiss.Close" WaysClass="deck-offer-actions"
-                      OnClose="AcceptOffer"
-                      DismissClass="btn btn-sm btn-warning"
-                      DismissFace="@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")"
-                      DismissTitle="Take the stranger's offer — it lands in your logbook"
-                      OnBeside="DeclineOffer"
-                      BesideClass="btn btn-sm btn-outline-light" BesideFace="Pass"
-                      BesideTitle="Wave the offer off — no hard feelings">
-            <div class="deck-offer-giver">◈ @offer.Giver</div>
-            @* #959 · THE PLAIN BLOCK, BEFORE THE VOICE. Owner: "We need to know before we decide if we
-               accept or not." So the four lines Core computes — the verb from a fixed vocabulary, what
-               completion actually takes AND what the target is, the honest distance and lane time, the pay
-               with its size against this purse — stand ABOVE the pitch. The pitch keeps every word it had;
-               it just stops being the only thing on the card that says what the job is. The SAME block, from
-               the SAME call, renders on the Captain's ledger row after acceptance. *@
-            @{ IReadOnlyList<string> _offerPlain = JobPlainBlock(offer); }
-            @if (_offerPlain.Count > 0)
-            {
-                <div class="job-plain">
-                    <div class="job-plain-verb">@_offerPlain[0]</div>
-                    <div class="job-plain-takes">@_offerPlain[1]</div>
-                    <div class="job-plain-effort">@_offerPlain[2]</div>
-                </div>
-            }
-            <div class="deck-offer-blurb">@offer.Blurb</div>
-            @* The pay keeps its own prominent slot on the card, and keeps the house's voice when there is
-               no coin in it — but when there IS and the offer is a real contract, the line is Core's, so
-               the size word travels with it. An offer that is a door rather than a job (the KAAMOS
-               returned filing) keeps the plain fee it always had. *@
-            <div class="deck-offer-reward">
-                @(offer.Reward <= 0
-                    ? "On the house — the tip's the payoff 🕸"
-                    : _offerPlain.Count > 0
-                        ? _offerPlain[3]
-                        : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")
-            </div>
-            @* #355 — the drink offer belongs IN the conversation: while a KNOWN face's contract is on the
-               table, the same offer-a-drink flow the counter card hosts sits right here too. A stranger's
-               first contract has no ledger history yet, so PresentBarContacts stays empty and this is quiet.
-               #997 wave 10 · ABOVE the answers now, not below them — #780's ruling, see the card's head. *@
-            @if (CurrentKeep is { } offerKeep && PresentBarContacts().Any(c => c.Giver.Equals(offer.Giver, StringComparison.OrdinalIgnoreCase)))
-            {
-                @ContactDrinkOffer(offer.Giver, GiverDisplay(offer.Giver), offerKeep)
-            }
-        </OverlayShell>
+        <PendingOfferCard _pendingOffer="@_pendingOffer" AcceptOffer="@AcceptOffer"
+                          ContactDrinkOffer="@ContactDrinkOffer" CurrentKeep="@CurrentKeep"
+                          DeclineOffer="@DeclineOffer" Dismiss="@Dismiss" GiverDisplay="@GiverDisplay"
+                          JobPlainBlock="@JobPlainBlock" PresentBarContacts="@PresentBarContacts" offer="@offer" />
     }
 
     @* #355 — the patron's OWN-TABLE drink card (doorway two). Press E at a known face drinking here and,
@@ -3997,30 +3217,9 @@
        Same overlay family as the deck-offer-card; the one shared state machine keeps both doorways in sync. *@
     @if (_deckMode && _patronDrink is { } patron && CurrentKeep is { } patronKeep)
     {
-        string patronDisplay = GiverDisplay(patron);
-        @* #997 wave 9 · A Close WHOSE WAY OUT IS THE WHOLE OF A ROW THE PAGE HAS A RULE FOR — wave 7's
-           `WaysClass`, on the first card in this family to want it. `Done` is this table's only way out and
-           it stands alone in `.deck-offer-actions`, which #780 pins sticky with a scrim and #735 lists among
-           the family's pinned feet. So the SHELL draws the row and the page NAMES it, which leaves the button
-           in the same box wearing the same dress, and the drink flow above it goes on being what it was: a
-           set of controls that are not ways out, which is precisely why this is a Close and not a decision. *@
-        <OverlayShell class="deck-offer-card" Frame="OverlayFrame.Bare"
-                      Dismiss="OverlayDismiss.Close" OnClose="() => Dismiss(ClosePatronTable)"
-                      WaysClass="deck-offer-actions"
-                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
-                      DismissTitle="Sit back — leave the table">
-            <div class="deck-offer-giver">◈ @patronDisplay</div>
-            @if (_patronDrinkBlurb is { } patronLine)
-            {
-                <div class="deck-offer-blurb">@patronLine</div>
-            }
-            @if (_barNotice is { } patronNote)
-            {
-                <div class="deck-bank-notice small">@patronNote</div>
-            }
-            <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr · @patronKeep.BarName</div>
-            @ContactDrinkOffer(patron, patronDisplay, patronKeep)
-        </OverlayShell>
+        <PatronDrinkCard _barNotice="@_barNotice" _credits="@_credits" _patronDrinkBlurb="@_patronDrinkBlurb"
+                         ClosePatronTable="@ClosePatronTable" ContactDrinkOffer="@ContactDrinkOffer"
+                         Dismiss="@Dismiss" GiverDisplay="@GiverDisplay" patron="@patron" patronKeep="@patronKeep" />
     }
 
     @* PR-WIRE — the favor bank card (FridaySecondPlan §0). Opened at a contact's table with 'b' (in
@@ -4375,55 +3574,9 @@
        is yours. Same overlay family as the deck-offer-card. *@
     @if (_deckMode && _oracleOpen && _oracleLine is { } oline)
     {
-        @* #997 wave 9 · THE SECOND CONSUMER OF `FootHost`, and it is here for the same reason the logbook
-           was: her foot is a row whose OTHER controls are not ways out. 🌀 Keep listening turns the dial one
-           line on and 🥃 Buy her a drink widens the channel — both leave her card standing, and the second is
-           drawn only where there is a counter to buy from. A shell that drew this row would have to know
-           that; a shell that HANDS the row its button has to know neither. Same div, same rule, same order —
-           `Done` is still the last button of `.deck-offer-actions`, and it is now the shell's dismiss, which
-           is what puts it inside the audit and inside the dismissibility law's reach. *@
-        @* The hush is a class on the ROOT, and a component attribute takes one expression rather than markup
-           mixed with C# — so both branches spell the card's own name out, which is #1002's vent-board idiom
-           and the shape the completeness guard reads the class list off. *@
-        <OverlayShell class="@(oline.RoomGoesQuiet ? "deck-offer-card oracle-card oracle-quiet" : "deck-offer-card oracle-card")"
-                      Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                      OnClose="() => Dismiss(CloseOracle)"
-                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
-                      DismissTitle="Leave her to her muttering">
-            <ChildContent>
-            <div class="deck-offer-giver">🌀 @Core.OracleRant.FullName</div>
-            @* #528 · THE CORNER, PAINTED. A backdrop rather than a plate: this card is a conversation the
-               captain stays inside, turning the dial line by line, and a modal opening over it every time
-               would be a card on a card. Same onerror-hide law as every other slot — no file, no frame. *@
-            <img class="oracle-art" src="@Core.OracleRant.ArtFile" alt="@Core.OracleRant.FullName"
-                 onerror="this.style.display='none'" />
-            <div class="deck-offer-blurb oracle-backstory">@Core.OracleRant.Backstory</div>
-            @if (oline.RoomGoesQuiet)
-            {
-                <div class="oracle-hush small">…the room goes quiet. A faint chill. This one lands differently.</div>
-            }
-            <div class="oracle-line @(oline.RoomGoesQuiet ? "oracle-line-quiet" : "")">“@oline.Text”</div>
-            @if (_oracleNotice is { } onote)
-            {
-                <div class="deck-bank-notice small">@onote</div>
-            }
-            <div class="deck-offer-reward">
-                Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr@(_oracleDrinks > 0 ? $" · you've stood her {_oracleDrinks} glass{(_oracleDrinks == 1 ? "" : "es")}" : "")
-            </div>
-            </ChildContent>
-            <FootHost Context="theWayOutOfHerCorner">
-                <div class="deck-offer-actions">
-                    <button type="button" class="btn btn-sm btn-outline-info" title="Let her keep talking — turn the dial one line on" @onclick="NextOracleLine">🌀 Keep listening</button>
-                    @if (CurrentKeep is { } orKeep)
-                    {
-                        <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < orKeep.DrinkPrice)"
-                                title="@($"Stand the oracle a {orKeep.DrinkName} — {orKeep.DrinkPrice} cr. A drunk oracle is more prophetic.")"
-                                @onclick="BuyOracleDrink">🥃 Buy her a drink · @orKeep.DrinkPrice cr</button>
-                    }
-                    @theWayOutOfHerCorner
-                </div>
-            </FootHost>
-        </OverlayShell>
+        <OracleCard _credits="@_credits" _oracleDrinks="@_oracleDrinks" _oracleNotice="@_oracleNotice"
+                    BuyOracleDrink="@BuyOracleDrink" CloseOracle="@CloseOracle" CurrentKeep="@CurrentKeep"
+                    Dismiss="@Dismiss" NextOracleLine="@NextOracleLine" oline="@oline" />
     }
 
     @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
@@ -4743,29 +3896,8 @@
        bearing/paces line, and the big red X. X always marks the spot; the barflies swear it never does. *@
     @if (_treasureMapCard is { } map)
     {
-        <div class="mission-celebration-backdrop" @onclick="DismissMapCard">
-            <OverlayShell class="treasure-map-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Into the ledger 🗺"
-                          DismissTitle="Tuck the map into the Captain's ledger"
-                          OnClose="DismissMapCard">
-                <div class="tm-art" style="background-image: @TreasureMapArtCss(map.BodyId);">
-                    <div class="tm-x">✗</div>
-                </div>
-                <div class="tm-caption">@map.Caption(BodyName(map.BodyId))</div>
-                <div class="tm-bearing">🧭 @map.BearingLine</div>
-                <div class="tm-contents">🧰 @map.ContentsLine()</div>
-                @* #455 rule 3 · How safe this hiding place reads — the rung word and its authored line, off
-                   the same oracle the return-trip roll compares against. The card is where a returning
-                   captain (or his successor, after a rebirth) reads back what was promised. *@
-                <div class="tm-bearing">🛡 @map.Safety.Word — @map.Safety.Line</div>
-                @if (map.ReeverLevel > 0)
-                {
-                    <div class="tm-bearing">🐕 @map.ReeverLevel Reever@(map.ReeverLevel == 1 ? "" : "s") haunt this ground — the most dangerous lock in the system.</div>
-                }
-                <div class="tm-flavor">✗ marks the spot. (The barflies swear it never does — out here, they're wrong every time.)</div>
-            </OverlayShell>
-        </div>
+        <TreasureMapCard BodyName="@BodyName" Dismiss="@Dismiss" DismissMapCard="@DismissMapCard"
+                         TreasureMapArtCss="@TreasureMapArtCss" map="@map" />
     }
 
     @* #370: THE RESEARCH BRIEF — the charter service's shamelessly optimistic pitch (a gen-AI image +
@@ -4773,42 +3905,16 @@
        the joke; the reveal will later contradict every word of it. Reuses the treasure-map card idiom. *@
     @if (_expeditionBriefCard is { } brief)
     {
-        <div class="mission-celebration-backdrop" @onclick="DismissExpeditionBrief">
-            <OverlayShell class="expedition-brief-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-success btn-sm mt-2" DismissFace="Sounds lovely — file it 📋"
-                          DismissTitle="File the brief and take the gig"
-                          OnClose="DismissExpeditionBrief">
-                <div class="eb-art" style="background-image: @ExpeditionBriefArtCss(brief.Kind);">
-                    <div class="eb-stamp">FULLY BENIGN<span>(pending)</span></div>
-                </div>
-                <div class="eb-title">📋 @brief.Title</div>
-                <div class="eb-site">Site: @brief.SiteName</div>
-                <div class="eb-body">@brief.Body</div>
-                <div class="eb-flavor">Brought to you by the charter service. Terms apply. Sanity not included.</div>
-            </OverlayShell>
-        </div>
+        <ExpeditionBriefPanel Dismiss="@Dismiss" DismissExpeditionBrief="@DismissExpeditionBrief"
+                              ExpeditionBriefArtCss="@ExpeditionBriefArtCss" brief="@brief" />
     }
 
     @* #370: THE REVEAL — the bigger picture, in the site's OWN voice, that contradicts the brief. A major
        sanity-throw moment (a big nerve shock, the dice shown on the tray). The card is the horror beat. *@
     @if (_expeditionRevealCard is { } reveal)
     {
-        <div class="mission-celebration-backdrop expedition-reveal-backdrop" @onclick="DismissExpeditionReveal">
-            <OverlayShell class="expedition-reveal-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-danger btn-sm mt-2" DismissFace="Hold the line 🫥"
-                          DismissTitle="There is no unseeing it"
-                          OnClose="DismissExpeditionReveal">
-                <div class="er-art" style="background-image: @ExpeditionBriefArtCss(reveal.Kind);">
-                    <div class="er-scrim"></div>
-                    <div class="er-stamp">THE BRIEF WAS A LIE</div>
-                </div>
-                <div class="er-headline">@reveal.Headline</div>
-                <div class="er-site">@reveal.SiteName</div>
-                <div class="er-body">@reveal.Body</div>
-            </OverlayShell>
-        </div>
+        <ExpeditionRevealPanel Dismiss="@Dismiss" DismissExpeditionReveal="@DismissExpeditionReveal"
+                               ExpeditionBriefArtCss="@ExpeditionBriefArtCss" reveal="@reveal" />
     }
 
     @* #394: THE DEFLECTION STORYBOARD — the aftermath told in staged panels with delivered art (the BUSTED
@@ -4816,26 +3922,9 @@
        gradient fallback behind the image, house-voice captions. Click / button to advance. *@
     @if (_deflectionStory is { Count: > 0 } story && _deflectionStoryIndex < story.Count)
     {
-        var panel = story[_deflectionStoryIndex];
-        bool last = _deflectionStoryIndex == story.Count - 1;
-        <div class="mission-celebration-backdrop" @onclick="AdvanceDeflectionStory">
-            @* THE ONE STAGED CLOSE IN THIS WAVE, said out loud. This card's way out reads "Next ▸" until
-               the last panel and "Close 🫡" on it, and pressing it turns the page rather than ending the
-               surface — the same shape as the BUSTED demand's answers (#997 wave 3). It stays a
-               `Dismiss.Close` and it needs no `Restages` opt-out, because a Close makes no claim about
-               ending the surface in one press: only ByDecision does, and Restages is that mode's word.
-               What the shell guarantees here is what it guarantees everywhere — the button is wired to the
-               page's own verb and it is a direct child of the card. *@
-            <OverlayShell class="expedition-brief-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="@($"btn btn-{(last ? "success" : "secondary")} btn-sm mt-2")"
-                          DismissFace="@(last ? "Close 🫡" : "Next ▸")"
-                          OnClose="AdvanceDeflectionStory">
-                <div class="eb-art" style="background-image: @DeflectionPanelArtCss(panel);"></div>
-                <div class="eb-body">@panel.Caption</div>
-                <div class="eb-flavor">Panel @(_deflectionStoryIndex + 1) of @story.Count</div>
-            </OverlayShell>
-        </div>
+        <DeflectionStoryCard _deflectionStoryIndex="@_deflectionStoryIndex"
+                             AdvanceDeflectionStory="@AdvanceDeflectionStory"
+                             DeflectionPanelArtCss="@DeflectionPanelArtCss" Dismiss="@Dismiss" story="@story" />
     }
 
     @* The chooser (owner: "if many objects under click we let the user choose what they
@@ -8025,30 +7114,8 @@
        arriving here; it never just silently appears in the ledger. *@
     @if (_celebration is { } party)
     {
-        <div class="mission-celebration-backdrop" @onclick="DismissCelebration">
-            <OverlayShell class="mission-celebration" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-warning btn-sm mt-2" DismissFace="Raise a glass 🍻"
-                          DismissTitle="Toast the payday and clear the fanfare"
-                          OnClose="DismissCelebration">
-                <div class="mc-fanfare">🎉 CONTRACT COMPLETE 🎉</div>
-                <div class="mc-title">@party.Title</div>
-                <div class="mc-giver">◈ @party.GiverName</div>
-                <div class="mc-thanks">@party.GiverThanks</div>
-                @* #959 — the owner on this very pop-up: "the job was really small also... it is fine".
-                   He was right, and the card should have been the one to say so. The size word is measured
-                   against the purse as it stood BEFORE this payment landed (_credits has already been
-                   credited by PayCompletedQuests), so "small" means small next to what you had, not next to
-                   what you have now. Same word, same thresholds, as the offer card that sold him the job. *@
-                <div class="mc-payment">💰 +@party.PaidCredits.ToString("N0", CultureInfo.InvariantCulture) cr received · @JobTerms.SizeWord(party.PaidCredits, _credits - party.PaidCredits)</div>
-                <div class="mc-parrot">🦜 @party.ParrotSong</div>
-                <div class="mc-history">
-                    @(party.MissionsWithGiver <= 1
-                        ? $"A new name in your logbook — your first job for {party.GiverName}."
-                        : $"Job #{party.MissionsWithGiver} for {party.GiverName}. You've got a history now.")
-                </div>
-            </OverlayShell>
-        </div>
+        <CelebrationCard _credits="@_credits" Dismiss="@Dismiss" DismissCelebration="@DismissCelebration"
+                         PayCompletedQuests="@PayCompletedQuests" party="@party" />
     }
 
     @* PR-BUSTED (owner ruling §5): the catch. A hunter runs you down → warp yanks to 1×, the ship is
@@ -8483,28 +7550,7 @@
        #226 lane's hook (ArcConvergence.ConvergenceSanityShockHook = the heaviest in the game). *@
     @if (_convergenceRevealOpen)
     {
-        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseConvergenceReveal)">
-            <OverlayShell class="convergence-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="…sit with that"
-                          OnClose="() => Dismiss(CloseConvergenceReveal)">
-                <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
-                <div class="convergence-head">Two mysteries. One truth.</div>
-                <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
-                @* #528 · THE PLATE. The biggest reveal in the game was a text div while a routine collector
-                   shakedown had a painted portrait. It is a PLATE, not an illustration of the paragraph
-                   below it: two filing systems that were always one building, and nobody in the room to
-                   react. onerror-hides, so a missing file leaves this card exactly as it was. *@
-                <img class="convergence-img" src="@ArcConvergence.ArtFile" alt="Two mysteries. One truth."
-                     onerror="this.style.display='none'" />
-                <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
-                @* The foot is the beat AFTER the beat, and it must not be a recap: it used to close on two
-                   sentences copied verbatim out of the paragraph directly above it, so the biggest card in
-                   the game repeated itself to the player's face. Core owns the line now, and a guard pins
-                   that no sentence of it appears in the body (#422 story pass). *@
-                <div class="convergence-foot">@ArcConvergence.ConvergenceFoot</div>
-            </OverlayShell>
-        </div>
+        <ConvergenceRevealCard CloseConvergenceReveal="@CloseConvergenceReveal" Dismiss="@Dismiss" />
     }
 
     @* #440 · THE FIRST GROUND. The one card a captain gets before their first excursion (owner, 2026-07-26:
@@ -8514,39 +7560,7 @@
        greet a captain twice (#292: only the truly new). Copy lives in Core GroundLesson, pinned by tests. *@
     @if (_groundLessonOpen)
     {
-        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundLesson)">
-            @* THE FIRST-GROUND FAMILY, and the one place in this wave where the button MOVES IN THE DOM.
-               It was typed above `.ground-lesson-foot` and put back under it by `order: 1` (#735's block:
-               "the footnote keeps its place in the prose, above the way on"). Bare draws the dismiss as the
-               card's last child, which is where that rule already puts it on the screen — so the pixel is
-               unchanged and the DOM finally reads the way the CSS comment says it does. *@
-            <OverlayShell class="convergence-card ground-lesson-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="@GroundLesson.Dismiss"
-                          OnClose="() => Dismiss(CloseGroundLesson)">
-                <div class="convergence-stamp">@GroundLesson.Stamp</div>
-                <div class="convergence-head">@GroundLesson.Head</div>
-                <div class="ground-lesson-levers">
-                    @foreach (GroundLesson.Lever lever in GroundLesson.Levers)
-                    {
-                        <div class="ground-lesson-lever">
-                            <span class="ground-lesson-key">@lever.Key</span>
-                            <span class="ground-lesson-lever-text">
-                                <span class="ground-lesson-lever-title">@lever.Title</span>
-                                <span class="ground-lesson-lever-what">@lever.What</span>
-                            </span>
-                        </div>
-                    }
-                </div>
-                <ul class="ground-lesson-laws">
-                    @foreach (string law in GroundLesson.Laws)
-                    {
-                        <li>@law</li>
-                    }
-                </ul>
-                <div class="ground-lesson-foot">@GroundLesson.Foot</div>
-            </OverlayShell>
-        </div>
+        <GroundLessonCard CloseGroundLesson="@CloseGroundLesson" Dismiss="@Dismiss" />
     }
 
     @* #563 · THE MAP JUST GOT BIGGER — the card that fires the first time a captain forces something open
@@ -8557,24 +7571,7 @@
        a moment ago. Degrades to no image via the house onerror rule — never a broken frame. *@
     @if (_groundGrewOpen)
     {
-        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundGrew)">
-            <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="@GroundGrows.Dismiss"
-                          OnClose="() => Dismiss(CloseGroundGrew)">
-                <div class="convergence-stamp">@GroundGrows.Stamp</div>
-                <img class="ground-grows-art" src="@GroundGrows.ArtFile" alt=""
-                     onerror="this.style.display='none'" />
-                <div class="convergence-head">@GroundGrows.Head</div>
-                <ul class="ground-grows-beats">
-                    @foreach (string beat in GroundGrows.Beats)
-                    {
-                        <li>@beat</li>
-                    }
-                </ul>
-                <div class="ground-lesson-foot">@GroundGrows.Foot</div>
-            </OverlayShell>
-        </div>
+        <GroundGrewCard CloseGroundGrew="@CloseGroundGrew" Dismiss="@Dismiss" />
     }
 
     @* #562 · THE TUBE FEEDS YOU — first time the ship racks a magazine while the captain stands in her
@@ -8584,24 +7581,7 @@
        GEN-AI ART (art/tube-rearm.jpg). Once per captain; the receipt line carries it thereafter. *@
     @if (_tubeRearmOpen)
     {
-        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTubeRearm)">
-            <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="@TubeRearm.Dismiss"
-                          OnClose="() => Dismiss(CloseTubeRearm)">
-                <div class="convergence-stamp">@TubeRearm.Stamp</div>
-                <img class="ground-grows-art" src="@TubeRearm.ArtFile" alt=""
-                     onerror="this.style.display='none'" />
-                <div class="convergence-head">@TubeRearm.Head</div>
-                <ul class="ground-grows-beats">
-                    @foreach (string beat in TubeRearm.Beats)
-                    {
-                        <li>@beat</li>
-                    }
-                </ul>
-                <div class="ground-lesson-foot">@TubeRearm.Foot</div>
-            </OverlayShell>
-        </div>
+        <TubeRearmCard CloseTubeRearm="@CloseTubeRearm" Dismiss="@Dismiss" />
     }
 
     @* #573 · THE TANK IS GETTING LOW — first time a captain's air passes the low mark on a surface. Owner:
@@ -8610,24 +7590,7 @@
        red-lit visor, a hand on the chest panel, and the lit hatch a long way off across the plain. *@
     @if (_airCardOpen)
     {
-        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseAirCard)">
-            <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="@AirCard.Dismiss"
-                          OnClose="() => Dismiss(CloseAirCard)">
-                <div class="convergence-stamp">@AirCard.Stamp</div>
-                <img class="ground-grows-art" src="@AirCard.ArtFile" alt=""
-                     onerror="this.style.display='none'" />
-                <div class="convergence-head">@AirCard.Head</div>
-                <ul class="ground-grows-beats">
-                    @foreach (string beat in AirCard.Beats)
-                    {
-                        <li>@beat</li>
-                    }
-                </ul>
-                <div class="ground-lesson-foot">@AirCard.Foot</div>
-            </OverlayShell>
-        </div>
+        <AirNoticeCard CloseAirCard="@CloseAirCard" Dismiss="@Dismiss" />
     }
 
     @* #973 L5a · "YOU LOOK DIFFERENT." The first meeting after a rebirth with somebody who knew the old
@@ -8636,52 +7599,9 @@
        is the one moment in the game that is about his own face. *@
     @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
     {
-        @* #997 wave 5 · THE ONE CARD OF THE FOURTEEN THAT KEEPS ITS OWN WAY OUT, with the reason, and it is
-           a fact about the ✕ rather than a shortcut. `.convergence-x` is a FLOAT: its own rule says so —
-           "the card is position: static, so this floats to the right of the flow it sits at the top of" —
-           and a float lands beside the line box it is declared next to. It is the FIRST thing in the card
-           for that reason. Bare draws the dismiss as the card's LAST direct child, which is the whole point
-           of the frame and why the other twelve could take it, so shelling this one would float the ✕ down
-           beside the card's last line instead of into its top-right corner. That is a control moving on the
-           screen, which this migration does not do. And it is the only card here with TWO ways out (the ✕,
-           and "Leave it there" once he has answered), which is a shape a Bare shell has no room for.
-           It gets a shell when the corner ✕ stops depending on source order. *@
-        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTheFaceScene)">
-            <div class="convergence-card old-crew-card" @onclick:stopPropagation="true">
-                @* #992 · A VISIBLE WAY OUT OF THE ANSWER PHASE (owner ruling 2026-08-24). Walking away
-                   without answering has always been legal here — the backdrop closes the scene — but a
-                   backdrop is an invisible control, and while the three answers are up they are the only
-                   thing on the card that LOOKS clickable and not one of them ends it. Same verb as the
-                   backdrop's, so there is still exactly one road out of this scene. *@
-                <button type="button" class="convergence-x" aria-label="Close"
-                        title="Say nothing and go — you can leave a face unanswered"
-                        @onclick="() => Dismiss(CloseTheFaceScene)">✕</button>
-                <div class="convergence-stamp">🪞 @faceWho.Name.ToUpperInvariant()</div>
-                <div class="old-crew-history small text-secondary">@OldCrewHistoryLine(faceGiver)</div>
-                <div class="convergence-head">“@OldCrewScene.Opening(faceWho.Id)”</div>
-                @if (_faceSceneReply is null)
-                {
-                    <div class="old-crew-answers">
-                        @foreach (OldCrewScene.Answer answer in Enum.GetValues<OldCrewScene.Answer>())
-                        {
-                            OldCrewScene.Answer a = answer;
-                            <button type="button" class="btn btn-light old-crew-answer"
-                                    title="@OldCrewScene.Said(a)"
-                                    @onclick="() => AnswerTheFace(a)">
-                                <span class="old-crew-answer-label">[@OldCrewScene.Button(a)]</span>
-                                <span class="old-crew-answer-said">“@OldCrewScene.Said(a)”</span>
-                            </button>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="old-crew-reply">“@_faceSceneReply”</div>
-                    <button type="button" class="btn btn-light convergence-close"
-                            @onclick="() => Dismiss(CloseTheFaceScene)">Leave it there</button>
-                }
-            </div>
-        </div>
+        <FaceSceneCard _faceSceneReply="@_faceSceneReply" AnswerTheFace="@AnswerTheFace"
+                       CloseTheFaceScene="@CloseTheFaceScene" Dismiss="@Dismiss"
+                       OldCrewHistoryLine="@OldCrewHistoryLine" Say="@Say" faceGiver="@faceGiver" faceWho="@faceWho" />
     }
 
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@

@@ -807,7 +807,7 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// because the frame mutates them and two worlds sharing a ship would be two worlds sharing a bug.</summary>
     private static Array TheTrafficAsTheComponentKeepsIt()
     {
-        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden | BindingFlags.Static)!;
+        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         FieldInfo ship = stateType.GetField("Ship", Hidden)!;
         Array states = Array.CreateInstance(stateType, Traffic.Value.Count);
         for (int i = 0; i < Traffic.Value.Count; i++)
@@ -919,8 +919,8 @@ public sealed class EveryFrameLeavesTheSameFingerprintTests
     /// pressurised floor of the Hive (negative), built by the page's own <c>RebuildSurfaceDeck</c>.</summary>
     private static void StandOnLuna(Pages.Map map, int floor)
     {
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

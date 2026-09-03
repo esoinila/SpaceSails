@@ -49,7 +49,7 @@ public sealed partial class Map
 
     /// <summary>What the away team is standing and looking at — the wreck's own portrait of how she died,
     /// raised when the cause's station is read.</summary>
-    private readonly record struct WreckLook(string Title, string Art, string Caption);
+    public readonly record struct WreckLook(string Title, string Art, string Caption);
 
     private WreckLook? _wreckLook;
 

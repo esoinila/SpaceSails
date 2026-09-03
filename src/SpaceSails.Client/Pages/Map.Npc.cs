@@ -58,7 +58,7 @@ public partial class Map
 
     // Live state of one NPC: its immutable schedule entry plus its evolving simulation state and
     // observation history. Mirrors PlanNode's role — mutable client-side wrapper over Core records.
-    private sealed class NpcState
+    public sealed class NpcState
     {
         public required NpcShip Ship;
         public ShipState State;

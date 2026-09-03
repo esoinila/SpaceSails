@@ -345,8 +345,8 @@ public sealed class TheHardcaseOnTheMoonTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
@@ -382,7 +382,7 @@ public sealed class TheHardcaseOnTheMoonTests
     /// having already laid eyes on the captain, so nothing about it is a special case.</summary>
     private static void PutAnOldOneAt(Pages.Map map, double x, double y)
     {
-        Type reever = typeof(Pages.Map).GetNestedType("Reever", Hidden)!;
+        Type reever = typeof(Pages.Map).GetNestedType("Reever", Hidden | BindingFlags.Public)!;
         object one = Activator.CreateInstance(reever, nonPublic: true)!;
         reever.GetField("X", Hidden)!.SetValue(one, x);
         reever.GetField("Y", Hidden)!.SetValue(one, y);

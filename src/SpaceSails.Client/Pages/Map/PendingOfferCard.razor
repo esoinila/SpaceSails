@@ -1,0 +1,119 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using QuestKind = SpaceSails.Client.Pages.Map.QuestKind
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PENDING JOB OFFER CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #997 wave 10 · THE STRANGER'S CONTRACT, and #1010's blocker answered by #780's own ruling.
+           #1009 named this card a straggler for a reason that was right: its two answers ARE both closes,
+           but the card ALSO carries #355's drink flow, whose controls are not — so `ByDecision` would be
+           the claim "every answer this surface offers is itself a close" and that claim would be false.
+           It is a Close with two ways out instead: `Take the job` is the dismiss and `Pass` is wave 7's
+           second one beside it, in `.deck-offer-actions` — the row #735 pins sticky and #780 wraps.
+
+           …AND THE DRINK FLOW MOVED ABOVE THE FOOT, which is the layout question #1010 left open and the
+           ONE thing on this card that is not chrome. #780 answered it once already, at the counter: the
+           menu's six priced items were rendering UNDER `.deck-offer-actions`' sticky 12rem scrim and read
+           as a greyed-out panel behind glass, so the menu moved above the row. This card had the identical
+           latent bug — a known face's drink flow rendered after the same sticky row — and the answer is
+           the same answer. It is also what the shell's `WaysClass` requires (the row it draws is the last
+           thing in a Bare surface), so the migration and the fix are one edit. The patron's table one card
+           along has read this way since wave 9. *@
+        <OverlayShell class="deck-offer-card" Frame="OverlayFrame.Bare"
+                      Dismiss="OverlayDismiss.Close" WaysClass="deck-offer-actions"
+                      OnClose="AcceptOffer"
+                      DismissClass="btn btn-sm btn-warning"
+                      DismissFace="@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")"
+                      DismissTitle="Take the stranger's offer — it lands in your logbook"
+                      OnBeside="DeclineOffer"
+                      BesideClass="btn btn-sm btn-outline-light" BesideFace="Pass"
+                      BesideTitle="Wave the offer off — no hard feelings">
+            <div class="deck-offer-giver">◈ @offer.Giver</div>
+            @* #959 · THE PLAIN BLOCK, BEFORE THE VOICE. Owner: "We need to know before we decide if we
+               accept or not." So the four lines Core computes — the verb from a fixed vocabulary, what
+               completion actually takes AND what the target is, the honest distance and lane time, the pay
+               with its size against this purse — stand ABOVE the pitch. The pitch keeps every word it had;
+               it just stops being the only thing on the card that says what the job is. The SAME block, from
+               the SAME call, renders on the Captain's ledger row after acceptance. *@
+            @{ IReadOnlyList<string> _offerPlain = JobPlainBlock(offer); }
+            @if (_offerPlain.Count > 0)
+            {
+                <div class="job-plain">
+                    <div class="job-plain-verb">@_offerPlain[0]</div>
+                    <div class="job-plain-takes">@_offerPlain[1]</div>
+                    <div class="job-plain-effort">@_offerPlain[2]</div>
+                </div>
+            }
+            <div class="deck-offer-blurb">@offer.Blurb</div>
+            @* The pay keeps its own prominent slot on the card, and keeps the house's voice when there is
+               no coin in it — but when there IS and the offer is a real contract, the line is Core's, so
+               the size word travels with it. An offer that is a door rather than a job (the KAAMOS
+               returned filing) keeps the plain fee it always had. *@
+            <div class="deck-offer-reward">
+                @(offer.Reward <= 0
+                    ? "On the house — the tip's the payoff 🕸"
+                    : _offerPlain.Count > 0
+                        ? _offerPlain[3]
+                        : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")
+            </div>
+            @* #355 — the drink offer belongs IN the conversation: while a KNOWN face's contract is on the
+               table, the same offer-a-drink flow the counter card hosts sits right here too. A stranger's
+               first contract has no ledger history yet, so PresentBarContacts stays empty and this is quiet.
+               #997 wave 10 · ABOVE the answers now, not below them — #780's ruling, see the card's head. *@
+            @if (CurrentKeep is { } offerKeep && PresentBarContacts().Any(c => c.Giver.Equals(offer.Giver, StringComparison.OrdinalIgnoreCase)))
+            {
+                @ContactDrinkOffer(offer.Giver, GiverDisplay(offer.Giver), offerKeep)
+            }
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `Quest? _pendingOffer`</summary>
+    [Parameter] public Quest? _pendingOffer { get; set; }
+    /// <summary>the page's `void AcceptOffer()`</summary>
+    [Parameter] public Action AcceptOffer { get; set; } = default!;
+    /// <summary>the page's `RenderFragment ContactDrinkOffer(string giver, string display, Core.Interior.Barkeep keep)`</summary>
+    [Parameter] public Func<string, string, Core.Interior.Barkeep, RenderFragment> ContactDrinkOffer { get; set; } = default!;
+    /// <summary>the page's `Core.Interior.Barkeep? CurrentKeep`</summary>
+    [Parameter] public Core.Interior.Barkeep? CurrentKeep { get; set; }
+    /// <summary>the page's `void DeclineOffer()`</summary>
+    [Parameter] public Action DeclineOffer { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `string GiverDisplay(string giver)`</summary>
+    [Parameter] public Func<string, string> GiverDisplay { get; set; } = default!;
+    /// <summary>the page's `IReadOnlyList<string> JobPlainBlock(Quest q)`</summary>
+    [Parameter] public Func<Quest, IReadOnlyList<string>> JobPlainBlock { get; set; } = default!;
+    /// <summary>the page's `IReadOnlyList<(string Giver, string Display)> PresentBarContacts()`</summary>
+    [Parameter] public Func<IReadOnlyList<(string Giver, string Display)>> PresentBarContacts { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public Quest offer { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

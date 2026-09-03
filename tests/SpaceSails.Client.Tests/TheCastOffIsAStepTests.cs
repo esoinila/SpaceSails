@@ -799,7 +799,7 @@ public sealed class TheCastOffIsAStepTests
 
     private static void AddPlottedVectorBurn(Pages.Map map, double simTime, double percent, double heading)
     {
-        Type nodeType = typeof(Pages.Map).GetNestedType("PlanNode", BindingFlags.NonPublic)
+        Type nodeType = typeof(Pages.Map).GetNestedType("PlanNode", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map.PlanNode is gone — this bench has drifted.");
         object node = Activator.CreateInstance(nodeType, nonPublic: true)!;
         SetField(node, "Kind", PlanStepKind.Burn);

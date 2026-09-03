@@ -466,7 +466,7 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
     {
         using DeskBench bench = await DeskBench.BootAsync(Ashore);
 
-        Type talkType = typeof(Map).GetNestedType("TableTalk", BindingFlags.NonPublic)
+        Type talkType = typeof(Map).GetNestedType("TableTalk", BindingFlags.NonPublic | BindingFlags.Public)
                         ?? throw new InvalidOperationException(
                             "Map.TableTalk is gone — this guard cannot seat a captain without it.");
         object talk = Activator.CreateInstance(talkType, nonPublic: true)!;
@@ -949,7 +949,7 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
     /// </summary>
     internal static void StageTheDemand(DeskBench bench, string phase)
     {
-        Type card = typeof(Map).GetNestedType("BustedEncounter", BindingFlags.NonPublic)
+        Type card = typeof(Map).GetNestedType("BustedEncounter", BindingFlags.NonPublic | BindingFlags.Public)
                     ?? throw new InvalidOperationException(
                         "Map.BustedEncounter is gone. The BUSTED panel's own state used to be called that; "
                         + "this guard cannot stage a demand without it.");

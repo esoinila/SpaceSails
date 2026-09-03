@@ -1,0 +1,88 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PINNED JOB CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="pin-backdrop" @onclick="CancelPin">
+            @* #997 wave 9 · THE KEYPAD'S Cancel IS THE SHELL'S DISMISS. The plainest Close left in the client:
+               one way out, last direct child of the pad, wired to the same CancelPin the backdrop behind it
+               already calls. Wave 4's three parameters and nothing else — `Bare` (the pad's own
+               `.pin-pad-hatch` IS its head and the shell must not put a second one above it),
+               `StopClicks="true"` (the stopPropagation that was typed on this div), and the Close.
+
+               NOT ONE WORD MOVED: "Cancel" and its title are the exact strings the hand-typed button carried.
+               And it keeps its own height — `.pin-pad-cancel` is not a `.btn`, so the shell's chrome rule
+               gives it `line-height: 1`, which is the same number its own `font: 600 .85rem/1 monospace` was
+               already setting. Measured in the browser and written up in the PR, not assumed. *@
+            <OverlayShell class="pin-pad" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close" OnClose="CancelPin"
+                          DismissClass="pin-pad-cancel" DismissFace="Cancel"
+                          DismissTitle="Back off — leave the hatch locked">
+                <div class="pin-pad-hatch">@(_pinHatch?.Label ?? "LOCKED HATCH")</div>
+                <div class="pin-pad-sub">ENTER ACCESS CODE</div>
+                <div class="pin-pad-display">@PinDisplay</div>
+                <div class="pin-pad-keys">
+                    @foreach (string d in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+                    {
+                        string digit = d;
+                        <button type="button" class="pin-pad-key" title="Key this digit into the access code" @onclick="() => PinPush(digit)">@digit</button>
+                    }
+                    <button type="button" class="pin-pad-key pin-pad-key-fn" title="Clear the code and start over" @onclick="PinClear">C</button>
+                    <button type="button" class="pin-pad-key" title="Key a zero into the access code" @onclick='() => PinPush("0")'>0</button>
+                    <button type="button" class="pin-pad-key pin-pad-key-go" title="Try this code on the hatch" @onclick="SubmitPin">↵</button>
+                </div>
+                @* #736 · The buzz, said on the pad. A wrong code leaves the pad up and blanks the four slots,
+                   and the sentence that explained why was pulsing to the HUD under this backdrop. *@
+                @if (_pinOutcome is { } pinSaid)
+                {
+                    <div class="panel-outcome">@pinSaid</div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `DeckPlan.ConsoleSpot? _pinHatch`</summary>
+    [Parameter] public DeckPlan.ConsoleSpot? _pinHatch { get; set; }
+    /// <summary>the page's `string? _pinOutcome`</summary>
+    [Parameter] public string? _pinOutcome { get; set; }
+    /// <summary>the page's `void CancelPin()`</summary>
+    [Parameter] public Action CancelPin { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void PinClear()`</summary>
+    [Parameter] public Action PinClear { get; set; } = default!;
+    /// <summary>the page's `string PinDisplay`</summary>
+    [Parameter] public string PinDisplay { get; set; } = default!;
+    /// <summary>the page's `void PinPush(string digit)`</summary>
+    [Parameter] public Action<string> PinPush { get; set; } = default!;
+    /// <summary>the page's `void SubmitPin()`</summary>
+    [Parameter] public Action SubmitPin { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

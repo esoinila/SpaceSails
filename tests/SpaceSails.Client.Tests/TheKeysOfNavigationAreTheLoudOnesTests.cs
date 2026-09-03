@@ -370,7 +370,7 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
         MethodInfo tip = typeof(Pages.Map).GetMethod("NavSearchRowTip", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("no NavSearchRowTip on Map — this bench has drifted");
 
-        Type rowType = typeof(Pages.Map).GetNestedType("NavSearchRow", BindingFlags.NonPublic)
+        Type rowType = typeof(Pages.Map).GetNestedType("NavSearchRow", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("no NavSearchRow on Map — this bench has drifted");
 
         object landable = Activator.CreateInstance(rowType, 'B', "ganymede", "Ganymede",

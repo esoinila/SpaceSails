@@ -1,0 +1,119 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE GALLEY CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseGalleyCard)">
+            @* `text-light` is the desk's own, carried over: Stations/Galley.razor's root was
+               `class="galley-desk text-light"`, and the tot count and the locker heading are drawn with no
+               colour of their own. Dropped, they inherit the page's body grey and the card reads a shade
+               dimmer than the screen it replaces — measured in a browser, not reasoned about. *@
+            <OverlayShell class="galley-card text-light" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          DismissTitle="Shut the galley card — Esc and 6 do the same"
+                          OnClose="() => Dismiss(CloseGalleyCard)">
+                <div class="view-object-title">🍹 THE GALLEY</div>
+
+                @* #1022 · THE MAN BEHIND THE COUNTER LEADS THE CARD.
+
+                   Owner, live: "The dialog, one imagines, is a set of phrases to keep the customer talking
+                   :-D ... but there is something heart warming in those scenes at the same time."
+
+                   The picture is the gen-AI art the owner said the first version lacked, and B-7V's plate
+                   and his current line sit under it, above the locker. Order matters and it is the same
+                   argument #1021 made about the locker and the wire: the thing that TALKS to you is the top
+                   of the card, the thing you PRESS is under it, and the thing you READ is what gives.
+
+                   Every word here is Core's (SpaceSails.Core.TheTender) — this markup chooses nothing, it
+                   only draws whichever line the sitting handed back. The rare register is drawn APART from
+                   his own voice: an announcement gets its own row, indented and italic, with the line
+                   underneath it in his ordinary voice. They arrive as one TheTender.Line, so there is no
+                   way to render the first without the second. *@
+                <div class="tender-head">
+                    <img class="tender-art" src="art/b7v-the-tender.jpg" alt="" aria-hidden="true"
+                         onerror="this.style.display='none'" />
+                    <div class="tender-plate">@SpaceSails.Core.TheTender.Plate</div>
+                    @if (_tenderLine is { } tender)
+                    {
+                        @if (tender.Announcement is { } announcement)
+                        {
+                            <div class="tender-announcement">@announcement</div>
+                        }
+                        <div class="tender-line">@tender.Text</div>
+                    }
+                </div>
+
+                <div class="galley-card-rum">
+                    <div class="fw-bold mb-2">The rum locker 🍹</div>
+                    <div class="mb-1">Tots poured: @_rumTots</div>
+                    <div class="mb-2 @(RumWobbleActive ? "text-warning fw-bold" : "text-secondary")">
+                        @(RumWobbleActive ? "Deck's tilty — steady on. 🍹" : "Steady legs, for now.")
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2" title="Pour a tot of rum from the locker — steadies the crew's legs when the deck goes tilty" @onclick="PourRumFromGalley">
+                        Pour a tot
+                    </button>
+                    @if (_lastRumLine is not null)
+                    {
+                        <div class="fst-italic text-info small">@_lastRumLine</div>
+                    }
+                </div>
+
+                <SpaceSails.Client.Pages.Stations.NewsWirePanel
+                    SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays)"
+                    ItemCount="GalleyFeedItemCount" />
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string? _lastRumLine`</summary>
+    [Parameter] public string? _lastRumLine { get; set; }
+    /// <summary>the page's `int _rumTots`</summary>
+    [Parameter] public int _rumTots { get; set; }
+    /// <summary>the page's `TheTender.Line? _tenderLine`</summary>
+    [Parameter] public TheTender.Line? _tenderLine { get; set; }
+    /// <summary>the page's `void CloseGalleyCard()`</summary>
+    [Parameter] public Action CloseGalleyCard { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `int GalleyFeedAmbientDays`</summary>
+    [Parameter] public int GalleyFeedAmbientDays { get; set; }
+    /// <summary>the page's `int GalleyFeedItemCount`</summary>
+    [Parameter] public int GalleyFeedItemCount { get; set; }
+    /// <summary>the page's `IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount, NewsWire.NewsScope scope = NewsWire.NewsScope.SystemWire, string? salt = null)`</summary>
+    [Parameter] public Func<int, IReadOnlyList<NewsWire.NewsItem>> NewsFeed { get; set; } = default!;
+    /// <summary>the page's `void PourRumFromGalley()`</summary>
+    [Parameter] public Action PourRumFromGalley { get; set; } = default!;
+    /// <summary>the page's `bool RumWobbleActive`</summary>
+    [Parameter] public bool RumWobbleActive { get; set; }
+    /// <summary>the page's `double SimTime`</summary>
+    [Parameter] public double SimTime { get; set; }
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -350,8 +350,8 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
     /// posture that already reached this ending before this lane, and the reason it was believed reachable.</summary>
     private static void StandOnLuna(Pages.Map map)
     {
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
@@ -383,7 +383,7 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
 
         ICelestialEphemeris eph = (ICelestialEphemeris)Read(map, "_ephemeris")!;
         NpcShip hull = TrafficSchedule.Generate(eph, seed: 42, count: 1)[0];
-        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden)!;
+        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden | BindingFlags.Public)!;
         object prey = Activator.CreateInstance(stateType, nonPublic: true)!;
         stateType.GetField("Ship", Hidden)!.SetValue(prey, hull);
         stateType.GetField("State", Hidden)!.SetValue(prey, (ShipState)Read(map, "_ship")!);
@@ -411,7 +411,7 @@ public sealed class SheGoesWhetherHeIsAboardOrNotTests
     /// pinned is that the ending folds the excursion COMPLETELY, exactly as a lift-off does.</summary>
     private static void PutACollectorPartyOnTheGround(Pages.Map map)
     {
-        Type collector = typeof(Pages.Map).GetNestedType("Collector", Hidden)!;
+        Type collector = typeof(Pages.Map).GetNestedType("Collector", Hidden | BindingFlags.Public)!;
         IList party = (IList)Read(map, "_collectors")!;
         for (int i = 0; i < 3; i++)
         {

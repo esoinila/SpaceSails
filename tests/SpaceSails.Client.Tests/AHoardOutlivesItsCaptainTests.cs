@@ -136,7 +136,7 @@ public sealed class AHoardOutlivesItsCaptainTests
     private static object AFreezeFrameDeath()
     {
         Type encounter = typeof(SpaceSails.Client.Pages.Map)
-            .GetNestedType("BustedEncounter", BindingFlags.NonPublic)
+            .GetNestedType("BustedEncounter", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map has no BustedEncounter — the death machinery has moved.");
         Type stage = encounter.GetNestedType("Stage", BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("BustedEncounter has no Stage — the wake's own gate has moved.");

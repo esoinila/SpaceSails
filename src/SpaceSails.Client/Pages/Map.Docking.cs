@@ -343,7 +343,7 @@ public partial class Map
     // One reachable stop on the destination board (#313): the body, how far / how long, and how the row
     // reads — a berth to step off at, a landable surface to walk, and/or a place with a chest already in
     // the ground. The classification is the pure, tested ShuttleExcursion.Destinations rule.
-    private sealed record ShuttleStop(
+    public sealed record ShuttleStop(
         CelestialBody Body, double DistanceMeters, double TravelSeconds,
         bool HasBerth, bool IsLandable, bool HasCache);
 

@@ -253,7 +253,7 @@ public partial class Map
     private const int WalkerFirstSlot =
         3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize + PatrolBand;
 
-    private sealed class Reever
+    internal sealed class Reever
     {
         public double X, Y, Facing, Vx, Vy;
         public int HitsTaken;   // #314: rounds a sentry has ground into it (downs at RoundsPerReever)
@@ -323,7 +323,7 @@ public partial class Map
 
     // #314: a sentry on the surface — carried in the sling or deployed and holding the line, with its
     // dwindling magazine. Deployed bots fire the SentryBot volley; a firing bot flags a brief zap line.
-    private sealed class SurfaceBot
+    public sealed class SurfaceBot
     {
         public required string Unit { get; init; }
         public int Rounds { get; set; }
@@ -342,9 +342,9 @@ public partial class Map
 
     // The three things a channeled dig can be (beach-comber kit): bury a carried chest where you stand,
     // lift an own cache back up at its ✗, or probe an empty hole to try your luck (the fishing expedition).
-    private enum DigKind { Bury, Lift, Probe }
+    public enum DigKind { Bury, Lift, Probe }
 
-    private sealed class DigChannel
+    public sealed class DigChannel
     {
         public double Progress;       // 0..1
         public DigKind Kind;          // bury / lift / probe
@@ -360,7 +360,7 @@ public partial class Map
     // DigChannel but its own act: several real seconds of shoulder-to-the-door, abortable by stepping away
     // from the door, watched while the away clock ticks (no fresh Reever roll — the site's own diced beats
     // are the threat). On completion the door's REGION APPENDS to the live map.
-    private sealed class DoorChannel
+    public sealed class DoorChannel
     {
         public double Progress;         // 0..1
         public required string DoorId;  // the sealed door being forced (outer or nested)
@@ -371,7 +371,7 @@ public partial class Map
     // channel but MUCH longer (DeflectionGig.RockProfile.DrillSeconds, per rock type) and, unlike a door,
     // its Progress PERSISTS across re-channels: a drill-snap complication backs the progress up, and the
     // captain sets the shoulder again from there. Abortable by stepping away from the drill point.
-    private sealed class DrillChannel
+    public sealed class DrillChannel
     {
         public double AnchorX, AnchorY; // the drill point — stepping away from HERE pauses the bore
     }

@@ -1,0 +1,88 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE IMPORT CONFIRMATION, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="start-picker-backdrop">
+            @* #997 wave 6 · The second of the two, and the same three parameters for the same reasons (see
+               the bank sheet above). Its three answers all really do end it: ConfirmImportBankingFirst and
+               ConfirmImportReplace both run ApplyPendingImport, which clears _importConfirming on its way in,
+               and CancelImport clears it outright — pressed, one per run, in this wave's own guard. *@
+            <OverlayShell class="start-picker save-surface"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
+                <div class="start-picker-title">Board this saved voyage?</div>
+                @* #312: the label is read FROM THE FILE'S CONTENTS, never its name — a renamed file still
+                   says what it is before the captain commits to boarding it. *@
+                @if (_importPreview is { } p)
+                {
+                    <div class="import-preview">
+                        <span class="import-preview-where">@(p.WasDocked ? "⚓ " : "🛰 ")@p.Where@(p.Tampered ? " 📛 edited outside the game" : "")</span>
+                        <span class="import-preview-when">day @p.SimDay · read from the file's own contents</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="import-preview import-preview-unknown">The file didn't parse as a save — boarding it may do nothing.</div>
+                }
+                <div class="start-picker-sub">This file will become the live game at once. Your current run isn't saved to a slot yet unless you bank it. (To shelve a file WITHOUT boarding, use “📥 file” on a berth instead.)</div>
+                <div class="save-surface-foot save-surface-foot-center">
+                    <button type="button" class="btn btn-sm btn-outline-success"
+                            title="Bank the current voyage to a free slot, THEN load the imported file"
+                            @onclick="ConfirmImportBankingFirst">💾 Bank current first, then import</button>
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Load the imported file now — the current run is discarded unless already saved"
+                            @onclick="ConfirmImportReplace">⬆ Replace now</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Keep flying the current voyage — cancel the import"
+                            @onclick="CancelImport">Cancel</button>
+                </div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `bool _importConfirming`</summary>
+    [Parameter] public bool _importConfirming { get; set; }
+    /// <summary>the page's `SaveSlotMeta? _importPreview`</summary>
+    [Parameter] public SaveSlotMeta? _importPreview { get; set; }
+    /// <summary>the page's `Task ApplyPendingImport()`</summary>
+    [Parameter] public Func<Task> ApplyPendingImport { get; set; } = default!;
+    /// <summary>the page's `void Board(NpcState npc)`</summary>
+    [Parameter] public Action<NpcState> Board { get; set; } = default!;
+    /// <summary>the page's `void CancelImport()`</summary>
+    [Parameter] public Action CancelImport { get; set; } = default!;
+    /// <summary>the page's `Task ConfirmImportBankingFirst()`</summary>
+    [Parameter] public Func<Task> ConfirmImportBankingFirst { get; set; } = default!;
+    /// <summary>the page's `Task ConfirmImportReplace()`</summary>
+    [Parameter] public Func<Task> ConfirmImportReplace { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

@@ -1,0 +1,69 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE STORY CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        var toldCopy = StoryBeatCopy(told.Beat, told.Subject);
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryCard)">
+            <OverlayShell class="view-object" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="…go on"
+                          OnClose="() => Dismiss(CloseStoryCard)">
+                <div class="view-object-title">@toldCopy.Title</div>
+                @if (toldCopy.Art is { Length: > 0 })
+                {
+                    <img class="view-object-img" src="@toldCopy.Art" alt="@toldCopy.Title"
+                         onerror="this.style.display='none'" />
+                }
+                <div class="view-object-caption">@toldCopy.Caption</div>
+                @* #736 (arrived with #664, from the deleted Map.RevealCard.cs) · WHAT THE ACT ACTUALLY DID, on
+                   the card the act raised. Owner, at the Gilt-Eye: the 350 cr and the kept receipt — "the two
+                   facts the player acts on" — were pulsing to the HUD under this backdrop while the caption in
+                   front carried neither. The caption is the fiction; this row is the arithmetic, and the
+                   card's own subtree is the one layer the backdrop cannot blur (#680/#686's law, third
+                   organ). *@
+                @if (told.Outcome is { Length: > 0 } toldOutcome)
+                {
+                    <div class="reveal-outcome">@toldOutcome</div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `void CloseStoryCard()`</summary>
+    [Parameter] public Action CloseStoryCard { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `(string Title, string Art, string Caption) StoryBeatCopy(StoryBeats.Beat beat, string? subject)`</summary>
+    [Parameter] public Func<StoryBeats.Beat, string?, (string Title, string Art, string Caption)> StoryBeatCopy { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public (StoryBeats.Beat Beat, string? Subject, string? Outcome) told { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

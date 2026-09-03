@@ -14,7 +14,7 @@ namespace SpaceSails.Client.Pages;
 // cheapest 600 lines to lift.
 public partial class Map
 {
-    private sealed class SurfaceExcursion
+    public sealed class SurfaceExcursion
     {
         public required ShuttleStop Stop { get; init; }
         public required string? RestoreHavenId { get; init; }

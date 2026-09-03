@@ -1,0 +1,103 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE ORACLE CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #997 wave 9 · THE SECOND CONSUMER OF `FootHost`, and it is here for the same reason the logbook
+           was: her foot is a row whose OTHER controls are not ways out. 🌀 Keep listening turns the dial one
+           line on and 🥃 Buy her a drink widens the channel — both leave her card standing, and the second is
+           drawn only where there is a counter to buy from. A shell that drew this row would have to know
+           that; a shell that HANDS the row its button has to know neither. Same div, same rule, same order —
+           `Done` is still the last button of `.deck-offer-actions`, and it is now the shell's dismiss, which
+           is what puts it inside the audit and inside the dismissibility law's reach. *@
+        @* The hush is a class on the ROOT, and a component attribute takes one expression rather than markup
+           mixed with C# — so both branches spell the card's own name out, which is #1002's vent-board idiom
+           and the shape the completeness guard reads the class list off. *@
+        <OverlayShell class="@(oline.RoomGoesQuiet ? "deck-offer-card oracle-card oracle-quiet" : "deck-offer-card oracle-card")"
+                      Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                      OnClose="() => Dismiss(CloseOracle)"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
+                      DismissTitle="Leave her to her muttering">
+            <ChildContent>
+            <div class="deck-offer-giver">🌀 @Core.OracleRant.FullName</div>
+            @* #528 · THE CORNER, PAINTED. A backdrop rather than a plate: this card is a conversation the
+               captain stays inside, turning the dial line by line, and a modal opening over it every time
+               would be a card on a card. Same onerror-hide law as every other slot — no file, no frame. *@
+            <img class="oracle-art" src="@Core.OracleRant.ArtFile" alt="@Core.OracleRant.FullName"
+                 onerror="this.style.display='none'" />
+            <div class="deck-offer-blurb oracle-backstory">@Core.OracleRant.Backstory</div>
+            @if (oline.RoomGoesQuiet)
+            {
+                <div class="oracle-hush small">…the room goes quiet. A faint chill. This one lands differently.</div>
+            }
+            <div class="oracle-line @(oline.RoomGoesQuiet ? "oracle-line-quiet" : "")">“@oline.Text”</div>
+            @if (_oracleNotice is { } onote)
+            {
+                <div class="deck-bank-notice small">@onote</div>
+            }
+            <div class="deck-offer-reward">
+                Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr@(_oracleDrinks > 0 ? $" · you've stood her {_oracleDrinks} glass{(_oracleDrinks == 1 ? "" : "es")}" : "")
+            </div>
+            </ChildContent>
+            <FootHost Context="theWayOutOfHerCorner">
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Let her keep talking — turn the dial one line on" @onclick="NextOracleLine">🌀 Keep listening</button>
+                    @if (CurrentKeep is { } orKeep)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < orKeep.DrinkPrice)"
+                                title="@($"Stand the oracle a {orKeep.DrinkName} — {orKeep.DrinkPrice} cr. A drunk oracle is more prophetic.")"
+                                @onclick="BuyOracleDrink">🥃 Buy her a drink · @orKeep.DrinkPrice cr</button>
+                    }
+                    @theWayOutOfHerCorner
+                </div>
+            </FootHost>
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `int _credits`</summary>
+    [Parameter] public int _credits { get; set; }
+    /// <summary>the page's `int _oracleDrinks`</summary>
+    [Parameter] public int _oracleDrinks { get; set; }
+    /// <summary>the page's `string? _oracleNotice`</summary>
+    [Parameter] public string? _oracleNotice { get; set; }
+    /// <summary>the page's `void BuyOracleDrink()`</summary>
+    [Parameter] public Action BuyOracleDrink { get; set; } = default!;
+    /// <summary>the page's `void CloseOracle()`</summary>
+    [Parameter] public Action CloseOracle { get; set; } = default!;
+    /// <summary>the page's `Core.Interior.Barkeep? CurrentKeep`</summary>
+    [Parameter] public Core.Interior.Barkeep? CurrentKeep { get; set; }
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `void NextOracleLine()`</summary>
+    [Parameter] public Action NextOracleLine { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public OracleLine oline { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

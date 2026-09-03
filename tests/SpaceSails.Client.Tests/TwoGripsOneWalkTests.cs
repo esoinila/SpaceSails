@@ -373,7 +373,7 @@ public sealed class TwoGripsOneWalkTests
     /// state: this bench is measuring who may steer, not what the man says on the way.</summary>
     private static void PutUnderEscort(Pages.Map map)
     {
-        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden)
+        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map has no nested Guard — #833's escort has moved.");
         Set(map, "_escort", RuntimeHelpers.GetUninitializedObject(guard));
         Assert.True((bool)Get(map, "CaptainIsUnderEscort")!,
@@ -400,8 +400,8 @@ public sealed class TwoGripsOneWalkTests
                 + "has moved, and the deck verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

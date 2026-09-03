@@ -1,0 +1,78 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE PATRON DRINK CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        string patronDisplay = GiverDisplay(patron);
+        @* #997 wave 9 · A Close WHOSE WAY OUT IS THE WHOLE OF A ROW THE PAGE HAS A RULE FOR — wave 7's
+           `WaysClass`, on the first card in this family to want it. `Done` is this table's only way out and
+           it stands alone in `.deck-offer-actions`, which #780 pins sticky with a scrim and #735 lists among
+           the family's pinned feet. So the SHELL draws the row and the page NAMES it, which leaves the button
+           in the same box wearing the same dress, and the drink flow above it goes on being what it was: a
+           set of controls that are not ways out, which is precisely why this is a Close and not a decision. *@
+        <OverlayShell class="deck-offer-card" Frame="OverlayFrame.Bare"
+                      Dismiss="OverlayDismiss.Close" OnClose="() => Dismiss(ClosePatronTable)"
+                      WaysClass="deck-offer-actions"
+                      DismissClass="btn btn-sm btn-outline-light" DismissFace="Done"
+                      DismissTitle="Sit back — leave the table">
+            <div class="deck-offer-giver">◈ @patronDisplay</div>
+            @if (_patronDrinkBlurb is { } patronLine)
+            {
+                <div class="deck-offer-blurb">@patronLine</div>
+            }
+            @if (_barNotice is { } patronNote)
+            {
+                <div class="deck-bank-notice small">@patronNote</div>
+            }
+            <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr · @patronKeep.BarName</div>
+            @ContactDrinkOffer(patron, patronDisplay, patronKeep)
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `string? _barNotice`</summary>
+    [Parameter] public string? _barNotice { get; set; }
+    /// <summary>the page's `int _credits`</summary>
+    [Parameter] public int _credits { get; set; }
+    /// <summary>the page's `string? _patronDrinkBlurb`</summary>
+    [Parameter] public string? _patronDrinkBlurb { get; set; }
+    /// <summary>the page's `void ClosePatronTable()`</summary>
+    [Parameter] public Action ClosePatronTable { get; set; } = default!;
+    /// <summary>the page's `RenderFragment ContactDrinkOffer(string giver, string display, Core.Interior.Barkeep keep)`</summary>
+    [Parameter] public Func<string, string, Core.Interior.Barkeep, RenderFragment> ContactDrinkOffer { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `string GiverDisplay(string giver)`</summary>
+    [Parameter] public Func<string, string> GiverDisplay { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public string patron { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public Core.Interior.Barkeep patronKeep { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

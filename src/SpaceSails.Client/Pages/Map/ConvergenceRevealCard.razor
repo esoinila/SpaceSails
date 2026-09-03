@@ -1,0 +1,62 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE CONVERGENCE REVEAL, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseConvergenceReveal)">
+            <OverlayShell class="convergence-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="btn btn-light convergence-close" DismissFace="…sit with that"
+                          OnClose="() => Dismiss(CloseConvergenceReveal)">
+                <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
+                <div class="convergence-head">Two mysteries. One truth.</div>
+                <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
+                @* #528 · THE PLATE. The biggest reveal in the game was a text div while a routine collector
+                   shakedown had a painted portrait. It is a PLATE, not an illustration of the paragraph
+                   below it: two filing systems that were always one building, and nobody in the room to
+                   react. onerror-hides, so a missing file leaves this card exactly as it was. *@
+                <img class="convergence-img" src="@ArcConvergence.ArtFile" alt="Two mysteries. One truth."
+                     onerror="this.style.display='none'" />
+                <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
+                @* The foot is the beat AFTER the beat, and it must not be a recap: it used to close on two
+                   sentences copied verbatim out of the paragraph directly above it, so the biggest card in
+                   the game repeated itself to the player's face. Core owns the line now, and a guard pins
+                   that no sentence of it appears in the body (#422 story pass). *@
+                <div class="convergence-foot">@ArcConvergence.ConvergenceFoot</div>
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `void CloseConvergenceReveal()`</summary>
+    [Parameter] public Action CloseConvergenceReveal { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}
