@@ -49,16 +49,30 @@ internal static class MapMarkup
     private static readonly Lazy<string> TheComposedPage = new(Compose, isThreadSafe: true);
 
     /// <summary>
-    /// <see cref="File.ReadAllText(string)"/> for every path but one. Handed <c>Pages/Map.razor</c> it returns
+    /// <see cref="File.ReadAllText(string)"/> for every path but two. Handed <c>Pages/Map.razor</c> it returns
     /// the COMPOSED page — the file plus every surface it hosts, spliced in where it is invoked.
+    ///
+    /// <para>#251 item 3 · and handed <c>Pages/Map.razor.css</c> it returns the whole CASCADE, through
+    /// <see cref="MapStylesheet"/>: the page's sheet plus every surface sheet, concatenated in the order the
+    /// build bundles them. The stylesheet was split along the same seams as the markup, for the same reason,
+    /// and the guards that read it are the same guards — so this stays their one entry point and neither half
+    /// of the split can quietly blind them.</para>
     /// </summary>
     internal static string Read(string path) =>
-        IsThePage(path) ? TheComposedPage.Value : File.ReadAllText(path);
+        IsThePage(path) ? TheComposedPage.Value
+        : MapStylesheet.IsThePageSheet(path) ? MapStylesheet.Text
+        : File.ReadAllText(path);
 
     /// <summary><see cref="File.ReadAllLines(string)"/>'s twin of <see cref="Read"/>, with the same
     /// line-splitting semantics (either ending, no trailing empty).</summary>
     internal static string[] ReadLines(string path)
     {
+        if (MapStylesheet.IsThePageSheet(path))
+        {
+            string[] css = MapStylesheet.Text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+            return css.Length > 0 && css[^1].Length == 0 ? css[..^1] : css;
+        }
+
         if (!IsThePage(path))
         {
             return File.ReadAllLines(path);

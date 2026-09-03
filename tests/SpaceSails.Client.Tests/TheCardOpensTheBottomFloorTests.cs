@@ -153,8 +153,7 @@ public sealed class TheCardOpensTheBottomFloorTests
         Assert.True(panel.Contains("the gate will read it", StringComparison.Ordinal),
             "the gated row never names what the held card will do (#689).");
 
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".lift-stop-card", StringComparison.Ordinal),
             "the card's title has no style of its own on the button — an institutional string in a nowrap " +
             "air cell is a row that overflows its panel (#689).");

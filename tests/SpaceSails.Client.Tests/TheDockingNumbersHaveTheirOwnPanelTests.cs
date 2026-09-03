@@ -194,7 +194,7 @@ public sealed class TheDockingNumbersHaveTheirOwnPanelTests
         Assert.True(readouts >= 0 && readouts < panelAt, "the focus panel is no longer inside the Nav readouts block.");
 
         // …and that block still caps and scrolls itself, which is what makes "in the flow" a safe answer.
-        string css = File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         int rule = css.IndexOf(".map-hud .map-readouts {", StringComparison.Ordinal);
         Assert.True(rule >= 0, "the .map-readouts sizing rule this panel relies on is gone.");
         Assert.Contains("overflow-y: auto", css[rule..(rule + 200)], StringComparison.Ordinal);

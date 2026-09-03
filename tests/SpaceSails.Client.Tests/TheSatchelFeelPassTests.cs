@@ -187,8 +187,7 @@ public sealed class TheSatchelFeelPassTests
             "setting a thing down closes the satchel — but you leave a thing in order to take another, and " +
             "reopening the pockets between each one is the friction #614 already ruled against.");
 
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".satchel-leave", StringComparison.Ordinal),
             "the leave control has no style of its own (#688).");
     }

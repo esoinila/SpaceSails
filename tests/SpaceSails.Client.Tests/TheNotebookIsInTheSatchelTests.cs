@@ -281,8 +281,7 @@ public sealed class TheNotebookIsInTheSatchelTests
         Assert.False(satchel.Contains("ShowPulseMessage(", StringComparison.Ordinal),
             "the satchel dialog pulses a line from behind its own backdrop (#680).");
 
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         foreach (string rule in new[] { ".satchel-tab", ".satchel-note", ".satchel-filter" })
         {
             Assert.True(css.Contains(rule, StringComparison.Ordinal),

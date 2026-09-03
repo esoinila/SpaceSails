@@ -406,7 +406,7 @@ public sealed class TheHailIsHostedByTheCardItArrivesOnTests
     [Fact]
     public void TheCaptionHasItsOwnLegibleStyleOverTheArt()
     {
-        string css = File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
 
         int at = css.IndexOf(".busted-hail-caption {", StringComparison.Ordinal);
         Assert.True(at >= 0,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -107,7 +107,7 @@ public sealed class EverySurfaceWearsThePagesCssScopeTests
         Assert.True(surfaces.Length > 60,
             $"only {surfaces.Length} surface(s) under Pages/Map/ — this law is guarding an empty room.");
 
-        string sheet = File.ReadAllText(Path.Combine(ClientDir, "Pages", "Map.razor.css"));
+        string sheet = MapStylesheet.Text;
         int deep = Regex.Matches(sheet, @"::deep").Count;
         int selectors = Regex.Matches(sheet, @"(?m)^[.#\[a-zA-Z][^{}\n]*\{").Count;
         Assert.True(deep > 100, $"only {deep} ::deep rule(s) — is this still Map.razor.css?");

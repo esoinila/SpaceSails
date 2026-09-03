@@ -105,7 +105,7 @@ public class TheDeathCardOffersTheShelfTests
         string razor = Razor("Map.razor");
         Assert.Contains("@if (_busted is { } bust && !_showSaveDrawer)", razor, StringComparison.Ordinal);
 
-        string css = File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(
             ZIndexOf(css, ".busted-backdrop") > ZIndexOf(css, ".start-picker-backdrop"),
             "the guard above exists BECAUSE the busted card outranks the picker's gate; if that ever stops "

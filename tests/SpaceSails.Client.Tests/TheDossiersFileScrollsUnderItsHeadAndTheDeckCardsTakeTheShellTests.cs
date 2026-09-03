@@ -184,8 +184,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
     [Fact]
     public void TheDossierIsAColumnWithACeilingAndTheArithmeticIsNotSaidTwice()
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         string card = RuleBody(css, "::deep .map-dossier")
             ?? throw new Xunit.Sdk.XunitException("Map.razor.css has no `::deep .map-dossier` rule at all.");
@@ -608,8 +607,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
         + "stretched across the pad's `align-items: stretch` column")]
     public void TheRulesForWhatTheShellNowDrawsAreWrittenWithDeep(string target, string what)
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         var reaching = Selectors(css)
             .Where(selector => Regex.IsMatch(selector, $@"{Regex.Escape(target)}\s*(\{{|,|$|:)")
