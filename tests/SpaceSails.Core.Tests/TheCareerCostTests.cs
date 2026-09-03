@@ -125,9 +125,11 @@ public sealed class TheCareerCostTests
     /// condition somebody has to keep agreeing.</para>
     ///
     /// <para><b>Reverts that reddened it:</b> the <c>StopOrder.On</c> arm removed from
-    /// <c>CanteenRegulars.Seating</c> — <i>"nobody on career-ground-115 B1 is off the closed shift"</i>; and
-    /// the <c>CareerCost.RegisterRow</c> pin taken out of <c>CanteenBoard.Pinned</c> — <i>"the register row is
-    /// not on the cork of a stopped ground"</i>.</para>
+    /// <c>CanteenRegulars.Seating</c>, leaving the mason's — <i>"Assert.Contains() Failure: Item not found in
+    /// collection"</i>, the colleague missing from a closed ground's own room (and two more guards in this
+    /// file went red with it); and the <c>CareerCost.RegisterRow</c> pin taken out of
+    /// <c>CanteenBoard.Pinned</c> — <i>"Assert.Single() Failure: The collection did not contain any matching
+    /// items"</i>.</para>
     /// </summary>
     [Fact]
     public void TheRowAndTheTwoRegularsStandOnlyWhereTheOrderStands()
@@ -212,9 +214,9 @@ public sealed class TheCareerCostTests
     /// <para>And it is STABLE: a register row that named a different hand between excursions would be a
     /// register nobody kept.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the hand seeded on the WATCH as well as the ground — <i>"the row
-    /// on career-ground-115 named two different hands"</i>; and <c>RegisterBody</c> shortened to the authored
-    /// line alone — <i>"the register row names nobody"</i>.</para>
+    /// <para><b>Revert that reddened it:</b> <c>RegisterBody</c> shortened to the authored line alone, which
+    /// is the tidy-looking edit somebody makes the day the row reads long — <i>"Assert.Equal() Failure:
+    /// Strings differ"</i>, the row naming nobody at all.</para>
     /// </summary>
     [Fact]
     public void TheRowNamesOneHandOffTheShiftAndTheNameIsOneTheGamePrints()
@@ -266,11 +268,11 @@ public sealed class TheCareerCostTests
     /// world where OTHER grounds are stopped hands an unstopped ground byte-identical rooms — same people,
     /// same chairs, same cork, character for character, watch by watch.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> the deal run against <c>Cast.Length - 1</c> again —
-    /// <i>"Assert.Equal() Failure: Expected: 10 Actual: 12"</i>, and then the sweep naming the room on
-    /// career-ground-6 as seating a colleague off a shift nobody stopped; and the register row added to the
-    /// catalogue's ordinary pool — <i>"REGISTER — PERSONNEL is pinned on a ground nobody has stopped"</i>.
-    /// </para>
+    /// <para><b>Revert that reddened it:</b> the deal run against <c>Cast.Length - 1</c> again —
+    /// <i>"Assert.Equal() Failure: Values differ"</i> on the pinned pool length, and the same revert reddened
+    /// four more guards across three files with it: this file's own "only where the order stands", and both
+    /// of <c>TheBurialTests</c>' untouched-room laws, and the board's pairing law. One number, five
+    /// guards.</para>
     /// </summary>
     [Fact]
     public void AGroundNobodyStoppedIsUnchangedByOneCharacter()
@@ -326,9 +328,10 @@ public sealed class TheCareerCostTests
     /// must be one of the three lines, one of the two plates, the register heading, or the glass the canteen
     /// already draws.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> a fourth const added to <c>CareerCost</c> (<c>"He left on the
-    /// Thursday car."</c>) — <i>"CareerCost publishes prose the canon pass did not author: Departed"</i>; and
-    /// a full stop taken off the mug line — <i>"Assert.Equal() Failure … That stays where it is"</i>.</para>
+    /// <para><b>Reverts that reddened it:</b> a fourth const added to <c>CareerCost</c> — <i>"CareerCost
+    /// publishes prose the canon pass did not author: Departed = \"He left on the Thursday car.\""</i>; and,
+    /// separately, the full stop taken off the mug line — <i>"Assert.Equal() Failure: Strings
+    /// differ"</i>.</para>
     /// </summary>
     [Fact]
     public void TheThreeLinesAreVerbatimAndAreTheOnlyProseThisBeatPublishes()
@@ -395,8 +398,8 @@ public sealed class TheCareerCostTests
     /// the one string in this beat that is COMPOSED — a dealt name and an authored sentence — and a
     /// composition is exactly where a forbidden word would arrive without anybody typing it.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> the word planted in the colleague's line — <i>"CareerCost says
-    /// what it may not: authority in Transferred, I think. The Authority would know where."</i>.</para>
+    /// <para><b>Revert that reddened it:</b> the word planted in the colleague's line — <i>"CareerCost.AllProse
+    /// says what it may not: authority in Transferred, I think. The Authority would know where."</i>.</para>
     /// </summary>
     [Fact]
     public void NothingOnThisBeatsPathSaysMissingOrDeadOrNamesTheWorking()
@@ -433,8 +436,9 @@ public sealed class TheCareerCostTests
     /// world disagreeing about a thing a captain can see.</para>
     ///
     /// <para><b>Reverts that reddened it:</b> the clamp removed from <c>CareerCost.MugAt</c> (the behind-side
-    /// coordinate returned unconditionally) — <i>"the mug on career-ground-115 stands outside its own
-    /// room"</i>; and the standoff cut to zero — <i>"the mug is inside the chair ring"</i>.</para>
+    /// coordinate returned unconditionally) — <i>"the clamped mug is still outside the room (0.00, 5.65)"</i>;
+    /// and <see cref="CareerCost.ShelfBehindDu"/> cut to zero — <i>"the mug on career-ground-6 B1 is inside
+    /// the chair ring"</i>.</para>
     /// </summary>
     [Fact]
     public void TheMugStandsBehindHerChairAndInsideTheRoom()
@@ -476,6 +480,25 @@ public sealed class TheCareerCostTests
         }
 
         Assert.True(placed >= 30, $"the sweep only placed {placed} mug(s).");
+
+        // ── AND THE CLAMP ITSELF, WHICH THE SWEEP ABOVE CANNOT REACH. Every top the real generator lays down
+        //    has room behind it, so the fallback arm would be a branch nobody had ever run — a guard that
+        //    cannot tell pass from fail, which is exactly the bug class this ground names. So it is exercised
+        //    directly, on a top standing hard against the back of its own room: the shelf goes to the NEAR
+        //    side, and the mug is still inside the walls a captain can see.
+        //
+        // This is pure geometry and the only place in this file that types a room rather than carving one:
+        // the question is what MugAt does with a box, and the box is the input.
+        var box = new UndergroundComplex.Amenity(
+            UndergroundComplex.Comfort.UpperCanteen, 0, 0, "PLATE", "FIXTURE", [(0.0, 3.0)]);
+        var atTheBack = new CanteenRegulars.TableSeat(0, 0.0, 3.0, 4, CareerCost.MugPlate, CareerCost.MugLine);
+
+        Assert.False(box.Contains(0.0, 3.0 + CanteenRegulars.ChairRingDu + CareerCost.ShelfBehindDu),
+            "the back-wall case this arm exists for is not a back-wall case any more.");
+
+        (double bx, double by) = CareerCost.MugAt(atTheBack, box);
+        Assert.True(box.Contains(bx, by), $"the clamped mug is still outside the room ({bx:F2}, {by:F2}).");
+        Assert.Equal(3.0 - CanteenRegulars.ChairRingDu - CareerCost.ShelfBehindDu, by, 6);
     }
 
     // ══ LAW 7 · IT SURVIVES THE RELOAD ═══════════════════════════════════════════════════════════════════
@@ -488,9 +511,9 @@ public sealed class TheCareerCostTests
     /// rather than assumed — so a save is written, round-tripped through the real serializer, installed from
     /// what came BACK, and the room is asked again.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> the register installed from the ORIGINAL save rather than the
-    /// loaded one, with <c>HallsStopped</c> dropped from the payload — <i>"the row is gone after a
-    /// reload"</i>.</para>
+    /// <para><b>Revert that reddened it:</b> <c>HallsStopped</c> marked <c>[JsonIgnore]</c> outright, which is
+    /// what a field dropped from the payload looks like — <i>"Assert.Equal() Failure: Collections
+    /// differ"</i>, and the row, the colleague and the mug all gone after one reload.</para>
     /// </summary>
     [Fact]
     public void TheRowAndTheRegularsSurviveTheVault()

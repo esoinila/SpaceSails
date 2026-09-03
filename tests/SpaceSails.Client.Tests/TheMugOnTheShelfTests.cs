@@ -42,9 +42,9 @@ public sealed class TheMugOnTheShelfTests
     /// at all.</para>
     ///
     /// <para><b>Reverts that reddened it:</b> the <c>MugPlate</c> arm removed from
-    /// <c>HiveInterior.FloorDeck</c> — <i>"the shelf behind her chair is bare on a stopped ground"</i>; and
-    /// the plate check widened to every seated regular — <i>"6 mug(s) on luna B1, where one regular keeps
-    /// one"</i>.</para>
+    /// <c>HiveInterior.FloorDeck</c> — <i>"9 floor(s) disagree with the mug's own law: luna B1: 0 mug(s) where
+    /// one regular keeps one …"</i>; and the plate check widened to every seated regular — <i>"luna B1: 6
+    /// mug(s) where one regular keeps one"</i>, a shelf of glasses behind every table in the room.</para>
     /// </summary>
     [Fact]
     public void OneMugIsDrawnOnAStoppedGroundAndNoneAnywhereElse()
@@ -106,8 +106,9 @@ public sealed class TheMugOnTheShelfTests
     /// for one piece of furniture. And nothing may be pressable at it — a mug with a verb on it would turn
     /// the one object in this beat that says nothing into a thing the game hands you.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> the label's coordinate written as the table's own —
-    /// <i>"the mug on luna B1 is drawn at the seat and not at the shelf"</i>.</para>
+    /// <para><b>Revert that reddened it:</b> the label's coordinate written as the table's own rather than
+    /// asked of <c>CareerCost.MugAt</c> — <i>"Assert.Contains() Failure: Filter not matched in
+    /// collection"</i>, the glass drawn in her dinner.</para>
     /// </summary>
     [Fact]
     public void TheMugIsWhereCoreSAIDAndNothingIsPressableAtIt()
