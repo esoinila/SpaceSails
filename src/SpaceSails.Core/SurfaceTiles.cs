@@ -236,6 +236,81 @@ public static class SurfaceTiles
         return SurfaceScenery.For(bodyId, Key(bodyId, siteSalt, a), GenerationField(bodyId, siteSalt, a));
     }
 
+    /// <summary>A door hung in one of a tile's own doorways, and whether somebody paid to fly it here.</summary>
+    public readonly record struct HungDoor(double X1, double Y1, double X2, double Y2, bool Imported);
+
+    /// <summary>A building on a tile that still has something in it — which index it is, where its middle
+    /// is, and what is in the drawer.</summary>
+    public readonly record struct Drawer(int Index, double X, double Y, SurfaceSalvage.Find Find);
+
+    /// <summary>
+    /// #563 slice 2 · WHAT IS HUNG IN ONE TILE'S DOORWAYS.
+    ///
+    /// <para>Owner, #573, walking the ground: <i>"there seemed to be shelter like spaces that were just
+    /// missing the services and the doors.... let's fix those."</i> The buildings had openings the whole
+    /// time — the generator hands them back — and a thick-walled ruin with a gap in it reads as an
+    /// unfinished shelter rather than somewhere people used to live.</para>
+    ///
+    /// <para>#592 · One in seven is IMPORTED, off the palette: <i>"some special color not distinctive to the
+    /// site could then be used to draw our attention to a place (like expensive door made with far away
+    /// imported materials)."</i> Rare on purpose — a signal that fires on every ruin is wallpaper — and
+    /// seeded, so the room worth breaking into is a fact about the ground rather than a fresh die.</para>
+    ///
+    /// <para><b>Here, in Core, because two grounds ask it.</b> The home tile's build (the client's
+    /// <c>MoonSurface</c>) and the lattice's tile compose both hang these, and a rule expressed twice is
+    /// this project's fourth named bug class — the version that lands is the one where one of the two gets
+    /// edited. The home tile answers on the site's own salt (<see cref="ContentSalt"/>), so every door the
+    /// ground under the tube has ever had comes out the same colour it always was.</para></summary>
+    public static IReadOnlyList<HungDoor> Doors(string bodyId, string siteSalt, Address a)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+
+        string contents = ContentSalt(bodyId, siteSalt, a);
+        var hung = new List<HungDoor>();
+        int index = 0;
+        foreach (SurfaceLayout.Doorway d in Ground(bodyId, siteSalt, a).Doorways ?? [])
+        {
+            bool imported = DiceRule.Roll(
+                DiceRule.Seed($"imported-door:{bodyId}:{contents}:{index++}"), 7).Face == 1;
+            hung.Add(new HungDoor(d.X1, d.Y1, d.X2, d.Y2, imported));
+        }
+        return hung;
+    }
+
+    /// <summary>
+    /// #563 slice 2 · WHAT IS STILL IN ONE TILE'S BUILDINGS — the buildings worth pressing [E] in, and what
+    /// each one holds.
+    ///
+    /// <para>Owner, on the whole reason for the structure generator: <i>"the idea is that we can then use
+    /// those places to have supplies and clues we can find on the way to somewhere. I want the illusion of a
+    /// big world, even if it is generated with random seed and some code."</i> That illusion is exactly what
+    /// a lattice of walls with nothing in it destroys.</para>
+    ///
+    /// <para>About half of them hold something and the empty ones are load-bearing (#573): if every building
+    /// paid out, walking into them would stop being a decision and become a chore performed on all of them.
+    /// The weighting is <see cref="SurfaceSalvage"/>'s and is untouched — what this adds is that the
+    /// question is asked on the TILE'S contents salt, so a ruin nine hundred du out holds its own wallet
+    /// rather than a copy of the one beside the tube.</para></summary>
+    public static IReadOnlyList<Drawer> Drawers(string bodyId, string siteSalt, Address a)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+
+        string contents = ContentSalt(bodyId, siteSalt, a);
+        IReadOnlyList<(double X, double Y)> centres = Ground(bodyId, siteSalt, a).BuildingCentres ?? [];
+        var found = new List<Drawer>();
+        for (int i = 0; i < centres.Count; i++)
+        {
+            SurfaceSalvage.Find find = SurfaceSalvage.WhatIsInside(bodyId, contents, i);
+            if (find != SurfaceSalvage.Find.Nothing)
+            {
+                found.Add(new Drawer(i, centres[i].X, centres[i].Y, find));
+            }
+        }
+        return found;
+    }
+
     /// <summary>The tiles carried at once around <paramref name="centre"/> — the chunk. Ordered, so two
     /// callers asking the same question get the same list in the same order and a comparison of two chunks
     /// is a comparison of two lists.</summary>

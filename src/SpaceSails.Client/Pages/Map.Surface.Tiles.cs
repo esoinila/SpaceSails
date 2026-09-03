@@ -119,14 +119,31 @@ public partial class Map
             ex.Stream.Step(_avatarX, _avatarY);
         }
 
-        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
+        _deckPlan.AppendRegion(TileRegion(ex.Stop.Body.Id, ex.Site.LayoutSalt, ex.Stream.Loaded));
+    }
+
+    /// <summary>EVERY CARRIED TILE'S GROUND AS ONE REGION — walls, weather, landmark labels, the doors hung
+    /// in its buildings and the drawers still worth pressing.
+    ///
+    /// <para>Static and pure in <c>(body, salt, the addresses being carried)</c> on purpose. It is what the
+    /// live deck is grown by, so it is also the only honest place to ASK what the lattice puts on the ground
+    /// — a guard that reads the source can be fooled by a call that is present and does nothing, and a guard
+    /// that stands up the whole page cannot be written at all. This one can simply be handed a chunk three
+    /// tiles from the tube and asked what came back.</para>
+    ///
+    /// <para><b>The landmark singletons are deliberately absent.</b> The monolith and the hidden lab are laid
+    /// by the home tile's build and stay there: #1058 made them facts about a BODY, and one per tile would
+    /// not be an unbounded world — it would be a wallpaper of monoliths, out to the backstop.</para></summary>
+    private static DeckPlan.DeckRegion TileRegion(
+        string body, string salt, IReadOnlyList<SurfaceTiles.Address> loaded)
+    {
         var walls = new List<DeckPlan.Wall>();
         var labels = new List<(float X, float Y, string Text)>();
         var scenery = new List<SurfaceScenery.Mark>();
         var doors = new List<DeckPlan.Door>();
         var consoles = new List<DeckPlan.ConsoleSpot>();
 
-        foreach (SurfaceTiles.Address a in ex.Stream.Loaded)
+        foreach (SurfaceTiles.Address a in loaded)
         {
             if (a == SurfaceTiles.Home)
             {
@@ -149,15 +166,23 @@ public partial class Map
 
             // #563 slice 2 · AND WHAT IS IN THEM. Slice 1 welded a tile's WALLS and stopped there, so every
             // building more than one tile from the tube was a thick-walled room with an open gap where its
-            // door should be and nothing inside — which is word for word the report #573 was filed about
-            // ("there seemed to be shelter like spaces that were just missing the services and the doors"),
-            // re-shipped one tile out. The whole point of walking is that there is something out there:
-            // owner, on the structure generator, "the idea is that we can then use those places to have
-            // supplies and clues we can find on the way to somewhere."
+            // door belongs and nothing inside — word for word the report #573 was filed about ("there seemed
+            // to be shelter like spaces that were just missing the services and the doors"), re-shipped one
+            // tile out. The whole point of walking is that there is something out there: owner, on the
+            // structure generator, "the idea is that we can then use those places to have supplies and clues
+            // we can find on the way to somewhere."
             //
-            // Both halves are the HOME TILE'S OWN CODE (MoonSurface.BuildLayout) asked on this tile's
-            // contents salt, never a second opinion about doors and drawers.
-            AddTileDoorsAndFinds(body, salt, a, plan, doors, consoles);
+            // Both halves are the HOME TILE'S OWN QUESTION (SurfaceTiles.Doors / .Drawers, which the home
+            // build also asks), never a second opinion about doors and drawers.
+            foreach (SurfaceTiles.HungDoor d in SurfaceTiles.Doors(body, salt, a))
+            {
+                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: d.Imported));
+            }
+            foreach (SurfaceTiles.Drawer drawer in SurfaceTiles.Drawers(body, salt, a))
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.RuinSalvage,
+                    (float)drawer.X, (float)drawer.Y, SurfaceSalvage.LabelFor(drawer.Find)));
+            }
 
             if (SurfaceTiles.NorthRim(a) is { } rim)
             {
@@ -166,50 +191,8 @@ public partial class Map
             }
         }
 
-        _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
-            [.. walls], [.. consoles], [.. labels], [], null, [.. scenery], [.. doors]));
-    }
-
-    /// <summary>One tile's DOORS and one tile's SALVAGE — the two things a captain can find in a ruin, laid
-    /// out here exactly as <c>MoonSurface.BuildLayout</c> lays them on the home tile.
-    ///
-    /// <para>The imported-door roll is the same one-in-seven off the same tag (#592: <i>"some special color
-    /// not distinctive to the site could then be used to draw our attention to a place"</i>), and the find is
-    /// the same <see cref="SurfaceSalvage"/> question, both asked on
-    /// <see cref="SurfaceTiles.ContentSalt"/> — which is the site's own salt on the home tile and the tile's
-    /// address key everywhere else. So the rate per building is unchanged and only the COUNT stops at one
-    /// field's worth, which is the same trade the huts made in slice 1.</para>
-    ///
-    /// <para><b>The landmark singletons deliberately do NOT come out here.</b> The monolith and the hidden
-    /// lab are laid by the home tile's build and stay there: #1058 made the landmarks a fact about a BODY,
-    /// and one monolith per tile would not be an unbounded world, it would be a wallpaper of monoliths. A
-    /// tile out in the world gets the seeded rubble-and-buildings generator and nothing that is supposed to
-    /// be the only one of its kind.</para></summary>
-    private static void AddTileDoorsAndFinds(
-        string body, string salt, SurfaceTiles.Address a, in SurfaceLayout.Plan plan,
-        List<DeckPlan.Door> doors, List<DeckPlan.ConsoleSpot> consoles)
-    {
-        string contents = SurfaceTiles.ContentSalt(body, salt, a);
-
-        int doorwayIndex = 0;
-        foreach (SurfaceLayout.Doorway d in plan.Doorways ?? [])
-        {
-            bool imported = DiceRule.Roll(
-                DiceRule.Seed($"imported-door:{body}:{contents}:{doorwayIndex++}"), 7).Face == 1;
-            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: imported));
-        }
-
-        IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
-        for (int i = 0; i < centres.Count; i++)
-        {
-            SurfaceSalvage.Find find = SurfaceSalvage.WhatIsInside(body, contents, i);
-            if (find == SurfaceSalvage.Find.Nothing)
-            {
-                continue;
-            }
-            consoles.Add(new(DeckPlan.ConsoleKind.RuinSalvage,
-                (float)centres[i].X, (float)centres[i].Y, SurfaceSalvage.LabelFor(find)));
-        }
+        return new DeckPlan.DeckRegion(
+            [.. walls], [.. consoles], [.. labels], [], null, [.. scenery], [.. doors]);
     }
 
     // ── #563 slice 2 · THE HUTS STAY AS YOU LEFT THEM, ACROSS VISITS ────────────────────────────────────
