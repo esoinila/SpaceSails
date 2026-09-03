@@ -119,7 +119,7 @@ public partial class Map
     // A pocket and a notebook are both things a satchel holds. There is NO second store here: the tab reads
     // _fieldNotes, the one book (#587's law — one place that can never be forgotten about), through the same
     // Core projection the ledger renders.
-    private enum SatchelPage
+    public enum SatchelPage
     {
         /// <summary>What you are carrying. Always where an open lands — the pocket is the primary tool.</summary>
         Carried,
@@ -158,7 +158,7 @@ public partial class Map
     private SatchelPage _satchelPage = SatchelPage.Carried;
 
     /// <summary>#690/#741 · WHICH READING OF THE BOOK the NOTES tab is showing.</summary>
-    private enum NotesView
+    public enum NotesView
     {
         /// <summary>#690 · This ground alone, and where an open always lands: a captain at a door wants what
         /// THIS building has told them, not the memoirs.</summary>

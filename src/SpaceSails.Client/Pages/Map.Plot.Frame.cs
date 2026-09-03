@@ -43,7 +43,7 @@ public partial class Map
     }
 
     // #135 — one entry in the plot's frame selector. Id == null is Sun/inertial.
-    private sealed record FrameOption(string? Id, string Label, string Title, bool Suggested);
+    public sealed record FrameOption(string? Id, string Label, string Title, bool Suggested);
 
     // The frames worth offering, in reading order: Sun (inertial), then any body whose Hill sphere
     // currently holds the ship (the local giant) and that giant's moons, then the nav target / picked

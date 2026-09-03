@@ -28,7 +28,7 @@ public partial class Map
     // scenario data. Test:true starts are dev-only free-flying jumps (they exercise a free approach), hidden
     // from the picker. The picker itself no longer reads this list — it offers the live dockable-haven
     // registry (BerthStarts) — so this is now purely the /map?start= alias table with human labels.
-    private sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
+    public sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
 
     private static readonly StartPoint[] StartPoints =
     [

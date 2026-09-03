@@ -222,7 +222,7 @@ public partial class Map
     private readonly List<ShipBot> _shipBots =
         [.. SentryBot.RosterUnits.Select(u => new ShipBot(u, SentryBot.MaxMagazine))];
 
-    private sealed class ShipBot(string unit, int rounds)
+    public sealed class ShipBot(string unit, int rounds)
     {
         public string Unit { get; } = unit;
         public int Rounds { get; set; } = rounds;

@@ -89,14 +89,24 @@
 }
 
 @code {
-    /// <summary>the page's `string _bankNote`</summary>
-    [Parameter] public string _bankNote { get; set; } = default!;
+    /// <summary>the page's `string _bankNote` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_bankNote` and the assignment still lands on the page.</summary>
+    [Parameter] public string _bankNoteValue { get; set; } = default!;
+    /// <summary>The page's `_bankNote = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string> _bankNoteSet { get; set; } = default!;
+    private string _bankNote { get => _bankNoteValue; set { _bankNoteValue = value; _bankNoteSet(value); } }
     /// <summary>the page's `BankPromptKind? _bankPrompt`</summary>
     [Parameter] public BankPromptKind? _bankPrompt { get; set; }
     /// <summary>the page's `string _bankSlotId`</summary>
     [Parameter] public string _bankSlotId { get; set; } = default!;
-    /// <summary>the page's `string _bankTitle`</summary>
-    [Parameter] public string _bankTitle { get; set; } = default!;
+    /// <summary>the page's `string _bankTitle` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_bankTitle` and the assignment still lands on the page.</summary>
+    [Parameter] public string _bankTitleValue { get; set; } = default!;
+    /// <summary>The page's `_bankTitle = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string> _bankTitleSet { get; set; } = default!;
+    private string _bankTitle { get => _bankTitleValue; set { _bankTitleValue = value; _bankTitleSet(value); } }
     /// <summary>the page's `string BankPromptHeading`</summary>
     [Parameter] public string BankPromptHeading { get; set; } = default!;
     /// <summary>the page's `void CancelBankPrompt()`</summary>

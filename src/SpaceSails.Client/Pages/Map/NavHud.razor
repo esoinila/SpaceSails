@@ -1,0 +1,1631 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE NAV MAP HUD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+    <div class="map-hud">
+        <div class="btn-toolbar bg-dark bg-opacity-75 rounded p-2 gap-2 align-items-center" role="toolbar" aria-label="Time warp controls">
+            <div class="d-flex align-items-center gap-1 me-2 map-warp-control">
+                <span class="text-light small">warp</span>
+                <input type="range" class="form-range" min="0" max="100" step="1"
+                       value="@WarpSliderValue" title="Time warp (log scale)"
+                       @oninput="OnWarpSliderInput" @onkeydown:stopPropagation="true" />
+                <span class="text-light small text-nowrap map-warp-readout">@WarpReadout</span>
+            </div>
+            @* #172 — ⏭ skip to next event, beside the warp slider (#236: a button, in the toolbar band).
+               Jumps time forward to the next burn/arrival; anything important still pulls you back to 1×.
+               Disabled when nothing is armed (no next event to skip to). Becomes ■ stop skip while running. *@
+            <button type="button" class="btn btn-sm @(_skipActive ? "btn-warning" : "btn-outline-info") me-2"
+                    title="Jump time forward to the next burn/arrival — anything important (a burn, an arrival, an alert) still pulls you back to 1×"
+                    disabled="@(!_skipActive && !_skipNext.Found)" @onclick="ToggleSkip">
+                @(_skipActive ? "■ stop skip" : "⏭ next event")
+            </button>
+            @* The long-coast advert: on a >1-day dead coast the ship OFFERS the cheap ride. A button, so
+               it lives in the toolbar band, never the banner. The coast is free — the skip spends only time. *@
+            @if (ShowLongCoastAdvert)
+            {
+                <button type="button" class="btn btn-sm btn-outline-warning me-2"
+                        title="The coast costs nothing — the skip spends only time. Jump to the next event."
+                        @onclick="StartSkip">
+                    @* #989 clock: through the plan's own ladder, not a private whole-days rounding. The
+                       advert opens at 24 h, so LongCoastDays said "1 d" for every coast up to a day and a
+                       half — sitting one toolbar row above a plan whose every step now reads "in 33 h". *@
+                    ⏭ Long coast ahead (@LongCoastAheadReadout) — skip it
+                </button>
+            }
+            @* #246/#249 🚀 the long haul as a toolbar chip — a SECONDARY surface (the map context menu is
+               the primary entry) mirroring the offer while a long destination is set. Placement per #236,
+               beside the ⏭ advert. Visible-but-disabled with the reason (#212). *@
+            @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhChipPlanet && _longHaulDeparture is { Ok: true } lhChipDep)
+            {
+                string? lhChipBlock = LongHaulOfferBlock(_longHaulDeparture, lhChipPlanet, _longHaulClearanceBlock);
+                <button type="button" class="btn btn-sm @(lhChipBlock is null ? "btn-warning" : "btn-outline-secondary") me-2"
+                        disabled="@(lhChipBlock is not null)"
+                        title="@(lhChipBlock ?? $"Autopilot the whole void to {lhChipPlanet.Name} vicinity in one jump — wake at the capture gate; the last mile stays premium")"
+                        @onclick="EngageLongHaul">
+                    🚀 Long haul (@lhChipDep.DeparturePulses p)
+                </button>
+            }
+            <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" title="Pause or resume the flow of sim time" @onclick="TogglePause">
+                @(Paused ? "Resume" : "Pause")
+            </button>
+            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light")" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
+                Follow Ship
+            </button>
+            @* #956 — …or on where she is GOING. Owner: "Let's have a follow nav destination option here in
+               addition to follow ship." Mutually exclusive with Follow Ship (one camera), and visible-but-
+               disabled with the reason when no destination is set (#212). *@
+            <button type="button" class="btn btn-sm @(_followDest && CanFollowDestination ? "btn-info" : "btn-outline-light") me-2"
+                    disabled="@(!CanFollowDestination)" title="@FollowDestTip()" @onclick="ToggleFollowDest">
+                Follow dest
+            </button>
+            @* #237 — clickable zoom: not every captain has a mouse wheel (and automation drives one
+               poorly). One real step per press, zooming toward the viewport centre. *@
+            <button type="button" class="btn btn-sm btn-outline-light" title="Zoom the map in one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: true)">
+                🔍+
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light me-2" title="Zoom the map out one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: false)">
+                🔍−
+            </button>
+            @* #962 · THE HEART OF NAVIGATION IS DRESSED AS SUCH. Owner: "Here the smallest button is the most
+               important one… Plot. Plot should stand out among the buttons here. It is the heart of the
+               navigation process. Now it is too well hidden." So it wears the solid primary look the Dock
+               button wears (not an outline like its neighbours), a size up, and #963's live hover that names
+               what a press would plot right now. *@
+            <button type="button" class="btn @(PlotMode ? "btn-success" : "btn-warning") btn-sm map-key-action me-2"
+                    title="@PlotButtonTip()" @onclick="TogglePlotMode">
+                @(PlotMode ? "▶ Play" : "🗺 Plot")
+            </button>
+            @* Berth at a grey-market dock (a station haven) — clamps on, no steering, the heat bleeds
+               off. #212: the button reads the ONE dock truth (_dockAffordance), the nearest DOCKABLE
+               haven passing DockRule — never the raw nearest body — so it can never disagree with the
+               envelope line. #211: latched so it doesn't blink as the drift phases. #213: when in range
+               but too hot it becomes ⚓ Match & clamp, quoting the terminal-match burn (visible paused). *@
+            @if (_dockedHavenId is not null)
+            {
+                @* #963 · EMERGENCY GEAR, DRESSED AS SUCH. Owner, 2026-08-25: the bare undock is "archaic
+                   compared to the combo of undock + harbour speed"; he cast off with this press once and died
+                   colliding, and "it made perfect sense"; "flying adrift in formation is kind of crazy
+                   maneuver". It stays, and it stays unconfirmed — an emergency you must confirm is not one,
+                   and dying honestly is the point. It is quiet red instead of amber, and it says what it is.
+                   See Map.NavToolbar for the ruling and for which siblings share the dress. *@
+                <button type="button" class="btn btn-sm btn-outline-danger me-2" @onclick="Undock"
+                        title="@EmergencyUndockTip()">🚀 Undock</button>
+            }
+            else if (_dockAffordance.CanClampNow)
+            {
+                <button type="button" class="btn btn-sm btn-outline-info me-2" @onclick="ToggleDock"
+                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">⚓ Dock</button>
+            }
+            else if (_dockAffordance.NeedsMatch)
+            {
+                @* Alongside but coasting too hot to clamp — one press flies the terminal match (the same
+                   burn the armed autopilot flies), then leaves the plain ⚓ Dock. *@
+                <button type="button" class="btn btn-sm btn-info me-2" @onclick="MatchAndClamp"
+                        title="@($"Fly the terminal match — nulls the {(_dockAffordance.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)} km/s drift into the clamp window, then hit ⚓ Dock")">
+                    ⚓ Match &amp; clamp — ≈@(_dockAffordance.MatchPulses) p
+                </button>
+            }
+            else if (_dockAffordance.Phase == DockPhase.TooHot)
+            {
+                @* In range but the match is unaffordable — refuse with the numbers, greyed so it teaches. *@
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" disabled
+                        title="@($"Too hot to clamp — the terminal match needs ≈{_dockAffordance.MatchPulses} p, only {_reactionMassPulses} aboard")">
+                    ⚓ Match &amp; clamp — needs ≈@(_dockAffordance.MatchPulses) p
+                </button>
+            }
+            @* #963: the Scope toggle used to sit here and the owner asked why — "that functionality should
+               stay at the scope position". It did: the scope window minimises into a tile in its own corner
+               (see .map-scope-tile below), which is also what stops this row from drowning out Plot. *@
+            @* #949 — the ? opens the plotting card OVER the map: how a trip is planned, the scrub, the ±
+               buttons and the arrival badge, with the panel still underneath it and Escape to put it away.
+               It used to open /help/nav in a second tab; that page is still the long version and the card's
+               foot still hands the reader on to it. The reasoning is in Map.NavHelp.cs — in one line, the ?
+               is pressed mid-plan, and a full page in another tab answers a question about the panel by
+               taking the panel off the screen. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => PressAndRefocus(ToggleNavHelp)" title="How a trip is planned — the plan, the scrub, the ± buttons and the arrival badge (? or Esc to close)">?</button>
+            @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
+               appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
+               tutorial chrome for a veteran. Starting or replaying a lesson lives at the Captain's desk
+               (0) → Tutorials, the quieter room where the picker already moved. *@
+            @if (ActiveTutorialIndex() >= 0 || _showTutorial)
+            {
+                <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial" title="Show/hide the current lesson's checklist — pick or replay lessons at the Captain's desk (0) → Tutorials">
+                    🏴 checklist
+                </a>
+            }
+            @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
+        </div>
+
+        <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+            <div class="mb-1">
+                <span class="fw-bold">@_scenarioName</span>
+                @if (_plasma is not null)
+                {
+                    <span class="badge bg-info text-dark ms-1">EU ⚡</span>
+                }
+            </div>
+            <div>Sim time: @FormatSimTime(SimTime)</div>
+            @if (_skipActive)
+            {
+                @* #172: while skipping, the roomy line states the whole thing — where we're headed and the ETA. *@
+                <div class="text-info">⏭ skipping to @_skipTargetLabel — ETA @FormatDuration(Math.Max(0, _skipTargetEpoch - SimTime)) @(_effectiveWarp < Warp ? $"(held at {_effectiveWarp}× near a body)" : $"({_effectiveWarp}×)")</div>
+            }
+            else
+            {
+                <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
+            }
+            <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
+            <hr />
+            <div>
+                Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                <span class="text-secondary">(circular here: @((CircularSpeedHere / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s)</span>
+            </div>
+            <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
+            <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
+            <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
+            @if (OrbitInfo() is { } oi)
+            {
+                <div class="mt-1 small">
+                    @* #175: this body is a cargo run's destination — say the delivery next action right
+                       in the nav-target box so the parcel's last step is never invisible. *@
+                    @if (ActiveCargoRunTo(oi.Body.Id) is not null)
+                    {
+                        <div class="map-cargo-deliver">📦 @CargoNextAction(oi.Body)</div>
+                    }
+                    @if (IsDockableHaven(oi.Body))
+                    {
+                        @* A mass-less haven has no Hill sphere — you clamp its ⚓ dock, you don't orbit.
+                           Same panel slot, dock language, so the capture-range math never lies here. *@
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>⚓ Dock at @oi.Body.Name — @DockStatusLine(oi)</span>
+                        </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · clamp within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (match ≤ @((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1" title="Drop this destination — stop tracking it"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>
+                                @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
+                            </span>
+                            @if (oi.WindowOpen && oi.RadiusInStableBand)
+                            {
+                                @* #963 · a sibling of the bare undock: this circularizes AT THIS RADIUS this
+                                   instant, which is not what the plan's arrive-orbit step (#965) would fly.
+                                   Emergency dress, unchanged behaviour. *@
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
+                                        disabled="@(!oi.CanEngage || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyInsertionTip(oi))" @onclick="EnterOrbit">
+                                    Enter orbit (@oi.Cost p / O)
+                                </button>
+                            }
+                            else if (oi.WindowOpen)
+                            {
+                                @* #180 moon-grade orbit: this radius is in the tide-chaotic band (Lab 16 — the
+                                   owner's ≈0.53-Hill Enceladus park that silently stripped). NEVER circularize
+                                   here silently; the button hands the descent to the autopilot, which parks at
+                                   the tide-stable radius. The O-key (EnterOrbit) follows the same logic. *@
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
+                                        disabled="@NavLockedByDock"
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyDescentTip(oi))"
+                                        @onclick="EnterOrbit">
+                                    🛰 Autopilot to stable park (≈@oi.ApproachCost p)
+                                </button>
+                            }
+                            else if (oi.Bound)
+                            {
+                                @* #176: already in orbit — the button isn't "off", there's just nothing to arm.
+                                   Say so instead of a mute grey "Auto-orbit" that reads like a dead control. *@
+                                <button type="button" class="btn btn-sm py-0 btn-outline-success" disabled
+                                        title="already orbiting — burn prograde to leave, or ⚓ Dock if it's a haven">
+                                    In orbit ✓
+                                </button>
+                            }
+                            else
+                            {
+                                @* #963 · the ARM press is the emergency (it points the autopilot from wherever
+                                   she is, instead of from where the plan puts her). Standing an armed
+                                   autopilot back down is the safe direction and keeps its own green dress. *@
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-outline-danger" : "btn-outline-secondary")"
+                                        disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : oi.Armed ? "Arm the autopilot to capture into orbit when she's in range" : EmergencyCaptureTip(oi))" @onclick="EnterOrbit">
+                                    @(oi.Armed
+                                        ? (_disarmConfirmBodyId == oi.Body.Id
+                                            ? "Disarm? click again"
+                                            : oi.InCaptureRange ? "Autopilot ON — flying" : "Autopilot ON — disarm")
+                                        : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
+                                </button>
+                            }
+                        </div>
+                        <div class="progress map-orbit-bar" title="distance vs capture range">
+                            <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
+                                 style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
+                            <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
+                                 style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1" title="Drop this destination — stop tracking it"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            @* #200 · THE DOCKING FOCUS PANEL — "Own pop-up of the numbers to hit, just like in piracy-hold."
+               The owner, inbound to Venus Haven, could not read off this HUD how close he was to the clamp's
+               distance and speed limits; the line he had was one sentence of coaching, and the readout beside
+               it toggled between whichever body was nearest. The flicker half is closed (#966's latch, #1033's
+               Hill-sphere deferral). This is the other half, and it is deliberately the SAME BOX the piracy
+               run already uses — the 🎯 autosteal criterion box on a prey dossier below: one row per gate,
+               reading against required, green the moment the number is inside.
+
+               ITS HOUSING IS THE PIRACY HOUSING. The plunder opportunity and the boarding progress are both
+               in-FLOW sections of this same .map-readouts block, not floating cards, and so is this. That is
+               the whole of its geometry answer (#1043): a box that claims real document height in a column
+               already bound to the window (.map-flowcolumn, #992) cannot fight the nav-target lines above it
+               or the Plotting panel below it for a pixel, and .map-readouts' own `overflow-y: auto` means it
+               scrolls only when the window is genuinely too short. No z-index, no position, nothing to lose a
+               stacking argument with.
+
+               IT SPEAKS ON THE CLAMP'S OWN GATE. DockFocusLive is the affordance's phase — a dock haven
+               armed or chosen, or the clamp in latched range of one — so a haven merely drifting past does
+               not raise it, and being clamped on puts it away (the affordance is Hidden there). Every number
+               in it comes off that same resolved affordance through DockFocus, whose gates are DockRule's
+               constants: the panel and the ⚓ button are reading one judgement, so a row can never be green
+               about a limit the arm refuses. #761: when the door refuses, the offending row is the one drawn
+               outside its gate, and the verdict names it. *@
+            @if (DockFocusLive)
+            {
+                <div class="map-dock-focus border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="fw-bold">⚓ Clamp at @(_dockAffordance.HavenName ?? "the berth") needs:</div>
+                    @foreach (DockGateRow row in DockFocus.Rows(_dockAffordance, EffectiveDockTankPulses))
+                    {
+                        <div class="@(row.Inside ? "text-success" : "text-warning")">
+                            @(row.Inside ? "✅" : "❌") @row.Label — @row.Reading @row.Gate
+                        </div>
+                    }
+                    <div class="@(_dockAffordance.CanClampNow ? "text-success fw-bold" : "text-secondary")">
+                        @DockFocus.Verdict(_dockAffordance, EffectiveDockTankPulses)
+                    </div>
+                </div>
+            }
+            <div>
+                @* #954: one line for a fact that needs two — the neighbourhood and the thing in it, and the
+                   ⚓ hint follows the neighbourhood's haven rather than blinking with the nearest slot. *@
+                Nearest: @NearestReadoutName() (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestHaven is not null && _dockedHavenId is null)
+                {
+                    <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
+                }
+            </div>
+            @if (_activeRadar)
+            {
+                <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
+            }
+            @if (_plasma is not null)
+            {
+                int chargePct = (int)Math.Round(_ship.Charge * 100);
+                string chargeClass = _ship.Charge >= ArcChargeThreshold ? "bg-danger"
+                    : _ship.Charge >= 0.6 ? "bg-warning" : "bg-info";
+                <hr />
+                <div>Charge: @chargePct% @(_ship.Charge >= ArcChargeThreshold ? "— ARCING RISK" : "")</div>
+                <div class="progress" role="progressbar" aria-label="Hull charge">
+                    <div class="progress-bar @chargeClass" style="width: @chargePct%"></div>
+                </div>
+                @if (_ship.Charge >= ArcChargeThreshold)
+                {
+                    <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
+                }
+            }
+            @if (_pulse.Message is not null)
+            {
+                <div class="text-warning">@_pulse.Message</div>
+            }
+            @if (_captureEngaged)
+            {
+                <hr />
+                <div class="fw-bold text-success">🚀 SHUTTLES AWAY — boarding @_captureTargetCallsign</div>
+                <div class="progress my-1" role="progressbar" aria-label="Boarding progress" style="height: 1.1rem;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                         style="width: @(((int)(_captureProgress * 100)))%">@((int)(_captureProgress * 100))%</div>
+                </div>
+                @* Owner ("let's make it more clear"): the autosteal crawls because boarding runs on
+                   WALL-CLOCK, not sim time — cranking warp does nothing. Say the ETA, say warp won't
+                   help, and say how to hurry it (a tighter, slower match cuts RequiredSecondsFor). *@
+                <div class="small">
+                    ≈ @(Math.Max(0, (1 - _captureProgress) * _captureRequiredSeconds).ToString("F0", CultureInfo.InvariantCulture)) s left ·
+                    <span class="text-warning">real-time — warp won't hurry it</span>
+                    <span class="text-secondary">· hold the match; closer &amp; slower boards faster</span>
+                </div>
+                @* #202: show what is being taken AS it transfers — no more forensic accounting. The
+                   take is the hull's cargo capped by our free hold; priced through the same fence market
+                   the loot line and the credited value read. *@
+                @if (SelectedCaptureTarget() is { } prey && prey.Ship.CargoUnits > 0)
+                {
+                    int hold = CargoCapacity - _cargoUnits;
+                    int take = Math.Max(0, Math.Min(prey.Ship.CargoUnits, hold));
+                    <div class="small text-warning">
+                        📦 Prising loose @take units of @prey.Ship.CargoClass — est.
+                        @((take * CargoMarket.UnitValue(prey.Ship.CargoClass)).ToString("N0", CultureInfo.InvariantCulture)) cr
+                        @(take < prey.Ship.CargoUnits ? "(hold's filling — the rest stays with her)" : "")
+                    </div>
+                }
+            }
+            @* #177/#178 — a boardable hull is in range, but piracy is never automatic. Offer it;
+               the shuttles do not move until the captain says so. Standing down is free and silent. *@
+            @if (_plunderOpportunityTargetId is not null)
+            {
+                <hr />
+                <div class="fw-bold text-warning">🏴 PLUNDER OPPORTUNITY — @_captureTargetCallsign in boarding range</div>
+                <div class="small text-secondary mb-1">
+                    Boarding @_captureTargetCallsign is PIRACY — you'll take their cargo and carry the heat.
+                    Hostile acts need the captain's word.
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-danger" title="Send the shuttles across and board her — this is piracy" @onclick="AuthorizePlunder">🏴 Board her — commit piracy</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="Stand the shuttles down — leave her be" @onclick="DeclinePlunder">Stand down</button>
+                </div>
+            }
+        </div>
+
+        @* #135/#143 — reference-frame selector. Near a gas giant a moon-to-moon course is useless in
+           the solar frame: the primary's ~10 km/s solar orbit drowns the interesting motion. Pick the
+           body every time-parameterized draw is expressed co-moving with. Default Sun (inertial); inside
+           a giant's Hill sphere that giant is suggested (✦) but never auto-selected — the owner asked for
+           a CHOICE. The v-readout is quoted in, and labelled with, the chosen frame. #143: this ONE
+           selection governs BOTH the Play-view ribbon/scrub path and the Plot curves, so the chip lives
+           OUTSIDE the Plot panel and is visible in both views — the ruler is never silent. *@
+        <div class="map-frame bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+            <div class="map-plot-frame d-flex flex-wrap align-items-center gap-1">
+                <span class="text-secondary">frame:</span>
+                @foreach (FrameOption opt in FrameOptions())
+                {
+                    bool active = opt.Id == _plotFrameBodyId;
+                    <button type="button"
+                            class="btn btn-sm py-0 @(active ? "btn-info" : opt.Suggested ? "btn-outline-warning" : "btn-outline-light")"
+                            title="@opt.Title"
+                            @onclick="() => SetPlotFrame(opt.Id)">@opt.Label@(opt.Suggested && !active ? " ✦" : "")</button>
+                }
+                @* #206 — the compact chips above are contextual (Sun · local giant · target); this overflow
+                   makes EVERY body pickable as origin from anywhere (owner: "All planets and moons need it"),
+                   grouped by parent. The pick gives it an active chip; #144's law holds (one frame rules map
+                   + plotting ribbon + readouts). *@
+                <select class="form-select form-select-sm py-0 map-frame-picker"
+                        value="@(_plotFrameBodyId ?? "")" @onchange="OnFramePicked"
+                        title="Pick ANY planet, moon, or station as the map/plot origin — the choice rules both views (#206)">
+                    @* value="" (Sun / inertial) shows this placeholder; an exotic frame shows its own name,
+                       so the picker always reads the live origin and pairs with its chip. *@
+                    <option value="">frame… ▾</option>
+                    @foreach ((string groupLabel, List<CelestialBody> members) in FramePickerGroups())
+                    {
+                        <optgroup label="@groupLabel">
+                            @foreach (CelestialBody b in members)
+                            {
+                                <option value="@b.Id">@b.Name</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+                <span class="text-secondary ms-1" title="Ship speed in the selected frame">@FrameSpeedReadout()</span>
+            </div>
+        </div>
+
+        @if (PlotMode)
+        {
+            @* #997 · THE PANEL IS A CappedScrollPanel NOW, and its behaviour is exactly #993's — because
+               the component IS #993's arithmetic, lifted out of this one panel's forty-line comment and
+               given a name. A head that keeps its measured height, a body that takes what is left and
+               scrolls there, a floor under the body so a short window pages the panel instead of squeezing
+               the plan to nothing, and the open editor scrolled into view when — and only when — WHICH
+               editor is open has changed since the last paint.
+
+               PlotPanelFitsTheWindowTests is unchanged and still locates `.map-plot` and `.map-plot-nodes`
+               by name: the panel keeps both names and both jobs, and the guard that proved the behaviour
+               at 1280x720 is the guard that now proves the component. *@
+            <CappedScrollPanel class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small"
+                               BodyClass="map-plot-nodes" BodyFloor="6rem"
+                               HasContent="@(!PlanListIsEmpty)"
+                               OpenChild="@OpenPlanEditorKey()" OpenChildSelector=".map-plan-step-open">
+                <Header>
+                <div class="fw-bold mb-1">Plotting</div>
+                @* #949 · The label is Core's (NodeFrame.ScrubLabel) so the help card can print the same
+                   word. The clock beside it is the client's own ladder and stays here. *@
+                <div class="mb-1">@(NodeFrame.ScrubLabel): @FormatSimTime(ScrubTime)</div>
+                @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
+                <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
+                       title="Scrub the plot clock forward and back along the course"
+                       @bind="_scrubOffsetSeconds" @bind:event="oninput" @onkeydown:stopPropagation="true" />
+                <div class="mb-1 d-flex justify-content-between align-items-center">
+                    <span>Path length: @FormatHorizon(CurrentPlotHorizonSeconds)</span>
+                    <button type="button" class="btn btn-sm py-0 @(_horizonChoice == "auto" ? "btn-info" : "btn-outline-light")"
+                            title="Let the nav line pick its own length automatically"
+                            @onclick="SetHorizonAuto">auto</button>
+                </div>
+                @* Same full-width form-range as the scrub slider above it. *@
+                <input type="range" class="form-range" min="0" max="100" step="1"
+                       value="@HorizonSliderValue" title="Length of the navigation line (log scale)"
+                       @oninput="OnHorizonSliderInput" @onkeydown:stopPropagation="true" />
+                @* #209 — say the state: when a frame crop or the projection cap makes the drawn ribbon
+                   shorter than the full picture, name why (never a silently short path). *@
+                @{ var _ribbonNote = RibbonHorizonNote(); }
+                @if (_ribbonNote is { } _rn)
+                {
+                    <div class="small map-ribbon-note @(_rn.Warn ? "text-warning fw-bold" : "text-info")"
+                         title="How long a stretch of the plotted course the ribbon actually draws, and why">@_rn.Text</div>
+                }
+                @* #168: this pass/insertion block appears and vanishes at plot cadence (a closest pass
+                   comes and goes as the sim ticks / the scrub moves) and its text reflows. Reserve its
+                   tallest state (pass line + insert button) in an always-rendered fixed-height container
+                   so the burn steps below never jump under a repeated ±15° click. *@
+                <div class="map-plot-passline">
+                    @if (_closestPass is { } cp)
+                    {
+                        <div class="small mb-1 @(cp.Impact ? "text-danger fw-bold" : cp.Severity < 5 ? "text-warning" : "text-secondary")">
+                            Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
+                            @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
+                        </div>
+                        @* #950/#952: the old "✈ Insert at X pass" chip stood HERE, above the plan, and armed
+                           whatever body happened to be nearest — which, parked at Earth, offered to orbit
+                           EARTH while the captain was plotting Mars. It is gone. The arrival is now a STEP at
+                           the end of the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md PR-D1), added
+                           by the compose buttons below and armed from inside its own row. One fact, one UI. *@
+                    }
+                </div>
+                @* PR-D2 · the flight plan OWNS the step editors (docs/WednesdayPlan/UnifiedNavListNotes.md,
+                   GeminiUINotes.md). The burn list IS the plan; the old floating sling/skim panels are now
+                   scratchpad COMPOSE rows (FMS pattern — solve→preview→commit); every committed step
+                   expands in place (accordion — one open at a time), so each step's buttons live inside
+                   its own row, not loose on the HUD. The NOW/NEXT line is derived through the same Core
+                   helper the pilot banner reads, so the two never disagree. *@
+                @{
+                    FlightPlanStatus _fp = FlightNowNext();
+                    int _fpCount = FlightPlanStepCount();
+                }
+                <div class="map-flightplan-head mb-2">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <span class="fw-bold">🗺 Flight plan</span>
+                        @if (_fpCount > 0)
+                        {
+                            <span class="text-secondary">step @FlightPlanCurrentStep() of @_fpCount</span>
+                        }
+                    </div>
+                    @* #168: NowLine wraps 1↔3 lines and NextLine toggles as the autopilot text changes.
+                       Reserve the common 2-line case (now + next) so the frequent 1↔2 flicker can't shove
+                       the burn steps below mid-click; a rare 3+-line NowLine may still grow (acceptable). *@
+                    <div class="map-flightplan-status">
+                        <div class="map-flightplan-now">@_fp.NowLine</div>
+                        @if (_fp.NextLine is { } _nextLine)
+                        {
+                            <div class="map-flightplan-next">@_nextLine</div>
+                        }
+                    </div>
+                </div>
+                @* Compose new steps (scratchpad). Add-burn seeds a step at the scrub and opens it; a
+                   slingable / skimmable pass offers its own solver as a compose editor that COMMITS a step. *@
+                @* #168: the sling / skim compose buttons appear only when the current plot has a
+                   slingable / skimmable pass — they toggle at plot cadence and can wrap this row 1↔2
+                   lines. Reserve the tallest state so the burn steps below never jump under a click. *@
+                <div class="map-plot-compose d-flex flex-wrap align-items-center mb-2 gap-2">
+                    @* #963: "This should help us highlight the NAV button and the Add Burn buttons as the keys
+                       to navigation. Them and the scrub handle are really underrepresented now." Same primary
+                       dress as Plot — these two are the navigation, everything else on the plan is trim. *@
+                    @* #955 NAV-1 · THE PLAN CAN START AT THE BERTH. Owner's test story for the unified nav list
+                       (2026-08-23): "plan while docked, then the plan starts with an undock step recorded
+                       topmost in the nav-burn list, then safe-harbour out-thrust to clear the vicinity of the
+                       station, then the actual burns." One press lays BOTH rows — a cast-off that leaves her
+                       drifting in the harbour's traffic is not a cast-off — and it is offered only where it
+                       means anything: at a berth, before the plan already has one. *@
+                    @if (NavLockedByDock && !PlanBeginsWithCastOff)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning map-key-action"
+                                title="@CastOffRule.ComposeHint" @onclick="AddCastOffAtTop">@CastOffRule.ComposeButton</button>
+                    }
+                    @* #949 · Face and tooltip both Core's now (NodeFrame), so the help card that teaches
+                       this button reads it rather than retyping it. *@
+                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="@NodeFrame.AddBurnAtScrubHint" @onclick="AddBurnAtScrub">@NodeFrame.AddBurnAtScrubButton</button>
+                    @if (_slingablePass is { } sp)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Sling ? "btn-info" : "btn-outline-info")"
+                                title="Open the sling solver for this flyby" @onclick="ToggleSlingPanel">⤴ Add sling past @sp.BodyName</button>
+                    }
+                    @if (_skimmablePass is { } kp)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Skim ? "btn-danger" : "btn-outline-danger")"
+                                title="Open the skim solver for this atmosphere pass" @onclick="ToggleSkimPanel">🔥 Add skim @kp.BodyName</button>
+                    }
+                    @* #952/#955 THE CHERRY ON TOP — the plan can finally END somewhere. The owner: "the cherry
+                       on top of the cake is missing when I cannot add the step to the end of the plan to orbit
+                       Mars here. It feels incomplete." These sit beside "+ Add burn at scrub" because that is
+                       where he looked for them, and each NAMES the body it would add so the step is never a
+                       surprise (#950). An arrival that does not currently work is still addable — its row says
+                       in numbers how far the course is from ending safely, and the ±p / ±d / ±h buttons are how
+                       the captain closes the gap. *@
+                    @if (ArriveCandidate(ArrivalStepRule.ArrivalKind.Orbit) is not null)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Arrive && _arrive?.Kind == ArrivalStepRule.ArrivalKind.Orbit ? "btn-info" : "btn-outline-info")"
+                                title="End the plan here: insert into orbit at the pass nearest the scrub"
+                                @onclick="() => AddArriveAtScrub(ArrivalStepRule.ArrivalKind.Orbit)">@ArriveButtonLabel(ArrivalStepRule.ArrivalKind.Orbit)</button>
+                    }
+                    @if (ArriveCandidate(ArrivalStepRule.ArrivalKind.Dock) is not null)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Arrive && _arrive?.Kind == ArrivalStepRule.ArrivalKind.Dock ? "btn-warning" : "btn-outline-warning")"
+                                title="End the plan here: coast into the dock envelope and clamp on at the haven nearest the scrub"
+                                @onclick="() => AddArriveAtScrub(ArrivalStepRule.ArrivalKind.Dock)">@ArriveButtonLabel(ArrivalStepRule.ArrivalKind.Dock)</button>
+                    }
+                    <span class="ms-auto text-nowrap">Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
+                </div>
+                @* PR-G · the sling compose editor — SOLVE previews against the real integrator (labs 19/20's
+                   crank); "Add the burn" COMMITS the solved node into the plan below. *@
+                @if (_openEditor == FlightEditorKind.Sling && _slingablePass is { } slp)
+                {
+                    <div class="map-step-editor map-sling-body bg-dark bg-opacity-50 rounded p-2 mb-2">
+                        <div class="fw-bold small mb-1">⤴ Compose sling past @slp.BodyName</div>
+                        <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Sling side">
+                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Lead ? "btn-success" : "btn-outline-secondary")"
+                                    title="Pass on the leading side — steal speed, boost outward" @onclick="() => SetSlingSide(SlingPlanner.PassSide.Lead)">Lead — boost</button>
+                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Trail ? "btn-warning" : "btn-outline-secondary")"
+                                    title="Pass on the trailing side — shed speed, brake" @onclick="() => SetSlingSide(SlingPlanner.PassSide.Trail)">Trail — brake</button>
+                        </div>
+                        <div class="mb-1">Pass distance:
+                            <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) planet radii</strong>
+                            <span class="text-secondary">(point-mass floor @SlingMinRadii.ToString("0", CultureInfo.InvariantCulture) R)</span>
+                        </div>
+                        @* stopPropagation: arrow keys adjust the slider, not fire live ship pulses. *@
+                        <input type="range" class="form-range" min="@SlingMinRadii" max="@SlingMaxRadii" step="0.5"
+                               value="@_slingPassRadii.ToString(CultureInfo.InvariantCulture)"
+                               title="Set how close the flyby skims the planet, in radii"
+                               @oninput="OnSlingRadiiInput" @onkeydown:stopPropagation="true" />
+                        <div class="text-secondary mb-2">@SlingNodeNoteNow() — solver may propose its own node</div>
+                        <button type="button" class="btn btn-sm btn-outline-info w-100 mb-2" disabled="@_slingSolving"
+                                title="Fly the sling through the real integrator and preview it" @onclick="RunSlingSolveAsync">@(_slingSolving ? "solving…" : "SOLVE the sling")</button>
+                        @if (_slingFailure is { } fail)
+                        {
+                            <div class="text-warning">⚠ @fail</div>
+                        }
+                        else if (_slingResult is { Ok: true } r)
+                        {
+                            <div class="map-sling-verdict">
+                                <div>@SlingPassLine(r)</div>
+                                <div>@SlingBurnLine(r)</div>
+                                <div class="@(r.SpeedGain >= 0 ? "text-success" : "text-warning")">@SlingOutcomeLine(r)</div>
+                                <div class="text-warning">@SlingLeverLine(r)</div>
+                                <button type="button" class="btn btn-sm btn-success w-100 mt-1" title="Commit this solved sling as a burn on the plan" @onclick="AddSlingBurn">Add the burn → commit step</button>
+                            </div>
+                        }
+                    </div>
+                }
+                @* PR-I · the skim compose editor — SOLVE flies the pass through the real drag model; the
+                   three-zone corridor gauge shows what actually flies; "Add the burn" COMMITS the step. *@
+                @if (_openEditor == FlightEditorKind.Skim && _skimmablePass is { } skp)
+                {
+                    <div class="map-step-editor map-skim-body bg-dark bg-opacity-50 rounded p-2 mb-2">
+                        <div class="fw-bold small mb-1">🔥 Compose skim @skp.BodyName</div>
+                        <div class="mb-1">Periapsis depth:
+                            <strong>@_skimAltKm.ToString("0", CultureInfo.InvariantCulture) km</strong>
+                            <span class="text-secondary">(shell top @SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture) km)</span>
+                        </div>
+                        @* stopPropagation: arrow keys move the slider, not fire live ship pulses. *@
+                        <input type="range" class="form-range" min="1" max="@SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture)" step="1"
+                               value="@_skimAltKm.ToString("0", CultureInfo.InvariantCulture)"
+                               title="Set the periapsis depth of the skim, in km"
+                               @oninput="OnSkimAltInput" @onkeydown:stopPropagation="true" />
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 mb-2" disabled="@_skimSolving"
+                                title="Fly the skim through the drag model and preview it" @onclick="RunSkimSolveAsync">@(_skimSolving ? "flying the pass…" : "SOLVE the skim")</button>
+                        @if (_skimFailure is { } fail)
+                        {
+                            <div class="text-warning">⚠ @fail</div>
+                        }
+                        else if (_skimResult is { } g)
+                        {
+                            @* The corridor gauge: three labeled zones read off the flown DragReport. *@
+                            <div class="map-skim-gauge">
+                                <div class="map-skim-zone @(g.TooShallow ? "fw-bold" : "text-secondary")">
+                                    @(g.ArrivalHyperbolic ? "▲ skip — she bounces" : "▲ too shallow") @(g.TooShallow ? "◀" : "")
+                                </div>
+                                <div class="map-skim-zone @(g.InCorridor ? "text-success fw-bold" : "text-secondary")">
+                                    ● the corridor @(g.InCorridor ? "◀" : "")
+                                </div>
+                                <div class="map-skim-zone @(g.TooDeep ? "text-danger fw-bold" : "text-secondary")">
+                                    ▼ too deep — would hole the sail @(g.TooDeep ? "◀" : "")
+                                </div>
+                            </div>
+                            <div class="map-skim-verdict mt-1">
+                                <div>@SkimDepthLine(g)</div>
+                                <div class="@(g.TooDeep ? "text-danger" : g.InCorridor ? "text-success" : "text-secondary")">@SkimShedLine(g)</div>
+                                <div>@SkimOutcomeLine(g)</div>
+                                <div class="text-secondary map-skim-fineprint">@SkimFinePrint()</div>
+                                <button type="button" class="btn btn-sm @(g.TooDeep ? "btn-danger" : "btn-success") w-100 mt-1"
+                                        title="Commit this solved skim as a burn on the plan" @onclick="AddSkimBurn">@(g.TooDeep ? "Add the burn anyway — fly into the red" : "Add the burn → commit step")</button>
+                            </div>
+                        }
+                    </div>
+                }
+                @if (_destinationBodyId is not null && _ancientCharges > 0)
+                {
+                    @* M28: the Ancients' pilot — scarce alien auto-plot, found at the pyramids. *@
+                    <button type="button" class="btn btn-sm btn-warning w-100 mb-2" title="Spend an Ancients' charge to auto-plot the whole course" @onclick="UseAncientsPilot">
+                        ◬ The Ancients' pilot — lay course to @BodyName(_destinationBodyId) (@_ancientCharges left)
+                    </button>
+                }
+
+                @* #989 · THE PLAN'S SHAPE, SAID AT THE DESK. Owner: "2 cast-off in sequence sounds kind of
+                   silly — we should have some logic check." The check is Core's (CastOffRule.CheckShape),
+                   and it is the SAME call that refuses a second pair at the button and that wakes the
+                   captain once when a plan on the board goes bad. Here it is simply readable: a plan that
+                   cannot be flown as written says so above the steps, in the rule's own words.
+
+                   #997 · IT AND THE EMPTY LINE ARE BOTH HEAD, and that is the whole of the restructuring
+                   this migration asked of the panel: what is above the plan does not scroll, the plan does.
+                   The empty state is a head row for a reason a body element would have got wrong — a body
+                   drawn on an empty plan would stand its own 6rem floor of blank scroller under a sentence
+                   that says there is nothing to scroll. *@
+                @if (PlanListIsEmpty)
+                {
+                    <div class="text-secondary">@(NavLockedByDock
+                        ? "No steps yet. Press ⚓ + Cast off to start the plan at this berth, then add the burns and end it with an orbit or a dock."
+                        : "No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.")</div>
+                }
+                else if (PlanShapeWarningLine() is { } _shapeWarning)
+                {
+                    <div class="text-warning small mb-1">✗ @_shapeWarning</div>
+                }
+                </Header>
+                <ChildContent>
+                        @foreach (PlanNode node in _planNodes)
+                        {
+                            @* #955 NAV-1 · THE TWO DEPARTURE ROWS. Shaped exactly like every other row — pip,
+                               caret, glance line, time — because the owner's whole ask is ONE list read top to
+                               bottom, and a departure that looked different would read as a different kind of
+                               thing. Their editors are the small ones they deserve: the clamp has nothing to
+                               set (it costs nothing and points nowhere), the clearance has the ±p nudges in
+                               NodeFrame's own faces. Both are removable, like every step. *@
+                            if (node.Kind != PlanStepKind.Burn)
+                            {
+                                FlightStepState _ds = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                                bool _dopen = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                                <div class="mb-1 map-plan-step map-plan-step-@_ds.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_dopen ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                    <div class="map-plan-step-line" role="button" tabindex="0"
+                                         title="Click to @(_dopen ? "collapse" : "open") this departure step"
+                                         @onclick="() => ToggleBurnEditor(node)">
+                                        <span class="map-plan-step-pip" title="@_ds" aria-hidden="true"></span>
+                                        <span class="map-plan-step-caret" aria-hidden="true">@(_dopen ? "▾" : "▸")</span>
+                                        <span class="flex-grow-1">@PlanStepGlanceLine(node)</span>
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
+                                    </div>
+                                    @if (_dopen)
+                                    {
+                                        @* The modifier class is not decoration: the burn editor's own guards
+                                           (TheNumbersNudgeTooTests, ThePlannerPlansInTheVectorViewTests) bound
+                                           their slice by the bare `map-plan-step-edit` opening tag, and a
+                                           second panel wearing the identical tag would silently widen what
+                                           they judge. Same styling, its own name. *@
+                                        <div class="map-plan-step-edit map-departure-step-edit">
+                                            @if (node.Kind == PlanStepKind.ClearHarbour)
+                                            {
+                                                <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node)) · @ClearanceEtaLine(node)</div>
+                                                <div class="map-burn-steps" role="group" aria-label="Step the clearance thrust in pulses">
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
+                                                            @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
+                                                            @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
+                                                    <span class="map-burn-epoch-readout text-nowrap" title="What this thrust spends">@node.Pulses p</span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(1, false)"
+                                                            @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeMagnitudeHint(1, true)"
+                                                            @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @* #989 · WHEN SHE LEAVES IS THE ONE THING A DEPARTURE HAS TO SET.
+                                                   Owner, docked at The Red Eye with the scrub 33 h out: "Cast off
+                                                   time says in zero hours here even though the scrub is in 33
+                                                   hours?" The pair is laid AT the scrub now, and these are the
+                                                   standard ±d/±h faces every other step's time buttons wear —
+                                                   except that they move the whole ACT: the clearance rides along
+                                                   at its own gap behind and is re-solved against the berth's new
+                                                   place (NudgeDepartureEpoch). *@
+                                                <div class="small mb-1 text-secondary">The clamp lets go at the hour below — nothing else to set. She leaves with the berth's own shove and the thrust that follows carries her clear.</div>
+                                                <div class="map-burn-steps" role="group" aria-label="Step the departure's hour along the plan">
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(-1, true)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, -1, true)">@NodeFrame.NudgeEpochLabel(-1, true)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(-1, false)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, -1, false)">@NodeFrame.NudgeEpochLabel(-1, false)</button>
+                                                    <span class="map-burn-epoch-readout text-nowrap" title="When the clamp lets go">@FormatSimTime(node.SimTime)</span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(1, false)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, 1, false)">@NodeFrame.NudgeEpochLabel(1, false)</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                                            title="@NodeFrame.NudgeEpochHint(1, true)"
+                                                            @onclick="() => NudgeDepartureEpoch(node, 1, true)">@NodeFrame.NudgeEpochLabel(1, true)</button>
+                                                </div>
+                                            }
+                                            @* #989 · THE PAIR COMES OFF AS ONE. One press laid both rows; one
+                                               press takes both away. Half a departure is not a plan anybody
+                                               meant to have — and the owner's second sighting is what a plan
+                                               that quietly lost half of one looks like. *@
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1"
+                                                    title="Take the cast off off the plan — the clamp release and the clearance come off together"
+                                                    @onclick="RemoveTheCastOff">✖ remove the cast off (both rows)</button>
+                                        </div>
+                                    }
+                                </div>
+                                continue;
+                            }
+
+                            @* PR-D2: each burn is a step. Collapsed, it shows a glanceable line (type +
+                               direction + countdown); clicking the line expands its editor in place
+                               (accordion — one open at a time). The state pip (planned / done / stale)
+                               rides the left edge so the plan reads at a glance. *@
+                            FlightStepState _bs = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                            bool _open = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                            <div class="mb-1 map-plan-step map-plan-step-@_bs.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_open ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_open ? "collapse" : "edit") this step"
+                                     @onclick="() => ToggleBurnEditor(node)">
+                                    <span class="map-plan-step-pip" title="@_bs" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_open ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">@BurnGlanceLine(node)</span>
+                                    <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
+                                </div>
+                                @if (_open)
+                                {
+                                    @* #838 · THE PLANNER PLANS IN THE VECTOR VIEW, AND IN FOUR WORDS. Owner:
+                                       "I almost always use those four directions in respect to our trajectory…
+                                       the intermediate angles are the exception." Ruling A (2026-08-17): the ±
+                                       idiom — the mode toggle, the prograde/retrograde pair AND the ±15° ↺/↻
+                                       nudges — leaves this panel for good and stays where it works, in reflex
+                                       flying (the live +/−/arrow keys). What stands here instead: four quick
+                                       selects solved in the GHOST'S frame at THIS node's epoch, and free aim
+                                       underneath as the exception. *@
+                                    <div class="map-plan-step-edit">
+                                        <div class="map-burn-quick" role="group" aria-label="Burn direction at this node">
+                                            @foreach (NodeDirection _dir in NodeFrame.QuickSelects)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm @(NodeAimedAlong(node, _dir) ? "btn-info" : "btn-outline-info")"
+                                                        title="@NodeFrame.Hint(_dir, PlanningPrimaryName(node.SimTime))"
+                                                        @onclick="() => SetNodeDirection(node, _dir)">@NodeFrame.Label(_dir)</button>
+                                            }
+                                        </div>
+                                        @* #926 · FLYING WITH THE MOUSE ALONE. Owner (2026-08-17, playing): "Let's add
+                                           the plus and minus buttons to the burn scrub angle … the vector rotation is
+                                           good for flying with mouse alone, without inputting … like ±5 degrees." Five
+                                           degrees off whatever the node points at now — a quick select then a nudge or
+                                           two, and the aim is set without the keyboard ever coming into it. The face is
+                                           an ANGLE (a degree sign), because this is the vector view's own idiom and not
+                                           the reflex-flying control #916 sent back to the live keys. *@
+                                        <div class="map-burn-nudge" role="group" aria-label="Nudge this burn's aim five degrees">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(-1)"
+                                                    @onclick="() => NudgeNodeAim(node, -1)">@NodeFrame.NudgeLabel(-1)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(1)"
+                                                    @onclick="() => NudgeNodeAim(node, 1)">@NodeFrame.NudgeLabel(1)</button>
+                                        </div>
+                                        @* #926 — the frame note now says BOTH frames the panel lives between: the one the
+                                           aim is solved in (the node's, #916) and the one the plan is READ in (the plot
+                                           frame). The second one is what the owner had to remember to switch by hand. *@
+                                        <div class="map-burn-frame-note text-secondary">
+                                            @NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime)) · @TripFrame.ReadingNote(PlotFrameName())
+                                        </div>
+                                        @* #926 · ONE LINE, ONE PRESS. Owner (2026-08-17): "the real thrust amounts are
+                                           dependent on the coordinate origin. I had to remember to switch to Sun to get
+                                           the ship to really start moving from Earth towards Mars." Ruling A: name the
+                                           frame, offer the trip's — never switch by yourself. The press moves what the
+                                           captain JUDGES by (the ribbon, the numbers); the quick selects go on aiming in
+                                           the node's frame, because an escape burn is Earth-prograde either way. *@
+                                        @if (TripFrameOffer(node.SimTime) is { } _offer)
+                                        {
+                                            <div class="map-burn-frame-offer">
+                                                <div class="map-burn-frame-offer-line">@TripFrame.OfferLine(PlotFrameName(), _offer.DestinationName, _offer.FrameName)</div>
+                                                <button type="button" class="btn btn-sm btn-warning w-100"
+                                                        title="@TripFrame.OfferButtonHint(_offer.FrameName)"
+                                                        @onclick="() => SetPlotFrame(_offer.FrameId)">@TripFrame.OfferButton(_offer.FrameName)</button>
+                                            </div>
+                                        }
+                                        <div class="map-burn-aim d-flex flex-wrap align-items-center gap-1">
+                                            @* Free aim — the exception the vector view keeps. #201: the burn angle is
+                                               ship-heading-RELATIVE by default — 0 = straight ahead, +90 = starboard,
+                                               −90 = port. The rel/abs toggle keeps the world heading a click away; the
+                                               stored HeadingDegrees is always world-space (BurnHeadingConvention). *@
+                                            <div class="input-group input-group-sm map-plot-heading">
+                                                <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                       value="@(_burnAngleAbsolute
+                                                           ? node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture)
+                                                           : BurnHeadingConvention.WorldToRelative(HeadingAlongCourseAt(node.SimTime), node.HeadingDegrees).ToString("+0.#;-0.#;0", CultureInfo.InvariantCulture))"
+                                                       title="@(_burnAngleAbsolute
+                                                           ? "Free aim — absolute nose heading in degrees (0° = +X, counter-clockwise)"
+                                                           : "Free aim — burn angle off the course at this node: 0 = straight ahead, +90 = starboard (right), −90 = port (left)")"
+                                                       @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
+                                                <span class="input-group-text">°</span>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                        title="@(_burnAngleAbsolute ? "Reading absolute world heading — click for course-relative (the angle off the track)" : "Reading course-relative angle (0 ahead, +90 starboard, −90 port) — click for absolute world heading")"
+                                                        @onclick="() => _burnAngleAbsolute = !_burnAngleAbsolute">@(_burnAngleAbsolute ? "abs" : "rel")</button>
+                                            </div>
+                                            @* Text (not number) input so the 4-decimal padding actually shows —
+                                               browsers strip trailing zeros from type=number. Owner: at least
+                                               ".0000" must be visible for fine thrust trims. *@
+                                            <div class="input-group input-group-sm map-plot-percent">
+                                                <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                       value="@(node.Percent.ToString("0.0000", CultureInfo.InvariantCulture))"
+                                                       title="Per-pulse thrust strength in percent — any decimal, shown to four places"
+                                                       @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
+                                                    @onclick="() => RetimeToScrub(node)">@@</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                                                    @onclick="() => DeleteNode(node)">&times;</button>
+                                        </div>
+                                        @* #937 · NUDGE THE NUMBERS TOO. Owner (2026-08-18, flying the scrub): "we
+                                           could have the small + / − symbols also on the thrust amount number dialog
+                                           for iterating the scrub panel. Now writing a new number there I have to
+                                           switch to another input to see what the effect of numeric change is."
+                                           And the ruling the same sitting: "only the fine / ultra-fine tuning would
+                                           be the captain entering the numeric value to the field, but the rough
+                                           estimation with those + − buttons like the angle." So the buttons are the
+                                           front door and the field is the exception — the two typed fields stay
+                                           exactly where they were, and each press re-solves the ribbon on the spot
+                                           through the SAME act the typed value takes (ApplyPulses / the epoch
+                                           clamp), never a second solve path. Every face carries its UNIT (p, h, d),
+                                           because #916's law is that a bare ± means reflex flying and lives on the
+                                           live keys, not here. *@
+                                        <div class="map-burn-steps" role="group" aria-label="Step this burn's size in pulses">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
+                                                    @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
+                                                    @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
+                                            @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
+                                            <input type="number" class="form-control form-control-sm map-plot-pulses"
+                                                   min="@MinNodePulses" max="@MaxNodePulses" value="@node.Pulses"
+                                                   title="Pulses this burn spends — type here for the exact number; the buttons beside it are the rough shaping"
+                                                   @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(1, false)"
+                                                    @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(1, true)"
+                                                    @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
+                                        </div>
+                                        <div class="map-burn-steps" role="group" aria-label="Step this burn's time along the course">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(-1, true)"
+                                                    @onclick="() => NudgeNodeEpoch(node, -1, true)">@NodeFrame.NudgeEpochLabel(-1, true)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(-1, false)"
+                                                    @onclick="() => NudgeNodeEpoch(node, -1, false)">@NodeFrame.NudgeEpochLabel(-1, false)</button>
+                                            <span class="map-burn-epoch-readout text-nowrap" title="When this burn fires">@FormatSimTime(node.SimTime)</span>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(1, false)"
+                                                    @onclick="() => NudgeNodeEpoch(node, 1, false)">@NodeFrame.NudgeEpochLabel(1, false)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(1, true)"
+                                                    @onclick="() => NudgeNodeEpoch(node, 1, true)">@NodeFrame.NudgeEpochLabel(1, true)</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        @* #957 — THE AUTOPILOT'S OWN BURNS ARE STEPS. Owner, after it finally accepted the
+                           Roadstead: "it accepted the autopilot but it does [not] add it as navigation step to
+                           the list." The armed transfer schedule (the #146 in-well arc, and the braking step
+                           laid instead of a refusal) fires impulses at fixed epochs; before this they had no
+                           list presence at all, so part of the plan the ship was flying was invisible. Read
+                           only — the autopilot owns them; disarming is how you take them back. *@
+                        @foreach (TransferPlanner.BurnStep _sched in ScheduledAutopilotBurns())
+                        {
+                            <div class="mb-1 map-plan-step map-plan-step-armed">
+                                <div class="map-plan-step-line" title="The autopilot fires this burn itself, at its own epoch — disarm the arrival to take it back">
+                                    <span class="map-plan-step-pip" title="Armed" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">·</span>
+                                    <span class="flex-grow-1">@ScheduledBurnGlanceLine(_sched)</span>
+                                    <span class="text-secondary small text-nowrap">@FormatSimTime(_sched.SimTime)</span>
+                                    <span class="badge bg-secondary">AUTOPILOT</span>
+                                </div>
+                            </div>
+                        }
+                        @* PR-D2: armed auto-orbit is the terminal step. Collapsed it names the body + state
+                           (ARMED → ACTIVE while the autopilot flies the approach); expanded it gains its own
+                           disarm control, so the insertion's button lives in its step like every other. The
+                           docked-guard (NavLockedByDock) still gates arming/disarming. #952: when the ARRIVE
+                           step below names the same body, that row IS this fact (with the pass and the ✓/✗
+                           bit on it) — so this one stands down rather than say it twice. *@
+                        @if (_armedOrbitBodyId is not null && !ArriveCoversArmed)
+                        {
+                            string _armedId = _armedOrbitBodyId;
+                            FlightStepState _is = FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach);
+                            bool _active = _is == FlightStepState.Active;
+                            bool _insOpen = _openEditor == FlightEditorKind.Insertion;
+                            <div class="mb-1 map-plan-step map-plan-step-@_is.ToString().ToLowerInvariant() @(_insOpen ? "map-plan-step-open" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_insOpen ? "collapse" : "manage")the insertion"
+                                     @onclick="ToggleInsertionEditor">
+                                    <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_insOpen ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">
+                                        🛰 @(_orbitKept ? "Holding orbit at" : HarborVocabulary.ArmedStepVerb(HarborClassOf(_armedId))) @BodyName(_armedId)
+                                        <span class="text-secondary">— @(_orbitKept ? (_keepTrimPulsesPerDay > 0 ? $"keeping · trim ≈{_keepTrimPulsesPerDay} p/day" : "keeping the park") : _active ? "flying the approach" : "armed · waiting for the window")</span>
+                                        @* The promise the autopilot quoted at arm time (#146): the whole-journey
+                                           budget it proved affordable before committing. #928: the number is the
+                                           CHARGED one — the autopilot's tenth — which is also what the tank is
+                                           really billed as the burns fire, so this line and the expellant gauge
+                                           can never tell two stories. *@
+                                        @if (_armedBudgetPulses > 0)
+                                        {
+                                            <span class="text-info small">· budgeted ≈@(_armedBudgetPulses) p</span>
+                                            <span class="text-secondary small d-block">💸 the autopilot flies at a tenth of the tank a hand would spend</span>
+                                        }
+                                        @* #146: the in-well transfer plan riding under this arm — the
+                                           planner's one-line quote while the cheap Lambert arc is active. *@
+                                        @if (_armedTransferSummary is not null)
+                                        {
+                                            <span class="text-info small d-block">🛰 @_armedTransferSummary</span>
+                                        }
+                                    </span>
+                                    @if (ArmedInsertionSimTime is { } _it)
+                                    {
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(_it)</span>
+                                    }
+                                    <span class="badge @(_orbitKept ? "bg-success" : _active ? "bg-info text-dark" : "bg-secondary")">@(_orbitKept ? "KEEPING" : _active ? "ACTIVE" : "ARMED")</span>
+                                </div>
+                                @if (_insOpen)
+                                {
+                                    <div class="map-plan-step-edit">
+                                        @* #950 ROOT CAUSE — "the disarm auto-insertion button does nothing here."
+                                           It was doing exactly what #179 asks: the FIRST click only arms a
+                                           four-second confirm and says so in a pulse toast. On a Nav panel
+                                           clipped from below the toast was never seen and the button's own face
+                                           never changed, so a correct double-confirm read as a dead control.
+                                           The orbit panel already showed the pending state on the button
+                                           (Map.razor "Disarm? click again"); this row now does the same, and
+                                           says it IN the step's sub-panel where the finger already is. *@
+                                        <button type="button" class="btn btn-sm w-100 @(_disarmConfirmBodyId == _armedId ? "btn-warning" : "btn-outline-warning")"
+                                                disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : "Stand the autopilot down and fly the ship by hand")"
+                                                @onclick="() => ToggleArmedInsertion(_armedId)">
+                                            @if (_disarmConfirmBodyId == _armedId)
+                                            {
+                                                <text>🛰 Click again to confirm — @(_orbitKept ? "hand the ship back from" : "disarm at") @BodyName(_armedId)</text>
+                                            }
+                                            else
+                                            {
+                                                <text>🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : HarborClassOf(_armedId) == HarborClass.Dock ? "Disarm the dock approach to" : "Disarm auto-orbit at") @BodyName(_armedId)</text>
+                                            }
+                                        </button>
+                                        <div class="text-secondary small mt-1">@(_orbitKept ? "The autopilot is HOLDING this orbit with trims. Release it and you fly by hand — it takes a confirming second click (#179)." : $"Target: {BodyName(_armedId)} — set from the navigation-target panel below; disarm here, then arm a different body.")</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        @* #952/#955 — THE ARRIVE STEP. The plan's last row, and the owner's "cherry on top":
+                           visually identical to the burn rows above it (pip · caret · glance line · time),
+                           with the valid/invalid bit as a badge and, when it is ✗, the whole sentence in
+                           numbers underneath. PR-D1 of UnifiedNavListNotes.md: the sub-panel of a step is
+                           WHERE the related buttons live, so Arm / Disarm / scrub-to-it / remove are all
+                           inside this row and nowhere else. *@
+                        @if (_arrive is { } _ar)
+                        {
+                            ArrivalStepRule.ArrivalCheck? _ac = ArriveCheck();
+                            bool _avalid = _ac?.Valid ?? false;
+                            // #952: a course too short to reach the body yields no verdict at all — the row
+                            // must read NOT JUDGED, never INVALID, because "invalid" is a claim about a plan
+                            // and this is a confession about the picture.
+                            string? _ashortLine = ArriveRibbonTooShortLine();
+                            bool _aunjudged = _ac is null;
+                            bool _aarmed = ArriveCoversArmed;
+                            bool _aactive = _aarmed && AutopilotFlyingApproach;
+                            bool _aopen = _openEditor == FlightEditorKind.Arrive;
+                            string _astate = _aarmed ? (_aactive ? "active" : "armed") : "planned";
+                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid || _aunjudged ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_aopen ? "collapse" : "manage") the arrival that ends this plan"
+                                     @onclick="ToggleArriveEditor">
+                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : _aunjudged ? "not judged yet" : "does NOT end safely")" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_aopen ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">@ArriveGlanceLine(_ar)</span>
+                                    @if (!_aunjudged && ArrivePassFor(_ar.BodyId) is { } _ap2)
+                                    {
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
+                                    }
+                                    @* #949 · The glyph and the five words are Core's constants now, so the
+                                       help card's "what ✓ / ✗ / ⌛ NOT JUDGED mean" section is printing the
+                                       same strings this badge is and cannot describe a badge that no longer
+                                       exists. Nothing about what it says or when has changed. *@
+                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : ArrivalStepRule.PendingBadge) @(_aarmed ? (_aactive ? ArrivalStepRule.StatusActive : ArrivalStepRule.StatusArmed) : _avalid ? ArrivalStepRule.StatusValid : _aunjudged ? ArrivalStepRule.StatusNotJudged : ArrivalStepRule.StatusInvalid)</span>
+                                </div>
+                                @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
+                                   speed against the real thresholds (Core ArrivalStepRule reads them off
+                                   OrbitRule / DockRule, so the sentence and the sim cannot disagree). *@
+                                @* …and (#952) when there is no verdict to give at all because the plotted
+                                   course stops short of the body, say THAT — never a fabricated ✗ whose
+                                   numbers point the captain the wrong way round the iterate loop. *@
+                                @if (_ac is { } _acx && !_acx.Valid)
+                                {
+                                    <div class="map-arrive-why text-danger small">@ArrivalStepRule.Verdict(_acx)</div>
+                                }
+                                @if (_ashortLine is { } _ashort)
+                                {
+                                    <div class="map-arrive-why text-warning small">@_ashort</div>
+                                }
+                                @if (_aopen)
+                                {
+                                    <div class="map-plan-step-edit">
+                                        @if (_ac is { } _ace)
+                                        {
+                                            <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
+                                        }
+                                        @if (_ashortLine is { } _ashortEdit)
+                                        {
+                                            <div class="small mb-1 text-warning">@_ashortEdit</div>
+                                        }
+                                        @* #969: the finished trip, in one line — "3 burns · arrive in 9 mo — the autopilot
+                                           will orbit Mars (≈3 p) · nothing more needed". This is the owner's own sentence
+                                           read back to him once the plan-time arm is accepted. *@
+                                        @if (ArrivePlanCompleteLine() is { } _aplan)
+                                        {
+                                            <div class="small mb-1 text-success">@_aplan</div>
+                                        }
+                                        @* #955 NAV-1: a clamped ship may arm a THEN — but only once the plan starts by
+                                           casting her off, and the button says which of those two it is instead of
+                                           standing there dead. A NOW arm from a berth is still a live nav act and
+                                           still refused by the lock. *@
+                                        @{
+                                            bool _armIsAThen = ArriveIsAThen(_ar);
+                                            bool _armBlocked = NavLockedByDock && !_armIsAThen;
+                                        }
+                                        <button type="button" class="btn btn-sm w-100 mb-1 @(_aarmed ? (_disarmConfirmBodyId == _ar.BodyId ? "btn-warning" : "btn-outline-warning") : _avalid ? "btn-success" : "btn-outline-secondary")"
+                                                disabled="@_armBlocked"
+                                                title="@(_armBlocked ? DockNavLockTip
+                                                    : NavLockedByDock && !PlanBeginsWithCastOff ? $"{DockNavLockTip} — {CastOffRule.ArmNeedsCastOff}"
+                                                    : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
+                                                @onclick="ArmArriveStep">
+                                            @if (_aarmed && _disarmConfirmBodyId == _ar.BodyId)
+                                            {
+                                                <text>🛰 Click again to confirm — disarm at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else if (_aarmed)
+                                            {
+                                                <text>🛰 Disarm the arrival at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else if (_armIsAThen)
+                                            {
+                                                @* #949 · The face is Core's; only the THEN clause is this
+                                                   branch's own. The help card prints the same face. *@
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId)) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
+                                            }
+                                            else
+                                            {
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId))</text>
+                                            }
+                                        </button>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-info flex-grow-1"
+                                                    title="Jump the scrub clock to this arrival's own pass" @onclick="ScrubToArrive">scrub to it</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    title="Take the arrival off the end of the plan" @onclick="RemoveArriveStep">✖ remove</button>
+                                        </div>
+                                        <div class="text-secondary small mt-1">
+                                            @if (_aarmed && ArmedArrivalStillAhead)
+                                            {
+                                                @* #949 · Core's sentence (ArrivalStepRule.ArmedAndNothingMore),
+                                                   because the help card promises it and must promise the
+                                                   words the step actually says. *@
+                                                <text>@ArrivalStepRule.ArmedAndNothingMore</text>
+                                            }
+                                            else
+                                            {
+                                                <text>
+                                                    The plan ends here. @(_avalid
+                                                        ? "Arm it now and the ship finishes the trip by itself — burns first, arrival last."
+                                                        : _aunjudged
+                                                        ? "Stretch Path length above (or press auto) until the pass is on the line — then the numbers say which way to iterate."
+                                                        : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
+                                                </text>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                </ChildContent>
+            </CappedScrollPanel>
+        }
+    </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `bool _activeRadar`</summary>
+    [Parameter] public bool _activeRadar { get; set; }
+    /// <summary>the page's `int _ancientCharges`</summary>
+    [Parameter] public int _ancientCharges { get; set; }
+    /// <summary>the page's `int _armedBudgetPulses`</summary>
+    [Parameter] public int _armedBudgetPulses { get; set; }
+    /// <summary>the page's `string? _armedOrbitBodyId`</summary>
+    [Parameter] public string? _armedOrbitBodyId { get; set; }
+    /// <summary>the page's `string? _armedTransferSummary`</summary>
+    [Parameter] public string? _armedTransferSummary { get; set; }
+    /// <summary>the page's `ArriveStep? _arrive`</summary>
+    [Parameter] public ArriveStep? _arrive { get; set; }
+    /// <summary>the page's `bool _burnAngleAbsolute` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_burnAngleAbsolute` and the assignment still lands on the page.</summary>
+    [Parameter] public bool _burnAngleAbsoluteValue { get; set; }
+    /// <summary>The page's `_burnAngleAbsolute = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<bool> _burnAngleAbsoluteSet { get; set; } = default!;
+    private bool _burnAngleAbsolute { get => _burnAngleAbsoluteValue; set { _burnAngleAbsoluteValue = value; _burnAngleAbsoluteSet(value); } }
+    /// <summary>the page's `Camera _camera`</summary>
+    [Parameter] public Camera _camera { get; set; } = default!;
+    /// <summary>the page's `bool _captureEngaged`</summary>
+    [Parameter] public bool _captureEngaged { get; set; }
+    /// <summary>the page's `double _captureProgress`</summary>
+    [Parameter] public double _captureProgress { get; set; }
+    /// <summary>the page's `double _captureRequiredSeconds`</summary>
+    [Parameter] public double _captureRequiredSeconds { get; set; }
+    /// <summary>the page's `string? _captureTargetCallsign`</summary>
+    [Parameter] public string? _captureTargetCallsign { get; set; }
+    /// <summary>the page's `int _cargoUnits`</summary>
+    [Parameter] public int _cargoUnits { get; set; }
+    /// <summary>the page's `int _cargoValue`</summary>
+    [Parameter] public int _cargoValue { get; set; }
+    /// <summary>the page's `ClosestApproach.Pass? _closestPass`</summary>
+    [Parameter] public ClosestApproach.Pass? _closestPass { get; set; }
+    /// <summary>the page's `int _credits`</summary>
+    [Parameter] public int _credits { get; set; }
+    /// <summary>the page's `string? _destinationBodyId`</summary>
+    [Parameter] public string? _destinationBodyId { get; set; }
+    /// <summary>the page's `string? _disarmConfirmBodyId`</summary>
+    [Parameter] public string? _disarmConfirmBodyId { get; set; }
+    /// <summary>the page's `DockAffordance _dockAffordance`</summary>
+    [Parameter] public DockAffordance _dockAffordance { get; set; } = default!;
+    /// <summary>the page's `string? _dockedHavenId`</summary>
+    [Parameter] public string? _dockedHavenId { get; set; }
+    /// <summary>the page's `int _effectiveWarp`</summary>
+    [Parameter] public int _effectiveWarp { get; set; }
+    /// <summary>the page's `bool _followDest`</summary>
+    [Parameter] public bool _followDest { get; set; }
+    /// <summary>the page's `string _horizonChoice`</summary>
+    [Parameter] public string _horizonChoice { get; set; } = default!;
+    /// <summary>the page's `int _keepTrimPulsesPerDay`</summary>
+    [Parameter] public int _keepTrimPulsesPerDay { get; set; }
+    /// <summary>the page's `string? _longHaulClearanceBlock`</summary>
+    [Parameter] public string? _longHaulClearanceBlock { get; set; }
+    /// <summary>the page's `LongHaul.Departure? _longHaulDeparture`</summary>
+    [Parameter] public LongHaul.Departure? _longHaulDeparture { get; set; }
+    /// <summary>the page's `Vector2d _nearestBodyPosition`</summary>
+    [Parameter] public Vector2d _nearestBodyPosition { get; set; } = default!;
+    /// <summary>the page's `Vector2d _nearestBodyVelocity`</summary>
+    [Parameter] public Vector2d _nearestBodyVelocity { get; set; } = default!;
+    /// <summary>the page's `CelestialBody? _nearestHaven`</summary>
+    [Parameter] public CelestialBody? _nearestHaven { get; set; }
+    /// <summary>the page's `FlightEditorKind _openEditor`</summary>
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    /// <summary>the page's `bool _orbitKept`</summary>
+    [Parameter] public bool _orbitKept { get; set; }
+    /// <summary>the page's `List<PlanNode> _planNodes`</summary>
+    [Parameter] public List<PlanNode> _planNodes { get; set; } = default!;
+    /// <summary>the page's `PlasmaEnvironment? _plasma`</summary>
+    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
+    /// <summary>the page's `string? _plotFrameBodyId`</summary>
+    [Parameter] public string? _plotFrameBodyId { get; set; }
+    /// <summary>the page's `string? _plunderOpportunityTargetId`</summary>
+    [Parameter] public string? _plunderOpportunityTargetId { get; set; }
+    /// <summary>the page's `PulseSlot _pulse`</summary>
+    [Parameter] public PulseSlot _pulse { get; set; } = default!;
+    /// <summary>the page's `int _reactionMassPulses`</summary>
+    [Parameter] public int _reactionMassPulses { get; set; }
+    /// <summary>the page's `string _scenarioName`</summary>
+    [Parameter] public string _scenarioName { get; set; } = default!;
+    /// <summary>the page's `double _scrubOffsetSeconds`</summary>
+    [Parameter] public double _scrubOffsetSeconds { get; set; }
+    /// <summary>the page's `PlanNode? _selectedPlanNode`</summary>
+    [Parameter] public PlanNode? _selectedPlanNode { get; set; }
+    /// <summary>the page's `ShipState _ship`</summary>
+    [Parameter] public ShipState _ship { get; set; } = default!;
+    /// <summary>the page's `bool _showTutorial`</summary>
+    [Parameter] public bool _showTutorial { get; set; }
+    /// <summary>the page's `double _skimAltKm`</summary>
+    [Parameter] public double _skimAltKm { get; set; }
+    /// <summary>the page's `string? _skimFailure`</summary>
+    [Parameter] public string? _skimFailure { get; set; }
+    /// <summary>the page's `ClosestApproach.Pass? _skimmablePass`</summary>
+    [Parameter] public ClosestApproach.Pass? _skimmablePass { get; set; }
+    /// <summary>the page's `SkimGauge? _skimResult`</summary>
+    [Parameter] public SkimGauge? _skimResult { get; set; }
+    /// <summary>the page's `bool _skimSolving`</summary>
+    [Parameter] public bool _skimSolving { get; set; }
+    /// <summary>the page's `bool _skipActive`</summary>
+    [Parameter] public bool _skipActive { get; set; }
+    /// <summary>the page's `WarpSkip.NextEvent _skipNext`</summary>
+    [Parameter] public WarpSkip.NextEvent _skipNext { get; set; } = default!;
+    /// <summary>the page's `double _skipTargetEpoch`</summary>
+    [Parameter] public double _skipTargetEpoch { get; set; }
+    /// <summary>the page's `string _skipTargetLabel`</summary>
+    [Parameter] public string _skipTargetLabel { get; set; } = default!;
+    /// <summary>the page's `ClosestApproach.Pass? _slingablePass`</summary>
+    [Parameter] public ClosestApproach.Pass? _slingablePass { get; set; }
+    /// <summary>the page's `string? _slingFailure`</summary>
+    [Parameter] public string? _slingFailure { get; set; }
+    /// <summary>the page's `double _slingPassRadii`</summary>
+    [Parameter] public double _slingPassRadii { get; set; }
+    /// <summary>the page's `SlingPlanner.Result? _slingResult`</summary>
+    [Parameter] public SlingPlanner.Result? _slingResult { get; set; }
+    /// <summary>the page's `SlingPlanner.PassSide _slingSide`</summary>
+    [Parameter] public SlingPlanner.PassSide _slingSide { get; set; } = default!;
+    /// <summary>the page's `bool _slingSolving`</summary>
+    [Parameter] public bool _slingSolving { get; set; }
+    /// <summary>the page's `Quest? ActiveCargoRunTo(string bodyId)`</summary>
+    [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
+    /// <summary>the page's `int ActiveTutorialIndex()`</summary>
+    [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
+    /// <summary>the page's `void AddArriveAtScrub(ArrivalStepRule.ArrivalKind kind)`</summary>
+    [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
+    /// <summary>the page's `void AddBurnAtScrub()`</summary>
+    [Parameter] public Action AddBurnAtScrub { get; set; } = default!;
+    /// <summary>the page's `void AddCastOffAtTop()`</summary>
+    [Parameter] public Action AddCastOffAtTop { get; set; } = default!;
+    /// <summary>the page's `void AddSkimBurn()`</summary>
+    [Parameter] public Action AddSkimBurn { get; set; } = default!;
+    /// <summary>the page's `void AddSlingBurn()`</summary>
+    [Parameter] public Action AddSlingBurn { get; set; } = default!;
+    /// <summary>the page's `void ApplyPulses(PlanNode node, int value)`</summary>
+    [Parameter] public Action<PlanNode, int> ApplyPulses { get; set; } = default!;
+    /// <summary>the page's `double ArcChargeThreshold`</summary>
+    [Parameter] public double ArcChargeThreshold { get; set; }
+    /// <summary>the page's `void ArmArriveStep()`</summary>
+    [Parameter] public Action ArmArriveStep { get; set; } = default!;
+    /// <summary>the page's `bool ArmedArrivalStillAhead`</summary>
+    [Parameter] public bool ArmedArrivalStillAhead { get; set; }
+    /// <summary>the page's `double? ArmedInsertionSimTime`</summary>
+    [Parameter] public double? ArmedInsertionSimTime { get; set; }
+    /// <summary>the page's `string ArriveButtonLabel(ArrivalStepRule.ArrivalKind kind)`</summary>
+    [Parameter] public Func<ArrivalStepRule.ArrivalKind, string> ArriveButtonLabel { get; set; } = default!;
+    /// <summary>the page's `ClosestApproach.Pass? ArriveCandidate(ArrivalStepRule.ArrivalKind kind)`</summary>
+    [Parameter] public Func<ArrivalStepRule.ArrivalKind, ClosestApproach.Pass?> ArriveCandidate { get; set; } = default!;
+    /// <summary>the page's `ArrivalStepRule.ArrivalCheck? ArriveCheck()`</summary>
+    [Parameter] public Func<ArrivalStepRule.ArrivalCheck?> ArriveCheck { get; set; } = default!;
+    /// <summary>the page's `bool ArriveCoversArmed`</summary>
+    [Parameter] public bool ArriveCoversArmed { get; set; }
+    /// <summary>the page's `string ArriveGlanceLine(ArriveStep step)`</summary>
+    [Parameter] public Func<ArriveStep, string> ArriveGlanceLine { get; set; } = default!;
+    /// <summary>the page's `bool ArriveIsAThen(ArriveStep step)`</summary>
+    [Parameter] public Func<ArriveStep, bool> ArriveIsAThen { get; set; } = default!;
+    /// <summary>the page's `ClosestApproach.Pass? ArrivePassFor(string bodyId)`</summary>
+    [Parameter] public Func<string, ClosestApproach.Pass?> ArrivePassFor { get; set; } = default!;
+    /// <summary>the page's `string? ArrivePlanCompleteLine()`</summary>
+    [Parameter] public Func<string?> ArrivePlanCompleteLine { get; set; } = default!;
+    /// <summary>the page's `string? ArriveRibbonTooShortLine()`</summary>
+    [Parameter] public Func<string?> ArriveRibbonTooShortLine { get; set; } = default!;
+    /// <summary>the page's `void AuthorizePlunder()`</summary>
+    [Parameter] public Action AuthorizePlunder { get; set; } = default!;
+    /// <summary>the page's `bool AutopilotFlyingApproach`</summary>
+    [Parameter] public bool AutopilotFlyingApproach { get; set; }
+    /// <summary>the page's `void Board(NpcState npc)`</summary>
+    [Parameter] public Action<NpcState> Board { get; set; } = default!;
+    /// <summary>the page's `string BodyName(string id)`</summary>
+    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    /// <summary>the page's `string BurnGlanceLine(PlanNode node)`</summary>
+    [Parameter] public Func<PlanNode, string> BurnGlanceLine { get; set; } = default!;
+    /// <summary>the page's `bool CanFollowDestination`</summary>
+    [Parameter] public bool CanFollowDestination { get; set; }
+    /// <summary>the page's `int CargoCapacity`</summary>
+    [Parameter] public int CargoCapacity { get; set; }
+    /// <summary>the page's `string CargoNextAction(CelestialBody dest)`</summary>
+    [Parameter] public Func<CelestialBody, string> CargoNextAction { get; set; } = default!;
+    /// <summary>the page's `double CircularSpeedHere`</summary>
+    [Parameter] public double CircularSpeedHere { get; set; }
+    /// <summary>the page's `string ClearanceEtaLine(PlanNode node)`</summary>
+    [Parameter] public Func<PlanNode, string> ClearanceEtaLine { get; set; } = default!;
+    /// <summary>the page's `double CurrentPlotHorizonSeconds`</summary>
+    [Parameter] public double CurrentPlotHorizonSeconds { get; set; }
+    /// <summary>the page's `void DeclinePlunder()`</summary>
+    [Parameter] public Action DeclinePlunder { get; set; } = default!;
+    /// <summary>the page's `void DeleteNode(PlanNode node)`</summary>
+    [Parameter] public Action<PlanNode> DeleteNode { get; set; } = default!;
+    /// <summary>the page's `string? DestinationEta()`</summary>
+    [Parameter] public Func<string?> DestinationEta { get; set; } = default!;
+    /// <summary>the page's `bool DockFocusLive`</summary>
+    [Parameter] public bool DockFocusLive { get; set; }
+    /// <summary>the page's `double DockMatchSpeedMps`</summary>
+    [Parameter] public double DockMatchSpeedMps { get; set; }
+    /// <summary>the page's `string DockNavLockTip`</summary>
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    /// <summary>the page's `double DockReachMeters`</summary>
+    [Parameter] public double DockReachMeters { get; set; }
+    /// <summary>the page's `string DockStatusLine(OrbitAssistInfo oi)`</summary>
+    [Parameter] public Func<OrbitAssistInfo, string> DockStatusLine { get; set; } = default!;
+    /// <summary>the page's `int EffectiveDockTankPulses`</summary>
+    [Parameter] public int EffectiveDockTankPulses { get; set; }
+    /// <summary>the page's `string EmergencyCaptureTip(OrbitAssistInfo oi)`</summary>
+    [Parameter] public Func<OrbitAssistInfo, string> EmergencyCaptureTip { get; set; } = default!;
+    /// <summary>the page's `string EmergencyDescentTip(OrbitAssistInfo oi)`</summary>
+    [Parameter] public Func<OrbitAssistInfo, string> EmergencyDescentTip { get; set; } = default!;
+    /// <summary>the page's `string EmergencyInsertionTip(OrbitAssistInfo oi)`</summary>
+    [Parameter] public Func<OrbitAssistInfo, string> EmergencyInsertionTip { get; set; } = default!;
+    /// <summary>the page's `string EmergencyUndockTip()`</summary>
+    [Parameter] public Func<string> EmergencyUndockTip { get; set; } = default!;
+    /// <summary>the page's `Task EngageLongHaul()`</summary>
+    [Parameter] public Func<Task> EngageLongHaul { get; set; } = default!;
+    /// <summary>the page's `void EnterOrbit()`</summary>
+    [Parameter] public Action EnterOrbit { get; set; } = default!;
+    /// <summary>the page's `FlightPlanStatus FlightNowNext()`</summary>
+    [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
+    /// <summary>the page's `int FlightPlanCurrentStep()`</summary>
+    [Parameter] public Func<int> FlightPlanCurrentStep { get; set; } = default!;
+    /// <summary>the page's `int FlightPlanStepCount()`</summary>
+    [Parameter] public Func<int> FlightPlanStepCount { get; set; } = default!;
+    /// <summary>the page's `string FollowDestTip()`</summary>
+    [Parameter] public Func<string> FollowDestTip { get; set; } = default!;
+    /// <summary>the page's `bool FollowShip`</summary>
+    [Parameter] public bool FollowShip { get; set; }
+    /// <summary>the page's `string FormatDistance(double meters)`</summary>
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    /// <summary>the page's `string FormatDuration(double seconds)`</summary>
+    [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
+    /// <summary>the page's `string FormatHorizon(double seconds)`</summary>
+    [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
+    /// <summary>the page's `string FormatSimTime(double simTime)`</summary>
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    /// <summary>the page's `string FormatZoom(double metersPerPixel)`</summary>
+    [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
+    /// <summary>the page's `List<FrameOption> FrameOptions()`</summary>
+    [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
+    /// <summary>the page's `List<(string Label, List<CelestialBody> Members)> FramePickerGroups()`</summary>
+    [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
+    /// <summary>the page's `string FrameSpeedReadout()`</summary>
+    [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;
+    /// <summary>the page's `HarborClass HarborClassOf(string? bodyId)`</summary>
+    [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
+    /// <summary>the page's `double HeadingAlongCourseAt(double simTime)`</summary>
+    [Parameter] public Func<double, double> HeadingAlongCourseAt { get; set; } = default!;
+    /// <summary>the page's `int HorizonSliderValue`</summary>
+    [Parameter] public int HorizonSliderValue { get; set; }
+    /// <summary>the page's `bool IsDockableHaven(CelestialBody body)`</summary>
+    [Parameter] public Func<CelestialBody, bool> IsDockableHaven { get; set; } = default!;
+    /// <summary>the page's `string LongCoastAheadReadout`</summary>
+    [Parameter] public string LongCoastAheadReadout { get; set; } = default!;
+    /// <summary>the page's `string? LongHaulOfferBlock(LongHaul.Departure? departure, CelestialBody planet, string? clearanceBlock)`</summary>
+    [Parameter] public Func<LongHaul.Departure?, CelestialBody, string?, string?> LongHaulOfferBlock { get; set; } = default!;
+    /// <summary>the page's `CelestialBody? LongHaulTargetPlanet(string? destBodyId)`</summary>
+    [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
+    /// <summary>the page's `void MatchAndClamp()`</summary>
+    [Parameter] public Action MatchAndClamp { get; set; } = default!;
+    /// <summary>the page's `int MaxNodePulses`</summary>
+    [Parameter] public int MaxNodePulses { get; set; }
+    /// <summary>the page's `int MinNodePulses`</summary>
+    [Parameter] public int MinNodePulses { get; set; }
+    /// <summary>the page's `bool NavLockedByDock`</summary>
+    [Parameter] public bool NavLockedByDock { get; set; }
+    /// <summary>the page's `string NearestReadoutName()`</summary>
+    [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
+    /// <summary>the page's `bool NodeAimedAlong(PlanNode node, NodeDirection direction)`</summary>
+    [Parameter] public Func<PlanNode, NodeDirection, bool> NodeAimedAlong { get; set; } = default!;
+    /// <summary>the page's `void NudgeDepartureEpoch(PlanNode undock, int sign, bool coarse)`</summary>
+    [Parameter] public Action<PlanNode, int, bool> NudgeDepartureEpoch { get; set; } = default!;
+    /// <summary>the page's `void NudgeNodeAim(PlanNode node, int sign)`</summary>
+    [Parameter] public Action<PlanNode, int> NudgeNodeAim { get; set; } = default!;
+    /// <summary>the page's `void NudgeNodeEpoch(PlanNode node, int sign, bool coarse)`</summary>
+    [Parameter] public Action<PlanNode, int, bool> NudgeNodeEpoch { get; set; } = default!;
+    /// <summary>the page's `void NudgeNodePulses(PlanNode node, int sign, bool coarse)`</summary>
+    [Parameter] public Action<PlanNode, int, bool> NudgeNodePulses { get; set; } = default!;
+    /// <summary>the page's `void OnFramePicked(ChangeEventArgs e)`</summary>
+    [Parameter] public Action<ChangeEventArgs> OnFramePicked { get; set; } = default!;
+    /// <summary>the page's `void OnHorizonSliderInput(ChangeEventArgs e)`</summary>
+    [Parameter] public Action<ChangeEventArgs> OnHorizonSliderInput { get; set; } = default!;
+    /// <summary>the page's `void OnSkimAltInput(ChangeEventArgs e)`</summary>
+    [Parameter] public Action<ChangeEventArgs> OnSkimAltInput { get; set; } = default!;
+    /// <summary>the page's `void OnSlingRadiiInput(ChangeEventArgs e)`</summary>
+    [Parameter] public Action<ChangeEventArgs> OnSlingRadiiInput { get; set; } = default!;
+    /// <summary>the page's `void OnWarpSliderInput(ChangeEventArgs e)`</summary>
+    [Parameter] public Action<ChangeEventArgs> OnWarpSliderInput { get; set; } = default!;
+    /// <summary>the page's `string? OpenPlanEditorKey()`</summary>
+    [Parameter] public Func<string?> OpenPlanEditorKey { get; set; } = default!;
+    /// <summary>the page's `OrbitAssistInfo? OrbitInfo()`</summary>
+    [Parameter] public Func<OrbitAssistInfo?> OrbitInfo { get; set; } = default!;
+    /// <summary>the page's `string OrbitStatusLine(OrbitAssistInfo oi)`</summary>
+    [Parameter] public Func<OrbitAssistInfo, string> OrbitStatusLine { get; set; } = default!;
+    /// <summary>the page's `bool Paused`</summary>
+    [Parameter] public bool Paused { get; set; }
+    /// <summary>the page's `bool PlanBeginsWithCastOff`</summary>
+    [Parameter] public bool PlanBeginsWithCastOff { get; set; }
+    /// <summary>the page's `bool PlanListIsEmpty`</summary>
+    [Parameter] public bool PlanListIsEmpty { get; set; }
+    /// <summary>the page's `int PlannedPulseTotal()`</summary>
+    [Parameter] public Func<int> PlannedPulseTotal { get; set; } = default!;
+    /// <summary>the page's `string PlanningPrimaryName(double simTime)`</summary>
+    [Parameter] public Func<double, string> PlanningPrimaryName { get; set; } = default!;
+    /// <summary>the page's `string? PlanShapeWarningLine()`</summary>
+    [Parameter] public Func<string?> PlanShapeWarningLine { get; set; } = default!;
+    /// <summary>the page's `string PlanStepGlanceLine(PlanNode node)`</summary>
+    [Parameter] public Func<PlanNode, string> PlanStepGlanceLine { get; set; } = default!;
+    /// <summary>the page's `string PlotButtonTip()`</summary>
+    [Parameter] public Func<string> PlotButtonTip { get; set; } = default!;
+    /// <summary>the page's `string PlotFrameName()`</summary>
+    [Parameter] public Func<string> PlotFrameName { get; set; } = default!;
+    /// <summary>the page's `bool PlotMode`</summary>
+    [Parameter] public bool PlotMode { get; set; }
+    /// <summary>the page's `Task PressAndRefocus(Action act)`</summary>
+    [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
+    /// <summary>the page's `int ReactionMassCapacity`</summary>
+    [Parameter] public int ReactionMassCapacity { get; set; }
+    /// <summary>the page's `void RemoveArriveStep()`</summary>
+    [Parameter] public Action RemoveArriveStep { get; set; } = default!;
+    /// <summary>the page's `void RemoveTheCastOff()`</summary>
+    [Parameter] public Action RemoveTheCastOff { get; set; } = default!;
+    /// <summary>the page's `void RetimeToScrub(PlanNode node)`</summary>
+    [Parameter] public Action<PlanNode> RetimeToScrub { get; set; } = default!;
+    /// <summary>the page's `(string Text, bool Warn)? RibbonHorizonNote()`</summary>
+    [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
+    /// <summary>the page's `Task RunSkimSolveAsync()`</summary>
+    [Parameter] public Func<Task> RunSkimSolveAsync { get; set; } = default!;
+    /// <summary>the page's `Task RunSlingSolveAsync()`</summary>
+    [Parameter] public Func<Task> RunSlingSolveAsync { get; set; } = default!;
+    /// <summary>the page's `void Say(bool atTheDoor, string line)`</summary>
+    [Parameter] public Action<bool, string> Say { get; set; } = default!;
+    /// <summary>the page's `IReadOnlyList<TransferPlanner.BurnStep> ScheduledAutopilotBurns()`</summary>
+    [Parameter] public Func<IReadOnlyList<TransferPlanner.BurnStep>> ScheduledAutopilotBurns { get; set; } = default!;
+    /// <summary>the page's `string ScheduledBurnGlanceLine(TransferPlanner.BurnStep burn)`</summary>
+    [Parameter] public Func<TransferPlanner.BurnStep, string> ScheduledBurnGlanceLine { get; set; } = default!;
+    /// <summary>the page's `double ScrubTime`</summary>
+    [Parameter] public double ScrubTime { get; set; }
+    /// <summary>the page's `void ScrubToArrive()`</summary>
+    [Parameter] public Action ScrubToArrive { get; set; } = default!;
+    /// <summary>the page's `NpcState? SelectedCaptureTarget()`</summary>
+    [Parameter] public Func<NpcState?> SelectedCaptureTarget { get; set; } = default!;
+    /// <summary>the page's `double SeparationFromHarbour(PlanNode node)`</summary>
+    [Parameter] public Func<PlanNode, double> SeparationFromHarbour { get; set; } = default!;
+    /// <summary>the page's `void SetDestination(string? bodyId)`</summary>
+    [Parameter] public Action<string?> SetDestination { get; set; } = default!;
+    /// <summary>the page's `void SetHeading(PlanNode node, ChangeEventArgs e)`</summary>
+    [Parameter] public Action<PlanNode, ChangeEventArgs> SetHeading { get; set; } = default!;
+    /// <summary>the page's `void SetHorizonAuto()`</summary>
+    [Parameter] public Action SetHorizonAuto { get; set; } = default!;
+    /// <summary>the page's `void SetNodeDirection(PlanNode node, NodeDirection direction)`</summary>
+    [Parameter] public Action<PlanNode, NodeDirection> SetNodeDirection { get; set; } = default!;
+    /// <summary>the page's `void SetPercent(PlanNode node, ChangeEventArgs e)`</summary>
+    [Parameter] public Action<PlanNode, ChangeEventArgs> SetPercent { get; set; } = default!;
+    /// <summary>the page's `void SetPlotFrame(string? bodyId)`</summary>
+    [Parameter] public Action<string?> SetPlotFrame { get; set; } = default!;
+    /// <summary>the page's `void SetPulses(PlanNode node, ChangeEventArgs e)`</summary>
+    [Parameter] public Action<PlanNode, ChangeEventArgs> SetPulses { get; set; } = default!;
+    /// <summary>the page's `void SetSlingSide(SlingPlanner.PassSide side)`</summary>
+    [Parameter] public Action<SlingPlanner.PassSide> SetSlingSide { get; set; } = default!;
+    /// <summary>the page's `bool ShowLongCoastAdvert`</summary>
+    [Parameter] public bool ShowLongCoastAdvert { get; set; }
+    /// <summary>the page's `double SimTime`</summary>
+    [Parameter] public double SimTime { get; set; }
+    /// <summary>the page's `string SkimDepthLine(SkimGauge g)`</summary>
+    [Parameter] public Func<SkimGauge, string> SkimDepthLine { get; set; } = default!;
+    /// <summary>the page's `string SkimFinePrint()`</summary>
+    [Parameter] public Func<string> SkimFinePrint { get; set; } = default!;
+    /// <summary>the page's `string SkimOutcomeLine(SkimGauge g)`</summary>
+    [Parameter] public Func<SkimGauge, string> SkimOutcomeLine { get; set; } = default!;
+    /// <summary>the page's `string SkimShedLine(SkimGauge g)`</summary>
+    [Parameter] public Func<SkimGauge, string> SkimShedLine { get; set; } = default!;
+    /// <summary>the page's `double SkimShellTopKm()`</summary>
+    [Parameter] public Func<double> SkimShellTopKm { get; set; } = default!;
+    /// <summary>the page's `string SlingBurnLine(SlingPlanner.Result r)`</summary>
+    [Parameter] public Func<SlingPlanner.Result, string> SlingBurnLine { get; set; } = default!;
+    /// <summary>the page's `string SlingLeverLine(SlingPlanner.Result r)`</summary>
+    [Parameter] public Func<SlingPlanner.Result, string> SlingLeverLine { get; set; } = default!;
+    /// <summary>the page's `double SlingMaxRadii`</summary>
+    [Parameter] public double SlingMaxRadii { get; set; }
+    /// <summary>the page's `double SlingMinRadii`</summary>
+    [Parameter] public double SlingMinRadii { get; set; }
+    /// <summary>the page's `string SlingNodeNoteNow()`</summary>
+    [Parameter] public Func<string> SlingNodeNoteNow { get; set; } = default!;
+    /// <summary>the page's `string SlingOutcomeLine(SlingPlanner.Result r)`</summary>
+    [Parameter] public Func<SlingPlanner.Result, string> SlingOutcomeLine { get; set; } = default!;
+    /// <summary>the page's `string SlingPassLine(SlingPlanner.Result r)`</summary>
+    [Parameter] public Func<SlingPlanner.Result, string> SlingPassLine { get; set; } = default!;
+    /// <summary>the page's `Task StartSkip()`</summary>
+    [Parameter] public Func<Task> StartSkip { get; set; } = default!;
+    /// <summary>the page's `void ToggleArmedInsertion(string bodyId)`</summary>
+    [Parameter] public Action<string> ToggleArmedInsertion { get; set; } = default!;
+    /// <summary>the page's `void ToggleArriveEditor()`</summary>
+    [Parameter] public Action ToggleArriveEditor { get; set; } = default!;
+    /// <summary>the page's `void ToggleBurnEditor(PlanNode node)`</summary>
+    [Parameter] public Action<PlanNode> ToggleBurnEditor { get; set; } = default!;
+    /// <summary>the page's `void ToggleDock()`</summary>
+    [Parameter] public Action ToggleDock { get; set; } = default!;
+    /// <summary>the page's `void ToggleFollow()`</summary>
+    [Parameter] public Action ToggleFollow { get; set; } = default!;
+    /// <summary>the page's `void ToggleFollowDest()`</summary>
+    [Parameter] public Action ToggleFollowDest { get; set; } = default!;
+    /// <summary>the page's `void ToggleInsertionEditor()`</summary>
+    [Parameter] public Action ToggleInsertionEditor { get; set; } = default!;
+    /// <summary>the page's `void ToggleNavHelp()`</summary>
+    [Parameter] public Action ToggleNavHelp { get; set; } = default!;
+    /// <summary>the page's `void TogglePause()`</summary>
+    [Parameter] public Action TogglePause { get; set; } = default!;
+    /// <summary>the page's `void TogglePlotMode()`</summary>
+    [Parameter] public Action TogglePlotMode { get; set; } = default!;
+    /// <summary>the page's `void ToggleSkimPanel()`</summary>
+    [Parameter] public Action ToggleSkimPanel { get; set; } = default!;
+    /// <summary>the page's `Task ToggleSkip()`</summary>
+    [Parameter] public Func<Task> ToggleSkip { get; set; } = default!;
+    /// <summary>the page's `void ToggleSlingPanel()`</summary>
+    [Parameter] public Action ToggleSlingPanel { get; set; } = default!;
+    /// <summary>the page's `void ToggleTutorial()`</summary>
+    [Parameter] public Action ToggleTutorial { get; set; } = default!;
+    /// <summary>the page's `(string? FrameId, string FrameName, string DestinationName)? TripFrameOffer(double simTime)`</summary>
+    [Parameter] public Func<double, (string? FrameId, string FrameName, string DestinationName)?> TripFrameOffer { get; set; } = default!;
+    /// <summary>the page's `void Undock()`</summary>
+    [Parameter] public Action Undock { get; set; } = default!;
+    /// <summary>the page's `void UseAncientsPilot()`</summary>
+    [Parameter] public Action UseAncientsPilot { get; set; } = default!;
+    /// <summary>the page's `int Warp`</summary>
+    [Parameter] public int Warp { get; set; }
+    /// <summary>the page's `string WarpReadout`</summary>
+    [Parameter] public string WarpReadout { get; set; } = default!;
+    /// <summary>the page's `int WarpSliderValue`</summary>
+    [Parameter] public int WarpSliderValue { get; set; }
+    /// <summary>the page's `void ZoomStep(bool zoomIn)`</summary>
+    [Parameter] public Action<bool> OnZoomStep { get; set; } = default!;
+    private void ZoomStep(bool zoomIn) => OnZoomStep(zoomIn);
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}
