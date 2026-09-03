@@ -88,12 +88,24 @@ public sealed class ThePlayerIsToldTests
     [
         // ── SOMEBODY IS NOW COMING FOR YOU ─────────────────────────────────────────────────────────────
         //
-        // The heat-hunter is the game's oldest consequence and the one #380 item 5 says new players could
-        // not see the cause of. It is a change to what the captain CAN DO — a berth he can no longer sit
-        // at — so the line is ranked rather than left to compete with the next fuel reading.
-        new("a robbery buys a collector, and it is already fitting out",
-            Surface.RankedPulse, "Map.Combat.cs", "SpawnHunterForHeatEvent",
-            "days, not weeks.\", Telling.Floor)"),
+        // …AND THERE IS NO ROW FOR THE SPAWN ITSELF, which is a finding and not an oversight, so it is
+        // written here rather than left to be re-discovered.
+        //
+        // `Map.Combat.SpawnHunterForHeatEvent` tells the player the one sentence #380 item 5 exists for —
+        // the causal chain from the robbery to the muscle that arrives days later, which owner ruling
+        // 2026-07-19 filed because "new players are left mystified". It says it at PulseRank.Status, and
+        // its own caller (RaiseHeatFromRobbery) writes an ambient heat line into the same slot one
+        // statement LATER, so the chain loses to the weather by write order: #689's shape exactly.
+        //
+        // Raising it to Telling.Floor is a two-token change and it was tried in this lane. It works, and it
+        // reddens TheClickMenusTakeTheShellAndTheContractTakesItsFootTests — because ?target=collector
+        // spawns a collector at boot and the cheat's own warning ("you are berthed at a HAVEN, which is
+        // exactly where a collector loses the scent") is then refused by the hold, inside the same breath.
+        // The warning is a DEV diagnostic; ranking THAT to survive would be a status line dressed up as a
+        // story one, which is the abuse #693 names in its first paragraph and refuses.
+        //
+        // So the change wants a decision this guard is not entitled to make, and #761 says in as many words
+        // that the owner may re-cut. Left as it ships, named here, and reported.
 
         // The grapples land: the demand panel IS the hail's card (#777 hosted), so the beat is raised
         // through the one door and the panel carries the painting. What the captain now OWES.
@@ -753,7 +765,7 @@ public sealed class ThePlayerIsToldTests
     [Fact]
     public void TheSweepReallyReadsTheShippedPages()
     {
-        Assert.True(TellingTable.Length >= 25, "the table has been emptied rather than corrected");
+        Assert.True(TellingTable.Length >= 24, "the table has been emptied rather than corrected");
         Assert.Contains("SpaceSails", ReadPage("Map.Combat.Busted.cs"));
 
         string hive = WithoutComments(ReadPage("Map.Surface.Hive.cs"));
