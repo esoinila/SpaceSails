@@ -45,6 +45,10 @@ public sealed class ThePapersOwnHeadsTests
 
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
 
+    /// <summary>A ground whose id is not one field. Nothing forbids it and a save has never promised
+    /// otherwise, which is why the id is split from the RIGHT.</summary>
+    private const string ColonInTheName = "paper-head:odd-ground";
+
     /// <summary>How many grounds each guard walks. Eight is enough to be a population rather than a case and
     /// small enough that five guards do not each rebuild a hundred floor plans.</summary>
     private const int Walked = 8;
@@ -124,9 +128,10 @@ public sealed class ThePapersOwnHeadsTests
     ///
     /// <para><b>Reverts that reddened it (watched go red, then restored):</b> the
     /// <c>UndergroundComplex.AuthoredPaperOf</c> branch removed from <c>FieldClue.Title</c> —
-    /// <i>"Assert.Equal() Failure: Strings differ … Expected: A maintenance ledger, three entries · Actual:
-    /// inspection schedule, margin list"</i>; and the same branch removed from <c>FieldClue.Document</c> —
-    /// the ledger opening as a countersigned supply requisition.</para>
+    /// <i>"Assert.Equal() Failure: Strings differ · Expected: A maintenance ledger, three entries · Actual:
+    /// pay sheet, allowances"</i>, which is the marker's own sentence reproduced; and the same branch
+    /// removed from <c>FieldClue.Document</c> — <i>"Actual: A pay sheet. Names, grades, a column for the
+    /// site allowance…"</i>, the burial's only surviving record opening as somebody's payroll.</para>
     /// </summary>
     [Fact]
     public void TheMaintenanceLedgerReadsAsItselfAwayFromItsRoom() =>
@@ -136,8 +141,9 @@ public sealed class ThePapersOwnHeadsTests
     /// <summary>
     /// #1074 beat 1 · …AND SO DOES THE PLANT'S VALVE-BOOK.
     ///
-    /// <para><b>Revert that reddened it:</b> <c>WhatIsKeptIn</c>'s valve-book arm deleted —
-    /// <i>"Assert.Equal() Failure: Strings differ … Expected: A valve-book, three entries · Actual: movement
+    /// <para><b>Reverts that reddened it:</b> <c>WhatIsKeptIn</c>'s valve-book arm deleted —
+    /// <i>"Assert.Equal() Failure: Values differ · Expected: ValveBook · Actual: null"</i>; and the
+    /// <c>FieldClue.Title</c> branch removed — <i>"Expected: A valve-book, three entries · Actual: movement
     /// order, third copy"</i>, the one book on the closed working's own floor going back to being a carbon
     /// third copy of somebody's travel paperwork.</para>
     /// </summary>
@@ -150,9 +156,11 @@ public sealed class ThePapersOwnHeadsTests
     /// #1074 beat 3 · THE POUR'S LINE ITEM, which is the one the marker in
     /// <c>UndergroundComplex.MoneyTrail.cs</c> was written about.
     ///
-    /// <para><b>Revert that reddened it:</b> <c>WhatIsKeptIn</c>'s money-trail arm answering null —
-    /// <i>"Assert.Equal() Failure: Strings differ … Expected: A line item: remediation · Actual: pay sheet,
-    /// allowances"</i>, which is the marker's own sentence, reproduced.</para>
+    /// <para><b>Reverts that reddened it:</b> <c>WhatIsKeptIn</c>'s pour arm answering null —
+    /// <i>"Assert.Equal() Failure: Values differ · Expected: Pour · Actual: null"</i>; and the
+    /// <c>FieldClue.Document</c> branch removed — <i>"Assert.Equal() Failure: Strings differ · Expected:
+    /// Three hundred tonnes into the lower galle… · Actual: A duplicate movement order, carbon third…"</i>,
+    /// three hundred tonnes of concrete opening as a carbon copy of somebody's travel order.</para>
     /// </summary>
     [Fact]
     public void ThePoursLineItemReadsAsItselfAwayFromItsRoom() =>
@@ -162,10 +170,11 @@ public sealed class ThePapersOwnHeadsTests
     /// <summary>
     /// #1074 beat 3 · …the rail's.
     ///
-    /// <para><b>Revert that reddened it:</b> <c>PaperHeads.TitleOf</c>'s rail arm returning
-    /// <c>RotaTitle</c> — <i>"Assert.Equal() Failure: Strings differ … Expected: A line item: perimeter rail
+    /// <para><b>Reverts that reddened it:</b> <c>PaperHeads.TitleOf</c>'s rail arm returning
+    /// <c>RotaTitle</c> — <i>"Assert.Equal() Failure: Strings differ · Expected: A line item: perimeter rail
     /// · Actual: A line item: site watch"</i>, two purchases wearing one head, which is the exact shape of
-    /// the bug a five-way switch invites.</para>
+    /// the bug a five-way switch invites; and the <c>FieldClue.Title</c> branch removed — <i>"Actual:
+    /// shipping manifest, torn"</i>.</para>
     /// </summary>
     [Fact]
     public void TheRailsLineItemReadsAsItselfAwayFromItsRoom() =>
@@ -175,10 +184,11 @@ public sealed class ThePapersOwnHeadsTests
     /// <summary>
     /// #1074 beat 3 · …and the rota's.
     ///
-    /// <para><b>Revert that reddened it:</b> <c>PaperHeads.DocumentOf</c>'s rota arm returning
-    /// <c>RailDocument</c> — <i>"Assert.Equal() Failure: Strings differ … Expected: Two hands, continuous,
-    /// charged to Preservation. · Actual: Sixteen sections, charged to Preservation."</i>, the watch's sheet
-    /// opening as the fence's invoice.</para>
+    /// <para><b>Reverts that reddened it:</b> <c>PaperHeads.DocumentOf</c>'s rota arm returning
+    /// <c>RailDocument</c> — <i>"Assert.Equal() Failure: Strings differ · Expected: Two hands, continuous,
+    /// charged to Preserv… · Actual: Sixteen sections, charged to Preservation…"</i>, the watch's sheet
+    /// opening as the fence's invoice; and the <c>FieldClue.Title</c> branch removed — <i>"Actual:
+    /// maintenance log, two hands"</i>.</para>
     /// </summary>
     [Fact]
     public void TheRotasLineItemReadsAsItselfAwayFromItsRoom() =>
@@ -195,8 +205,9 @@ public sealed class ThePapersOwnHeadsTests
     /// later cannot escape the canon grep by not being in the list. That is beat 1's own arrangement and it
     /// is kept for beat 1's own reason.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> <i>"A line item: the perimeter rail"</i> —
-    /// <i>"Assert.Equal() Failure: Strings differ"</i>; and an eleventh constant added to the type —
+    /// <para><b>Reverts that reddened it:</b> <c>TitleOf</c>'s rail arm returning <c>RotaTitle</c> —
+    /// <i>"Assert.Equal() Failure: Strings differ · Expected: A line item: perimeter rail · Actual: A line
+    /// item: site watch"</i>; and an eleventh constant added to the type —
     /// <i>"Assert.All() Failure: 1 out of 11 items in the collection did not pass"</i>, which is the sweep
     /// naming the string no canon grep could see.</para>
     /// </summary>
@@ -246,8 +257,9 @@ public sealed class ThePapersOwnHeadsTests
     ///
     /// <para><b>Reverts that reddened it:</b> the re-minted-id comparison in <c>AuthoredPaperOf</c> dropped
     /// — <i>"Assert.Null() Failure: Value of type 'Nullable&lt;Paper&gt;' has a value"</i> on the hall
-    /// record; and <c>RoomOfFind</c> splitting from the LEFT — the same failure on a body id with a colon in
-    /// it, which is the shape a save has never promised not to contain.</para>
+    /// record, a section of wall titled with a plant book; and <c>RoomOfFind</c> splitting from the LEFT on
+    /// four fields — <i>"Assert.Equal() Failure: Values differ"</i> on a body id with a colon in it, which
+    /// is the shape a save has never promised not to contain.</para>
     /// </summary>
     [Fact]
     public void OnlyAnIdThisBuildingWouldMintIsOneOfTheFive()
@@ -257,6 +269,15 @@ public sealed class ThePapersOwnHeadsTests
         Assert.Null(UndergroundComplex.AuthoredPaperOf("kolt-premium-schedule"));
         Assert.Null(UndergroundComplex.AuthoredPaperOf("hive:probe-moon-3"));
         Assert.Null(UndergroundComplex.AuthoredPaperOf("hive:probe-moon-3:two:0"));
+
+        // A BODY ID WITH A COLON IN IT. The registers take whatever a save hands them and a body id has
+        // never promised to be one field; the two numbers are the fixed part and are always the last two.
+        using (Stopped(ColonInTheName))
+        {
+            (int level, int room) = UndergroundComplex.ValveBookRoomFor(ColonInTheName)!.Value;
+            Assert.Equal(PaperHeads.Paper.ValveBook, UndergroundComplex.AuthoredPaperOf(
+                UndergroundComplex.FindId(ColonInTheName, level, room)));
+        }
 
         foreach (string body in Grounds().Take(Walked))
         {
@@ -290,10 +311,10 @@ public sealed class ThePapersOwnHeadsTests
     ///
     /// <para><b>Reverts that reddened it (watched go red, then restored):</b> <c>FieldClue.CertaintyOf</c>
     /// given an authored-paper arm returning <c>Certainty.Exact</c> — <i>"Assert.Equal() Failure: Values
-    /// differ · Expected: Vague · Actual: Exact"</i> on the very first ground, the same id answering two
-    /// different ways in two worlds; and the same arm without the world gate, so every paper in the game
-    /// rolled one answer — <i>"Assert.Equal() Failure · Expected: 3 · Actual: 1"</i> on the faces the
-    /// population came back with.</para>
+    /// differ · Expected: Vague · Actual: Exact"</i>, the same id answering two different ways in two
+    /// worlds, which would have promoted five clerical papers into positions; and the seed tag stripped of
+    /// its paper id, so every paper in the game rolled one answer — <i>"Assert.Equal() Failure: Values
+    /// differ · Expected: 3 · Actual: 1"</i> on the faces the population came back with.</para>
     /// </summary>
     [Fact]
     [Trait("speed", "slow")]
