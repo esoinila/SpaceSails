@@ -315,15 +315,32 @@ public sealed partial class Map
         _telescopeLevel = kit.TelescopeLevel;
         RebuildSensor();
 
-        // The excursion, if he was on one, ends here — there is nothing overhead to go back up to.
+        // The excursion, if he was on one, ends here — there is nothing overhead to go back up to. Folded
+        // the way the shuttle's own lift-off folds it (Map.Surface.cs), including the writ that followed his
+        // heat down: a collector party is a body ON THAT GROUND, and the ground is gone.
         bool wasOnSurface = _surface is not null;
         if (wasOnSurface)
         {
             _surface = null;
             _reevers.Clear();
+            _collectors.Clear();
             _lastNearestReeverRange = null;
         }
         _shuttleRun = null;
+
+        // #525 · AND NOBODY IS CHASING WHAT IS NOT THERE. The deterrent breaks off whoever was watching at
+        // the moment the keys turned — that is the mechanic, spent once per arming so the line is not said
+        // every frame. It cannot cover a hunter who arrived DURING the ninety seconds, and on the old code he
+        // went on flying his intercept at a hull that had stopped existing. Said with nothing at all: the
+        // arithmetic changed, not the conversation, and the card is already up.
+        for (int h = 0; h < _hunters.Count; h++)
+        {
+            HunterState hunter = _hunters[h];
+            if (!hunter.BrokenOff && !hunter.CaughtPlayer)
+            {
+                _hunters[h] = hunter with { BrokenOff = true };
+            }
+        }
 
         // Picked up, and berthed on somebody's charity.
         string haven = WakeAtNearestHaven();
@@ -352,6 +369,12 @@ public sealed partial class Map
         string line = $"☢ She is gone, and you are not. Picked up at {haven}, with the hull nobody else wanted.";
         LogAutopilotEvent(line);
         ShipBoardLog(line);
+
+        // …and it is written down, by this ending rather than by a side effect of the wake. A berth's clamp
+        // does ask for a save, but a haven with no berth to clamp to does not — and an ending that empties
+        // the hold, launders the stamp on it and swaps the hull must never depend on which kind of rock
+        // happened to be nearest. A reload does not resurrect her.
+        RequestVaultSave();
         StateHasChanged();
     }
 

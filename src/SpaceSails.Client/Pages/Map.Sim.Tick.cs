@@ -94,6 +94,19 @@ public partial class Map
             _camera.CenterOn(followed);
         }
 
+        // #525 · HER OVERLOAD IS THE SHIP'S CLOCK, AND IT IS SPENT AHEAD OF EVERY EARLY STOP. It used to be
+        // spent inside the walked view alone, which made the ninety seconds a thing that only happened while
+        // the captain was on his feet: arm the charges, sit down at the nav board — which is where a captain
+        // who has just told a boarder to back off actually sits — and the count froze. The threat was free.
+        // Exactly the bug AdvanceHerOwnClocks (below) was written for, one field over.
+        //
+        // Ahead of the shuttle-run stop rather than inside that method, for the reason the ending itself is
+        // written on: THE SHUTTLE BEING AWAY WITH HIM IN IT is one of the two ways this clock can reach zero
+        // (ShipScuttle.Ending.Castaway, decided by CaptainWasAboardHer). A countdown that stops when the boat
+        // leaves can never end with the captain clear of her, and the branch that says it can would be a
+        // sentence about a frame that never runs.
+        AdvanceShipCharges(dtRealSeconds);
+
         if (TheShuttleRunOwnsThisFrame(dtRealSeconds, highResTimestampMs))
         {
             return;
@@ -611,7 +624,9 @@ public partial class Map
                 StepProcessing(dtRealSeconds);
             }
             AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
-            AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
+            // #525 · HER OVERLOAD IS NOT SPENT HERE ANY MORE — it is a ship clock now, run ahead of every
+            // early stop in OnTick. It was the walked view's alone, and a captain at the nav board watched
+            // ninety seconds not pass.
             DrawWalkFrame();
 
             DrawTheScopeInsetIfItIsUp();
