@@ -3757,6 +3757,21 @@
                 {
                     <div class="reveal-outcome">@voOutcome</div>
                 }
+                @* #615 · KEEP OR LEAVE. Owner: "should we have like keep / leave option when we find stuff?"
+                   The kit's own press rows one region up, with two answers instead of one — the find/console
+                   card the ground already raises over a pallet and a shelf, not an overlay of its own. Both
+                   controls are a way OUT of the card, and so is the ✕ beside them: closing IS Leave, which is
+                   what lets the general closing law hold here without a special case. Two words, no prose;
+                   the room's own line is what the captain is deciding about and it is already on the card. *@
+                @if (TheFindIsWaitingOnAnAnswer)
+                {
+                    <div class="satchel-row">
+                        <button type="button" class="satchel-load"
+                                @onclick="KeepTheFind">@SpaceSails.Core.KeepOrLeave.KeepLabel</button>
+                        <button type="button" class="satchel-load"
+                                @onclick="LeaveTheFind">@SpaceSails.Core.KeepOrLeave.LeaveLabel</button>
+                    </div>
+                }
             </OverlayShell>
         </div>
     }

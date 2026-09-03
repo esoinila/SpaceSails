@@ -118,6 +118,12 @@ public sealed class Vault
     /// truth about a case nobody has worked yet — and about every save written while the register still
     /// lived on the excursion and died with the shuttle.</summary>
     public WorkedUpSection? WorkedUp { get; init; }
+
+    /// <summary>#615/#573 · Which rooms under which moons this captain has already turned over. Its own
+    /// independently optional section; a pre-#615 file lacks it and wakes with an empty register, which is
+    /// the honest truth about a facility nobody has walked yet.</summary>
+    public TurnedOverSection? TurnedOver { get; init; }
+
     public KaamosSection? Kaamos { get; init; }
     public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
@@ -750,6 +756,30 @@ public sealed record WorkedUpSection
     /// <summary>One key per sheet already dug out. A set on the page, so the order this list happens to be
     /// in is not a fact about anything.</summary>
     public IReadOnlyList<string> Sheets { get; init; } = [];
+}
+
+/// <summary>
+/// #615/#573 · <b>WHICH ROOMS THIS CAPTAIN HAS TURNED OVER, AND UNDER WHICH MOON.</b>
+///
+/// <para>The register lived on the <c>SurfaceExcursion</c> and died with the shuttle, which was invisible
+/// while a find was an automatic pickup — flying away and coming back simply re-filled a facility, and the
+/// only thing that cost was an exploit nobody had noticed. #615 makes it load-bearing: LEAVE's whole promise
+/// is that <i>a captain can come back for the paper they walked past</i>, and a promise you cannot tell from
+/// the world resetting itself is not a promise. With this section, a room the captain KEPT from is empty
+/// when they return and a room they LEFT still holds its find — which is the difference the decision is
+/// about, written down.</para>
+///
+/// <para>Stored as the opaque site-qualified keys the register is keyed on
+/// (<see cref="KeepOrLeave.RoomKey"/>) — the same shape <see cref="SatchelSection"/> and
+/// <see cref="WorkedUpSection"/> use and for the same reason: the file carries the FACT (this room has been
+/// gone through) and never a sentence, because every word said about a room is rebuilt from the seed at read
+/// time. A key this build cannot recognise costs nothing to carry, so nothing is dropped on load.</para>
+/// </summary>
+public sealed record TurnedOverSection
+{
+    /// <summary>One key per room already gone through. A set on the page, so the order this list happens to
+    /// be in is not a fact about anything.</summary>
+    public IReadOnlyList<string> Rooms { get; init; } = [];
 }
 
 /// <summary>#973 L1 · The filing line's marks. Stored as opaque row strings

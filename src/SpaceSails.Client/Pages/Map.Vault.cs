@@ -508,6 +508,14 @@ public partial class Map
             WorkedUp = _workedUp.Count > 0
                 ? new WorkedUpSection { Sheets = [.. _workedUp] }
                 : null,
+            // #615/#573 · …and which rooms under which moons have already been gone through. Durable for the
+            // register above's reason, arrived at from the other side: LEAVE's promise is that a captain can
+            // come back for the paper they walked past, and a facility that re-fills itself the moment the
+            // shuttle lifts cannot tell that promise from its own amnesia. Site-qualified opaque keys, so a
+            // room under one moon can never strike off the room with the same index under another.
+            TurnedOver = _roomsTurnedOver.Count > 0
+                ? new TurnedOverSection { Rooms = [.. _roomsTurnedOver] }
+                : null,
             // #973 L1 · the filing line's marks on the Captain's ledger: which pages this captain does not
             // remember writing, which have been read at already, and the hidden originals of the ones that
             // came back wrong. Opaque rows — the file carries the FACT, never the sentences.
@@ -1080,6 +1088,19 @@ public partial class Map
             if (!string.IsNullOrWhiteSpace(sheet))
             {
                 _workedUp.Add(sheet);
+            }
+        }
+
+        // #615/#573 · …AND WHICH ROOMS HAVE ALREADY BEEN GONE THROUGH. Restored as it was written, and an
+        // unrecognised key kept rather than dropped for the register above's reason: it costs one string and
+        // can only ever say "already emptied" about a room this build cannot generate, while dropping it
+        // would hand a captain the same file on the same man a second time.
+        _roomsTurnedOver.Clear();
+        foreach (string turned in vault.TurnedOver?.Rooms ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(turned))
+            {
+                _roomsTurnedOver.Add(turned);
             }
         }
 

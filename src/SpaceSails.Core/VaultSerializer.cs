@@ -76,6 +76,7 @@ public static class VaultSerializer
     private const string SecWeather = "insuranceweather"; // #973 · what the bars say about the insurance men
     private const string SecSatchel = "satchel";          // #603 · everything carried on foot
     private const string SecWorkedUp = "workedup";        // #1016 · the sheets already dug out at a table
+    private const string SecTurnedOver = "turnedover";    // #615 · the rooms already gone through, by site
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
@@ -115,6 +116,7 @@ public static class VaultSerializer
         AddSection(sections, SecWeather, vault.InsuranceWeather);
         AddSection(sections, SecSatchel, vault.Satchel);
         AddSection(sections, SecWorkedUp, vault.WorkedUp);
+        AddSection(sections, SecTurnedOver, vault.TurnedOver);
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
@@ -266,6 +268,7 @@ public static class VaultSerializer
             InsuranceWeather = Harvest<InsuranceWeatherSection>(sections, SecWeather, warnings),
             Satchel = Harvest<SatchelSection>(sections, SecSatchel, warnings),
             WorkedUp = Harvest<WorkedUpSection>(sections, SecWorkedUp, warnings),
+            TurnedOver = Harvest<TurnedOverSection>(sections, SecTurnedOver, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),
