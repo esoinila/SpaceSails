@@ -1,3 +1,161 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · JumpCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   14 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   CoastSkipCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* #255 — the diegetic long-haul jump overlay. Full-screen theater over the frozen map; the one
+   loading bar allowed to be a feature. Above every HUD layer, below nothing. */
+/* #997 wave 2 · reached with `::deep` because OverlayShell draws this div now — a scoped rule compiles to
+   `.jump-overlay[b-map]` and would stop matching the moment a component rendered the element, which is
+   exactly the shape of #996's 213 dead rules. `::deep` compiles to `[b-map] .jump-overlay` and matches
+   again. The CHILDREN below (.jump-overlay-title, -year, -bar, -fill, -bound, -note, -nostop) are still the
+   page's own markup and still carry b-map, so their rules are left exactly as they were. */
+
+/* GRID, AND IT IS NOT A REDECORATION. The sheet centred one child with flex; the shell hands it two — the
+   head row that carries the way out, and the body that carries the words. Putting both in the SAME grid
+   cell keeps the way out sitting on the inner card's own top-right corner, which is where #992 measured it
+   and where it must stay: a control anchored to the viewport instead is a control a narrow screen can push
+   under an edge. `place-content: center` is what flex's centring was; `place-items: center` is what its
+   `align-items`/`justify-content` were. The cell is sized by the body, because the head is one small
+   button. */
+::deep .jump-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 40);
+    display: grid;
+    place-content: center;
+    place-items: center;
+    background: radial-gradient(ellipse at center, rgba(10, 16, 30, 0.86) 0%, rgba(2, 4, 9, 0.97) 70%);
+    backdrop-filter: blur(3px);
+    animation: jump-fade-in 0.4s ease-out;
+    color: #dfe8ff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    text-align: center;
+    user-select: none;
+}
+
+@keyframes jump-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+::deep .jump-overlay-inner {
+    grid-area: 1 / 1;
+    position: relative;
+    max-width: min(90vw, 34rem);
+    padding: 2rem 2.5rem;
+}
+
+/* The head row lands in the body's own cell, pinned to its top-right corner and inset by the half-rem the
+   absolutely-positioned button used to carry itself. It never grows the cell: it holds one – and shrinks
+   to it. */
+::deep .jump-overlay-head {
+    grid-area: 1 / 1;
+    align-self: start;
+    justify-self: end;
+    margin: 0.5rem;
+}
+
+/* #992 · THE WAY OUT OF THE VOID SHEET (owner ruling 2026-08-24). It sits on the INNER card and not on the
+   viewport, so on a narrow screen it travels with the words it belongs to instead of being pushed under the
+   edge — the whole point of the ruling is a control the player can actually reach. #997 wave 2 keeps it in
+   exactly that place by grid rather than by `position: absolute`: it is the shell's dismiss now, drawn in
+   the shell's head row, and the head row is laid into the body's own cell above. */
+::deep .jump-overlay-min {
+    min-width: 1.75rem;
+    padding: 0 0.4rem;
+    color: rgba(223, 232, 255, 0.8);
+    font: 600 1rem/1.6 monospace;
+    /* Opaque, and #782's law is what asked for it: this is a POSITIONED panel painting text, so at 0.6 alpha
+       its contrast would be decided by whatever the void sheet's gradient happened to be over. The way out
+       of a surface is the last control in the game that should be hard to read. */
+    background: #0a0f18;
+    border: 1px solid rgba(143, 208, 255, 0.4);
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+::deep .jump-overlay-min:hover,
+::deep .jump-overlay-min:focus-visible {
+    color: #8fd0ff;
+    border-color: rgba(143, 208, 255, 0.85);
+}
+
+/* …and the tile it becomes. Top-right of the viewport rather than the scope's bottom-right corner: the
+   crossing is not a Nav instrument and it must not land on top of the scope tile, which the captain can now
+   see again precisely because this sheet went away. */
+::deep .jump-overlay-tile {
+    position: fixed;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: calc(var(--z-modal) + 40);
+    pointer-events: auto;
+}
+
+.jump-overlay-title {
+    font-size: clamp(1.6rem, 5vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    color: #8fd0ff;
+    text-shadow: 0 0 18px rgba(80, 170, 255, 0.5);
+    margin-bottom: 1.4rem;
+}
+
+.jump-overlay-year {
+    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+    letter-spacing: 0.15em;
+    color: #f4d58d;
+    margin-bottom: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.jump-overlay-bar {
+    height: 0.55rem;
+    border-radius: 0.3rem;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    margin-bottom: 1.1rem;
+}
+
+.jump-overlay-fill {
+    height: 100%;
+    border-radius: 0.3rem;
+    background: linear-gradient(90deg, #4a8fd8, #8fd0ff);
+    box-shadow: 0 0 12px rgba(120, 190, 255, 0.7);
+    transition: width 0.35s ease-out;
+}
+
+.jump-overlay-bound {
+    font-size: clamp(0.95rem, 2.6vw, 1.15rem);
+    color: #cfe0ff;
+    margin-bottom: 1.3rem;
+}
+
+.jump-overlay-note {
+    font-size: 0.95rem;
+    color: #9fb4d8;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+.jump-overlay-nostop {
+    font-size: 0.85rem;
+    color: #6f83a6;
+    letter-spacing: 0.02em;
+}

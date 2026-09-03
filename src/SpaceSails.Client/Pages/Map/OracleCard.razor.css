@@ -1,3 +1,62 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · OracleCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   6 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* #425 — the station oracle's corner card (deck-offer-card family). A cool, off-channel violet edge marks
+   her apart from the warm bar cards; the "quiet" variant (the TELL — the room hushes) deepens the glow and
+   the line, a cue that this one MIGHT be true. Never definitive: the hush lies sometimes, the sifting is
+   the player's. OracleCard / oracle-quiet. */
+::deep .oracle-card {
+    border-color: rgba(170, 140, 255, 0.5);
+    box-shadow: 0 0.5rem 2rem rgba(90, 60, 180, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+}
+
+/* #528 — the oracle's corner, painted. Sits between her name and her backstory, sized so the CARD is still
+   the card: it is a backdrop for a conversation, not a plate that takes the screen. It onerror-hides, so a
+   missing file leaves the card exactly as it read before, with no gap and no broken frame. */
+.oracle-art {
+    display: block;
+    width: 100%;
+    max-height: 9rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    margin: 0.35rem 0 0.5rem;
+    opacity: 0.88;
+    border: 1px solid rgba(170, 140, 255, 0.28);
+}
+
+.oracle-line {
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0.4rem 0 0.7rem;
+    color: #e8ecf4;
+}
+
+/* The TELL, rendered: when the room goes quiet the whole card cools and the line stills — a faint chill the
+   player learns to notice but can never fully trust. */
+::deep .oracle-card.oracle-quiet {
+    border-color: rgba(150, 200, 255, 0.7);
+    box-shadow: 0 0 2.5rem rgba(120, 170, 255, 0.28), 0 0.5rem 2rem rgba(0, 0, 0, 0.6);
+}
+
+.oracle-hush {
+    color: #9fd0ff;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+}
+
+.oracle-line-quiet {
+    color: #eaf3ff;
+    text-shadow: 0 0 0.6rem rgba(140, 190, 255, 0.45);
+}

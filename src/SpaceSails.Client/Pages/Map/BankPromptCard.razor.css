@@ -1,3 +1,71 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · BankPromptCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   7 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* The bank/export/edit sheet: two fields and the promise that a banked berth stays banked. ::deep because
+   #997 wave 6 put this sheet on OverlayShell — the card is the shell's element, the fields inside it are
+   still the page's own and keep their scope attribute untouched. */
+::deep .bank-sheet {
+    max-width: 34rem;
+}
+
+.bank-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin: 0.5rem 0;
+    text-align: left;
+}
+
+.bank-field-label {
+    color: rgba(224, 228, 236, 0.62);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.bank-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.4rem;
+    color: #e8eef6;
+    font-size: 0.92rem;
+}
+
+.bank-input:focus {
+    border-color: rgba(120, 200, 255, 0.75);
+    outline: none;
+}
+
+.bank-note {
+    resize: vertical;
+    min-height: 4.5rem;
+    line-height: 1.4;
+}
+
+/* The owner's actual fear, answered in words on the sheet that does the banking: "I want this moment, not
+   that I die and that situation overwrites this." The law was always true (#310 gave the autosave its own
+   slot); it had simply never been said anywhere the captain could read it. */
+.bank-safety {
+    margin: 0.4rem 0 0.2rem;
+    padding: 0.4rem 0.6rem;
+    background: rgba(120, 230, 160, 0.1);
+    border: 1px solid rgba(120, 230, 160, 0.35);
+    border-radius: 0.4rem;
+    color: #a9e9c4;
+    font-size: 0.8rem;
+    text-align: left;
+}

@@ -1,3 +1,57 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · LockedDoorCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   5 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* #603 · THE LOCKED DOOR, and the pockets it reminds you of. Owner: "we should advertise the items list on
+   closed locked door pop-up... something like check your items button there that opens inventory." */
+.locked-door {
+    width: min(34rem, 94vw);
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(224, 160, 112, 0.4);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.locked-door-line {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cfd8e4;
+}
+
+.locked-door-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* The affordance the door exists to advertise — brighter than the dismiss, because it is the one that
+   answers the question the captain is standing there asking. */
+.locked-door-try {
+    flex: 1;
+    padding: 0.55rem 0.8rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: #0c1017;
+    background: #d8b884;
+    border: none;
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.locked-door-try:hover { background: #e8cb9c; }

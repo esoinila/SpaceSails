@@ -1,3 +1,300 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · DeskPanels's OWN RULES, moved verbatim out of Map.razor.css.
+
+   36 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   SensorsDeskLayer, MapScopePanel, TutorialCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* Full-screen desk container (rule 1: the desk's own topic owns the screen). Sensors dims the
+   live map through behind it (rule 4); every other desk goes near-opaque. */
+.desk-layer {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-map-chrome) + 5);
+    background: rgba(6, 9, 15, 0.92);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Extra right padding clears the desk-chip-strip's column (9.5rem wide, 0.5rem off the
+       edge) so a desk's own right-hand content (e.g. the Comms desk's traffic board) never
+       renders underneath the chips. #997: the literal is --desk-chip-strip-clearance now
+       (declared once on .map-page), the same number .map-scope/.map-scope-tile/.parrot-perch
+       read as their own `right` below. */
+    padding: 2rem var(--desk-chip-strip-clearance) 2rem 2rem;
+    box-sizing: border-box;
+}
+
+/* #127: the desk tab bar + pilot-in-command banner own the top-center strip, and the 🗺 Layers /
+   find-a-target pair owns the top-left one. EVERY desk is anchored below both — aligned to the top
+   with --desk-top-clearance reserved above it — so a desk's own first row (the Captain's
+   Orders/Status/Tutorials/Ledger toggle, the Sensors desk's "Tracking post 📡" header) is never
+   hidden behind the chrome.
+
+   #986 F1 · This used to say `:not(.desk-layer-passthrough)`, on the belief that the passthrough
+   desks (Sensors, War Room) "float their own instrument cards clear of the strip". They do not:
+   .tracking-post-desk and .war-room-desk are `height: 100%` inside .desk-content, so their card
+   headers start wherever the layer starts — which was the top of the screen, under the two floating
+   controls. Excusing a desk from the clearance is what buried the title; the exemption is gone and
+   the two passthrough desks obey the same law as the other six. */
+.desk-layer {
+    align-items: flex-start;
+    padding-top: var(--desk-top-clearance);
+}
+
+.desk-layer .desk-content {
+    height: calc(100vh - var(--desk-top-clearance) - 2rem);
+}
+
+.desk-layer-dimmed {
+    background: rgba(6, 9, 15, 0.55);
+}
+
+.desk-content {
+    width: min(96vw, 90rem);
+    height: 90vh;
+    overflow-y: auto;
+}
+
+/* Trade desk — master–detail edition (owner: "like File Explorer"): the places-of-business
+   tree + detail pane spans two thirds; the dock market lives INSIDE it now (as the dockyard
+   node's detail), so only the cargo manifest keeps its own column. */
+.desk-trade-grid {
+    display: grid;
+    grid-template-columns: 2.1fr 1fr;
+    gap: 0 1.25rem;
+    height: 100%;
+}
+
+.desk-side-panel {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.trade-manifest-panel .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.trade-manifest-transfer {
+    border: 1px solid rgba(125, 211, 255, 0.35);
+    border-radius: 0.4rem;
+    padding: 0.5rem;
+    background: rgba(20, 40, 55, 0.4);
+}
+
+.trade-manifest-transfer-label {
+    font-size: 0.85rem;
+}
+
+.trade-manifest-transfer-pct {
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+.trade-manifest-progress {
+    height: 10px;
+    margin: 0.35rem 0;
+}
+
+/* ⛽ FILL HER UP (#157): a car-dashboard fuel gauge in the Trade desk. Big readout, a bar banded
+   green / amber (<18% reserve) / red (floor), and a fat fill button — the desk's plain answer to
+   "how do I refuel her?". */
+.fuel-desk-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 213, 128, 0.9);
+    margin-bottom: 0.35rem;
+}
+
+.fuel-gauge {
+    position: relative;
+    height: 2.4rem;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.fuel-gauge-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    transition: width 0.25s ease;
+}
+
+.fuel-gauge.fuel-green .fuel-gauge-fill {
+    background: linear-gradient(90deg, rgba(46, 204, 113, 0.55), rgba(46, 204, 113, 0.85));
+}
+
+.fuel-gauge.fuel-amber .fuel-gauge-fill {
+    background: linear-gradient(90deg, rgba(241, 196, 15, 0.55), rgba(243, 156, 18, 0.9));
+}
+
+.fuel-gauge.fuel-red .fuel-gauge-fill {
+    background: linear-gradient(90deg, rgba(231, 76, 60, 0.6), rgba(192, 57, 43, 0.95));
+}
+
+.fuel-gauge-readout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    height: 100%;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.fuel-gauge-cap {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.75;
+    margin-left: 0.2rem;
+}
+
+.fuel-alongside {
+    color: rgba(255, 213, 128, 0.85);
+}
+
+.fuel-fill-btn {
+    letter-spacing: 0.04em;
+}
+
+.desk-traffic-scroll {
+    max-height: calc(90vh - 6rem);
+    overflow-y: auto;
+}
+
+/* The comms room (PR-14, StationDesks.md #14): a ticker band on top, then the departures board
+   (a) roomier in its own column and DarkWeb.razor's own two columns for (b) the dark web market
+   and (c) tight-beam/laser ranging filling the rest — "one coherent comms room". */
+.desk-comms-room {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    height: 100%;
+    min-height: 0;
+}
+
+/* #1021 · THE TICKER'S FOUR RULES MOVED TO Stations/NewsWirePanel.razor.css, word for word. They could not
+   stay here and be reached with ::deep: Blazor scopes a rule to the component that RENDERED the element,
+   the strip is drawn by that component now, and a rule follows the markup it dresses. The room's own column
+   above is untouched — the strip declares its `flex: 0 0 auto` on itself, so it is still the first child of
+   `.desk-comms-room` and sits exactly where it always did. */
+
+.desk-comms-grid {
+    /* Master-detail: the lean contacts tree takes the narrow column, the selected node's
+       generous detail takes the wide one. */
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 0 1.5rem;
+}
+
+/* M29: the sensors chief works the SKY — the desk layer's empty space passes pointer events
+   through to the live map (pan, wheel zoom, ship/planet click), while every real instrument
+   re-enables its own. The dim backdrop still paints; only hit-testing changes. */
+.desk-layer-passthrough,
+.desk-layer-passthrough .desk-content {
+    pointer-events: none; /* inherited by the whole desk tree unless re-enabled below */
+}
+
+/* The tracking post card sets its own explicit auto (it's a floating panel on Nav) — undo
+   that inside the passthrough desk so the card body is sky, not shield. */
+.desk-layer-passthrough ::deep .tracking-post-card,
+.desk-layer-passthrough ::deep .tracking-post-desk-body {
+    pointer-events: none;
+}
+
+/* ::deep — these live inside the TrackingPost child component, outside Map's own scope. Note
+   .sensors-cards/.sensors-main are NOT re-enabled: the flex containers stretch over empty sky;
+   only the actual cards and the live scope take their events back. */
+.desk-layer-passthrough ::deep .card-header,
+.desk-layer-passthrough ::deep .tracking-post-desk-top,
+.desk-layer-passthrough ::deep .sensors-opportunity-box,
+.desk-layer-passthrough ::deep .sensors-radar-box,
+.desk-layer-passthrough ::deep .sensor-tasks-box,
+.desk-layer-passthrough ::deep .sensor-lost-box,
+.desk-layer-passthrough ::deep .sensors-finds-box,
+.desk-layer-passthrough ::deep .sensor-card,
+.desk-layer-passthrough ::deep .tracking-progress {
+    pointer-events: auto;
+}
+
+/* Same treatment for the war room's instruments (owner: "the war room map seems dead to
+   mouse clicks"): its panels take events back, its stretchy grid stays sky. The floating
+   war-room-card sets its own auto — undo it inside the passthrough desk, then re-enable
+   only the real instruments. */
+.desk-layer-passthrough ::deep .war-room-card,
+.desk-layer-passthrough ::deep .war-room-desk-body,
+.desk-layer-passthrough ::deep .war-room-desk-grid,
+.desk-layer-passthrough ::deep .war-room-tactical-col,
+.desk-layer-passthrough ::deep .war-room-side-col {
+    pointer-events: none;
+}
+
+.desk-layer-passthrough ::deep .war-room-range-group,
+.desk-layer-passthrough ::deep .war-room-scope,
+.desk-layer-passthrough ::deep .war-room-heat-corner,
+.desk-layer-passthrough ::deep .war-room-firecontrol,
+.desk-layer-passthrough ::deep .war-room-intercept,
+.desk-layer-passthrough ::deep .war-room-track-list,
+.desk-layer-passthrough ::deep .war-room-hunter-list,
+.desk-layer-passthrough ::deep .war-room-hunter-warning,
+.desk-layer-passthrough ::deep .war-room-contact-list {
+    pointer-events: auto;
+}
+
+/* Comms tree (master-detail edition, ui-guidelines.md): lean contact rows + group headers. */
+.comms-tree-group {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0.4rem 0 0.15rem;
+}
+
+.comms-node {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.18rem 0.4rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.comms-node:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.comms-node-selected {
+    background: rgba(120, 220, 255, 0.12);
+    outline: 1px solid rgba(120, 220, 255, 0.35);
+}
+
+.comms-breadcrumbs {
+    font-size: 0.78rem;
+}
+
+.comms-actions {
+    max-width: 30rem;
+}

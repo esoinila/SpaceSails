@@ -1,3 +1,254 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · VentPanel's OWN RULES, moved verbatim out of Map.razor.css.
+
+   42 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   ShipBoardPanel, ChargeBoardPanel, ShipScuttlePanel, PressureDoorCard, ScuttlePanel, AlarmPanel,
+   CaptainsRemotePanel, LiftPanel, DoorBoardPanel, BarMenuCard, and 14 more.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* #488 — THE VALVE BOARD. A damage-control mimic drawn from the ship own geometry: bow taper, transom,
+   spine and every compartment in its real place. You point at the PLACE; the name is written in it. */
+
+.vent-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.9rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(150, 170, 190, 0.22);
+}
+
+/* THE LOG SHE IS STILL KEEPING. The board could only ever show one line, so anything that happened while
+   the captain was looking at the map — a pump banking, a soak finishing, a hatch that would not move — was
+   gone before it could be read. Newest at the top; scrolls rather than pushing the switches off the
+   screen. */
+.vent-history {
+    flex-basis: 100%;
+    margin-top: 0.45rem;
+    max-height: 9.5rem;
+    overflow-y: auto;
+    border-top: 1px solid rgba(120, 140, 165, 0.25);
+    padding-top: 0.3rem;
+}
+
+.vent-history-head {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    color: #6f7f95;
+    margin-bottom: 0.2rem;
+}
+
+.vent-history-line {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* The owner's own ruling on this panel's log: amber on black, and big enough to read standing back
+       from it. Nothing here is a footnote. */
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #d8b877;
+}
+
+/* The one just written is brighter — it is the line you came to read. */
+.vent-history-line:first-of-type { color: #f2d79b; }
+
+.vent-picked {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+    color: #e0b25a;
+    margin-right: 0.3rem;
+}
+
+.vent-refusal, .vent-message {
+    flex-basis: 100%;
+    /* The board is read standing back from it, so the log reads at arm's length. */
+    font-size: 0.95rem;
+    color: #e39089;
+    margin-top: 0.3rem;
+    line-height: 1.45;
+}
+
+.vent-message { color: #d7e0f2; font-style: italic; }
+
+/* The mimic itself. Drawn in DECK UNITS with Y negated, so a compartment sits where it sits on the deck —
+   the map cannot drift from the ship, because it is the ship's own numbers. */
+.vent-map {
+    display: block;
+    width: 100%;
+    max-height: 46vh;
+    margin: 0.2rem 0 0.5rem;
+}
+
+.vent-hull {
+    fill: rgba(10, 14, 20, 0.9);
+    stroke: rgba(170, 190, 210, 0.75);
+    stroke-width: 0.28;
+}
+
+/* No rules of its own. Owner: "no difference with it and the others" — so it takes .vent-area rect whole,
+   fill, stroke and every state, and there is nothing here that could ever make it drift. */
+
+/* THE SAME TEXT THE ROOMS GET. Owner: "the grey text like is in the other spaces could be in the spine
+   also … why is it any different in the diagram now?" No good reason — it was styled as a faint background
+   annotation back when the corridor was scenery you could not select. It is a region you pick like any
+   other now, so it reads like one: same fill, same size, same tracking as a compartment's name. */
+.vent-spine-label {
+    fill: #cddaeb;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.55px;
+    letter-spacing: 0.12px;
+}
+
+/* Each compartment is a button that looks like a room. */
+.vent-area { cursor: pointer; }
+
+.vent-area rect {
+    fill: rgba(24, 32, 42, 0.9);
+    stroke: rgba(150, 170, 190, 0.45);
+    stroke-width: 0.16;
+    transition: fill 90ms linear;
+}
+
+/* The compartment names are INJECTED AS MARKUP — Razor reserves the <text> tag for its own control flow,
+   so they are built in code and carry no CSS-isolation scope attribute. ::deep is how this sheet reaches
+   them. Kept under .vent-area so the spine label, which is a real element, keeps its own styling. */
+.vent-map ::deep .vent-area text {
+    fill: #cddaeb;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.55px;
+    letter-spacing: 0.12px;
+    pointer-events: none;
+}
+
+.vent-map ::deep .vent-area .vent-tag { fill: #8fa1b8; font-size: 1.35px; }
+.vent-map ::deep .vent-area .alive-tag { fill: #e8b45c; }
+.vent-map ::deep .vent-area .here-tag { fill: #78dcaa; }
+.vent-map ::deep .vent-area .pumping-tag { fill: #7fd4e8; }
+.vent-map ::deep .vent-area .banked-tag { fill: #78dcaa; }
+.vent-map ::deep .vent-area.vented text { fill: #4d586d; }
+
+.vent-area:hover rect { fill: rgba(38, 50, 64, 0.95); }
+
+/* Sealed reads as a solid door onto the spine; open is a broken one. */
+.vent-door {
+    stroke: rgba(150, 170, 190, 0.5);
+    stroke-width: 0.34;
+    stroke-dasharray: 0.7 0.7;
+}
+.vent-area.sealed .vent-door { stroke: #e0b25a; stroke-dasharray: none; stroke-width: 0.5; }
+.vent-area.sealed rect { fill: rgba(30, 40, 52, 0.95); }
+
+.vent-area.vented rect { fill: rgba(4, 6, 9, 0.98); stroke-dasharray: 0.6 0.6; }
+
+.vent-area.here rect { stroke: rgba(120, 220, 170, 0.85); stroke-width: 0.34; }
+.vent-area.picked rect { stroke: #e0b25a; stroke-width: 0.42; }
+
+/* THE CORRIDOR IS DRAWN AS A SPACE LIKE ANY OTHER. My first pass kept it recessed and border-less on the
+   theory that a corridor is "the space BETWEEN the rooms" and should read as different. Owner, looking at
+   it: "it should look the same in the panel and be selectable." He is right and the theory was backwards —
+   it IS one of the volumes on this board now, it takes the same actions, holds the same vacuum and keeps
+   the same clock, so drawing it as scenery only teaches the captain not to press it. Everything below it
+   inherits from .vent-area, so hover, picked, standing-in-it and blown all come for free and can never
+   drift out of step with the compartments again. */
+
+/* The label is a real element rather than injected markup, so it would otherwise eat the clicks aimed at
+   the band underneath it — the one part of the corridor most likely to be pressed. */
+.vent-spine-label { pointer-events: none; }
+
+/* THE CAPTAIN'S OWN CONDITION, on the board. The canvas pips are behind this panel's backdrop, so while
+   the board is open they might as well not exist — and the board is exactly where a captain stands still
+   with their hands full while something walks up behind them. */
+.vent-condition {
+    display: flex;
+    align-items: center;
+    gap: 0.32rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: #8fa1b8;
+    margin: 0.15rem 0 0.35rem;
+}
+
+.vent-condition-label { color: #6f7f95; }
+.vent-condition-word { color: #b9c8dc; }
+
+.cond-pip {
+    width: 0.62rem;
+    height: 0.62rem;
+    background: #d1584f;
+    border: 1px solid rgba(255, 170, 160, 0.45);
+}
+
+/* A spent pip is a hollow socket, not a missing square — you should be able to count what you have LEFT
+   and what you have SPENT in the same glance. */
+.cond-pip.spent { background: transparent; border-color: rgba(140, 90, 88, 0.55); }
+
+/* One pip left stops being a readout and starts being an alarm. */
+.vent-condition.critical .cond-pip { animation: cond-pulse 900ms ease-in-out infinite; }
+.vent-condition.critical .vent-condition-word { color: #ff8a7d; }
+
+@keyframes cond-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+/* The full reading for the selected room, spelled out under the map. */
+.vent-readout {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.98rem;
+    /* Was a grey-blue that sat almost on top of the board's own background — the one line the captain most
+       needs to read, styled like a disclaimer. Amber on black instead (owner: "that yellow font against
+       black works great"), with the ALIVE state pushed hotter so the two never blur into one another. */
+    color: #e8c07a;
+    padding: 0.35rem 0.1rem 0;
+    line-height: 1.45;
+}
+.vent-readout.alive { color: #ff9a52; font-weight: 700; }
+
+/* ── The board's log ────────────────────────────────────────────────────────────────────────────────
+   Both lines together, under the switches: what the instrument said, then what the handle did. They
+   used to sit on opposite sides of the button row, which read as one line hidden behind the keys.
+   Reserves room for two lines so the panel does not jump as they appear. */
+.vent-log {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 2.6rem;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(150, 170, 190, 0.18);
+}
+
+.vent-log:empty { display: none; }
+
+/* Inside the log they are plain rows, not flex items borrowed from the action bar. */
+.vent-log .vent-message,
+.vent-log .vent-readout {
+    flex-basis: auto;
+    margin-top: 0;
+}
+
+/* Until a room is picked the board has no switches to offer, so it says so rather than showing a
+   lone "Step away" and reading as broken. */
+.vent-pick-hint {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    color: #8fa1b8;
+    text-align: center;
+    padding: 0.7rem 0.2rem 0.2rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(150, 170, 190, 0.18);
+}

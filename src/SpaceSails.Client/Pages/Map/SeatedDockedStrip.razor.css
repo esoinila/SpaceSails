@@ -1,3 +1,133 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · SeatedDockedStrip's OWN RULES, moved verbatim out of Map.razor.css.
+
+   10 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* ── #784 · THE SEATED DOCK ───────────────────────────────────────────────────────────────────────────
+   Owner, live at a taken table with the card up: "the seated frame docks, it does not dim — the hall stays
+   lit, the A* walkers stay visible, the park stays green. The full card returns only for conversations."
+
+   THIS IS NOT A CARD AND MUST NEVER GROW INTO ONE. It has no backdrop, no scrim, no blur and no centring;
+   it is a HUD strip pinned to the foot of the deck, and everything above it is the room the player came to
+   watch. The one thing it takes from the card family is the skin, so the eye reads the two as the same
+   game — and it stays deliberately short, because a strip tall enough to cover the tables would be the
+   modal back in a low hat.
+
+   pointer-events: auto on the strip only — the wrapper takes none, so a click on the hall behind it still
+   reaches the canvas and the captain can keep clicking their way around the room while seated. */
+.seated-dock {
+    position: absolute;
+    left: 50%;
+    bottom: 4.5rem;
+    transform: translateX(-50%);
+    width: min(46rem, 94vw);
+    max-height: 38vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.55rem 0.85rem;
+    text-align: left;
+    color: #e8ecf4;
+    background: rgba(6, 9, 15, 0.86);
+    border: 1px solid rgba(160, 200, 220, 0.42);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    z-index: calc(var(--z-desks-popups) + 40);
+}
+
+/* The CUSTOMER LINE, in the AIR gauge's clothes: monospace figures, one row, quiet ink. It is an
+   INSTRUMENT and it is styled like one — the moment it reads as prose it stops being glanced at, which is
+   the whole reason the air line works. */
+.seated-dock-line {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #9fd0e4;
+    border-bottom: 1px solid rgba(160, 200, 220, 0.2);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
+}
+
+/* The latest thing the table said. Same ink as .table-outcome, because it is the same slot moved onto the
+   strip — the law travelled with the surface (#680). */
+.seated-dock-said {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.45rem;
+    white-space: pre-wrap;
+}
+
+/* …and a running dig, in the channel's own amber-green rather than the outcome's gold: it is not an answer
+   yet, it is a clock. */
+.seated-dock-busy {
+    color: #9fe0c0;
+    background: rgba(120, 215, 175, 0.08);
+    border-left-color: rgba(120, 215, 175, 0.55);
+}
+
+/* #784/#782 · THE DIG'S OWN CLOCK, AT THE STRIP'S OWN WIDTH. Owner, live: "the progress bar is kind of
+   small there... took me a while to notice it." So it is the full width of the strip and tall enough to
+   read from a lean-back — #782's readability law is about SIZE and CONTRAST, and a bar is a number drawn
+   as a length: too thin to see is exactly the same defect as too small to read. Same amber-green ink as
+   the sentence directly above it, because they are one event. */
+.seated-dock-dig {
+    width: 100%;
+    height: 1.05rem;
+    margin: -0.15rem 0 0.5rem;
+    background: rgba(120, 215, 175, 0.1);
+    border: 1px solid rgba(120, 215, 175, 0.5);
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.seated-dock-dig-fill {
+    height: 100%;
+    background: rgba(120, 215, 175, 0.7);
+    transition: width 0.12s linear;
+}
+
+.seated-dock-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* #865 · THE COMPANY LINE. The customer line's own clothes with one thing changed — it is about a PERSON,
+   so it is not in the instrument's cold blue. Owner: "It should somehow UI wise be same style as the sitting
+   alone case", so this is the same row, one lower, and not a second panel. It carries no rule of its own
+   because the line above it already drew one and two hairlines in a row read as a table. */
+.seated-dock-company {
+    color: #d3c9b4;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0.45rem;
+}
+
+/* …and their one breath, overheard. The outcome slot's skin in a quieter ink and in italics, because it is
+   not an answer to anything the captain did — it is a thing being said at the table you sat down at. */
+.seated-dock-bark {
+    font-style: italic;
+    color: #bfc7d4;
+    background: rgba(160, 200, 220, 0.06);
+    border-left-color: rgba(160, 200, 220, 0.45);
+}
+
+/* The pocket, fanned open under "put something on the table" — inside the strip rather than inside a card. */
+.seated-dock-showables {
+    margin-top: 0.5rem;
+}

@@ -1,3 +1,55 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · PlotRibbonPanel's OWN RULES, moved verbatim out of Map.razor.css.
+
+   1 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* M25: navigation-target panel — the plotted course's pass vs orbit success, in plain words.
+   Bottom center, deliberately roomy: it is the whole point of navigating there.
+
+   #1037 · IT IS THE FOOT OF THE FLOW COLUMN NOW, not a second layout system beside it. M25 pinned it to
+   the window's own corner (`position: absolute; bottom: 0.75rem`) while the Plotting panel above it lives
+   in #992's flex arithmetic — and that arithmetic did not know this panel was there. Measured docked at a
+   great port with a plan AND a destination set: `.map-plot`'s own bottom edge landed 12 px inside this
+   panel's top edge at 1280x720 and 16 px at 390x700, and who painted there was whatever the z-band
+   happened to say. Raising the z-index above `.map-hud` is proven wrong (one stacking context —
+   out-ranking it out-ranks every control it carries, and CriticalControlsTests caught autopilot-disengage
+   going unreachable at every size, #1035); only geometry can settle it, which is #994's own finding about
+   the story plate one panel over.
+
+   So it is a member of the column: `position: relative` keeps its z-index working from inside a box that
+   makes no stacking context of its own, `align-self: center` is the old `left: 50% / translateX(-50%)`
+   said in the column's own language, and `margin-bottom` is the old `bottom` — the SAME 0.75 rem off the
+   glass, so `.map-dossier-raised`'s 18.25 rem stack-above offset and CriticalControls' bottom-centre model
+   are both still true of it.
+
+   `flex: 0 1 auto; min-height: 6rem` — it gives, like every other item in this column, because it has a
+   scroll in it (below) and a scroll is what makes giving harmless. The floor is the head row plus the
+   closest-approach line: a panel squeezed past that is a panel that says nothing. */
+.map-dest-panel {
+    position: relative;
+    align-self: center;
+    flex: 0 1 auto;
+    min-height: 6rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+    width: 38rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+    z-index: calc(var(--z-map-chrome) + 2);
+    border: 1px solid rgba(120, 220, 255, 0.5);
+    /* #960: CAPPED so the dossier stacked above it (.map-dossier-raised) sits at a KNOWN offset rather than
+       one CSS would have to measure. A long plan scrolls inside its own box instead of growing under the
+       card that is riding on top of it. */
+    max-height: 17rem;
+    overflow-y: auto;
+}

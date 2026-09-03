@@ -1,3 +1,106 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · GalleyCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   7 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #1021 · THE GALLEY CARD — the satchel's geometry, because the owner asked for the satchel's grammar
+   ("done in pop-up style like the work the case is").
+
+   ::deep because OverlayShell draws this root, and a rule without it compiles to a selector that matches
+   nothing — #996's shape, and the one TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests' dead-rule
+   guard exists to catch.
+
+   WHAT IS NOT HERE, and it is the whole point of the issue: no `background: url('art/…')`. The old desk
+   painted the-space-bar-desk.jpg under a 0.82/0.88 scrim — a photograph of a bar, blacked out, standing in
+   front of the actual bar. The card is transparent to the ROOM instead: the backdrop is the house's
+   `.view-object-backdrop`, and at the CANTINA the cantina's own art is what is behind it.
+
+   `min-height: 0` is load-bearing, not tidiness: the wire inside is a CappedScrollPanel, and a flex item
+   that has not been told it may shrink below its content will not — which is how a panel walks off the
+   bottom of a phone (#950/#993). Height is measured here, not guessed at: 92vh caps the card, the locker
+   keeps its own height, and the dated list is the one thing that gives. */
+::deep .galley-card {
+    width: min(32rem, 94vw);
+    max-height: 92vh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+/* The locker keeps its measured height above the wire — it is the half of the card you PRESS, and a
+   pressable row that scrolls away is a control the captain has to go looking for. */
+.galley-card-rum {
+    flex: 0 0 auto;
+}
+
+/* #1022 · THE TENDER'S HEAD — the picture, the plate, and whatever he is saying. Fixed like the locker
+   for the same reason: he is the top of the card, and a speaker who scrolls away is a speaker you stop
+   hearing. The card's own 92vh cap and the wire's CappedScrollPanel still absorb everything, so the page
+   itself never scrolls — measured at 390 x 700, which is where #1021 was measured. */
+.tender-head {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* 16:9, and CAPPED IN VIEWPORT HEIGHT rather than pixels: on a phone the picture gives way first, because
+   the words under it are the feature and the picture is the room they are said in. object-fit crops rather
+   than squashes, so the counter stays a counter at every width. */
+.tender-art {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 20vh;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(255, 180, 90, 0.25);
+}
+
+/* #782's floor, kept deliberately: 0.875rem is 14 px at the root size, which is the smallest the owner
+   asked to be able to read on a phone. A speaker's name is not decoration. */
+.tender-plate {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #e6b35c;
+}
+
+/* His own voice: what he says to you, across the counter. */
+.tender-line {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cfdae8;
+}
+
+/* THE OTHER REGISTER, drawn as a different thing entirely — indented off his own line, italic, and in the
+   brass of the fitting rather than the blue of the room. Nothing here explains it and nothing should: the
+   change of register IS the whole telling. */
+.tender-announcement {
+    margin: 0.15rem 0 0 0.9rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid rgba(214, 178, 112, 0.45);
+    font-style: italic;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    color: #d6b270;
+}

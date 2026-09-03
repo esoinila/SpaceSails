@@ -1,3 +1,93 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · ConvergenceRevealCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   8 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   AirNoticeCard, FaceSceneCard, GroundGrewCard, GroundLessonCard, TubeRearmCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* THE CONVERGENCE — the marquee one-time reveal, above everything (a catch that just fired it sits under).
+   Ice-and-archive palette: KAAMOS's cold blue meeting NEBULA's filed grey, the two threads crossing. */
+.convergence-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 60); /* above the BUSTED card (+50) — the recognition tops even a catch */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 40%, rgba(10, 20, 34, 0.86), rgba(1, 2, 5, 0.95) 85%);
+    pointer-events: auto;
+}
+
+.convergence-stamp {
+    display: inline-block;
+    transform: rotate(-3deg);
+    padding: 0.2rem 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: #bfe0ff;
+    border: 2px solid rgba(150, 200, 240, 0.75);
+    border-radius: 0.3rem;
+    background: rgba(6, 14, 26, 0.6);
+    margin-bottom: 0.7rem;
+}
+
+.convergence-head {
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    color: #e7f1ff;
+    margin-bottom: 0.15rem;
+}
+
+.convergence-sub {
+    font-size: 0.82rem;
+    font-style: italic;
+    letter-spacing: 0.03em;
+    color: #93b2d4;
+    margin-bottom: 0.75rem;
+}
+
+/* #528 · the convergence's plate. Kept SHORT (a capped height, not the view-object's 70vh) because this
+   card is mostly prose and the picture is its establishing shot, not its subject — the paragraph under it
+   has to stay on screen with it. A missing file onerror-hides and this rule simply never applies. */
+.convergence-img {
+    display: block;
+    width: 100%;
+    max-height: 34vh;
+    object-fit: cover;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(140, 190, 230, 0.28);
+    background: #05070c;
+    margin-bottom: 0.85rem;
+}
+
+.convergence-body {
+    line-height: 1.55;
+    color: #d3e0ef;
+    text-align: left;
+    margin-bottom: 0.7rem;
+}
+
+.convergence-foot {
+    font-style: italic;
+    color: #9db9d8;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+::deep .convergence-card {
+    --card-foot-scrim: rgb(12, 15, 22);
+}

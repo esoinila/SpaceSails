@@ -1,3 +1,57 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · VentReadCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   6 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   ChargeBoardPanel, VentPanel.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* ── The operating log, as a card over the board ─────────────────────────────────────────────────────
+   Sits ABOVE the valve board's own backdrop, so the board is visibly inert behind it until dismissed. */
+.vent-read-backdrop {
+    z-index: calc(var(--z-desks-popups) + 140);
+}
+
+.vent-read-die {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.95rem;
+    letter-spacing: 1.2px;
+    color: #8fa1b8;
+    margin: 0.5rem 0 0.15rem;
+}
+
+/* The sentence itself, given the size it earns. */
+.vent-read-line {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* It has the whole screen and it is the most important sentence the mechanic produces. */
+    font-size: clamp(1.15rem, 2.6vw, 1.7rem);
+    line-height: 1.45;
+    color: #cddaeb;
+    padding: 0.5rem 0.6rem 0.7rem;
+}
+.vent-read-line.alive { color: #e8b45c; }
+
+/* When something is warm in there the card itself takes the warning colour, so the answer registers
+   before a word of it is read. */
+::deep .vent-read-card.alive { border-color: rgba(232, 180, 92, 0.55); }
+
+.vent-read-foot {
+    font-size: 0.98rem;
+    line-height: 1.5;
+    color: #c3d1e4;
+    border-top: 1px solid rgba(150, 170, 190, 0.18);
+    padding-top: 0.55rem;
+    margin-top: 0.2rem;
+}

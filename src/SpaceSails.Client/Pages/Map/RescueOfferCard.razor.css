@@ -1,3 +1,36 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · RescueOfferCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   4 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+.rescue-brings {
+    color: #a9e6c0;
+    margin-bottom: 0.4rem;
+}
+
+.rescue-manifest {
+    margin: 0.2rem 0 0;
+    padding-left: 1.4rem;
+    color: #e6d3d3;
+    font-size: 0.9rem;
+}
+
+.rescue-manifest li {
+    margin-bottom: 0.1rem;
+}
+
+.rescue-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

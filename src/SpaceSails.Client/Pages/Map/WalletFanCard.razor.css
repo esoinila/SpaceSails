@@ -1,3 +1,88 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · WalletFanCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   10 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   ShipBoardPanel, VentPanel, WreckChoiceCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* #836 — THE FLETCH WALLET, fanned while a guard crosses the floor. Same card frame as the derelict's
+   decision (an artifact, held up, decided on), and the rows are papers rather than options: the face on
+   top, what the card claims under it, and what your own book says about it here in the smallest type on
+   the dialog. Nothing in here is coloured by whether a paper is GOOD — the whole feature is that you do
+   not know until he reads it. */
+.wallet-fan-rows {
+    margin: 0.6rem 0 0.4rem;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.wallet-paper {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.35rem;
+    padding: 0.42rem 0.55rem;
+    border: 1px solid rgba(150, 170, 190, 0.28);
+    border-radius: 4px;
+    background: rgba(10, 14, 20, 0.55);
+    color: #d8e2ee;
+}
+
+.wallet-paper:hover {
+    border-color: rgba(196, 214, 232, 0.55);
+    background: rgba(18, 24, 32, 0.75);
+}
+
+.wallet-paper.picked {
+    border-color: rgba(224, 178, 90, 0.75);
+}
+
+.wallet-paper-face {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.86rem;
+    letter-spacing: 0.04em;
+}
+
+.wallet-paper-glyph {
+    font-size: 0.95rem;
+}
+
+.wallet-paper-name {
+    font-weight: 600;
+}
+
+.wallet-paper-held {
+    color: #e0b25a;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+}
+
+.wallet-paper-claims {
+    display: block;
+    color: #9fb1c6;
+    font-size: 0.72rem;
+    margin-top: 0.12rem;
+}
+
+.wallet-paper-book {
+    display: block;
+    color: #7f8fa3;
+    font-size: 0.68rem;
+    font-style: italic;
+    margin-top: 0.1rem;
+}
