@@ -20,9 +20,9 @@ public static partial class UndergroundComplex
     //
     // NOT ROOM 0, AND THAT IS A RULE RATHER THAN AN ARRANGEMENT: a paper in room 0 would be a paper the
     // first search on the floor is guaranteed to turn up, and a money trail that hands itself over on the
-    // first press is a briefing. The floor carries thirteen searchable rooms at its narrowest (measured over
-    // the whole generated family, and pinned by TheMoneyTrailTests), so three designations high in the pool
-    // still leave the captain a building to turn over.
+    // first press is a briefing. The narrowest works floor in the swept family carries FOURTEEN searchable
+    // rooms — measured rather than remembered, and asserted by TheMoneyTrailTests to leave room for the
+    // highest index this file names — so three designations still leave a captain a building to turn over.
     //
     // NOTHING ELSE CHANGES. There is no new haul face, no new pocket line, no card, no pulse of its own and
     // no beat: the room reads as operational paper because operational paper is exactly what it is, and the
@@ -136,12 +136,17 @@ public static partial class UndergroundComplex
             : MoneyTrail.SubjectsFor(siteName);
     }
 
-    // FABLE: line needed — a title and a body for a cost-centre line item as it reads IN THE SLEEVE. A paper
-    // out of one of these rooms goes into the pocket as ordinary Satchel.Kind.Paper and FieldClue.Title /
-    // FieldClue.Document then rebuild a seeded generic document off its find id, so a captain who reads it
-    // again in the satchel is shown a pay sheet or a torn manifest rather than the line he found. That gap
-    // is not new and is not this beat's to invent out of: #1063's maintenance ledger and beat 1's valve-book
-    // ship with exactly the same one, and closing it needs two authored strings per paper (the title in the
-    // sleeve and the body on the card) that no canon pass has written. The room's own line is authored and
-    // correct; the pocket is honest that it is holding operational paper.
+    // FABLE: line needed — a TITLE and a BODY for a cost-centre line item as it reads away from the room. A
+    // paper out of one of these rooms goes into the pocket as ordinary Satchel.Kind.Paper, and both seams
+    // that name a paper outside its own room rebuild a seeded generic document off the find id: the sleeve's
+    // row and #615's keep card are titled by FieldClue.Title, and the free glance opens FieldClue.Document.
+    // So the decision card reads "pay sheet, allowances" over the rail's own sentence, and a captain who
+    // opens the sheet again in the satchel is shown a torn manifest rather than the line he found.
+    //
+    // That gap is not new and is not this beat's to invent out of: #1063's maintenance ledger and beat 1's
+    // valve-book carry exactly the same one, so it is an arc-wide want rather than a lane's. Closing it
+    // needs two authored strings per paper that no canon pass has written, and #1061's dropped schedule is
+    // the shape the answer would take (ScheduleLabel + ScheduleBody, branched into Title and Document).
+    // The room's own line is authored and correct, and the pocket is honest that it is holding operational
+    // paper.
 }

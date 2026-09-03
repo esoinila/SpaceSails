@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -222,7 +222,10 @@ public sealed class TheMoneyTrailTests
     /// in care — and the first must find <b>zero</b> line items in the very rooms the second finds three.
     /// A predicate wired to a constant would fail that on the spot.</para>
     ///
-    /// <para><b>Reverts that reddened it:</b> <c>MoneyTrailPaperIn</c> answering the pour for every room on
+    /// <para><b>Reverts that reddened it:</b> <c>MoneyTrailRotaRoom</c> raised to 14, one past the narrowest
+    /// works floor in the family — <i>"the narrowest works floor in the family carries 14 searchable rooms,
+    /// and the rota's paper is designated to room 14"</i>, a designation off the end of a pool and therefore
+    /// a paper nobody could ever reach; <c>MoneyTrailPaperIn</c> answering the pour for every room on
     /// the floor — <i>"Assert.Equal() Failure: Values differ"</i> on the count of papers a fenced site
     /// carries, a floor that is nothing but invoices; and both register gates in <c>MoneyTrailRoomFor</c>
     /// defeated so the answer no longer depends on the world at all — the same failure on
@@ -234,7 +237,7 @@ public sealed class TheMoneyTrailTests
     public void TheLineItemsAreThreeRoomsOfAFloorAndNothingInAWorldThatBoughtNothing()
     {
         List<string> grounds = Grounds();
-        int rooms = 0, quietPapers = 0, fencedPapers = 0;
+        int rooms = 0, quietPapers = 0, fencedPapers = 0, narrowest = int.MaxValue;
 
         foreach (string body in grounds)
         {
@@ -244,6 +247,7 @@ public sealed class TheMoneyTrailTests
             }
             int count = UndergroundComplex.Build(body, works, Field).RoomCentres.Count;
             rooms += count;
+            narrowest = Math.Min(narrowest, count);
 
             // The world nobody closed anything in — the same rooms, asked the same question.
             for (int r = 0; r < count; r++)
@@ -267,6 +271,18 @@ public sealed class TheMoneyTrailTests
         }
 
         Assert.True(rooms > 500, $"only {rooms} works-floor rooms were swept — this proves little.");
+
+        // THE NARROWEST WORKS FLOOR IN THE WHOLE FAMILY STILL HAS ROOM FOR THREE DESIGNATIONS, and it is
+        // asked FIRST so that it names the cause rather than the symptom: the moment a floor came back
+        // shorter than the highest index this beat designates, that paper would be past the end of a pool
+        // and therefore unreachable forever, and every count below would merely come out low. It is fourteen
+        // rooms at the narrowest, which is the number UndergroundComplex.MoneyTrail.cs's own note quotes —
+        // measured here rather than remembered, which is this repo's rule about numbers in prose.
+        Assert.True(narrowest >= UndergroundComplex.MoneyTrailRotaRoom + 1,
+            $"the narrowest works floor in the family carries {narrowest} searchable rooms, and the rota's "
+            + $"paper is designated to room {UndergroundComplex.MoneyTrailRotaRoom}");
+        Assert.InRange(narrowest, UndergroundComplex.MoneyTrailRotaRoom + 1, 40);
+
         Assert.Equal(0, quietPapers);
         Assert.Equal(3 * grounds.Count, fencedPapers);
 
