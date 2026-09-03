@@ -31,17 +31,10 @@ public partial class Map
     {
         foreach (string key in _roomsTurnedOver)
         {
-            if (!KeepOrLeave.KeyIsFor(key, ex.Stop.Body.Id))
-            {
-                continue;
-            }
-
-            string[] parts = key.Split('|');
-            if (parts.Length == 3
-                && int.TryParse(parts[1], System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out int level)
-                && int.TryParse(parts[2], System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out int room))
+            // Core reads its own key. A transcription of the format here would be a second reader that
+            // agrees with the writer until the day one of them is edited — and the failure would be a
+            // facility quietly re-filling itself, which is the exact thing this register exists to stop.
+            if (KeepOrLeave.TryReadKey(key, ex.Stop.Body.Id, out int level, out int room))
             {
                 ex.HiveRoomsEmptied.Add(HiveInterior.RoomKey(level, room));
             }

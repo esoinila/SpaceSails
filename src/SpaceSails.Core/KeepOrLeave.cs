@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace SpaceSails.Core;
 
@@ -89,14 +90,31 @@ public static class KeepOrLeave
         return $"{bodyId}|{level}|{roomIndex}";
     }
 
-    /// <summary>#615 · Does this stored key belong to the site the captain is standing on? The one question
-    /// the seeding asks of the register, so the excursion and the vault can never come to two views of which
-    /// rooms this building has left.</summary>
-    public static bool KeyIsFor(string key, string bodyId)
+    /// <summary>#615 · Read one stored key back, but ONLY if it belongs to the site the captain is standing
+    /// on. The one question the seeding asks of the register — which room on which floor of THIS building has
+    /// already been gone through — so the excursion's live set and the vault's durable one can never come to
+    /// two views of one room.
+    ///
+    /// <para>Here rather than at the seeding, because a key written by
+    /// <see cref="RoomKey"/> and read by a transcription of it in the client is two functions that agree
+    /// until the day one of them is edited. False for anything this build cannot read, which costs one
+    /// unrecognised room its strike-off and nothing else.</para></summary>
+    public static bool TryReadKey(string key, string bodyId, out int level, out int roomIndex)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(bodyId);
-        return key.StartsWith(bodyId + "|", StringComparison.Ordinal);
+
+        level = 0;
+        roomIndex = 0;
+        if (!key.StartsWith(bodyId + "|", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string[] parts = key.Split('|');
+        return parts.Length == 3
+            && int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out level)
+            && int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out roomIndex);
     }
 
     /// <summary>#615 · A find waiting on an answer: everything the KEEP branch needs to finish the pickup the
