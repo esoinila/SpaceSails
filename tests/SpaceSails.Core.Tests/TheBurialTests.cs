@@ -740,7 +740,11 @@ public sealed class TheBurialTests
     [Fact]
     public void TheOrdinaryBoardAndTheOrdinaryRotaAreUntouched()
     {
-        Assert.Equal(CanteenRegulars.CastSize, CanteenBoard.CatalogSize);
+        // #1074 beat 4 · The two catalogues stopped being the same length the day a regular arrived who pins
+        // no paper, so the pool LENGTHS are pinned instead — which is the number that actually matters here,
+        // because it is what the dice are rolled against.
+        Assert.Equal(10, CanteenRegulars.OrdinaryCastSize);
+        Assert.Equal(10, CanteenBoard.OrdinaryNoticeSize);
 
         foreach (string body in Plain(25))
         {

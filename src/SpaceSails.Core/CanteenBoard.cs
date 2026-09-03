@@ -160,6 +160,11 @@ public static class CanteenBoard
     /// the board it was before this shipped.</summary>
     private static int OrdinaryNotices => Catalog.Length - 1;
 
+    /// <summary>#1063/#1074 · How many notices the ordinary seeded deal may choose from, published so a guard
+    /// can pin it without reaching into the array. <b>This number must never change</b>: it is the length the
+    /// dice are rolled against, and moving it re-pins every board in every world.</summary>
+    public static int OrdinaryNoticeSize => OrdinaryNotices;
+
     /// <summary>#1074 · Which entry is the ROSTER — found by its own heading rather than written down as an
     /// index, for <see cref="RosterHead"/>'s reason and for <c>HeadOfficeLevelOf</c>'s: a beat pointed at a
     /// row that does not exist should fail loudly at the first call rather than go quietly missing on some
@@ -255,11 +260,24 @@ public static class CanteenBoard
         // row would say in its own shape that something new had happened here), and it goes into `used` so
         // the deal below cannot pin it twice. On every ground nobody has stopped — which is every ground in
         // almost every world — the rota is dealt or not dealt exactly as it always was.
+        //
+        // ── #1074 beat 4 · …AND THE REGISTER ROW UNDER IT ────────────────────────────────────────────────
+        //
+        // The rota lists the shift; this names one hand off it and says where they went, in a personnel
+        // system's own four words. It is pinned on a stopped ground only, beside the rota it belongs to, and
+        // it takes a third of the four slots rather than a fifth — the same rule, for the same reason.
+        //
+        // IT IS NOT IN THE CATALOGUE AT ALL. It carries a NAME, dealt off the ground (CareerCost.HandOn), so
+        // it is not a constant the array could hold; and keeping it out means the ordinary deal below runs
+        // against exactly the length it always ran against, with no index anybody could reach it by. The
+        // board a captain reads on a ground nobody has stopped is the board it was before this shipped, to
+        // the byte.
         bool closed = StopOrder.On(bodyId);
         if (closed)
         {
             up.Add(Catalog[RosterNotice]);
             used.Add(RosterNotice);
+            up.Add(CareerCost.RegisterRow(bodyId));
         }
 
         bool works = Burial.NoticeIsUp(bodyId);
