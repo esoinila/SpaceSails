@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -176,7 +176,11 @@ public partial class Map
             return;
         }
 
-        int price = FuelMarket.PricePerPulse(_ephemeris.Position(pump.Id, SimTime).Length);
+        // #1068 · …at whatever the pump is asking today. The market's own overnight move rides on top of
+        // the belt price, bounded by the belt markup itself, and is zero at every pump in almost every
+        // world. Nothing says it moved; the receipt is simply a credit a pulse different.
+        int price = FuelMarket.PricePerPulse(
+            _ephemeris.Position(pump.Id, SimTime).Length, QuietHands.PulsePriceMoveAt(_ephemeris, pump.Id));
         FuelMarket.Quote quote = FuelMarket.QuoteFill(_reactionMassPulses, capacity, price, _credits, pulsesWanted);
         if (quote.Pulses <= 0)
         {
@@ -274,7 +278,11 @@ public partial class Map
             return;
         }
         int room = ReactionMassCapacity - _reactionMassPulses;
-        int price = FuelMarket.PricePerPulse(_ephemeris.Position(pump.Id, SimTime).Length);
+        // #1068 · …at whatever the pump is asking today. The market's own overnight move rides on top of
+        // the belt price, bounded by the belt markup itself, and is zero at every pump in almost every
+        // world. Nothing says it moved; the receipt is simply a credit a pulse different.
+        int price = FuelMarket.PricePerPulse(
+            _ephemeris.Position(pump.Id, SimTime).Length, QuietHands.PulsePriceMoveAt(_ephemeris, pump.Id));
         long principal = PumpLoanPrincipal(room, price);
         if (!BankBorrowFavor(lender, principal, viaWire: true))
         {

@@ -502,6 +502,25 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<HallDeclineRecord>? HallsDeclined { get; init; }
+
+    /// <summary>#1068 — THE GROUNDS THE HARBOUR HAS DONE ITS PAPERWORK ABOUT, the world-side window each was
+    /// filed in, and whether the reassigned berth has been handed over yet (<see cref="QuietHands"/>): the
+    /// third manifestation channel's two mundane deliveries, a berth and a price.
+    ///
+    /// <para>All three fields have to survive a reload. The window because both deliveries are CHOSEN
+    /// against it — which slot, and which way the pump moved — and a price that had walked the other way
+    /// after a reload would not be weather, it would be an event. The spent flag because the berth is handed
+    /// over ONCE: a reassignment that came back every time the tab was closed would be exactly the farmable
+    /// trigger #672 forbids, and the one direction it was ever open in.</para>
+    ///
+    /// <para>Null until the harbour has filed something — the #1057/#1072/#1066/#677/#1063/#1068 pattern,
+    /// and here for their exact reason: the checksum is taken over the payload, so an eager
+    /// <c>"hallsHandled": []</c> on every save would change the digest of every vault ever written and hang
+    /// the 📛 tampered marker on honest voyages. A pre-#1068 file simply lacks the field and loads with
+    /// nothing filed.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<QuietHandRecord>? HallsHandled { get; init; }
 }
 
 /// <summary>#1068 — one row of <see cref="ProgressSection.HallsDeclined"/>: a ground, and the world-side
@@ -510,6 +529,12 @@ public sealed record ProgressSection
 /// reason — this file is a FORMAT, and a format spelled as a domain type moves the day the domain type is
 /// renamed, with old saves silently losing the field.</summary>
 public sealed record HallDeclineRecord(string BodyId, long Window);
+
+/// <summary>#1068 — one row of <see cref="ProgressSection.HallsHandled"/>: a ground, the world-side window
+/// the harbour filed it in, and whether the reassigned berth has already been given. A wire record of its
+/// own rather than <see cref="QuietHands.Hand"/> serialized directly, for
+/// <see cref="HallDeclineRecord"/>'s own reason.</summary>
+public sealed record QuietHandRecord(string BodyId, long Window, bool BerthGiven);
 
 /// <summary>#677 — one row of <see cref="ProgressSection.HallsOpened"/>: a ground, and the world-side window
 /// its halls were first entered in.

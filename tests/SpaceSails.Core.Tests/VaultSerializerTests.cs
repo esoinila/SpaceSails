@@ -103,6 +103,11 @@ public class VaultSerializerTests
             // than one list said three times: a file where the buried ground and the declined ground were
             // the same row would round-trip nothing about them being independent facts.
             HallsDeclined = [new HallDeclineRecord("phobos", 4)],
+            // #1068 — …and which of them the harbour has done its paperwork about, with the window and with
+            // the berth already handed over. BerthGiven is TRUE on purpose: false is what a dropped field
+            // decays to, so a round trip that only ever carried false would prove nothing about the one flag
+            // standing between "the berth moved once" and "the berth moves every time you reload".
+            HallsHandled = [new QuietHandRecord("miranda", 9, BerthGiven: true)],
         },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
@@ -163,6 +168,10 @@ public class VaultSerializerTests
         // chosen against, so a save that dropped it would re-open the shut leaf and shut a different one:
         // a lock that moved by itself, which is the one reading a declined door may never have.
         Assert.Equal([new HallDeclineRecord("phobos", 4)], loaded.Progress.HallsDeclined);
+        // #1068 — and which of them the harbour filed, with the window and the spent berth. The spent flag is
+        // the load-bearing half: a reassignment that came back on every reload would be the one farmable
+        // shape #672's channel is written to avoid, and nothing on screen would ever say so.
+        Assert.Equal([new QuietHandRecord("miranda", 9, true)], loaded.Progress.HallsHandled);
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet

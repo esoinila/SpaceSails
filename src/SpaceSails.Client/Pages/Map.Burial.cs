@@ -89,6 +89,12 @@ public partial class Map
         // neighbours do), so a second call site a few lines apart would be two places that have to be kept
         // agreeing about when a shift is. See Map.Decline.cs; it does nothing at all on almost every voyage.
         TheWorldDeclines();
+
+        // #1068 · …and the THIRD channel, on the same breath and the same threshold, for the same reason
+        // again. The people who do not know why are a harbour clerk and a pump attendant, and neither of
+        // them is standing on this ground either. See Map.QuietHands.cs; like the other two, it does nothing
+        // at all on almost every voyage.
+        TheQuietHandsMove();
     }
 
     /// <summary>#1063 · <b>AFTER</b> — the rag, cheerful, once. The owner's own cherry on the cake: a ton of

@@ -74,7 +74,7 @@ public static class ArrivalTube
             return 0;   // a scenario with no traffic section says nothing about anybody's importance
         }
 
-        HashSet<string> neighbourhood = Neighbourhood(ephemeris, havenId);
+        IReadOnlySet<string> neighbourhood = Neighbourhood(ephemeris, havenId);
         double total = 0;
 
         foreach (Contracts.RouteDefinition route in traffic.Routes)
@@ -94,9 +94,17 @@ public static class ArrivalTube
         return total;
     }
 
-    /// <summary>The haven, its parent, and its parent's other children — "the system this berth is in".</summary>
-    private static HashSet<string> Neighbourhood(ICelestialEphemeris ephemeris, string havenId)
+    /// <summary>The haven, its parent, and its parent's other children — "the system this berth is in".
+    ///
+    /// <para>#1068 made this public rather than copying it out: the quiet hands have to know which harbour
+    /// serves a moon, and "the system that ground is in" is this set exactly. A second neighbourhood rule
+    /// would be two answers to one question, which is how a marquee beat once came to fire on the wrong
+    /// moon (#574).</para></summary>
+    public static IReadOnlySet<string> Neighbourhood(ICelestialEphemeris ephemeris, string havenId)
     {
+        ArgumentNullException.ThrowIfNull(ephemeris);
+        ArgumentNullException.ThrowIfNull(havenId);
+
         HashSet<string> at = new(StringComparer.Ordinal) { havenId };
 
         CelestialBody? haven = ephemeris.Bodies.FirstOrDefault(b => b.Id == havenId);

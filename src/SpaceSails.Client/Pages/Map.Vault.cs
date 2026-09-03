@@ -463,6 +463,8 @@ public partial class Map
                 HallsDeclined = _hallsDeclined.Count > 0
                     ? [.. _hallsDeclined.Select(d => new HallDeclineRecord(d.BodyId, d.Window))]
                     : null,
+                // #1068 · …and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
+                HallsHandled = QuietHandRows(),
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -1038,6 +1040,9 @@ public partial class Map
             _hallsDeclined = [.. declined.Select(d => new PoliteDecline.Decline(d.BodyId, d.Window))];
         }
 
+        // #1068: and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
+        RestoreQuietHands(vault.Progress);
+
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
         // ground must come back to a shaft that already ends where the burial left it, and to the same one
         // door the world had already declined.
@@ -1274,7 +1279,11 @@ public partial class Map
         SetDeckForDock(null);
 
         Vector2d dockPos = _ephemeris.Position(havenId, savedSimTime);
-        _ship = BerthState.CoMoving(_ephemeris, havenId, savedSimTime, BerthState.BerthOffsetMeters); // the shared berth build (#269)
+        // The shared berth build (#269), in the slot the roster gives (#1068) — the SAME call the clamp
+        // makes, so a resumed voyage ties up where the clamp tied up rather than a slot away from it.
+        _ship = BerthState.CoMoving(
+            _ephemeris, havenId, savedSimTime, BerthState.BerthOffsetMeters, 0,
+            DockRoster.BearingAt(_ephemeris, havenId));
 
         SimTime = savedSimTime;
 

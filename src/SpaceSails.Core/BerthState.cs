@@ -31,8 +31,14 @@ public static class BerthState
     /// equal to the body's orbital velocity by central difference. Bodies are deterministic from time,
     /// so this reconstructs the exact berth at any epoch — no stored orbit need cross a save boundary.
     /// </summary>
+    /// <param name="bearingRadians">#1068 · Which way round the body the standoff points, measured from the
+    /// Sun-outward direction this construction has always used. <b>Zero is that direction exactly</b>, so
+    /// every caller with no roster to consult builds the berth it has always built, to the bit. The docking
+    /// clamp passes <see cref="DockRoster.BearingAt"/> — which is how a station comes to have more than one
+    /// slot to tie a hull up in, and therefore a slot it can move a hull to.</param>
     public static ShipState CoMoving(
-        ICelestialEphemeris ephemeris, string bodyId, double simTime, double offsetMeters, double charge = 0)
+        ICelestialEphemeris ephemeris, string bodyId, double simTime, double offsetMeters, double charge = 0,
+        double bearingRadians = 0)
     {
         ArgumentNullException.ThrowIfNull(ephemeris);
 
@@ -40,6 +46,12 @@ public static class BerthState
         Vector2d pos = ephemeris.Position(bodyId, simTime);
         Vector2d vel = (ephemeris.Position(bodyId, simTime + h) - ephemeris.Position(bodyId, simTime - h)) / (2 * h);
         Vector2d outward = pos == Vector2d.Zero ? new Vector2d(1, 0) : pos.Normalized();
+        if (bearingRadians != 0)
+        {
+            double cos = Math.Cos(bearingRadians);
+            double sin = Math.Sin(bearingRadians);
+            outward = new Vector2d(cos * outward.X - sin * outward.Y, sin * outward.X + cos * outward.Y);
+        }
         return new ShipState(pos + outward * offsetMeters, vel, simTime, charge);
     }
 
