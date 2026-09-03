@@ -50,12 +50,19 @@ public partial class Map
     {
         // The cheat, and it does exactly one thing: it makes the clock say this ground was opened a shift
         // ago. Everything after this line is the ordinary game.
-        if (_buriedCheat
+        //
+        // #1074 · …and WHICH shift, because the shift decides which of the two outcomes this ground gets.
+        // The split is seeded on the window the ground was opened in (StopOrder.TheOfficeGetsThisOne), so a
+        // cheat that parked any old window would hand a tester a stop order half the time they asked for a
+        // burial. It parks the ROCK and the WINDOW, which is the same move ?found=1 makes with a body id —
+        // and it does it by choosing a real window rather than by overriding the outcome, so what a tester
+        // walks is still exactly the code path a captain walks.
+        if ((_buriedCheat || _stoppedCheat)
             && DisclosureClock.OpeningOf(_hallsOpened, UndergroundComplex.FoundBandCheatSiteId) is null)
         {
             _hallsOpened = DisclosureClock.Note(_hallsOpened, new DisclosureClock.Opening(
                 UndergroundComplex.FoundBandCheatSiteId,
-                DisclosureClock.WindowAt(SimTime) - Burial.WindowsBeforeFilling - 1));
+                CheatOpeningWindow(UndergroundComplex.FoundBandCheatSiteId, wantTheOffice: _stoppedCheat)));
         }
 
         IReadOnlyList<string> next = Burial.Fill(
@@ -95,6 +102,39 @@ public partial class Map
         // them is standing on this ground either. See Map.QuietHands.cs; like the other two, it does nothing
         // at all on almost every voyage.
         TheQuietHandsMove();
+        // #1074 · …and the third outcome of the same moment: the office closes the working. It is the
+        // BURIAL'S OWN trigger read the other way — one opened ground, one whole window, the captain off the
+        // body — and the two are mutually exclusive by construction, so this may run beside Burial.Fill
+        // rather than in place of it and neither has to know what the other decided. See Map.Stop.cs.
+        TheOfficeClosesTheWorking();
+    }
+
+    /// <summary>#1074 · Which window a dev cheat should say this ground was opened in, so that the outcome
+    /// the tester asked for is the outcome the ordinary game produces.
+    ///
+    /// <para>Walks back a shift at a time from the current window until the split
+    /// (<see cref="StopOrder.TheOfficeGetsThisOne"/>) lands on the wanted side. It is a fair coin, so the
+    /// first or second candidate almost always answers; the sweep is long enough that failing it is not a
+    /// thing that happens, and the last window is returned rather than throwing because a cheat that crashed
+    /// a boot would be worse than a cheat that showed the other beat.</para>
+    ///
+    /// <para>Every candidate is at least a whole window old, which is what both outcomes require — the walk
+    /// starts one PAST the threshold rather than at it, exactly as the pre-#1074 cheat's own arithmetic
+    /// did.</para></summary>
+    private long CheatOpeningWindow(string bodyId, bool wantTheOffice)
+    {
+        long now = DisclosureClock.WindowAt(SimTime);
+        long window = now - Burial.WindowsBeforeFilling - 1;
+        for (int back = 0; back < 64; back++)
+        {
+            long candidate = window - back;
+            if (StopOrder.TheOfficeGetsThisOne(new DisclosureClock.Opening(bodyId, candidate))
+                == wantTheOffice)
+            {
+                return candidate;
+            }
+        }
+        return window;
     }
 
     /// <summary>#1063 · <b>AFTER</b> — the rag, cheerful, once. The owner's own cherry on the cake: a ton of

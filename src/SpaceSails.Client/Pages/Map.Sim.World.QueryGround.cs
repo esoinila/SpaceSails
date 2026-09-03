@@ -206,6 +206,35 @@ public partial class Map
                 q.SecretlabCheat = true;
             }
         }
+        else if (pair.StartsWith("stopped=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1074 dev cheat: /map?stopped=1 is ?buried=1's twin — the same rock, the same ground already
+            // OPENED a whole world window ago, and a window chosen so that the split hands this one to the
+            // Authority instead of to the neighbours. The stop order fires on the way down and the tester
+            // lands on a site whose deep working has been closed.
+            //
+            // It seeds the disclosure clock's register and NOTHING ELSE, for ?buried=1's reason: the closure
+            // itself runs through the ordinary StopOrder.Note on the ordinary descent, so what a tester walks
+            // is exactly what a captain who went away for a shift would walk. It picks a real window rather
+            // than overriding an outcome, which is what keeps that true.
+            //
+            // WHAT A TESTER SHOULD SEE: the halls are STILL THERE and nothing is filled in — but the lift
+            // panel has no button past the listed bottom, with no row refusing and nothing said; on the
+            // listed bottom, a short recess off the main corridor with one leaf at the back of it that does
+            // not open, reading AUTHORITY — WORKING CLOSED, and [E] on it gives the order verbatim and no
+            // more; the plant's valve-book in the SECOND room searched on that floor, three entries with the
+            // middle one citing an order and no number; and in the upper canteen the week's rota still up,
+            // listing the shift. Nothing else, anywhere, says a word — no card, no pulse of its own, no
+            // marker, nothing on the wire. Use /map?found=1 for the same ground before the order, and
+            // /map?buried=1 for the outcome the neighbours produce instead.
+            string candidate = Uri.UnescapeDataString(pair["stopped=".Length..]).ToLowerInvariant();
+            if (candidate is "1" or "true" or "yes")
+            {
+                _stoppedCheat = true;
+                _foundCheat = true;
+                q.SecretlabCheat = true;
+            }
+        }
         else if (pair.StartsWith("card=", StringComparison.OrdinalIgnoreCase))
         {
             // #693 dev cheat: /map?card=next puts ONE authority in the wallet — the one the gate in front

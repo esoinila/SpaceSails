@@ -73,6 +73,18 @@ public sealed class TheBurialTests
         return plain;
     }
 
+    /// <summary>#1074 · THE GROUNDS THE NEIGHBOURS GET, of those opened in a given world-side window.
+    ///
+    /// <para>#1074's stop order is the OTHER outcome of this same trigger — one opened ground, one whole
+    /// window, the captain off the body — and roughly half of the due grounds are the office's, which
+    /// <c>Fill</c> therefore leaves alone. Every guard below that asks whether a ground is filled in has to
+    /// ask it of a ground the neighbours get, and it derives that list off the split's own function rather
+    /// than typing an id, so a re-seed moves the sample instead of reddening a law about burials.</para>
+    /// </summary>
+    private static List<string> NeighbourGrounds(long openedInWindow) =>
+        [.. Grounds().Where(
+            g => !StopOrder.TheOfficeGetsThisOne(new DisclosureClock.Opening(g, openedInWindow)))];
+
     /// <summary>Install a burial (and the opening that had to come before it) for the length of one guard,
     /// and put the world back afterwards whatever happens.</summary>
     private static IDisposable Buried(params string[] bodies) =>
@@ -376,9 +388,11 @@ public sealed class TheBurialTests
     [Fact]
     public void NothingIsFilledInBeforeAWholeWindowHasPassed()
     {
-        string body = Grounds()[0];
         double window = DisclosureClock.WindowSeconds;
         Assert.Equal(Monolith.EpochSeconds, window);   // one clock, and it is not this file's
+
+        // #1074 · a ground the NEIGHBOURS get, opened in window four — see NeighbourGrounds.
+        string body = NeighbourGrounds(4)[0];
 
         int gallery = GalleriesOf(body)[0];
         IReadOnlyList<DisclosureClock.Opening> register =
@@ -411,7 +425,7 @@ public sealed class TheBurialTests
     [Fact]
     public void NothingIsFilledInWhileTheCaptainIsStandingOnIt()
     {
-        List<string> grounds = Grounds().Take(3).ToList();
+        List<string> grounds = NeighbourGrounds(0).Take(3).ToList();   // #1074 · see NeighbourGrounds
         double window = DisclosureClock.WindowSeconds;
 
         IReadOnlyList<DisclosureClock.Opening> register = [];
@@ -474,7 +488,7 @@ public sealed class TheBurialTests
 
         // And the event itself only ever ADDS. A register is never shortened, never reordered, and never
         // rewritten — the same monotone promise the clock makes about its own reading.
-        string first = Grounds()[0], second = Grounds()[1];
+        string first = NeighbourGrounds(0)[0], second = NeighbourGrounds(0)[1];   // #1074
         IReadOnlyList<string> had = [first];
         IReadOnlyList<DisclosureClock.Opening> register =
             [new(first, 0), new(second, 0)];

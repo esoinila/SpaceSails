@@ -226,6 +226,16 @@ public static partial class UndergroundComplex
             return Haul.Records;
         }
 
+        // #1074 · And, on a ground whose deep working the Authority has closed, the room the plant's
+        // valve-book is kept in — on the listed bottom, a corridor's length from the seal. Designated for
+        // the reason above and not for a new one; it cannot collide with the Key room, which is room 0 of
+        // that same floor. See ValveBookRoomFor.
+        if (ValveBookRoomFor(bodyId) is { } valves
+            && level == valves.Level && roomIndex == valves.RoomIndex)
+        {
+            return Haul.Records;
+        }
+
         // ── #677 · AND THE HALLS, WHERE ALMOST NOTHING IS IN ALMOST EVERY ROOM ────────────────────────────
         //
         // The emptiness is load-bearing everywhere on this ground (§10.3) and down here it is the whole
@@ -380,6 +390,12 @@ public static partial class UndergroundComplex
         // 2211, then an entry citing none, then 2213. See MaintenanceLedgerLine.
         Haul.Records when MaintenanceLedgerRoomFor(bodyId) is { } l && level == l.Level && roomIndex == l.RoomIndex
             => MaintenanceLedgerLine,
+        // #1074 · …and on a ground whose working the Authority has closed, the plant's valve-book, open at
+        // the three entries that bracket the closure. The anomaly is the BREVITY again and it is read off
+        // the numbering: instruction 2231, then an entry citing an ORDER and no number, then 2233. See
+        // PlantValveBookLine.
+        Haul.Records when ValveBookRoomFor(bodyId) is { } v && level == v.Level && roomIndex == v.RoomIndex
+            => PlantValveBookLine,
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",

@@ -108,6 +108,13 @@ public class VaultSerializerTests
             // decays to, so a round trip that only ever carried false would prove nothing about the one flag
             // standing between "the berth moved once" and "the berth moves every time you reload".
             HallsHandled = [new QuietHandRecord("miranda", 9, BerthGiven: true)],
+            // #1074 — …and which of them the Authority has since closed the deep working of. The SAME row
+            // as the declined one, deliberately: a stop and a decline are two different things that can be
+            // true of one ground at once (they are different channels), and a file where the three lists
+            // never overlapped would round-trip a shape that says nothing about them being independent.
+            // What may never share a row is a stop and a BURIAL, and that is a law about the world rather
+            // than about this format — TheStopOrderAtTheDigTests holds it.
+            HallsStopped = ["phobos"],
         },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
@@ -172,6 +179,10 @@ public class VaultSerializerTests
         // the load-bearing half: a reassignment that came back on every reload would be the one farmable
         // shape #672's channel is written to avoid, and nothing on screen would ever say so.
         Assert.Equal([new QuietHandRecord("miranda", 9, true)], loaded.Progress.HallsHandled);
+        // #1074 — and which of them an office closed the working of. A closure that forgot across a reload
+        // would re-open a shaft an office had sealed, and would let the neighbours fill in a ground the
+        // Authority had already taken.
+        Assert.Equal(["phobos"], loaded.Progress.HallsStopped);
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet

@@ -114,8 +114,16 @@ public static class Burial
 
     /// <summary>#1063 · Is the works notice up? <b>Between the opening and the fill</b>, which is the window
     /// the issue posts it in — the notice comes down when the job is done, the way a notice about a job that
-    /// is finished comes down.</summary>
-    public static bool NoticeIsUp(string bodyId) => WorksAreOn(bodyId) && !IsFilled(bodyId);
+    /// is finished comes down.
+    ///
+    /// <para>#1074 · …and it comes down the other way too, on a ground the Authority has closed the working
+    /// of. A notice about resurfacing the lower galleries is a notice about a job somebody was going to do,
+    /// and on a stopped ground nobody is going to do it — <i>"services isolated per order"</i> is the
+    /// valve-book saying so in the plainest available words. Left up, it would be a facility advertising
+    /// work on a level it has just sealed the way to, which is the one thing the board must never be: a
+    /// piece of paper that disagrees with the building.</para></summary>
+    public static bool NoticeIsUp(string bodyId) =>
+        WorksAreOn(bodyId) && !IsFilled(bodyId) && !StopOrder.On(bodyId);
 
     /// <summary>#1063 · Has this ground been filled in?</summary>
     public static bool IsFilled(string bodyId)
@@ -184,6 +192,15 @@ public static class Burial
             if (!IsDue(opening, window))
             {
                 continue;
+            }
+            // #1074 · …AND THE OFFICE MAY HAVE GOT THERE FIRST. The stop order is the OTHER outcome of this
+            // same trigger — one opened ground, one whole window, the captain off the body — and a ground
+            // gets one of the two. The split is ONE function asked by both sides (StopOrder's own remarks
+            // carry the whole argument), so "a stopped ground is never also a buried one" holds by
+            // construction rather than by two conditions somebody has to keep agreeing.
+            if (StopOrder.TheOfficeGetsThisOne(opening))
+            {
+                continue;   // the Authority's ground, and it closes the working instead (#1074)
             }
             if (string.Equals(opening.BodyId, standingOn, StringComparison.Ordinal))
             {

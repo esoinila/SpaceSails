@@ -226,6 +226,14 @@ public static partial class UndergroundComplex
         CarveSpecimen(bodyId, level, field, walls, alcoveMouths, claimed);
         Specimen? specimen = SpecimenOn(bodyId, level, field);
 
+        // #1074 · …and, on a ground whose deep working the Authority has closed, the recess the SEAL stands
+        // in. The same pocket, cut here for the same two reasons, and it may be the same pocket because a
+        // ground is stopped or buried and never both (StopOrder.TheOfficeGetsThisOne). What differs is what
+        // is at the back of it: #1063 keeps a preserved doorway with nothing written on it, and this hangs a
+        // leaf that will not open with an office's stamp on it. On every site nobody has stopped — which is
+        // every site in almost every world — this returns having done nothing at all.
+        CarveStopSeal(bodyId, level, field, walls, alcoveMouths, claimed, locked);
+
         // #775 · THE DOORS THE HALL CUTS IN THE SPINE'S OWN FACE, filled in by the carve below and read by
         // the wall builder — one list, so the gap the corridor leaves and the door the hall publishes are
         // the same gap. #585's law, said about the one wall the hall did not previously own a hole in.

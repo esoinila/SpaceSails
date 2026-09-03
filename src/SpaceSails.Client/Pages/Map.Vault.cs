@@ -465,6 +465,8 @@ public partial class Map
                     : null,
                 // #1068 · …and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
                 HallsHandled = QuietHandRows(),
+                // #1074 · …and which of them the Authority has closed the working of (Map.Stop.cs).
+                HallsStopped = StopRows(),
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -1042,12 +1044,15 @@ public partial class Map
 
         // #1068: and which of them the harbour has filed paperwork about (Map.QuietHands.cs).
         RestoreQuietHands(vault.Progress);
+        // #1074: and which of them the Authority has closed the working of (Map.Stop.cs).
+        RestoreStop(vault.Progress);
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
-        // ground must come back to a shaft that already ends where the burial left it, and to the same one
-        // door the world had already declined.
+        // ground must come back to a shaft that already ends where the burial left it, to the same one
+        // door the world had already declined, and to the seal an office had already posted.
         InstallBurialRegister();
         InstallDeclineRegister();
+        InstallStopRegister();
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.

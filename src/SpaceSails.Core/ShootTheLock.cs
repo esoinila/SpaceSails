@@ -98,7 +98,11 @@ public static class ShootTheLock
         {
             return Verdict.NoLockToBreak;
         }
-        if (UndergroundComplex.IsSealedWay(sign))
+        // #1074 · …and the order's seal answers with them. It is asked through UndergroundComplex.HasNoReader
+        // rather than through IsSealedWay alone so that this file and the satchel cannot come to two opinions
+        // about what a captain is standing in front of. A stop order is a leaf welded shut and stamped by an
+        // office: there is no hasp on it, and the honest refusal is the sealed way's, not the reader's.
+        if (UndergroundComplex.HasNoReader(sign))
         {
             return Verdict.NoLockToBreak;
         }
