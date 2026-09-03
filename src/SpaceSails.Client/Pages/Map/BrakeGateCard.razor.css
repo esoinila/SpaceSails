@@ -1,3 +1,23 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · BrakeGateCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   1 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* #304 — the arrival-brake consent card: the deck-offer-card family, but a heat-of-arrival tint and a
+   z-index just above the other deck cards (still below the distress lifeline and the full-screen gates), so
+   a brake ask in the heat of arrival is never buried under a stray context menu. #299 band = ArrivalBrakeCard. */
+::deep .arrival-brake-card {
+    border-color: rgba(255, 150, 90, 0.6);
+    box-shadow: 0 0.5rem 2rem rgba(255, 90, 40, 0.25), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    z-index: calc(var(--z-desks-popups) + 90);
+}

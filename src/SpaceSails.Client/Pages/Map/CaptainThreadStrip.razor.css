@@ -1,3 +1,41 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · CaptainThreadStrip's OWN RULES, moved verbatim out of Map.razor.css.
+
+   2 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   SaveLoadRack.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* The in-play captain chip (owner 2026-07-19): a small identity-glance disc, bottom-left, while aboard.
+   Icon-scale (~34px), quiet. Sits ABOVE the map canvas but BELOW the deck/dock pop-ups, so it never covers
+   a control — any card that opens over the corner wins. Reuses .captain-mono / .captain-portrait layering. */
+.captain-chip {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: var(--mono-color, #35506a);
+    box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.55);
+    z-index: calc(var(--z-map-chrome) + 5);
+    pointer-events: auto;
+}
+
+.captain-chip .captain-mono {
+    font-size: 0.95rem;
+}

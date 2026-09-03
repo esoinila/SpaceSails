@@ -113,8 +113,7 @@ public sealed class TheTryOutcomeIsReadableTests
     [Fact]
     public void TheOutcomeRowIsStyledLikeTheDialogItSitsIn()
     {
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".satchel-outcome", StringComparison.Ordinal),
             "the satchel outcome row has no style of its own — an unstyled answer in a styled dialog is a " +
             "bug report waiting to be filed (#680).");

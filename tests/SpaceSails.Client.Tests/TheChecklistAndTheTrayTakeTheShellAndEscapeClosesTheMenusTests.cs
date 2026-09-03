@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -123,8 +123,7 @@ public sealed class TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTes
     [Fact]
     public void TheRuleForTheChecklistsAnchorIsWrittenWithDeep()
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         var reaching = Selectors(css)
             .Where(one => one.TrimEnd().EndsWith(".map-tutorial", StringComparison.Ordinal))

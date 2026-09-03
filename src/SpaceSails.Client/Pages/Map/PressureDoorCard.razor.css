@@ -1,3 +1,93 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · PressureDoorCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   10 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   BoardTargetCard, BrakeGateCard, BustedCard, NavHud, RescueOfferCard, WreckOutcomeCard, LiftPanel,
+   ShipBoardPanel, VentPanel.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* ── The pressure gauge on a loaded door ────────────────────────────────────────────────────────────
+   The needle sits hard over on its stop and does not move. That IS the readout: there is no nuance in
+   ten tonnes, and a dial pinned at MAX says it faster than any sentence. */
+::deep .pressure-door { max-width: 30rem; }
+
+.pd-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.6rem 0 0.4rem;
+}
+
+.pd-face {
+    position: relative;
+    width: 11rem;
+    height: 5.9rem;
+    border: 2px solid rgba(170, 190, 210, 0.5);
+    border-bottom-width: 3px;
+    border-radius: 11rem 11rem 0.3rem 0.3rem;
+    background:
+        radial-gradient(circle at 50% 100%, rgba(224, 178, 90, 0.13), transparent 62%),
+        rgba(10, 14, 20, 0.95);
+    overflow: hidden;
+}
+
+/* Pinned at the top of its travel — a needle against the stop, not a needle at rest. */
+.pd-needle {
+    position: absolute;
+    left: 50%;
+    bottom: 0.25rem;
+    width: 2px;
+    height: 4.6rem;
+    background: linear-gradient(to top, #e0b25a, #ff6b5a);
+    transform-origin: 50% 100%;
+    transform: rotate(74deg);
+    box-shadow: 0 0 6px rgba(255, 107, 90, 0.7);
+}
+
+.pd-face::after {           /* the hub the needle turns on */
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0.25rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-left: -0.275rem;
+    margin-bottom: -0.275rem;
+    border-radius: 50%;
+    background: rgba(190, 205, 220, 0.85);
+}
+
+.pd-scale {
+    position: absolute;
+    inset: auto 0.55rem 0.35rem;
+    display: flex;
+    justify-content: space-between;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+    color: #6f7f94;
+    letter-spacing: 0.4px;
+}
+.pd-scale .hot { color: #ff6b5a; }
+
+.pd-sides {
+    display: flex;
+    gap: 1.1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+}
+.pd-sides .vac { color: #7fb4e8; }
+.pd-sides .air { color: #78dcaa; }

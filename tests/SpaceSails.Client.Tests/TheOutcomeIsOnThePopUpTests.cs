@@ -269,8 +269,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheOutcomeRowsAreStyledLikeThePopUpsTheySitIn()
     {
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
 
         foreach (string rule in new[] { ".reveal-outcome", ".panel-outcome" })
         {

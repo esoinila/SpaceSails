@@ -1,3 +1,122 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · ShuttleBayCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   15 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   BoardTargetCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+.deck-shuttle-title {
+    color: #ffd479;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: center;
+    margin-bottom: 0.6rem;
+}
+
+.deck-shuttle-empty {
+    line-height: 1.4;
+    text-align: center;
+    color: #c8cfda;
+    margin-bottom: 0.8rem;
+}
+
+.deck-shuttle-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 40vh;
+    overflow-y: auto;
+    margin-bottom: 0.7rem;
+}
+
+.deck-shuttle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.3rem 0.4rem;
+    border-radius: 0.35rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.deck-shuttle-dest {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    min-width: 0;
+}
+
+.deck-shuttle-name {
+    font-weight: 600;
+}
+
+.deck-shuttle-meta {
+    color: #9fb0c4;
+    font-size: 0.8rem;
+}
+
+/* #955 NAV-2: the window line under a destination row — the clock, not the geography. Warmer than the
+   grey meta above it, because a shuttle window is a thing that runs out while you are reading it. */
+.deck-shuttle-window {
+    color: #d9b473;
+}
+
+.deck-shuttle-noberth {
+    color: #9098a6;
+    font-style: italic;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* #368: the beyond-reach tail — the nearest ground the shuttle can't cross yet. A quiet heading and
+   dimmed, button-less rows so it reads as information (watch the gap), never as a place to board. */
+.deck-shuttle-farhead {
+    color: #8f9bb0;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    margin: 0.15rem 0 0.4rem;
+}
+
+.deck-shuttle-row-far {
+    background: rgba(255, 255, 255, 0.02);
+    opacity: 0.68;
+    cursor: default;
+}
+
+.deck-shuttle-row-far .deck-shuttle-name {
+    font-weight: 500;
+    color: #b7c0cf;
+}
+
+/* The hatch's foot is the shell's row now (WaysClass), the load-out's is still the page's own — same
+   rule reaches both, for the reason above. */
+::deep .deck-shuttle-actions {
+    display: flex;
+    justify-content: center;
+}
+
+/* #223 buried treasure — the shuttle-row action cluster, the bury chooser, and the map card. */
+.deck-shuttle-row-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+::deep .deck-shuttle-card {
+    --card-foot-scrim: rgba(6, 9, 15, 0.94);
+}

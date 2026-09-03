@@ -1,0 +1,794 @@
+# #251 item 3 · THE CASCADE AS IT STOOD BEFORE THE SPLIT.
+#
+# One line per rule of src/SpaceSails.Client/Pages/Map.razor.css at bd6c5b4a — the selector, normalised
+# (comments stripped, whitespace collapsed), IN THE ORDER THE FILE WROTE THEM. That order was the cascade:
+# where two rules of equal specificity could both match an element, the later one won.
+#
+# TheBundleIsTheSameCascadeTests reads this and holds the split to it — every rule still shipped, and no
+# pair that could ever fight over an element having changed which of them wins. It is not a snapshot of
+# VALUES: edit a declaration freely, this file has nothing to say about it. It only knows what rules there
+# were and what order they came in.
+#
+# DELETING A RULE? Delete its line here, in the same PR, or the guard reddens naming the selector — which
+# is the point: a rule vanishing out of a stylesheet nobody reads end-to-end any more should cost somebody
+# a deliberate keystroke.
+.map-page
+.map-canvas
+.map-canvas:active
+.perf-hud
+.deck-pulse-toast
+::deep .deck-offer-card
+::deep .arrival-brake-card
+::deep .oracle-card
+.oracle-card .deck-offer-giver
+.oracle-art
+.oracle-backstory
+.oracle-line
+::deep .oracle-card.oracle-quiet
+.oracle-hush
+.oracle-line-quiet
+.deck-offer-giver
+.deck-offer-blurb
+.deck-offer-reward
+::deep .deck-offer-actions, ::deep .contact-offer-row
+::deep .contact-offer-row
+::deep .deck-bank-card
+.deck-bank-balance
+.deck-bank-warn
+.deck-bank-actions
+.deck-bank-row
+.deck-bank-label
+.deck-bank-notice
+.bar-offer-moment
+.bar-toasted
+.bar-overheard
+.bar-overheard-head
+.bar-overheard-line
+.bar-favorite
+.bar-desk-art
+.bar-view-caption
+.bar-menu
+.bar-menu-head
+.bar-menu-item
+.bar-menu-art
+.bar-menu-words
+.bar-menu-buy
+.bar-menu-flavor
+.map-topstack
+::deep .deck-shuttle-card
+.deck-shuttle-title
+.deck-shuttle-empty
+.deck-shuttle-rows
+.deck-shuttle-row
+.deck-shuttle-dest
+.deck-shuttle-name
+.deck-shuttle-meta
+.deck-shuttle-window
+.deck-shuttle-noberth
+.deck-shuttle-farhead
+.deck-shuttle-row-far
+.deck-shuttle-row-far .deck-shuttle-name
+::deep .deck-shuttle-actions
+.map-flowcolumn
+.map-flowcolumn > .map-topstack
+.map-hud
+.map-hud .btn-toolbar, .map-hud .map-frame
+.map-hud .map-readouts
+.map-hud .btn-toolbar, .map-hud .map-readouts, .map-hud .map-frame, .map-hud ::deep .map-plot
+.map-hud .btn-toolbar
+.map-frame
+.map-frame-picker
+.map-ribbon-note
+::deep .map-plot
+.map-burn-quick
+.map-burn-quick .btn
+.map-burn-nudge
+.map-burn-nudge .btn
+.map-burn-steps
+.map-burn-steps .btn
+.map-burn-epoch-readout
+.map-burn-frame-note
+.map-burn-frame-offer
+.map-burn-frame-offer-line
+.map-plot-pulses
+.map-traffic
+.map-traffic-scroll
+.map-traffic-row
+.map-dock
+::deep .map-tutorial
+.map-adrift
+.map-adrift-reopen
+.map-adrift-reopen:hover
+@keyframes adrift-pulse
+.rescue-backdrop
+::deep .rescue-card
+.rescue-hail
+.rescue-quote
+.rescue-terms
+.rescue-brings
+.rescue-fee
+.rescue-manifest
+.rescue-manifest li
+.rescue-options
+::deep .map-scope
+::deep .map-scope-tile
+::deep .map-scope-min
+.map-scope-canvas
+.map-plot-horizon
+.map-loading
+.map-warp-control .form-range
+.map-warp-readout
+.map-horizon-readout
+.map-plot-percent
+.map-plot-heading
+.map-plot-node-selected
+.map-flightplan-head
+.map-flightplan-now
+.map-flightplan-next
+.map-plot-passline
+.map-flightplan-status
+.map-plot-compose
+.map-plan-step
+.map-plan-step-pip
+.map-plan-step-done .map-plan-step-pip
+.map-plan-step-stale .map-plan-step-pip
+.map-plan-step-armed .map-plan-step-pip
+.map-plan-step-active .map-plan-step-pip
+.map-plan-step-active
+.map-plan-step-invalid .map-plan-step-pip
+.map-arrive-why
+.map-plan-step-line
+.map-plan-step-line:hover
+.map-plan-step-caret
+.map-plan-step-open
+.map-plan-step-edit, .map-step-editor
+.map-plan-step-edit
+.map-step-editor
+@keyframes map-step-open
+.map-sling-verdict
+.map-dest-panel
+.map-key-action
+::deep .map-body-menu
+.map-orbit-bar
+.map-cargo-deliver
+.desk-tab-bar
+.pilot-banner
+.pilot-banner:hover
+.pilot-banner-who
+.pilot-banner-rows
+.pilot-banner-mode
+.pilot-banner-queue
+.pilot-banner-next
+.pilot-banner-pager
+.pilot-banner-arrow
+.pilot-banner-arrow:disabled
+.pilot-banner-pageno
+.ship-alert-strip
+.ship-alert
+.ship-alert-red
+.ship-alert-amber
+.ship-alert-ack
+.ship-alert-action
+.ship-alert-silence
+.pilot-banner-alert-amber
+.pilot-banner-alert-red
+.pilot-banner-manual
+.pilot-banner-auto
+.pilot-banner-auto .pilot-banner-who
+@keyframes pilot-banner-pulse
+.desk-tab
+.desk-layer
+.desk-layer
+.desk-layer .desk-content
+.desk-layer-dimmed
+.desk-content
+.desk-trade-grid
+.desk-side-panel
+.trade-manifest-panel .card-body
+.trade-manifest-transfer
+.trade-manifest-transfer-label
+.trade-manifest-transfer-pct
+.trade-manifest-progress
+.fuel-desk-title
+.fuel-gauge
+.fuel-gauge-fill
+.fuel-gauge.fuel-green .fuel-gauge-fill
+.fuel-gauge.fuel-amber .fuel-gauge-fill
+.fuel-gauge.fuel-red .fuel-gauge-fill
+.fuel-gauge-readout
+.fuel-gauge-cap
+.fuel-alongside
+.fuel-fill-btn
+.desk-traffic-scroll
+.desk-comms-room
+.desk-comms-grid
+.comms-traffic-table td, .comms-traffic-table th
+.parrot-perch
+.parrot-bird
+.parrot-bubble
+::deep .map-dossier
+::deep .map-dossier > .overlay-shell-head
+::deep .map-dossier > .overlay-shell-body
+::deep .map-dossier-raised
+::deep .map-dossier-tile
+::deep .map-dossier-min
+.desk-layer-passthrough, .desk-layer-passthrough .desk-content
+.desk-layer-passthrough ::deep .tracking-post-card, .desk-layer-passthrough ::deep .tracking-post-desk-body
+.desk-layer-passthrough ::deep .card-header, .desk-layer-passthrough ::deep .tracking-post-desk-top, .desk-layer-passthrough ::deep .sensors-opportunity-box, .desk-layer-passthrough ::deep .sensors-radar-box, .desk-layer-passthrough ::deep .sensor-tasks-box, .desk-layer-passthrough ::deep .sensor-lost-box, .desk-layer-passthrough ::deep .sensors-finds-box, .desk-layer-passthrough ::deep .sensor-card, .desk-layer-passthrough ::deep .tracking-progress
+.desk-layer-passthrough ::deep .war-room-card, .desk-layer-passthrough ::deep .war-room-desk-body, .desk-layer-passthrough ::deep .war-room-desk-grid, .desk-layer-passthrough ::deep .war-room-tactical-col, .desk-layer-passthrough ::deep .war-room-side-col
+.desk-layer-passthrough ::deep .war-room-range-group, .desk-layer-passthrough ::deep .war-room-scope, .desk-layer-passthrough ::deep .war-room-heat-corner, .desk-layer-passthrough ::deep .war-room-firecontrol, .desk-layer-passthrough ::deep .war-room-intercept, .desk-layer-passthrough ::deep .war-room-track-list, .desk-layer-passthrough ::deep .war-room-hunter-list, .desk-layer-passthrough ::deep .war-room-hunter-warning, .desk-layer-passthrough ::deep .war-room-contact-list
+.comms-tree-group
+.comms-node
+.comms-node:hover
+.comms-node-selected
+.comms-breadcrumbs
+.comms-actions
+.map-layers
+.nav-search
+.nav-search-input
+.nav-search-input::placeholder
+.nav-search-results
+.nav-search-row
+.nav-search-name
+.map-layers-panel
+.map-layers-row
+.map-layers-group
+.map-layers-parent
+.map-layers-caret
+.map-layers-caret:hover
+.map-layers-parent-label
+.map-layers-child
+.map-layers-child input, .map-layers-parent-label input
+.map-layers-pin
+.map-layers-tri.mixed
+.map-layers-tri.mixed::after
+.map-layers-foot
+.map-layers-reset
+.map-layers-reset:hover
+.map-pick-filter-hint
+.map-pick-filter-hint:hover
+.start-picker-backdrop
+::deep .start-picker
+.start-picker-title
+.start-picker-sub
+.start-picker-berths-intro
+.start-picker-list
+.start-picker-option
+.start-picker-option:hover, .start-picker-option:focus-visible
+.start-picker-continue
+.start-picker-continue:hover, .start-picker-continue:focus-visible
+.start-picker-devstarts
+.start-picker-devstarts-head
+.start-picker-devstarts-head:hover, .start-picker-devstarts-head:focus-visible
+.start-picker-devstarts-count
+.start-picker-devstarts-chev
+.start-picker-devstarts-blurb
+.start-picker-devstart
+.start-picker-devstart:hover, .start-picker-devstart:focus-visible
+.start-picker-devtag
+.start-picker-devurl
+.captain-vault-actions
+.start-picker-icon
+.start-picker-text
+.start-picker-label
+.start-picker-blurb
+::deep .save-surface
+.save-warming
+.save-warming-spin
+@keyframes save-warming-turn
+.wait-gear
+.shuttle-descent
+.wait-shuttle-lane
+.wait-shuttle
+@keyframes wait-shuttle-fly
+.start-picker-newvoyage
+.start-picker-newvoyage:hover, .start-picker-newvoyage:focus-visible
+.save-slots-label
+.save-slots-list
+.slot-row
+.slot-load
+.slot-load
+.slot-load:hover, .slot-load:focus-visible
+.slot-row-auto .slot-load
+.slot-load-empty
+.slot-icon
+.slot-text
+.slot-where
+.slot-when
+.slot-stamp
+.slot-mini
+.slot-mini:hover
+.slot-mini-danger:hover
+.save-surface-foot
+.save-surface-foot-center
+.save-scenarios-toggle
+.save-scenarios-toggle:hover
+.save-scenarios
+.slot-row-empty .slot-load-empty
+.slot-where-empty
+.slot-latest
+.save-berth-toggle
+.save-berth-starts
+.save-captain-roster
+.captain-card
+.captain-card:first-child
+.captain-card-active
+.captain-avatar
+.captain-card-active .captain-avatar
+.captain-mono
+.captain-portrait
+.captain-ident
+.captain-name
+.captain-helm
+.captain-where
+.captain-retired
+.captain-slots
+.captain-card-active + .captain-slots
+.captain-chip
+.captain-chip .captain-mono
+.heat-remembered
+.import-preview
+.import-preview-where
+.import-preview-when
+.import-preview-unknown
+.view-object-backdrop
+.satchel-backdrop
+::deep .view-object
+.view-object-title
+.view-object-img
+.view-object-caption
+::deep .view-object-close
+::deep .view-object-close:hover
+::deep .archive-vision
+.archive-vision .view-object-title
+::deep .archive-vision .view-object-close
+::deep .archive-vision .view-object-close:hover
+.archive-band
+.archive-collar
+.archive-dice
+::deep .selfie-frame
+.selfie-stage
+.selfie-vista
+.selfie-portrait
+.selfie-caption
+.selfie-foot
+::deep .selfie-offer
+.selfie-offer-text
+.selfie-offer-actions
+.captain-selfies
+.captain-selfies-label
+.captain-selfie-strip
+.captain-selfie-thumb
+.captain-selfie-thumb img
+.pin-backdrop
+::deep .pin-pad
+.pin-pad-hatch
+.pin-pad-sub
+.pin-pad-display
+.pin-pad-keys
+.pin-pad-key
+.pin-pad-key:hover
+.pin-pad-key-fn
+.pin-pad-key-go
+.pin-pad-key-go:hover
+::deep .pin-pad-cancel
+::deep .pin-pad-cancel:hover
+.mission-celebration-backdrop
+::deep .mission-celebration
+.mc-fanfare
+.mc-title
+.mc-giver
+.mc-thanks
+.mc-payment
+.mc-parrot
+.mc-history
+.deck-shuttle-row-actions
+.bury-chooser-body
+.bury-row
+.bury-coin
+.bury-steppers
+.bury-cargo
+.bury-note
+.board-sites
+.board-sites-head
+.board-site-row
+.board-site-row:hover
+.board-site-sel
+.board-site-name
+.board-site-flavor
+.bury-gear
+.bury-gear > span:first-child, .bury-eta > span:first-child
+.bury-gear .gear-thumb
+.bury-empty-confirm
+::deep .treasure-map-card
+.tm-art
+.tm-x
+.tm-caption
+.tm-bearing
+.tm-contents
+.tm-flavor
+::deep .treasure-map-card .btn
+::deep .expedition-brief-card
+.eb-art
+.eb-stamp
+.eb-stamp span
+.eb-title
+.eb-site
+.eb-body
+.eb-flavor
+::deep .expedition-brief-card .btn
+.expedition-reveal-backdrop
+::deep .expedition-reveal-card
+.er-art
+.er-scrim
+.er-stamp
+.er-headline
+.er-site
+.er-body
+::deep .expedition-reveal-card .btn
+.busted-backdrop
+.busted-backdrop.busted-sepia
+::deep .busted-card
+.busted-hail
+.busted-collector-hail
+.busted-heat
+.busted-quote
+.bolivia-beat-img
+.busted-nerve-ledger
+.busted-nerve-ledger-head
+.busted-nerve-ledger-line
+.busted-options
+.busted-opt
+.busted-opt .bo-title
+.busted-opt .bo-detail
+.busted-receipt
+.busted-receipt div
+.busted-math
+.busted-succession
+.busted-succession-head
+.busted-succession-line
+.busted-succession-names
+.busted-succession-names .succ-old
+.busted-succession-names .succ-arrow
+.busted-succession-names .succ-portrait
+.busted-roll
+::deep .busted-close
+.busted-freeze
+.busted-freeze-art
+.busted-freeze-art .bf-silhouettes
+.busted-freeze-art .bf-flash
+.busted-explosion
+.busted-freeze-art .bf-art
+.busted-freeze-art.has-art
+.busted-freeze-caption
+.busted-whathappened
+.busted-death-art
+.busted-whathappened-head
+.busted-whathappened-line
+@keyframes busted-flash
+::deep .jump-overlay
+@keyframes jump-fade-in
+::deep .jump-overlay-inner
+::deep .jump-overlay-head
+::deep .jump-overlay-min
+::deep .jump-overlay-min:hover, ::deep .jump-overlay-min:focus-visible
+::deep .jump-overlay-tile
+.jump-overlay-title
+.jump-overlay-year
+.jump-overlay-bar
+.jump-overlay-fill
+.jump-overlay-bound
+.jump-overlay-note
+.jump-overlay-nostop
+.busted-nebula
+.busted-nebula-head
+.busted-nebula-line
+.busted-glitch-flash
+@keyframes nebula-glitch-flicker
+.convergence-backdrop
+::deep .convergence-card
+.convergence-x
+.convergence-x:hover, .convergence-x:focus-visible
+.convergence-stamp
+.convergence-head
+.convergence-sub
+.convergence-img
+.convergence-body
+.convergence-foot
+::deep .ground-lesson-card
+.ground-lesson-levers
+.ground-lesson-lever
+.ground-lesson-key
+.ground-lesson-lever-text
+.ground-lesson-lever-title
+.ground-lesson-lever-what
+.ground-lesson-laws
+.ground-lesson-foot
+::deep .ground-grows-card
+.ground-grows-art
+.ground-grows-beats
+.ground-grows-beats li + li
+.wreck-choice .wreck-finding
+.wreck-finding-head
+.wreck-cause
+.wreck-cause.picked
+.wallet-fan-rows
+.wallet-paper
+.wallet-paper:hover
+.wallet-paper.picked
+.wallet-paper-face
+.wallet-paper-glyph
+.wallet-paper-name
+.wallet-paper-held
+.wallet-paper-claims
+.wallet-paper-book
+.vent-actions
+.vent-history
+.vent-history-head
+.vent-history-line
+.vent-history-line:first-of-type
+.vent-picked
+.vent-refusal, .vent-message
+.vent-message
+.vent-map
+.vent-hull
+.vent-spine-label
+.vent-area
+.vent-area rect
+.vent-map ::deep .vent-area text
+.vent-map ::deep .vent-area .vent-tag
+.vent-map ::deep .vent-area .alive-tag
+.vent-map ::deep .vent-area .here-tag
+.vent-map ::deep .vent-area .pumping-tag
+.vent-map ::deep .vent-area .banked-tag
+.vent-map ::deep .vent-area.vented text
+.vent-area:hover rect
+.vent-door
+.vent-area.sealed .vent-door
+.vent-area.sealed rect
+.vent-area.vented rect
+.vent-area.here rect
+.vent-area.picked rect
+.vent-spine-label
+.vent-spine-tag
+.vent-spine-tag.pumping-tag
+.vent-spine-tag.banked-tag
+.vent-spine-tag.here-tag
+.vent-condition
+.vent-condition-label
+.vent-condition-word
+.cond-pip
+.cond-pip.spent
+.vent-condition.critical .cond-pip
+.vent-condition.critical .vent-condition-word
+@keyframes cond-pulse
+.vent-readout
+.vent-readout.alive
+::deep .pressure-door
+.pd-gauge
+.pd-face
+.pd-needle
+.pd-face::after
+.pd-scale
+.pd-scale .hot
+.pd-sides
+.pd-sides .vac
+.pd-sides .air
+.wreck-clocks
+.wc-line
+.wc-line.pump
+.wc-tag
+.wc-room
+.wc-time
+.wc-note
+::deep .scuttle-panel, ::deep .scuttle-epitaph
+.scuttle-art
+.scuttle-epitaph-text
+.scuttle-epitaph-text.heard
+.vent-log
+.vent-log:empty
+.vent-log .vent-message, .vent-log .vent-readout
+.vent-read-backdrop
+::deep .vent-read-card
+.vent-read-die
+.vent-read-line
+.vent-read-line.alive
+::deep .vent-read-card.alive
+.vent-read-foot
+.wc-line.overload
+.wc-line.overload .wc-time
+.wc-line.overload.no-recall
+.wc-line.overload.no-recall .wc-tag
+.vent-pick-hint
+::deep .lift-panel
+.lift-sub
+.lift-stops
+.lift-stop
+.lift-stop:hover:not(:disabled)
+.lift-stop-depth
+.lift-stop-name
+.lift-stop-air
+.lift-stop.dead .lift-stop-air
+.lift-stop.here
+.lift-stop.here .lift-stop-depth
+.lift-stop.sealed
+.lift-stop.sealed .lift-stop-air
+.lift-stop.carded
+.lift-stop.carded .lift-stop-air
+.lift-stop-card
+.lift-pad
+.lift-pad-sticker
+.lift-pad-said
+.pin-pad-key:disabled
+.locked-door
+.locked-door-line
+.locked-door-actions
+.locked-door-try
+.locked-door-try:hover
+::deep .galley-card
+.galley-card-rum
+::deep .nav-help-card
+::deep .nav-help-scroll
+.tender-head
+.tender-art
+.tender-plate
+.tender-line
+.tender-announcement
+::deep .satchel
+.satchel-sub, .satchel-empty
+.satchel-empty
+.lift-outcome, .satchel-outcome, .reveal-outcome, .panel-outcome
+.reveal-outcome, .panel-outcome
+.satchel-items
+.satchel-item
+.satchel-item:hover:not(:disabled)
+.satchel-item.inert
+.satchel-row
+.satchel-row .satchel-item
+.satchel-look
+.satchel-look:hover
+.satchel-leave
+.satchel-leave:hover
+.satchel-item-try
+.satchel-load
+.satchel-load:hover
+.satchel-share
+.satchel-where
+.satchel-back
+.satchel-back:hover
+.satchel-folder
+.satchel-folder:hover:not(:disabled)
+.satchel-fan
+.satchel-fan:hover
+.satchel-wallet-cards
+.satchel-tabs
+.satchel-tab
+.satchel-tab:hover
+.satchel-tab.on
+.satchel-notes-filter
+.satchel-filter
+.satchel-filter:hover
+.satchel-filter.on
+.satchel-notes
+.satchel-place
+.satchel-place:first-child
+.satchel-note
+.mission-line
+.mission-title
+.mission-why
+.mission-step
+.mission-step.here
+.mission-step.away
+.notebook-pen
+.satchel-filter.red-pen.on
+.notebook-register
+.thread-head
+.thread-head:first-child
+.thread-name
+.thread-count
+.held-sheet
+.held-sheet-title
+.held-sheet-text
+.held-sheet-byline
+.held-sheet.stray
+.held-sheet.stray .held-sheet-text
+.spread-lay
+.spread-laid
+.spread-laid-item
+.spread-second-question
+.satchel-filter.thread-pen
+::deep .story-plate
+::deep .story-plate:not(:last-child)
+@keyframes story-plate-in
+::deep .story-plate-close
+::deep .story-plate-close:hover, ::deep .story-plate-close:focus-visible
+.story-plate-art
+.story-plate-words
+.story-plate-title
+.story-plate-caption
+.busted-collector-hail
+.busted-hail-art
+.busted-collector-hail > span
+.busted-hail-caption
+.captains-remote-btn
+::deep .table-card
+.table-card .deck-offer-giver
+.table-seats
+.table-art
+.table-outcome
+.table-math
+.table-actions
+.table-showables
+.table-showable
+::deep .busted-card, ::deep .view-object, ::deep .convergence-card, ::deep .deck-offer-card, ::deep .mission-celebration, ::deep .treasure-map-card, ::deep .expedition-brief-card, ::deep .expedition-reveal-card, ::deep .rescue-card, ::deep .vent-read-card, ::deep .deck-shuttle-card
+::deep .deck-offer-card
+::deep .deck-offer-card.table-card
+::deep .busted-card .busted-close-row, ::deep .busted-card .busted-close, .busted-card > .busted-options, ::deep .view-object > .view-object-close, ::deep .convergence-card > .convergence-close, ::deep .deck-offer-card > .deck-offer-actions, .deck-offer-card > .deck-bank-actions, .treasure-map-card > .busted-options, ::deep .treasure-map-card > .view-object-close, ::deep .treasure-map-card > button:last-child, ::deep .mission-celebration > button:last-child, ::deep .expedition-brief-card > button:last-child, ::deep .expedition-reveal-card > button:last-child, .rescue-card > .rescue-options, ::deep .deck-shuttle-card > .deck-shuttle-actions
+::deep .ground-lesson-card, ::deep .ground-grows-card
+::deep .ground-lesson-card > .convergence-close, ::deep .ground-grows-card > .convergence-close
+.ground-lesson-card > .convergence-stamp, .ground-grows-card > .convergence-stamp
+::deep .busted-card, ::deep .rescue-card
+::deep .view-object
+::deep .treasure-map-card
+::deep .expedition-brief-card
+::deep .mission-celebration
+::deep .expedition-reveal-card
+::deep .convergence-card
+::deep .deck-offer-card
+::deep .deck-shuttle-card
+.seated-dock
+.seated-dock-line
+.seated-dock-said
+.seated-dock-busy
+.seated-dock-dig
+.seated-dock-dig-fill
+.seated-dock-actions
+.seated-dock-company
+.seated-dock-bark
+.seated-dock-showables
+.seated-news
+::deep .seated-news-card
+.news-clip
+.news-clip:hover
+.spread-item .satchel-item-try
+.job-plain
+.job-plain-verb
+.job-plain-takes
+.job-plain-effort
+.slot-entry
+.slot-note
+.slot-note:hover, .slot-note:focus-visible
+.slot-note-open
+::deep .bank-sheet
+.bank-field
+.bank-field-label
+.bank-input
+.bank-input:focus
+.bank-note
+.bank-safety
+.captain-rename
+.captain-rename-input
+.captain-rename-input:focus
+.captain-rename-pencil
+.captain-card:hover .captain-rename-pencil, .captain-rename-pencil:hover, .captain-rename-pencil:focus-visible
+.captain-ident-row
+.captain-ident-label
+.captain-ident-name
+::deep .busted-close-row
+::deep .busted-card .busted-close-row .busted-close
+::deep .busted-logbook
+::deep .busted-logbook:hover, ::deep .busted-logbook:focus-visible
+.old-crew-card .old-crew-history
+.old-crew-history
+.old-crew-answers
+.old-crew-answer
+.old-crew-answer-label
+.old-crew-answer-said
+.old-crew-reply
+.rep-portrait
+.rep-desk
+.rep-pitch
+.rep-said
+.rep-offers
+.rep-offer
+.rep-offer:hover, .rep-offer:focus

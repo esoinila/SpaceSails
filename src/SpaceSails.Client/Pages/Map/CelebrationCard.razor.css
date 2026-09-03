@@ -1,3 +1,81 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · CelebrationCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   9 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   DeflectionStoryCard, ExpeditionBriefPanel, ExpeditionRevealPanel, TreasureMapCard, WalletFanCard,
+   WreckChoiceCard, WreckOutcomeCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* #185 — the completion fanfare. A finished contract is a CELEBRATION, centred over everything,
+   the coin arriving in the open, the giver grateful, the parrot singing. */
+.mission-celebration-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 40);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 6, 11, 0.6);
+    pointer-events: auto;
+}
+
+.mc-fanfare {
+    color: #ffd479;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.mc-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.mc-giver {
+    color: #ffd479;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.mc-thanks {
+    font-style: italic;
+    color: #cfe0f5;
+    margin-bottom: 0.6rem;
+}
+
+.mc-payment {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #7ee787;
+    margin-bottom: 0.5rem;
+}
+
+.mc-parrot {
+    color: #f0c674;
+    margin-bottom: 0.4rem;
+}
+
+.mc-history {
+    font-size: 0.85rem;
+    color: #9aa6bd;
+}
+
+/* The fanfare's own darkness: the BOTTOM stop of its gradient, alpha and all, read off the rule above. */
+::deep .mission-celebration {
+    --card-foot-scrim: rgba(8, 11, 18, 0.98);
+}

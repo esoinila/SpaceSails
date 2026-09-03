@@ -1,3 +1,92 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · ExpeditionBriefPanel's OWN RULES, moved verbatim out of Map.razor.css.
+
+   9 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   DeflectionStoryCard, AirNoticeCard, AlarmPanel, BankPromptCard, BankSessionCard, BarMenuCard,
+   BoardTargetCard, BodyMenuPanel, BrakeGateCard, BustedCard, and 42 more.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+.eb-art {
+    position: relative;
+    height: 12rem;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid rgba(120, 220, 150, 0.3);
+}
+
+/* The reassuring "FULLY BENIGN (pending)" rubber stamp, corner-slapped over the hero image. */
+.eb-stamp {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    transform: rotate(7deg);
+    padding: 0.2rem 0.5rem;
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.05em;
+    color: #8affb0;
+    border: 2px solid #8affb0;
+    border-radius: 0.3rem;
+    background: rgba(4, 12, 8, 0.45);
+    text-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.8);
+}
+
+/* #782 · THE HEDGE WORD IS THE JOKE, so it has to be legible enough to BE one. It shipped at 0.6rem —
+   9.6 px of 0.85-opacity mint laid over whichever gen-AI photograph the brief drew, which on the owner's
+   phone is not fine print, it is texture. EveryTextReadsTests found it by sweeping the runtime art slots.
+   It keeps its place below the stamp's shout (1.05rem over 0.875rem) and stops being a smudge; the parent
+   grew by the same step so the hierarchy the stamp is drawn in survives the fix. */
+.eb-stamp span {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+.eb-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    color: #8affb0;
+    margin: 0.7rem 1rem 0.15rem;
+}
+
+.eb-site {
+    color: #bfe6cc;
+    font-size: 0.9rem;
+    margin: 0 1rem 0.35rem;
+}
+
+.eb-body {
+    color: #e2f0e6;
+    line-height: 1.4;
+    margin: 0.15rem 1.1rem 0.4rem;
+}
+
+.eb-flavor {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: #8fae99;
+    margin: 0.2rem 1rem;
+}
+
+::deep .expedition-brief-card .btn {
+    margin-bottom: 1rem;
+}
+
+::deep .expedition-brief-card {
+    --card-foot-scrim: rgb(10, 20, 14);
+}

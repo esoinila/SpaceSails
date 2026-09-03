@@ -573,7 +573,7 @@ public sealed class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests
 
         var dead = new List<string>();
 
-        foreach (string selector in Selectors(WithoutComments(File.ReadAllText(sheet))))
+        foreach (string selector in Selectors(WithoutComments(MapMarkup.Read(sheet))))
         {
             if (selector.StartsWith("::deep", StringComparison.Ordinal))
             {

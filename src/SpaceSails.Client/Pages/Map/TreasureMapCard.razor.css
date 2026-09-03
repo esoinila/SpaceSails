@@ -1,3 +1,69 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · TreasureMapCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   7 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   WreckOutcomeCard, WreckChoiceCard, WalletFanCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+.tm-art {
+    position: relative;
+    height: 12rem;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid rgba(255, 210, 130, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* X ALWAYS marks the spot — big, red, unmissable, dead centre of the marked ground. */
+.tm-x {
+    font-size: 4.5rem;
+    font-weight: 900;
+    color: #ff3b30;
+    text-shadow: 0 0 0.4rem rgba(0, 0, 0, 0.9), 0 0 1.2rem rgba(255, 59, 48, 0.6);
+    transform: rotate(-8deg);
+    line-height: 1;
+}
+
+.tm-caption {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #ffd479;
+    margin: 0.7rem 1rem 0.2rem;
+}
+
+.tm-bearing {
+    color: #f0e2c2;
+    margin: 0.15rem 1rem;
+}
+
+.tm-contents {
+    color: #cfe0f5;
+    margin: 0.15rem 1rem 0.3rem;
+}
+
+.tm-flavor {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #b7a988;
+    margin: 0.2rem 1rem;
+}
+
+::deep .treasure-map-card {
+    --card-foot-scrim: rgb(23, 17, 10);
+}

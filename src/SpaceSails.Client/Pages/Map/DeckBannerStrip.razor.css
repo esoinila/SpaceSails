@@ -1,3 +1,52 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · DeckBannerStrip's OWN RULES, moved verbatim out of Map.razor.css.
+
+   10 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   ScuttlePanel, DeskPanels, RescueOfferCard, SaveLoadRack, ShipBoardPanel, VentPanel.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* ── The clocks, readable from the corridor ─────────────────────────────────────────────────────────
+   The pump and the vacuum soak have to be visible while the captain is out fighting for the lane, not
+   only from the board they walked away from. Small, top-right, out of the tracker's way. */
+.wreck-clocks {
+    position: fixed;
+    top: 4.6rem;
+    right: 0.9rem;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid rgba(170, 190, 210, 0.28);
+    border-radius: 0.3rem;
+    background: rgba(8, 11, 16, 0.82);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    pointer-events: none;
+}
+
+.wc-line { display: flex; align-items: baseline; gap: 0.5rem; color: #8fa1b8; }
+.wc-line.pump { color: #7fd4e8; }
+.wc-tag { letter-spacing: 0.5px; }
+.wc-room { color: #cddaeb; }
+.wc-time { margin-left: auto; color: #e0b25a; font-variant-numeric: tabular-nums; }
+
+/* The overload clock: the loudest thing on the HUD, because the whole scene is walking away from the
+   panel that owns it. Past the recall point it stops counting down and starts stating a fact. */
+.wc-line.overload { color: #ff8a72; }
+.wc-line.overload .wc-time { color: #ff6b5a; font-weight: 700; }
+.wc-line.overload.no-recall { color: #ff5a45; }
+.wc-line.overload.no-recall .wc-tag { letter-spacing: 1px; }

@@ -1,3 +1,42 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · NavHelpCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   2 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* ── #949 · THE PLOTTING CARD ──────────────────────────────────────────────────────────────────────────
+   Three declarations, and every one of them is a fact the CappedScrollPanel inside cannot know from where
+   it stands. It borrows everything else — the plate, the border, the amber, the 92vh cap, the inner scroll
+   and the pinned foot — off the `.view-object` family it wears, so this block adds no geometry the game
+   did not already have.
+
+   `min-height: 0` is the load-bearing one, and it is #950/#993's lesson wearing a third card's clothes: a
+   flex item that has not been told it may shrink below its content will not, which is exactly how a panel
+   walks off the bottom of a phone. The family sets `display: flex; flex-direction: column` already; this
+   is the half of the pair it does not set.
+
+   NARROWER THAN THE FAMILY on purpose — 34rem against `.view-object`'s 40. This card is six paragraphs of
+   prose and nothing else, and a measure that runs 40rem wide is a measure the eye loses the start of on
+   the way back. It is the one card in the family whose content is a READ rather than a look. */
+::deep .nav-help-card {
+    width: min(34rem, 94vw);
+    min-height: 0;
+}
+
+/* The title keeps its height while the six steps move under it. `flex: 0 0 auto` is the CappedScrollPanel's
+   own rule for a head and is NOT restated here — this is only the fact that the panel is the thing in this
+   column allowed to give, which it already claims (`flex: 0 1 auto`) and which the family's own
+   `overflow-y: auto` stands behind as the backstop on a very short window. */
+::deep .nav-help-scroll {
+    /* The card's gap already spaces the head off the body; a second gap here would double it. */
+    row-gap: 0.5rem;
+}

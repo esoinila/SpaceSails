@@ -1,3 +1,465 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · SatchelPanel's OWN RULES, moved verbatim out of Map.razor.css.
+
+   59 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   SeatedDockedStrip, ViewObjectCard, ChargeBoardPanel, ShipBoardPanel, VentPanel, BarMenuCard,
+   BoardTargetCard, BodyMenuPanel, BustedCard, DeskPanels, and 28 more.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* #1027 · THE POCKET IS NOT A CARD, AND IT STOPPED PRETENDING TO BE ONE.
+
+   The satchel wears `.view-object-backdrop` for its looks — same dim, same blur, same click-to-close ground
+   — and for its LAYER it wears this, one step higher. The whole bug is in the rule directly above: the two
+   families shared its z-index, so which of them the player saw was decided by which block was typed first
+   in Map.razor. The satchel's is typed at ~2480 and the arrival card's at ~3550, so the picture won, every
+   time, silently. Press I under 🛗 THE SHAFT and the pocket opened BEHIND it.
+
+   A MODIFIER RATHER THAN A NEW FAMILY, deliberately: the same idiom as `.rep-backdrop` and
+   `.selfie-backdrop`, so the pop-up law's recogniser still reads the registered family root off the same
+   attribute and nobody has to register the satchel twice. It must stay AFTER `.view-object-backdrop` in
+   this file — equal specificity, so the cascade is doing the overriding and source order is the tie-break.
+
+   The number is OverlayBands.SatchelBackdrop and CssZBandSyncTests pins it: one over the cards, ten under
+   the distress lifeline. The pocket may cover a flavour card; it may never cover the rescue button. */
+.satchel-backdrop {
+    z-index: calc(var(--z-desks-popups) + 130);
+}
+
+.satchel-sub, .satchel-empty {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #8fa2bb;
+}
+
+.satchel-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    overflow-y: auto;
+}
+
+/* Opened from nowhere in particular, it is a LOOK — the rows are not buttons pretending to be inert, they
+   simply are not offering anything, because there is nothing here to offer it to. */
+.satchel-item.inert { cursor: default; opacity: 0.92; }
+
+/* #614 · The row is a pair now: the item, and a lens for the things worth looking at. The lens sits OUTSIDE
+   the item button so that admiring a thing can never be a mis-click on offering it to a door. */
+.satchel-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.3rem;
+}
+
+.satchel-row .satchel-item { flex: 1 1 auto; }
+
+.satchel-look {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-look:hover {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.6);
+}
+
+/* #688 · LEAVE IT. The third control on the row, and the coolest of the three on purpose: looking is free,
+   offering is the decision, and putting a thing down is the one that costs you something you already have.
+   Same footprint as the lens so the row still reads as a row. */
+.satchel-leave {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #9fb0c6;
+    background: #141821;
+    border: 1px solid rgba(150, 170, 200, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-leave:hover {
+    color: #e6dcc8;
+    background: #1b2029;
+    border-color: rgba(150, 170, 200, 0.55);
+}
+
+.satchel-item-try {
+    font-size: 0.74rem;
+    color: #d8b884;
+    white-space: nowrap;
+}
+
+/* #837 · LOAD IT FROM THE ROW. The fourth control on a row of loose rounds, and amber like every other
+   control down here that spends something: looking is free, leaving is cool, and putting twelve rounds into
+   a drum is a decision. It carries a WORD rather than a glyph because that is the whole bug it fixes — the
+   verb was invisible at the one place the player was looking at the ammunition. */
+.satchel-load {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.74rem;
+    line-height: 1;
+    white-space: nowrap;
+    color: #d8b884;
+    background: #1b1c17;
+    border: 1px solid rgba(200, 170, 120, 0.4);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-load:hover {
+    color: #f0e2c4;
+    background: #23241c;
+    border-color: rgba(200, 170, 120, 0.75);
+}
+
+/* The stepper's own reading, between the − and the +. Tabular figures, because a number that jumps sideways
+   as it counts is a number the eye has to re-find on every press. */
+.satchel-share {
+    flex: 0 0 auto;
+    align-self: center;
+    min-width: 4.6rem;
+    text-align: center;
+    font-size: 0.74rem;
+    color: #d8b884;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Where the gun is — the readout's own two words, dimmed, because it is context and not the figure. */
+.satchel-where { color: #8d8977; font-size: 0.74rem; }
+
+/* …and the way back to the pocket. A quiet full-width control under the rows: leaving a chooser must not
+   look like one of the things it is choosing between. */
+.satchel-back {
+    display: block;
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    font: inherit;
+    font-size: 0.78rem;
+    color: #9fb0c6;
+    background: #141821;
+    border: 1px solid rgba(150, 170, 200, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-back:hover {
+    color: #e6dcc8;
+    background: #1b2029;
+    border-color: rgba(150, 170, 200, 0.55);
+}
+
+/* #697 · THE WALLET. One row for every card in the pocket, and the cards one tap under it. It is styled as a
+   heading rather than as an object, because it is not one — it is the pocket the objects are in. */
+.satchel-folder {
+    letter-spacing: 0.05em;
+    background: #1b1c17;
+    border-color: rgba(200, 170, 120, 0.4);
+}
+
+.satchel-folder:hover:not(:disabled) { background: #23241c; }
+
+/* TRY THEM ALL. Its own control beside the folder, never part of it — #614's ruling one size up: opening a
+   wallet must not be a mis-click away from offering everything in it to a door. Amber, like every other
+   control down here that costs you a decision. */
+.satchel-fan {
+    flex: 0 0 auto;
+    padding: 0 0.8rem;
+    font: inherit;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    color: #d8b884;
+    background: #201b12;
+    border: 1px solid rgba(200, 170, 120, 0.45);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-fan:hover {
+    color: #f0dfb8;
+    background: #2a2317;
+    border-color: rgba(200, 170, 120, 0.8);
+}
+
+/* The cards themselves, stepped in so the folder above them reads as the thing they came out of. */
+.satchel-wallet-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-left: 0.9rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid rgba(200, 170, 120, 0.25);
+}
+
+/* #690 · THE NOTES TAB. A pocket and a notebook are both things a satchel holds, so the notebook gets the
+   satchel's own frame rather than a second dialog — the whole point is reading your notes WHERE you are, and
+   a second modal on top of the door pop-up would be one layer further from the ground. */
+.satchel-tabs {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.satchel-tab {
+    flex: 1 1 0;
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #8fa2bb;
+    background: #12161d;
+    border: 1px solid rgba(200, 170, 120, 0.18);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-tab:hover { color: #e6dcc8; border-color: rgba(200, 170, 120, 0.45); }
+
+/* The page you are on is lit; the other one is a door you can see. */
+.satchel-tab.on {
+    color: #e6dcc8;
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.6);
+}
+
+/* This ground / every ground. Smaller than the page tabs and to one side, because it is a filter on the
+   notebook and not a third place to be. */
+.satchel-notes-filter {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.satchel-filter {
+    padding: 0.25rem 0.6rem;
+    font: inherit;
+    font-size: 0.72rem;
+    color: #7b8ca3;
+    background: transparent;
+    border: 1px solid rgba(150, 170, 200, 0.2);
+    border-radius: 1rem;
+    cursor: pointer;
+}
+
+.satchel-filter:hover { color: #e6dcc8; border-color: rgba(150, 170, 200, 0.5); }
+
+.satchel-filter.on {
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-color: rgba(200, 170, 120, 0.55);
+}
+
+/* min-height: 0 because the book is the one list in this dialog that can be genuinely long — eighty notes
+   across a dozen grounds — and a flex child defaults to min-height: auto, which refuses to shrink below its
+   content and would push Close off the bottom of a 92vh dialog rather than scrolling. */
+.satchel-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* The ledger's own 🥾 heading, one size down: a ground with its finds under it. */
+.satchel-place {
+    margin-top: 0.4rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.05em;
+    color: #d8b56a;
+}
+
+.satchel-place:first-child { margin-top: 0; }
+
+/* A line off the ground, kept verbatim. Read-only on purpose — the book is capped and durable by its own
+   laws (#587) and the satchel only holds it open. */
+.satchel-note {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #cfd8e5;
+    background: #12161d;
+    border-left: 2px solid rgba(150, 170, 200, 0.28);
+    border-radius: 0.2rem;
+}
+
+/* #727 · THE CARRIED COMPASS — one block per live mission on the satchel's MISSIONS page. It reuses
+   .satchel-note's card so a mission reads like everything else the satchel holds open; these three only say
+   which of its lines is the name, which is the why, and which is the step. */
+.mission-line {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border-left-color: rgba(216, 181, 106, 0.45);
+}
+
+.mission-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: #d8b56a;
+}
+
+.mission-why {
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: #7b8ca3;
+}
+
+/* The fold, and the only thing this markup decides. A step you can act on where you stand is LIT — it is the
+   sentence you opened the page for. A step that is a voyage is the same size in a quieter ink: DIRECTION,
+   not an affordance, because the pane cannot honour it and must never look as though it could. */
+.mission-step {
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.mission-step.here { color: #e6dcc8; }
+
+.mission-step.away { color: #93a3b8; }
+
+/* #741 · THE RED PEN, on its own row under the filters — an instrument taken out of the satchel, with the
+   register it puts the page in beside it. The nodes themselves are a child component and carry their own
+   sheet (Components/NotebookNodes.razor.css); these two are drawn by Map.razor. */
+.notebook-pen {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+/* Red only while it is in the hand. On the shelf it is one more control, and a permanently red button on a
+   page full of grey ones would be the game pointing at the feature. */
+.satchel-filter.red-pen.on {
+    color: #e07a6e;
+    background: rgba(196, 62, 52, 0.1);
+    border-color: rgba(196, 62, 52, 0.7);
+}
+
+.notebook-register {
+    flex: 1 1 14rem;
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: #7b8ca3;
+}
+
+/* #741 v1 · THE THREADS PAGE — one heading per name the book has written down more than once, with the
+   notebook's own nodes stacked under it. The heading takes .satchel-place's ink (it is the same rank of
+   thing: a grouping the book made, never a claim it is making) and adds the count and the pen. */
+.thread-head {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-top: 0.7rem;
+}
+
+.thread-head:first-child { margin-top: 0; }
+
+.thread-name {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    color: #d8b56a;
+}
+
+.thread-count {
+    font-size: 0.72rem;
+    color: #7b8ca3;
+}
+
+/* #973 L3 · A HELD MEMORY, DRAWN. Not a note and deliberately not shaped like one: a note is a line the
+   captain wrote on a ground the book can name, and this is a page somebody remembers. So it gets a left
+   rule rather than a bullet, and the byline under it carries the whole of what the book knows about it —
+   whose it is, which theory it serves, who handed it over, the day. */
+.held-sheet {
+    border-left: 2px solid rgba(216, 181, 106, 0.45);
+    padding: 0.25rem 0 0.25rem 0.55rem;
+    margin: 0.4rem 0;
+}
+
+.held-sheet-title {
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #d8b56a;
+}
+
+.held-sheet-text {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #c9d6e4;
+}
+
+/* The one line that says whose it is. Quiet, like every other provenance in this book — a byline is what
+   the page is FILED as, never what it is arguing. */
+.held-sheet-byline {
+    font-size: 0.7rem;
+    color: #7b8ca3;
+    margin-top: 0.15rem;
+}
+
+/* …and a page that fits nobody's life is drawn in the flashback's own bleached ink rather than the
+   book's gold. It is the one row on the page the captain did not earn and cannot place. */
+.held-sheet.stray { border-left-color: rgba(200, 210, 220, 0.5); }
+
+.held-sheet.stray .held-sheet-text { color: #dfe6ee; }
+
+/* #973 L3 · THE RECONCILE, on the spread. The laid pair sits above the papers because it is what the
+   captain is looking at; the second question sits under the verdict because it is a count and not a
+   conclusion. */
+.spread-lay { margin-bottom: 0.6rem; }
+
+.spread-laid {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin: 0.3rem 0;
+}
+
+.spread-laid-item {
+    font-size: 0.75rem;
+    color: #d8b56a;
+    border: 1px solid rgba(216, 181, 106, 0.35);
+    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
+}
+
+.spread-second-question {
+    font-size: 0.7rem;
+    color: #7b8ca3;
+    margin: 0.15rem 0 0.4rem;
+}
+
+/* Quiet, and smaller than the reading: the pen offered at a stack must never read as the page's own
+   recommendation. It is a shortcut for the wrist, not for the judgement. */
+.satchel-filter.thread-pen {
+    margin-left: auto;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+}
+
+/* #784 · A paper lying on the table. The satchel row's skin with the spread's own pen-coloured hint, so a
+   dig reads apart from a TRY at a glance. */
+.spread-item .satchel-item-try {
+    color: #d8c56a;
+}

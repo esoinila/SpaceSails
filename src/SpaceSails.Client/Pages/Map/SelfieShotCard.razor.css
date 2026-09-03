@@ -1,3 +1,65 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · SelfieShotCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   6 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* THE CAPTAIN'S SELFIE (#400) — the framed shot: the vista, the captain's #368 portrait disc composited
+   into the corner (v1's "no image processing" composite), the boast, and the ledger stamp. */
+::deep .selfie-frame {
+    border-color: rgba(120, 200, 255, 0.4);
+}
+
+.selfie-stage {
+    position: relative;
+    width: 100%;
+    min-height: 8rem;
+    max-height: 62vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #05070c;
+    border-radius: 0.4rem;
+    overflow: hidden;
+}
+
+.selfie-vista {
+    width: 100%;
+    max-height: 62vh;
+    object-fit: cover;
+    display: block;
+}
+
+/* The captain, HERE — a portrait disc pinned into the lower-left corner of the vista. */
+.selfie-portrait {
+    position: absolute;
+    left: 0.7rem;
+    bottom: 0.7rem;
+    width: clamp(4.5rem, 22%, 8rem);
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid rgba(120, 200, 255, 0.8);
+    box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.7);
+    background: #0c1017;
+}
+
+.selfie-caption {
+    color: #dfeaff;
+}
+
+.selfie-foot {
+    color: rgba(120, 200, 255, 0.85);
+    font: 600 0.78rem/1.2 monospace;
+    letter-spacing: 0.03em;
+    text-align: center;
+}

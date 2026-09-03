@@ -438,8 +438,7 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
     [InlineData("the tow offer and the plan alarm", "rescue-card")]
     public void EveryCardInTheCelebrationFamilyTakesTheTallCardCapAndThePinnedFoot(string name, string root)
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         Assert.True(
             SelectorsOfTheRuleContaining(css, "max-height: min(92vh, 100%)")

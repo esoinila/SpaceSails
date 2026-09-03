@@ -235,8 +235,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     [Fact]
     public void TheRuleForTheMenusRootIsWrittenWithDeep()
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         var reaching = Selectors(css)
             .Where(one => one.TrimEnd().EndsWith(".map-body-menu", StringComparison.Ordinal))

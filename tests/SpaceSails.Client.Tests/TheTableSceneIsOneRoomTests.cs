@@ -219,7 +219,7 @@ public sealed class TheTableSceneIsOneRoomTests
         // …and it is styled like the dialog it sits in. An unstyled answer in a styled dialog is a bug
         // report waiting to be filed (#680's own words).
         Assert.Contains(".table-outcome",
-            File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css")),
+            MapStylesheet.Text,
             StringComparison.Ordinal);
     }
 

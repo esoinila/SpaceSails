@@ -25,6 +25,10 @@
        of it, and it is held to its own law next door in TheComposedPageIsThePageTests. -->
   <ItemGroup>
     <Compile Include="..\SpaceSails.Client.Tests\MapMarkup.cs" Link="MapMarkup.cs" />
+    <!-- #251 item 3 — and its twin for the stylesheet, for the same reason and by the same rule: one copy,
+         linked. MapMarkup.Read hands the whole cascade back for Pages/Map.razor.css, so it cannot compile
+         without it. -->
+    <Compile Include="..\SpaceSails.Client.Tests\MapStylesheet.cs" Link="MapStylesheet.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,6 +46,11 @@
   <ItemGroup>
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\css\app.css" Link="cssource\app.css" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\Pages\Map.razor.css" Link="cssource\Map.razor.css" CopyToOutputDirectory="PreserveNewest" />
+    <!-- #251 item 3 — and the seventy-six sheets the page's own stylesheet was split into. The bands this
+         gate resolves are spread across them now (`.jump-overlay` is JumpCard's, `.busted-backdrop` is
+         BustedCard's), and a z-index only means anything against the WHOLE cascade anyway: copying the
+         page's half alone would leave the gate quietly resolving fewer selectors every time a rule moved. -->
+    <Content Include="..\..\src\SpaceSails.Client\Pages\Map\*.razor.css" Link="cssource\Map\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\Components\DiceTray.razor.css" Link="cssource\DiceTray.razor.css" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

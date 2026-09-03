@@ -1,3 +1,451 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · BustedCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   52 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   WreckChoiceCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* PR-BUSTED — the catch pop-up (owner ruling §5). Reuses the celebration modal's backdrop grammar,
+   in the collector's harder colours; the freeze-frame goes full-bleed sepia. */
+.busted-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 50); /* above the celebration modal — a catch interrupts everything */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 3, 6, 0.82);
+    pointer-events: auto;
+}
+
+.busted-backdrop.busted-sepia {
+    background: radial-gradient(circle at 50% 40%, rgba(90, 60, 25, 0.9), rgba(10, 7, 3, 0.97));
+}
+
+.busted-hail {
+    color: #ff8a8a;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: 1.1rem;
+    margin-bottom: 0.35rem;
+}
+
+/* PR-BUSTED art (docs/art-manifest-busted.md item 3): busted-collector-hail.jpg backs ONLY the Demand
+   header. A left-weighted dark scrim keeps the callsign legible while the repo captain reads from the
+   right of the cockpit; the gradient sits ABOVE the url so a missing asset still leaves dark, readable
+   chrome. Text-only readability is preserved — the image is decoration behind the scrim. */
+.busted-collector-hail {
+    padding: 0.6rem 0.7rem;
+    border-radius: 0.5rem;
+    background:
+        linear-gradient(90deg, rgba(12, 6, 4, 0.9) 0%, rgba(12, 6, 4, 0.72) 45%, rgba(12, 6, 4, 0.4) 100%),
+        url('art/busted-collector-hail.jpg') right center / cover no-repeat;
+    text-shadow: 0 0.08rem 0.3rem rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 138, 138, 0.28);
+}
+
+.busted-heat {
+    color: #ffce7a;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.busted-quote {
+    font-style: italic;
+    color: #d7e0f2;
+    margin-bottom: 0.75rem;
+}
+
+/* #528 · the Bolivia's per-beat plate. Capped SHORT (28vh) and cropped, because the three choice buttons
+   under it are the reason the card is open — a picture that pushed them off the fold would make the scene
+   worse, not better. The sepia frame matches the freeze-frame that ends the same script. A missing file
+   onerror-hides and this rule simply never applies. */
+.bolivia-beat-img {
+    display: block;
+    width: 100%;
+    max-height: 28vh;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    border: 1px solid rgba(190, 150, 110, 0.32);
+    background: #0b0906;
+    margin-bottom: 0.7rem;
+}
+
+/* #480 — the nerve ledger on the death card: the last few named pips, so "what broke me?" is answered at the
+   one moment the question is loudest. Monospace and plain, deliberately reading like an instrument readout
+   rather than more fiction — the fiction is the line above it. */
+.busted-nerve-ledger {
+    margin: 0.15rem 0 0.8rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid rgba(150, 170, 190, 0.28);
+    border-radius: 4px;
+    background: rgba(10, 14, 20, 0.55);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.busted-nerve-ledger-head {
+    color: #93a6bd;
+    letter-spacing: 0.06em;
+    font-size: 0.7rem;
+    margin-bottom: 0.3rem;
+}
+
+.busted-nerve-ledger-line {
+    color: #e39089;
+}
+
+.busted-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.busted-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.1rem;
+    padding: 0.55rem 0.8rem;
+    white-space: normal;
+}
+
+.busted-opt .bo-title {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.busted-opt .bo-detail {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.busted-receipt {
+    text-align: left;
+    display: inline-block;
+    margin: 0.25rem auto 0.75rem;
+    color: #ffd0d0;
+    font-size: 0.92rem;
+}
+
+.busted-receipt div {
+    margin: 0.1rem 0;
+}
+
+.busted-math {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: #9aa6bd;
+}
+
+/* Evening wind #20 — THE NEW CAPTAIN block on the resurrection card: the policy pays out, a new name and
+   face take the license. Reads as a small notarised panel under the brain-backup receipt. */
+.busted-succession {
+    margin: 0.5rem auto 0.25rem;
+    padding: 0.6rem 0.9rem;
+    max-width: 30rem;
+    border: 1px solid rgba(120, 230, 160, 0.45);
+    border-radius: 0.6rem;
+    background: rgba(120, 230, 160, 0.08);
+}
+
+.busted-succession-head {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #9fe9bd;
+    text-transform: uppercase;
+}
+
+.busted-succession-line {
+    margin: 0.35rem 0 0.5rem;
+    font-style: italic;
+    color: #e7f4ec;
+}
+
+.busted-succession-names {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-weight: 700;
+    color: #eef3fa;
+}
+
+.busted-succession-names .succ-old {
+    color: rgba(224, 228, 236, 0.6);
+    text-decoration: line-through;
+    font-weight: 500;
+}
+
+.busted-succession-names .succ-arrow {
+    color: #9fe9bd;
+}
+
+.busted-succession-names .succ-portrait {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(120, 230, 160, 0.55);
+}
+
+.busted-roll {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    color: #cfe0f5;
+    margin: 0.15rem 0;
+}
+
+/* The death card's way out, wherever it is drawn from: the shell's dismiss on the four panels that end in
+   a row (wave 7), the page's own button on the four that end in one control. `::deep` reaches both. */
+::deep .busted-close {
+    margin-top: 0.6rem;
+}
+
+/* The freeze-frame — homage, not film: two silhouetted rogues bursting into muzzle-flash light,
+   sepia, held. The <art> slots are placeholders the grok image lane fills (see image manifest). */
+.busted-freeze {
+    text-align: center;
+    color: #f3e2c4;
+}
+
+.busted-freeze-art {
+    position: relative;
+    height: 9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem 0 0.75rem;
+    background: radial-gradient(circle at 50% 55%, rgba(255, 236, 180, 0.9), rgba(120, 78, 30, 0.4) 45%, rgba(20, 12, 5, 0.9));
+    border-radius: 0.6rem;
+    overflow: hidden;
+    filter: sepia(0.7) contrast(1.1);
+}
+
+.busted-freeze-art .bf-silhouettes {
+    font-size: 3rem;
+    filter: brightness(0.15);
+    z-index: 2;
+}
+
+.busted-freeze-art .bf-flash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6rem;
+    color: #fff6dc;
+    opacity: 0.85;
+    animation: busted-flash 1.6s ease-out infinite;
+}
+
+.busted-explosion {
+    height: 6rem;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 180, 90, 0.95), rgba(120, 40, 10, 0.5) 50%, rgba(15, 8, 4, 0.95));
+    filter: sepia(0.3) contrast(1.2);
+}
+
+/* PR-BUSTED art (docs/art-manifest-busted.md): the delivered JPGs cover the freeze/explosion boxes,
+   sitting on TOP of the placeholder gradient (which stays as the load/404 fallback). The art is already
+   painterly-sepia, so has-art drops the box's tinting filter and lets the baked frame read as authored.
+   The box keeps overflow:hidden + border-radius, so the image is clipped to the same slot shape. */
+.busted-freeze-art .bf-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+.busted-freeze-art.has-art {
+    filter: none;
+}
+
+.busted-freeze-caption {
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #ffe9c0;
+    margin-bottom: 0.4rem;
+}
+
+/* #380 item 1 — the WHAT HAPPENED block on the resurrection card: the cause image + a place-dependent
+   house-voice line, set off above the brain-backup copy so the fiction explains itself. The death art is
+   authored (Grok), so it drops the sepia tinting like the other has-art frames; a short one keeps the
+   card compact. A hairline rule under the block separates it from the wake receipt below. */
+.busted-whathappened {
+    text-align: center;
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 138, 138, 0.22);
+}
+
+.busted-death-art {
+    height: 8rem;
+    filter: none;
+    background: radial-gradient(circle at 50% 50%, rgba(60, 20, 40, 0.85), rgba(15, 8, 12, 0.95) 70%);
+}
+
+.busted-whathappened-head {
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    font-size: 0.8rem;
+    color: #ff9a9a;
+    margin: 0.1rem 0 0.25rem;
+}
+
+.busted-whathappened-line {
+    font-style: italic;
+    color: #e6d3bd;
+    font-size: 0.95rem;
+    line-height: 1.35;
+}
+
+@keyframes busted-flash {
+    0% { opacity: 0.55; transform: scale(0.9); }
+    50% { opacity: 0.95; transform: scale(1.05); }
+    100% { opacity: 0.55; transform: scale(0.9); }
+}
+
+/* #422 arc 2 — NEBULA MUTUAL fragments delivered ON the BUSTED/resurrection card (the glitch flash, the
+   collector's writ, the clinic's second page). A cold, filed-under-it slab set into the warmer death card. */
+.busted-nebula {
+    margin: 0.5rem 0.9rem;
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: rgba(6, 10, 16, 0.72);
+    border: 1px solid rgba(120, 170, 210, 0.4);
+    border-left: 3px solid rgba(150, 190, 230, 0.85);
+    border-radius: 0.3rem;
+    color: #cdd8e6;
+}
+
+.busted-nebula-head {
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    color: #a9c4e0;
+    margin-bottom: 0.25rem;
+}
+
+.busted-nebula-line {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #c4d1e0;
+}
+
+/* The one-flat-second glitch: a monospace, flickering machine line that should not be there. */
+.busted-glitch-flash {
+    font-family: "Consolas", "Courier New", monospace;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #8fe6c8;
+    text-shadow: 0 0 0.4rem rgba(80, 220, 170, 0.5);
+    margin-bottom: 0.3rem;
+    animation: nebula-glitch-flicker 1.1s steps(2, end) 3;
+}
+
+@keyframes nebula-glitch-flicker {
+    0%, 100% { opacity: 1; }
+    45% { opacity: 0.35; }
+    50% { opacity: 1; }
+    55% { opacity: 0.55; }
+}
+
+/* #528 · the collector's hail, painted. The art sits BEHIND the heading rather than replacing it. */
+.busted-collector-hail { position: relative; overflow: hidden; }
+
+.busted-hail-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.busted-collector-hail > span { position: relative; z-index: 1; }
+
+/* #777 · THE HOSTED BEAT'S OWN WORDS, on the host's own canvas. CollectorHail is
+   StoryBeats.Presentation.Hosted: the seam counts it as told and raises nothing, so this panel is the only
+   place its caption can be read — #761 ("told clearly, on the surface they are looking at") and #736 ("not
+   in the banner behind the backdrop"). Its own scrim rather than the header's, because that gradient thins
+   to 0.4 alpha at the right and a three-line sentence crosses the whole frame; and it resets the heading's
+   alarm styling, because it is prose and not a shout. */
+.busted-hail-caption {
+    position: relative;
+    z-index: 1;
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.35rem;
+    background: rgba(10, 6, 5, 0.82);
+    border: 1px solid rgba(255, 138, 138, 0.16);
+    color: rgba(238, 241, 246, 0.94);
+    font-weight: 400;
+    font-size: 0.86rem;
+    line-height: 1.38;
+    letter-spacing: 0;
+    text-align: left;
+}
+
+/* #951 — the death card's two verbs sit side by side: wake up (the brain backup, canon) and the logbook.
+
+   THE ROW OWNS THE PINNED FOOT, and it must. .busted-close carries this family's sticky footer treatment —
+   `position: sticky` plus a `box-shadow: 0 12rem 0 12rem <scrim>` that paints the card's own darkness far
+   out to both shoulders — and the moment it acquired a SIBLING that scrim swallowed it. The browser showed
+   it immediately: an outlined button with no readable text inside it, because a 12rem spread drawn from a
+   z-index:3 element covers a plain sibling entirely. So the row is added to that selector list above and
+   the button inside a row gives its own scrim up; one foot, one scrim, two verbs on top of it. */
+::deep .busted-close-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+/* Inside a row, the button is just a button — the row is the pinned foot now. */
+::deep .busted-card .busted-close-row .busted-close {
+    position: static;
+    box-shadow: none;
+    margin-top: 0;
+}
+
+/* Readable against the sepia backdrop without competing with the white "…wake up": the logbook is the
+   quieter of the two verbs, but it must be legible, which btn-outline-light alone was not here. */
+::deep .busted-logbook {
+    font-size: 0.9rem;
+    border-color: rgba(243, 226, 196, 0.65);
+    color: #f3e2c4;
+    background: rgba(20, 14, 8, 0.55);
+}
+
+::deep .busted-logbook:hover,
+::deep .busted-logbook:focus-visible {
+    border-color: #f3e2c4;
+    background: rgba(243, 226, 196, 0.16);
+    color: #fff6e4;
+    outline: none;
+}

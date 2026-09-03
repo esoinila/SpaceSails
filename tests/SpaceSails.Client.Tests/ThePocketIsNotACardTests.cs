@@ -130,8 +130,7 @@ public sealed class ThePocketIsNotACardTests
     [Fact]
     public void TheModifiersRuleIsWrittenAfterTheFamilysOwn()
     {
-        string css = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
 
         int family = css.IndexOf(".view-object-backdrop {", StringComparison.Ordinal);
         int modifier = css.IndexOf(".satchel-backdrop {", StringComparison.Ordinal);

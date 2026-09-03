@@ -1,3 +1,145 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · BoardTargetCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   17 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+.bury-chooser-body {
+    margin: 0.4rem 0 0.6rem;
+    color: #dbe4f3;
+}
+
+.bury-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+}
+
+.bury-coin {
+    font-weight: 800;
+    color: #ffd479;
+    font-size: 1.1rem;
+}
+
+.bury-steppers {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.bury-cargo {
+    color: #cfe0f5;
+}
+
+.bury-note {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #9aa6bd;
+}
+
+/* #320: the landing-site chooser — a body's seeded set of grounds, each a mood. A tight stack of
+   selectable rows in the boarding panel; the picked one glows the house amber. */
+.board-sites {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.4rem 0 0.55rem;
+    padding: 0.4rem 0.45rem 0.5rem;
+    border: 1px solid rgba(120, 160, 210, 0.22);
+    border-radius: 0.35rem;
+    background: rgba(20, 30, 46, 0.5);
+}
+
+.board-sites-head {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #b9c8e0;
+    letter-spacing: 0.02em;
+}
+
+.board-site-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid rgba(120, 160, 210, 0.28);
+    border-radius: 0.3rem;
+    background: rgba(14, 20, 32, 0.6);
+    color: #cfe0f5;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+}
+
+.board-site-row:hover {
+    border-color: rgba(255, 212, 121, 0.6);
+    background: rgba(30, 40, 58, 0.7);
+}
+
+.board-site-sel {
+    border-color: #ffd479;
+    background: rgba(60, 46, 18, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 212, 121, 0.35) inset;
+}
+
+.board-site-name {
+    font-weight: 700;
+    color: #ffe6a8;
+    letter-spacing: 0.02em;
+}
+
+.board-site-flavor {
+    font-size: 0.76rem;
+    font-style: italic;
+    color: #9aa6bd;
+    line-height: 1.25;
+}
+
+/* #348: the standard beach-comber kit + the flight ETA — informational body rows, set off from the
+   load-out steppers by a faint rule so they read as "what always comes / what the trip costs", not
+   another dial. */
+.bury-gear {
+    padding-top: 0.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bury-gear > span:first-child,
+.bury-eta > span:first-child {
+    color: #cfe0f5;
+}
+
+/* #348: the Grok kit thumbnail (art/gear-beachcomber-kit.jpg) rides at the left of the gear line.
+   Capped small — object-fit cover + a modest max-height — so it never grows the boarding dialog or
+   pushes the Board button off small screens. Sits inside the flex .bury-row, so text flows beside it. */
+.bury-gear .gear-thumb {
+    flex: 0 0 auto;
+    width: 3.4rem;
+    max-height: 2.4rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    margin-right: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    align-self: center;
+}
+
+/* #348: the empty-sling "are you certain?" line — a fishing-expedition nudge, not a scold, so it wraps
+   full width above its confirm buttons. */
+.bury-empty-confirm {
+    display: block;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    margin: 0.2rem 0 0.5rem;
+}

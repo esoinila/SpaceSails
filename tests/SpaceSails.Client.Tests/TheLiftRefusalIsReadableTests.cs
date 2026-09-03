@@ -75,8 +75,7 @@ public sealed class TheLiftRefusalIsReadableTests
     [Fact]
     public void TheOutcomeRowIsStyledLikeThePanelItSitsIn()
     {
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".lift-outcome", StringComparison.Ordinal),
             "the lift panel's outcome row has no style of its own (#686).");
     }

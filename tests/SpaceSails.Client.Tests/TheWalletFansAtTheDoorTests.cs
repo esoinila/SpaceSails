@@ -174,8 +174,7 @@ public sealed class TheWalletFansAtTheDoorTests
         Assert.True(satchel.Contains("satchel-fan", StringComparison.Ordinal),
             "the fan has no control of its own — expanding the wallet and offering it are one button (#697).");
 
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         foreach (string rule in new[] { ".satchel-folder", ".satchel-fan", ".satchel-wallet-cards" })
         {
             Assert.True(css.Contains(rule, StringComparison.Ordinal),

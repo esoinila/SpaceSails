@@ -1,3 +1,86 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · DossierCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   6 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* M29: the target dossier — the tactical target's own box, floating bottom-center ABOVE the
+   desk layers (z 20 > desk 15) so Nav and Sensors read the same book. */
+::deep .map-dossier {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0.75rem;
+    z-index: calc(var(--z-map-chrome) + 10);
+    pointer-events: auto;
+    border: 1px solid rgba(150, 255, 210, 0.45);
+    width: 30rem;
+    max-width: calc(100% - 1.5rem);
+    /* #997 wave 9 · THE COLUMN THE CAPPED SCROLL NEEDS, AND THE CEILING THIS CARD NEVER HAD.
+
+       The ceiling first, because it is a bug rather than a refactor: this card is anchored to the BOTTOM of
+       the glass and grows UPWARD, and until now nothing capped it in the unstacked state. A hunter with
+       terms, an autosteal box and a long history made a dossier taller than a short window, and what went
+       off the screen was the TOP of it — the title, the – and the ✕. #735's own shape, on a card #735's
+       gate had never been pointed at. `100vh - 1.5rem` is the anchor's own 0.75rem doubled, so the card
+       stops exactly where its own bottom margin says the glass ends.
+
+       Then the column: the head keeps its height, the body gives. The arithmetic itself belongs to
+       CappedScrollPanel and is NOT restated here — what is here is only the three facts the panel cannot
+       know from inside, which are that this card is a column, how tall it may be, and which of its two
+       children is the head. */
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 1.5rem);
+}
+
+/* The head does not give. It is the SHELL's element, so this is `::deep` for the same reason every rule in
+   this family is, and it is one property rather than a copy of #993's comment: what remains after it is
+   what `.capped-scroll` inside is allowed to have. */
+::deep .map-dossier > .overlay-shell-head {
+    flex: 0 0 auto;
+}
+
+/* …and the shell's own body is not a box here — the panel inside it is. `display: contents` is the same
+   move `.overlay-shell-hosted` makes for a hosted beat and it is exactly one property: the CappedScrollPanel
+   becomes a direct flex child of this column, so it can be the item that shrinks. The alternative was to
+   write `flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column` onto `.overlay-shell-body`,
+   which is #993's arithmetic said a second time in a second place — the thing CappedScrollPanel exists to
+   stop. Bootstrap's `d-none` is `!important`, so the tucked state still hides this. */
+::deep .map-dossier > .overlay-shell-body {
+    display: contents;
+}
+
+/* #960 — WINDOWS AT THE BOTTOM CENTRE TAKE TURNS. The target dossier and the navigation-target panel both
+   want this spot, and in the owner's screenshot the dossier lay across the nav panel's text and buttons.
+   The nav panel keeps the floor (it is the one with the arm-the-arrival button); the dossier rides above it,
+   clear of the capped panel below. Declared AFTER .map-dossier on purpose — same specificity, later wins. */
+::deep .map-dossier-raised {
+    bottom: 18.25rem;
+    max-height: min(26rem, calc(100vh - 24rem));
+    overflow-y: auto;
+}
+
+/* …and either way the card can be tucked into a tile of its own (owner: "option to minimize a window into
+   a sugarcube tile and back would avoid the moving-windows can of worms"). No dragging. */
+::deep .map-dossier-tile {
+    width: auto;
+    max-width: 22rem;
+    overflow: visible;
+    max-height: none;
+}
+
+::deep .map-dossier-min {
+    line-height: 1;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+}

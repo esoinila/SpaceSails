@@ -1,3 +1,34 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · BodyMenuPanel's OWN RULES, moved verbatim out of Map.razor.css.
+
+   1 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   PickMenuPanel, ShipMenuPanel, SkyMenuPanel.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+/* M24: planet click menu — anchored at the click point, above the canvas.
+   #997 wave 10 · ::deep because OverlayShell draws this root now. Without it the rule compiles to
+   `.map-body-menu[b-map]`, matches nothing, and the menu loses its `position: absolute` — every one of
+   the four falls back into the document flow at the top-left of the page, wearing the inline left/top the
+   page still writes and ignoring both of them. It also loses the z-index the band gate pins, which is the
+   half CssZBandSyncTests would still be green over: that gate parses this file for the declaration and
+   never asks whether the selector can match. */
+::deep .map-body-menu {
+    position: absolute;
+    z-index: calc(var(--z-map-chrome) + 10);
+    pointer-events: auto;
+    min-width: 12rem;
+    max-width: 16rem;
+}

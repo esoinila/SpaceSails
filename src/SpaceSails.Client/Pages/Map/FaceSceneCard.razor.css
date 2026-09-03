@@ -1,3 +1,81 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · FaceSceneCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   8 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+/* #992 · the corner ✕ on a convergence card. It is INSIDE the card's own padding rather than hanging off
+   its corner, so a narrow viewport cannot push it off the edge — a dismiss control the player cannot reach
+   is the ruling failing quietly instead of loudly. The card is position: static, so this floats to the
+   right of the flow it sits at the top of. */
+.convergence-x {
+    float: right;
+    margin: -0.6rem -0.6rem 0 0;
+    min-width: 1.75rem;
+    padding: 0 0.4rem;
+    color: rgba(219, 230, 242, 0.72);
+    font: 600 0.95rem/1.6 monospace;
+    background: transparent;
+    border: 1px solid rgba(140, 190, 230, 0.4);
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.convergence-x:hover,
+.convergence-x:focus-visible {
+    color: #dbe6f2;
+    border-color: rgba(140, 190, 230, 0.85);
+}
+
+/* #973 L5a · "YOU LOOK DIFFERENT." — the face scene, and the bond line that shows before you knock.
+   The card borrows the convergence shell (one modal look in this game, not seven); what is added here is
+   only the three answers, which are laid out as a stack of full-width choices because the player is
+   choosing what kind of man the captain is and that should not read like a toolbar. */
+.old-crew-card .old-crew-history {
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+}
+
+.old-crew-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: 1rem;
+}
+
+.old-crew-answer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+}
+
+.old-crew-answer-label {
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.old-crew-answer-said {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.old-crew-reply {
+    margin: 1rem 0 1.1rem;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: #e7f1ff;
+}

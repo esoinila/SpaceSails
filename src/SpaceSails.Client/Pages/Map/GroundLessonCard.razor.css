@@ -1,3 +1,78 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · GroundLessonCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   7 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+ */
+
+.ground-lesson-levers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin: 1rem 0 0.9rem;
+    text-align: left;
+}
+
+.ground-lesson-lever {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+}
+
+/* The keycap. The whole card exists because a key was invisible, so the key is the loudest thing on it. */
+.ground-lesson-key {
+    flex: 0 0 auto;
+    min-width: 2rem;
+    padding: 0.25rem 0;
+    color: #ffd479;
+    background: rgba(240, 190, 110, 0.1);
+    border: 1px solid rgba(240, 190, 110, 0.65);
+    border-bottom-width: 3px;
+    border-radius: 0.35rem;
+    font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ground-lesson-lever-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.ground-lesson-lever-title {
+    color: #f4e3c4;
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+.ground-lesson-lever-what {
+    color: rgba(219, 230, 242, 0.82);
+    font-size: 0.88rem;
+    line-height: 1.35;
+}
+
+/* The laws — the four things that end a first excursion. Terse, and visually apart from the keys. */
+.ground-lesson-laws {
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.9rem 0.7rem 2rem;
+    text-align: left;
+    color: rgba(219, 230, 242, 0.9);
+    /* #782 · was 0.87rem, which lays out at 13.9 px — under the 14 px floor by a tenth of a pixel, on the
+       one card that tells a captain the five things that will kill them on the regolith. The live probe
+       measured it on the phone. The pressure valve here is the card's own scroll (#735), never the type. */
+    font-size: 0.9rem;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.25);
+    border-left: 2px solid rgba(240, 190, 110, 0.5);
+    border-radius: 0.3rem;
+}

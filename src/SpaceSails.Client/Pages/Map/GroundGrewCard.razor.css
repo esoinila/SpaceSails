@@ -1,3 +1,40 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · GroundGrewCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   3 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   AirNoticeCard, TubeRearmCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+.ground-grows-art {
+    display: block;
+    width: 100%;
+    border-radius: 0.25rem;
+    margin: 0.5rem 0 0.7rem;
+    border: 1px solid rgba(120, 210, 180, 0.28);
+}
+
+.ground-grows-beats {
+    margin: 0.9rem 0 0.2rem;
+    padding-left: 1.1rem;
+    text-align: left;
+    color: rgba(226, 238, 250, 0.88);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.ground-grows-beats li + li {
+    margin-top: 0.55rem;
+}

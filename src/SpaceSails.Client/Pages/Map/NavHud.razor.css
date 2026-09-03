@@ -1,3 +1,480 @@
-﻿/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. The rules themselves move under #251 item 3. */
+﻿/* #251 item 3 · NavHud's OWN RULES, moved verbatim out of Map.razor.css.
+
+   51 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   AirNoticeCard, AlarmPanel, BankPromptCard, BankSessionCard, BarMenuCard, BoardTargetCard, BodyMenuPanel,
+   BrakeGateCard, BustedCard, CaptainsRemotePanel, and 42 more.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+.map-hud {
+    /* #195: an in-flow block that follows .map-topstack (was absolute top:5.9rem), so the banner above
+       it can never overlap it — it starts below the banner's real height, whatever that grows to. */
+    position: relative;
+    z-index: calc(var(--z-map-chrome) + 12);
+    pointer-events: none;
+    width: fit-content;
+    max-width: 100%;
+    padding-left: 0.75rem;
+    margin-top: 0.4rem;
+
+    /* #992: …and it takes exactly the rest of the window. min-height:0 is the load-bearing half — without
+       it a flex item refuses to shrink below its content, which is precisely how a panel walks off the
+       bottom of the screen. */
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+
+    /* #1037 · …AND IT PAINTS INSIDE WHAT IT IS GIVEN. This is the half that makes the column's arithmetic
+       BINDING rather than advisory: three of the four blocks in here are `flex: 0 0 auto` and the fourth
+       has a floor, so on a window short enough they do not shrink — they OVERFLOW, and the Plotting panel
+       at the foot of them lands wherever it falls. That is what put its bottom edge inside the
+       navigation-target panel at 390x700 (measured: the HUD's own box 0 px tall, its 411 px of content
+       painting straight down the glass over whatever was under it), and at 320x480 it is what puts the
+       frame chip and the Plotting panel BELOW the bottom of the window with no way back to them at all.
+
+       `auto`, not `hidden`: what does not fit is still reachable by scrolling — #997's own backstop for
+       the Plotting panel ("the whole panel pages rather than losing its head"), said one level up for the
+       column that holds it. The x axis is clipped rather than scrolled because the toolbar wraps and the
+       panel is `max-width: 100%`: nothing in here is ever legitimately wider than the HUD. */
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+}
+
+/* #992 · WHO GIVES WHEN THE WINDOW IS SHORT. The toolbar, the readouts and the frame chip are read at a
+   glance and are the same height whatever the plan does — they keep their measured height. The Plotting
+   panel is the one that gives, because it is the one with a scroll inside it. */
+.map-hud .btn-toolbar,
+.map-hud .map-frame {
+    flex: 0 0 auto;
+}
+
+/* #994 · …AND WHO GIVES SECOND, WHEN THE PANEL HAS GIVEN EVERYTHING. Measured at 1280x720 on Nav: the
+   top stack takes 111 px and the toolbar, readouts and frame chip 424 more, so the column is already
+   full before the Plotting panel asks for a single pixel. Raise a story plate at the foot of it (168 px
+   of card and 88 px of floor) and there is a 271 px deficit — more than the panel has to give. Three
+   `flex: 0 0 auto` blocks over a shrinkable one do not shrink; they OVERFLOW, and the panel lands 93 px
+   below the box it was allotted, which is exactly where the plate is.
+
+   So the readouts are the second thing allowed to give. They are the right second choice for the same
+   reason the panel was the first: it is a wall of read-at-a-glance text with no control in it, so a
+   scroll costs a wrist and nothing else — where the toolbar and the frame chip are rows of buttons, and
+   a button you have to scroll to is #212's complaint again. `flex-shrink: 8` against the panel's 1 means
+   the readouts give first and the plan keeps its size; `min-height` is the floor that stops the block
+   collapsing into a sliver rather than scrolling. */
+.map-hud .map-readouts {
+    flex: 0 8 auto;
+    min-height: 7rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.map-hud .btn-toolbar,
+.map-hud .map-readouts,
+.map-hud .map-frame,
+.map-hud ::deep .map-plot {
+    pointer-events: auto;
+}
+
+/* #123/#195: the Nav toolbar wraps cleanly. When the strip is too narrow for warp · Pause · Follow ·
+   Plot · Dock · Scope · ? · checklist on one line, the row-gap keeps the wrapped line clear of the one
+   above instead of letting 'Scope / ? / checklist' collide with their neighbours. */
+.map-hud .btn-toolbar {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+}
+
+/* #143 — the frame chip lives outside the Plot panel now (it governs the Play ribbon too), so it
+   gets its own compact panel in the HUD column, visible in both views. */
+.map-frame {
+    width: 32rem;
+    max-width: 100%;
+}
+
+/* #206 — the every-body frame overflow. A compact inline control sized to its "frame… ▾" label, not
+   the full row, so it sits among the contextual chips rather than dominating them. */
+.map-frame-picker {
+    width: auto;
+    display: inline-block;
+    height: 1.6rem;
+    font-size: 0.75rem;
+    background-color: rgba(33, 37, 41, 0.9);
+    color: #dee2e6;
+    border-color: #495057;
+}
+
+/* #209 — the honest ribbon-length note, tucked just under the Path-length slider. */
+.map-ribbon-note {
+    margin-top: -0.15rem;
+    margin-bottom: 0.35rem;
+    line-height: 1.15;
+}
+
+/* ::deep — #997 put the panel inside a CappedScrollPanel, so this div is drawn by that component and a
+   plain `.map-plot` rule (which compiles to `.map-plot[b-map]`) would no longer match it. The rule still
+   belongs here: what is left in it is the panel's IDENTITY — how wide the Plotting panel is — while the
+   arithmetic that used to sit under it is the component's, once, for every panel that needs it. */
+::deep .map-plot {
+    /* #838 — owner: "that panel could be bigger to fit all the buttons properly." It could not fit them:
+       at 32rem the open step editor had ~28.6rem of usable width (panel − card padding − step indent −
+       editor padding) and its one row already asked for ~29.9rem (mode 2 + ↺ 2.1 + heading 8.5 + ↻ 2.1 +
+       pulses 3.75 + percent 5.5 + retime 2.1 + delete 2.1, plus seven 0.25rem gaps), so it wrapped
+       mid-row and the buttons landed wherever they fell. 38rem gives ~34.6rem: the four quick selects get
+       an even ~8.4rem each on their own row, and the free-aim row (heading 8.5 + pulses 3.75 + percent
+       5.5 + retime + delete ≈ 23rem) fits on one line with room to spare — including the longest time
+       label ("365d 23h 59m"). max-width still clamps it to the viewport on a phone (#253). */
+    width: 38rem;
+    max-width: 100%;
+
+    /* #950 — "UI at scrub planning is clipped from below … I cannot remove the insertion step." #992, the
+       owner again, docked at The Red Eye with cast off · clear the harbour · two burns and the LAST row's
+       editor open: the same clipping, and the ±p / ±d / ±h rows could not be reached at all.
+
+       #950's answer was `max-height: calc(100vh - 14rem)` — a constant standing in for the chrome above
+       this panel. MEASURED (1483×1105, the owner's own window, Nav with the plot open): the tab bar and
+       banner take 128 px, then the toolbar 48, the readouts block 264 and the frame chip 69, so the panel's
+       own top is 540 px — 34 rem, not 14. The cap resolved to 881 px against a 701 px panel and never once
+       engaged; nothing about #971/#983/#990 broke it, it could not fire on this desk from the day it was
+       written. The cap is now the .map-flowcolumn arithmetic above, which cannot be wrong about a height it
+       did not have to guess.
+
+       flex 0 1 auto: the panel is the one thing in the HUD allowed to shrink (see .map-hud above), and
+       min-height:0 is what lets it. overflow-y stays as the BACKSTOP — on a short window the step list
+       reaches its own floor and the whole panel pages rather than losing its head.
+
+       #997 · ALL FIVE OF THOSE DECLARATIONS ARE NOW `.capped-scroll`'s, in Components/CappedScrollPanel
+       .razor.css, together with `.map-plot > *`'s `flex: 0 0 auto` and the step list's own
+       `flex: 1 1 auto; min-height: 6rem; overflow-y: auto; overscroll-behavior: contain`. Nothing about
+       them changed — they were measured for THIS panel and they are still the measurement. What changed is
+       that the next panel with a head and a scrolling body inherits them instead of guessing at a constant,
+       which is the whole of the bug #950 and #992 were: a written-down `14rem` standing in for a 34rem
+       chrome, on a panel where the cap could never once fire.
+
+       The step list keeps its `.map-plot-nodes` name — the component wears it on the scrolling element
+       (BodyClass) — because that name is what PlotPanelFitsTheWindowTests locates in a real browser, and a
+       refactor that renamed the handle its own guard holds would be a refactor that had to move the guard.
+       The floor travels as `BodyFloor="6rem"`: how short is too short stays this panel's judgement (about
+       two steps and a scrollbar), what to do about it is the component's. */
+}
+
+/* #838 · the four quick selects — forward, back, up, down. A 4-column grid rather than a flex row so
+   every button is the same width and none of them ever wraps onto a line of its own: the owner presses
+   these by position, and a row that reflows is a row that mis-clicks. minmax(0,1fr) lets a narrow
+   viewport shrink them evenly instead of pushing the panel wide. */
+.map-burn-quick {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+}
+
+.map-burn-quick .btn {
+    min-width: 0;
+    white-space: nowrap;
+    padding-inline: 0.25rem;
+}
+
+/* #926 · the two five-degree nudges — mouse-only aim, right under the four quick selects. A flex pair
+   rather than a grid: they are a matched pair, not a row of four, and at ~4.4rem each they take under
+   9.5rem of the open editor's ~34.6rem, so nothing below them moves. */
+.map-burn-nudge {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+}
+
+.map-burn-nudge .btn {
+    min-width: 4.4rem;
+    white-space: nowrap;
+    padding-inline: 0.4rem;
+}
+
+/* #937 · the number steps — a coarse and a fine press either side of the thing they move, so the field
+   reads as the middle of its own range rather than as an input with buttons bolted on one end. Owner:
+   "the rough estimation with those + − buttons like the angle", the typed field kept for the last decimal.
+
+   THE MEASUREMENT (#782's law: measure the fit, don't hope for it). #838 measured the open step editor at
+   a 32rem panel as 28.6rem usable, i.e. 3.4rem of card padding + step indent + editor padding. At the
+   38rem panel that is ~34.6rem; on a 390px phone the panel's max-width:100% clamps it to 24.375rem,
+   leaving ~20.9rem usable. Each row asks for:
+     magnitude  4 x 3.1rem (buttons) + 3.75rem (.map-plot-pulses) + 4 x 0.3rem (gaps) = 17.35rem
+     time       4 x 3.1rem (buttons) + 5.6rem (the readout)       + 4 x 0.3rem (gaps) = 19.20rem
+   Both fit inside 20.9rem, so BOTH pairs survive at 390px and nothing collapses to the fine step alone.
+   flex-wrap is the backstop, not the plan: if a future face grows past those min-widths the row breaks
+   onto a second line instead of pushing the panel past the viewport (#253). */
+.map-burn-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+}
+
+.map-burn-steps .btn {
+    min-width: 3.1rem;
+    white-space: nowrap;
+    padding-inline: 0.35rem;
+}
+
+/* When the burn fires, sat between its four time steps. The widest this can read is "365d 23h 59m". */
+.map-burn-epoch-readout {
+    min-width: 5.6rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #cfe8ff;
+}
+
+/* Whose frame those four buttons speak in — small, quiet, and always under them. #926 added the second
+   half of that sentence (the frame the plan is READ in), so it is allowed to wrap onto a second line. */
+.map-burn-frame-note {
+    font-size: 0.72rem;
+    line-height: 1.1;
+    margin-bottom: 0.3rem;
+}
+
+/* #926 · the trip-frame offer. Loud enough to be read — this is the thing the owner had to remember by
+   hand — and quiet enough not to shout over the four buttons above it. The sentence WRAPS: at 0.78rem the
+   open editor's ~34.6rem holds ~88 characters to a line, and the longest sentence this scenario can build
+   ("…in RINGSIDE EXCHANGE's frame — the trip to HIGHPORT SATELLITE WORKS is in the SUN's.") is ~105, so
+   it takes two lines and the panel never grows sideways past its 38rem. */
+.map-burn-frame-offer {
+    margin-bottom: 0.4rem;
+}
+
+.map-burn-frame-offer-line {
+    font-size: 0.78rem;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+    color: #ffda6a;
+}
+
+.map-plot-pulses {
+    width: 3.75rem;
+}
+
+.map-warp-control .form-range {
+    width: 9rem;
+}
+
+.map-warp-readout {
+    min-width: 3.5rem;
+    text-align: right;
+}
+
+.map-plot-percent {
+    width: 5.5rem;
+    flex: 0 0 auto;
+}
+
+/* #838 — .map-plot-mode (the ±/✚ toggle) left the planner with the mode it toggled; the rule is gone
+   with it. The planner has one surface now, and it is the vector view. */
+
+/* #260 — the X-Pilot heading readout crams a signed 1-decimal degree value, its ° suffix AND the
+   abs/rel toggle button into one input-group. At 5rem the number clipped exactly where the captain
+   flies by hand (the manual close-in, angles off the panel) — widen so "-172.5°" reads in full. The
+   step-edit row is flex-wrap inside the width:32rem / max-width:100% plotting panel, so the extra
+   width wraps rather than pushing past the viewport (#253 clamping holds). */
+.map-plot-heading {
+    width: 8.5rem;
+    flex: 0 0 auto;
+}
+
+.map-plot-node-selected {
+    outline: 1px solid rgba(150, 220, 255, 0.7);
+    border-radius: 0.25rem;
+}
+
+/* PR-D1 · the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md). The burn list, headed as a
+   plan, with the owner's NOW/next status line. Cyan for "you", amber for "the machine has it" —
+   the same colour language as the pilot banner so the two read as one system. */
+.map-flightplan-head {
+    border-left: 2px solid rgba(120, 220, 255, 0.6);
+    padding-left: 0.5rem;
+}
+
+.map-flightplan-now {
+    font-weight: 700;
+    color: #e6f2ff;
+    letter-spacing: 0.02em;
+}
+
+/* Round-2 audit fix 3: the "what happens next" line was too quiet to read cold. Give the NEXT: line
+   its own weight and a cyan tint so who-is-flying (banner) + what-next (this) read as one unit. */
+.map-flightplan-next {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #bfe0ff;
+}
+
+/* #168 — layout-stability reserves for the plotting panel. Transient text above the burn-step
+   editors (a closest pass that comes and goes, the autopilot NOW/NEXT that reflows, the sling/skim
+   compose buttons that appear per-pass) was reflowing the step rows mid-click, so the ±15° nudge
+   button fled under the player's cursor. Each conditional region now reserves its tallest common
+   state instead of toggling height, so the steps below hold still while the sim ticks. */
+
+/* Pass line + "Insert at … pass" button — reserve both rows (≈ small line + btn-sm) so the block
+   holding still whether a pass is present, armed, or gone. A rare 2-line pass label may still grow. */
+.map-plot-passline {
+    min-height: 3.25rem;
+}
+
+/* Autopilot status — the common two-line case (NOW + NEXT). 1↔2-line changes no longer shift the
+   list; a rare 3+-line NOW may still grow (acceptable — the frequent flicker is the bug). */
+.map-flightplan-status {
+    min-height: 2.7rem;
+}
+
+/* Compose row — reserve the tallest state (all of + Add burn / Add sling / Add skim / Planned,
+   which wraps to two button rows at this panel width) so toggling the sling/skim buttons in and out
+   never rewraps the row and pushes the steps below. */
+.map-plot-compose {
+    min-height: 4.25rem;
+}
+
+/* A step's state, shown as a coloured pip on the left edge of its row. */
+.map-plan-step {
+    position: relative;
+    padding-left: 0.55rem;
+}
+
+.map-plan-step-pip {
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    bottom: 0.15rem;
+    width: 3px;
+    border-radius: 2px;
+    background: rgba(150, 170, 190, 0.5);   /* planned — quiet */
+}
+
+.map-plan-step-done .map-plan-step-pip {
+    background: rgba(120, 220, 160, 0.85);  /* flown — green */
+}
+
+.map-plan-step-stale .map-plan-step-pip {
+    background: rgba(150, 150, 150, 0.4);   /* struck out */
+}
+
+.map-plan-step-armed .map-plan-step-pip {
+    background: #ffb028;                     /* machine armed — amber, banner language */
+}
+
+.map-plan-step-active .map-plan-step-pip {
+    background: #7fdfff;                     /* being flown now — bright cyan */
+    box-shadow: 0 0 6px rgba(127, 223, 255, 0.8);
+}
+
+/* #952 · the arrive step's INVALID state — the plan does not end safely. Red pip and a red "why" line
+   under the row, carrying the numbers (distance and relative speed against the real thresholds). Not a
+   FlightStepState: "stale" means struck out and will not fire, which is a different and softer thing than
+   "this plan ends nowhere". */
+.map-plan-step-invalid .map-plan-step-pip {
+    background: #ff6b6b;
+    box-shadow: 0 0 6px rgba(255, 107, 107, 0.7);
+}
+
+.map-arrive-why {
+    margin-left: 1.25rem;
+    line-height: 1.25;
+}
+
+/* PR-D2 · the flight-plan accordion. Each step is a glanceable clickable line; opening it reveals its
+   editor in place. The open row lifts (background + inset ring) so the one editor in focus reads as a
+   sub-panel, per GeminiUINotes.md (data-state / accordion / lifted editor). */
+.map-plan-step-line {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding: 0.15rem 0;
+    border-radius: 0.25rem;
+}
+
+.map-plan-step-line:hover {
+    background: rgba(120, 200, 255, 0.08);
+}
+
+.map-plan-step-caret {
+    flex: 0 0 auto;
+    width: 0.85rem;
+    text-align: center;
+    color: rgba(190, 215, 240, 0.75);
+    font-size: 0.8rem;
+}
+
+.map-plan-step-open {
+    background: rgba(120, 200, 255, 0.06);
+    border-radius: 0.3rem;
+}
+
+/* The expanded editor — the step's own buttons live here (owner: the sub-panel IS where the buttons
+   live). A lifted panel with an inset cyan ring, opening with a short slide so it reads as an accordion. */
+.map-plan-step-edit,
+.map-step-editor {
+    animation: map-step-open 0.14s ease-out;
+}
+
+.map-plan-step-edit {
+    margin: 0.15rem 0 0.1rem 0.9rem;
+    padding: 0.4rem 0.5rem;
+    background: rgba(18, 30, 44, 0.75);
+    border-radius: 0.35rem;
+    box-shadow: inset 0 0 0 1px rgba(120, 200, 255, 0.22);
+}
+
+.map-step-editor {
+    box-shadow: inset 0 0 0 1px rgba(120, 200, 255, 0.22);
+}
+
+@keyframes map-step-open {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* PR-G · the sling — the plot-desk crank panel. The verdict block echoes the war-room verdict:
+   a lightly boxed readout the captain scans before committing the aiming burn. */
+.map-sling-verdict {
+    border-left: 2px solid rgba(120, 220, 255, 0.6);
+    padding-left: 0.5rem;
+    margin-top: 0.35rem;
+    line-height: 1.35;
+}
+
+/* #962/#963 — THE KEYS OF NAVIGATION, DRESSED AS KEYS. Owner: "Here the smallest button is the most
+   important one… Plot should stand out among the buttons here. It is the heart of the navigation process."
+   A solid fill already separates Plot and + Add burn from the outline buttons around them; this is the rest
+   of the difference — a size up and a little weight, without leaving the toolbar's own rhythm. */
+.map-key-action {
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+    box-shadow: 0 0 0 1px rgba(255, 220, 150, 0.35), 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.map-orbit-bar {
+    height: 4px;
+    margin-top: 3px;
+    background: #1c2230;
+}
+
+/* #175: the cargo-run delivery next-action, in the nav-target box — parcel amber, the same cue as
+   the 📦 map marker and the quest card, so the three read as one thread. */
+.map-cargo-deliver {
+    color: #ebbe78;
+    font-weight: 600;
+    margin-bottom: 2px;
+}

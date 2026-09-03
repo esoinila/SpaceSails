@@ -24,6 +24,30 @@ public class CssZBandSyncTests
         return File.ReadAllText(path);
     }
 
+    /// <summary>
+    /// #251 item 3 · THE MAP'S WHOLE CASCADE, not one file of it. <c>Map.razor.css</c> was split into the
+    /// page's own sheet plus seventy-six surface sheets under <c>Pages/Map/</c>, and the overlay bands this
+    /// gate resolves went with their cards: <c>.jump-overlay</c> is <c>JumpCard.razor.css</c>'s now,
+    /// <c>.busted-backdrop</c> is <c>BustedCard.razor.css</c>'s. A z-index is a statement about the whole
+    /// stylesheet anyway, so this reads the whole stylesheet — the page's sheet first, then the surfaces in
+    /// the order the build bundles them (project-relative path, case-insensitive), which is the order the
+    /// browser resolves them in.
+    /// </summary>
+    private static string ReadMapCascade()
+    {
+        string surfaces = Path.Combine(CssDir, "Map");
+        Assert.True(Directory.Exists(surfaces),
+            $"the Map surface stylesheets were not copied for the sync gate: {surfaces}. Without them this " +
+            "gate can only see the page's own half of the cascade and would pass by never finding the "
+            + "selectors it is supposed to be checking.");
+
+        string[] sheets = [.. Directory.EnumerateFiles(surfaces, "*.razor.css").OrderBy(p => p, StringComparer.OrdinalIgnoreCase)];
+        Assert.True(sheets.Length > 60,
+            $"only {sheets.Length} Map surface stylesheet(s) beside the test assembly — the copy is broken.");
+
+        return ReadCss("Map.razor.css") + "\n" + string.Join("\n", sheets.Select(File.ReadAllText));
+    }
+
     /// <summary>The five band anchors declared in app.css's <c>:root</c>, name → value.</summary>
     private static IReadOnlyDictionary<string, int> ParseRootBands()
     {
@@ -39,16 +63,25 @@ public class CssZBandSyncTests
         return bands;
     }
 
-    /// <summary>Resolve a selector's <c>z-index</c> expression in Map.razor.css to an integer, using the
+    /// <summary>Resolve a selector's <c>z-index</c> expression in the Map cascade to an integer, using the
     /// band values parsed from app.css's <c>:root</c>. Understands <c>var(--z-band)</c> and
     /// <c>calc(var(--z-band) ± N)</c> — the only forms the migrated stylesheet uses for overlay layers.</summary>
+    /// <para>#251 item 3 · THE LAST block that sets it, not the first that mentions the selector. A class
+    /// can be written in more than one rule — most of these are named in the #735 capped-card family list as
+    /// well as in their own block — and it is the LAST z-index in the cascade that the browser resolves. The
+    /// old reader took the first match, which was the right answer only while every rule for a card sat in
+    /// one file above the family law; the split put `.deck-shuttle-card`'s own block in
+    /// <c>ShuttleBayCard.razor.css</c>, AFTER the family list that mentions it and declares no z-index at
+    /// all, and the first-match reader went red on a stylesheet that had not changed a value.</para>
     private static int ResolveSelectorZ(string css, string selector, IReadOnlyDictionary<string, int> bands)
     {
-        Match block = Regex.Match(css, Regex.Escape(selector) + @"\s*\{(?<body>.*?)\}", RegexOptions.Singleline);
-        Assert.True(block.Success, $"selector {selector} not found in Map.razor.css");
+        MatchCollection blocks = Regex.Matches(css, Regex.Escape(selector) + @"\s*\{(?<body>.*?)\}", RegexOptions.Singleline);
+        Assert.True(blocks.Count > 0, $"selector {selector} not found anywhere in the Map cascade");
 
-        Match z = Regex.Match(block.Groups["body"].Value, @"z-index:\s*(?<expr>[^;]+);");
-        Assert.True(z.Success, $"selector {selector} has no z-index");
+        Match z = blocks.Reverse()
+            .Select(b => Regex.Match(b.Groups["body"].Value, @"z-index:\s*(?<expr>[^;]+);"))
+            .FirstOrDefault(m => m.Success) ?? Match.Empty;
+        Assert.True(z.Success, $"selector {selector} has no z-index in any of its {blocks.Count} rule(s)");
         string expr = z.Groups["expr"].Value.Trim();
 
         Match var = Regex.Match(expr, @"var\(\s*--z-(?<band>[a-z-]+)\s*\)");
@@ -115,7 +148,7 @@ public class CssZBandSyncTests
     [MemberData(nameof(Overlays))]
     public void EveryOverlaySelector_ResolvesToItsBandConstant(string selector, int expectedZ)
     {
-        string css = ReadCss("Map.razor.css");
+        string css = ReadMapCascade();
         IReadOnlyDictionary<string, int> bands = ParseRootBands();
 
         Assert.Equal(expectedZ, ResolveSelectorZ(css, selector, bands));
@@ -140,7 +173,7 @@ public class CssZBandSyncTests
     {
         // The load-bearing invariant, verified against the stylesheet itself: the reserved lifeline band
         // sits above every routine desk/pop-up overlay and below the rescue modal it opens.
-        string css = ReadCss("Map.razor.css");
+        string css = ReadMapCascade();
         IReadOnlyDictionary<string, int> bands = ParseRootBands();
 
         int lifeline = ResolveSelectorZ(css, ".map-adrift", bands);
