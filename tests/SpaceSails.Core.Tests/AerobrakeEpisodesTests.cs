@@ -6,6 +6,8 @@ namespace SpaceSails.Core.Tests;
 /// rolls (a menu quote is byte-identical whether episodes are live or not — only the flown pass carries
 /// the dice); and every episode raises a <see cref="DiceEvent"/> the shared dice tray can show.
 /// </summary>
+// #1108 · The other writer of Aerobrake.DiceEpisodeHook. See AerobrakeTests and StopRegisterCollection.
+[Collection(StopRegisterCollection.Name)]
 public class AerobrakeEpisodesTests
 {
     private static CelestialBody Uranus(Atmosphere? atm) =>

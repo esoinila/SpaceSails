@@ -27,6 +27,9 @@ namespace SpaceSails.Core.Tests;
 /// ground paid to learn the rule. Nothing else in this assembly reads <see cref="QuietHands"/> or
 /// <see cref="DockRoster"/>, and no guard here installs a register it does not take back.</para>
 /// </summary>
+// #1108 · Writes the quiet-hands AND decline registers, and restores both with a read-modify-write. It
+// was outside the collection, sharing the decline register with TheWorldDeclinesPolitelyTests.
+[Collection(StopRegisterCollection.Name)]
 public sealed class ThePeopleWhoDoNotKnowWhyTests
 {
     private static CircularOrbitEphemeris Sol() =>

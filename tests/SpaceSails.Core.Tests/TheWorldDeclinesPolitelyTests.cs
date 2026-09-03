@@ -23,6 +23,10 @@ namespace SpaceSails.Core.Tests;
 /// DERIVED out of the generator and named in the failure message, never typed (the fifth named bug class:
 /// a guard handed a world that cannot tell pass from fail).</para>
 /// </summary>
+// #1108 · Writes the decline register — a process-wide ambient UndergroundComplex reads — and restores it
+// with a read-modify-write, which is the one thing an id family of its own cannot make safe. It was
+// outside the collection; ThePeopleWhoDoNotKnowWhyTests writes the same register.
+[Collection(StopRegisterCollection.Name)]
 public sealed class TheWorldDeclinesPolitelyTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;

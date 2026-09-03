@@ -13,7 +13,10 @@ index is [docs/workflows/README.md](workflows/README.md).
 about six minutes; the inner-loop run is `--filter "speed!=slow"` (or `./test-fast.ps1`) and takes
 about forty seconds. A green fast run means the rules hold, not that the ship flies — see
 [Appendix C](#appendix-c--the-fast-run-and-the-full-run-251-item-4) for exactly what it skips and
-why. CI always runs the whole suite.
+why. CI always runs the whole suite. If your new guard installs one of Core's process-wide
+registers, read
+[Appendix D](#appendix-d--the-process-wide-registers-and-why-some-suites-run-alone-1108) first — it
+is the difference between a suite that is correct and a suite that is correct most afternoons.
 
 **Before you start:** run `./run.ps1` (Release build) and open the printed localhost URL.
 Debug WASM runs on the IL interpreter and is roughly **100× slower** — choppy frames, sluggish
@@ -1962,8 +1965,10 @@ each assembly's wall clock *was* its single slowest class:
 | `SpaceSails.Client.Tests` | 5 m 1 s | `EveryDeskBootsTests` | 300 s |
 
 Tagging half of a slow class would leave the other half holding the floor, so a class carries the
-mark or it does not. **63 classes** cost ten seconds or more: 21 in Core, 42 in the Client. Between
-them they are **732 tests — 12.7% of the suite — and 93.0% of its measured seconds.**
+mark or it does not. **64 classes** cost ten seconds or more: 21 in Core, 43 in the Client. Between
+them they are **733 tests — 12.7% of the suite — and 93.0% of its measured seconds.** (63 of them
+were measured in the 2026-09-02 baseline; the 64th, `TheWorldBuildersAreThreadSafeTests`, is #1108's
+concurrency guard, measured at 15 s on 2026-09-04.)
 
 Ten is a budget, not a discovered boundary: the class-total distribution is a continuum here, with
 the nearest class above the line at 10.5 s and the nearest below it at 9.8 s. It is chosen because
@@ -2081,3 +2086,71 @@ dotnet test SpaceSails.slnx -c Release --logger "trx" --results-directory TestRe
 then sum each class's `UnitTestResult/@duration` from the `.trx`. Tag or untag the class, edit its
 row in the same commit, and quote what you measured in the PR — the laws above will tell you, by
 name, if you did only half of it.
+
+---
+
+## Appendix D — the process-wide registers, and why some suites run alone (#1108)
+
+Five registers in Core are **ambient**: a static the whole process shares, installed once by whoever
+owns the save and consulted at the one seam every reader already goes through.
+
+| register | installed by | read by |
+| --- | --- | --- |
+| `PreservationZone` | `Map.Preserve.cs` | `MoonSurface.SurfaceDeck`, `UndergroundComplex.MoneyTrail` |
+| `StopOrder` | `Map.Stop.cs` | `UndergroundComplex` (depth, bands, the money trail), `CanteenBoard`, `CanteenRegulars`, `Burial.NoticeIsUp` |
+| `Burial` | `Map.Burial.cs` | `UndergroundComplex.HasFoundBand` and its neighbours, `CanteenBoard`, `CanteenRegulars` |
+| `PoliteDecline` | `Map.Decline.cs` | `UndergroundComplex.Decline` |
+| `QuietHands` | `Map.QuietHands.cs` | the owed-ground seam |
+
+That is deliberate and it stays. A burial changes the *shape* of a site, and the shape of a site is
+asked by about thirty callers — the lift panel, the remote, the sounder, the room carver, the sign
+writer, the audits, the renderer — none of which has any business learning what a burial is. §13.15's
+second cause is a caller reasoning about the shape of a building it does not own, and thirty callers
+each taught a new idea is that bug thirty times. The game is single-threaded and reads them safely.
+
+**The test runner is not single-threaded, and that is where the cost lands.** xUnit parallelises
+across test classes. A guard that installs one of these registers on a *real* body id — `luna`,
+`titan`, `phobos` — changes the world under every other class building that body at that instant.
+Symptoms are never about the register: #1108 was `EveryFrameHashesTheSameTests` drawing 651 marks
+where 649 were pinned, and `TheLiftHeadIsJustAnotherHutTests` measuring a lift head with a
+preservation fence accidentally welded to it, about one run in four with Core and Client sharing a
+machine. The register never appears in the message.
+
+So:
+
+* **Every test class that writes one of these registers carries
+  `[Collection(StopRegisterCollection.Name)]`** — in both suites. The definition is one linked file
+  (`tests/SpaceSails.Core.Tests/StopRegisterCollection.cs`, compiled into the Client suite as well),
+  because a collection definition is per-assembly and two copies of "there is one of these" is how
+  two halves come to disagree.
+* **That collection is `DisableParallelization = true`.** Sharing a collection serialises the
+  *writers* against each other and does nothing at all about the *readers*, which are the rest of
+  the suite. Measured with an isolated xUnit 2.9.3 probe: four watcher classes polling a flag held
+  by a plain `[CollectionDefinition]` class all saw the overlap (4 failed / 1 passed); with
+  `DisableParallelization = true` on the same definition, none of them did (5 passed).
+* **`TheProcessWideWritersAreSerialisedTests` enforces it** by reading both suites' sources for the
+  six writes that replace process-wide state — the five `Install(` calls plus
+  `Aerobrake.DiceEpisodeHook =`, which is the same animal — and failing any class that performs one
+  without the attribute. It found four that had drifted outside, and two Aerobrake suites that had
+  never been in.
+
+**Writing a new guard that needs one of these registers?** Install it, restore it in a `finally`,
+prefer an id family of your own (`care-ground-0`, `money-ground-1`) over a real body — and put
+`[Collection(StopRegisterCollection.Name)]` on the class. The law will tell you if you forget.
+
+**The other half — the generator caches.** `MoonSurface`'s layout memo and `HavenInterior`'s deck
+memo are process-wide caches. Both were plain dictionaries once and both cost an afternoon (#585, a
+shelter list that did not match the ground; #649, an `InvalidOperationException` out of the oracle
+seat audit); both are `ConcurrentDictionary` now, and neither fix left a guard behind.
+`TheWorldBuildersAreThreadSafeTests` is that guard: it fingerprints every mark the three world
+builders lay, then has every core rebuild them fifty times over and asserts the fingerprints never
+move. A cache keyed on a pure function of its inputs is fine; one whose value depends on call order
+is not.
+
+**"But the boot path writes them on every page build."** It does — a live `Pages.Map` is the game's one
+writer and installs all five on every world build, so every Client guard that boots a page writes them too.
+Those writes are `Install([])`: a fresh voyage has nothing stopped, fenced, filled or declined, and no test
+boots a page with `?stopped=` / `?buried=` / `?preserved=`, nor loads a vault whose `Halls*` rows are
+non-empty. An empty register replaced by an empty register moves nobody's world. What moves a world is a
+**non-empty** install, and that only ever happens in the dozen suites the law names — which is why
+serialising them costs a dozen classes and not the half of the Client suite that boots a page.

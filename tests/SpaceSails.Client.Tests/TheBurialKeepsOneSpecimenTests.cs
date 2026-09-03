@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Tests;
 
 namespace SpaceSails.Client.Tests;
 
@@ -24,6 +25,9 @@ namespace SpaceSails.Client.Tests;
 /// about, and it is put back in a <c>finally</c>.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+// #1108 · Writes the burial register, which UndergroundComplex reads ambiently. Its ids are its own, but
+// the RESTORE is global and the rule is the rule: a writer of a process-wide register runs alone.
+[Collection(StopRegisterCollection.Name)]
 public sealed class TheBurialKeepsOneSpecimenTests
 {
     private const int Probes = 4000;
