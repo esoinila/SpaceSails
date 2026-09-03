@@ -23,6 +23,7 @@ namespace SpaceSails.Core.Tests;
 /// registers only ever change the answer for the ids IN them, so a guard here that installs a ground of its
 /// OWN cannot move any other guard's world, whatever order xUnit runs them in.</para>
 /// </summary>
+[Collection(StopRegisterCollection.Name)]
 public sealed class ThePreservationZoneTests
 {
     /// <summary>How many generated rocks the sweeps walk to find grounds with halls. The band is about one
