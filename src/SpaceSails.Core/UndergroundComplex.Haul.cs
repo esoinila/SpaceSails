@@ -236,6 +236,15 @@ public static partial class UndergroundComplex
             return Haul.Records;
         }
 
+        // #1074 beat 3 · And, on the works floor of a closed working — plus the two further rooms a ground in
+        // official care carries — the cost-centre papers. Designated for the reason above and not for a new
+        // one. They cannot collide with #1063's ledger, which takes room 0 of this same floor and only ever
+        // exists on a ground that was filled in rather than stopped. See MoneyTrailRoomFor.
+        if (MoneyTrailPaperIn(bodyId, level, roomIndex) is not null)
+        {
+            return Haul.Records;
+        }
+
         // ── #677 · AND THE HALLS, WHERE ALMOST NOTHING IS IN ALMOST EVERY ROOM ────────────────────────────
         //
         // The emptiness is load-bearing everywhere on this ground (§10.3) and down here it is the whole
@@ -396,6 +405,11 @@ public static partial class UndergroundComplex
         // PlantValveBookLine.
         Haul.Records when ValveBookRoomFor(bodyId) is { } v && level == v.Level && roomIndex == v.RoomIndex
             => PlantValveBookLine,
+        // #1074 beat 3 · …and on the works floor of that same ground, one of the cost-centre line items the
+        // closure is being paid for out of. One purchase, one line, one cost centre, and no remark: the
+        // paper is the whole of what it says. See MoneyTrailLine.
+        Haul.Records when MoneyTrailPaperIn(bodyId, level, roomIndex) is { } bought
+            => MoneyTrailLine(bought),
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",

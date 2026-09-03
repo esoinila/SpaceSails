@@ -239,8 +239,20 @@ public partial class Map
         }
         else
         {
-            ShowAndFile(find.RoomLine + pick.Line,
-                find.Haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+            // #1074 beat 3 - a cost-centre line item is filed UNDER TWO NAMES rather than as a loose entry:
+            // the office that is paying, and the ground it is paying for. Core answers what the find is
+            // about (CaseSubjects' law - a subject comes from the AUTHOR of the sentence, never from a
+            // reader of it), and every other room in the building answers the empty line, which is what
+            // FileNoteAbout has always meant by a note that names nothing.
+            //
+            // It is filed HERE and nowhere else, which #615 is what made true: every find a captain can
+            // decide about arrives at this one body whichever way it got here, so a line item cannot be
+            // filed one way when it was kept and another when it simply fell into the pocket.
+            ShowAndFileAbout(
+                find.RoomLine + pick.Line,
+                find.Haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26",
+                UndergroundComplex.MoneyTrailSubjectsFor(
+                    find.BodyId, find.Level, find.RoomIndex, ex.Site.Name));
         }
 
         if (find.Haul == UndergroundComplex.Haul.Dirt)
