@@ -576,6 +576,18 @@ public partial class Map
         FileNote(text, glyph);
     }
 
+    /// <summary>#1074 · <see cref="ShowAndFile"/> for a find whose AUTHOR knows what its sentence is about —
+    /// the same relationship <see cref="FileNoteAbout"/> has to <see cref="FileNote"/>, and it exists for the
+    /// identical reason. An empty <paramref name="subjects"/> is the ordinary case and is exactly what
+    /// <see cref="ShowAndFile"/> already files, so the two never disagree about a note that names
+    /// nothing.</summary>
+    private void ShowAndFileAbout(
+        string text, string glyph, string subjects, PulseRank rank = PulseRank.Status)
+    {
+        ShowPulseMessage(text, rank);
+        FileNoteAbout(text, glyph, subjects);
+    }
+
     /// <summary>#774 · <see cref="ShowAndFile"/>'s sibling for a durable find announced in the same breath as
     /// a card that will stand in front of it: the book keeps it, and the SAYING goes wherever the captain's
     /// eye actually is (<see cref="SayItWhereTheyAreLooking"/>) rather than to a HUD behind a backdrop. With
